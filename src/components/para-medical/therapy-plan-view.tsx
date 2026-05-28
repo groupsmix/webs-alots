@@ -1,7 +1,12 @@
 "use client";
 
 import {
-  Target, CheckCircle, Circle, Clock, ChevronDown, ChevronUp,
+  Target,
+  CheckCircle,
+  Circle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
   RotateCcw,
 } from "lucide-react";
 import { useState } from "react";
@@ -73,19 +78,30 @@ export function TherapyPlanView({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={STATUS_VARIANT[plan.status]} className="text-xs">{plan.status}</Badge>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <Badge variant={STATUS_VARIANT[plan.status]} className="text-xs">
+                    {plan.status}
+                  </Badge>
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
 
               {/* Progress bar */}
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>{achievedGoals}/{totalGoals} goals achieved</span>
+                  <span>
+                    {achievedGoals}/{totalGoals} goals achieved
+                  </span>
                   <span>{progress}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  <div
+                    className="h-full bg-purple-500 rounded-full transition-all"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
               </div>
             </CardHeader>
@@ -108,11 +124,15 @@ export function TherapyPlanView({
                     return (
                       <div key={goal.id} className="p-3 rounded-lg border">
                         <div className="flex items-start gap-3">
-                          <GoalIcon className={`h-5 w-5 mt-0.5 shrink-0 ${GOAL_STATUS_COLOR[goal.status]}`} />
+                          <GoalIcon
+                            className={`h-5 w-5 mt-0.5 shrink-0 ${GOAL_STATUS_COLOR[goal.status]}`}
+                          />
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium">{goal.description}</p>
-                              <Badge variant="outline" className="text-[10px]">{goal.status.replace("_", " ")}</Badge>
+                              <Badge variant="outline" className="text-[10px]">
+                                {goal.status.replace("_", " ")}
+                              </Badge>
                             </div>
 
                             {/* Progress */}
@@ -122,7 +142,10 @@ export function TherapyPlanView({
                                 <span>{goal.progress_pct}%</span>
                               </div>
                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-purple-400 rounded-full" style={{ width: `${goal.progress_pct}%` }} />
+                                <div
+                                  className="h-full bg-purple-400 rounded-full"
+                                  style={{ width: `${goal.progress_pct}%` }}
+                                />
                               </div>
                             </div>
 
@@ -145,11 +168,17 @@ export function TherapyPlanView({
                                         <Circle className="h-3.5 w-3.5 text-muted-foreground" />
                                       )}
                                     </button>
-                                    <span className={ms.completed ? "line-through text-muted-foreground" : ""}>
+                                    <span
+                                      className={
+                                        ms.completed ? "line-through text-muted-foreground" : ""
+                                      }
+                                    >
                                       {ms.description}
                                     </span>
                                     {ms.target_date && (
-                                      <span className="text-[10px] text-muted-foreground ml-auto">{ms.target_date}</span>
+                                      <span className="text-[10px] text-muted-foreground ml-auto">
+                                        {ms.target_date}
+                                      </span>
                                     )}
                                   </div>
                                 ))}
@@ -160,12 +189,24 @@ export function TherapyPlanView({
                             {editable && goal.status !== "achieved" && (
                               <div className="flex gap-1 mt-2">
                                 {goal.status === "not_started" && (
-                                  <Button size="sm" variant="outline" onClick={() => onUpdateGoalStatus?.(plan.id, goal.id, "in_progress")}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      onUpdateGoalStatus?.(plan.id, goal.id, "in_progress")
+                                    }
+                                  >
                                     Start
                                   </Button>
                                 )}
                                 {goal.status === "in_progress" && (
-                                  <Button size="sm" variant="outline" onClick={() => onUpdateGoalStatus?.(plan.id, goal.id, "achieved")}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      onUpdateGoalStatus?.(plan.id, goal.id, "achieved")
+                                    }
+                                  >
                                     Mark Achieved
                                   </Button>
                                 )}

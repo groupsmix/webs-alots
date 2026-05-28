@@ -1,17 +1,28 @@
 "use client";
 
 import {
-  CheckCircle, Clock, AlertCircle,
-  FileText, MessageCircle, DollarSign, Calendar,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  FileText,
+  MessageCircle,
+  DollarSign,
+  Calendar,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { InstallmentPlanView as InstallmentPlan, InstallmentPaymentView as InstallmentPayment } from "@/lib/data/client";
+import type {
+  InstallmentPlanView as InstallmentPlan,
+  InstallmentPaymentView as InstallmentPayment,
+} from "@/lib/data/client";
 import { formatDisplayDate } from "@/lib/utils";
 
-const STATUS_CONFIG: Record<InstallmentPayment["status"], { icon: typeof Clock; color: string; variant: "default" | "success" | "destructive" | "outline" }> = {
+const STATUS_CONFIG: Record<
+  InstallmentPayment["status"],
+  { icon: typeof Clock; color: string; variant: "default" | "success" | "destructive" | "outline" }
+> = {
   pending: { icon: Clock, color: "text-gray-500", variant: "outline" },
   paid: { icon: CheckCircle, color: "text-green-600", variant: "success" },
   overdue: { icon: AlertCircle, color: "text-red-500", variant: "destructive" },
@@ -42,7 +53,9 @@ export function InstallmentTracker({
         const totalPaid = plan.downPayment + paidInstallments.reduce((sum, i) => sum + i.amount, 0);
         const remainingBalance = plan.totalAmount - totalPaid;
         const progress = Math.round((totalPaid / plan.totalAmount) * 100);
-        const nextDue = plan.installments.find((i) => i.status === "pending" || i.status === "overdue");
+        const nextDue = plan.installments.find(
+          (i) => i.status === "pending" || i.status === "overdue",
+        );
 
         return (
           <Card key={plan.id}>
@@ -57,7 +70,16 @@ export function InstallmentTracker({
                     {plan.patientName} &middot; {plan.numberOfInstallments} installments
                   </p>
                 </div>
-                <Badge variant={plan.status === "active" ? "default" : plan.status === "completed" ? "success" : "destructive"} className="text-xs">
+                <Badge
+                  variant={
+                    plan.status === "active"
+                      ? "default"
+                      : plan.status === "completed"
+                        ? "success"
+                        : "destructive"
+                  }
+                  className="text-xs"
+                >
                   {plan.status}
                 </Badge>
               </div>
@@ -73,7 +95,9 @@ export function InstallmentTracker({
                   <p className="text-[10px] text-muted-foreground">Paid</p>
                 </div>
                 <div className="text-center p-2 border rounded-lg">
-                  <p className="text-sm font-bold text-orange-600">{remainingBalance.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-orange-600">
+                    {remainingBalance.toLocaleString()}
+                  </p>
                   <p className="text-[10px] text-muted-foreground">Remaining</p>
                 </div>
               </div>
@@ -81,11 +105,16 @@ export function InstallmentTracker({
               {/* Progress Bar */}
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>{paidInstallments.length + 1}/{plan.numberOfInstallments + 1} payments</span>
+                  <span>
+                    {paidInstallments.length + 1}/{plan.numberOfInstallments + 1} payments
+                  </span>
                   <span>{progress}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  <div
+                    className="h-full bg-green-500 rounded-full transition-all"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
               </div>
 
@@ -93,7 +122,8 @@ export function InstallmentTracker({
                 <div className="mt-2 flex items-center gap-2 text-xs">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    Next payment: {nextDue.amount.toLocaleString()} {plan.currency} due {formatDisplayDate(nextDue.dueDate, "fr", "short")}
+                    Next payment: {nextDue.amount.toLocaleString()} {plan.currency} due{" "}
+                    {formatDisplayDate(nextDue.dueDate, "fr", "short")}
                   </span>
                 </div>
               )}
@@ -108,7 +138,9 @@ export function InstallmentTracker({
                     <p className="text-sm font-medium">Down Payment</p>
                     <p className="text-xs text-muted-foreground">{plan.createdAt}</p>
                   </div>
-                  <span className="text-sm font-medium text-green-600">{plan.downPayment.toLocaleString()} {plan.currency}</span>
+                  <span className="text-sm font-medium text-green-600">
+                    {plan.downPayment.toLocaleString()} {plan.currency}
+                  </span>
                 </div>
 
                 {/* Installments */}
@@ -121,9 +153,11 @@ export function InstallmentTracker({
                       <div
                         key={inst.id}
                         className={`flex items-center gap-3 p-3 rounded-lg border ${
-                          inst.status === "paid" ? "bg-green-50/50 dark:bg-green-950/20" :
-                          inst.status === "overdue" ? "bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800" :
-                          ""
+                          inst.status === "paid"
+                            ? "bg-green-50/50 dark:bg-green-950/20"
+                            : inst.status === "overdue"
+                              ? "bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+                              : ""
                         }`}
                       >
                         <StatusIcon className={`h-4 w-4 shrink-0 ${config.color}`} />
@@ -138,7 +172,8 @@ export function InstallmentTracker({
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Due: {formatDisplayDate(inst.dueDate, "fr", "short")}
-                            {inst.paidDate && ` | Paid: ${formatDisplayDate(inst.paidDate, "fr", "short")}`}
+                            {inst.paidDate &&
+                              ` | Paid: ${formatDisplayDate(inst.paidDate, "fr", "short")}`}
                           </p>
                         </div>
 
@@ -157,19 +192,21 @@ export function InstallmentTracker({
                               <DollarSign className="h-3.5 w-3.5 text-green-600" />
                             </Button>
                           )}
-                          {(role === "doctor" || role === "admin") && inst.status !== "paid" && plan.whatsappReminderEnabled && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Send WhatsApp reminder"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSendReminder?.(plan.id, inst.id);
-                              }}
-                            >
-                              <MessageCircle className="h-3.5 w-3.5 text-green-500" />
-                            </Button>
-                          )}
+                          {(role === "doctor" || role === "admin") &&
+                            inst.status !== "paid" &&
+                            plan.whatsappReminderEnabled && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Send WhatsApp reminder"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSendReminder?.(plan.id, inst.id);
+                                }}
+                              >
+                                <MessageCircle className="h-3.5 w-3.5 text-green-500" />
+                              </Button>
+                            )}
                           {inst.status === "paid" && (
                             <Button
                               variant="ghost"

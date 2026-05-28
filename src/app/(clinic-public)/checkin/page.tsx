@@ -82,7 +82,9 @@ export default function CheckInKioskPage() {
     if (!phone || phone.length < 8 || !clinicId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/checkin/lookup?phone=${encodeURIComponent(phone)}&clinicId=${clinicId}`);
+      const res = await fetch(
+        `/api/checkin/lookup?phone=${encodeURIComponent(phone)}&clinicId=${clinicId}`,
+      );
       const json = await res.json();
       if (json.ok && json.data?.appointments?.length > 0) {
         setAppointments(json.data.appointments);
@@ -171,9 +173,7 @@ export default function CheckInKioskPage() {
       <div className="w-full max-w-lg">
         {/* Clinic Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {tenant?.clinicName ?? "Clinic"}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">{tenant?.clinicName ?? "Clinic"}</h1>
           <p className="text-lg text-gray-600 mt-1">Self Check-In</p>
         </div>
 
@@ -216,9 +216,7 @@ export default function CheckInKioskPage() {
                 onClick={handlePhoneSubmit}
                 disabled={phone.length < 8 || loading}
               >
-                {loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                ) : null}
+                {loading ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : null}
                 Find My Appointment
               </Button>
             </CardContent>
@@ -230,12 +228,7 @@ export default function CheckInKioskPage() {
           <Card className="shadow-xl">
             <CardContent className="p-8">
               <div className="flex items-center gap-3 mb-6">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetKiosk}
-                  className="rounded-full"
-                >
+                <Button variant="ghost" size="sm" onClick={resetKiosk} className="rounded-full">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h2 className="text-2xl font-semibold">Your Appointments Today</h2>
@@ -286,9 +279,7 @@ export default function CheckInKioskPage() {
           <Card className="shadow-xl border-2 border-green-400">
             <CardContent className="p-12 text-center">
               <CheckCircle className="h-20 w-20 text-green-600 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-green-700 mb-2">
-                You&apos;re Checked In!
-              </h2>
+              <h2 className="text-3xl font-bold text-green-700 mb-2">You&apos;re Checked In!</h2>
               <p className="text-lg text-muted-foreground mb-6">
                 {selectedAppointment?.serviceName} with Dr. {selectedAppointment?.doctorName}
               </p>
@@ -317,9 +308,7 @@ export default function CheckInKioskPage() {
                   style={{ width: "100%" }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Screen resets automatically...
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">Screen resets automatically...</p>
             </CardContent>
           </Card>
         )}
@@ -333,10 +322,7 @@ export default function CheckInKioskPage() {
               <p className="text-muted-foreground mb-6">
                 We couldn&apos;t find any appointments for today with that phone number.
               </p>
-              <Button
-                className="h-14 px-8 text-lg font-semibold rounded-xl"
-                onClick={resetKiosk}
-              >
+              <Button className="h-14 px-8 text-lg font-semibold rounded-xl" onClick={resetKiosk}>
                 Try Again
               </Button>
             </CardContent>

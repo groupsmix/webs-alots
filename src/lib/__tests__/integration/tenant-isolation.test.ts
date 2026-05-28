@@ -162,7 +162,9 @@ describe("Tenant Isolation — Clinic ID Validation", () => {
     expect(() => assertTenantMatch(clinicA, clinicA, "doctor", "appointment.create")).not.toThrow();
 
     // Different tenant — must throw
-    expect(() => assertTenantMatch(clinicA, clinicB, "doctor", "appointment.create")).toThrow("Cross-tenant access blocked");
+    expect(() => assertTenantMatch(clinicA, clinicB, "doctor", "appointment.create")).toThrow(
+      "Cross-tenant access blocked",
+    );
   });
 });
 

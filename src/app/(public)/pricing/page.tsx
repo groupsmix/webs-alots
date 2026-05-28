@@ -11,8 +11,7 @@ export const metadata: Metadata = {
     "Découvrez nos plans tarifaires adaptés à chaque cabinet médical. Du plan gratuit au plan Enterprise, trouvez l'offre qui vous convient.",
   openGraph: {
     title: "Tarifs — Plans et Abonnements | Oltigo",
-    description:
-      "Plans tarifaires pour professionnels de santé. Commencez gratuitement.",
+    description: "Plans tarifaires pour professionnels de santé. Commencez gratuitement.",
   },
 };
 

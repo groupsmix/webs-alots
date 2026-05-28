@@ -20,10 +20,7 @@ import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
-import {
-  cleanupAbandonedUploads,
-  reconcileOrphans,
-} from "@/lib/r2-cleanup";
+import { cleanupAbandonedUploads, reconcileOrphans } from "@/lib/r2-cleanup";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
 

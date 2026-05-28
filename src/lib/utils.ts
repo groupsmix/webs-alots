@@ -1,11 +1,11 @@
-import { clsx, type ClassValue } from "clsx"
-import { formatInTimeZone } from "date-fns-tz"
-import { twMerge } from "tailwind-merge"
-import { DEFAULT_TIMEZONE } from "@/lib/constants"
-import type { Locale } from "@/lib/i18n"
+import { clsx, type ClassValue } from "clsx";
+import { formatInTimeZone } from "date-fns-tz";
+import { twMerge } from "tailwind-merge";
+import { DEFAULT_TIMEZONE } from "@/lib/constants";
+import type { Locale } from "@/lib/i18n";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -16,10 +16,7 @@ export function cn(...inputs: ClassValue[]) {
  * `.toISOString().split("T")[0]` gets wrong (e.g. 23:30 local on
  * March 15 → March 16 in UTC).
  */
-export function getLocalDateStr(
-  date: Date = new Date(),
-  timezone = DEFAULT_TIMEZONE,
-): string {
+export function getLocalDateStr(date: Date = new Date(), timezone = DEFAULT_TIMEZONE): string {
   return formatInTimeZone(date, timezone, "yyyy-MM-dd");
 }
 
@@ -126,7 +123,7 @@ function formatRelativeTime(date: Date, locale: Locale): string {
 export function formatNumber(
   value: number,
   locale: Locale = "fr",
-  options?: Intl.NumberFormatOptions
+  options?: Intl.NumberFormatOptions,
 ): string {
   const intlLocale = LOCALE_MAP[locale];
   return new Intl.NumberFormat(intlLocale, options).format(value);
@@ -135,7 +132,7 @@ export function formatNumber(
 export function formatCurrency(
   value: number,
   locale: Locale = "fr",
-  currency: string = "MAD"
+  currency: string = "MAD",
 ): string {
   const intlLocale = LOCALE_MAP[locale];
   return new Intl.NumberFormat(intlLocale, {

@@ -23,9 +23,9 @@ CI while they are investigated.
 
 ## Currently Quarantined Tests
 
-| File | Test name | Issue | Date quarantined | Root cause |
-|------|-----------|-------|------------------|------------|
-| — | — | — | — | No flaky tests currently quarantined |
+| File | Test name | Issue | Date quarantined | Root cause                           |
+| ---- | --------- | ----- | ---------------- | ------------------------------------ |
+| —    | —         | —     | —                | No flaky tests currently quarantined |
 
 ## Conditional Skips (not quarantined)
 

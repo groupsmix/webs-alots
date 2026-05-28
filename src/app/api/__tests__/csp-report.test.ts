@@ -22,9 +22,7 @@ vi.mock("@/lib/logger", () => ({
 
 const limiterCheck = vi.fn().mockResolvedValue(true);
 vi.mock("@/lib/rate-limit", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/rate-limit")>(
-    "@/lib/rate-limit",
-  );
+  const actual = await vi.importActual<typeof import("@/lib/rate-limit")>("@/lib/rate-limit");
   return {
     ...actual,
     createRateLimiter: () => ({ check: limiterCheck }),

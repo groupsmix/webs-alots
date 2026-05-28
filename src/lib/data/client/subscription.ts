@@ -53,7 +53,9 @@ const TIER_NAMES: Record<string, string> = {
   "saas-monthly": "SaaS Mensuel",
 };
 
-export async function fetchClinicSubscription(clinicId: string): Promise<ClinicSubscriptionView | null> {
+export async function fetchClinicSubscription(
+  clinicId: string,
+): Promise<ClinicSubscriptionView | null> {
   const supabase = createClient();
 
   // Fetch the clinic to get tier and type info
@@ -83,20 +85,32 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const payments = (paymentsData ?? []) as { id: string; amount: number; status: string; created_at: string }[];
+  const payments = (paymentsData ?? []) as {
+    id: string;
+    amount: number;
+    status: string;
+    created_at: string;
+  }[];
   const invoices = payments.map((p) => ({
     id: p.id,
     date: p.created_at?.split("T")[0] ?? "",
     amount: p.amount ?? 0,
-    status: (p.status === "completed" ? "paid" : p.status === "pending" ? "pending" : "overdue") as "paid" | "pending" | "overdue" | "refunded",
+    status: (p.status === "completed" ? "paid" : p.status === "pending" ? "pending" : "overdue") as
+      | "paid"
+      | "pending"
+      | "overdue"
+      | "refunded",
     paidDate: p.status === "completed" ? p.created_at?.split("T")[0] : undefined,
   }));
 
   const subStatus: ClinicSubscriptionView["status"] =
-    clinic.status === "active" ? "active"
-      : clinic.status === "suspended" ? "suspended"
-      : clinic.status === "trial" ? "trial"
-      : "cancelled";
+    clinic.status === "active"
+      ? "active"
+      : clinic.status === "suspended"
+        ? "suspended"
+        : clinic.status === "trial"
+          ? "trial"
+          : "cancelled";
 
   const now = new Date();
   const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -120,17 +134,30 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
     autoRenew: clinic.status === "active",
     systemType,
     invoices,
-    tier: tierData ? {
-      slug: tierData.slug ?? "",
-      name: tierData.name ?? "",
-      description: tierData.description ?? "",
-      features: (tierData.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
-      limits: (tierData.limits as NonNullable<ClinicSubscriptionView["tier"]>["limits"]) ?? {
-        maxDoctors: 1, maxPatients: 0, maxAppointmentsPerMonth: 0,
-        storageGB: 1, customDomain: false, apiAccess: false, whiteLabel: false,
-      },
-      pricing: (tierData.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
-    } : null,
+    tier: tierData
+      ? {
+          slug: tierData.slug ?? "",
+          name: tierData.name ?? "",
+          description: tierData.description ?? "",
+          features:
+            (tierData.features as {
+              key: string;
+              label: string;
+              included: boolean;
+              limit?: string;
+            }[]) ?? [],
+          limits: (tierData.limits as NonNullable<ClinicSubscriptionView["tier"]>["limits"]) ?? {
+            maxDoctors: 1,
+            maxPatients: 0,
+            maxAppointmentsPerMonth: 0,
+            storageGB: 1,
+            customDomain: false,
+            apiAccess: false,
+            whiteLabel: false,
+          },
+          pricing: (tierData.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
+        }
+      : null,
   };
 }
 

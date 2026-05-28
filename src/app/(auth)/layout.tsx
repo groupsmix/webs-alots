@@ -3,11 +3,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { t, type Locale } from "@/lib/i18n";
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   // I18N-01: Server component — read locale from cookie or default to "fr".
   // The auth layout is a server component so we cannot use the useLocale hook.
   const locale: Locale = "fr";

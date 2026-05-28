@@ -3,12 +3,7 @@
 import { MessageCircle, Phone, Package, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export interface ProductInfo {
   id: string;
@@ -27,7 +22,10 @@ export interface ProductInfo {
   active: boolean;
 }
 
-function getStockLabel(qty: number, min: number): { label: string; variant: "outline" | "secondary" | "destructive"; color: string } {
+function getStockLabel(
+  qty: number,
+  min: number,
+): { label: string; variant: "outline" | "secondary" | "destructive"; color: string } {
   if (qty === 0) return { label: "Out of Stock", variant: "destructive", color: "" };
   if (qty <= min) return { label: "Low Stock", variant: "secondary", color: "text-yellow-600" };
   return { label: "In Stock", variant: "outline", color: "text-emerald-600 border-emerald-600" };
@@ -35,7 +33,7 @@ function getStockLabel(qty: number, min: number): { label: string; variant: "out
 
 function buildWhatsAppUrl(phone: string, product: ProductInfo): string {
   const text = encodeURIComponent(
-    `Bonjour, je souhaite commander : ${product.name} (${product.price} ${product.currency}). Merci !`
+    `Bonjour, je souhaite commander : ${product.name} (${product.price} ${product.currency}). Merci !`,
   );
   const cleanPhone = phone.replace(/\s+/g, "");
   return `https://wa.me/${cleanPhone}?text=${text}`;
@@ -60,10 +58,7 @@ export function ProductDetailModal({
 
   return (
     <Dialog open={open}>
-      <DialogContent
-        onClose={onClose}
-        className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
-      >
+      <DialogContent onClose={onClose} className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">{product.name}</DialogTitle>
         </DialogHeader>
@@ -71,9 +66,7 @@ export function ProductDetailModal({
         <div className="space-y-4 mt-2">
           {/* Badges row */}
           <div className="flex flex-wrap gap-2">
-            <Badge
-              variant={product.requiresPrescription ? "destructive" : "secondary"}
-            >
+            <Badge variant={product.requiresPrescription ? "destructive" : "secondary"}>
               {product.requiresPrescription ? "Rx Required" : "OTC"}
             </Badge>
             <Badge variant="outline" className="capitalize">
@@ -86,9 +79,7 @@ export function ProductDetailModal({
 
           {/* Generic name */}
           {product.genericName && (
-            <p className="text-sm text-muted-foreground italic">
-              {product.genericName}
-            </p>
+            <p className="text-sm text-muted-foreground italic">{product.genericName}</p>
           )}
 
           {/* Description */}
@@ -151,11 +142,7 @@ export function ProductDetailModal({
           </div>
 
           {/* Close button for mobile */}
-          <Button
-            variant="ghost"
-            className="w-full sm:hidden"
-            onClick={onClose}
-          >
+          <Button variant="ghost" className="w-full sm:hidden" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Close
           </Button>

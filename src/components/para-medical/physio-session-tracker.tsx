@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  CheckCircle, XCircle, TrendingDown, TrendingUp,
-} from "lucide-react";
+import { CheckCircle, XCircle, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,7 +52,13 @@ export function PhysioSessionTracker({ sessions }: PhysioSessionTrackerProps) {
       {/* Filter */}
       <div className="flex gap-2">
         {(["all", "attended", "missed"] as const).map((f) => (
-          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)} className="capitalize">
+          <Button
+            key={f}
+            variant={filter === f ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter(f)}
+            className="capitalize"
+          >
             {f}
           </Button>
         ))}
@@ -77,7 +81,10 @@ export function PhysioSessionTracker({ sessions }: PhysioSessionTrackerProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">{session.patient_name}</p>
-                    <Badge variant={session.attended ? "success" : "destructive"} className="text-xs">
+                    <Badge
+                      variant={session.attended ? "success" : "destructive"}
+                      className="text-xs"
+                    >
                       {session.attended ? "Attended" : "Missed"}
                     </Badge>
                   </div>
@@ -99,13 +106,17 @@ export function PhysioSessionTracker({ sessions }: PhysioSessionTrackerProps) {
                   )}
 
                   {session.progress_notes && (
-                    <p className="text-xs text-muted-foreground mt-2 border-t pt-2">{session.progress_notes}</p>
+                    <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                      {session.progress_notes}
+                    </p>
                   )}
 
                   {session.exercises_completed.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {session.exercises_completed.map((ex, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">{ex}</Badge>
+                        <Badge key={i} variant="outline" className="text-[10px]">
+                          {ex}
+                        </Badge>
                       ))}
                     </div>
                   )}
@@ -119,7 +130,12 @@ export function PhysioSessionTracker({ sessions }: PhysioSessionTrackerProps) {
   );
 }
 
-function Button({ variant = "default", size = "default", className = "", ...props }: {
+function Button({
+  variant = "default",
+  size = "default",
+  className = "",
+  ...props
+}: {
   variant?: "default" | "outline" | "ghost" | "destructive";
   size?: "default" | "sm" | "lg";
   className?: string;
@@ -138,5 +154,7 @@ function Button({ variant = "default", size = "default", className = "", ...prop
     sm: "h-8 px-3 text-xs",
     lg: "h-11 px-8 text-base",
   };
-  return <button className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...props} />;
+  return (
+    <button className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...props} />
+  );
 }

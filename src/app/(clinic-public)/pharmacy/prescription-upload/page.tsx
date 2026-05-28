@@ -1,8 +1,15 @@
 "use client";
 
 import {
-  Upload, Camera, FileText, Check, AlertCircle,
-  Truck, MapPin, Phone, MessageCircle,
+  Upload,
+  Camera,
+  FileText,
+  Check,
+  AlertCircle,
+  Truck,
+  MapPin,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -37,8 +44,8 @@ export default function PrescriptionUploadPage() {
         </div>
         <h1 className="text-2xl font-bold mb-4">Prescription Uploaded!</h1>
         <p className="text-muted-foreground mb-6">
-          Your prescription has been submitted successfully. Our pharmacist will
-          review it shortly and notify you via WhatsApp when your medications are ready.
+          Your prescription has been submitted successfully. Our pharmacist will review it shortly
+          and notify you via WhatsApp when your medications are ready.
         </p>
         <div className="bg-muted rounded-lg p-4 mb-6 text-left">
           <h3 className="font-semibold mb-2">What happens next?</h3>
@@ -110,14 +117,14 @@ export default function PrescriptionUploadPage() {
           <div key={s.num} className="flex items-center gap-2">
             <div
               className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= s.num
-                  ? "bg-emerald-600 text-white"
-                  : "bg-muted text-muted-foreground"
+                step >= s.num ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"
               }`}
             >
               {step > s.num ? <Check className="h-4 w-4" /> : s.num}
             </div>
-            <span className={`text-sm hidden sm:inline ${step >= s.num ? "font-medium" : "text-muted-foreground"}`}>
+            <span
+              className={`text-sm hidden sm:inline ${step >= s.num ? "font-medium" : "text-muted-foreground"}`}
+            >
               {s.label}
             </span>
             {s.num < 3 && <div className="w-8 h-px bg-muted-foreground/30" />}
@@ -163,7 +170,9 @@ export default function PrescriptionUploadPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setPrescriptionFile(new File(["demo"], "prescription.jpg", { type: "image/jpeg" }));
+                        setPrescriptionFile(
+                          new File(["demo"], "prescription.jpg", { type: "image/jpeg" }),
+                        );
                       }}
                     >
                       <Camera className="mr-2 h-4 w-4" />
@@ -172,7 +181,9 @@ export default function PrescriptionUploadPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setPrescriptionFile(new File(["demo"], "prescription.jpg", { type: "image/jpeg" }));
+                        setPrescriptionFile(
+                          new File(["demo"], "prescription.jpg", { type: "image/jpeg" }),
+                        );
                       }}
                     >
                       <Upload className="mr-2 h-4 w-4" />
@@ -298,7 +309,9 @@ export default function PrescriptionUploadPage() {
             </div>
 
             <div className="flex justify-between mt-6">
-              <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+              <Button variant="outline" onClick={() => setStep(1)}>
+                Back
+              </Button>
               <Button
                 className="bg-emerald-600 hover:bg-emerald-700"
                 disabled={!formData.name || !formData.phone}
@@ -332,16 +345,22 @@ export default function PrescriptionUploadPage() {
                     <span className="text-muted-foreground">Collection</span>
                     <Badge variant="outline" className="capitalize">
                       {formData.deliveryOption === "delivery" ? (
-                        <><Truck className="h-3 w-3 mr-1" /> Delivery</>
+                        <>
+                          <Truck className="h-3 w-3 mr-1" /> Delivery
+                        </>
                       ) : (
-                        <><MapPin className="h-3 w-3 mr-1" /> Pickup</>
+                        <>
+                          <MapPin className="h-3 w-3 mr-1" /> Pickup
+                        </>
                       )}
                     </Badge>
                   </div>
                   {formData.deliveryOption === "delivery" && formData.deliveryAddress && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Address</span>
-                      <span className="font-medium text-right max-w-[200px]">{formData.deliveryAddress}</span>
+                      <span className="font-medium text-right max-w-[200px]">
+                        {formData.deliveryAddress}
+                      </span>
                     </div>
                   )}
                   {formData.isChronic && (
@@ -373,11 +392,10 @@ export default function PrescriptionUploadPage() {
             </div>
 
             <div className="flex justify-between mt-6">
-              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-              <Button
-                className="bg-emerald-600 hover:bg-emerald-700"
-                onClick={handleSubmit}
-              >
+              <Button variant="outline" onClick={() => setStep(2)}>
+                Back
+              </Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit}>
                 <MessageCircle className="mr-2 h-4 w-4" />
                 Submit Prescription
               </Button>

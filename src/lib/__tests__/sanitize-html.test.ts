@@ -12,7 +12,7 @@ import { sanitizeHtml } from "../sanitize-html";
 describe("sanitizeHtml", () => {
   it("preserves the allow-listed structural tags", () => {
     const out = sanitizeHtml(
-      "<h2>Title</h2><p>Some <strong>bold</strong> text and a <a href=\"https://example.com\">link</a>.</p>",
+      '<h2>Title</h2><p>Some <strong>bold</strong> text and a <a href="https://example.com">link</a>.</p>',
     );
     expect(out).toContain("<h2>Title</h2>");
     expect(out).toContain("<strong>bold</strong>");
@@ -46,11 +46,11 @@ describe("sanitizeHtml", () => {
   });
 
   it("strips dangerous elements not handled by the old regex (svg/details)", () => {
-    expect(sanitizeHtml(`<svg onload="alert(1)"></svg>`).toLowerCase()).not.toContain(
-      "alert(1)",
-    );
+    expect(sanitizeHtml(`<svg onload="alert(1)"></svg>`).toLowerCase()).not.toContain("alert(1)");
     expect(
-      sanitizeHtml(`<details open ontoggle="alert(1)"><summary>x</summary></details>`).toLowerCase(),
+      sanitizeHtml(
+        `<details open ontoggle="alert(1)"><summary>x</summary></details>`,
+      ).toLowerCase(),
     ).not.toContain("alert(1)");
   });
 
@@ -71,12 +71,12 @@ describe("sanitizeHtml", () => {
 
   it("strips iframe / object / embed / form / meta / link", () => {
     for (const tag of [
-      "<iframe src=\"https://evil.com\"></iframe>",
-      "<object data=\"x\"></object>",
-      "<embed src=\"x\" />",
-      "<form action=\"x\"><input /></form>",
-      "<meta http-equiv=\"refresh\" />",
-      "<link rel=\"stylesheet\" href=\"x\" />",
+      '<iframe src="https://evil.com"></iframe>',
+      '<object data="x"></object>',
+      '<embed src="x" />',
+      '<form action="x"><input /></form>',
+      '<meta http-equiv="refresh" />',
+      '<link rel="stylesheet" href="x" />',
     ]) {
       const out = sanitizeHtml(tag).toLowerCase();
       expect(out).not.toContain("iframe");

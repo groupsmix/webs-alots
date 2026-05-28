@@ -51,15 +51,19 @@ describe("Webhook API — signature verification", () => {
 describe("Webhook API — message extraction", () => {
   it("extracts text message from webhook payload", () => {
     const entry = {
-      changes: [{
-        value: {
-          messages: [{
-            from: "+1234567890",
-            text: { body: "CONFIRM" },
-          }],
-          metadata: { phone_number_id: "pn-123" },
+      changes: [
+        {
+          value: {
+            messages: [
+              {
+                from: "+1234567890",
+                text: { body: "CONFIRM" },
+              },
+            ],
+            metadata: { phone_number_id: "pn-123" },
+          },
         },
-      }],
+      ],
     };
 
     const changes = entry.changes;
@@ -71,18 +75,22 @@ describe("Webhook API — message extraction", () => {
 
   it("extracts interactive button reply from webhook payload", () => {
     const entry = {
-      changes: [{
-        value: {
-          messages: [{
-            from: "+1234567890",
-            interactive: {
-              type: "button_reply",
-              button_reply: { id: "CONFIRM", title: "Confirm" },
-            },
-          }],
-          metadata: { phone_number_id: "pn-123" },
+      changes: [
+        {
+          value: {
+            messages: [
+              {
+                from: "+1234567890",
+                interactive: {
+                  type: "button_reply",
+                  button_reply: { id: "CONFIRM", title: "Confirm" },
+                },
+              },
+            ],
+            metadata: { phone_number_id: "pn-123" },
+          },
         },
-      }],
+      ],
     };
 
     const msg = entry.changes[0].value.messages[0];
@@ -92,16 +100,20 @@ describe("Webhook API — message extraction", () => {
 
   it("extracts delivery status updates", () => {
     const entry = {
-      changes: [{
-        value: {
-          statuses: [{
-            id: "msg-123",
-            status: "delivered",
-            timestamp: "1711987200",
-            recipient_id: "+1234567890",
-          }],
+      changes: [
+        {
+          value: {
+            statuses: [
+              {
+                id: "msg-123",
+                status: "delivered",
+                timestamp: "1711987200",
+                recipient_id: "+1234567890",
+              },
+            ],
+          },
         },
-      }],
+      ],
     };
 
     const status = entry.changes[0].value.statuses[0];
@@ -112,16 +124,20 @@ describe("Webhook API — message extraction", () => {
 
   it("handles read status update", () => {
     const entry = {
-      changes: [{
-        value: {
-          statuses: [{
-            id: "msg-456",
-            status: "read",
-            timestamp: "1711987500",
-            recipient_id: "+1234567890",
-          }],
+      changes: [
+        {
+          value: {
+            statuses: [
+              {
+                id: "msg-456",
+                status: "read",
+                timestamp: "1711987500",
+                recipient_id: "+1234567890",
+              },
+            ],
+          },
         },
-      }],
+      ],
     };
 
     const status = entry.changes[0].value.statuses[0];

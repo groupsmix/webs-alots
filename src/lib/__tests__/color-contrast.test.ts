@@ -19,14 +19,10 @@ import { describe, it, expect } from "vitest";
 function oklchToRgb(oklchStr: string): { r: number; g: number; b: number } {
   // Handle oklch with alpha: "oklch(1 0 0 / 10%)"
   const cleaned = oklchStr.replace(/\/.*$/, "").trim();
-  const match = cleaned.match(
-    /oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/,
-  );
+  const match = cleaned.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/);
   if (!match) {
     // Achromatic shorthand like oklch(0.145 0 0)
-    const achromatic = cleaned.match(
-      /oklch\(\s*([\d.]+)\s+0\s+0\s*\)/,
-    );
+    const achromatic = cleaned.match(/oklch\(\s*([\d.]+)\s+0\s+0\s*\)/);
     if (achromatic) {
       // L in OKLCH ~ perceptual lightness; approximate sRGB gray
       const L = parseFloat(achromatic[1]);

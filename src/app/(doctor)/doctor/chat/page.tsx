@@ -35,7 +35,9 @@ export default function DoctorChatPage() {
       .catch(() => {
         // ignored — component unmounted or fetch failed
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const doctorId = user?.id ?? "";
@@ -91,9 +93,7 @@ export default function DoctorChatPage() {
           <MessageCircle className="h-6 w-6" />
           Internal Chat
         </h1>
-        {unreadCount > 0 && (
-          <Badge variant="destructive">{unreadCount} unread</Badge>
-        )}
+        {unreadCount > 0 && <Badge variant="destructive">{unreadCount} unread</Badge>}
       </div>
 
       <Card className="max-w-3xl mx-auto">
@@ -118,21 +118,18 @@ export default function DoctorChatPage() {
               {messages.map((msg) => {
                 const isDoctor = msg.senderRole === "doctor";
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${isDoctor ? "flex-row-reverse" : ""}`}
-                  >
+                  <div key={msg.id} className={`flex gap-3 ${isDoctor ? "flex-row-reverse" : ""}`}>
                     <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className={`text-[10px] ${isDoctor ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                      <AvatarFallback
+                        className={`text-[10px] ${isDoctor ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}
+                      >
                         {isDoctor ? "Dr" : "RS"}
                       </AvatarFallback>
                     </Avatar>
                     <div className={`max-w-[70%] ${isDoctor ? "text-right" : ""}`}>
                       <div
                         className={`rounded-lg px-3 py-2 text-sm ${
-                          isDoctor
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
+                          isDoctor ? "bg-primary text-primary-foreground" : "bg-muted"
                         }`}
                       >
                         {msg.message}

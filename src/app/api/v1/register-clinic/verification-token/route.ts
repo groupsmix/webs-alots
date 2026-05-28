@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
     token,
     record_name: hostname,
     record_value: `oltigo-verify=${token}`,
-    instructions:
-      `Add a DNS TXT record on '${hostname}' (or '_oltigo.${hostname}') with value 'oltigo-verify=${token}', then call POST /api/v1/register-clinic with the same email and website_domain.`,
+    instructions: `Add a DNS TXT record on '${hostname}' (or '_oltigo.${hostname}') with value 'oltigo-verify=${token}', then call POST /api/v1/register-clinic with the same email and website_domain.`,
   });
 }

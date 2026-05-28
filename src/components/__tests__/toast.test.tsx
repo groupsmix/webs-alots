@@ -5,11 +5,7 @@ import { ToastProvider, useToast } from "@/components/ui/toast";
 
 function TestConsumer() {
   const { addToast } = useToast();
-  return (
-    <button onClick={() => addToast("Test notification", "success")}>
-      Show Toast
-    </button>
-  );
+  return <button onClick={() => addToast("Test notification", "success")}>Show Toast</button>;
 }
 
 describe("ToastProvider", () => {
@@ -17,7 +13,7 @@ describe("ToastProvider", () => {
     render(
       <ToastProvider>
         <p>Hello</p>
-      </ToastProvider>
+      </ToastProvider>,
     );
     expect(screen.getByText("Hello")).toBeTruthy();
   });
@@ -27,7 +23,7 @@ describe("ToastProvider", () => {
     render(
       <ToastProvider>
         <TestConsumer />
-      </ToastProvider>
+      </ToastProvider>,
     );
 
     await act(async () => {
@@ -42,7 +38,7 @@ describe("ToastProvider", () => {
     render(
       <ToastProvider>
         <TestConsumer />
-      </ToastProvider>
+      </ToastProvider>,
     );
 
     await act(async () => {

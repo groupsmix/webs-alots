@@ -63,7 +63,10 @@ function sanitizeUserInput(text: string): string {
       // Strip XML-style role tags
       .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
       // Strip "ignore all previous instructions" style attacks
-      .replace(/ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi, "[filtered]")
+      .replace(
+        /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi,
+        "[filtered]",
+      )
       // Collapse excessive whitespace
       .replace(/\n{3,}/g, "\n\n")
       .trim()
@@ -97,7 +100,10 @@ async function trackAIUsage(
       },
       { onConflict: "clinic_id,month" },
     )
-    .then(() => {}, () => {});
+    .then(
+      () => {},
+      () => {},
+    );
 }
 
 /**
@@ -106,7 +112,8 @@ async function trackAIUsage(
  * Returns the sanitised string, or null if the response is unsafe.
  */
 function validateAIOutput(text: string): string | null {
-  const roleElevation = /\b(i am now|role changed to|switched to admin|access granted|patient list|dump all|SELECT \*)\b/i;
+  const roleElevation =
+    /\b(i am now|role changed to|switched to admin|access granted|patient list|dump all|SELECT \*)\b/i;
   if (roleElevation.test(text)) return null;
   // Redact any Moroccan phone numbers that slipped past pseudonymisation
   const cleaned = text.replace(/(?:\+212|0)([ .\-]?\d){9}/g, "[REDACTED_PHONE]");
@@ -118,288 +125,283 @@ function validateAIOutput(text: string): string | null {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
-    // A107-03: Global AI kill switch
-    if (process.env.AI_DISABLED === "true") {
-      return apiError("AI features are temporarily disabled", 503, "AI_DISABLED");
-    }
+  // A107-03: Global AI kill switch
+  if (process.env.AI_DISABLED === "true") {
+    return apiError("AI features are temporarily disabled", 503, "AI_DISABLED");
+  }
 
-    // Resolve clinic ID strictly from tenant context (middleware headers)
-    const tenant = await requireTenant();
-    const clinicId = tenant.clinicId;
+  // Resolve clinic ID strictly from tenant context (middleware headers)
+  const tenant = await requireTenant();
+  const clinicId = tenant.clinicId;
 
-    const lastMessage = body.messages[body.messages.length - 1];
-    if (!lastMessage || lastMessage.role !== "user" || !lastMessage.content.trim()) {
-      return apiError("Last message must be a non-empty user message");
-    }
+  const lastMessage = body.messages[body.messages.length - 1];
+  if (!lastMessage || lastMessage.role !== "user" || !lastMessage.content.trim()) {
+    return apiError("Last message must be a non-empty user message");
+  }
 
-    // Sanitize and truncate messages; limit conversation history length.
-    // V-01: Truncate assistant messages too — an attacker can fabricate
-    // long assistant turns in the request body to inflate token cost.
-    const sanitizedMessages = body.messages
-      .slice(-MAX_HISTORY_LENGTH)
-      .map((m) => ({
-        ...m,
-        content:
-          m.role === "user"
-            ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
-            : m.content.slice(0, MAX_MESSAGE_LENGTH),
-      }));
+  // Sanitize and truncate messages; limit conversation history length.
+  // V-01: Truncate assistant messages too — an attacker can fabricate
+  // long assistant turns in the request body to inflate token cost.
+  const sanitizedMessages = body.messages.slice(-MAX_HISTORY_LENGTH).map((m) => ({
+    ...m,
+    content:
+      m.role === "user"
+        ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
+        : m.content.slice(0, MAX_MESSAGE_LENGTH),
+  }));
 
-    // Fetch clinic context from Supabase
-    const ctx = await fetchChatbotContext(clinicId);
+  // Fetch clinic context from Supabase
+  const ctx = await fetchChatbotContext(clinicId);
 
-    // Check if chatbot is enabled for this clinic
-    if (ctx.chatbotConfig && !ctx.chatbotConfig.enabled) {
-      return apiError("Chatbot is not enabled for this clinic", 403, "FORBIDDEN");
-    }
+  // Check if chatbot is enabled for this clinic
+  if (ctx.chatbotConfig && !ctx.chatbotConfig.enabled) {
+    return apiError("Chatbot is not enabled for this clinic", 403, "FORBIDDEN");
+  }
 
-    // Determine intelligence level
-    const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
+  // Determine intelligence level
+  const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
 
-    // --- BASIC: keyword matching, no AI ---
-    // Basic tier is allowed without authentication since it uses no AI
-    // API and is purely keyword-based. This allows public visitors to
-    // interact with the chatbot quick-reply buttons.
-    if (intelligence === "basic") {
+  // --- BASIC: keyword matching, no AI ---
+  // Basic tier is allowed without authentication since it uses no AI
+  // API and is purely keyword-based. This allows public visitors to
+  // interact with the chatbot quick-reply buttons.
+  if (intelligence === "basic") {
+    const reply = getBasicResponse(lastMessage.content, ctx);
+    return apiSuccess({
+      message: { role: "assistant" as const, content: reply },
+    });
+  }
+
+  // SEC-01: Require authentication for AI-powered tiers (smart / advanced)
+  // to prevent bot-driven abuse of Cloudflare Workers AI quota and OpenAI API.
+  const supabaseForAuth = await createClient();
+  const {
+    data: { user: chatUser },
+  } = await supabaseForAuth.auth.getUser();
+  if (!chatUser) {
+    // Fall back to basic keyword matching for unauthenticated users
+    const reply = getBasicResponse(lastMessage.content, ctx);
+    return apiSuccess({
+      message: { role: "assistant" as const, content: reply },
+    });
+  }
+
+  // AI-002: Check monthly AI token budget before making any AI call.
+  // The ai_usage table tracks per-clinic monthly consumption.
+  const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // e.g., "2026-05-01"
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: usage } = (await (supabaseForAuth as any)
+    .from("ai_usage")
+    .select("tokens_in, tokens_out")
+    .eq("clinic_id", clinicId)
+    .eq("month", currentMonth)
+    .maybeSingle()) as { data: { tokens_in: number; tokens_out: number } | null };
+
+  const AI_MONTHLY_TOKEN_LIMIT = 500_000;
+  const totalTokens = (usage?.tokens_in ?? 0) + (usage?.tokens_out ?? 0);
+  if (totalTokens >= AI_MONTHLY_TOKEN_LIMIT) {
+    return apiError(
+      "Monthly AI token budget exceeded. Please upgrade your plan or wait until next month.",
+      429,
+      "AI_BUDGET_EXCEEDED",
+    );
+  }
+
+  // --- SMART: Cloudflare Workers AI (free) ---
+  if (intelligence === "smart") {
+    const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const cfApiToken = process.env.CLOUDFLARE_AI_API_TOKEN;
+
+    if (!cfAccountId || !cfApiToken) {
       const reply = getBasicResponse(lastMessage.content, ctx);
       return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }
-
-    // SEC-01: Require authentication for AI-powered tiers (smart / advanced)
-    // to prevent bot-driven abuse of Cloudflare Workers AI quota and OpenAI API.
-    const supabaseForAuth = await createClient();
-    const { data: { user: chatUser } } = await supabaseForAuth.auth.getUser();
-    if (!chatUser) {
-      // Fall back to basic keyword matching for unauthenticated users
-      const reply = getBasicResponse(lastMessage.content, ctx);
-      return apiSuccess({
-        message: { role: "assistant" as const, content: reply },
-      });
-    }
-
-    // AI-002: Check monthly AI token budget before making any AI call.
-    // The ai_usage table tracks per-clinic monthly consumption.
-    const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // e.g., "2026-05-01"
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: usage } = await (supabaseForAuth as any)
-      .from("ai_usage")
-      .select("tokens_in, tokens_out")
-      .eq("clinic_id", clinicId)
-      .eq("month", currentMonth)
-      .maybeSingle() as { data: { tokens_in: number; tokens_out: number } | null };
-
-    const AI_MONTHLY_TOKEN_LIMIT = 500_000;
-    const totalTokens = (usage?.tokens_in ?? 0) + (usage?.tokens_out ?? 0);
-    if (totalTokens >= AI_MONTHLY_TOKEN_LIMIT) {
-      return apiError(
-        "Monthly AI token budget exceeded. Please upgrade your plan or wait until next month.",
-        429,
-        "AI_BUDGET_EXCEEDED",
-      );
-    }
-
-    // --- SMART: Cloudflare Workers AI (free) ---
-    if (intelligence === "smart") {
-      const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-      const cfApiToken = process.env.CLOUDFLARE_AI_API_TOKEN;
-
-      if (!cfAccountId || !cfApiToken) {
-        const reply = getBasicResponse(lastMessage.content, ctx);
-        return apiSuccess({
-          message: { role: "assistant" as const, content: reply },
-        });
-      }
-
-      const systemPrompt = buildSystemPrompt(ctx);
-      const cfMessages = [
-        { role: "system" as const, content: systemPrompt },
-        ...sanitizedMessages,
-      ];
-
-      const cfResponse = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${cfApiToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages: cfMessages,
-            max_tokens: 500,
-          }),
-          signal: AbortSignal.timeout(30_000),
-        },
-      );
-
-      if (cfResponse.ok) {
-        const cfData = (await cfResponse.json()) as { result?: { response?: string } };
-        const rawContent = cfData.result?.response;
-        if (rawContent) {
-          // API-010: Validate AI output before returning to client
-          const content = validateAIOutput(rawContent);
-          if (!content) {
-            logger.warn("AI output rejected by safety validator", {
-              context: "chat/output-safety",
-              clinicId,
-            });
-            const reply = getBasicResponse(lastMessage.content, ctx);
-            return apiSuccess({
-              message: { role: "assistant" as const, content: reply },
-            });
-          }
-          // F-AI-08: Audit log AI invocation
-          void logAuditEvent({
-            supabase: supabaseForAuth,
-            action: "ai_chat_invocation",
-            type: "admin",
-            clinicId,
-            actor: chatUser.id,
-            description: "Chatbot AI response (smart tier)",
-            metadata: { tier: "smart", model: "llama-3.1-8b-instruct" },
-          }).catch(() => {});
-          // AI-002: Track estimated token usage (rough: 4 chars ≈ 1 token)
-          void trackAIUsage(
-            supabaseForAuth,
-            clinicId,
-            Math.ceil(lastMessage.content.length / 4),
-            Math.ceil(content.length / 4),
-          );
-          return apiSuccess({
-            message: { role: "assistant" as const, content },
-          });
-        }
-      } else {
-        // Log non-OK responses (including 429 rate-limit / quota exhaustion)
-        logger.warn("Cloudflare AI request failed", {
-          context: "chat/cloudflare-ai",
-          status: cfResponse.status,
-          clinicId,
-          statusText: cfResponse.statusText,
-        });
-      }
-
-      // Fallback to basic keyword matching when AI is unavailable
-      const reply = getBasicResponse(lastMessage.content, ctx);
-      return apiSuccess({
-        message: { role: "assistant" as const, content: reply },
-      });
-    }
-
-    // --- ADVANCED: OpenAI-compatible API (paid) ---
-    // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
-    const aiResult = await resolveAIConfig();
-    if (!aiResult.ok) {
-      // Graceful fallback to basic matching when AI is unavailable
-      const reply = getBasicResponse(lastMessage.content, ctx);
-      return apiSuccess({
-        message: { role: "assistant" as const, content: reply },
-      });
-    }
-    const { apiKey, baseUrl, model } = aiResult.config;
 
     const systemPrompt = buildSystemPrompt(ctx);
-    const apiMessages = [
-      { role: "system" as const, content: systemPrompt },
-      ...sanitizedMessages,
-    ];
+    const cfMessages = [{ role: "system" as const, content: systemPrompt }, ...sanitizedMessages];
 
-    const apiResponse = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const cfResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cfApiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: cfMessages,
+          max_tokens: 500,
+        }),
+        signal: AbortSignal.timeout(30_000),
       },
-      body: JSON.stringify({
-        model,
-        messages: apiMessages,
-        stream: true,
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
+    );
 
-    if (!apiResponse.ok) {
-      const reply = getBasicResponse(lastMessage.content, ctx);
-      return apiSuccess({
-        message: { role: "assistant" as const, content: reply },
+    if (cfResponse.ok) {
+      const cfData = (await cfResponse.json()) as { result?: { response?: string } };
+      const rawContent = cfData.result?.response;
+      if (rawContent) {
+        // API-010: Validate AI output before returning to client
+        const content = validateAIOutput(rawContent);
+        if (!content) {
+          logger.warn("AI output rejected by safety validator", {
+            context: "chat/output-safety",
+            clinicId,
+          });
+          const reply = getBasicResponse(lastMessage.content, ctx);
+          return apiSuccess({
+            message: { role: "assistant" as const, content: reply },
+          });
+        }
+        // F-AI-08: Audit log AI invocation
+        void logAuditEvent({
+          supabase: supabaseForAuth,
+          action: "ai_chat_invocation",
+          type: "admin",
+          clinicId,
+          actor: chatUser.id,
+          description: "Chatbot AI response (smart tier)",
+          metadata: { tier: "smart", model: "llama-3.1-8b-instruct" },
+        }).catch(() => {});
+        // AI-002: Track estimated token usage (rough: 4 chars ≈ 1 token)
+        void trackAIUsage(
+          supabaseForAuth,
+          clinicId,
+          Math.ceil(lastMessage.content.length / 4),
+          Math.ceil(content.length / 4),
+        );
+        return apiSuccess({
+          message: { role: "assistant" as const, content },
+        });
+      }
+    } else {
+      // Log non-OK responses (including 429 rate-limit / quota exhaustion)
+      logger.warn("Cloudflare AI request failed", {
+        context: "chat/cloudflare-ai",
+        status: cfResponse.status,
+        clinicId,
+        statusText: cfResponse.statusText,
       });
     }
 
-    // F-AI-08: Audit log AI invocation (advanced tier)
-    void logAuditEvent({
-      supabase: supabaseForAuth,
-      action: "ai_chat_invocation",
-      type: "admin",
-      clinicId,
-      actor: chatUser.id,
-      description: "Chatbot AI response (advanced tier)",
-      metadata: { tier: "advanced", model },
-    }).catch(() => {});
-    // AI-002: Track estimated token usage for advanced tier.
-    // Streaming prevents exact counts; estimate from input length + max_tokens.
-    void trackAIUsage(
-      supabaseForAuth,
-      clinicId,
-      Math.ceil(sanitizedMessages.reduce((a, m) => a + m.content.length, 0) / 4),
-      125, // max_tokens=500 → ~125 estimated output tokens
-    );
+    // Fallback to basic keyword matching when AI is unavailable
+    const reply = getBasicResponse(lastMessage.content, ctx);
+    return apiSuccess({
+      message: { role: "assistant" as const, content: reply },
+    });
+  }
 
-    // Stream the response back to the client
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = apiResponse.body?.getReader();
-        if (!reader) {
-          controller.close();
-          return;
-        }
+  // --- ADVANCED: OpenAI-compatible API (paid) ---
+  // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
+  const aiResult = await resolveAIConfig();
+  if (!aiResult.ok) {
+    // Graceful fallback to basic matching when AI is unavailable
+    const reply = getBasicResponse(lastMessage.content, ctx);
+    return apiSuccess({
+      message: { role: "assistant" as const, content: reply },
+    });
+  }
+  const { apiKey, baseUrl, model } = aiResult.config;
 
-        const decoder = new TextDecoder();
-        const encoder = new TextEncoder();
+  const systemPrompt = buildSystemPrompt(ctx);
+  const apiMessages = [{ role: "system" as const, content: systemPrompt }, ...sanitizedMessages];
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+  const apiResponse = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: apiMessages,
+      stream: true,
+      max_tokens: 500,
+      temperature: 0.7,
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+  if (!apiResponse.ok) {
+    const reply = getBasicResponse(lastMessage.content, ctx);
+    return apiSuccess({
+      message: { role: "assistant" as const, content: reply },
+    });
+  }
 
-            for (const line of lines) {
-              if (line === "data: [DONE]") {
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                continue;
-              }
-              if (line.startsWith("data: ")) {
-                try {
-                  const json = JSON.parse(line.slice(6));
-                  const content = json.choices?.[0]?.delta?.content;
-                  if (content) {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
-                    );
-                  }
-                } catch (parseErr) {
-                  logger.warn("Malformed SSE chunk skipped", { context: "chat/stream", error: parseErr });
+  // F-AI-08: Audit log AI invocation (advanced tier)
+  void logAuditEvent({
+    supabase: supabaseForAuth,
+    action: "ai_chat_invocation",
+    type: "admin",
+    clinicId,
+    actor: chatUser.id,
+    description: "Chatbot AI response (advanced tier)",
+    metadata: { tier: "advanced", model },
+  }).catch(() => {});
+  // AI-002: Track estimated token usage for advanced tier.
+  // Streaming prevents exact counts; estimate from input length + max_tokens.
+  void trackAIUsage(
+    supabaseForAuth,
+    clinicId,
+    Math.ceil(sanitizedMessages.reduce((a, m) => a + m.content.length, 0) / 4),
+    125, // max_tokens=500 → ~125 estimated output tokens
+  );
+
+  // Stream the response back to the client
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = apiResponse.body?.getReader();
+      if (!reader) {
+        controller.close();
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+          for (const line of lines) {
+            if (line === "data: [DONE]") {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              continue;
+            }
+            if (line.startsWith("data: ")) {
+              try {
+                const json = JSON.parse(line.slice(6));
+                const content = json.choices?.[0]?.delta?.content;
+                if (content) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
                 }
+              } catch (parseErr) {
+                logger.warn("Malformed SSE chunk skipped", {
+                  context: "chat/stream",
+                  error: parseErr,
+                });
               }
             }
           }
-        } finally {
-          reader.releaseLock();
-          controller.close();
         }
-      },
-    });
+      } finally {
+        reader.releaseLock();
+        controller.close();
+      }
+    },
+  });
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 });

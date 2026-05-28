@@ -148,10 +148,7 @@ export interface NotificationPreferences {
  * Replaces {{variable_name}} placeholders in a template string
  * with values from the variables object.
  */
-export function substituteVariables(
-  template: string,
-  variables: TemplateVariables,
-): string {
+export function substituteVariables(template: string, variables: TemplateVariables): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
     return variables[key] ?? match;
   });
@@ -168,7 +165,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "New Appointment Booked",
     body: "A new appointment has been booked for {{patient_name}} with {{doctor_name}} on {{date}} at {{time}} for {{service_name}}.",
-    whatsappBody: "New booking: {{patient_name}} with {{doctor_name}} on {{date}} at {{time}}. Service: {{service_name}}.",
+    whatsappBody:
+      "New booking: {{patient_name}} with {{doctor_name}} on {{date}} at {{time}}. Service: {{service_name}}.",
     enabled: true,
     priority: "normal",
     recipientRoles: ["receptionist", "doctor", "clinic_admin"],
@@ -181,7 +179,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment Confirmed",
     body: "Your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Service: {{service_name}}. {{clinic_name}}",
-    whatsappBody: "Hello {{patient_name}}, your appointment with Dr. {{doctor_name}} is confirmed.\n\nDate: {{date}}\nTime: {{time}}\nService: {{service_name}}\nAddress: {{clinic_address}}\n\nManage/cancel: {{manage_url}}\n\n{{clinic_name}}",
+    whatsappBody:
+      "Hello {{patient_name}}, your appointment with Dr. {{doctor_name}} is confirmed.\n\nDate: {{date}}\nTime: {{time}}\nService: {{service_name}}\nAddress: {{clinic_address}}\n\nManage/cancel: {{manage_url}}\n\n{{clinic_name}}",
     enabled: true,
     priority: "high",
     recipientRoles: ["patient"],
@@ -194,7 +193,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment Tomorrow",
     body: "Reminder: You have an appointment with {{doctor_name}} tomorrow at {{time}}. {{clinic_name}} — {{clinic_address}}",
-    whatsappBody: "Reminder: You have an appointment with {{doctor_name}} tomorrow at {{time}}. {{clinic_name}} — {{clinic_address}}. Reply CONFIRM to confirm or CANCEL to cancel.",
+    whatsappBody:
+      "Reminder: You have an appointment with {{doctor_name}} tomorrow at {{time}}. {{clinic_name}} — {{clinic_address}}. Reply CONFIRM to confirm or CANCEL to cancel.",
     enabled: true,
     priority: "high",
     recipientRoles: ["patient"],
@@ -207,7 +207,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment in 1 Hour",
     body: "Your appointment with {{doctor_name}} is in 1 hour at {{time}}. Please arrive 10 minutes early. {{clinic_name}}",
-    whatsappBody: "Your appointment with {{doctor_name}} is in 1 hour at {{time}}. Please arrive 10 minutes early. {{clinic_name}} — {{clinic_address}}",
+    whatsappBody:
+      "Your appointment with {{doctor_name}} is in 1 hour at {{time}}. Please arrive 10 minutes early. {{clinic_name}} — {{clinic_address}}",
     enabled: true,
     priority: "urgent",
     recipientRoles: ["patient"],
@@ -220,7 +221,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment in 2 Hours",
     body: "Your appointment with {{doctor_name}} is in 2 hours at {{time}}. Please arrive 10 minutes early. {{clinic_name}}",
-    whatsappBody: "Your appointment with {{doctor_name}} is in 2 hours at {{time}}. Please arrive 10 minutes early. {{clinic_name}} — {{clinic_address}}",
+    whatsappBody:
+      "Your appointment with {{doctor_name}} is in 2 hours at {{time}}. Please arrive 10 minutes early. {{clinic_name}} — {{clinic_address}}",
     enabled: true,
     priority: "urgent",
     recipientRoles: ["patient"],
@@ -233,7 +235,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment Cancelled",
     body: "Your appointment with {{doctor_name}} on {{date}} at {{time}} has been cancelled. Please contact us to reschedule.",
-    whatsappBody: "Your appointment with {{doctor_name}} on {{date}} at {{time}} has been cancelled. Contact us at {{clinic_phone}} to reschedule.",
+    whatsappBody:
+      "Your appointment with {{doctor_name}} on {{date}} at {{time}} has been cancelled. Contact us at {{clinic_phone}} to reschedule.",
     enabled: true,
     priority: "high",
     recipientRoles: ["patient", "doctor", "receptionist"],
@@ -246,7 +249,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Missed Appointment",
     body: "You missed your appointment with {{doctor_name}} on {{date}} at {{time}}. Would you like to reschedule?",
-    whatsappBody: "Hello {{patient_name}}, we noticed you missed your appointment on {{date}}. Would you like to reschedule? Contact us at {{clinic_phone}}.",
+    whatsappBody:
+      "Hello {{patient_name}}, we noticed you missed your appointment on {{date}}. Would you like to reschedule? Contact us at {{clinic_phone}}.",
     enabled: true,
     priority: "normal",
     recipientRoles: ["patient"],
@@ -259,7 +263,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Prescription Ready",
     body: "Your prescription from {{doctor_name}} is ready. You can view it in your patient portal or pick it up at {{clinic_name}}.",
-    whatsappBody: "Hello {{patient_name}}, your prescription from {{doctor_name}} is ready for pickup at {{clinic_name}}. {{clinic_address}}",
+    whatsappBody:
+      "Hello {{patient_name}}, your prescription from {{doctor_name}} is ready for pickup at {{clinic_name}}. {{clinic_address}}",
     enabled: true,
     priority: "normal",
     recipientRoles: ["patient"],
@@ -271,8 +276,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     label: "New Review Received",
     channels: ["in_app"],
     subject: "New Patient Review",
-    body: "{{patient_name}} left a {{review_stars}}-star review: \"{{review_comment}}\"",
-    whatsappBody: "New review from {{patient_name}}: {{review_stars}} stars — \"{{review_comment}}\"",
+    body: '{{patient_name}} left a {{review_stars}}-star review: "{{review_comment}}"',
+    whatsappBody: 'New review from {{patient_name}}: {{review_stars}} stars — "{{review_comment}}"',
     enabled: true,
     priority: "low",
     recipientRoles: ["doctor", "clinic_admin"],
@@ -285,7 +290,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Payment Confirmed",
     body: "Payment of {{amount}} {{currency}} received via {{payment_method}} for your visit on {{date}}. Thank you!",
-    whatsappBody: "Hello {{patient_name}}, we received your payment of {{amount}} {{currency}} via {{payment_method}}. Invoice: {{invoice_id}}. Thank you! — {{clinic_name}}",
+    whatsappBody:
+      "Hello {{patient_name}}, we received your payment of {{amount}} {{currency}} via {{payment_method}}. Invoice: {{invoice_id}}. Thank you! — {{clinic_name}}",
     enabled: true,
     priority: "normal",
     recipientRoles: ["patient"],
@@ -311,7 +317,8 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app", "email"],
     subject: "Appointment Rescheduled",
     body: "Your appointment with {{doctor_name}} has been rescheduled to {{date}} at {{time}}. Service: {{service_name}}. {{clinic_name}}",
-    whatsappBody: "Hello {{patient_name}}, your appointment with {{doctor_name}} has been rescheduled to {{date}} at {{time}}. Contact us at {{clinic_phone}} if you have questions. {{clinic_name}}",
+    whatsappBody:
+      "Hello {{patient_name}}, your appointment with {{doctor_name}} has been rescheduled to {{date}} at {{time}}. Contact us at {{clinic_phone}} if you have questions. {{clinic_name}}",
     enabled: true,
     priority: "high",
     recipientRoles: ["patient", "doctor", "receptionist"],
@@ -413,10 +420,7 @@ function sleep(ms: number): Promise<void> {
  * delays (1s, 2s, 4s …). If all attempts fail the last error is
  * re-thrown so the caller can handle it.
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -540,7 +544,11 @@ export async function dispatchNotification(
               recipient: recipientId,
               body,
               trigger,
-              metadata: { recipient_id: recipientId, dead_letter: "true", failure_reason: inAppResult.error ?? "unknown" },
+              metadata: {
+                recipient_id: recipientId,
+                dead_letter: "true",
+                failure_reason: inAppResult.error ?? "unknown",
+              },
               maxAttempts: 1, // Already retried — mark as dead letter immediately
             });
           }
@@ -567,12 +575,7 @@ export async function dispatchNotification(
 
           const { sendNotificationEmail } = await import("./email");
           const emailResult = await withRetry(() =>
-            sendNotificationEmail(
-              recipientEmail,
-              subject,
-              body,
-              variables.clinic_name,
-            ),
+            sendNotificationEmail(recipientEmail, subject, body, variables.clinic_name),
           );
           if (!emailResult.success) {
             logger.error("Email notification failed after retries", {
@@ -590,7 +593,11 @@ export async function dispatchNotification(
               recipient: recipientEmail,
               body,
               trigger,
-              metadata: { recipient_id: recipientId, dead_letter: "true", failure_reason: emailResult.error ?? "unknown" },
+              metadata: {
+                recipient_id: recipientId,
+                dead_letter: "true",
+                failure_reason: emailResult.error ?? "unknown",
+              },
               maxAttempts: 1, // Already retried — mark as dead letter immediately
             });
           }
@@ -652,4 +659,3 @@ export async function dispatchNotification(
 
   return results;
 }
-

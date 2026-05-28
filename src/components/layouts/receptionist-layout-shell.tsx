@@ -1,8 +1,15 @@
 "use client";
 
 import {
-  LayoutDashboard, Users, Clock, CalendarDays, CreditCard, FileText,
-  Menu, X, ClipboardList,
+  LayoutDashboard,
+  Users,
+  Clock,
+  CalendarDays,
+  CreditCard,
+  FileText,
+  Menu,
+  X,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,13 +32,7 @@ const navItems = [
   { href: "/receptionist/daily-report", label: "Daily Report", icon: FileText },
 ];
 
-function NavLinks({
-  pathname,
-  onNavClick,
-}: {
-  pathname: string;
-  onNavClick?: () => void;
-}) {
+function NavLinks({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
   return (
     <nav className="space-y-1">
       {navItems.map((item) => {
@@ -57,11 +58,7 @@ function NavLinks({
   );
 }
 
-export default function ReceptionistLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ReceptionistLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -107,7 +104,10 @@ export default function ReceptionistLayoutShell({
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setMobileMenuOpen(false)}
+            />
             <div className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 shadow-lg">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -116,7 +116,12 @@ export default function ReceptionistLayoutShell({
                   </div>
                   <h2 className="text-lg font-semibold">Reception Panel</h2>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} aria-label="Fermer le menu">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Fermer le menu"
+                >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
@@ -135,10 +140,7 @@ export default function ReceptionistLayoutShell({
       </div>
 
       {/* Mobile bottom tab bar */}
-      <MobileTabBar
-        tabs={receptionistMobileTabs}
-        onMoreClick={() => setMobileMenuOpen(true)}
-      />
+      <MobileTabBar tabs={receptionistMobileTabs} onMoreClick={() => setMobileMenuOpen(true)} />
 
       <SessionTimeoutWarning onLogout={() => signOut()} />
       <PatientSearchPalette basePath="/receptionist/patients" />

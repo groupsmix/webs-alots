@@ -120,8 +120,8 @@ export default async function DentistPricesPage() {
           {/* CTA */}
           <div className="text-center pt-4">
             <p className="text-muted-foreground mb-4">
-              Prices are indicative and may vary based on individual treatment plans.
-              Book a consultation for an accurate estimate.
+              Prices are indicative and may vary based on individual treatment plans. Book a
+              consultation for an accurate estimate.
             </p>
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
               <Calendar className="h-4 w-4 mr-2" />

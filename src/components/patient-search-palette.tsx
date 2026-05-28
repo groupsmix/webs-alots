@@ -28,9 +28,7 @@ export function PatientSearchPalette({ basePath = "/doctor/patients" }: { basePa
 
   const { items } = usePatientSearch(query, tenant?.clinicId, handleSelect);
 
-  useKeyboardShortcuts([
-    { key: "k", ctrl: true, handler: () => setOpen(true) },
-  ]);
+  useKeyboardShortcuts([{ key: "k", ctrl: true, handler: () => setOpen(true) }]);
 
   return (
     <CommandPalette

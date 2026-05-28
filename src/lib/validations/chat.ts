@@ -24,14 +24,16 @@ export const aiPrescriptionRequestSchema = z.object({
   patientId: z.string().min(1),
   diagnosis: z.string().min(1).max(2000),
   symptoms: z.string().max(2000).optional(),
-  patientContext: z.object({
-    age: z.number().int().min(0).max(150).optional(),
-    gender: z.enum(["M", "F"]).optional(),
-    allergies: z.array(z.string().max(200)).optional(),
-    currentMedications: z.array(z.string().max(200)).optional(),
-    chronicConditions: z.array(z.string().max(200)).optional(),
-    weight: z.number().positive().max(500).optional(),
-  }).optional(),
+  patientContext: z
+    .object({
+      age: z.number().int().min(0).max(150).optional(),
+      gender: z.enum(["M", "F"]).optional(),
+      allergies: z.array(z.string().max(200)).optional(),
+      currentMedications: z.array(z.string().max(200)).optional(),
+      chronicConditions: z.array(z.string().max(200)).optional(),
+      weight: z.number().positive().max(500).optional(),
+    })
+    .optional(),
 });
 
 export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
@@ -65,12 +67,16 @@ export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 export const aiManagerRequestSchema = z.object({
   question: z.string().min(1).max(2000),
-  conversationHistory: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string().min(1).max(2000),
-    }),
-  ).max(20).optional().default([]),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().min(1).max(2000),
+      }),
+    )
+    .max(20)
+    .optional()
+    .default([]),
 });
 
 export type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
@@ -78,14 +84,16 @@ export type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
 export const aiAutoSuggestRequestSchema = z.object({
   diagnosis: z.string().min(1).max(2000),
   patientId: z.string().min(1).optional(),
-  patientContext: z.object({
-    age: z.number().int().min(0).max(150).optional(),
-    gender: z.enum(["M", "F"]).optional(),
-    allergies: z.array(z.string().max(200)).optional(),
-    currentMedications: z.array(z.string().max(200)).optional(),
-    chronicConditions: z.array(z.string().max(200)).optional(),
-    weight: z.number().positive().max(500).optional(),
-  }).optional(),
+  patientContext: z
+    .object({
+      age: z.number().int().min(0).max(150).optional(),
+      gender: z.enum(["M", "F"]).optional(),
+      allergies: z.array(z.string().max(200)).optional(),
+      currentMedications: z.array(z.string().max(200)).optional(),
+      chronicConditions: z.array(z.string().max(200)).optional(),
+      weight: z.number().positive().max(500).optional(),
+    })
+    .optional(),
 });
 
 export type AiAutoSuggestRequest = z.infer<typeof aiAutoSuggestRequestSchema>;

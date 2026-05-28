@@ -28,7 +28,9 @@ type Patient = PatientView;
 export default function DoctorPatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "history" | "prescriptions" | "notes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "history" | "prescriptions" | "notes">(
+    "overview",
+  );
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<AppointmentView[]>([]);
   const [prescriptions, setPrescriptions] = useState<PrescriptionView[]>([]);
@@ -39,29 +41,34 @@ export default function DoctorPatientsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [pts, appts, rxs, notes] = await Promise.all([
-      fetchPatients(user.clinic_id),
-      fetchAppointments(user.clinic_id),
-      fetchPrescriptions(user.clinic_id),
-      fetchConsultationNotes(user.clinic_id, user.id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [pts, appts, rxs, notes] = await Promise.all([
+        fetchPatients(user.clinic_id),
+        fetchAppointments(user.clinic_id),
+        fetchPrescriptions(user.clinic_id),
+        fetchConsultationNotes(user.clinic_id, user.id),
+      ]);
       if (controller.signal.aborted) return;
-    setPatients(pts);
-    setAppointments(appts);
-    setPrescriptions(rxs);
-    setConsultationNotes(notes);
-    setLoading(false);
-  }
+      setPatients(pts);
+      setAppointments(appts);
+      setPrescriptions(rxs);
+      setConsultationNotes(notes);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -71,7 +78,9 @@ export default function DoctorPatientsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -81,14 +90,24 @@ export default function DoctorPatientsPage() {
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.phone.includes(searchQuery) ||
-      p.id.includes(searchQuery)
+      p.id.includes(searchQuery),
   );
 
   const getPatientData = (patient: Patient) => {
     const patientAppts = appointments.filter((a) => a.patientId === patient.id);
     const patientRx = prescriptions.filter((rx) => rx.patientId === patient.id);
     const patientNotes = consultationNotes.filter((n) => n.patientId === patient.id);
-    return { patientAppts, patientRx, patientNotes: patientNotes.map(n => ({ ...n, chiefComplaint: "", examination: "", plan: "", privateNotes: "" })) };
+    return {
+      patientAppts,
+      patientRx,
+      patientNotes: patientNotes.map((n) => ({
+        ...n,
+        chiefComplaint: "",
+        examination: "",
+        plan: "",
+        privateNotes: "",
+      })),
+    };
   };
 
   return (
@@ -108,23 +127,35 @@ export default function DoctorPatientsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPatients.map((patient) => {
           const patientAppts = appointments.filter((a) => a.patientId === patient.id);
-          const lastVisit = patientAppts.filter((a) => a.status === "completed").sort((a, b) => b.date.localeCompare(a.date))[0];
+          const lastVisit = patientAppts
+            .filter((a) => a.status === "completed")
+            .sort((a, b) => b.date.localeCompare(a.date))[0];
           return (
             <Card
               key={patient.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => { setSelectedPatient(patient); setActiveTab("overview"); }}
+              onClick={() => {
+                setSelectedPatient(patient);
+                setActiveTab("overview");
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar>
                     <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {patient.name.split(" ").map((n) => n[0]).join("")}
+                      {patient.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{patient.name}</p>
-                    <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
+                    <DataMask
+                      value={patient.phone}
+                      type="phone"
+                      className="text-xs text-muted-foreground"
+                    />
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
@@ -138,7 +169,10 @@ export default function DoctorPatientsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Insurance</span>
-                    <Badge variant={patient.insurance ? "success" : "secondary"} className="text-[10px]">
+                    <Badge
+                      variant={patient.insurance ? "success" : "secondary"}
+                      className="text-[10px]"
+                    >
                       {patient.insurance || "None"}
                     </Badge>
                   </div>
@@ -160,13 +194,23 @@ export default function DoctorPatientsPage() {
       </div>
 
       {filteredPatients.length === 0 && (
-        <p className="text-center text-muted-foreground mt-8">No patients found matching your search.</p>
+        <p className="text-center text-muted-foreground mt-8">
+          No patients found matching your search.
+        </p>
       )}
 
       {/* Patient Detail Modal */}
-      <Dialog open={!!selectedPatient} onOpenChange={(open) => { if (!open) setSelectedPatient(null); }}>
+      <Dialog
+        open={!!selectedPatient}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPatient(null);
+        }}
+      >
         {selectedPatient && (
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-auto" onClose={() => setSelectedPatient(null)}>
+          <DialogContent
+            className="max-w-2xl max-h-[85vh] overflow-auto"
+            onClose={() => setSelectedPatient(null)}
+          >
             <DialogHeader>
               <DialogTitle>Patient Details</DialogTitle>
             </DialogHeader>
@@ -191,7 +235,9 @@ export default function DoctorPatientsPage() {
                 <div className="flex gap-2 mt-2">
                   <Badge>{selectedPatient.gender}</Badge>
                   <Badge variant="outline">Age: {selectedPatient.age}</Badge>
-                  {selectedPatient.insurance && <Badge variant="secondary">{selectedPatient.insurance}</Badge>}
+                  {selectedPatient.insurance && (
+                    <Badge variant="secondary">{selectedPatient.insurance}</Badge>
+                  )}
                   {selectedPatient.allergies && selectedPatient.allergies.length > 0 && (
                     <Badge variant="destructive" className="flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
@@ -250,12 +296,19 @@ export default function DoctorPatientsPage() {
                       <p className="text-sm text-muted-foreground">No visit history.</p>
                     ) : (
                       patientAppts.map((appt) => (
-                        <div key={appt.id} className="flex items-center justify-between border-b pb-3 last:border-0">
+                        <div
+                          key={appt.id}
+                          className="flex items-center justify-between border-b pb-3 last:border-0"
+                        >
                           <div>
                             <p className="font-medium text-sm">{appt.serviceName}</p>
-                            <p className="text-xs text-muted-foreground">{appt.date} at {appt.time} - {appt.doctorName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {appt.date} at {appt.time} - {appt.doctorName}
+                            </p>
                           </div>
-                          <Badge variant={appt.status === "completed" ? "default" : "secondary"}>{appt.status}</Badge>
+                          <Badge variant={appt.status === "completed" ? "default" : "secondary"}>
+                            {appt.status}
+                          </Badge>
                         </div>
                       ))
                     )}
@@ -280,7 +333,9 @@ export default function DoctorPatientsPage() {
                               <div key={idx} className="text-sm flex items-center gap-2">
                                 <Pill className="h-3 w-3 text-muted-foreground" />
                                 <span>{med.name}</span>
-                                <span className="text-muted-foreground">- {med.dosage}, {med.duration}</span>
+                                <span className="text-muted-foreground">
+                                  - {med.dosage}, {med.duration}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -294,7 +349,12 @@ export default function DoctorPatientsPage() {
               if (activeTab === "notes") {
                 return (
                   <div className="space-y-4 mt-4">
-                    <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Patients" }]} />
+                    <Breadcrumb
+                      items={[
+                        { label: "Doctor", href: "/doctor/dashboard" },
+                        { label: "Patients" },
+                      ]}
+                    />
                     {patientNotes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No consultation notes found.</p>
                     ) : (

@@ -9,7 +9,9 @@ import { withAuth as _withAuth } from "@/lib/with-auth";
  * Inserts a clinic row with the clinic_type_key FK and creates the
  * clinic_admin user record.
  */
-export const POST = withAuthValidation(onboardingSchema, async (body, request, { supabase, user }) => {
+export const POST = withAuthValidation(
+  onboardingSchema,
+  async (body, request, { supabase, user }) => {
     // Require email verification before allowing clinic creation
     if (!user.email_confirmed_at) {
       return apiForbidden("Email verification required before creating a clinic");
@@ -88,9 +90,7 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
     const orphanQuery = subdomain
       ? orphanBase.eq("subdomain", subdomain)
       : orphanBase.is("subdomain", null);
-    const { data: orphanedClinic } = await orphanQuery
-      .limit(1)
-      .maybeSingle();
+    const { data: orphanedClinic } = await orphanQuery.limit(1).maybeSingle();
 
     let clinicId: string;
 
@@ -113,7 +113,8 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
       clinicId = orphanedClinic.id;
     } else {
       // Create the clinic
-      const { data: clinic, error: clinicError } = await supabase.from("clinics")
+      const { data: clinic, error: clinicError } = await supabase
+        .from("clinics")
         .insert({
           name: body.clinic_name,
           type: legacyType,
@@ -166,10 +167,7 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
       }
 
       // Roll back the orphaned clinic so the user can retry onboarding
-      const { error: deleteError } = await supabase
-        .from("clinics")
-        .delete()
-        .eq("id", clinicId);
+      const { error: deleteError } = await supabase.from("clinics").delete().eq("id", clinicId);
 
       if (deleteError) {
         void deleteError;
@@ -184,4 +182,6 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
       clinic_id: clinicId,
       subdomain: subdomain || null,
     });
-}, null); // null is intentional: new users don't have a profile/role yet during onboarding; the handler performs its own authorization checks (email verification, no existing profile)
+  },
+  null,
+); // null is intentional: new users don't have a profile/role yet during onboarding; the handler performs its own authorization checks (email verification, no existing profile)

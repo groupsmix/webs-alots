@@ -35,9 +35,8 @@ export function TestimonialsSection() {
               fontStyle: "normal",
             }}
           >
-            Depuis qu&apos;on utilise Oltigo, le taux de no-show est passé de
-            32% à 8%. Les rappels WhatsApp en darija font la différence — nos
-            patients confirment en une minute.
+            Depuis qu&apos;on utilise Oltigo, le taux de no-show est passé de 32% à 8%. Les rappels
+            WhatsApp en darija font la différence — nos patients confirment en une minute.
           </p>
           <p
             style={{

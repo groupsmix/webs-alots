@@ -92,7 +92,10 @@ interface ConsultationNoteRaw {
   updated_at: string;
 }
 
-export async function fetchConsultationNotes(clinicId: string, doctorId?: string): Promise<ConsultationNoteView[]> {
+export async function fetchConsultationNotes(
+  clinicId: string,
+  doctorId?: string,
+): Promise<ConsultationNoteView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
@@ -322,24 +325,50 @@ export async function fetchDashboardStats(clinicId: string): Promise<DashboardSt
     doctorCountRes,
     insurancePatientsRes,
   ] = await Promise.all([
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "no_show"),
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "patient"),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("status", "completed"),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("status", "no_show"),
     supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
     supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "doctor"),
     supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
   const payments = (paymentsRes.data ?? []) as { amount: number }[];
   const reviews = (reviewsRes.data ?? []) as { stars: number }[];
-  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
+  const insurancePatients = (insurancePatientsRes.data ?? []) as {
+    id: string;
+    metadata: Record<string, unknown> | null;
+  }[];
 
   const totalRevenue = payments.reduce((s, p) => s + (p.amount ?? 0), 0);
-  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
+  const avgRating =
+    reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
   const insuranceCount = insurancePatients.filter((p) => {
     if (!p.metadata || typeof p.metadata !== "object") return false;
-    return "insurance" in (p.metadata as object) && Boolean((p.metadata as { insurance?: unknown }).insurance);
+    return (
+      "insurance" in (p.metadata as object) &&
+      Boolean((p.metadata as { insurance?: unknown }).insurance)
+    );
   }).length;
 
   return {

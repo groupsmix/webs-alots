@@ -16,7 +16,11 @@ function getPreferencesUrl(): string {
   return `https://${rootDomain}/patient/preferences`;
 }
 
-function wrap(brandName: string, subject: string, bodyHtml: string): { subject: string; html: string } {
+function wrap(
+  brandName: string,
+  subject: string,
+  bodyHtml: string,
+): { subject: string; html: string } {
   const safeBrand = escapeHtml(brandName);
   const preferencesUrl = getPreferencesUrl();
   const html = `<!DOCTYPE html>
@@ -140,10 +144,10 @@ export function clinicSuspendedEmail(params: {
 
 // ---------- Clinic reactivated notification ----------
 
-export function clinicActivatedEmail(params: {
-  clinicName: string;
-  adminName: string;
-}): { subject: string; html: string } {
+export function clinicActivatedEmail(params: { clinicName: string; adminName: string }): {
+  subject: string;
+  html: string;
+} {
   const { clinicName, adminName } = params;
   const body = `
     <h2 style="margin:0 0 16px;font-size:18px;color:#16a34a;">Clinic Reactivated</h2>

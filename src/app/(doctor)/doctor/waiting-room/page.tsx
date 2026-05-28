@@ -8,11 +8,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  getCurrentUser,
-  fetchWaitingRoom,
-  type WaitingRoomEntry,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchWaitingRoom, type WaitingRoomEntry } from "@/lib/data/client";
 
 export default function WaitingRoomPage() {
   const [entries, setEntries] = useState<WaitingRoomEntry[]>([]);
@@ -22,21 +18,26 @@ export default function WaitingRoomPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const wr = await fetchWaitingRoom(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const wr = await fetchWaitingRoom(user.clinic_id);
       if (controller.signal.aborted) return;
-    setEntries(wr);
-    setLoading(false);
-  }
+      setEntries(wr);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -46,7 +47,9 @@ export default function WaitingRoomPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -66,24 +69,26 @@ export default function WaitingRoomPage() {
 
   const handleStartConsultation = (entryId: string) => {
     setEntries((prev) =>
-      prev.map((e) => (e.id === entryId ? { ...e, status: "in-consultation" as const } : e))
+      prev.map((e) => (e.id === entryId ? { ...e, status: "in-consultation" as const } : e)),
     );
   };
 
   const handleMarkDone = (entryId: string) => {
     setEntries((prev) =>
-      prev.map((e) => (e.id === entryId ? { ...e, status: "done" as const } : e))
+      prev.map((e) => (e.id === entryId ? { ...e, status: "done" as const } : e)),
     );
   };
 
   const priorityOrder: Record<string, number> = { urgent: 0, normal: 1, "follow-up": 2 };
   const sortedWaiting = [...waitingEntries].sort(
-    (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
+    (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority],
   );
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Waiting Room" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Waiting Room" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Waiting Room</h1>
         <div className="flex gap-4 text-sm">
@@ -119,7 +124,10 @@ export default function WaitingRoomPage() {
                     <div className="flex items-center gap-3 mb-3">
                       <Avatar>
                         <AvatarFallback className="text-xs bg-orange-100 text-orange-700">
-                          {entry.patientName.split(" ").map((n) => n[0]).join("")}
+                          {entry.patientName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
@@ -127,13 +135,18 @@ export default function WaitingRoomPage() {
                         <p className="text-xs text-muted-foreground">{entry.serviceName}</p>
                       </div>
                       {entry.priority === "urgent" && (
-                        <Badge variant="destructive" className="text-[10px] flex items-center gap-1">
+                        <Badge
+                          variant="destructive"
+                          className="text-[10px] flex items-center gap-1"
+                        >
                           <AlertTriangle className="h-3 w-3" />
                           Urgent
                         </Badge>
                       )}
                       {entry.priority === "follow-up" && (
-                        <Badge variant="secondary" className="text-[10px]">Follow-up</Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          Follow-up
+                        </Badge>
                       )}
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
@@ -174,7 +187,10 @@ export default function WaitingRoomPage() {
                     <div className="flex items-center gap-3 mb-3">
                       <Avatar>
                         <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
-                          {entry.patientName.split(" ").map((n) => n[0]).join("")}
+                          {entry.patientName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
@@ -217,14 +233,19 @@ export default function WaitingRoomPage() {
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback className="text-xs bg-green-100 text-green-700">
-                          {entry.patientName.split(" ").map((n) => n[0]).join("")}
+                          {entry.patientName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <p className="font-medium text-sm">{entry.patientName}</p>
                         <p className="text-xs text-muted-foreground">{entry.serviceName}</p>
                       </div>
-                      <Badge variant="success" className="text-[10px]">Done</Badge>
+                      <Badge variant="success" className="text-[10px]">
+                        Done
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>

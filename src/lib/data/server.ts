@@ -222,7 +222,9 @@ async function _getClinicBranding(clinicId: string): Promise<ClinicBrandingRow |
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clinics")
-    .select("logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url")
+    .select(
+      "logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url",
+    )
     .eq("id", clinicId)
     .single();
 
@@ -243,10 +245,7 @@ async function _updateClinicBranding(
   branding: Partial<ClinicBrandingRow>,
 ): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("clinics")
-    .update(branding)
-    .eq("id", clinicId);
+  const { error } = await supabase.from("clinics").update(branding).eq("id", clinicId);
 
   if (error) {
     logger.warn("Mutation failed", { context: "data/server", error });
@@ -366,21 +365,36 @@ async function _getAppointments(clinicId: string): Promise<AppointmentRow[]> {
   });
 }
 
-async function _getAppointmentsByDoctor(clinicId: string, doctorId: string): Promise<AppointmentRow[]> {
+async function _getAppointmentsByDoctor(
+  clinicId: string,
+  doctorId: string,
+): Promise<AppointmentRow[]> {
   return query<AppointmentRow>("appointments", {
-    eq: [["clinic_id", clinicId], ["doctor_id", doctorId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["doctor_id", doctorId],
+    ],
     order: ["slot_start", { ascending: true }],
   });
 }
 
-async function _getAppointmentsByPatient(clinicId: string, patientId: string): Promise<AppointmentRow[]> {
+async function _getAppointmentsByPatient(
+  clinicId: string,
+  patientId: string,
+): Promise<AppointmentRow[]> {
   return query<AppointmentRow>("appointments", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["slot_start", { ascending: true }],
   });
 }
 
-async function _getTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentRow[]> {
+async function _getTodayAppointments(
+  clinicId: string,
+  doctorId?: string,
+): Promise<AppointmentRow[]> {
   const supabase = await createClient();
   const today = getLocalDateStr();
   const todayStart = `${today}T00:00:00`;
@@ -388,7 +402,9 @@ async function _getTodayAppointments(clinicId: string, doctorId?: string): Promi
 
   let q = supabase
     .from("appointments")
-    .select("id, clinic_id, patient_id, doctor_id, service_id, slot_start, slot_end, appointment_date, start_time, end_time, status, booking_source, is_first_visit, insurance_flag, notes, cancellation_reason, cancelled_at, source, is_walk_in, is_emergency, rescheduled_from, recurrence_group_id, recurrence_index, recurrence_pattern, updated_at, created_at")
+    .select(
+      "id, clinic_id, patient_id, doctor_id, service_id, slot_start, slot_end, appointment_date, start_time, end_time, status, booking_source, is_first_visit, insurance_flag, notes, cancellation_reason, cancelled_at, source, is_walk_in, is_emergency, rescheduled_from, recurrence_group_id, recurrence_index, recurrence_pattern, updated_at, created_at",
+    )
     .eq("clinic_id", clinicId)
     .gte("slot_start", todayStart)
     .lte("slot_start", todayEnd)
@@ -461,7 +477,10 @@ async function _getPayments(clinicId: string): Promise<PaymentRow[]> {
 
 async function _getPaymentsByPatient(clinicId: string, patientId: string): Promise<PaymentRow[]> {
   return query<PaymentRow>("payments", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -507,7 +526,10 @@ interface NotificationRow {
 
 async function _getNotifications(clinicId: string, userId: string): Promise<NotificationRow[]> {
   return query<NotificationRow>("notifications", {
-    eq: [["clinic_id", clinicId], ["user_id", userId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["user_id", userId],
+    ],
     order: ["sent_at", { ascending: false }],
   });
 }
@@ -556,7 +578,9 @@ async function _getPrescriptions(clinicId: string, doctorId?: string): Promise<P
   const supabase = await createClient();
   let q = supabase
     .from("prescriptions")
-    .select("id, clinic_id, appointment_id, doctor_id, patient_id, items, notes, pdf_url, created_at")
+    .select(
+      "id, clinic_id, appointment_id, doctor_id, patient_id, items, notes, pdf_url, created_at",
+    )
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false })
     .limit(DEFAULT_QUERY_LIMIT);
@@ -583,9 +607,15 @@ async function _getPrescriptions(clinicId: string, doctorId?: string): Promise<P
   }));
 }
 
-async function _getPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionRow[]> {
+async function _getPatientPrescriptions(
+  clinicId: string,
+  patientId: string,
+): Promise<PrescriptionRow[]> {
   return query<PrescriptionRow>("prescriptions", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -606,9 +636,15 @@ interface ConsultationNoteRow {
   updated_at: string;
 }
 
-async function _getConsultationNotes(clinicId: string, doctorId: string): Promise<ConsultationNoteRow[]> {
+async function _getConsultationNotes(
+  clinicId: string,
+  doctorId: string,
+): Promise<ConsultationNoteRow[]> {
   return query<ConsultationNoteRow>("consultation_notes", {
-    eq: [["clinic_id", clinicId], ["doctor_id", doctorId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["doctor_id", doctorId],
+    ],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -651,7 +687,10 @@ interface FamilyMemberRow {
 
 async function _getFamilyMembers(clinicId: string, userId: string): Promise<FamilyMemberRow[]> {
   return query<FamilyMemberRow>("family_members", {
-    eq: [["clinic_id", clinicId], ["primary_user_id", userId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["primary_user_id", userId],
+    ],
   });
 }
 
@@ -671,7 +710,10 @@ interface OdontogramRow {
 
 async function _getOdontogram(clinicId: string, patientId: string): Promise<OdontogramRow[]> {
   return query<OdontogramRow>("odontogram", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["tooth_number", { ascending: true }],
   });
 }
@@ -693,7 +735,10 @@ interface TreatmentPlanRow {
   updated_at: string;
 }
 
-async function _getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
+async function _getTreatmentPlans(
+  clinicId: string,
+  doctorId?: string,
+): Promise<TreatmentPlanRow[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   return query<TreatmentPlanRow>("treatment_plans", {
@@ -702,9 +747,15 @@ async function _getTreatmentPlans(clinicId: string, doctorId?: string): Promise<
   });
 }
 
-async function _getPatientTreatmentPlans(clinicId: string, patientId: string): Promise<TreatmentPlanRow[]> {
+async function _getPatientTreatmentPlans(
+  clinicId: string,
+  patientId: string,
+): Promise<TreatmentPlanRow[]> {
   return query<TreatmentPlanRow>("treatment_plans", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -750,16 +801,28 @@ interface InstallmentRow {
   created_at: string;
 }
 
-async function _getInstallments(clinicId: string, treatmentPlanId: string): Promise<InstallmentRow[]> {
+async function _getInstallments(
+  clinicId: string,
+  treatmentPlanId: string,
+): Promise<InstallmentRow[]> {
   return query<InstallmentRow>("installments", {
-    eq: [["clinic_id", clinicId], ["treatment_plan_id", treatmentPlanId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["treatment_plan_id", treatmentPlanId],
+    ],
     order: ["due_date", { ascending: true }],
   });
 }
 
-async function _getPatientInstallments(clinicId: string, patientId: string): Promise<InstallmentRow[]> {
+async function _getPatientInstallments(
+  clinicId: string,
+  patientId: string,
+): Promise<InstallmentRow[]> {
   return query<InstallmentRow>("installments", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["due_date", { ascending: true }],
   });
 }
@@ -947,22 +1010,39 @@ async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardS
     reviewsRes,
     doctorCountRes,
   ] = await Promise.all([
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "no_show"),
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "patient"),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("status", "completed"),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("status", "no_show"),
     supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
     supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "doctor"),
   ]);
 
   const payments = (paymentsRes.data ?? []) as { amount: number }[];
   const reviews = (reviewsRes.data ?? []) as { stars: number }[];
   const totalRevenue = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
   const avgRating =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + (r.stars ?? 0), 0) / reviews.length
-      : 0;
+    reviews.length > 0 ? reviews.reduce((sum, r) => sum + (r.stars ?? 0), 0) / reviews.length : 0;
 
   return {
     totalPatients: patientCountRes.count ?? 0,
@@ -1010,7 +1090,10 @@ async function _getSuperAdminStats(): Promise<SuperAdminStats> {
   }
 
   const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
-    supabase.from("clinics").select("id, name, type, config, tier, status, subdomain, created_at").order("created_at", { ascending: false }),
+    supabase
+      .from("clinics")
+      .select("id, name, type, config, tier, status, subdomain, created_at")
+      .order("created_at", { ascending: false }),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "patient"),
     supabase.from("appointments").select("id", { count: "exact", head: true }),
     supabase.from("payments").select("amount").eq("status", "completed"),
@@ -1159,7 +1242,8 @@ export async function createRadiologyOrder(data: {
 }): Promise<{ id: string; order_number: string } | null> {
   const supabase = await createClient();
   const orderNumber = `RAD-${Date.now().toString(36).toUpperCase()}`;
-  const { data: row, error } = await supabase.from("radiology_orders")
+  const { data: row, error } = await supabase
+    .from("radiology_orders")
     .insert({
       ...data,
       order_number: orderNumber,
@@ -1278,10 +1362,7 @@ export async function updateRadiologyOrderPdfUrl(
 // Lab — Mutations (server-side)
 // ────────────────────────────────────────────
 
-export async function updateLabOrderPdfUrl(
-  orderId: string,
-  pdfUrl: string,
-): Promise<boolean> {
+export async function updateLabOrderPdfUrl(orderId: string, pdfUrl: string): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("lab_test_orders")
@@ -1318,10 +1399,7 @@ export interface DashboardStats {
 
 export async function getDashboardStats(clinicId: string): Promise<DashboardStats> {
   // Reuse shared base queries (audit DRY-02)
-  const [base, supabase] = await Promise.all([
-    fetchBaseDashboardStats(clinicId),
-    createClient(),
-  ]);
+  const [base, supabase] = await Promise.all([fetchBaseDashboardStats(clinicId), createClient()]);
 
   // Fetch dashboard-specific data in parallel
   const [insurancePatientsRes, recentActivity] = await Promise.all([
@@ -1329,7 +1407,10 @@ export async function getDashboardStats(clinicId: string): Promise<DashboardStat
     getRecentActivity(supabase, clinicId),
   ]);
 
-  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: { insurance?: boolean } | null }[];
+  const insurancePatients = (insurancePatientsRes.data ?? []) as {
+    id: string;
+    metadata: { insurance?: boolean } | null;
+  }[];
   const insuranceCount = insurancePatients.filter((p) => p.metadata?.insurance).length;
 
   return {
@@ -1434,32 +1515,41 @@ export interface DoctorDashboardData {
   invoices: DoctorInvoiceView[];
 }
 
-export async function getDoctorDashboardData(clinicId: string, doctorId: string): Promise<DoctorDashboardData> {
+export async function getDoctorDashboardData(
+  clinicId: string,
+  doctorId: string,
+): Promise<DoctorDashboardData> {
   const supabase = await createClient();
 
   // Fetch doctor's appointments, patients, waiting room, invoices in parallel
   const today = getLocalDateStr();
   const [apptsRes, patientsRes, waitingRes, invoicesRes] = await Promise.all([
-    supabase.from("appointments")
-      .select("id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, status, is_first_visit, insurance_flag, is_emergency, notes, recurrence_group_id, recurrence_pattern")
+    supabase
+      .from("appointments")
+      .select(
+        "id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, status, is_first_visit, insurance_flag, is_emergency, notes, recurrence_group_id, recurrence_pattern",
+      )
       .eq("clinic_id", clinicId)
       .eq("doctor_id", doctorId)
       .order("appointment_date", { ascending: true })
       .limit(DEFAULT_QUERY_LIMIT),
-    supabase.from("users")
+    supabase
+      .from("users")
       .select("id, name, phone")
       .eq("clinic_id", clinicId)
       .eq("role", "patient")
       .order("name", { ascending: true })
       .limit(DEFAULT_QUERY_LIMIT),
-    supabase.from("appointments")
+    supabase
+      .from("appointments")
       .select("id, patient_id, service_id, start_time, status, is_emergency")
       .eq("clinic_id", clinicId)
       .eq("appointment_date", today)
       .in("status", ["confirmed", "checked_in", "checked-in"])
       .order("start_time", { ascending: true })
       .limit(DEFAULT_QUERY_LIMIT),
-    supabase.from("payments")
+    supabase
+      .from("payments")
       .select("id, appointment_id, amount, status, created_at")
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false })
@@ -1467,14 +1557,30 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
   ]);
 
   type ApptRaw = {
-    id: string; patient_id: string; doctor_id: string; service_id: string | null;
-    appointment_date: string; start_time: string; status: string;
-    is_first_visit: boolean; insurance_flag: boolean; is_emergency: boolean;
-    notes: string | null; recurrence_group_id: string | null; recurrence_pattern: string | null;
+    id: string;
+    patient_id: string;
+    doctor_id: string;
+    service_id: string | null;
+    appointment_date: string;
+    start_time: string;
+    status: string;
+    is_first_visit: boolean;
+    insurance_flag: boolean;
+    is_emergency: boolean;
+    notes: string | null;
+    recurrence_group_id: string | null;
+    recurrence_pattern: string | null;
   };
   const apptRows = (apptsRes.data ?? []) as ApptRaw[];
 
-  type WaitRaw = { id: string; patient_id: string; service_id: string | null; start_time: string; status: string; is_emergency: boolean };
+  type WaitRaw = {
+    id: string;
+    patient_id: string;
+    service_id: string | null;
+    start_time: string;
+    status: string;
+    is_emergency: boolean;
+  };
   const waitRows = (waitingRes.data ?? []) as WaitRaw[];
 
   // DAL-03: Only fetch the users & services actually referenced by appointments
@@ -1495,17 +1601,26 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
 
   const [usersRes, servicesRes] = await Promise.all([
     userIds.length > 0
-      ? supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId).in("id", userIds)
-      : Promise.resolve({ data: [] as { id: string; name: string; phone: string; email: string }[] }),
+      ? supabase
+          .from("users")
+          .select("id, name, phone, email")
+          .eq("clinic_id", clinicId)
+          .in("id", userIds)
+      : Promise.resolve({
+          data: [] as { id: string; name: string; phone: string; email: string }[],
+        }),
     serviceIds.length > 0
-      ? supabase.from("services").select("id, name, price").eq("clinic_id", clinicId).in("id", serviceIds)
+      ? supabase
+          .from("services")
+          .select("id, name, price")
+          .eq("clinic_id", clinicId)
+          .in("id", serviceIds)
       : Promise.resolve({ data: [] as { id: string; name: string; price: number }[] }),
   ]);
   const userMap = new Map(
-    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
-      u.id,
-      { name: u.name, phone: u.phone ?? "", email: u.email ?? "" },
-    ]),
+    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map(
+      (u) => [u.id, { name: u.name, phone: u.phone ?? "", email: u.email ?? "" }],
+    ),
   );
   const serviceMap = new Map(
     ((servicesRes.data ?? []) as { id: string; name: string; price: number }[]).map((s) => [
@@ -1521,7 +1636,9 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
     doctorId: raw.doctor_id,
     doctorName: userMap.get(raw.doctor_id)?.name ?? "Unknown",
     serviceId: raw.service_id ?? "",
-    serviceName: raw.service_id ? (serviceMap.get(raw.service_id)?.name ?? "Consultation") : "Consultation",
+    serviceName: raw.service_id
+      ? (serviceMap.get(raw.service_id)?.name ?? "Consultation")
+      : "Consultation",
     date: raw.appointment_date,
     time: raw.start_time?.slice(0, 5) ?? "",
     status: raw.status?.replaceAll("_", "-") ?? "scheduled",
@@ -1533,7 +1650,9 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
     recurrencePattern: raw.recurrence_pattern ?? undefined,
   }));
 
-  const patients: DoctorPatientView[] = ((patientsRes.data ?? []) as { id: string; name: string; phone: string | null }[]).map((p) => ({
+  const patients: DoctorPatientView[] = (
+    (patientsRes.data ?? []) as { id: string; name: string; phone: string | null }[]
+  ).map((p) => ({
     id: p.id,
     name: p.name,
     phone: p.phone ?? "",
@@ -1543,12 +1662,20 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
     id: r.id,
     patientName: userMap.get(r.patient_id)?.name ?? "Patient",
     scheduledTime: r.start_time?.slice(0, 5) ?? "",
-    serviceName: r.service_id ? (serviceMap.get(r.service_id)?.name ?? "Consultation") : "Consultation",
+    serviceName: r.service_id
+      ? (serviceMap.get(r.service_id)?.name ?? "Consultation")
+      : "Consultation",
     status: "waiting",
     priority: r.is_emergency ? "urgent" : "normal",
   }));
 
-  type InvRaw = { id: string; appointment_id: string | null; amount: number; status: string; created_at: string };
+  type InvRaw = {
+    id: string;
+    appointment_id: string | null;
+    amount: number;
+    status: string;
+    created_at: string;
+  };
   const invoices: DoctorInvoiceView[] = ((invoicesRes.data ?? []) as InvRaw[]).map((r) => ({
     id: r.id,
     appointmentId: r.appointment_id ?? undefined,
@@ -1602,7 +1729,11 @@ export interface PatientDashboardData {
   notifications: PatientNotificationView[];
 }
 
-export async function getPatientDashboardData(clinicId: string, userId: string, userName: string): Promise<PatientDashboardData> {
+export async function getPatientDashboardData(
+  clinicId: string,
+  userId: string,
+  userName: string,
+): Promise<PatientDashboardData> {
   const supabase = await createClient();
 
   // Resolve clinic currency from DB config (DAL-04: was hardcoded to "MAD")
@@ -1610,33 +1741,50 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
   const clinicCfg = await getClinicConfig(clinicId);
 
   const [apptsRes, rxRes, invoicesRes, notifsRes] = await Promise.all([
-    supabase.from("appointments")
+    supabase
+      .from("appointments")
       .select("id, doctor_id, service_id, appointment_date, start_time, status")
       .eq("clinic_id", clinicId)
       .eq("patient_id", userId)
       .order("appointment_date", { ascending: true })
       .limit(DEFAULT_QUERY_LIMIT),
-    supabase.from("prescriptions")
+    supabase
+      .from("prescriptions")
       .select("id, patient_id, doctor_id, items, created_at")
       .eq("clinic_id", clinicId)
       .eq("patient_id", userId)
       .order("created_at", { ascending: false })
       .limit(DEFAULT_QUERY_LIMIT),
-    supabase.from("payments")
+    supabase
+      .from("payments")
       .select("id, amount, status, created_at")
       .eq("clinic_id", clinicId)
       .eq("patient_id", userId)
       .order("created_at", { ascending: false })
       .limit(DEFAULT_QUERY_LIMIT),
-    supabase.from("notifications")
+    supabase
+      .from("notifications")
       .select("id, is_read")
       .eq("user_id", userId)
       .order("sent_at", { ascending: false })
       .limit(DEFAULT_QUERY_LIMIT),
   ]);
 
-  type ApptRaw = { id: string; doctor_id: string; service_id: string | null; appointment_date: string; start_time: string; status: string };
-  type RxRaw = { id: string; patient_id: string; doctor_id: string; items: { name: string; dosage: string; duration: string }[] | null; created_at: string };
+  type ApptRaw = {
+    id: string;
+    doctor_id: string;
+    service_id: string | null;
+    appointment_date: string;
+    start_time: string;
+    status: string;
+  };
+  type RxRaw = {
+    id: string;
+    patient_id: string;
+    doctor_id: string;
+    items: { name: string; dosage: string; duration: string }[] | null;
+    created_at: string;
+  };
   const apptRows = (apptsRes.data ?? []) as ApptRaw[];
   const rxRows = (rxRes.data ?? []) as RxRaw[];
 
@@ -1696,10 +1844,12 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
   }));
 
   type NotifRaw = { id: string; is_read: boolean };
-  const notifications: PatientNotificationView[] = ((notifsRes.data ?? []) as NotifRaw[]).map((r) => ({
-    id: r.id,
-    read: r.is_read ?? false,
-  }));
+  const notifications: PatientNotificationView[] = ((notifsRes.data ?? []) as NotifRaw[]).map(
+    (r) => ({
+      id: r.id,
+      read: r.is_read ?? false,
+    }),
+  );
 
   return { userName, appointments, prescriptions, invoices, notifications };
 }

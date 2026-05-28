@@ -1,6 +1,15 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus, User, Clock, GripVertical, Phone, MessageCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  User,
+  Clock,
+  GripVertical,
+  Phone,
+  MessageCircle,
+} from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,7 +56,10 @@ export function ReceptionistBookingCalendar() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const [appts, docs] = await Promise.all([
         fetchAppointments(user.clinic_id),
         fetchDoctors(user.clinic_id),
@@ -63,12 +75,25 @@ export function ReceptionistBookingCalendar() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+    "09:00",
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00",
+    "11:30",
+    "12:00",
+    "14:00",
+    "14:30",
+    "15:00",
+    "15:30",
+    "16:00",
+    "16:30",
   ];
 
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -101,9 +126,10 @@ export function ReceptionistBookingCalendar() {
     setCurrentDate(d);
   };
 
-  const filteredAppointments = selectedDoctor === "all"
-    ? localAppointments
-    : localAppointments.filter((a) => a.doctorId === selectedDoctor);
+  const filteredAppointments =
+    selectedDoctor === "all"
+      ? localAppointments
+      : localAppointments.filter((a) => a.doctorId === selectedDoctor);
 
   const getAppointmentForSlot = (date: Date, time: string) => {
     const dateStr = date.toISOString().split("T")[0];
@@ -136,27 +162,30 @@ export function ReceptionistBookingCalendar() {
     setDragOverCell(null);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, date: Date, time: string) => {
-    e.preventDefault();
-    setDragOverCell(null);
+  const handleDrop = useCallback(
+    (e: React.DragEvent, date: Date, time: string) => {
+      e.preventDefault();
+      setDragOverCell(null);
 
-    if (!draggedAppointment) return;
+      if (!draggedAppointment) return;
 
-    const newDate = date.toISOString().split("T")[0];
-    const existingAppt = localAppointments.find(
-      (a) => a.date === newDate && a.time === time && a.id !== draggedAppointment.id
-    );
-    if (existingAppt) return;
+      const newDate = date.toISOString().split("T")[0];
+      const existingAppt = localAppointments.find(
+        (a) => a.date === newDate && a.time === time && a.id !== draggedAppointment.id,
+      );
+      if (existingAppt) return;
 
-    setLocalAppointments((prev) =>
-      prev.map((a) =>
-        a.id === draggedAppointment.id
-          ? { ...a, date: newDate, time, status: "rescheduled" as const }
-          : a
-      )
-    );
-    setDraggedAppointment(null);
-  }, [draggedAppointment, localAppointments]);
+      setLocalAppointments((prev) =>
+        prev.map((a) =>
+          a.id === draggedAppointment.id
+            ? { ...a, date: newDate, time, status: "rescheduled" as const }
+            : a,
+        ),
+      );
+      setDraggedAppointment(null);
+    },
+    [draggedAppointment, localAppointments],
+  );
 
   const handleNewBooking = (booking: {
     patientId: string;
@@ -201,7 +230,9 @@ export function ReceptionistBookingCalendar() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -217,7 +248,11 @@ export function ReceptionistBookingCalendar() {
           </Button>
           <span className="text-sm font-medium">
             {weekDates[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} -{" "}
-            {weekDates[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            {weekDates[6].toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </span>
           <Button variant="outline" size="sm" onClick={nextWeek} aria-label="Semaine suivante">
             <ChevronRight className="h-4 w-4" />
@@ -262,7 +297,9 @@ export function ReceptionistBookingCalendar() {
       {/* Drag-and-drop hint */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
         <GripVertical className="h-3 w-3" />
-        <span>Drag and drop appointments to reschedule them. Click on an appointment for details.</span>
+        <span>
+          Drag and drop appointments to reschedule them. Click on an appointment for details.
+        </span>
       </div>
 
       {/* Weekly Calendar Grid */}
@@ -285,10 +322,16 @@ export function ReceptionistBookingCalendar() {
                       className={`text-center p-2 text-xs ${isToday ? "bg-primary/5 rounded-t-lg" : ""} ${!wh.enabled ? "opacity-50" : ""}`}
                     >
                       <div className="font-medium">{dayNames[i]}</div>
-                      <div className={`${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                      <div
+                        className={`${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}
+                      >
                         {date.getDate()}
                       </div>
-                      {!wh.enabled && <Badge variant="secondary" className="text-[9px] mt-1">Closed</Badge>}
+                      {!wh.enabled && (
+                        <Badge variant="secondary" className="text-[9px] mt-1">
+                          Closed
+                        </Badge>
+                      )}
                     </th>
                   );
                 })}
@@ -315,8 +358,8 @@ export function ReceptionistBookingCalendar() {
                         onDragLeave={handleDragLeave}
                         onDrop={wh.enabled ? (e) => handleDrop(e, date, time) : undefined}
                       >
-                        {wh.enabled && (
-                          appt ? (
+                        {wh.enabled &&
+                          (appt ? (
                             // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element
                             <div
                               draggable
@@ -332,14 +375,20 @@ export function ReceptionistBookingCalendar() {
                               {/* Quick action buttons on hover */}
                               <div className="absolute top-0 right-0 hidden group-hover:flex gap-0.5 p-0.5">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handleCallPatient("+212612345678"); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCallPatient("+212612345678");
+                                  }}
                                   className="p-0.5 rounded bg-white/80 hover:bg-white shadow-sm"
                                   title="Call patient"
                                 >
                                   <Phone className="h-2.5 w-2.5 text-blue-600" />
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handleWhatsApp("+212612345678"); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleWhatsApp("+212612345678");
+                                  }}
                                   className="p-0.5 rounded bg-white/80 hover:bg-white shadow-sm"
                                   title="WhatsApp patient"
                                 >
@@ -355,8 +404,7 @@ export function ReceptionistBookingCalendar() {
                                   : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
                               } cursor-pointer`}
                             />
-                          )
-                        )}
+                          ))}
                       </td>
                     );
                   })}

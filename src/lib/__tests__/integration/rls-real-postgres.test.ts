@@ -38,10 +38,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_LOCAL_SERVICE_KEY ?? "";
 // Now: only skipped when SKIP_RLS is explicitly set to "true".
 // CI provides the Supabase local env vars via the `supabase start` step.
 const SKIP =
-  process.env.SKIP_RLS === "true" ||
-  !SUPABASE_URL ||
-  !SUPABASE_ANON_KEY ||
-  !SUPABASE_SERVICE_KEY;
+  process.env.SKIP_RLS === "true" || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_KEY;
 
 const CLINIC_A_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const CLINIC_B_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
@@ -94,22 +91,49 @@ const CORE_PHI_TABLES = [
 ] as const;
 
 describe.skipIf(SKIP)("RLS Real Postgres Tests", () => {
-
   beforeAll(async () => {
     // Seed two clinics and basic data using admin client
     const admin = createAdminClient();
 
     // Ensure test clinics exist (idempotent upsert)
-    await admin.from("clinics").upsert([
-      { id: CLINIC_A_ID, name: "Clinic A (RLS Test)", type: "doctor", status: "active", tier: "pro" },
-      { id: CLINIC_B_ID, name: "Clinic B (RLS Test)", type: "doctor", status: "active", tier: "pro" },
-    ], { onConflict: "id" });
+    await admin.from("clinics").upsert(
+      [
+        {
+          id: CLINIC_A_ID,
+          name: "Clinic A (RLS Test)",
+          type: "doctor",
+          status: "active",
+          tier: "pro",
+        },
+        {
+          id: CLINIC_B_ID,
+          name: "Clinic B (RLS Test)",
+          type: "doctor",
+          status: "active",
+          tier: "pro",
+        },
+      ],
+      { onConflict: "id" },
+    );
 
     // Create a test service in each clinic for FK references
-    await admin.from("services").upsert([
-      { id: "11111111-1111-1111-1111-111111111111", clinic_id: CLINIC_A_ID, name: "Consultation A", duration_minutes: 30 },
-      { id: "22222222-2222-2222-2222-222222222222", clinic_id: CLINIC_B_ID, name: "Consultation B", duration_minutes: 30 },
-    ], { onConflict: "id" });
+    await admin.from("services").upsert(
+      [
+        {
+          id: "11111111-1111-1111-1111-111111111111",
+          clinic_id: CLINIC_A_ID,
+          name: "Consultation A",
+          duration_minutes: 30,
+        },
+        {
+          id: "22222222-2222-2222-2222-222222222222",
+          clinic_id: CLINIC_B_ID,
+          name: "Consultation B",
+          duration_minutes: 30,
+        },
+      ],
+      { onConflict: "id" },
+    );
   });
 
   describe("Cross-tenant SELECT isolation", () => {
@@ -143,10 +167,7 @@ describe.skipIf(SKIP)("RLS Real Postgres Tests", () => {
       async (table) => {
         const anonNoClinic = createAnonClientNoClinic();
 
-        const { data, error } = await anonNoClinic
-          .from(table)
-          .select("id")
-          .limit(5);
+        const { data, error } = await anonNoClinic.from(table).select("id").limit(5);
 
         // RLS should either return empty rows or deny access entirely
         if (!error) {

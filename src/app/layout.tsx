@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic, Noto_Sans_Arabic, Playfair_Display } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  IBM_Plex_Sans_Arabic,
+  Noto_Sans_Arabic,
+  Playfair_Display,
+} from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import { OfflineIndicator } from "@/components/offline-indicator";
@@ -63,7 +69,7 @@ export const viewport: Viewport = {
  */
 export async function generateMetadata(): Promise<Metadata> {
   // Default locale — see #628 for per-tenant locale support.
-  const cookieStore = await import("next/headers").then(m => m.cookies());
+  const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
   const locale = preferredLocale || ("fr" as Locale);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
@@ -76,9 +82,7 @@ export async function generateMetadata(): Promise<Metadata> {
         { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
         { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
       ],
-      apple: [
-        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     },
     title: {
       default: t(locale, "meta.title" as TranslationKey),
@@ -100,8 +104,8 @@ export async function generateMetadata(): Promise<Metadata> {
     authors: [{ name: "Oltigo" }],
     alternates: {
       languages: {
-        "fr": siteUrl,
-        "ar": `${siteUrl}?lang=ar`,
+        fr: siteUrl,
+        ar: `${siteUrl}?lang=ar`,
       },
     },
     openGraph: {
@@ -129,7 +133,7 @@ export default async function RootLayout({
   // The middleware can set x-tenant-locale from the clinic's DB config JSONB.
   // Falls back to "fr" (the Moroccan default) when no header is present.
   const h = await headers();
-  const cookieStore = await import("next/headers").then(m => m.cookies());
+  const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
   const locale: Locale = preferredLocale || (h.get("x-tenant-locale") as Locale) || "fr";
   const dir = getDirection(locale);
@@ -162,13 +166,9 @@ export default async function RootLayout({
             See src/app/(public)/page.tsx for clinic-specific schema. */}
         <ThemeProvider>
           <ToastProvider>
-            <TenantProvider tenant={tenant}>
-              {children}
-            </TenantProvider>
+            <TenantProvider tenant={tenant}>{children}</TenantProvider>
             <OfflineIndicator />
-            {process.env.NEXT_PUBLIC_ENABLE_PERF_MONITORING === "true" && (
-              <PerformanceMonitor />
-            )}
+            {process.env.NEXT_PUBLIC_ENABLE_PERF_MONITORING === "true" && <PerformanceMonitor />}
           </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegister />

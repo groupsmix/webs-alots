@@ -105,7 +105,11 @@ describe("Impersonate API — cookie behavior", () => {
   });
 
   it("impersonation cookie names are properly scoped", () => {
-    const cookieNames = ["sa_impersonate_clinic_id", "sa_impersonate_clinic_name", "sa_impersonate_reason"];
+    const cookieNames = [
+      "sa_impersonate_clinic_id",
+      "sa_impersonate_clinic_name",
+      "sa_impersonate_reason",
+    ];
     for (const name of cookieNames) {
       expect(name).toMatch(/^sa_impersonate_/);
     }

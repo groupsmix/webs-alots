@@ -16,38 +16,30 @@ export default function CompliancePage() {
 
       {/* DPA Template */}
       <section className="rounded-lg border bg-card p-6">
-        <h2 className="text-lg font-semibold mb-4">
-          Accord de Traitement des Données (DPA)
-        </h2>
+        <h2 className="text-lg font-semibold mb-4">Accord de Traitement des Données (DPA)</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          En tant que propriétaire de cabinet utilisant Oltigo, vous agissez en
-          tant que responsable de traitement. Oltigo agit en tant que
-          sous-traitant. Ce document formalise vos obligations respectives.
+          En tant que propriétaire de cabinet utilisant Oltigo, vous agissez en tant que responsable
+          de traitement. Oltigo agit en tant que sous-traitant. Ce document formalise vos
+          obligations respectives.
         </p>
 
         <div className="prose prose-sm max-w-none text-muted-foreground space-y-4">
           <div className="rounded-md border p-4 bg-muted/30">
-            <h3 className="text-base font-medium text-foreground mb-2">
-              1. Parties
-            </h3>
+            <h3 className="text-base font-medium text-foreground mb-2">1. Parties</h3>
             <p>
-              <strong>Responsable de traitement :</strong> Le propriétaire du
-              cabinet (vous), tel qu&apos;identifié dans votre compte Oltigo.
+              <strong>Responsable de traitement :</strong> Le propriétaire du cabinet (vous), tel
+              qu&apos;identifié dans votre compte Oltigo.
             </p>
             <p>
-              <strong>Sous-traitant :</strong> Oltigo, plateforme SaaS de
-              gestion médicale.
+              <strong>Sous-traitant :</strong> Oltigo, plateforme SaaS de gestion médicale.
             </p>
           </div>
 
           <div className="rounded-md border p-4 bg-muted/30">
-            <h3 className="text-base font-medium text-foreground mb-2">
-              2. Objet du Traitement
-            </h3>
+            <h3 className="text-base font-medium text-foreground mb-2">2. Objet du Traitement</h3>
             <p>
-              Le sous-traitant traite les données personnelles des patients
-              uniquement pour fournir les services de gestion de cabinet définis
-              dans le contrat de service, incluant :
+              Le sous-traitant traite les données personnelles des patients uniquement pour fournir
+              les services de gestion de cabinet définis dans le contrat de service, incluant :
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Gestion des rendez-vous et de la file d&apos;attente</li>
@@ -64,20 +56,17 @@ export default function CompliancePage() {
             </h3>
             <ul className="list-disc pl-5 space-y-1">
               <li>
-                <strong>Données d&apos;identification :</strong> nom, prénom,
-                email, téléphone
+                <strong>Données d&apos;identification :</strong> nom, prénom, email, téléphone
               </li>
               <li>
-                <strong>Données de santé :</strong> motifs de consultation,
-                antécédents, prescriptions
+                <strong>Données de santé :</strong> motifs de consultation, antécédents,
+                prescriptions
               </li>
               <li>
-                <strong>Données financières :</strong> montants, modes de
-                paiement
+                <strong>Données financières :</strong> montants, modes de paiement
               </li>
               <li>
-                <strong>Données techniques :</strong> adresse IP, logs de
-                connexion
+                <strong>Données techniques :</strong> adresse IP, logs de connexion
               </li>
             </ul>
           </div>
@@ -87,29 +76,20 @@ export default function CompliancePage() {
               4. Obligations du Sous-traitant
             </h3>
             <ul className="list-disc pl-5 space-y-1">
+              <li>Traiter les données uniquement sur instruction documentée du responsable</li>
+              <li>Garantir la confidentialité des personnes autorisées à traiter les données</li>
               <li>
-                Traiter les données uniquement sur instruction documentée du
-                responsable
+                Mettre en oeuvre les mesures techniques et organisationnelles appropriées
+                (chiffrement, RLS, audit logs)
+              </li>
+              <li>Notifier le responsable dans les 72 heures en cas de violation de données</li>
+              <li>
+                Supprimer les données à l&apos;issue du contrat, sauf obligation légale de
+                conservation
               </li>
               <li>
-                Garantir la confidentialité des personnes autorisées à traiter
-                les données
-              </li>
-              <li>
-                Mettre en oeuvre les mesures techniques et organisationnelles
-                appropriées (chiffrement, RLS, audit logs)
-              </li>
-              <li>
-                Notifier le responsable dans les 72 heures en cas de violation
-                de données
-              </li>
-              <li>
-                Supprimer les données à l&apos;issue du contrat, sauf obligation
-                légale de conservation
-              </li>
-              <li>
-                Mettre à disposition les informations nécessaires pour
-                démontrer le respect des obligations
+                Mettre à disposition les informations nécessaires pour démontrer le respect des
+                obligations
               </li>
             </ul>
           </div>
@@ -119,16 +99,13 @@ export default function CompliancePage() {
               5. Droits des Personnes Concernées
             </h3>
             <p>
-              Le sous-traitant aide le responsable à répondre aux demandes
-              d&apos;exercice des droits des patients :
+              Le sous-traitant aide le responsable à répondre aux demandes d&apos;exercice des
+              droits des patients :
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Droit d&apos;accès (export des données en JSON/CSV)</li>
               <li>Droit de rectification</li>
-              <li>
-                Droit à l&apos;effacement (suppression avec délai de grâce de
-                30 jours)
-              </li>
+              <li>Droit à l&apos;effacement (suppression avec délai de grâce de 30 jours)</li>
               <li>Droit à la portabilité</li>
               <li>Droit d&apos;opposition</li>
             </ul>
@@ -138,39 +115,30 @@ export default function CompliancePage() {
             <h3 className="text-base font-medium text-foreground mb-2">
               6. Sous-traitance Ultérieure
             </h3>
-            <p>
-              Oltigo utilise les sous-traitants suivants pour fournir le
-              service :
-            </p>
+            <p>Oltigo utilise les sous-traitants suivants pour fournir le service :</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>
-                <strong>Supabase (AWS eu-west)</strong> — Base de données et
-                authentification
+                <strong>Supabase (AWS eu-west)</strong> — Base de données et authentification
               </li>
               <li>
                 <strong>Cloudflare</strong> — CDN, Workers, stockage R2
               </li>
               <li>
-                <strong>Meta (WhatsApp Business API)</strong> — Notifications
-                patients
+                <strong>Meta (WhatsApp Business API)</strong> — Notifications patients
               </li>
             </ul>
           </div>
 
           <div className="rounded-md border p-4 bg-muted/30">
-            <h3 className="text-base font-medium text-foreground mb-2">
-              7. Loi Applicable
-            </h3>
+            <h3 className="text-base font-medium text-foreground mb-2">7. Loi Applicable</h3>
             <p>
-              Le présent accord est soumis au droit marocain, en particulier à
-              la loi n° 09-08 relative à la protection des personnes physiques
-              à l&apos;égard du traitement des données à caractère personnel,
-              ainsi qu&apos;au RGPD pour les résidents de l&apos;UE.
+              Le présent accord est soumis au droit marocain, en particulier à la loi n° 09-08
+              relative à la protection des personnes physiques à l&apos;égard du traitement des
+              données à caractère personnel, ainsi qu&apos;au RGPD pour les résidents de l&apos;UE.
             </p>
             <p className="mt-2">
-              <strong>Autorité de contrôle :</strong> CNDP (Commission
-              Nationale de contrôle de la protection des Données à caractère
-              Personnel), Rabat, Maroc.
+              <strong>Autorité de contrôle :</strong> CNDP (Commission Nationale de contrôle de la
+              protection des Données à caractère Personnel), Rabat, Maroc.
             </p>
           </div>
         </div>

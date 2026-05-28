@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Search, Filter, ChevronDown, Scan, Plus,
-  FileText, Loader2,
-} from "lucide-react";
+import { Search, Filter, ChevronDown, Scan, Plus, FileText, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
@@ -35,8 +32,26 @@ import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/clien
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-const statusOptions = ["all", "pending", "scheduled", "in_progress", "images_ready", "reported", "validated", "cancelled"] as const;
-const modalityOptions = ["xray", "ct", "mri", "ultrasound", "mammography", "pet", "fluoroscopy", "other"] as const;
+const statusOptions = [
+  "all",
+  "pending",
+  "scheduled",
+  "in_progress",
+  "images_ready",
+  "reported",
+  "validated",
+  "cancelled",
+] as const;
+const modalityOptions = [
+  "xray",
+  "ct",
+  "mri",
+  "ultrasound",
+  "mammography",
+  "pet",
+  "fluoroscopy",
+  "other",
+] as const;
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function RadiologyOrdersPage() {
@@ -85,18 +100,23 @@ export default function RadiologyOrdersPage() {
     Promise.all([
       fetchRadiologyOrders(tenant?.clinicId ?? ""),
       fetchRadiologyTemplates(tenant?.clinicId ?? ""),
-    ]).then(([o, t]) => {
-      if (controller.signal.aborted) return;
-      setOrders(o);
-      setTemplates(t);
-    }).catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    }).finally(() => {
-      if (!controller.signal.aborted) setLoading(false);
-    });
-    return () => { controller.abort(); };
+    ])
+      .then(([o, t]) => {
+        if (controller.signal.aborted) return;
+        setOrders(o);
+        setTemplates(t);
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const handleCreateOrder = async () => {
@@ -118,7 +138,14 @@ export default function RadiologyOrdersPage() {
       });
       if (res.ok) {
         setNewOrderOpen(false);
-        setNewOrder({ patientId: "", modality: "xray", bodyPart: "", clinicalIndication: "", priority: "normal", scheduledAt: "" });
+        setNewOrder({
+          patientId: "",
+          modality: "xray",
+          bodyPart: "",
+          clinicalIndication: "",
+          priority: "normal",
+          scheduledAt: "",
+        });
         refreshOrders();
       }
     } finally {
@@ -221,7 +248,9 @@ export default function RadiologyOrdersPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -255,7 +284,9 @@ export default function RadiologyOrdersPage() {
         </div>
         <Dialog open={newOrderOpen} onOpenChange={setNewOrderOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> New Order</Button>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" /> New Order
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -265,27 +296,46 @@ export default function RadiologyOrdersPage() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="patientId">Patient ID</Label>
-                <Input id="patientId" placeholder="Patient UUID" value={newOrder.patientId} onChange={(e) => setNewOrder((p) => ({ ...p, patientId: e.target.value }))} />
+                <Input
+                  id="patientId"
+                  placeholder="Patient UUID"
+                  value={newOrder.patientId}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, patientId: e.target.value }))}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Modality</Label>
-                  <Select value={newOrder.modality} onValueChange={(v) => setNewOrder((p) => ({ ...p, modality: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={newOrder.modality}
+                    onValueChange={(v) => setNewOrder((p) => ({ ...p, modality: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {modalityOptions.map((m) => (
-                        <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>
+                        <SelectItem key={m} value={m}>
+                          {m.toUpperCase()}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
                   <Label>Priority</Label>
-                  <Select value={newOrder.priority} onValueChange={(v) => setNewOrder((p) => ({ ...p, priority: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={newOrder.priority}
+                    onValueChange={(v) => setNewOrder((p) => ({ ...p, priority: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {priorityOptions.map((pr) => (
-                        <SelectItem key={pr} value={pr} className="capitalize">{pr}</SelectItem>
+                        <SelectItem key={pr} value={pr} className="capitalize">
+                          {pr}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -293,19 +343,39 @@ export default function RadiologyOrdersPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="bodyPart">Body Part</Label>
-                <Input id="bodyPart" placeholder="e.g., Chest, Knee, Brain" value={newOrder.bodyPart} onChange={(e) => setNewOrder((p) => ({ ...p, bodyPart: e.target.value }))} />
+                <Input
+                  id="bodyPart"
+                  placeholder="e.g., Chest, Knee, Brain"
+                  value={newOrder.bodyPart}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, bodyPart: e.target.value }))}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="indication">Clinical Indication</Label>
-                <Textarea id="indication" placeholder="Reason for imaging..." value={newOrder.clinicalIndication} onChange={(e) => setNewOrder((p) => ({ ...p, clinicalIndication: e.target.value }))} rows={2} />
+                <Textarea
+                  id="indication"
+                  placeholder="Reason for imaging..."
+                  value={newOrder.clinicalIndication}
+                  onChange={(e) =>
+                    setNewOrder((p) => ({ ...p, clinicalIndication: e.target.value }))
+                  }
+                  rows={2}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="scheduledAt">Scheduled Date/Time</Label>
-                <Input id="scheduledAt" type="datetime-local" value={newOrder.scheduledAt} onChange={(e) => setNewOrder((p) => ({ ...p, scheduledAt: e.target.value }))} />
+                <Input
+                  id="scheduledAt"
+                  type="datetime-local"
+                  value={newOrder.scheduledAt}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, scheduledAt: e.target.value }))}
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setNewOrderOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setNewOrderOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={handleCreateOrder} disabled={newOrderSaving || !newOrder.patientId}>
                 {newOrderSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Create Order
@@ -318,11 +388,22 @@ export default function RadiologyOrdersPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by patient, order number..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder="Search by patient, order number..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
         <div className="flex gap-2 flex-wrap">
           {statusOptions.map((s) => (
-            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="capitalize">
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+              className="capitalize"
+            >
               {s === "all" ? "All" : s.replace("_", " ")}
             </Button>
           ))}
@@ -334,7 +415,10 @@ export default function RadiologyOrdersPage() {
           <Card key={order.id}>
             <CardContent className="pt-4 pb-4">
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
+              <div
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
+              >
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                     <Scan className="h-5 w-5 text-indigo-600" />
@@ -342,26 +426,39 @@ export default function RadiologyOrdersPage() {
                   <div>
                     <p className="font-medium">{order.patientName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.orderNumber} &middot; {order.modality.toUpperCase()} &middot; {order.bodyPart ?? "N/A"}
+                      {order.orderNumber} &middot; {order.modality.toUpperCase()} &middot;{" "}
+                      {order.bodyPart ?? "N/A"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {(order.priority === "urgent" || order.priority === "stat") && (
-                    <Badge variant="destructive" className="text-xs uppercase">{order.priority}</Badge>
+                    <Badge variant="destructive" className="text-xs uppercase">
+                      {order.priority}
+                    </Badge>
                   )}
-                  <Badge className={
-                    order.status === "pending" ? "bg-yellow-100 text-yellow-700 border-0" :
-                    order.status === "scheduled" ? "bg-cyan-100 text-cyan-700 border-0" :
-                    order.status === "in_progress" ? "bg-blue-100 text-blue-700 border-0" :
-                    order.status === "images_ready" ? "bg-purple-100 text-purple-700 border-0" :
-                    order.status === "reported" ? "bg-emerald-100 text-emerald-700 border-0" :
-                    order.status === "validated" ? "bg-green-100 text-green-700 border-0" :
-                    "bg-gray-100 text-gray-700 border-0"
-                  }>
+                  <Badge
+                    className={
+                      order.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700 border-0"
+                        : order.status === "scheduled"
+                          ? "bg-cyan-100 text-cyan-700 border-0"
+                          : order.status === "in_progress"
+                            ? "bg-blue-100 text-blue-700 border-0"
+                            : order.status === "images_ready"
+                              ? "bg-purple-100 text-purple-700 border-0"
+                              : order.status === "reported"
+                                ? "bg-emerald-100 text-emerald-700 border-0"
+                                : order.status === "validated"
+                                  ? "bg-green-100 text-green-700 border-0"
+                                  : "bg-gray-100 text-gray-700 border-0"
+                    }
+                  >
                     {order.status.replace("_", " ")}
                   </Badge>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === order.id ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === order.id ? "rotate-180" : ""}`}
+                  />
                 </div>
               </div>
 
@@ -378,11 +475,17 @@ export default function RadiologyOrdersPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Scheduled</p>
-                      <p className="font-medium">{order.scheduledAt ? new Date(order.scheduledAt).toLocaleString() : "\u2014"}</p>
+                      <p className="font-medium">
+                        {order.scheduledAt
+                          ? new Date(order.scheduledAt).toLocaleString()
+                          : "\u2014"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Images</p>
-                      <p className="font-medium">{order.imageCount} image{order.imageCount !== 1 ? "s" : ""}</p>
+                      <p className="font-medium">
+                        {order.imageCount} image{order.imageCount !== 1 ? "s" : ""}
+                      </p>
                     </div>
                   </div>
                   {order.clinicalIndication && (
@@ -409,10 +512,15 @@ export default function RadiologyOrdersPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, getNextStatus(order.status)!); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusUpdate(order.id, getNextStatus(order.status)!);
+                        }}
                         disabled={updatingStatusId === order.id}
                       >
-                        {updatingStatusId === order.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                        {updatingStatusId === order.id && (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        )}
                         Move to {getNextStatus(order.status)!.replace("_", " ")}
                       </Button>
                     )}
@@ -420,26 +528,36 @@ export default function RadiologyOrdersPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={(e) => { e.stopPropagation(); openReportDialog(order); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openReportDialog(order);
+                        }}
                       >
                         <FileText className="h-3 w-3 mr-1" /> Write Report
                       </Button>
                     )}
-                    {(order.status === "reported" || order.status === "validated") && order.findings && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => { e.stopPropagation(); handleGeneratePdf(order); }}
-                      >
-                        Generate PDF
-                      </Button>
-                    )}
+                    {(order.status === "reported" || order.status === "validated") &&
+                      order.findings && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGeneratePdf(order);
+                          }}
+                        >
+                          Generate PDF
+                        </Button>
+                      )}
                     {order.status !== "cancelled" && order.status !== "validated" && (
                       <Button
                         size="sm"
                         variant="ghost"
                         className="text-red-600 hover:text-red-700"
-                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, "cancelled"); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusUpdate(order.id, "cancelled");
+                        }}
                         disabled={updatingStatusId === order.id}
                       >
                         Cancel Order
@@ -471,10 +589,14 @@ export default function RadiologyOrdersPage() {
               <div className="grid gap-2">
                 <Label>Load from Template</Label>
                 <Select value={reportData.templateId} onValueChange={handleApplyTemplate}>
-                  <SelectTrigger><SelectValue placeholder="Select a template..." /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a template..." />
+                  </SelectTrigger>
                   <SelectContent>
                     {templates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -482,20 +604,46 @@ export default function RadiologyOrdersPage() {
             )}
             <div className="grid gap-2">
               <Label htmlFor="findings">Findings</Label>
-              <Textarea id="findings" placeholder="Describe the findings..." value={reportData.findings} onChange={(e) => setReportData((p) => ({ ...p, findings: e.target.value }))} rows={4} />
+              <Textarea
+                id="findings"
+                placeholder="Describe the findings..."
+                value={reportData.findings}
+                onChange={(e) => setReportData((p) => ({ ...p, findings: e.target.value }))}
+                rows={4}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="impression">Impression</Label>
-              <Textarea id="impression" placeholder="Summary / Impression..." value={reportData.impression} onChange={(e) => setReportData((p) => ({ ...p, impression: e.target.value }))} rows={3} />
+              <Textarea
+                id="impression"
+                placeholder="Summary / Impression..."
+                value={reportData.impression}
+                onChange={(e) => setReportData((p) => ({ ...p, impression: e.target.value }))}
+                rows={3}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="reportText">Full Report</Label>
-              <Textarea id="reportText" placeholder="Complete report text..." value={reportData.reportText} onChange={(e) => setReportData((p) => ({ ...p, reportText: e.target.value }))} rows={6} />
+              <Textarea
+                id="reportText"
+                placeholder="Complete report text..."
+                value={reportData.reportText}
+                onChange={(e) => setReportData((p) => ({ ...p, reportText: e.target.value }))}
+                rows={6}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveReport} disabled={reportSaving || (!reportData.findings && !reportData.impression && !reportData.reportText)}>
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveReport}
+              disabled={
+                reportSaving ||
+                (!reportData.findings && !reportData.impression && !reportData.reportText)
+              }
+            >
               {reportSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Report
             </Button>

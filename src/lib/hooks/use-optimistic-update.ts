@@ -41,7 +41,7 @@ export function useOptimisticUpdate<T>(initialData: T) {
     async (
       optimisticData: T,
       serverAction: () => Promise<T | void>,
-      options?: { onSuccess?: () => void; onError?: (err: string) => void }
+      options?: { onSuccess?: () => void; onError?: (err: string) => void },
     ) => {
       const previousData = state.data;
 
@@ -59,13 +59,12 @@ export function useOptimisticUpdate<T>(initialData: T) {
         options?.onSuccess?.();
       } catch (err) {
         // Roll back to previous data on failure
-        const message =
-          err instanceof Error ? err.message : t(locale, "auth.genericError");
+        const message = err instanceof Error ? err.message : t(locale, "auth.genericError");
         setState({ data: previousData, status: "error", error: message });
         options?.onError?.(message);
       }
     },
-    [state.data, locale]
+    [state.data, locale],
   );
 
   const reset = useCallback(() => {

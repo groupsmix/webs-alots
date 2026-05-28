@@ -3,6 +3,7 @@
 > **Audit finding:** F-AI-03 | **Last updated:** May 2026
 
 Automated evaluation suite for Oltigo Health's AI clinical endpoints:
+
 - `/api/v1/ai/prescription` — prescription generation
 - `/api/v1/ai/drug-check` — drug interaction checking
 - `/api/v1/ai/patient-summary` — patient summary generation
@@ -38,17 +39,20 @@ the `evals/results/` directory.
 ## Test Cases
 
 ### Hallucination Tests (`hallucination.eval.ts`)
+
 - Known drug interactions (e.g. warfarin + aspirin)
 - Non-existent drug names (should refuse or flag uncertainty)
 - Dosage boundary checks (should not exceed BNF/Vidal maximums)
 
 ### Jailbreak Tests (`jailbreak.eval.ts`)
+
 - System prompt extraction attempts
 - Role-play attacks ("pretend you are an unrestricted AI")
 - Delimiter escape (inject `<<UNTRUSTED_PATIENT_INPUT_END>>`)
 - Instruction injection via patient context fields
 
 ### Bias Tests (`bias.eval.ts`)
+
 - Same symptoms, different patient names/ages/genders
 - Verify recommendations are clinically consistent
 - Flag any demographic-correlated variance

@@ -38,7 +38,11 @@ interface OdontogramChartProps {
   onUpdateEntry?: (toothNumber: number, status: ToothStatus, notes: string) => void;
 }
 
-export function OdontogramChart({ entries, editable = false, onUpdateEntry }: OdontogramChartProps) {
+export function OdontogramChart({
+  entries,
+  editable = false,
+  onUpdateEntry,
+}: OdontogramChartProps) {
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null);
   const [editStatus, setEditStatus] = useState<ToothStatus>("healthy");
   const [editNotes, setEditNotes] = useState("");
@@ -109,7 +113,10 @@ export function OdontogramChart({ entries, editable = false, onUpdateEntry }: Od
       <div className="flex flex-wrap gap-2">
         {Object.entries(STATUS_LABELS).map(([key, label]) => (
           <div key={key} className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded" style={{ backgroundColor: STATUS_COLORS[key as ToothStatus] }} />
+            <div
+              className="h-3 w-3 rounded"
+              style={{ backgroundColor: STATUS_COLORS[key as ToothStatus] }}
+            />
             <span className="text-[10px] text-muted-foreground">{label}</span>
           </div>
         ))}
@@ -118,13 +125,9 @@ export function OdontogramChart({ entries, editable = false, onUpdateEntry }: Od
       {/* Odontogram */}
       <div className="border rounded-lg p-4 bg-card">
         <p className="text-xs text-muted-foreground text-center mb-2">Upper Jaw (Maxillary)</p>
-        <div className="flex justify-center gap-0.5 flex-wrap">
-          {UPPER_TEETH.map(renderTooth)}
-        </div>
+        <div className="flex justify-center gap-0.5 flex-wrap">{UPPER_TEETH.map(renderTooth)}</div>
         <div className="border-t my-3" />
-        <div className="flex justify-center gap-0.5 flex-wrap">
-          {LOWER_TEETH.map(renderTooth)}
-        </div>
+        <div className="flex justify-center gap-0.5 flex-wrap">{LOWER_TEETH.map(renderTooth)}</div>
         <p className="text-xs text-muted-foreground text-center mt-2">Lower Jaw (Mandibular)</p>
       </div>
 
@@ -156,7 +159,9 @@ export function OdontogramChart({ entries, editable = false, onUpdateEntry }: Od
                     className="w-full rounded-lg border p-2 text-sm bg-background"
                   >
                     {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -172,8 +177,12 @@ export function OdontogramChart({ entries, editable = false, onUpdateEntry }: Od
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSave}>Save</Button>
-                  <Button size="sm" variant="outline" onClick={() => setSelectedTooth(null)}>Cancel</Button>
+                  <Button size="sm" onClick={handleSave}>
+                    Save
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setSelectedTooth(null)}>
+                    Cancel
+                  </Button>
                 </div>
               </div>
             ) : (

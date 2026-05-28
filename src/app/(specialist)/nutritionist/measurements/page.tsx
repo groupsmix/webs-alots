@@ -7,7 +7,10 @@ import { useState, useEffect } from "react";
 import { getCurrentUser } from "@/lib/data/client";
 
 const BodyMeasurementTracker = dynamic(
-  () => import("@/components/para-medical/body-measurement-tracker").then((m) => m.BodyMeasurementTracker),
+  () =>
+    import("@/components/para-medical/body-measurement-tracker").then(
+      (m) => m.BodyMeasurementTracker,
+    ),
   { ssr: false, loading: () => <div className="h-[400px] animate-pulse bg-muted rounded-lg" /> },
 );
 import type { BodyMeasurement } from "@/lib/types/para-medical";
@@ -22,19 +25,24 @@ export default function MeasurementsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    setMeasurements([]);
-    setLoading(false);
-  }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      setMeasurements([]);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -44,7 +52,9 @@ export default function MeasurementsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );

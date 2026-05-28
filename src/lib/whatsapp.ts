@@ -108,23 +108,20 @@ async function sendViaMeta(
   to: string,
   body: string,
 ): Promise<WhatsAppSendResult> {
-  const response = await fetch(
-    `${META_API_URL}/${config.metaPhoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.metaAccessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body },
-      }),
-      signal: AbortSignal.timeout(10_000),
+  const response = await fetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.metaAccessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
 
   const data = await response.json();
   if (response.ok) {
@@ -145,38 +142,35 @@ async function sendTemplateViaMeta(
   config: WhatsAppConfig,
   payload: WhatsAppMessagePayload,
 ): Promise<WhatsAppSendResult> {
-  const response = await fetch(
-    `${META_API_URL}/${config.metaPhoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.metaAccessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: payload.to,
-        type: "template",
-        template: {
-          name: payload.templateName,
-          language: { code: payload.languageCode || "en" },
-          components:
-            payload.parameters && payload.parameters.length > 0
-              ? [
-                  {
-                    type: "body",
-                    parameters: payload.parameters.map((p) => ({
-                      type: "text",
-                      text: p,
-                    })),
-                  },
-                ]
-              : undefined,
-        },
-      }),
-      signal: AbortSignal.timeout(10_000),
+  const response = await fetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.metaAccessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: payload.to,
+      type: "template",
+      template: {
+        name: payload.templateName,
+        language: { code: payload.languageCode || "en" },
+        components:
+          payload.parameters && payload.parameters.length > 0
+            ? [
+                {
+                  type: "body",
+                  parameters: payload.parameters.map((p) => ({
+                    type: "text",
+                    text: p,
+                  })),
+                },
+              ]
+            : undefined,
+      },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
 
   const data = await response.json();
   if (response.ok) {
@@ -239,36 +233,31 @@ async function sendInteractiveViaMeta(
   config: WhatsAppConfig,
   payload: WhatsAppInteractivePayload,
 ): Promise<WhatsAppSendResult> {
-  const response = await fetch(
-    `${META_API_URL}/${config.metaPhoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.metaAccessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: payload.to,
-        type: "interactive",
-        interactive: {
-          type: "button",
-          ...(payload.header
-            ? { header: { type: "text", text: payload.header } }
-            : {}),
-          body: { text: payload.body },
-          ...(payload.footer ? { footer: { text: payload.footer } } : {}),
-          action: {
-            buttons: payload.buttons.map((btn) => ({
-              type: "reply",
-              reply: { id: btn.id, title: btn.title },
-            })),
-          },
-        },
-      }),
-      signal: AbortSignal.timeout(10_000),
+  const response = await fetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.metaAccessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: payload.to,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        ...(payload.header ? { header: { type: "text", text: payload.header } } : {}),
+        body: { text: payload.body },
+        ...(payload.footer ? { footer: { text: payload.footer } } : {}),
+        action: {
+          buttons: payload.buttons.map((btn) => ({
+            type: "reply",
+            reply: { id: btn.id, title: btn.title },
+          })),
+        },
+      },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
 
   const data = await response.json();
   if (response.ok) {
@@ -336,10 +325,7 @@ export async function sendWhatsAppMessage(
 /**
  * Send a plain text WhatsApp message using the configured provider.
  */
-export async function sendTextMessage(
-  to: string,
-  body: string,
-): Promise<WhatsAppSendResult> {
+export async function sendTextMessage(to: string, body: string): Promise<WhatsAppSendResult> {
   const config = getWhatsAppConfig();
 
   if (!isConfigured(config)) {
@@ -359,9 +345,7 @@ export async function sendTextMessage(
  * Falls back to the default (French) templates when no locale-specific
  * set exists.
  */
-function getTemplatesForLocale(
-  locale: PatientMessageLocale = "fr",
-): NotificationTemplate[] {
+function getTemplatesForLocale(locale: PatientMessageLocale = "fr"): NotificationTemplate[] {
   switch (locale) {
     case "darija":
       return toDarijaNotificationTemplates();
@@ -389,8 +373,7 @@ export async function sendNotificationWhatsApp(
   templates?: NotificationTemplate[],
   locale?: PatientMessageLocale,
 ): Promise<WhatsAppSendResult> {
-  const resolvedTemplates =
-    templates ?? getTemplatesForLocale(locale);
+  const resolvedTemplates = templates ?? getTemplatesForLocale(locale);
 
   const template = resolvedTemplates.find(
     (t) => t.trigger === trigger && t.enabled && t.channels.includes("whatsapp"),

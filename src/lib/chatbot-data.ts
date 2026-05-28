@@ -28,9 +28,19 @@ export interface ChatbotClinicContext {
     domain?: string;
     config: ClinicConfigJson | Record<string, unknown>;
   } | null;
-  services: { name: string; price: number | null; category: string | null; duration_minutes: number }[];
+  services: {
+    name: string;
+    price: number | null;
+    category: string | null;
+    duration_minutes: number;
+  }[];
   doctors: { name: string; phone: string | null; email: string | null }[];
-  workingHours: { day_of_week: number; start_time: string; end_time: string; is_available: boolean }[];
+  workingHours: {
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+    is_available: boolean;
+  }[];
   faqs: { question: string; answer: string; keywords: string[] }[];
   chatbotConfig: {
     enabled: boolean;
@@ -48,27 +58,26 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
   const supabase = await createClient();
 
   // Query known tables via typed client
-  const [clinicRes, servicesRes, doctorsRes, slotsRes] =
-    await Promise.all([
-      supabase
-        .from("clinics")
-        .select("id, name, type, tier, config, domain, city, owner_phone, owner_email")
-        .eq("id", clinicId)
-        .single(),
-      supabase
-        .from("services")
-        .select("name, price, category, duration_minutes")
-        .eq("clinic_id", clinicId),
-      supabase
-        .from("users")
-        .select("name, phone, email")
-        .eq("clinic_id", clinicId)
-        .eq("role", "doctor"),
-      supabase
-        .from("time_slots")
-        .select("day_of_week, start_time, end_time")
-        .eq("clinic_id", clinicId),
-    ]);
+  const [clinicRes, servicesRes, doctorsRes, slotsRes] = await Promise.all([
+    supabase
+      .from("clinics")
+      .select("id, name, type, tier, config, domain, city, owner_phone, owner_email")
+      .eq("id", clinicId)
+      .single(),
+    supabase
+      .from("services")
+      .select("name, price, category, duration_minutes")
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("users")
+      .select("name, phone, email")
+      .eq("clinic_id", clinicId)
+      .eq("role", "doctor"),
+    supabase
+      .from("time_slots")
+      .select("day_of_week, start_time, end_time")
+      .eq("clinic_id", clinicId),
+  ]);
 
   // chatbot_faqs and chatbot_config are now in the generated DB types.
   const [faqsRes, configRes] = await Promise.all([
@@ -150,33 +159,41 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
 
   const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
-  const hoursText = workingHours.length > 0
-    ? workingHours
-        .filter((s) => s.is_available)
-        .map((s) => `${dayNames[s.day_of_week]}: ${s.start_time} - ${s.end_time}`)
-        .join("\n")
-    : "Non renseigné";
+  const hoursText =
+    workingHours.length > 0
+      ? workingHours
+          .filter((s) => s.is_available)
+          .map((s) => `${dayNames[s.day_of_week]}: ${s.start_time} - ${s.end_time}`)
+          .join("\n")
+      : "Non renseigné";
 
-  const servicesText = services.length > 0
-    ? services
-        .map((s) => {
-          const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
-          return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
-        })
-        .join("\n")
-    : "Aucun service configuré";
+  const servicesText =
+    services.length > 0
+      ? services
+          .map((s) => {
+            const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
+            const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
+            return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
+          })
+          .join("\n")
+      : "Aucun service configuré";
 
-  const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
-    : "Aucun médecin configuré";
+  const doctorsText =
+    doctors.length > 0
+      ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
+      : "Aucun médecin configuré";
 
   // F-AI-02: Sanitize stored FAQ answers to prevent prompt injection via
   // chatbot_faqs.answer. Attackers could store injection payloads in FAQ
   // answers that get interpolated into the system prompt.
-  const faqsText = faqs.length > 0
-    ? faqs.map((f) => `Q: ${sanitizeUntrustedText(f.question)}\nR: ${sanitizeUntrustedText(f.answer)}`).join("\n\n")
-    : "";
+  const faqsText =
+    faqs.length > 0
+      ? faqs
+          .map(
+            (f) => `Q: ${sanitizeUntrustedText(f.question)}\nR: ${sanitizeUntrustedText(f.answer)}`,
+          )
+          .join("\n\n")
+      : "";
 
   const contactParts: string[] = [];
   if (clinic.phone) contactParts.push(`Téléphone: ${clinic.phone}`);
@@ -242,8 +259,15 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
   }
 
   // Working hours
-  if (msg.includes("horaire") || msg.includes("hours") || msg.includes("ouvert") || msg.includes("open") ||
-      msg.includes("وقت") || msg.includes("ساعات") || msg.includes("شحال")) {
+  if (
+    msg.includes("horaire") ||
+    msg.includes("hours") ||
+    msg.includes("ouvert") ||
+    msg.includes("open") ||
+    msg.includes("وقت") ||
+    msg.includes("ساعات") ||
+    msg.includes("شحال")
+  ) {
     if (workingHours.length === 0) {
       return `Les horaires de ${clinicName} ne sont pas encore configurés. Veuillez nous contacter directement.`;
     }
@@ -256,9 +280,17 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
   }
 
   // Services & prices
-  if (msg.includes("service") || msg.includes("tarif") || msg.includes("prix") || msg.includes("price") ||
-      msg.includes("coût") || msg.includes("combien") || msg.includes("تمن") || msg.includes("خدمات") ||
-      msg.includes("بشحال")) {
+  if (
+    msg.includes("service") ||
+    msg.includes("tarif") ||
+    msg.includes("prix") ||
+    msg.includes("price") ||
+    msg.includes("coût") ||
+    msg.includes("combien") ||
+    msg.includes("تمن") ||
+    msg.includes("خدمات") ||
+    msg.includes("بشحال")
+  ) {
     if (services.length === 0) {
       return `Les services de ${clinicName} ne sont pas encore configurés. Contactez-nous pour plus d'informations.`;
     }
@@ -270,7 +302,8 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
     });
 
     if (matchedService) {
-      const price = matchedService.price != null ? `${matchedService.price} MAD` : "Prix sur demande";
+      const price =
+        matchedService.price != null ? `${matchedService.price} MAD` : "Prix sur demande";
       return `${matchedService.name} chez ${clinicName} : ${price} (durée : ${matchedService.duration_minutes} min).\nVoulez-vous prendre rendez-vous ?`;
     }
 
@@ -284,8 +317,14 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
   }
 
   // Doctors
-  if (msg.includes("docteur") || msg.includes("médecin") || msg.includes("doctor") || msg.includes("praticien") ||
-      msg.includes("طبيب") || msg.includes("دكتور")) {
+  if (
+    msg.includes("docteur") ||
+    msg.includes("médecin") ||
+    msg.includes("doctor") ||
+    msg.includes("praticien") ||
+    msg.includes("طبيب") ||
+    msg.includes("دكتور")
+  ) {
     if (doctors.length === 0) {
       return `Aucun praticien n'est encore configuré pour ${clinicName}.`;
     }
@@ -294,8 +333,16 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
   }
 
   // Contact info
-  if (msg.includes("contact") || msg.includes("téléphone") || msg.includes("phone") || msg.includes("email") ||
-      msg.includes("adresse") || msg.includes("address") || msg.includes("عنوان") || msg.includes("تيليفون")) {
+  if (
+    msg.includes("contact") ||
+    msg.includes("téléphone") ||
+    msg.includes("phone") ||
+    msg.includes("email") ||
+    msg.includes("adresse") ||
+    msg.includes("address") ||
+    msg.includes("عنوان") ||
+    msg.includes("تيليفون")
+  ) {
     const parts: string[] = [];
     if (clinic?.phone) parts.push(`Téléphone : ${clinic.phone}`);
     if (clinic?.email) parts.push(`Email : ${clinic.email}`);
@@ -307,8 +354,14 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
   }
 
   // Location
-  if (msg.includes("où") || msg.includes("location") || msg.includes("localisation") || msg.includes("adresse") ||
-      msg.includes("فين") || msg.includes("وين")) {
+  if (
+    msg.includes("où") ||
+    msg.includes("location") ||
+    msg.includes("localisation") ||
+    msg.includes("adresse") ||
+    msg.includes("فين") ||
+    msg.includes("وين")
+  ) {
     const parts: string[] = [];
     if (clinic?.address) parts.push(clinic.address);
     if (clinic?.city) parts.push(clinic.city);
@@ -318,14 +371,26 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
   }
 
   // Booking
-  if (msg.includes("rendez-vous") || msg.includes("appointment") || msg.includes("book") || msg.includes("réserv") ||
-      msg.includes("حجز") || msg.includes("موعد")) {
+  if (
+    msg.includes("rendez-vous") ||
+    msg.includes("appointment") ||
+    msg.includes("book") ||
+    msg.includes("réserv") ||
+    msg.includes("حجز") ||
+    msg.includes("موعد")
+  ) {
     return `Pour prendre un rendez-vous chez ${clinicName}, utilisez notre page de réservation en ligne ou contactez-nous directement. Souhaitez-vous connaître nos horaires ou services disponibles ?`;
   }
 
   // Greetings
-  if (msg.includes("bonjour") || msg.includes("hello") || msg.includes("hi") || msg.includes("salut") ||
-      msg.includes("سلام") || msg.includes("مرحبا")) {
+  if (
+    msg.includes("bonjour") ||
+    msg.includes("hello") ||
+    msg.includes("hi") ||
+    msg.includes("salut") ||
+    msg.includes("سلام") ||
+    msg.includes("مرحبا")
+  ) {
     return `Bonjour ! Bienvenue chez ${clinicName}. Comment puis-je vous aider ? Je peux vous renseigner sur nos services, tarifs, horaires ou vous aider à prendre rendez-vous.`;
   }
 

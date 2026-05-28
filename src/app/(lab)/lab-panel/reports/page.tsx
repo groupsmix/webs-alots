@@ -22,16 +22,20 @@ export default function LabReportsPage() {
     const controller = new AbortController();
     fetchLabTestOrders(tenant?.clinicId ?? "")
       .then((all) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setOrders(all.filter((o) => o.status === "completed" || o.status === "validated"));
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -41,7 +45,9 @@ export default function LabReportsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -84,16 +90,20 @@ export default function LabReportsPage() {
                   <div>
                     <p className="font-medium">{order.patientName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.orderNumber} &middot; {order.testCount} test{order.testCount !== 1 ? "s" : ""} &middot; Completed {order.completedAt ? new Date(order.completedAt).toLocaleDateString() : ""}
+                      {order.orderNumber} &middot; {order.testCount} test
+                      {order.testCount !== 1 ? "s" : ""} &middot; Completed{" "}
+                      {order.completedAt ? new Date(order.completedAt).toLocaleDateString() : ""}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge className={
-                    order.status === "validated"
-                      ? "bg-green-100 text-green-700 border-0"
-                      : "bg-emerald-100 text-emerald-700 border-0"
-                  }>
+                  <Badge
+                    className={
+                      order.status === "validated"
+                        ? "bg-green-100 text-green-700 border-0"
+                        : "bg-emerald-100 text-emerald-700 border-0"
+                    }
+                  >
                     {order.status}
                   </Badge>
                   {order.pdfUrl ? (

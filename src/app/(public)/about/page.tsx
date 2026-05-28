@@ -40,15 +40,16 @@ export default function AboutPage() {
           ) : (
             <Avatar className="h-24 w-24 mx-auto mb-4">
               <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                {cfg.doctorName.split(" ").map((n) => n[0]).join("")}
+                {cfg.doctorName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
               </AvatarFallback>
             </Avatar>
           )}
           <h1 className="text-3xl font-bold mb-2">{cfg.doctorName}</h1>
           <p className="text-lg text-primary font-medium">{cfg.specialty}</p>
-          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-            {cfg.bio}
-          </p>
+          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">{cfg.bio}</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 mb-12">

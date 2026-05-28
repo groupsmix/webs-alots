@@ -23,11 +23,7 @@ const PUBLIC_ROUTES = [
 ];
 
 /** Public route prefixes (no auth required) */
-const PUBLIC_PREFIXES = [
-  "/pharmacy",
-  "/dentist",
-  "/lab/",
-];
+const PUBLIC_PREFIXES = ["/pharmacy", "/dentist", "/lab/"];
 
 /** Protected route prefixes (require authentication) */
 const PROTECTED_PREFIXES = [
@@ -49,9 +45,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 /** Lightweight API routes that skip heavy middleware processing */
-export const LIGHTWEIGHT_API_PATHS = new Set([
-  "/api/health",
-]);
+export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health"]);
 
 /**
  * Role to allowed route prefix mapping.

@@ -37,7 +37,13 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 text-lg font-bold">
               {logoUrl && (
-                <Image src={logoUrl} alt={displayName} width={28} height={28} className="h-7 w-auto" />
+                <Image
+                  src={logoUrl}
+                  alt={displayName}
+                  width={28}
+                  height={28}
+                  className="h-7 w-auto"
+                />
               )}
               <span className="hidden sm:inline">{displayName}</span>
             </Link>
@@ -58,7 +64,10 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
                   {item.label}
                 </Link>
               ))}
-              <Link href="/book" className={buttonVariants({ size: "sm", className: "rounded-full" })}>
+              <Link
+                href="/book"
+                className={buttonVariants({ size: "sm", className: "rounded-full" })}
+              >
                 {t(locale, "public.bookAppointment")}
               </Link>
             </nav>
@@ -67,7 +76,9 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
             <button
               className="md:hidden flex items-center justify-center min-h-11 min-w-11 rounded-full hover:bg-muted transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? t(locale, "public.closeMenu") : t(locale, "public.openMenu")}
+              aria-label={
+                mobileMenuOpen ? t(locale, "public.closeMenu") : t(locale, "public.openMenu")
+              }
               aria-expanded={mobileMenuOpen}
               aria-controls="floating-mobile-nav"
             >

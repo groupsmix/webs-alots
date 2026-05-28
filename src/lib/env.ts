@@ -27,14 +27,34 @@ interface EnvRule {
 
 const ENV_RULES: EnvRule[] = [
   // ── Core (required for the app to function) ────────────────────────
-  { name: "NEXT_PUBLIC_SUPABASE_URL", required: true, description: "Supabase project URL", group: "core" },
-  { name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", required: true, description: "Supabase anonymous key", group: "core" },
+  {
+    name: "NEXT_PUBLIC_SUPABASE_URL",
+    required: true,
+    description: "Supabase project URL",
+    group: "core",
+  },
+  {
+    name: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    required: true,
+    description: "Supabase anonymous key",
+    group: "core",
+  },
 
   // ── Auth / Security ────────────────────────────────────────────────
-  { name: "BOOKING_TOKEN_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for booking verification tokens (required in production)", group: "auth" },
+  {
+    name: "BOOKING_TOKEN_SECRET",
+    required: process.env.NODE_ENV === "production",
+    description: "HMAC secret for booking verification tokens (required in production)",
+    group: "auth",
+  },
   // R-15: Set to the previous BOOKING_TOKEN_SECRET during key rotation.
   // Remove after the overlap window (>= booking token TTL, 15 min).
-  { name: "BOOKING_TOKEN_SECRET_OLD", required: false, description: "Previous HMAC secret — set during rotation, remove after overlap window", group: "auth" },
+  {
+    name: "BOOKING_TOKEN_SECRET_OLD",
+    required: false,
+    description: "Previous HMAC secret — set during rotation, remove after overlap window",
+    group: "auth",
+  },
 
   // ── Phone Auth (Twilio SMS OTP) ──────────────────────────────────────
   // These are NOT required at startup. They are only needed when
@@ -47,70 +67,190 @@ const ENV_RULES: EnvRule[] = [
   //   - TWILIO_MESSAGE_SERVICE_SID
 
   // ── Multi-tenant ───────────────────────────────────────────────────
-  { name: "ROOT_DOMAIN", required: process.env.NODE_ENV === "production", description: "Root domain for subdomain routing (required in production)", group: "tenant" },
-  { name: "NEXT_PUBLIC_SITE_URL", required: process.env.NODE_ENV === "production", description: "Public site URL for CSRF and links (required in production)", group: "tenant" },
+  {
+    name: "ROOT_DOMAIN",
+    required: process.env.NODE_ENV === "production",
+    description: "Root domain for subdomain routing (required in production)",
+    group: "tenant",
+  },
+  {
+    name: "NEXT_PUBLIC_SITE_URL",
+    required: process.env.NODE_ENV === "production",
+    description: "Public site URL for CSRF and links (required in production)",
+    group: "tenant",
+  },
 
   // ── Supabase Service Role (needed for rate limiter, cron, admin ops) ─
-  { name: "SUPABASE_SERVICE_ROLE_KEY", required: process.env.NODE_ENV === "production", description: "Required server-only key for admin Supabase operations (required in production)", group: "core" },
+  {
+    name: "SUPABASE_SERVICE_ROLE_KEY",
+    required: process.env.NODE_ENV === "production",
+    description: "Required server-only key for admin Supabase operations (required in production)",
+    group: "core",
+  },
 
   // ── Cloudflare R2 Storage ──────────────────────────────────────────
-  { name: "R2_ACCOUNT_ID", required: false, description: "Cloudflare R2 account ID", group: "storage" },
-  { name: "R2_ACCESS_KEY_ID", required: false, description: "Cloudflare R2 access key", group: "storage" },
-  { name: "R2_SECRET_ACCESS_KEY", required: false, description: "Cloudflare R2 secret key", group: "storage" },
-  { name: "R2_BUCKET_NAME", required: false, description: "Cloudflare R2 bucket name", group: "storage" },
+  {
+    name: "R2_ACCOUNT_ID",
+    required: false,
+    description: "Cloudflare R2 account ID",
+    group: "storage",
+  },
+  {
+    name: "R2_ACCESS_KEY_ID",
+    required: false,
+    description: "Cloudflare R2 access key",
+    group: "storage",
+  },
+  {
+    name: "R2_SECRET_ACCESS_KEY",
+    required: false,
+    description: "Cloudflare R2 secret key",
+    group: "storage",
+  },
+  {
+    name: "R2_BUCKET_NAME",
+    required: false,
+    description: "Cloudflare R2 bucket name",
+    group: "storage",
+  },
   // Audit Finding #8: PHI file paths and signed URLs are derived from this
   // secret. A hardcoded fallback ("default-salt") is never acceptable in
   // production, so we refuse to boot without a dedicated R2_SIGNED_URL_SECRET.
-  { name: "R2_SIGNED_URL_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for R2 signed URLs and upload filename hashing (required in production; `openssl rand -hex 32`)", group: "storage" },
+  {
+    name: "R2_SIGNED_URL_SECRET",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "HMAC secret for R2 signed URLs and upload filename hashing (required in production; `openssl rand -hex 32`)",
+    group: "storage",
+  },
   // Consumed by `src/lib/r2-cleanup.ts` — the fraction (0..1) of keys in a
   // reconciliation pass that, when classified as orphans, triggers a
   // Sentry alert and an error-level log line. Optional: defaults to 0.1
   // (10 %) when unset. The library ignores out-of-range or non-numeric
   // values rather than failing closed — see `readOrphanRateAlertThreshold`.
-  { name: "R2_ORPHAN_RATE_ALERT_THRESHOLD", required: false, description: "Orphan-rate threshold (0..1) above which the R2 cleanup cron emits a Sentry alert. Default: 0.1", group: "storage" },
+  {
+    name: "R2_ORPHAN_RATE_ALERT_THRESHOLD",
+    required: false,
+    description:
+      "Orphan-rate threshold (0..1) above which the R2 cleanup cron emits a Sentry alert. Default: 0.1",
+    group: "storage",
+  },
 
   // ── Payments ───────────────────────────────────────────────────────
-  { name: "STRIPE_SECRET_KEY", required: false, description: "Stripe secret key", group: "payments" },
-  { name: "STRIPE_WEBHOOK_SECRET", required: false, description: "Stripe webhook signing secret", group: "payments" },
+  {
+    name: "STRIPE_SECRET_KEY",
+    required: false,
+    description: "Stripe secret key",
+    group: "payments",
+  },
+  {
+    name: "STRIPE_WEBHOOK_SECRET",
+    required: false,
+    description: "Stripe webhook signing secret",
+    group: "payments",
+  },
   { name: "CMI_MERCHANT_ID", required: false, description: "CMI merchant ID", group: "payments" },
-  { name: "CMI_SECRET_KEY", required: false, description: "CMI HMAC secret key", group: "payments" },
+  {
+    name: "CMI_SECRET_KEY",
+    required: false,
+    description: "CMI HMAC secret key",
+    group: "payments",
+  },
 
   // ── WhatsApp ───────────────────────────────────────────────────────
-  { name: "META_APP_SECRET", required: false, description: "Meta app secret for webhook verification", group: "whatsapp" },
-  { name: "WHATSAPP_VERIFY_TOKEN", required: false, description: "WhatsApp webhook verify token", group: "whatsapp" },
+  {
+    name: "META_APP_SECRET",
+    required: false,
+    description: "Meta app secret for webhook verification",
+    group: "whatsapp",
+  },
+  {
+    name: "WHATSAPP_VERIFY_TOKEN",
+    required: false,
+    description: "WhatsApp webhook verify token",
+    group: "whatsapp",
+  },
 
   // ── Email ──────────────────────────────────────────────────────────
-  { name: "RESEND_API_KEY", required: false, description: "Resend API key for email", group: "email" },
+  {
+    name: "RESEND_API_KEY",
+    required: false,
+    description: "Resend API key for email",
+    group: "email",
+  },
 
   // ── AI / Chat ──────────────────────────────────────────────────────
-  { name: "OPENAI_API_KEY", required: false, description: "OpenAI API key for advanced chat", group: "ai" },
-  { name: "CLOUDFLARE_ACCOUNT_ID", required: false, description: "Cloudflare account ID for Workers AI", group: "ai" },
-  { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
+  {
+    name: "OPENAI_API_KEY",
+    required: false,
+    description: "OpenAI API key for advanced chat",
+    group: "ai",
+  },
+  {
+    name: "CLOUDFLARE_ACCOUNT_ID",
+    required: false,
+    description: "Cloudflare account ID for Workers AI",
+    group: "ai",
+  },
+  {
+    name: "CLOUDFLARE_AI_API_TOKEN",
+    required: false,
+    description: "Cloudflare AI API token",
+    group: "ai",
+  },
 
   // ── PHI Encryption (C-08) ──────────────────────────────────────────
   // C-08: PHI_ENCRYPTION_KEY is required in production. Without it, any code
   // path that calls encryptAndUpload silently fails, and any code path that
   // calls uploadToR2 directly stores plaintext PHI on R2.
-  { name: "PHI_ENCRYPTION_KEY", required: process.env.NODE_ENV === "production", description: "AES-256-GCM key for PHI file encryption (64 hex chars, required in production; `openssl rand -hex 32`)", group: "security" },
+  {
+    name: "PHI_ENCRYPTION_KEY",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "AES-256-GCM key for PHI file encryption (64 hex chars, required in production; `openssl rand -hex 32`)",
+    group: "security",
+  },
 
   // ── Observability ────────────────────────────────────────────────────
   // O-06: Sentry DSN is required in production so errors are not silently lost.
-  { name: "NEXT_PUBLIC_SENTRY_DSN", required: process.env.NODE_ENV === "production", description: "Sentry DSN for error monitoring (required in production)", group: "observability" },
+  {
+    name: "NEXT_PUBLIC_SENTRY_DSN",
+    required: process.env.NODE_ENV === "production",
+    description: "Sentry DSN for error monitoring (required in production)",
+    group: "observability",
+  },
 
   // ── Security: AV scanning (Audit Finding #5) ────────────────────────
   // AV_SCAN_URL is required in production so malicious files (PDFs,
   // polyglots) cannot be uploaded into clinical categories and served
   // back to staff browsers via signed R2 URLs.
-  { name: "AV_SCAN_URL", required: process.env.NODE_ENV === "production", description: "AV scanner endpoint (e.g. ClamAV REST) for upload virus scanning (required in production)", group: "security" },
+  {
+    name: "AV_SCAN_URL",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "AV scanner endpoint (e.g. ClamAV REST) for upload virus scanning (required in production)",
+    group: "security",
+  },
 
   // ── Cron ───────────────────────────────────────────────────────────
-  { name: "CRON_SECRET", required: process.env.NODE_ENV === "production", description: "Bearer token for cron endpoints (required in production)", group: "cron" },
+  {
+    name: "CRON_SECRET",
+    required: process.env.NODE_ENV === "production",
+    description: "Bearer token for cron endpoints (required in production)",
+    group: "cron",
+  },
 
   // ── Profile-header HMAC (R-02) ────────────────────────────────────
   // Distinct key from CRON_SECRET so leaking one does not compromise
   // both cron invocation and session-header forgery. No fallback —
   // missing key disables the optimization and forces the DB lookup.
-  { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
+  {
+    name: "PROFILE_HEADER_HMAC_KEY",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)",
+    group: "auth",
+  },
 
   // AUDIT-15: Removed duplicate PHI_ENCRYPTION_KEY entry (was listed at
   // line ~91 under "security" group and again here under "encryption").
@@ -123,11 +263,38 @@ const ENV_RULES: EnvRule[] = [
   // Cloudflare auth: either CLOUDFLARE_API_TOKEN (scoped) or
   // CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (global key). Both are optional
   // here — the cross-field check runs inside validateEnv().
-  { name: "CLOUDFLARE_API_TOKEN", required: false, description: "Cloudflare scoped API token for DNS management", group: "domains" },
-  { name: "CLOUDFLARE_API_KEY", required: false, description: "Cloudflare Global API Key (alternative to API token)", group: "domains" },
-  { name: "CLOUDFLARE_EMAIL", required: false, description: "Cloudflare account email (required with Global API Key)", group: "domains" },
-  { name: "CLOUDFLARE_ZONE_ID", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone ID for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
-  { name: "CLOUDFLARE_ZONE_NAME", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone (root domain) name for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+  {
+    name: "CLOUDFLARE_API_TOKEN",
+    required: false,
+    description: "Cloudflare scoped API token for DNS management",
+    group: "domains",
+  },
+  {
+    name: "CLOUDFLARE_API_KEY",
+    required: false,
+    description: "Cloudflare Global API Key (alternative to API token)",
+    group: "domains",
+  },
+  {
+    name: "CLOUDFLARE_EMAIL",
+    required: false,
+    description: "Cloudflare account email (required with Global API Key)",
+    group: "domains",
+  },
+  {
+    name: "CLOUDFLARE_ZONE_ID",
+    required: customDomainsEnabledFromEnv(),
+    description:
+      "Cloudflare zone ID for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)",
+    group: "domains",
+  },
+  {
+    name: "CLOUDFLARE_ZONE_NAME",
+    required: customDomainsEnabledFromEnv(),
+    description:
+      "Cloudflare zone (root domain) name for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)",
+    group: "domains",
+  },
 ];
 
 /**
@@ -216,10 +383,13 @@ export function enforceEnvValidation(): void {
     }
 
     for (const [group, vars] of grouped) {
-      logger.info(`Optional env vars missing for "${group}" (feature will be disabled):\n${vars.join("\n")}`, {
-        context: "env-validation",
-        group,
-      });
+      logger.info(
+        `Optional env vars missing for "${group}" (feature will be disabled):\n${vars.join("\n")}`,
+        {
+          context: "env-validation",
+          group,
+        },
+      );
     }
 
     // F-34: Emit Sentry alert for WhatsApp provider degradation in production
@@ -329,8 +499,7 @@ export function enforceSecurityFlagAcknowledgments(): void {
   if (process.env.NODE_ENV !== "production") return;
 
   const violations = SECURITY_FLAG_ACKNOWLEDGMENTS.filter(
-    ({ flag, ack }) =>
-      process.env[flag] === "true" && process.env[ack] !== "true",
+    ({ flag, ack }) => process.env[flag] === "true" && process.env[ack] !== "true",
   );
 
   if (violations.length === 0) return;
@@ -365,10 +534,10 @@ export function enforcePhiMaskingPolicy(): void {
   if (masking === "none" && !allowUnmasked) {
     const message =
       "[STARTUP HEALTH CHECK FAILED] NEXT_PUBLIC_DATA_MASKING=none is not allowed in production.\n" +
-      "Production must default to \"partial\" or \"full\" so patient PHI is never\n" +
+      'Production must default to "partial" or "full" so patient PHI is never\n' +
       "accidentally exposed in the UI. To intentionally disable masking (e.g. for an\n" +
       "internal staff-only deployment), set ALLOW_UNMASKED_PHI=true alongside\n" +
-      "NEXT_PUBLIC_DATA_MASKING=none. See SECURITY.md → \"PHI Masking Defaults\".";
+      'NEXT_PUBLIC_DATA_MASKING=none. See SECURITY.md → "PHI Masking Defaults".';
     logger.error(message, { context: "env-validation", check: "phi-masking" });
     throw new Error(message);
   }

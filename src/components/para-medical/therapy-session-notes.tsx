@@ -1,8 +1,14 @@
 "use client";
 
 import {
-  Brain, Lock, Shield, AlertTriangle, Calendar,
-  ChevronDown, ChevronUp, Clock,
+  Brain,
+  Lock,
+  Shield,
+  AlertTriangle,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Clock,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +37,7 @@ export function TherapySessionNotes({ sessions }: TherapySessionNotesProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const sorted = [...sessions].sort(
-    (a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+    (a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime(),
   );
 
   return (
@@ -48,8 +54,12 @@ export function TherapySessionNotes({ sessions }: TherapySessionNotesProps) {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-purple-600">
               {sessions.filter((s) => s.mood_rating !== null).length > 0
-                ? (sessions.filter((s) => s.mood_rating !== null).reduce((s, n) => s + (n.mood_rating ?? 0), 0) /
-                  sessions.filter((s) => s.mood_rating !== null).length).toFixed(1)
+                ? (
+                    sessions
+                      .filter((s) => s.mood_rating !== null)
+                      .reduce((s, n) => s + (n.mood_rating ?? 0), 0) /
+                    sessions.filter((s) => s.mood_rating !== null).length
+                  ).toFixed(1)
                 : "—"}
             </p>
             <p className="text-xs text-muted-foreground">Avg Mood Rating</p>
@@ -69,7 +79,9 @@ export function TherapySessionNotes({ sessions }: TherapySessionNotesProps) {
 
       {/* Session list */}
       {sorted.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-8">No therapy sessions recorded.</p>
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No therapy sessions recorded.
+        </p>
       )}
       {sorted.map((session) => {
         const isExpanded = expandedId === session.id;
@@ -85,7 +97,9 @@ export function TherapySessionNotes({ sessions }: TherapySessionNotesProps) {
                   <div>
                     <CardTitle className="text-sm flex items-center gap-2">
                       Session #{session.session_number}
-                      {session.is_confidential && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                      {session.is_confidential && (
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {session.patient_name} &middot; {session.session_date}
@@ -107,11 +121,17 @@ export function TherapySessionNotes({ sessions }: TherapySessionNotesProps) {
                       {session.risk_assessment}
                     </Badge>
                   )}
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
               <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {session.duration_minutes} min</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {session.duration_minutes} min
+                </span>
               </div>
             </CardHeader>
 
@@ -156,7 +176,9 @@ export function TherapySessionNotes({ sessions }: TherapySessionNotesProps) {
                   <div className="p-3 rounded-lg border">
                     <p className="text-xs font-medium mb-1">Risk Assessment</p>
                     <span className={`text-xs font-medium ${RISK_COLORS[session.risk_assessment]}`}>
-                      {session.risk_assessment.charAt(0).toUpperCase() + session.risk_assessment.slice(1)} Risk
+                      {session.risk_assessment.charAt(0).toUpperCase() +
+                        session.risk_assessment.slice(1)}{" "}
+                      Risk
                     </span>
                   </div>
                 )}

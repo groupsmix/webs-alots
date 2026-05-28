@@ -37,11 +37,7 @@ export const SUBSCRIPTION_PLANS: Record<PlanSlug, SubscriptionPlan> = {
     price: 0,
     currency: "MAD",
     stripePriceId: null,
-    features: [
-      "basic_booking",
-      "website",
-      "5_appointments_per_month",
-    ],
+    features: ["basic_booking", "website", "5_appointments_per_month"],
     limits: {
       appointmentsPerMonth: 5,
       staffMembers: 1,
@@ -150,9 +146,7 @@ export const FEATURE_LABELS: Record<string, string> = {
 
 /** Get a plan by its Stripe Price ID. */
 export function getPlanByPriceId(priceId: string): SubscriptionPlan | undefined {
-  return Object.values(SUBSCRIPTION_PLANS).find(
-    (plan) => plan.stripePriceId === priceId,
-  );
+  return Object.values(SUBSCRIPTION_PLANS).find((plan) => plan.stripePriceId === priceId);
 }
 
 /** All plan slugs in upgrade order. */

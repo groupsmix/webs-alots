@@ -147,11 +147,15 @@ function buildPatientContext(
   }
 
   if (ctx?.currentMedications?.length) {
-    parts.push(`- Médicaments actuels: ${sanitizeUntrustedText(ctx.currentMedications.join(", "))}`);
+    parts.push(
+      `- Médicaments actuels: ${sanitizeUntrustedText(ctx.currentMedications.join(", "))}`,
+    );
   }
 
   if (ctx?.chronicConditions?.length) {
-    parts.push(`- Conditions chroniques: ${sanitizeUntrustedText(ctx.chronicConditions.join(", "))}`);
+    parts.push(
+      `- Conditions chroniques: ${sanitizeUntrustedText(ctx.chronicConditions.join(", "))}`,
+    );
   }
 
   parts.push(`<<UNTRUSTED_PATIENT_INPUT_END>>`);
@@ -364,9 +368,7 @@ export const POST = withAuthValidation(
           doctorId,
           contentPreview: content.slice(0, 300),
         });
-        return apiInternalError(
-          "La réponse IA n'a pas pu être interprétée. Veuillez réessayer.",
-        );
+        return apiInternalError("La réponse IA n'a pas pu être interprétée. Veuillez réessayer.");
       }
 
       // Log AI usage for billing (fire-and-forget)

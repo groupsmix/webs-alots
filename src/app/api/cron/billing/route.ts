@@ -48,7 +48,11 @@ async function handler(request: NextRequest) {
   // data integrity but acts as defense-in-depth.
   const subs = (subscriptions ?? []).filter((sub) => {
     if (!sub.clinic_id) {
-      results.push({ clinicId: "unknown", success: false, error: "Missing clinic_id — skipped for tenant safety" });
+      results.push({
+        clinicId: "unknown",
+        success: false,
+        error: "Missing clinic_id — skipped for tenant safety",
+      });
       return false;
     }
     try {
@@ -66,9 +70,7 @@ async function handler(request: NextRequest) {
 
   for (let i = 0; i < subs.length; i += BATCH_SIZE) {
     const batch = subs.slice(i, i + BATCH_SIZE);
-    const settled = await Promise.allSettled(
-      batch.map((sub) => processRenewal(sub.clinic_id)),
-    );
+    const settled = await Promise.allSettled(batch.map((sub) => processRenewal(sub.clinic_id)));
     for (let j = 0; j < batch.length; j++) {
       const outcome = settled[j];
       if (outcome.status === "fulfilled") {

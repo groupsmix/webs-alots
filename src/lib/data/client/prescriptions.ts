@@ -28,7 +28,10 @@ interface PrescriptionRaw {
   created_at: string;
 }
 
-export async function fetchPrescriptions(clinicId: string, doctorId?: string): Promise<PrescriptionView[]> {
+export async function fetchPrescriptions(
+  clinicId: string,
+  doctorId?: string,
+): Promise<PrescriptionView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
@@ -47,10 +50,16 @@ export async function fetchPrescriptions(clinicId: string, doctorId?: string): P
   }));
 }
 
-async function _fetchPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionView[]> {
+async function _fetchPatientPrescriptions(
+  clinicId: string,
+  patientId: string,
+): Promise<PrescriptionView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<PrescriptionRaw>("prescriptions", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["created_at", { ascending: false }],
   });
   return rows.map((r) => ({
@@ -63,4 +72,3 @@ async function _fetchPatientPrescriptions(clinicId: string, patientId: string): 
     notes: r.notes ?? undefined,
   }));
 }
-

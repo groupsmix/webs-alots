@@ -13,13 +13,13 @@ import { withAuth } from "@/lib/with-auth";
  *
  * Create an emergency slot (doctor only) or book an existing one.
  */
-export const POST = withAuthValidation(emergencySlotSchema, async (body, request, { supabase }) => {
-
+export const POST = withAuthValidation(
+  emergencySlotSchema,
+  async (body, request, { supabase }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
     if (body.action === "create") {
-
       // Input length validation to prevent DoS via oversized payloads
       if (body.reason && body.reason.length > 1000) {
         return apiError("Reason exceeds maximum allowed length");
@@ -41,7 +41,9 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
       // Calculate end time with midnight overflow guard
       const { endTime, overflows } = computeEndTime(body.startTime, body.durationMin);
       if (overflows) {
-        return apiError("Emergency slot would extend past midnight. Please choose an earlier time or shorter duration.");
+        return apiError(
+          "Emergency slot would extend past midnight. Please choose an earlier time or shorter duration.",
+        );
       }
 
       const { data: slot, error: insertError } = await supabase
@@ -96,15 +98,15 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
 
       // Find or create patient (prefer phone-based lookup to avoid name collisions)
       const patientId = await findOrCreatePatient(
-        supabase, clinicId, body.patientId, body.patientName,
+        supabase,
+        clinicId,
+        body.patientId,
+        body.patientName,
         { phone: body.patientPhone },
       );
       if (!patientId) {
         // Rollback: release the slot claim if patient resolution fails
-        await supabase
-          .from("emergency_slots")
-          .update({ is_booked: false })
-          .eq("id", body.slotId);
+        await supabase.from("emergency_slots").update({ is_booked: false }).eq("id", body.slotId);
         return apiInternalError("Failed to resolve patient");
       }
 
@@ -135,10 +137,7 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
 
       if (apptError || !appointment) {
         // Rollback: release the slot claim if appointment creation fails
-        await supabase
-          .from("emergency_slots")
-          .update({ is_booked: false })
-          .eq("id", body.slotId);
+        await supabase.from("emergency_slots").update({ is_booked: false }).eq("id", body.slotId);
 
         return apiInternalError("Failed to create appointment");
       }
@@ -160,7 +159,9 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
     }
 
     return apiError("action must be 'create' or 'book'");
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);
 
 /**
  * GET /api/booking/emergency-slot?doctorId=...&date=...

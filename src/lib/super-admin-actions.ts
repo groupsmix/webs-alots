@@ -12,15 +12,15 @@
 
 import { requireRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
-import { staffWelcomeEmail, clinicSuspendedEmail, clinicActivatedEmail } from "@/lib/email-templates";
+import {
+  staffWelcomeEmail,
+  clinicSuspendedEmail,
+  clinicActivatedEmail,
+} from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
-import type {
-  ClinicType,
-  ClinicTier,
-  Json,
-} from "@/lib/types/database";
+import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
 
 /**
  * Server-side Supabase client scoped to super_admin operations.
@@ -109,7 +109,6 @@ export interface CreateUserInput {
   email?: string;
 }
 
-
 export interface CreateServiceInput {
   clinic_id: string;
   name: string;
@@ -181,13 +180,9 @@ export async function updateClinicStatus(
     .eq("id", clinicId)
     .single();
 
-  const { error } = await supabase
-    .from("clinics")
-    .update({ status })
-    .eq("id", clinicId);
+  const { error } = await supabase.from("clinics").update({ status }).eq("id", clinicId);
 
-  if (error)
-    throw new Error(`Failed to update clinic status: ${error.message}`);
+  if (error) throw new Error(`Failed to update clinic status: ${error.message}`);
 
   // Invalidate subdomain cache so middleware picks up the new status
   if (clinic?.subdomain) {
@@ -205,21 +200,26 @@ export async function updateClinicStatus(
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", clinicId, error: err });
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      clinicId,
+      error: err,
+    });
   }
 
   // Send email notification to clinic admin
   if (clinic?.owner_email) {
     try {
-      const template = status === "suspended"
-        ? clinicSuspendedEmail({
-            clinicName: clinic.name ?? "Your Clinic",
-            adminName: clinic.owner_name ?? "Admin",
-          })
-        : clinicActivatedEmail({
-            clinicName: clinic.name ?? "Your Clinic",
-            adminName: clinic.owner_name ?? "Admin",
-          });
+      const template =
+        status === "suspended"
+          ? clinicSuspendedEmail({
+              clinicName: clinic.name ?? "Your Clinic",
+              adminName: clinic.owner_name ?? "Admin",
+            })
+          : clinicActivatedEmail({
+              clinicName: clinic.name ?? "Your Clinic",
+              adminName: clinic.owner_name ?? "Admin",
+            });
       await sendEmail({ to: clinic.owner_email, ...template });
     } catch (emailErr) {
       logger.warn("Failed to send clinic status email", {
@@ -277,11 +277,14 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
             authId = existing.id;
           }
         } else {
-          logger.warn("Failed to create auth account for staff — user will be created without login", {
-            context: "super-admin-actions",
-            email: input.email,
-            error: authError.message,
-          });
+          logger.warn(
+            "Failed to create auth account for staff — user will be created without login",
+            {
+              context: "super-admin-actions",
+              email: input.email,
+              error: authError.message,
+            },
+          );
         }
       } else if (authUser?.user) {
         authId = authUser.user.id;
@@ -310,12 +313,15 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
 
     if (existingRow) {
       // auth_id is already taken by another users row — don't link it
-      logger.warn("auth_id already linked to another users row — creating staff without auth link", {
-        context: "super-admin-actions",
-        email: input.email,
-        authId,
-        existingUserId: existingRow.id,
-      });
+      logger.warn(
+        "auth_id already linked to another users row — creating staff without auth link",
+        {
+          context: "super-admin-actions",
+          email: input.email,
+          authId,
+          existingUserId: existingRow.id,
+        },
+      );
       authId = null;
     }
   }
@@ -373,12 +379,12 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
         type: "recovery",
         email: input.email,
         options: {
-          redirectTo: `${siteUrl}/login?reset=true`
-        }
+          redirectTo: `${siteUrl}/login?reset=true`,
+        },
       });
-      
+
       const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
-      
+
       const template = staffWelcomeEmail({
         staffName: input.name,
         clinicName: input.clinic_id,
@@ -488,10 +494,7 @@ export async function createTimeSlotsForDoctor(
     buffer_minutes: s.buffer_minutes ?? 10,
   }));
 
-  const { data, error } = await supabase
-    .from("time_slots")
-    .insert(rows)
-    .select();
+  const { data, error } = await supabase.from("time_slots").insert(rows).select();
 
   if (error) throw new Error(`Failed to create time slots: ${error.message}`);
   return (data ?? []) as TimeSlotRow[];
@@ -519,24 +522,15 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   // a server-side SUM.  If the function doesn't exist yet we fall back
   // to fetching only the `amount` column of completed payments and
   // summing client-side — still far cheaper than SELECT *.
-  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] =
-    await Promise.all([
-      supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
-      supabase
-        .from("users")
-        .select("id", { count: "exact", head: true })
-        .in("role", ["patient"]),
-      supabase
-        .from("appointments")
-        .select("id", { count: "exact", head: true }),
-      // Fetch only the `amount` column of completed payments.
-      // A DB-level SUM via RPC would be ideal but the function may not
-      // exist yet — this is still far cheaper than SELECT *.
-      supabase
-        .from("payments")
-        .select("amount")
-        .eq("status", "completed"),
-    ]);
+  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
+    supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
+    supabase.from("users").select("id", { count: "exact", head: true }).in("role", ["patient"]),
+    supabase.from("appointments").select("id", { count: "exact", head: true }),
+    // Fetch only the `amount` column of completed payments.
+    // A DB-level SUM via RPC would be ideal but the function may not
+    // exist yet — this is still far cheaper than SELECT *.
+    supabase.from("payments").select("amount").eq("status", "completed"),
+  ]);
 
   const clinics = (clinicsRes.data ?? []) as ClinicRow[];
   const completedPayments = (revenueRes.data ?? []) as { amount: number }[];
@@ -544,10 +538,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   const totalClinics = clinics.length;
   const activeClinics = clinics.filter((c) => c.status === "active").length;
   const totalPatients = patientCountRes.count ?? 0;
-  const totalRevenue = completedPayments.reduce(
-    (sum, p) => sum + (p.amount ?? 0),
-    0,
-  );
+  const totalRevenue = completedPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
   return {
     clinics,
@@ -610,7 +601,11 @@ export async function fetchBillingRecords(): Promise<BillingRecord[]> {
       amountDue: p.amount ?? 0,
       amountPaid: isPaid ? (p.amount ?? 0) : 0,
       currency: "MAD",
-      status: (isPaid ? "paid" : p.status === "pending" ? "pending" : "overdue") as BillingRecord["status"],
+      status: (isPaid
+        ? "paid"
+        : p.status === "pending"
+          ? "pending"
+          : "overdue") as BillingRecord["status"],
       invoiceDate: createdDate,
       dueDate: createdDate,
       paidDate: isPaid ? createdDate : undefined,
@@ -638,7 +633,9 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("announcements")
-    .select("id, title, message, type, target, target_label, published_at, expires_at, is_active, created_by, created_at")
+    .select(
+      "id, title, message, type, target, target_label, published_at, expires_at, is_active, created_by, created_at",
+    )
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
@@ -761,10 +758,16 @@ export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
     description: row.description ?? "",
     popular: row.is_popular ?? false,
     pricing: (row.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
-    features: (row.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
+    features:
+      (row.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
     limits: (row.limits as PricingTierRow["limits"]) ?? {
-      maxDoctors: 1, maxPatients: 0, maxAppointmentsPerMonth: 0,
-      storageGB: 1, customDomain: false, apiAccess: false, whiteLabel: false,
+      maxDoctors: 1,
+      maxPatients: 0,
+      maxAppointmentsPerMonth: 0,
+      storageGB: 1,
+      customDomain: false,
+      apiAccess: false,
+      whiteLabel: false,
     },
   }));
 }
@@ -860,9 +863,7 @@ export interface RevenueStats {
 export async function fetchRevenueStats(): Promise<RevenueStats> {
   const supabase = await rawClient();
 
-  const { data: clinics } = await supabase
-    .from("clinics")
-    .select("id, config, created_at");
+  const { data: clinics } = await supabase.from("clinics").select("id, config, created_at");
 
   const planBreakdown: Record<string, number> = {
     free: 0,
@@ -947,15 +948,22 @@ export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> 
       id: p.id,
       date: p.created_at?.split("T")[0] ?? "",
       amount: p.amount ?? 0,
-      status: (p.status === "completed" ? "paid" : p.status === "pending" ? "pending" : "overdue") as ClientInvoice["status"],
+      status: (p.status === "completed"
+        ? "paid"
+        : p.status === "pending"
+          ? "pending"
+          : "overdue") as ClientInvoice["status"],
       paidDate: p.status === "completed" ? p.created_at?.split("T")[0] : undefined,
     }));
 
     const subStatus: ClientSubscription["status"] =
-      c.status === "active" ? "active"
-        : c.status === "suspended" ? "suspended"
-        : c.status === "trial" ? "trial"
-        : "cancelled";
+      c.status === "active"
+        ? "active"
+        : c.status === "suspended"
+          ? "suspended"
+          : c.status === "trial"
+            ? "trial"
+            : "cancelled";
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];

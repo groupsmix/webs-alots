@@ -70,7 +70,9 @@ export function DepartmentDashboard({ stats }: DepartmentDashboardProps) {
               <BedDouble className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{totalOccupied}/{totalBeds}</p>
+              <p className="text-2xl font-bold">
+                {totalOccupied}/{totalBeds}
+              </p>
               <p className="text-xs text-muted-foreground">Beds Occupied</p>
             </div>
           </CardContent>
@@ -103,7 +105,8 @@ export function DepartmentDashboard({ stats }: DepartmentDashboardProps) {
         ) : (
           <div className="space-y-2">
             {stats.map((dept) => {
-              const occupancy = dept.totalBeds > 0 ? Math.round((dept.occupiedBeds / dept.totalBeds) * 100) : 0;
+              const occupancy =
+                dept.totalBeds > 0 ? Math.round((dept.occupiedBeds / dept.totalBeds) * 100) : 0;
               return (
                 <Card key={dept.id}>
                   <CardContent className="p-3">

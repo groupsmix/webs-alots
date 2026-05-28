@@ -31,9 +31,9 @@ test.describe("Login flow", () => {
   test("shows validation error for empty email submission", async ({ page }) => {
     // The form has required fields — verify they report invalid when empty
     // (check before clicking submit to avoid navigation destroying context)
-    const requiredInput = page.locator(
-      'input[required], input[type="email"], input[type="tel"]',
-    ).first();
+    const requiredInput = page
+      .locator('input[required], input[type="email"], input[type="tel"]')
+      .first();
     const isInvalid = await requiredInput.evaluate(
       (el) => !(el as HTMLInputElement).checkValidity(),
     );
@@ -51,7 +51,9 @@ test.describe("Login flow", () => {
     await submitBtn.click();
 
     // Wait for an error message to appear
-    const errorMessage = page.locator('[role="alert"], .text-red-500, .text-destructive, [data-testid="error"]');
+    const errorMessage = page.locator(
+      '[role="alert"], .text-red-500, .text-destructive, [data-testid="error"]',
+    );
     await expect(errorMessage.first()).toBeVisible({ timeout: 10_000 });
   });
 

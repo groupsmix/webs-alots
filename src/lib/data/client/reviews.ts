@@ -50,4 +50,3 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
     response: r.response ?? undefined,
   }));
 }
-

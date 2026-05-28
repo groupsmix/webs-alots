@@ -69,10 +69,16 @@ export async function fetchLabDashboardKPIs(clinicId: string): Promise<LabDashbo
   const pending = rows.filter((r) => r.status === "pending");
   const awaiting = rows.filter((r) => r.status === "awaiting_validation");
   const completedToday = rows.filter(
-    (r) => (r.status === "completed" || r.status === "validated") && r.completed_at && r.completed_at.startsWith(todayStr),
+    (r) =>
+      (r.status === "completed" || r.status === "validated") &&
+      r.completed_at &&
+      r.completed_at.startsWith(todayStr),
   );
   const completedThisWeek = rows.filter(
-    (r) => (r.status === "completed" || r.status === "validated") && r.completed_at && r.completed_at >= weekAgoStr,
+    (r) =>
+      (r.status === "completed" || r.status === "validated") &&
+      r.completed_at &&
+      r.completed_at >= weekAgoStr,
   );
 
   const completedWithTimes = rows.filter((r) => r.completed_at);
@@ -80,7 +86,10 @@ export async function fetchLabDashboardKPIs(clinicId: string): Promise<LabDashbo
     const hours = calcTurnaroundHours(r.ordered_at, r.completed_at);
     return sum + (hours ?? 0);
   }, 0);
-  const avgTurnaround = completedWithTimes.length > 0 ? Math.round((totalTurnaround / completedWithTimes.length) * 10) / 10 : 0;
+  const avgTurnaround =
+    completedWithTimes.length > 0
+      ? Math.round((totalTurnaround / completedWithTimes.length) * 10) / 10
+      : 0;
 
   const recentTests: LabDashboardTestView[] = rows.slice(0, 10).map((r) => ({
     id: r.id,
@@ -164,20 +173,43 @@ interface AdmissionRaw {
   status: string;
 }
 
-export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<ClinicCenterDashboardKPIs> {
+export async function fetchClinicCenterDashboardKPIs(
+  clinicId: string,
+): Promise<ClinicCenterDashboardKPIs> {
   const supabase = createClient();
 
   const [deptRes, bedRes, admissionRes, paymentsRes] = await Promise.all([
-  supabase.from("departments").select("id, clinic_id, name, code, is_active").eq("clinic_id", clinicId).eq("is_active", true),
-  supabase.from("beds").select("id, clinic_id, department_id, bed_number, status, patient_id").eq("clinic_id", clinicId),
-  supabase.from("admissions").select("id, clinic_id, patient_id, doctor_id, department_id, bed_id, admission_date, discharge_date, status").eq("clinic_id", clinicId),
-  supabase.from("payments").select("id, amount, created_at, appointment_id").eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase
+      .from("departments")
+      .select("id, clinic_id, name, code, is_active")
+      .eq("clinic_id", clinicId)
+      .eq("is_active", true),
+    supabase
+      .from("beds")
+      .select("id, clinic_id, department_id, bed_number, status, patient_id")
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("admissions")
+      .select(
+        "id, clinic_id, patient_id, doctor_id, department_id, bed_id, admission_date, discharge_date, status",
+      )
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("payments")
+      .select("id, amount, created_at, appointment_id")
+      .eq("clinic_id", clinicId)
+      .eq("status", "completed"),
   ]);
 
   const departments = (deptRes.data ?? []) as DepartmentRaw[];
   const beds = (bedRes.data ?? []) as BedRaw[];
   const admissions = (admissionRes.data ?? []) as AdmissionRaw[];
-  const payments = (paymentsRes.data ?? []) as { id: string; amount: number; created_at: string; appointment_id: string | null }[];
+  const payments = (paymentsRes.data ?? []) as {
+    id: string;
+    amount: number;
+    created_at: string;
+    appointment_id: string | null;
+  }[];
 
   const todayStr = getLocalDateStr();
 
@@ -195,7 +227,9 @@ export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<
   const departmentPatientLoad: DepartmentPatientLoad[] = departments.map((dept) => {
     const deptBeds = beds.filter((b) => b.department_id === dept.id);
     const deptOccupied = deptBeds.filter((b) => b.status === "occupied").length;
-    const activeAdmissions = admissions.filter((a) => a.department_id === dept.id && a.status === "admitted").length;
+    const activeAdmissions = admissions.filter(
+      (a) => a.department_id === dept.id && a.status === "admitted",
+    ).length;
     return {
       departmentId: dept.id,
       departmentName: dept.name,
@@ -251,4 +285,3 @@ export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<
     departmentRevenue,
   };
 }
-

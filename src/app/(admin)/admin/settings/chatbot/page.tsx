@@ -128,8 +128,7 @@ export default function ChatbotSettingsPage() {
         setConfig({
           enabled: configData.enabled ?? false,
           intelligence: (configData.intelligence as ChatbotConfig["intelligence"]) ?? "basic",
-          greeting:
-            configData.greeting || "Bonjour ! Comment puis-je vous aider ?",
+          greeting: configData.greeting || "Bonjour ! Comment puis-je vous aider ?",
           language: configData.language || "fr",
         });
       }
@@ -153,7 +152,9 @@ export default function ChatbotSettingsPage() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   async function saveConfig() {
@@ -163,19 +164,17 @@ export default function ChatbotSettingsPage() {
     const supabase = getSupabase();
 
     // Upsert chatbot config
-    const { error: configError } = await supabase
-      .from("chatbot_config")
-      .upsert(
-        {
-          clinic_id: clinicId,
-          enabled: config.enabled,
-          intelligence: config.intelligence,
-          greeting: config.greeting,
-          language: config.language,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "clinic_id" },
-      );
+    const { error: configError } = await supabase.from("chatbot_config").upsert(
+      {
+        clinic_id: clinicId,
+        enabled: config.enabled,
+        intelligence: config.intelligence,
+        greeting: config.greeting,
+        language: config.language,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "clinic_id" },
+    );
 
     if (configError) {
       void configError;
@@ -194,10 +193,7 @@ export default function ChatbotSettingsPage() {
         .eq("clinic_id", clinicId)
         .not("id", "in", `(${existingIds.join(",")})`);
     } else {
-      await supabase
-        .from("chatbot_faqs")
-        .delete()
-        .eq("clinic_id", clinicId);
+      await supabase.from("chatbot_faqs").delete().eq("clinic_id", clinicId);
     }
 
     // Upsert FAQs
@@ -216,10 +212,7 @@ export default function ChatbotSettingsPage() {
       if (faq.isNew) {
         await supabase.from("chatbot_faqs").insert(faqPayload);
       } else {
-        await supabase
-          .from("chatbot_faqs")
-          .update(faqPayload)
-          .eq("id", faq.id);
+        await supabase.from("chatbot_faqs").update(faqPayload).eq("id", faq.id);
       }
     }
 
@@ -258,9 +251,7 @@ export default function ChatbotSettingsPage() {
   }
 
   function updateFaq(id: string, field: keyof FaqEntry, value: unknown) {
-    setFaqs((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, [field]: value } : f)),
-    );
+    setFaqs((prev) => prev.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
   }
 
   if (loading) {
@@ -270,7 +261,9 @@ export default function ChatbotSettingsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -310,9 +303,7 @@ export default function ChatbotSettingsPage() {
             <div className="flex items-center gap-2">
               <Switch
                 checked={config.enabled}
-                onCheckedChange={(enabled) =>
-                  setConfig({ ...config, enabled })
-                }
+                onCheckedChange={(enabled) => setConfig({ ...config, enabled })}
               />
               <Badge variant={config.enabled ? "default" : "secondary"}>
                 {config.enabled ? "Activé" : "Désactivé"}
@@ -337,9 +328,7 @@ export default function ChatbotSettingsPage() {
               return (
                 <button
                   key={level.value}
-                  onClick={() =>
-                    setConfig({ ...config, intelligence: level.value })
-                  }
+                  onClick={() => setConfig({ ...config, intelligence: level.value })}
                   className={`relative flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
                     isSelected
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
@@ -351,16 +340,11 @@ export default function ChatbotSettingsPage() {
                       className={`h-5 w-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
                     />
                     <span className="font-medium text-sm">{level.label}</span>
-                    <Badge
-                      variant={level.badgeVariant}
-                      className="ml-auto text-[10px]"
-                    >
+                    <Badge variant={level.badgeVariant} className="ml-auto text-[10px]">
                       {level.badge}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {level.description}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{level.description}</p>
                 </button>
               );
             })}
@@ -382,9 +366,7 @@ export default function ChatbotSettingsPage() {
               <Label>Message de bienvenue</Label>
               <Textarea
                 value={config.greeting}
-                onChange={(e) =>
-                  setConfig({ ...config, greeting: e.target.value })
-                }
+                onChange={(e) => setConfig({ ...config, greeting: e.target.value })}
                 placeholder="Bonjour ! Comment puis-je vous aider ?"
                 rows={2}
               />
@@ -393,9 +375,7 @@ export default function ChatbotSettingsPage() {
               <Label>Langue par défaut</Label>
               <select
                 value={config.language}
-                onChange={(e) =>
-                  setConfig({ ...config, language: e.target.value })
-                }
+                onChange={(e) => setConfig({ ...config, language: e.target.value })}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="fr">Français</option>
@@ -425,8 +405,7 @@ export default function ChatbotSettingsPage() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Ajoutez des questions/réponses personnalisées. Le chatbot les
-            utilisera en priorité.
+            Ajoutez des questions/réponses personnalisées. Le chatbot les utilisera en priorité.
           </p>
         </CardHeader>
         <CardContent>
@@ -437,12 +416,7 @@ export default function ChatbotSettingsPage() {
               <p className="text-xs mt-1">
                 Ajoutez des questions fréquentes pour aider vos patients
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={addFaq}
-              >
+              <Button size="sm" variant="outline" className="mt-3" onClick={addFaq}>
                 <Plus className="h-4 w-4 mr-1" />
                 Ajouter une FAQ
               </Button>
@@ -467,9 +441,7 @@ export default function ChatbotSettingsPage() {
                     <div className="flex items-center gap-1">
                       <Switch
                         checked={faq.is_active}
-                        onCheckedChange={(active) =>
-                          updateFaq(faq.id, "is_active", active)
-                        }
+                        onCheckedChange={(active) => updateFaq(faq.id, "is_active", active)}
                       />
                       <Button
                         variant="ghost"
@@ -485,9 +457,7 @@ export default function ChatbotSettingsPage() {
                     <Label className="text-xs">Question</Label>
                     <Input
                       value={faq.question}
-                      onChange={(e) =>
-                        updateFaq(faq.id, "question", e.target.value)
-                      }
+                      onChange={(e) => updateFaq(faq.id, "question", e.target.value)}
                       placeholder="Ex: Est-ce que vous faites l'Invisalign ?"
                     />
                   </div>
@@ -495,17 +465,13 @@ export default function ChatbotSettingsPage() {
                     <Label className="text-xs">Réponse</Label>
                     <Textarea
                       value={faq.answer}
-                      onChange={(e) =>
-                        updateFaq(faq.id, "answer", e.target.value)
-                      }
+                      onChange={(e) => updateFaq(faq.id, "answer", e.target.value)}
                       placeholder="Ex: Oui, nous proposons Invisalign à partir de 15 000 MAD."
                       rows={2}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">
-                      Mots-clés (séparés par des virgules)
-                    </Label>
+                    <Label className="text-xs">Mots-clés (séparés par des virgules)</Label>
                     <Input
                       value={(faq.keywords ?? []).join(", ")}
                       onChange={(e) =>

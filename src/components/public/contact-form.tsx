@@ -55,14 +55,8 @@ export function ContactForm() {
             <Check className="h-8 w-8 text-green-600" />
           </div>
           <h3 className="text-lg font-semibold mb-2">{t("fr", "contact.successTitle")}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t("fr", "contact.successMessage")}
-          </p>
-          <Button
-            variant="outline"
-            className="mt-6"
-            onClick={() => setSubmitted(false)}
-          >
+          <p className="text-sm text-muted-foreground">{t("fr", "contact.successMessage")}</p>
+          <Button variant="outline" className="mt-6" onClick={() => setSubmitted(false)}>
             {t("fr", "contact.sendAnother")}
           </Button>
         </CardContent>
@@ -80,25 +74,21 @@ export function ContactForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">{t("fr", "contact.name")}</Label>
-              <Input id="name" name="name" placeholder={t("fr", "contact.namePlaceholder")} required />
+              <Input
+                id="name"
+                name="name"
+                placeholder={t("fr", "contact.namePlaceholder")}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">{t("fr", "contact.phone")}</Label>
-              <Input
-                id="phone"
-                name="phone"
-                placeholder="+212 6XX XX XX XX"
-              />
+              <Input id="phone" name="phone" placeholder="+212 6XX XX XX XX" />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">{t("fr", "contact.email")}</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="votre@email.com"
-            />
+            <Input id="email" name="email" type="email" placeholder="votre@email.com" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="subject">{t("fr", "contact.subject")}</Label>

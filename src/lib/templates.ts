@@ -8,16 +8,16 @@
  * branding / website config.
  */
 
-export type TemplateId =
-  | "modern"
-  | "classic"
-  | "elegant"
-  | "bold"
-  | "minimal"
-  | "arabic";
+export type TemplateId = "modern" | "classic" | "elegant" | "bold" | "minimal" | "arabic";
 
 /** Header layout variant */
-export type HeaderVariant = "top-sticky" | "top-transparent" | "side-left" | "bottom-bar" | "floating" | "overlay";
+export type HeaderVariant =
+  | "top-sticky"
+  | "top-transparent"
+  | "side-left"
+  | "bottom-bar"
+  | "floating"
+  | "overlay";
 
 /** Footer layout variant */
 export type FooterVariant = "classic-3col" | "minimal" | "centered" | "hidden";

@@ -15,14 +15,18 @@ test.describe("Booking full cycle", () => {
   test("booking page loads with step indicator or form", async ({ page }) => {
     await expect(page.locator("body")).not.toBeEmpty();
     // Should have interactive elements for the booking flow
-    const interactiveElements = page.locator("button, input, select, [role='button'], [role='radio'], [role='combobox']");
+    const interactiveElements = page.locator(
+      "button, input, select, [role='button'], [role='radio'], [role='combobox']",
+    );
     const count = await interactiveElements.count();
     expect(count).toBeGreaterThan(0);
   });
 
   test("booking page shows specialty or service selection", async ({ page }) => {
     // The booking flow should show selectable options (cards, buttons, or select)
-    const selectable = page.locator("button, [role='radio'], [role='option'], select, input[type='radio']");
+    const selectable = page.locator(
+      "button, [role='radio'], [role='option'], select, input[type='radio']",
+    );
     const count = await selectable.count();
     expect(count).toBeGreaterThan(0);
   });

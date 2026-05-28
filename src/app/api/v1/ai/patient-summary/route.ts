@@ -43,47 +43,44 @@ async function fetchPatientContext(
   clinicId: string,
 ) {
   // Fetch all context in parallel
-  const [
-    patientResult,
-    consultationsResult,
-    prescriptionsResult,
-    vitalsResult,
-  ] = await Promise.all([
-    // Patient basic info + metadata (allergies, conditions, DOB, gender stored in metadata)
-    supabase
-      .from("users")
-      .select("id, name, metadata")
-      .eq("id", patientId)
-      .eq("clinic_id", clinicId)
-      .single(),
+  const [patientResult, consultationsResult, prescriptionsResult, vitalsResult] = await Promise.all(
+    [
+      // Patient basic info + metadata (allergies, conditions, DOB, gender stored in metadata)
+      supabase
+        .from("users")
+        .select("id, name, metadata")
+        .eq("id", patientId)
+        .eq("clinic_id", clinicId)
+        .single(),
 
-    // Last 10 consultations
-    supabase
-      .from("consultation_notes")
-      .select("id, diagnosis, notes, content, created_at")
-      .eq("patient_id", patientId)
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false })
-      .limit(10),
+      // Last 10 consultations
+      supabase
+        .from("consultation_notes")
+        .select("id, diagnosis, notes, content, created_at")
+        .eq("patient_id", patientId)
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .limit(10),
 
-    // Recent prescriptions
-    supabase
-      .from("prescriptions")
-      .select("id, content, items, notes, created_at")
-      .eq("patient_id", patientId)
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false })
-      .limit(10),
+      // Recent prescriptions
+      supabase
+        .from("prescriptions")
+        .select("id, content, items, notes, created_at")
+        .eq("patient_id", patientId)
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .limit(10),
 
-    // Recent blood pressure readings (vitals)
-    supabase
-      .from("blood_pressure_readings")
-      .select("systolic, diastolic, heart_rate, reading_date, notes")
-      .eq("patient_id", patientId)
-      .eq("clinic_id", clinicId)
-      .order("reading_date", { ascending: false })
-      .limit(10),
-  ]);
+      // Recent blood pressure readings (vitals)
+      supabase
+        .from("blood_pressure_readings")
+        .select("systolic, diastolic, heart_rate, reading_date, notes")
+        .eq("patient_id", patientId)
+        .eq("clinic_id", clinicId)
+        .order("reading_date", { ascending: false })
+        .limit(10),
+    ],
+  );
 
   return {
     patient: patientResult.data,
@@ -122,9 +119,25 @@ Tu dois TOUJOURS répondre avec un JSON valide respectant ce format exact.`;
 
 function buildUserMessage(context: {
   patient: { name: string; metadata: Json | null };
-  consultations: { diagnosis: string | null; notes: string | null; content: Json | null; created_at: string | null }[];
-  prescriptions: { content: Json; items: Json | null; notes: string | null; created_at: string | null }[];
-  vitals: { systolic: number; diastolic: number; heart_rate: number | null; reading_date: string; notes: string | null }[];
+  consultations: {
+    diagnosis: string | null;
+    notes: string | null;
+    content: Json | null;
+    created_at: string | null;
+  }[];
+  prescriptions: {
+    content: Json;
+    items: Json | null;
+    notes: string | null;
+    created_at: string | null;
+  }[];
+  vitals: {
+    systolic: number;
+    diastolic: number;
+    heart_rate: number | null;
+    reading_date: string;
+    notes: string | null;
+  }[];
 }): string {
   const { patient, consultations, prescriptions, vitals } = context;
   const meta = (patient.metadata ?? {}) as PatientMetadata;
@@ -163,7 +176,9 @@ function buildUserMessage(context: {
   if (consultations.length > 0) {
     parts.push(`\nDERNIÈRES CONSULTATIONS (${consultations.length}):`);
     for (const c of consultations) {
-      const date = c.created_at ? new Date(c.created_at).toLocaleDateString("fr-FR") : "Date inconnue";
+      const date = c.created_at
+        ? new Date(c.created_at).toLocaleDateString("fr-FR")
+        : "Date inconnue";
       const diag = c.diagnosis ? sanitizeUntrustedText(c.diagnosis) : "Pas de diagnostic";
       const notes = c.notes ? ` — ${sanitizeUntrustedText(c.notes).slice(0, 200)}` : "";
       parts.push(`- ${date}: ${diag}${notes}`);
@@ -174,10 +189,14 @@ function buildUserMessage(context: {
   if (prescriptions.length > 0) {
     parts.push(`\nDERNIÈRES ORDONNANCES (${prescriptions.length}):`);
     for (const rx of prescriptions) {
-      const date = rx.created_at ? new Date(rx.created_at).toLocaleDateString("fr-FR") : "Date inconnue";
+      const date = rx.created_at
+        ? new Date(rx.created_at).toLocaleDateString("fr-FR")
+        : "Date inconnue";
       const items = rx.items as { name?: string; dosage?: string }[] | null;
       if (items?.length) {
-        const medNames = items.map((item) => sanitizeUntrustedText(item.name ?? "Inconnu")).join(", ");
+        const medNames = items
+          .map((item) => sanitizeUntrustedText(item.name ?? "Inconnu"))
+          .join(", ");
         parts.push(`- ${date}: ${medNames}`);
       } else {
         parts.push(`- ${date}: ${sanitizeUntrustedText(rx.notes ?? "Ordonnance")}`);
@@ -272,9 +291,7 @@ export const POST = withAuthValidation(
     // Rate limit per doctor (30/day)
     const allowed = await aiPatientSummaryLimiter.check(`ai-summary:${doctorId}`);
     if (!allowed) {
-      return apiRateLimited(
-        "Limite quotidienne atteinte (30 résumés IA/jour). Réessayez demain.",
-      );
+      return apiRateLimited("Limite quotidienne atteinte (30 résumés IA/jour). Réessayez demain.");
     }
 
     // Check for cached summary (unless force refresh requested)
@@ -396,9 +413,7 @@ export const POST = withAuthValidation(
           doctorId,
           contentPreview: content.slice(0, 300),
         });
-        return apiInternalError(
-          "La réponse IA n'a pas pu être interprétée. Veuillez réessayer.",
-        );
+        return apiInternalError("La réponse IA n'a pas pu être interprétée. Veuillez réessayer.");
       }
 
       const generatedAt = new Date().toISOString();

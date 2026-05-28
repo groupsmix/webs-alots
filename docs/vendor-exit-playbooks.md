@@ -26,11 +26,11 @@ curl -s -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
 
 ### Alternative Provider
 
-| Option | Effort | Notes |
-|--------|--------|-------|
-| **Neon** (serverless Postgres) | Medium | Compatible wire protocol; RLS policies portable |
-| **Self-hosted Postgres** (on Railway / Render / bare VM) | High | Full control; must replicate Auth + RLS |
-| **PlanetScale** (MySQL) | Very High | Schema rewrite required; last resort |
+| Option                                                   | Effort    | Notes                                           |
+| -------------------------------------------------------- | --------- | ----------------------------------------------- |
+| **Neon** (serverless Postgres)                           | Medium    | Compatible wire protocol; RLS policies portable |
+| **Self-hosted Postgres** (on Railway / Render / bare VM) | High      | Full control; must replicate Auth + RLS         |
+| **PlanetScale** (MySQL)                                  | Very High | Schema rewrite required; last resort            |
 
 ### IP Ownership
 
@@ -78,13 +78,13 @@ curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
 
 ### Alternative Provider
 
-| Component | Alternative | Effort |
-|-----------|------------|--------|
-| **Workers** (compute) | Vercel Edge Functions, AWS Lambda@Edge, Deno Deploy | Medium (OpenNext adapter swap) |
-| **R2** (object storage) | AWS S3, GCS, Backblaze B2 | Low (S3-compatible API) |
-| **KV** (key-value) | Upstash Redis, DynamoDB | Low (small dataset) |
-| **CDN** | Fastly, AWS CloudFront, Vercel | Medium |
-| **DNS** | AWS Route 53, Google Cloud DNS | Low |
+| Component               | Alternative                                         | Effort                         |
+| ----------------------- | --------------------------------------------------- | ------------------------------ |
+| **Workers** (compute)   | Vercel Edge Functions, AWS Lambda@Edge, Deno Deploy | Medium (OpenNext adapter swap) |
+| **R2** (object storage) | AWS S3, GCS, Backblaze B2                           | Low (S3-compatible API)        |
+| **KV** (key-value)      | Upstash Redis, DynamoDB                             | Low (small dataset)            |
+| **CDN**                 | Fastly, AWS CloudFront, Vercel                      | Medium                         |
+| **DNS**                 | AWS Route 53, Google Cloud DNS                      | Low                            |
 
 ### IP Ownership
 
@@ -118,11 +118,11 @@ curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
 
 ### Alternative Provider
 
-| Option | Effort | Notes |
-|--------|--------|-------|
-| **AWS SES** | Low | Change SMTP/API endpoint in `src/lib/email-templates.ts` |
-| **Postmark** | Low | Similar REST API |
-| **SendGrid** | Low | Similar REST API |
+| Option       | Effort | Notes                                                    |
+| ------------ | ------ | -------------------------------------------------------- |
+| **AWS SES**  | Low    | Change SMTP/API endpoint in `src/lib/email-templates.ts` |
+| **Postmark** | Low    | Similar REST API                                         |
+| **SendGrid** | Low    | Similar REST API                                         |
 
 ### Switch Procedure
 
@@ -145,11 +145,11 @@ curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
 
 ### Alternative Provider
 
-| Option | Effort | Notes |
-|--------|--------|-------|
-| **Twilio** (already integrated as fallback) | Low | `src/lib/sms.ts` already supports Twilio |
-| **MessageBird** | Medium | New SDK integration |
-| **Direct SMS via local provider** | Medium | Moroccan SMS aggregator |
+| Option                                      | Effort | Notes                                    |
+| ------------------------------------------- | ------ | ---------------------------------------- |
+| **Twilio** (already integrated as fallback) | Low    | `src/lib/sms.ts` already supports Twilio |
+| **MessageBird**                             | Medium | New SDK integration                      |
+| **Direct SMS via local provider**           | Medium | Moroccan SMS aggregator                  |
 
 ### Switch Procedure
 
@@ -162,12 +162,12 @@ curl -s -H "Authorization: Bearer $CF_API_TOKEN" \
 
 ## Review Schedule
 
-| Vendor | Last Drill | Next Drill | Owner |
-|--------|-----------|------------|-------|
-| Supabase | _Not yet_ | Q3 2026 | Platform lead |
-| Cloudflare | _Not yet_ | Q3 2026 | Platform lead |
-| Resend | _Not yet_ | Q4 2026 | Platform lead |
-| Meta/WhatsApp | _Not yet_ | Q4 2026 | Platform lead |
+| Vendor        | Last Drill | Next Drill | Owner         |
+| ------------- | ---------- | ---------- | ------------- |
+| Supabase      | _Not yet_  | Q3 2026    | Platform lead |
+| Cloudflare    | _Not yet_  | Q3 2026    | Platform lead |
+| Resend        | _Not yet_  | Q4 2026    | Platform lead |
+| Meta/WhatsApp | _Not yet_  | Q4 2026    | Platform lead |
 
 ## Related Documents
 

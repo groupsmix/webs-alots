@@ -1,13 +1,29 @@
 "use client";
 
 import {
-  DollarSign, Users, Calendar, Clock, TrendingUp, TrendingDown,
-  ArrowUpRight, ArrowDownRight, BarChart3, Activity,
+  DollarSign,
+  Users,
+  Calendar,
+  Clock,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
+  Activity,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
 } from "recharts";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
@@ -71,9 +87,11 @@ function startOfDay(date: Date): Date {
 }
 
 function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() &&
+  return (
+    a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+    a.getDate() === b.getDate()
+  );
 }
 
 function isWithinRange(date: Date, start: Date, end: Date): boolean {
@@ -108,9 +126,12 @@ function ChangeIndicator({ value }: { value: number }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">0%</span>;
   const positive = value > 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${positive ? "text-green-600" : "text-red-600"}`}>
+    <span
+      className={`inline-flex items-center gap-0.5 text-xs font-medium ${positive ? "text-green-600" : "text-red-600"}`}
+    >
       {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-      {positive ? "+" : ""}{value}%
+      {positive ? "+" : ""}
+      {value}%
     </span>
   );
 }
@@ -169,7 +190,12 @@ export function AnalyticsDashboard({
 
   // Pre-compute date-parsed data
   const parsedAppointments = useMemo(
-    () => appointments.map((a) => ({ ...a, _date: new Date(a.slot_start), _created: new Date(a.created_at) })),
+    () =>
+      appointments.map((a) => ({
+        ...a,
+        _date: new Date(a.slot_start),
+        _created: new Date(a.created_at),
+      })),
     [appointments],
   );
   const parsedPayments = useMemo(
@@ -203,7 +229,9 @@ export function AnalyticsDashboard({
   const revenueChange = pctChange(todayRevenue, yesterdayRevenue);
 
   const todayCompleted = todayAppts.filter((a) => a.status === "completed").length;
-  const todayPending = todayAppts.filter((a) => a.status === "pending" || a.status === "confirmed").length;
+  const todayPending = todayAppts.filter(
+    (a) => a.status === "pending" || a.status === "confirmed",
+  ).length;
   const todayCancelled = todayAppts.filter((a) => a.status === "cancelled").length;
 
   const newPatientsToday = useMemo(
@@ -235,9 +263,7 @@ export function AnalyticsDashboard({
   // Busiest hours heatmap (7 days x 12 hours: 8AM-8PM)
   const heatmapData = useMemo(() => {
     const grid: number[][] = Array.from({ length: 7 }, () => Array(12).fill(0));
-    const weekAppts = parsedAppointments.filter((a) =>
-      isWithinRange(a._date, thisWeekStart, now),
-    );
+    const weekAppts = parsedAppointments.filter((a) => isWithinRange(a._date, thisWeekStart, now));
     for (const a of weekAppts) {
       const dayIdx = a._date.getDay();
       const hour = a._date.getHours();
@@ -248,10 +274,7 @@ export function AnalyticsDashboard({
     return grid;
   }, [parsedAppointments, thisWeekStart, now]);
 
-  const heatmapMax = useMemo(
-    () => Math.max(1, ...heatmapData.flat()),
-    [heatmapData],
-  );
+  const heatmapMax = useMemo(() => Math.max(1, ...heatmapData.flat()), [heatmapData]);
 
   // Top services by revenue (this week)
   const topServices = useMemo(() => {
@@ -282,15 +305,20 @@ export function AnalyticsDashboard({
 
   // Staff utilization (this week)
   const staffUtilization = useMemo(() => {
-    const weekAppts = parsedAppointments.filter((a) =>
-      isWithinRange(a._date, thisWeekStart, now),
-    );
-    return doctors.map((doc) => {
-      const docAppts = weekAppts.filter((a) => a.doctor_id === doc.id);
-      const completed = docAppts.filter((a) => a.status === "completed").length;
-      const total = docAppts.length;
-      return { name: doc.name, total, completed, rate: total > 0 ? Math.round((completed / total) * 100) : 0 };
-    }).sort((a, b) => b.total - a.total);
+    const weekAppts = parsedAppointments.filter((a) => isWithinRange(a._date, thisWeekStart, now));
+    return doctors
+      .map((doc) => {
+        const docAppts = weekAppts.filter((a) => a.doctor_id === doc.id);
+        const completed = docAppts.filter((a) => a.status === "completed").length;
+        const total = docAppts.length;
+        return {
+          name: doc.name,
+          total,
+          completed,
+          rate: total > 0 ? Math.round((completed / total) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
   }, [parsedAppointments, doctors, thisWeekStart, now]);
 
   // ── MONTHLY VIEW data ────────────────────────────────────────────────
@@ -325,7 +353,9 @@ export function AnalyticsDashboard({
       const rev = parsedPayments
         .filter((p) => isWithinRange(p._date, mStart, mEnd) && p.status === "completed")
         .reduce((s, p) => s + p.amount, 0);
-      const monthName = new Intl.DateTimeFormat(LOCALE_MAP[locale], { month: "short" }).format(mStart);
+      const monthName = new Intl.DateTimeFormat(LOCALE_MAP[locale], { month: "short" }).format(
+        mStart,
+      );
       months.push({ name: monthName, revenue: rev });
     }
     return months;
@@ -340,7 +370,9 @@ export function AnalyticsDashboard({
       const count = parsedAppointments.filter(
         (a) => a.is_first_visit && isWithinRange(a._date, mStart, mEnd),
       ).length;
-      const monthName = new Intl.DateTimeFormat(LOCALE_MAP[locale], { month: "short" }).format(mStart);
+      const monthName = new Intl.DateTimeFormat(LOCALE_MAP[locale], { month: "short" }).format(
+        mStart,
+      );
       months.push({ name: monthName, newPatients: count });
     }
     return months;
@@ -353,21 +385,20 @@ export function AnalyticsDashboard({
   );
   const newThisMonth = thisMonthAppts.filter((a) => a.is_first_visit).length;
   const returningThisMonth = thisMonthAppts.length - newThisMonth;
-  const retentionRate = thisMonthAppts.length > 0
-    ? Math.round((returningThisMonth / thisMonthAppts.length) * 100)
-    : 0;
+  const retentionRate =
+    thisMonthAppts.length > 0 ? Math.round((returningThisMonth / thisMonthAppts.length) * 100) : 0;
 
   // Avg revenue per appointment — this month
   const thisMonthRevenue = useMemo(
-    () => parsedPayments
-      .filter((p) => isWithinRange(p._date, thisMonthStart, now) && p.status === "completed")
-      .reduce((s, p) => s + p.amount, 0),
+    () =>
+      parsedPayments
+        .filter((p) => isWithinRange(p._date, thisMonthStart, now) && p.status === "completed")
+        .reduce((s, p) => s + p.amount, 0),
     [parsedPayments, thisMonthStart, now],
   );
   const thisMonthCompletedAppts = thisMonthAppts.filter((a) => a.status === "completed").length;
-  const avgRevenuePerAppt = thisMonthCompletedAppts > 0
-    ? Math.round(thisMonthRevenue / thisMonthCompletedAppts)
-    : 0;
+  const avgRevenuePerAppt =
+    thisMonthCompletedAppts > 0 ? Math.round(thisMonthRevenue / thisMonthCompletedAppts) : 0;
 
   // ── COMPARISON VIEW data ─────────────────────────────────────────────
 
@@ -376,9 +407,12 @@ export function AnalyticsDashboard({
     [parsedAppointments, lastMonthStart, lastMonthEnd],
   );
   const lastMonthRevenue = useMemo(
-    () => parsedPayments
-      .filter((p) => isWithinRange(p._date, lastMonthStart, lastMonthEnd) && p.status === "completed")
-      .reduce((s, p) => s + p.amount, 0),
+    () =>
+      parsedPayments
+        .filter(
+          (p) => isWithinRange(p._date, lastMonthStart, lastMonthEnd) && p.status === "completed",
+        )
+        .reduce((s, p) => s + p.amount, 0),
     [parsedPayments, lastMonthStart, lastMonthEnd],
   );
 
@@ -391,15 +425,19 @@ export function AnalyticsDashboard({
     [parsedAppointments, lastWeekStart, lastWeekEnd],
   );
   const thisWeekRevenue = useMemo(
-    () => parsedPayments
-      .filter((p) => isWithinRange(p._date, thisWeekStart, now) && p.status === "completed")
-      .reduce((s, p) => s + p.amount, 0),
+    () =>
+      parsedPayments
+        .filter((p) => isWithinRange(p._date, thisWeekStart, now) && p.status === "completed")
+        .reduce((s, p) => s + p.amount, 0),
     [parsedPayments, thisWeekStart, now],
   );
   const lastWeekRevenue = useMemo(
-    () => parsedPayments
-      .filter((p) => isWithinRange(p._date, lastWeekStart, lastWeekEnd) && p.status === "completed")
-      .reduce((s, p) => s + p.amount, 0),
+    () =>
+      parsedPayments
+        .filter(
+          (p) => isWithinRange(p._date, lastWeekStart, lastWeekEnd) && p.status === "completed",
+        )
+        .reduce((s, p) => s + p.amount, 0),
     [parsedPayments, lastWeekStart, lastWeekEnd],
   );
 
@@ -464,10 +502,27 @@ export function AnalyticsDashboard({
               <CardContent>
                 <div className="grid gap-3 sm:grid-cols-4">
                   {[
-                    { label: "En attente", count: todayAppts.filter((a) => a.status === "pending").length, color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
-                    { label: "Confirmés", count: todayAppts.filter((a) => a.status === "confirmed").length, color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
-                    { label: "Terminés", count: todayCompleted, color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
-                    { label: "Annulés", count: todayCancelled, color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+                    {
+                      label: "En attente",
+                      count: todayAppts.filter((a) => a.status === "pending").length,
+                      color:
+                        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                    },
+                    {
+                      label: "Confirmés",
+                      count: todayAppts.filter((a) => a.status === "confirmed").length,
+                      color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                    },
+                    {
+                      label: "Terminés",
+                      count: todayCompleted,
+                      color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                    },
+                    {
+                      label: "Annulés",
+                      count: todayCancelled,
+                      color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                    },
                   ].map((s) => (
                     <div key={s.label} className={`rounded-lg p-3 text-center ${s.color}`}>
                       <p className="text-2xl font-bold">{s.count}</p>
@@ -497,7 +552,10 @@ export function AnalyticsDashboard({
                     <BarChart data={weeklyRevenueData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="name" className="text-xs" />
-                      <YAxis className="text-xs" tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis
+                        className="text-xs"
+                        tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                      />
                       <Tooltip
                         formatter={(value) => [formatMAD(Number(value)), "Revenu"]}
                         contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
@@ -569,23 +627,31 @@ export function AnalyticsDashboard({
                 </CardHeader>
                 <CardContent>
                   {topServices.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Aucune donnée cette semaine</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Aucune donnée cette semaine
+                    </p>
                   ) : (
                     <div className="space-y-3">
                       {topServices.map((svc) => (
                         <div key={svc.name}>
                           <div className="flex items-center justify-between text-sm mb-1">
                             <span className="truncate">{svc.name}</span>
-                            <span className="font-medium ml-2 whitespace-nowrap">{formatMAD(svc.revenue)}</span>
+                            <span className="font-medium ml-2 whitespace-nowrap">
+                              {formatMAD(svc.revenue)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-primary rounded-full"
-                                style={{ width: `${topServicesTotal > 0 ? (svc.revenue / topServicesTotal) * 100 : 0}%` }}
+                                style={{
+                                  width: `${topServicesTotal > 0 ? (svc.revenue / topServicesTotal) * 100 : 0}%`,
+                                }}
                               />
                             </div>
-                            <Badge variant="outline" className="text-[10px]">{svc.count} RDV</Badge>
+                            <Badge variant="outline" className="text-[10px]">
+                              {svc.count} RDV
+                            </Badge>
                           </div>
                         </div>
                       ))}
@@ -676,7 +742,10 @@ export function AnalyticsDashboard({
                       <LineChart data={monthlyRevenueData}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis dataKey="name" className="text-xs" />
-                        <YAxis className="text-xs" tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                        <YAxis
+                          className="text-xs"
+                          tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                        />
                         <Tooltip
                           formatter={(value) => [formatMAD(Number(value)), "Revenu"]}
                           contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
@@ -781,8 +850,12 @@ export function AnalyticsDashboard({
                   />
                   <ComparisonItem
                     label="RDV complétés"
-                    current={thisWeekAppts.filter((a) => a.status === "completed").length.toString()}
-                    previous={lastWeekAppts.filter((a) => a.status === "completed").length.toString()}
+                    current={thisWeekAppts
+                      .filter((a) => a.status === "completed")
+                      .length.toString()}
+                    previous={lastWeekAppts
+                      .filter((a) => a.status === "completed")
+                      .length.toString()}
                     change={pctChange(
                       thisWeekAppts.filter((a) => a.status === "completed").length,
                       lastWeekAppts.filter((a) => a.status === "completed").length,
@@ -816,10 +889,13 @@ export function AnalyticsDashboard({
                         ) : item.value < 0 ? (
                           <TrendingDown className="h-5 w-5 text-red-600" />
                         ) : null}
-                        <span className={`text-2xl font-bold ${
-                          item.value > 0 ? "text-green-600" : item.value < 0 ? "text-red-600" : ""
-                        }`}>
-                          {item.value > 0 ? "+" : ""}{item.value}%
+                        <span
+                          className={`text-2xl font-bold ${
+                            item.value > 0 ? "text-green-600" : item.value < 0 ? "text-red-600" : ""
+                          }`}
+                        >
+                          {item.value > 0 ? "+" : ""}
+                          {item.value}%
                         </span>
                       </div>
                     </div>
@@ -855,11 +931,18 @@ function ComparisonItem({
           <p className="text-lg font-bold">{current}</p>
           <p className="text-xs text-muted-foreground">vs {previous}</p>
         </div>
-        <span className={`inline-flex items-center gap-0.5 text-sm font-medium ${
-          change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
-        }`}>
-          {change > 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : change < 0 ? <ArrowDownRight className="h-3.5 w-3.5" /> : null}
-          {change > 0 ? "+" : ""}{change}%
+        <span
+          className={`inline-flex items-center gap-0.5 text-sm font-medium ${
+            change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
+          }`}
+        >
+          {change > 0 ? (
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          ) : change < 0 ? (
+            <ArrowDownRight className="h-3.5 w-3.5" />
+          ) : null}
+          {change > 0 ? "+" : ""}
+          {change}%
         </span>
       </div>
     </div>

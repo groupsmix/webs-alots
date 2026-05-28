@@ -239,11 +239,9 @@ describe("tenant isolation guard", () => {
     const { client } = makeSupabaseStub();
 
     await expect(
-      findOrphanKeys(
-        client as unknown as Parameters<typeof findOrphanKeys>[0],
-        "not-a-uuid",
-        ["clinics/a/orphan.png"],
-      ),
+      findOrphanKeys(client as unknown as Parameters<typeof findOrphanKeys>[0], "not-a-uuid", [
+        "clinics/a/orphan.png",
+      ]),
     ).rejects.toThrow(/TENANT SAFETY/);
     expect(client.from).not.toHaveBeenCalled();
   });
@@ -315,19 +313,13 @@ describe("findOrphanKeys", () => {
       input,
     );
 
-    expect(result).toEqual([
+    expect(result).toEqual(["clinics/a/logos/orphan-1.png", "clinics/a/logos/orphan-2.png"]);
+    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
+    expect(builder.in).toHaveBeenCalledWith("r2_key", [
+      "clinics/a/logos/known.png",
       "clinics/a/logos/orphan-1.png",
       "clinics/a/logos/orphan-2.png",
     ]);
-    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
-    expect(builder.in).toHaveBeenCalledWith(
-      "r2_key",
-      [
-        "clinics/a/logos/known.png",
-        "clinics/a/logos/orphan-1.png",
-        "clinics/a/logos/orphan-2.png",
-      ],
-    );
   });
 
   it("throws and logs when the Supabase query errors", async () => {
@@ -340,11 +332,9 @@ describe("findOrphanKeys", () => {
     });
 
     await expect(
-      findOrphanKeys(
-        client as unknown as Parameters<typeof findOrphanKeys>[0],
-        TEST_CLINIC_ID,
-        ["k1"],
-      ),
+      findOrphanKeys(client as unknown as Parameters<typeof findOrphanKeys>[0], TEST_CLINIC_ID, [
+        "k1",
+      ]),
     ).rejects.toEqual({ message: "db down" });
 
     expect(logger.error).toHaveBeenCalledWith(
@@ -538,9 +528,7 @@ describe("reconcileOrphans", () => {
     const { listR2Objects, deleteFromR2 } = await import("@/lib/r2");
     const { client, builder } = makeSupabaseStub();
 
-    (listR2Objects as Mock).mockResolvedValue([
-      "clinics/a/logos/orphan.png",
-    ]);
+    (listR2Objects as Mock).mockResolvedValue(["clinics/a/logos/orphan.png"]);
     builder._resolver.mockResolvedValueOnce({ data: [], error: null });
 
     const result = await reconcileOrphans(
@@ -588,10 +576,7 @@ describe("reconcileOrphans", () => {
     const { listR2Objects, deleteFromR2 } = await import("@/lib/r2");
     const { client, builder } = makeSupabaseStub();
 
-    (listR2Objects as Mock).mockResolvedValue([
-      "clinics/a/orphan-1.png",
-      "clinics/a/orphan-2.png",
-    ]);
+    (listR2Objects as Mock).mockResolvedValue(["clinics/a/orphan-1.png", "clinics/a/orphan-2.png"]);
     builder._resolver.mockResolvedValueOnce({ data: [], error: null });
     (deleteFromR2 as Mock)
       .mockRejectedValueOnce(new Error("transient"))
@@ -606,9 +591,7 @@ describe("reconcileOrphans", () => {
     expect(result.scanned).toBe(2);
     expect(result.orphans).toBe(2);
     expect(result.deletedFromR2).toBe(1);
-    expect(result.errors).toEqual([
-      expect.objectContaining({ key: "clinics/a/orphan-1.png" }),
-    ]);
+    expect(result.errors).toEqual([expect.objectContaining({ key: "clinics/a/orphan-1.png" })]);
   });
 
   it("forwards the limit option to listR2Objects when supplied", async () => {
@@ -766,13 +749,9 @@ describe("emitOrphanRateAlert", () => {
     const { emitOrphanRateAlert } = await import("../r2-cleanup");
 
     // 4/10 = 0.4 < 0.5 → no alert
-    expect(
-      emitOrphanRateAlert({ orphanCount: 4, totalCount: 10 }),
-    ).toBe(false);
+    expect(emitOrphanRateAlert({ orphanCount: 4, totalCount: 10 })).toBe(false);
 
     // 6/10 = 0.6 >= 0.5 → alert
-    expect(
-      emitOrphanRateAlert({ orphanCount: 6, totalCount: 10 }),
-    ).toBe(true);
+    expect(emitOrphanRateAlert({ orphanCount: 6, totalCount: 10 })).toBe(true);
   });
 });

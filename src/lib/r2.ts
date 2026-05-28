@@ -88,7 +88,10 @@ function _generateSignedR2Url(key: string, expiresIn = 3600): string {
   if (!accountId || !bucketName) {
     // R2 is not configured — return a best-effort placeholder URL.
     // Callers should check isR2Configured() before using signed URLs.
-    logger.warn("generateSignedR2Url called but R2 is not fully configured", { context: "r2", key });
+    logger.warn("generateSignedR2Url called but R2 is not fully configured", {
+      context: "r2",
+      key,
+    });
     return `https://r2-not-configured.invalid/${key}`;
   }
 
@@ -147,7 +150,10 @@ function _validateSignedR2Url(
   }
 
   const signatureBase = `${bucket}:${key}:${expires}`;
-  const expectedSignature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
+  const expectedSignature = createHmac("sha256", secret)
+    .update(signatureBase)
+    .digest("hex")
+    .slice(0, 32);
 
   // Constant-time comparison to prevent timing attacks
   if (signature.length !== expectedSignature.length) return false;
@@ -414,10 +420,7 @@ export async function getPresignedUploadPost(
  * @param expiresIn  URL validity in seconds (default: 3600 = 1 hour)
  * @returns Pre-signed download URL, or null if R2 is not configured
  */
-async function _getPresignedDownloadUrl(
-  key: string,
-  expiresIn = 3600,
-): Promise<string | null> {
+async function _getPresignedDownloadUrl(key: string, expiresIn = 3600): Promise<string | null> {
   const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
@@ -435,9 +438,9 @@ async function _getPresignedDownloadUrl(
     ResponseContentDisposition: "attachment",
   });
 
-  // Audit 8.2: We do not log the download here because getPresignedDownloadUrl 
+  // Audit 8.2: We do not log the download here because getPresignedDownloadUrl
   // only generates the URL, it doesn't mean the file was actually downloaded.
-  // The actual download access log should be tracked via Cloudflare Logpush 
+  // The actual download access log should be tracked via Cloudflare Logpush
   // on the R2 bucket or a dedicated download proxy route.
 
   return getSignedUrl(client, command, { expiresIn });
@@ -459,9 +462,7 @@ export interface R2ObjectMetadata {
  *
  * Returns `null` if the object does not exist or R2 is not configured.
  */
-export async function getR2ObjectMetadata(
-  key: string,
-): Promise<R2ObjectMetadata | null> {
+export async function getR2ObjectMetadata(key: string): Promise<R2ObjectMetadata | null> {
   const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
@@ -534,7 +535,9 @@ export async function listR2Objects(
       }
     }
 
-    continuationToken = response.IsTruncated ? response.NextContinuationToken ?? undefined : undefined;
+    continuationToken = response.IsTruncated
+      ? (response.NextContinuationToken ?? undefined)
+      : undefined;
   } while (continuationToken);
 
   return keys;
@@ -547,10 +550,7 @@ export async function listR2Objects(
  * @param bytes    Number of bytes to read (default: 16)
  * @returns Buffer with the first bytes, or null if not found / not configured
  */
-export async function readR2ObjectHead(
-  key: string,
-  bytes = 16,
-): Promise<Buffer | null> {
+export async function readR2ObjectHead(key: string, bytes = 16): Promise<Buffer | null> {
   const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
@@ -647,7 +647,11 @@ const IMAGE_WIDTHS = [100, 300, 800] as const;
 function getResizedImageUrl(
   srcUrl: string,
   width: number,
-  options: { quality?: number; fit?: "scale-down" | "contain" | "cover" | "crop" | "pad"; format?: "auto" | "webp" | "avif" } = {},
+  options: {
+    quality?: number;
+    fit?: "scale-down" | "contain" | "cover" | "crop" | "pad";
+    format?: "auto" | "webp" | "avif";
+  } = {},
 ): string {
   if (!srcUrl.startsWith("http")) return srcUrl;
 

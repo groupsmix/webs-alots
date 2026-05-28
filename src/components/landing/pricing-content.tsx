@@ -6,13 +6,7 @@ import type { TranslationKey } from "@/lib/i18n";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-billing";
 import { useLandingLocale } from "./landing-locale-provider";
 
-function FormatLimit({
-  value,
-  unlimitedLabel,
-}: {
-  value: number;
-  unlimitedLabel: string;
-}) {
+function FormatLimit({ value, unlimitedLabel }: { value: number; unlimitedLabel: string }) {
   return <>{value === -1 ? unlimitedLabel : String(value)}</>;
 }
 
@@ -36,9 +30,7 @@ export function PricingContent() {
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
           {t("pricing.title")}
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-          {t("pricing.subtitle")}
-        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">{t("pricing.subtitle")}</p>
       </div>
 
       {/* Pricing cards */}
@@ -62,27 +54,24 @@ export function PricingContent() {
                 )}
 
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {plan.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
                   <div className="mt-4 flex items-baseline gap-1">
                     <span className="text-4xl font-bold tracking-tight text-gray-900">
-                      {plan.priceMonthly === 0
-                        ? t("pricing.free")
-                        : `${plan.priceMonthly}`}
+                      {plan.priceMonthly === 0 ? t("pricing.free") : `${plan.priceMonthly}`}
                     </span>
                     {plan.priceMonthly > 0 && (
                       <span className="text-sm text-gray-500">
-                        {plan.currency}{t("pricing.perMonth")}
+                        {plan.currency}
+                        {t("pricing.perMonth")}
                       </span>
                     )}
                   </div>
                   {plan.priceYearly > 0 && (
                     <p className="mt-1 text-sm text-gray-500">
-                      {plan.priceYearly} {plan.currency}{t("pricing.perYear")} (
+                      {plan.priceYearly} {plan.currency}
+                      {t("pricing.perYear")} (
                       {Math.round(
-                        ((plan.priceMonthly * 12 - plan.priceYearly) /
-                          (plan.priceMonthly * 12)) *
+                        ((plan.priceMonthly * 12 - plan.priceYearly) / (plan.priceMonthly * 12)) *
                           100,
                       )}
                       % {t("pricing.savings")})
@@ -99,9 +88,7 @@ export function PricingContent() {
                         unlimitedLabel={t("pricing.unlimited")}
                       />
                     </span>{" "}
-                    {plan.maxDoctors === 1
-                      ? t("pricing.doctor")
-                      : t("pricing.doctors")}
+                    {plan.maxDoctors === 1 ? t("pricing.doctor") : t("pricing.doctors")}
                   </p>
                   <p>
                     <span className="font-medium text-gray-900">
@@ -163,14 +150,9 @@ export function PricingContent() {
           </h2>
           <div className="space-y-6">
             {faqKeys.map(({ q, a }) => (
-              <div
-                key={q}
-                className="rounded-xl border border-gray-100 p-6"
-              >
+              <div key={q} className="rounded-xl border border-gray-100 p-6">
                 <h3 className="font-semibold text-gray-900">{t(q)}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                  {t(a)}
-                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{t(a)}</p>
               </div>
             ))}
           </div>

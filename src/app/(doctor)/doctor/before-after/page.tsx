@@ -19,21 +19,26 @@ export default function DoctorBeforeAfterPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const data = await fetchBeforeAfterPhotos(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const data = await fetchBeforeAfterPhotos(user.clinic_id);
       if (controller.signal.aborted) return;
-    setPhotos(data);
-    setLoading(false);
-  }
+      setPhotos(data);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -43,7 +48,9 @@ export default function DoctorBeforeAfterPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -63,15 +70,14 @@ export default function DoctorBeforeAfterPage() {
       after_date: photo.afterDate ?? undefined,
     });
 
-    setPhotos((prev) => [
-      { ...photo, id: newId ?? `ba${prev.length + 1}` },
-      ...prev,
-    ]);
+    setPhotos((prev) => [{ ...photo, id: newId ?? `ba${prev.length + 1}` }, ...prev]);
   };
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Before/After" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Before/After" }]}
+      />
       <h1 className="text-2xl font-bold">Before / After Photos</h1>
       <BeforeAfterGallery photos={photos} editable onAddPhoto={handleAddPhoto} />
     </div>

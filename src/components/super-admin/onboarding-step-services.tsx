@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Stethoscope,
-  Plus,
-  Trash2,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
+import { Stethoscope, Plus, Trash2, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,10 +47,7 @@ export function OnboardingStepServices({
         </p>
 
         {services.map((service, index) => (
-          <div
-            key={index}
-            className="rounded-lg border p-4 space-y-3"
-          >
+          <div key={index} className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <Badge variant="outline">Service #{index + 1}</Badge>
               {services.length > 1 && (
@@ -74,15 +64,12 @@ export function OnboardingStepServices({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>
-                  Service Name{" "}
-                  <span className="text-destructive">*</span>
+                  Service Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   placeholder="e.g. Consultation Générale"
                   value={service.name}
-                  onChange={(e) =>
-                    onUpdateService(index, "name", e.target.value)
-                  }
+                  onChange={(e) => onUpdateService(index, "name", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -90,9 +77,7 @@ export function OnboardingStepServices({
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   value={service.category}
-                  onChange={(e) =>
-                    onUpdateService(index, "category", e.target.value)
-                  }
+                  onChange={(e) => onUpdateService(index, "category", e.target.value)}
                 >
                   <option value="consultation">Consultation</option>
                   <option value="treatment">Treatment</option>
@@ -113,9 +98,7 @@ export function OnboardingStepServices({
                   type="number"
                   placeholder="e.g. 400"
                   value={service.price}
-                  onChange={(e) =>
-                    onUpdateService(index, "price", e.target.value)
-                  }
+                  onChange={(e) => onUpdateService(index, "price", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -124,13 +107,7 @@ export function OnboardingStepServices({
                   type="number"
                   placeholder="30"
                   value={service.duration_minutes}
-                  onChange={(e) =>
-                    onUpdateService(
-                      index,
-                      "duration_minutes",
-                      e.target.value,
-                    )
-                  }
+                  onChange={(e) => onUpdateService(index, "duration_minutes", e.target.value)}
                 />
               </div>
             </div>

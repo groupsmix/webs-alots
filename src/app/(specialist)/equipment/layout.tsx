@@ -3,12 +3,11 @@
 import EquipmentLayoutShell from "@/components/layouts/equipment-layout-shell";
 
 // Re-export types and hooks for backward compatibility
-export { useEquipmentLocale, type EquipmentLocale } from "@/components/layouts/equipment-layout-shell";
+export {
+  useEquipmentLocale,
+  type EquipmentLocale,
+} from "@/components/layouts/equipment-layout-shell";
 
-export default function EquipmentLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function EquipmentLayout({ children }: { children: React.ReactNode }) {
   return <EquipmentLayoutShell>{children}</EquipmentLayoutShell>;
 }

@@ -28,9 +28,7 @@ import { logger } from "@/lib/logger";
 interface CloudflareConfig {
   zoneId: string;
   zoneName: string;
-  auth:
-    | { mode: "token"; apiToken: string }
-    | { mode: "global-key"; apiKey: string; email: string };
+  auth: { mode: "token"; apiToken: string } | { mode: "global-key"; apiKey: string; email: string };
 }
 
 export interface DnsRecord {
@@ -126,14 +124,13 @@ export function isValidSubdomain(slug: string): boolean {
  * Create a CNAME record for a clinic subdomain.
  * Points `{slug}.{zoneName}` → `{zoneName}` (proxied through Cloudflare).
  */
-export async function provisionSubdomain(
-  slug: string,
-): Promise<CloudflareResult<DnsRecord>> {
+export async function provisionSubdomain(slug: string): Promise<CloudflareResult<DnsRecord>> {
   const config = getConfig();
   if (!config) {
     return {
       success: false,
-      error: "Cloudflare DNS not configured. Set CLOUDFLARE_API_TOKEN (or CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL), CLOUDFLARE_ZONE_ID, CLOUDFLARE_ZONE_NAME.",
+      error:
+        "Cloudflare DNS not configured. Set CLOUDFLARE_API_TOKEN (or CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL), CLOUDFLARE_ZONE_ID, CLOUDFLARE_ZONE_NAME.",
     };
   }
 
@@ -202,9 +199,7 @@ export async function provisionSubdomain(
 /**
  * Look up an existing DNS record for a subdomain.
  */
-export async function getDnsRecord(
-  slug: string,
-): Promise<CloudflareResult<DnsRecord | null>> {
+export async function getDnsRecord(slug: string): Promise<CloudflareResult<DnsRecord | null>> {
   const config = getConfig();
   if (!config) {
     return { success: false, error: "Cloudflare DNS not configured" };
@@ -263,17 +258,13 @@ async function _updateDnsRecord(
   const fqdn = `${slug}.${config.zoneName}`;
 
   try {
-    const result = await cfFetch<DnsRecord>(
-      config,
-      `/dns_records/${recordId}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({
-          content: updates.content ?? existing.data.content,
-          proxied: updates.proxied ?? existing.data.proxied,
-        }),
-      },
-    );
+    const result = await cfFetch<DnsRecord>(config, `/dns_records/${recordId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        content: updates.content ?? existing.data.content,
+        proxied: updates.proxied ?? existing.data.proxied,
+      }),
+    });
 
     if (!result.success) {
       const errMsg = result.errors.map((e) => e.message).join("; ");
@@ -303,9 +294,7 @@ async function _updateDnsRecord(
 /**
  * Remove a clinic's subdomain DNS record.
  */
-export async function removeSubdomain(
-  slug: string,
-): Promise<CloudflareResult<void>> {
+export async function removeSubdomain(slug: string): Promise<CloudflareResult<void>> {
   const config = getConfig();
   if (!config) {
     return { success: false, error: "Cloudflare DNS not configured" };
@@ -322,11 +311,9 @@ export async function removeSubdomain(
   const fqdn = `${slug}.${config.zoneName}`;
 
   try {
-    const result = await cfFetch<{ id: string }>(
-      config,
-      `/dns_records/${recordId}`,
-      { method: "DELETE" },
-    );
+    const result = await cfFetch<{ id: string }>(config, `/dns_records/${recordId}`, {
+      method: "DELETE",
+    });
 
     if (!result.success) {
       const errMsg = result.errors.map((e) => e.message).join("; ");

@@ -27,15 +27,17 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getCurrentUser,
-  fetchNotifications,
-  type NotificationView,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchNotifications, type NotificationView } from "@/lib/data/client";
 
 // ---- Type Mapping ----
 
-type NotificationType = "appointment" | "prescription" | "payment" | "general" | "review" | "cancellation";
+type NotificationType =
+  | "appointment"
+  | "prescription"
+  | "payment"
+  | "general"
+  | "review"
+  | "cancellation";
 
 function triggerToType(trigger: string): NotificationType {
   switch (trigger) {
@@ -96,7 +98,9 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export default function PatientNotificationsPage() {
-  const [notifications, setNotifications] = useState<Array<NotificationView & { type: NotificationType; time: string }>>([]);
+  const [notifications, setNotifications] = useState<
+    Array<NotificationView & { type: NotificationType; time: string }>
+  >([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [prefsOpen, setPrefsOpen] = useState(false);
@@ -112,20 +116,29 @@ export default function PatientNotificationsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    getCurrentUser().then(async (user) => {
-      if (!user || controller.signal.aborted) { if (!controller.signal.aborted) setPageLoading(false); return; }
-      const notifs = await fetchNotifications(user.id);
-      if (controller.signal.aborted) return;
-      setNotifications(notifs.map((n) => ({
-        ...n,
-        type: triggerToType(n.trigger),
-        time: formatTimeAgo(n.createdAt),
-      })));
-      setPageLoading(false);
-    }).catch(() => {
-      // ignored — component unmounted or fetch failed
-    });
-    return () => { controller.abort(); };
+    getCurrentUser()
+      .then(async (user) => {
+        if (!user || controller.signal.aborted) {
+          if (!controller.signal.aborted) setPageLoading(false);
+          return;
+        }
+        const notifs = await fetchNotifications(user.id);
+        if (controller.signal.aborted) return;
+        setNotifications(
+          notifs.map((n) => ({
+            ...n,
+            type: triggerToType(n.trigger),
+            time: formatTimeAgo(n.createdAt),
+          })),
+        );
+        setPageLoading(false);
+      })
+      .catch(() => {
+        // ignored — component unmounted or fetch failed
+      });
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (pageLoading) {
@@ -140,7 +153,9 @@ export default function PatientNotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAsRead = (id: string) => {
-    setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true, status: "read" as const } : n)));
+    setNotifications(
+      notifications.map((n) => (n.id === id ? { ...n, read: true, status: "read" as const } : n)),
+    );
   };
 
   const markAllRead = () => {
@@ -162,7 +177,9 @@ export default function PatientNotificationsPage() {
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All caught up!"}
+            {unreadCount > 0
+              ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
+              : "All caught up!"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -208,8 +225,15 @@ export default function PatientNotificationsPage() {
               onClick={() => markAsRead(notification.id)}
             >
               <CardContent className="flex items-start gap-4 pt-4 pb-4">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${colorMap[nType]}`}>
-                  <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Notifications" }]} />
+                <div
+                  className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${colorMap[nType]}`}
+                >
+                  <Breadcrumb
+                    items={[
+                      { label: "Patient", href: "/patient/dashboard" },
+                      { label: "Notifications" },
+                    ]}
+                  />
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -217,7 +241,9 @@ export default function PatientNotificationsPage() {
                     <p className="text-sm font-medium">{notification.title}</p>
                     {!notification.read && <Badge className="text-[10px]">New</Badge>}
                     {notification.priority === "urgent" && (
-                      <Badge variant="destructive" className="text-[10px]">Urgent</Badge>
+                      <Badge variant="destructive" className="text-[10px]">
+                        Urgent
+                      </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{notification.message}</p>

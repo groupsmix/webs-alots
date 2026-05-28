@@ -61,7 +61,10 @@ export function LandingHeader() {
         </Link>
 
         {/* Desktop nav */}
-        <nav aria-label="Main navigation" className="hidden items-center gap-[var(--space-5)] md:flex">
+        <nav
+          aria-label="Main navigation"
+          className="hidden items-center gap-[var(--space-5)] md:flex"
+        >
           {navLinks.map(({ key, href }) => (
             <Link
               key={href}

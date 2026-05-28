@@ -65,10 +65,15 @@ function validateRedirectUrl(
  *
  * Requires: CMI_MERCHANT_ID, CMI_SECRET_KEY env vars
  */
-export const POST = withAuthValidation(cmiPaymentSchema, async (body, request, { user }) => {
-  if (!isCmiConfigured()) {
-    return apiError("CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY.", 503);
-  }
+export const POST = withAuthValidation(
+  cmiPaymentSchema,
+  async (body, request, { user }) => {
+    if (!isCmiConfigured()) {
+      return apiError(
+        "CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY.",
+        503,
+      );
+    }
 
     const {
       amount,
@@ -106,4 +111,6 @@ export const POST = withAuthValidation(cmiPaymentSchema, async (body, request, {
       formUrl: result.formUrl,
       formFields: result.formFields,
     });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

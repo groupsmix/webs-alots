@@ -61,7 +61,15 @@ Sentry.init({
       if (breadcrumb.data?.["url"]) {
         try {
           const url = new URL(breadcrumb.data["url"], window.location.origin);
-          const phiParams = ["phone", "email", "name", "patient", "patientId", "dob", "date_of_birth"];
+          const phiParams = [
+            "phone",
+            "email",
+            "name",
+            "patient",
+            "patientId",
+            "dob",
+            "date_of_birth",
+          ];
           for (const param of phiParams) {
             if (url.searchParams.has(param)) {
               url.searchParams.set(param, "[REDACTED]");
@@ -83,16 +91,18 @@ Sentry.init({
       delete event.request.cookies;
       // Redact PHI query params from the URL
       if (typeof event.request.query_string === "string") {
-        event.request.query_string = event.request.query_string
-          .replace(/(phone|email|name|patient|patientId|dob|date_of_birth)=[^&]*/gi, "$1=[REDACTED]");
+        event.request.query_string = event.request.query_string.replace(
+          /(phone|email|name|patient|patientId|dob|date_of_birth)=[^&]*/gi,
+          "$1=[REDACTED]",
+        );
       }
     }
 
     const url = event.request?.url ?? window.location.href;
     if (url.includes("/admin/") || url.includes("/doctor/") || url.includes("/patient/")) {
       delete event.exception?.values?.[0]?.mechanism?.handled;
-      if (event.type === 'replay_event') return null; // Drop replay on PHI routes
+      if (event.type === "replay_event") return null; // Drop replay on PHI routes
     }
     return event;
-  }
+  },
 });

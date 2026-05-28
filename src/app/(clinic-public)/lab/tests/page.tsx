@@ -6,7 +6,8 @@ import { getPublicLabTests, getLabTestCategories } from "@/lib/data/lab-public";
 
 export const metadata: Metadata = {
   title: "Tests & Examens — Laboratoire",
-  description: "Consultez notre catalogue complet d'analyses médicales et d'examens radiologiques avec instructions de préparation.",
+  description:
+    "Consultez notre catalogue complet d'analyses médicales et d'examens radiologiques avec instructions de préparation.",
 };
 
 export default async function LabTestsPage() {
@@ -19,15 +20,17 @@ export default async function LabTestsPage() {
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Tests & Exams</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Browse our complete catalog of laboratory analyses and radiology exams.
-          Each test includes preparation instructions to help you get accurate results.
+          Browse our complete catalog of laboratory analyses and radiology exams. Each test includes
+          preparation instructions to help you get accurate results.
         </p>
       </div>
 
       {activeTests.length === 0 ? (
         <div className="text-center py-16">
           <FlaskConical className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No tests available at the moment. Please contact us for more information.</p>
+          <p className="text-muted-foreground">
+            No tests available at the moment. Please contact us for more information.
+          </p>
         </div>
       ) : (
         categories.map((category) => {

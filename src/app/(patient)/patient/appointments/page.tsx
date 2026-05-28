@@ -1,6 +1,16 @@
 "use client";
 
-import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle, Repeat, Plus } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  User,
+  MapPin,
+  X,
+  RefreshCw,
+  AlertTriangle,
+  Repeat,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
@@ -9,11 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getCurrentUser,
-  fetchPatientAppointments,
-  type AppointmentView,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchPatientAppointments, type AppointmentView } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 
 const statusColors: Record<string, string> = {
@@ -40,21 +46,26 @@ export default function PatientAppointmentsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const appts = await fetchPatientAppointments(user.clinic_id, user.id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const appts = await fetchPatientAppointments(user.clinic_id, user.id);
       if (controller.signal.aborted) return;
-    setPatientAppointments(appts);
-    setLoading(false);
-  }
+      setPatientAppointments(appts);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [refreshKey]);
 
   if (loading) {
@@ -64,16 +75,22 @@ export default function PatientAppointmentsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
   const upcoming = patientAppointments.filter(
-    (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress"
+    (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress",
   );
   const past = patientAppointments.filter(
-    (a) => a.status === "completed" || a.status === "no-show" || a.status === "cancelled" || a.status === "rescheduled"
+    (a) =>
+      a.status === "completed" ||
+      a.status === "no-show" ||
+      a.status === "cancelled" ||
+      a.status === "rescheduled",
   );
 
   const displayed = tab === "upcoming" ? upcoming : past;
@@ -99,7 +116,10 @@ export default function PatientAppointmentsPage() {
       setCancelSuccess("Appointment cancelled successfully.");
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      logger.warn("Appointment cancellation failed", { context: "patient-appointments", error: err });
+      logger.warn("Appointment cancellation failed", {
+        context: "patient-appointments",
+        error: err,
+      });
       setCancelError("An error occurred while cancelling.");
     } finally {
       setCancellingId(null);
@@ -158,7 +178,12 @@ export default function PatientAppointmentsPage() {
         <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {cancelError}
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setCancelError(null)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setCancelError(null)}
+          >
             <X className="h-3 w-3" />
           </Button>
         </div>
@@ -167,7 +192,12 @@ export default function PatientAppointmentsPage() {
       {cancelSuccess && (
         <div className="mb-4 rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
           {cancelSuccess}
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setCancelSuccess(null)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setCancelSuccess(null)}
+          >
             <X className="h-3 w-3" />
           </Button>
         </div>
@@ -182,7 +212,9 @@ export default function PatientAppointmentsPage() {
             </p>
             {tab === "upcoming" && (
               <Link href="/book">
-                <Button variant="link" className="mt-2">Book an appointment</Button>
+                <Button variant="link" className="mt-2">
+                  Book an appointment
+                </Button>
               </Link>
             )}
           </CardContent>
@@ -228,12 +260,12 @@ export default function PatientAppointmentsPage() {
                       </span>
                     </div>
                     {appt.cancellationReason && (
-                      <p className="text-xs text-destructive">
-                        Reason: {appt.cancellationReason}
-                      </p>
+                      <p className="text-xs text-destructive">Reason: {appt.cancellationReason}</p>
                     )}
                   </div>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[appt.status] ?? "bg-gray-100 text-gray-700"}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[appt.status] ?? "bg-gray-100 text-gray-700"}`}
+                  >
                     {appt.status}
                   </span>
                 </div>

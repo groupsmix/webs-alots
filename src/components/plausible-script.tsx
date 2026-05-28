@@ -61,8 +61,7 @@ export function PlausibleScript() {
 
   if (!domain || !analyticsConsented) return null;
 
-  const host =
-    process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
+  const host = process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
 
   return (
     <Script

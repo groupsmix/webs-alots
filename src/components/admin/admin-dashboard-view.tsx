@@ -34,17 +34,37 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
   const totalPatients = stats.totalPatients;
   const totalAppts = stats.totalAppointments;
   const completedAppts = stats.completedAppointments;
-  const noShowRate = totalAppts > 0 ? Math.round(stats.noShowCount / totalAppts * 100) : 0;
+  const noShowRate = totalAppts > 0 ? Math.round((stats.noShowCount / totalAppts) * 100) : 0;
   const totalRevenue = stats.totalRevenue;
   const avgRating = stats.averageRating;
   const doctorCount = stats.doctorCount;
   const insurancePatients = stats.insurancePatients;
 
   const statCards = [
-    { icon: Users, label: t(locale, "admin.totalPatients"), value: totalPatients.toString(), color: "text-blue-600" },
-    { icon: Calendar, label: t(locale, "admin.totalAppointments"), value: totalAppts.toString(), color: "text-green-600" },
-    { icon: CreditCard, label: t(locale, "admin.monthlyRevenue"), value: `${totalRevenue} MAD`, color: "text-purple-600" },
-    { icon: Star, label: t(locale, "admin.averageRating"), value: avgRating.toFixed(1), color: "text-yellow-600" },
+    {
+      icon: Users,
+      label: t(locale, "admin.totalPatients"),
+      value: totalPatients.toString(),
+      color: "text-blue-600",
+    },
+    {
+      icon: Calendar,
+      label: t(locale, "admin.totalAppointments"),
+      value: totalAppts.toString(),
+      color: "text-green-600",
+    },
+    {
+      icon: CreditCard,
+      label: t(locale, "admin.monthlyRevenue"),
+      value: `${totalRevenue} MAD`,
+      color: "text-purple-600",
+    },
+    {
+      icon: Star,
+      label: t(locale, "admin.averageRating"),
+      value: avgRating.toFixed(1),
+      color: "text-yellow-600",
+    },
   ];
 
   const recentActivity: RecentActivityItem[] = stats.recentActivity;
@@ -77,16 +97,25 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
-              <EmptyState icon={Activity} title={t(locale, "admin.noRecentActivity")} className="py-4" />
+              <EmptyState
+                icon={Activity}
+                title={t(locale, "admin.noRecentActivity")}
+                className="py-4"
+              />
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((activity, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm">
-                    <Badge variant={activityVariant[activity.type]} className="text-[10px] w-16 justify-center">
+                    <Badge
+                      variant={activityVariant[activity.type]}
+                      className="text-[10px] w-16 justify-center"
+                    >
                       {activity.type}
                     </Badge>
                     <p className="flex-1 text-sm">{activity.message}</p>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDisplayDate(activity.time, locale, "relative")}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDisplayDate(activity.time, locale, "relative")}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -117,7 +146,9 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
                 <span className="font-medium">{avgRating.toFixed(1)} / 5</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t(locale, "admin.insurancePatients")}</span>
+                <span className="text-muted-foreground">
+                  {t(locale, "admin.insurancePatients")}
+                </span>
                 <span className="font-medium">{insurancePatients}</span>
               </div>
             </div>

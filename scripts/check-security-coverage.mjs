@@ -30,7 +30,7 @@ const THRESHOLDS = {
 if (!existsSync(COVERAGE_PATH)) {
   console.error(
     "❌ Coverage summary not found at coverage/coverage-summary.json\n" +
-    "   Run: npx vitest run --coverage"
+      "   Run: npx vitest run --coverage",
   );
   process.exit(1);
 }
@@ -48,14 +48,10 @@ for (const [file, thresholds] of Object.entries(THRESHOLDS)) {
   for (const [metric, min] of Object.entries(thresholds)) {
     const actual = data[metric]?.pct ?? 0;
     if (actual < min) {
-      console.error(
-        `❌ ${file}: ${metric} = ${actual.toFixed(1)}% (min: ${min}%)`
-      );
+      console.error(`❌ ${file}: ${metric} = ${actual.toFixed(1)}% (min: ${min}%)`);
       failures++;
     } else {
-      console.log(
-        `✓  ${file}: ${metric} = ${actual.toFixed(1)}% (min: ${min}%)`
-      );
+      console.log(`✓  ${file}: ${metric} = ${actual.toFixed(1)}% (min: ${min}%)`);
     }
   }
 }

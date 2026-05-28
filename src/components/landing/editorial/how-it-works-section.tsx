@@ -10,20 +10,17 @@ const STEPS = [
   {
     step: "02",
     title: "Configurez votre cabinet",
-    description:
-      "Ajoutez vos médecins, services, horaires et templates WhatsApp.",
+    description: "Ajoutez vos médecins, services, horaires et templates WhatsApp.",
   },
   {
     step: "03",
     title: "Accueillez vos patients",
-    description:
-      "Vos patients prennent rendez-vous en ligne. Rappels automatiques.",
+    description: "Vos patients prennent rendez-vous en ligne. Rappels automatiques.",
   },
   {
     step: "04",
     title: "Suivez votre activité",
-    description:
-      "Tableau de bord analytique. Revenus, taux de no-show, satisfaction.",
+    description: "Tableau de bord analytique. Revenus, taux de no-show, satisfaction.",
   },
 ];
 

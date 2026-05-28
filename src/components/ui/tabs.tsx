@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState, createContext, useContext } from "react"
-import { cn } from "@/lib/utils"
+import { useState, createContext, useContext } from "react";
+import { cn } from "@/lib/utils";
 
 const TabsContext = createContext<{
-  value: string
-  onValueChange: (value: string) => void
-}>({ value: "", onValueChange: () => {} })
+  value: string;
+  onValueChange: (value: string) => void;
+}>({ value: "", onValueChange: () => {} });
 
 function Tabs({
   defaultValue,
@@ -16,18 +16,18 @@ function Tabs({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  defaultValue?: string
-  value?: string
-  onValueChange?: (value: string) => void
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }) {
-  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "")
-  const isControlled = controlledValue !== undefined
-  const currentValue = isControlled ? controlledValue : uncontrolledValue
+  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
+  const isControlled = controlledValue !== undefined;
+  const currentValue = isControlled ? controlledValue : uncontrolledValue;
 
   const handleChange = (newValue: string) => {
-    if (!isControlled) setUncontrolledValue(newValue)
-    onValueChange?.(newValue)
-  }
+    if (!isControlled) setUncontrolledValue(newValue);
+    onValueChange?.(newValue);
+  };
 
   return (
     <TabsContext.Provider value={{ value: currentValue, onValueChange: handleChange }}>
@@ -35,7 +35,7 @@ function Tabs({
         {children}
       </div>
     </TabsContext.Provider>
-  )
+  );
 }
 
 function TabsList({ className, ...props }: React.ComponentProps<"div">) {
@@ -48,7 +48,7 @@ function TabsList({ className, ...props }: React.ComponentProps<"div">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 function TabsTrigger({
@@ -56,8 +56,8 @@ function TabsTrigger({
   value,
   ...props
 }: React.ComponentProps<"button"> & { value: string }) {
-  const ctx = useContext(TabsContext)
-  const isActive = ctx.value === value
+  const ctx = useContext(TabsContext);
+  const isActive = ctx.value === value;
 
   return (
     <button
@@ -71,7 +71,7 @@ function TabsTrigger({
       onClick={() => ctx.onValueChange(value)}
       {...props}
     />
-  )
+  );
 }
 
 function TabsContent({
@@ -79,16 +79,19 @@ function TabsContent({
   value,
   ...props
 }: React.ComponentProps<"div"> & { value: string }) {
-  const ctx = useContext(TabsContext)
-  if (ctx.value !== value) return null
+  const ctx = useContext(TabsContext);
+  if (ctx.value !== value) return null;
 
   return (
     <div
       data-slot="tabs-content"
-      className={cn("mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)}
+      className={cn(
+        "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        className,
+      )}
       {...props}
     />
-  )
+  );
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+export { Tabs, TabsList, TabsTrigger, TabsContent };

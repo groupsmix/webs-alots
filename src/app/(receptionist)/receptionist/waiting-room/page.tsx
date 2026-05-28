@@ -1,4 +1,3 @@
-
 import { WaitingRoomManager } from "@/components/receptionist/waiting-room-manager";
 
 export default function WaitingRoomPage() {

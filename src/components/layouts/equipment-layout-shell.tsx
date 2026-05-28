@@ -1,8 +1,14 @@
 "use client";
 
 import {
-  LayoutDashboard, Package, HandCoins, Wrench,
-  Menu, X, Stethoscope, Languages,
+  LayoutDashboard,
+  Package,
+  HandCoins,
+  Wrench,
+  Menu,
+  X,
+  Stethoscope,
+  Languages,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,9 +37,15 @@ export function useEquipmentLocale() {
 }
 
 const navLabels: Record<string, Record<EquipmentLocale, string>> = {
-  "/equipment/dashboard": { fr: "Tableau de bord", ar: "\u0644\u0648\u062D\u0629 \u0627\u0644\u062A\u062D\u0643\u0645" },
+  "/equipment/dashboard": {
+    fr: "Tableau de bord",
+    ar: "\u0644\u0648\u062D\u0629 \u0627\u0644\u062A\u062D\u0643\u0645",
+  },
   "/equipment/inventory": { fr: "Inventaire", ar: "\u0627\u0644\u0645\u062E\u0632\u0648\u0646" },
-  "/equipment/rentals": { fr: "Locations", ar: "\u0627\u0644\u0625\u064A\u062C\u0627\u0631\u0627\u062A" },
+  "/equipment/rentals": {
+    fr: "Locations",
+    ar: "\u0627\u0644\u0625\u064A\u062C\u0627\u0631\u0627\u062A",
+  },
   "/equipment/maintenance": { fr: "Maintenance", ar: "\u0627\u0644\u0635\u064A\u0627\u0646\u0629" },
 };
 
@@ -82,11 +94,7 @@ function SidebarContent({
   );
 }
 
-export default function EquipmentLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function EquipmentLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [locale, setLocale] = useState<EquipmentLocale>("fr");
@@ -96,7 +104,10 @@ export default function EquipmentLayoutShell({
   }, []);
 
   const isRtl = locale === "ar";
-  const title = locale === "fr" ? "Mat\u00E9riel M\u00E9dical" : "\u0645\u0639\u062F\u0627\u062A \u0637\u0628\u064A\u0629";
+  const title =
+    locale === "fr"
+      ? "Mat\u00E9riel M\u00E9dical"
+      : "\u0645\u0639\u062F\u0627\u062A \u0637\u0628\u064A\u0629";
   const shortTitle = locale === "fr" ? "Mat\u00E9riel" : "\u0645\u0639\u062F\u0627\u062A";
 
   return (
@@ -136,11 +147,19 @@ export default function EquipmentLayoutShell({
                   <Stethoscope className="h-5 w-5 text-amber-600" />
                   <h2 className="text-lg font-semibold">{shortTitle}</h2>
                 </div>
-                <button onClick={() => setMobileOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Close menu">
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md p-1 hover:bg-muted"
+                  aria-label="Close menu"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <SidebarContent pathname={pathname} locale={locale} onNavClick={() => setMobileOpen(false)} />
+              <SidebarContent
+                pathname={pathname}
+                locale={locale}
+                onNavClick={() => setMobileOpen(false)}
+              />
             </aside>
           </div>
         )}

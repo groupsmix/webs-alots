@@ -5,11 +5,7 @@ import { InstallmentTracker } from "@/components/installments/installment-tracke
 import { useLocale } from "@/components/locale-switcher";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  getCurrentUser,
-  fetchInstallmentPlans,
-  type InstallmentPlanView,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchInstallmentPlans, type InstallmentPlanView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
@@ -23,21 +19,26 @@ export default function PatientPaymentPlanPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const plans = await fetchInstallmentPlans(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const plans = await fetchInstallmentPlans(user.clinic_id);
       if (controller.signal.aborted) return;
-    setMyPlans(plans.filter(p => p.patientId === user.id));
-    setLoading(false);
-  }
+      setMyPlans(plans.filter((p) => p.patientId === user.id));
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -47,7 +48,9 @@ export default function PatientPaymentPlanPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -85,7 +88,9 @@ export default function PatientPaymentPlanPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Payment Plan" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Payment Plan" }]}
+      />
       <h1 className="text-2xl font-bold">Payment Plan</h1>
       <p className="text-sm text-muted-foreground">
         Track your installment payments and download receipts.

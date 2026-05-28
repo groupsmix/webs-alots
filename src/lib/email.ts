@@ -19,7 +19,6 @@
 import { escapeHtml } from "@/lib/escape-html";
 import { logger } from "@/lib/logger";
 
-
 const RESEND_API_URL = "https://api.resend.com/emails";
 
 export interface EmailSendResult {
@@ -48,7 +47,8 @@ function detectProvider(): EmailProvider {
     (process.env.EMAIL_RELAY_HOST || process.env.SMTP_HOST) &&
     (process.env.EMAIL_RELAY_USER || process.env.SMTP_USER) &&
     (process.env.EMAIL_RELAY_PASS || process.env.SMTP_PASS)
-  ) return "smtp";
+  )
+    return "smtp";
   return "none";
 }
 
@@ -59,10 +59,10 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
   if (!apiKey) {
     return { success: false, error: "RESEND_API_KEY is not configured" };
   }
-    const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
+  const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
-    try {
-      const response = await fetch(RESEND_API_URL, {
+  try {
+    const response = await fetch(RESEND_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -118,11 +118,14 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
   const user = process.env.EMAIL_RELAY_USER || process.env.SMTP_USER;
   const pass = process.env.EMAIL_RELAY_PASS || process.env.SMTP_PASS;
   if (!host || !user || !pass) {
-    return { success: false, error: "EMAIL_RELAY_HOST, EMAIL_RELAY_USER, and EMAIL_RELAY_PASS must all be configured" };
+    return {
+      success: false,
+      error: "EMAIL_RELAY_HOST, EMAIL_RELAY_USER, and EMAIL_RELAY_PASS must all be configured",
+    };
   }
-    const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
+  const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
-    // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
+  // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
   // to avoid issues with TLS certificate validation on non-standard ports.
   const baseUrl = port === "443" ? `https://${host}` : `https://${host}:${port}`;
 
@@ -176,7 +179,8 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailSendResult>
       // No email provider configured
       return {
         success: false,
-        error: "No email provider configured. Set RESEND_API_KEY or EMAIL_RELAY_HOST/EMAIL_RELAY_USER/EMAIL_RELAY_PASS.",
+        error:
+          "No email provider configured. Set RESEND_API_KEY or EMAIL_RELAY_HOST/EMAIL_RELAY_USER/EMAIL_RELAY_PASS.",
       };
   }
 }

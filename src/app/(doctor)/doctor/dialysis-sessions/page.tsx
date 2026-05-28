@@ -12,7 +12,9 @@ export default function DoctorDialysisSessionsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Dialysis Sessions" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Dialysis Sessions" }]}
+      />
       <h1 className="text-2xl font-bold">Dialysis Sessions</h1>
       <Tabs defaultValue="schedule">
         <TabsList>

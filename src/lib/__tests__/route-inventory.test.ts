@@ -29,9 +29,7 @@ function findApiRoutes(dir: string, prefix = "/api"): string[] {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       // Dynamic route segments: [id] → :id
-      const segment = entry.name.startsWith("[")
-        ? `:${entry.name.slice(1, -1)}`
-        : entry.name;
+      const segment = entry.name.startsWith("[") ? `:${entry.name.slice(1, -1)}` : entry.name;
       routes.push(...findApiRoutes(fullPath, `${prefix}/${segment}`));
     } else if (entry.name === "route.ts" || entry.name === "route.tsx") {
       routes.push(prefix);
@@ -96,10 +94,7 @@ describe("API Route Inventory", () => {
     for (const pattern of sensitivePatterns) {
       const matchingRoutes = allRoutes.filter((r) => r.startsWith(pattern));
       for (const route of matchingRoutes) {
-        expect(
-          isPublicRoute(route),
-          `Sensitive route ${route} should NOT be public`,
-        ).toBe(false);
+        expect(isPublicRoute(route), `Sensitive route ${route} should NOT be public`).toBe(false);
       }
     }
   });

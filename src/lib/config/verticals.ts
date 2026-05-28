@@ -12,9 +12,4 @@
  */
 
 /** Vertical ID — each business vertical has a unique string identifier. */
-export type VerticalId =
-  | "healthcare"
-  | "beauty"
-  | "restaurant"
-  | "fitness"
-  | "veterinary";
+export type VerticalId = "healthcare" | "beauty" | "restaurant" | "fitness" | "veterinary";

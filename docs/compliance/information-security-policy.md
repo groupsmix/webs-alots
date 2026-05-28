@@ -50,21 +50,21 @@ Every database operation MUST be scoped to a `clinic_id`. See `AGENTS.md` for en
 
 ### 4.4 Data Classification
 
-| Classification | Examples | Controls |
-|---|---|---|
-| **Restricted (PHI)** | Patient records, prescriptions, documents | AES-256-GCM encryption, audit logging, tenant isolation |
-| **Confidential** | API keys, credentials, internal configs | Environment variables, secret rotation, never logged |
-| **Internal** | Source code, architecture docs, audit reports | Access-controlled repository, PR review |
-| **Public** | Marketing site, API docs, privacy policy | No special controls |
+| Classification       | Examples                                      | Controls                                                |
+| -------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| **Restricted (PHI)** | Patient records, prescriptions, documents     | AES-256-GCM encryption, audit logging, tenant isolation |
+| **Confidential**     | API keys, credentials, internal configs       | Environment variables, secret rotation, never logged    |
+| **Internal**         | Source code, architecture docs, audit reports | Access-controlled repository, PR review                 |
+| **Public**           | Marketing site, API docs, privacy policy      | No special controls                                     |
 
 ## 5. Roles and Responsibilities
 
-| Role | Responsibility |
-|---|---|
-| **CTO / Security Lead** | Policy ownership, risk assessment, incident response |
-| **Engineering Team** | Secure coding practices, PR reviews, vulnerability remediation |
-| **Clinic Administrators** | User access management within their tenant |
-| **All Staff** | Compliance with this policy, security awareness training |
+| Role                      | Responsibility                                                 |
+| ------------------------- | -------------------------------------------------------------- |
+| **CTO / Security Lead**   | Policy ownership, risk assessment, incident response           |
+| **Engineering Team**      | Secure coding practices, PR reviews, vulnerability remediation |
+| **Clinic Administrators** | User access management within their tenant                     |
+| **All Staff**             | Compliance with this policy, security awareness training       |
 
 ## 6. Key Controls
 
@@ -126,7 +126,7 @@ Any exception to this policy must be documented, risk-assessed, and approved by 
 
 **Approval:**
 
-| Name | Role | Date | Signature |
-|---|---|---|---|
-| ___________________ | CTO | __________ | __________ |
-| ___________________ | Security Lead | __________ | __________ |
+| Name                           | Role          | Date             | Signature        |
+| ------------------------------ | ------------- | ---------------- | ---------------- |
+| **\*\*\*\***\_\_\_**\*\*\*\*** | CTO           | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| **\*\*\*\***\_\_\_**\*\*\*\*** | Security Lead | \***\*\_\_\*\*** | \***\*\_\_\*\*** |

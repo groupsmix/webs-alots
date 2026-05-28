@@ -40,10 +40,7 @@ function getStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
   return "ok";
 }
 
-function searchProducts(
-  products: PublicPharmacyProduct[],
-  query: string,
-): PublicPharmacyProduct[] {
+function searchProducts(products: PublicPharmacyProduct[], query: string): PublicPharmacyProduct[] {
   const q = query.toLowerCase();
   return products.filter(
     (p) =>
@@ -60,15 +57,29 @@ async function fetchProductsClient(clinicId: string): Promise<PublicPharmacyProd
   const supabase = createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
-    supabase.from("products").select("id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength").eq("clinic_id", clinicId),
-    supabase.from("stock").select("product_id, quantity, min_threshold, expiry_date").eq("clinic_id", clinicId),
+    supabase
+      .from("products")
+      .select(
+        "id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength",
+      )
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("stock")
+      .select("product_id, quantity, min_threshold, expiry_date")
+      .eq("clinic_id", clinicId),
   ]);
 
   if (!products) return [];
 
   const stockMap = new Map(
-    ((stockRows ?? []) as { product_id: string; quantity: number; min_threshold: number; expiry_date: string | null }[])
-      .map((s) => [s.product_id, s]),
+    (
+      (stockRows ?? []) as {
+        product_id: string;
+        quantity: number;
+        min_threshold: number;
+        expiry_date: string | null;
+      }[]
+    ).map((s) => [s.product_id, s]),
   );
 
   return products.map((p: Record<string, unknown>) => {
@@ -181,14 +192,20 @@ export default function CatalogPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchProductsClient(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setAllProducts(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const filtered = useMemo(() => {
@@ -207,7 +224,9 @@ export default function CatalogPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -255,74 +274,88 @@ export default function CatalogPage() {
         </div>
       ) : (
         <>
-      {/* Results count */}
-      <p className="text-sm text-muted-foreground mb-4">
-        Showing {filtered.length} product{filtered.length !== 1 ? "s" : ""}
-      </p>
+          {/* Results count */}
+          <p className="text-sm text-muted-foreground mb-4">
+            Showing {filtered.length} product{filtered.length !== 1 ? "s" : ""}
+          </p>
 
-      {/* Product Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((product) => {
-          const stock = getStockStatus(product);
-          return (
-            <Card
-              key={product.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => handleProductClick(product)}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <Badge
-                    variant={product.requiresPrescription ? "destructive" : "secondary"}
-                    className="text-xs"
-                  >
-                    {product.requiresPrescription ? "Rx Required" : "OTC"}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs capitalize">
-                    {product.category.replace("-", " ")}
-                  </Badge>
-                </div>
-                <h3 className="font-semibold mb-1">{product.name}</h3>
-                {product.genericName && (
-                  <p className="text-xs text-muted-foreground italic mb-1">{product.genericName}</p>
-                )}
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                  {product.description}
-                </p>
-                {product.dosageForm && (
-                  <p className="text-xs text-muted-foreground mb-1">
-                    {product.dosageForm} {product.strength ? `- ${product.strength}` : ""}
-                  </p>
-                )}
-                {product.manufacturer && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  by {product.manufacturer}
-                </p>
-                )}
-                <div className="flex items-center justify-between pt-3 border-t">
-                  <span className="text-lg font-bold text-emerald-600">
-                    {product.price} {product.currency}
-                  </span>
-                  <Badge
-                    variant={stock === "ok" ? "outline" : stock === "low" ? "secondary" : "destructive"}
-                    className={stock === "ok" ? "text-emerald-600 border-emerald-600" : stock === "low" ? "text-yellow-600" : ""}
-                  >
-                    {stock === "ok" ? "In Stock" : stock === "low" ? "Low Stock" : "Out of Stock"}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+          {/* Product Grid */}
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((product) => {
+              const stock = getStockStatus(product);
+              return (
+                <Card
+                  key={product.id}
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleProductClick(product)}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <Badge
+                        variant={product.requiresPrescription ? "destructive" : "secondary"}
+                        className="text-xs"
+                      >
+                        {product.requiresPrescription ? "Rx Required" : "OTC"}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {product.category.replace("-", " ")}
+                      </Badge>
+                    </div>
+                    <h3 className="font-semibold mb-1">{product.name}</h3>
+                    {product.genericName && (
+                      <p className="text-xs text-muted-foreground italic mb-1">
+                        {product.genericName}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {product.description}
+                    </p>
+                    {product.dosageForm && (
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {product.dosageForm} {product.strength ? `- ${product.strength}` : ""}
+                      </p>
+                    )}
+                    {product.manufacturer && (
+                      <p className="text-xs text-muted-foreground mb-3">
+                        by {product.manufacturer}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between pt-3 border-t">
+                      <span className="text-lg font-bold text-emerald-600">
+                        {product.price} {product.currency}
+                      </span>
+                      <Badge
+                        variant={
+                          stock === "ok" ? "outline" : stock === "low" ? "secondary" : "destructive"
+                        }
+                        className={
+                          stock === "ok"
+                            ? "text-emerald-600 border-emerald-600"
+                            : stock === "low"
+                              ? "text-yellow-600"
+                              : ""
+                        }
+                      >
+                        {stock === "ok"
+                          ? "In Stock"
+                          : stock === "low"
+                            ? "Low Stock"
+                            : "Out of Stock"}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-      {filtered.length === 0 && (
-        <div className="text-center py-16">
-          <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">No products found</h3>
-          <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
-        </div>
-      )}
+          {filtered.length === 0 && (
+            <div className="text-center py-16">
+              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-semibold text-lg mb-2">No products found</h3>
+              <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+            </div>
+          )}
         </>
       )}
 

@@ -1,4 +1,3 @@
-
 import { ReceptionistBookingCalendar } from "@/components/receptionist/booking-calendar";
 
 export default function ReceptionistBookingsPage() {

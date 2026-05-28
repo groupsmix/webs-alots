@@ -8,13 +8,7 @@ const post: BlogPost = {
   excerpt:
     "La digitalisation des cabinets medicaux au Maroc est en plein essor. Decouvrez les fonctionnalites indispensables d'un logiciel de gestion moderne et comment choisir la solution adaptee a votre pratique.",
   category: "gestion-cabinet",
-  tags: [
-    "logiciel medical",
-    "gestion cabinet",
-    "Maroc",
-    "digitalisation",
-    "SaaS sante",
-  ],
+  tags: ["logiciel medical", "gestion cabinet", "Maroc", "digitalisation", "SaaS sante"],
   author: "Equipe Oltigo",
   publishedAt: "2026-01-15",
   readTime: "8 min",

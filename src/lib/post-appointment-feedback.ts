@@ -84,8 +84,8 @@ export async function handleFeedbackResponse(params: {
     await sendTextMessage(
       patientPhone,
       `Thank you for the great rating, ${patientName}! 🙏\n\n` +
-      `We'd love it if you could share your experience on Google to help others find us:\n${reviewUrl}\n\n` +
-      `— ${clinicName}`,
+        `We'd love it if you could share your experience on Google to help others find us:\n${reviewUrl}\n\n` +
+        `— ${clinicName}`,
     );
   } else if (rating >= 4) {
     // Positive but no Google Place ID configured
@@ -98,8 +98,8 @@ export async function handleFeedbackResponse(params: {
     await sendTextMessage(
       patientPhone,
       `Thank you for your feedback, ${patientName}. We're sorry your experience wasn't perfect.\n\n` +
-      `Your feedback is important to us and has been shared with our team. ` +
-      `If you'd like to share more details, please reply to this message.\n\n— ${clinicName}`,
+        `Your feedback is important to us and has been shared with our team. ` +
+        `If you'd like to share more details, please reply to this message.\n\n— ${clinicName}`,
     );
 
     // Notify clinic admin about the low rating

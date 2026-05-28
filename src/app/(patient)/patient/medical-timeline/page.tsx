@@ -80,12 +80,12 @@ export default async function MedicalTimelinePage() {
   const supabase = await createClient();
 
   // Get the current user's profile
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return (
-      <div className="p-6 text-center text-muted-foreground">
-        {t("fr", "auth.genericError")}
-      </div>
+      <div className="p-6 text-center text-muted-foreground">{t("fr", "auth.genericError")}</div>
     );
   }
 
@@ -98,9 +98,7 @@ export default async function MedicalTimelinePage() {
 
   if (!profile) {
     return (
-      <div className="p-6 text-center text-muted-foreground">
-        {t("fr", "auth.genericError")}
-      </div>
+      <div className="p-6 text-center text-muted-foreground">{t("fr", "auth.genericError")}</div>
     );
   }
 
@@ -113,7 +111,9 @@ export default async function MedicalTimelinePage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical Timeline" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical Timeline" }]}
+      />
       <h1 className="text-2xl font-bold">{t("fr", "carnet.title")}</h1>
 
       {timeline.length === 0 ? (
@@ -135,17 +135,13 @@ export default async function MedicalTimelinePage() {
                     >
                       {event.type}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {event.date}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{event.date}</span>
                   </div>
                   <CardTitle className="text-sm">{event.title}</CardTitle>
                 </CardHeader>
                 {event.description && (
                   <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground">
-                      {event.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{event.description}</p>
                   </CardContent>
                 )}
               </Card>

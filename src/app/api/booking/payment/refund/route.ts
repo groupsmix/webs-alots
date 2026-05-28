@@ -12,8 +12,9 @@ const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
  *
  * Refund a completed payment (full or partial).
  */
-export const POST = withAuthValidation(paymentRefundSchema, async (body, request, { supabase }) => {
-
+export const POST = withAuthValidation(
+  paymentRefundSchema,
+  async (body, request, { supabase }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
@@ -39,11 +40,7 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
     const refundAmount = body.amount ?? payment.amount;
 
     // Validate refund amount
-    if (
-      typeof refundAmount !== "number" ||
-      !Number.isFinite(refundAmount) ||
-      refundAmount <= 0
-    ) {
+    if (typeof refundAmount !== "number" || !Number.isFinite(refundAmount) || refundAmount <= 0) {
       return apiError("Refund amount must be a positive number");
     }
 
@@ -51,7 +48,9 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
     const remaining = payment.amount - alreadyRefunded;
 
     if (refundAmount > remaining) {
-      return apiError(`Refund amount (${refundAmount}) exceeds remaining refundable amount (${remaining})`);
+      return apiError(
+        `Refund amount (${refundAmount}) exceeds remaining refundable amount (${remaining})`,
+      );
     }
 
     const newRefundedTotal = alreadyRefunded + refundAmount;
@@ -80,11 +79,7 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
     }
 
     if (!updated) {
-      return apiError(
-        "Concurrent refund detected — please retry",
-        409,
-        "CONCURRENT_REFUND",
-      );
+      return apiError("Concurrent refund detected — please retry", 409, "CONCURRENT_REFUND");
     }
 
     await logAuditEvent({
@@ -96,4 +91,6 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
     });
 
     return apiSuccess({ status: "refunded", message: "Payment refunded" });
-}, ADMIN_ROLES);
+  },
+  ADMIN_ROLES,
+);

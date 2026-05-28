@@ -42,27 +42,32 @@ export default function AdminPatientDatabasePage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [p, a, rx] = await Promise.all([
-      fetchPatients(user.clinic_id),
-      fetchAppointments(user.clinic_id),
-      fetchPrescriptions(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [p, a, rx] = await Promise.all([
+        fetchPatients(user.clinic_id),
+        fetchAppointments(user.clinic_id),
+        fetchPrescriptions(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setPatientsList(p);
-    setAppointmentsList(a);
-    setPrescriptionsList(rx);
-    setLoading(false);
-  }
+      setPatientsList(p);
+      setAppointmentsList(a);
+      setPrescriptionsList(rx);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const patients = patientsList;
@@ -73,7 +78,7 @@ export default function AdminPatientDatabasePage() {
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.phone.includes(search) ||
-      p.email.toLowerCase().includes(search.toLowerCase())
+      p.email.toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -83,7 +88,9 @@ export default function AdminPatientDatabasePage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -165,7 +172,12 @@ export default function AdminPatientDatabasePage() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setSelectedPatient(patient)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => setSelectedPatient(patient)}
+                  >
                     View Profile
                   </Button>
                 </div>
@@ -178,14 +190,19 @@ export default function AdminPatientDatabasePage() {
       {filtered.length === 0 && (
         <div className="text-center py-12">
           <User className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">No patients found matching &quot;{search}&quot;</p>
+          <p className="text-sm text-muted-foreground">
+            No patients found matching &quot;{search}&quot;
+          </p>
         </div>
       )}
 
       {/* Patient Profile Dialog */}
       <Dialog open={selectedPatient !== null} onOpenChange={() => setSelectedPatient(null)}>
         {selectedPatient && (
-          <DialogContent onClose={() => setSelectedPatient(null)} className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogContent
+            onClose={() => setSelectedPatient(null)}
+            className="max-w-lg max-h-[80vh] overflow-y-auto"
+          >
             <DialogHeader>
               <DialogTitle>Patient Profile</DialogTitle>
               <DialogDescription>{selectedPatient.name}</DialogDescription>
@@ -198,9 +215,12 @@ export default function AdminPatientDatabasePage() {
                 <div>
                   <p className="font-semibold text-lg">{selectedPatient.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {selectedPatient.gender === "M" ? "Male" : "Female"}, {selectedPatient.age} years old
+                    {selectedPatient.gender === "M" ? "Male" : "Female"}, {selectedPatient.age}{" "}
+                    years old
                   </p>
-                  <p className="text-xs text-muted-foreground">DOB: {selectedPatient.dateOfBirth}</p>
+                  <p className="text-xs text-muted-foreground">
+                    DOB: {selectedPatient.dateOfBirth}
+                  </p>
                 </div>
               </div>
 
@@ -211,7 +231,11 @@ export default function AdminPatientDatabasePage() {
                 </div>
                 <div className="border rounded-lg p-3">
                   <p className="text-xs text-muted-foreground">Email</p>
-                  <DataMask value={selectedPatient.email} type="email" className="font-medium text-xs" />
+                  <DataMask
+                    value={selectedPatient.email}
+                    type="email"
+                    className="font-medium text-xs"
+                  />
                 </div>
                 <div className="border rounded-lg p-3">
                   <p className="text-xs text-muted-foreground">Insurance</p>
@@ -228,7 +252,9 @@ export default function AdminPatientDatabasePage() {
                   <p className="text-sm font-medium mb-1">Allergies</p>
                   <div className="flex gap-1 flex-wrap">
                     {selectedPatient.allergies.map((a) => (
-                      <Badge key={a} variant="destructive" className="text-xs">{a}</Badge>
+                      <Badge key={a} variant="destructive" className="text-xs">
+                        {a}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -236,26 +262,41 @@ export default function AdminPatientDatabasePage() {
 
               <Tabs defaultValue="appointments">
                 <TabsList className="w-full">
-                  <TabsTrigger value="appointments" className="flex-1">Appointments</TabsTrigger>
-                  <TabsTrigger value="prescriptions" className="flex-1">Prescriptions</TabsTrigger>
+                  <TabsTrigger value="appointments" className="flex-1">
+                    Appointments
+                  </TabsTrigger>
+                  <TabsTrigger value="prescriptions" className="flex-1">
+                    Prescriptions
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="appointments">
                   <div className="space-y-2 mt-2">
                     {getPatientAppts(selectedPatient.id).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">No appointments</p>
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No appointments
+                      </p>
                     )}
                     {getPatientAppts(selectedPatient.id).map((appt) => (
-                      <div key={appt.id} className="flex items-center justify-between border rounded-lg p-3 text-sm">
+                      <div
+                        key={appt.id}
+                        className="flex items-center justify-between border rounded-lg p-3 text-sm"
+                      >
                         <div>
                           <p className="font-medium">{appt.serviceName}</p>
-                          <p className="text-xs text-muted-foreground">{appt.doctorName} — {appt.date} at {appt.time}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {appt.doctorName} — {appt.date} at {appt.time}
+                          </p>
                         </div>
                         <Badge
                           variant={
-                            appt.status === "completed" ? "default" :
-                            appt.status === "cancelled" ? "destructive" :
-                            appt.status === "no-show" ? "destructive" : "secondary"
+                            appt.status === "completed"
+                              ? "default"
+                              : appt.status === "cancelled"
+                                ? "destructive"
+                                : appt.status === "no-show"
+                                  ? "destructive"
+                                  : "secondary"
                           }
                           className="text-xs"
                         >
@@ -269,7 +310,9 @@ export default function AdminPatientDatabasePage() {
                 <TabsContent value="prescriptions">
                   <div className="space-y-2 mt-2">
                     {getPatientPrescriptions(selectedPatient.id).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">No prescriptions</p>
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No prescriptions
+                      </p>
                     )}
                     {getPatientPrescriptions(selectedPatient.id).map((rx) => (
                       <div key={rx.id} className="border rounded-lg p-3">
@@ -283,7 +326,8 @@ export default function AdminPatientDatabasePage() {
                         <div className="space-y-1">
                           {rx.medications.map((med, i) => (
                             <p key={i} className="text-xs text-muted-foreground">
-                              <span className="font-medium text-foreground">{med.name}</span> — {med.dosage} for {med.duration}
+                              <span className="font-medium text-foreground">{med.name}</span> —{" "}
+                              {med.dosage} for {med.duration}
                             </p>
                           ))}
                         </div>

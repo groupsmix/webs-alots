@@ -53,7 +53,7 @@ export function Tooltip({ content, children, side = "top", className }: TooltipP
             "absolute z-50 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background shadow-md",
             "animate-in fade-in-0 zoom-in-95 motion-reduce:animate-none",
             positionClasses[side],
-            className
+            className,
           )}
         >
           {content}

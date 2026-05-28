@@ -1,13 +1,26 @@
 import {
-  FlaskConical, Search, FileText, MapPin, Phone,
-  ArrowRight, Clock, Shield, Microscope, Activity,
-  Droplets, Scan,
+  FlaskConical,
+  Search,
+  FileText,
+  MapPin,
+  Phone,
+  ArrowRight,
+  Clock,
+  Shield,
+  Microscope,
+  Activity,
+  Droplets,
+  Scan,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { getPublicLabTests, getPublicCollectionPoints, getLabTestCategories } from "@/lib/data/lab-public";
+import {
+  getPublicLabTests,
+  getPublicCollectionPoints,
+  getLabTestCategories,
+} from "@/lib/data/lab-public";
 
 export const metadata: Metadata = {
   title: "Laboratoire — Accueil",
@@ -55,8 +68,8 @@ export default async function LabHomePage() {
                 Accurate <span className="text-blue-600">Diagnostics</span> You Can Trust
               </h1>
               <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-                Comprehensive lab tests, radiology exams, and fast results.
-                Access your results online with your secure patient code.
+                Comprehensive lab tests, radiology exams, and fast results. Access your results
+                online with your secure patient code.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/lab/my-results" className={linkBtnPrimary}>
@@ -107,10 +120,30 @@ export default async function LabHomePage() {
           </p>
           <div className="grid gap-8 md:grid-cols-4 max-w-4xl mx-auto">
             {[
-              { step: "1", title: "Get Referred", desc: "Bring your doctor's prescription or request to any collection point", icon: FileText },
-              { step: "2", title: "Sample Collection", desc: "Visit a collection point or schedule home collection", icon: Droplets },
-              { step: "3", title: "Analysis", desc: "Our certified lab processes your samples with precision", icon: Microscope },
-              { step: "4", title: "Results Online", desc: "Access your results securely online with your patient code", icon: Search },
+              {
+                step: "1",
+                title: "Get Referred",
+                desc: "Bring your doctor's prescription or request to any collection point",
+                icon: FileText,
+              },
+              {
+                step: "2",
+                title: "Sample Collection",
+                desc: "Visit a collection point or schedule home collection",
+                icon: Droplets,
+              },
+              {
+                step: "3",
+                title: "Analysis",
+                desc: "Our certified lab processes your samples with precision",
+                icon: Microscope,
+              },
+              {
+                step: "4",
+                title: "Results Online",
+                desc: "Access your results securely online with your patient code",
+                icon: Search,
+              },
             ].map((s) => (
               <div key={s.step} className="text-center">
                 <div className="h-14 w-14 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mx-auto mb-4">
@@ -142,10 +175,14 @@ export default async function LabHomePage() {
                   <Card key={category} className="hover:shadow-md transition-shadow">
                     <CardContent className="pt-6">
                       <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mb-4">
-                        {categoryIcons[category.toLowerCase()] || <FlaskConical className="h-6 w-6" />}
+                        {categoryIcons[category.toLowerCase()] || (
+                          <FlaskConical className="h-6 w-6" />
+                        )}
                       </div>
                       <h3 className="font-semibold mb-1 capitalize">{category}</h3>
-                      <p className="text-sm text-muted-foreground">{count} test{count !== 1 ? "s" : ""} available</p>
+                      <p className="text-sm text-muted-foreground">
+                        {count} test{count !== 1 ? "s" : ""} available
+                      </p>
                     </CardContent>
                   </Card>
                 );
@@ -205,14 +242,21 @@ export default async function LabHomePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Access Your Results Online</h2>
           <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-            Use your patient code to securely access your lab and radiology results online. No need to visit the lab.
+            Use your patient code to securely access your lab and radiology results online. No need
+            to visit the lab.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/lab/my-results" className="inline-flex items-center justify-center rounded-lg bg-white text-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-50 transition-colors">
+            <Link
+              href="/lab/my-results"
+              className="inline-flex items-center justify-center rounded-lg bg-white text-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-50 transition-colors"
+            >
               <FileText className="mr-2 h-4 w-4" />
               View Results
             </Link>
-            <Link href="/lab/collection-points" className="inline-flex items-center justify-center rounded-lg border border-white/50 text-white px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors">
+            <Link
+              href="/lab/collection-points"
+              className="inline-flex items-center justify-center rounded-lg border border-white/50 text-white px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
+            >
               <MapPin className="mr-2 h-4 w-4" />
               Find Collection Points
             </Link>

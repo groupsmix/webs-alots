@@ -46,8 +46,18 @@ function formatAriaDate(year: number, month: number, day: number): string {
 }
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -121,55 +131,58 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
     btn?.focus();
   }, [focusedDay, currentMonth, currentYear]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const current = focusedDay ?? tabbableDay;
-    let next = current;
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const current = focusedDay ?? tabbableDay;
+      let next = current;
 
-    switch (e.key) {
-      case "ArrowLeft":
-        next = current - 1;
-        break;
-      case "ArrowRight":
-        next = current + 1;
-        break;
-      case "ArrowUp":
-        next = current - 7;
-        break;
-      case "ArrowDown":
-        next = current + 7;
-        break;
-      case "Home":
-        next = 1;
-        break;
-      case "End":
-        next = daysInMonth;
-        break;
-      case "PageUp":
-        e.preventDefault();
+      switch (e.key) {
+        case "ArrowLeft":
+          next = current - 1;
+          break;
+        case "ArrowRight":
+          next = current + 1;
+          break;
+        case "ArrowUp":
+          next = current - 7;
+          break;
+        case "ArrowDown":
+          next = current + 7;
+          break;
+        case "Home":
+          next = 1;
+          break;
+        case "End":
+          next = daysInMonth;
+          break;
+        case "PageUp":
+          e.preventDefault();
+          prevMonth();
+          return;
+        case "PageDown":
+          e.preventDefault();
+          nextMonth();
+          return;
+        default:
+          return;
+      }
+
+      e.preventDefault();
+
+      // Navigate to prev/next month if out of range
+      if (next < 1) {
         prevMonth();
         return;
-      case "PageDown":
-        e.preventDefault();
+      }
+      if (next > daysInMonth) {
         nextMonth();
         return;
-      default:
-        return;
-    }
+      }
 
-    e.preventDefault();
-
-    // Navigate to prev/next month if out of range
-    if (next < 1) {
-      prevMonth();
-      return;
-    }
-    if (next > daysInMonth) {
-      nextMonth();
-      return;
-    }
-
-    setFocusedDay(next);
-  }, [focusedDay, tabbableDay, daysInMonth, prevMonth, nextMonth]);
+      setFocusedDay(next);
+    },
+    [focusedDay, tabbableDay, daysInMonth, prevMonth, nextMonth],
+  );
 
   return (
     <div>
@@ -194,7 +207,11 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
       >
         <div role="row" className="contents">
           {dayNames.map((d) => (
-            <div key={d} role="columnheader" className="text-xs font-medium text-muted-foreground py-2">
+            <div
+              key={d}
+              role="columnheader"
+              className="text-xs font-medium text-muted-foreground py-2"
+            >
               {d}
             </div>
           ))}
@@ -213,7 +230,9 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
             const isTabbable = day === tabbableDay;
 
             const disableReason = available ? null : getDisableReason(day);
-            const ariaLabel = formatAriaDate(currentYear, currentMonth, day) + (disableReason ? `, ${disableReason}` : "");
+            const ariaLabel =
+              formatAriaDate(currentYear, currentMonth, day) +
+              (disableReason ? `, ${disableReason}` : "");
 
             const btn = (
               <button
@@ -237,11 +256,7 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
 
             return (
               <div key={day} role="gridcell" aria-selected={isSelected}>
-                {disableReason ? (
-                  <Tooltip content={disableReason}>{btn}</Tooltip>
-                ) : (
-                  btn
-                )}
+                {disableReason ? <Tooltip content={disableReason}>{btn}</Tooltip> : btn}
               </div>
             );
           })}

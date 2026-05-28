@@ -12,9 +12,7 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Tenant isolation — header injection prevention", () => {
-  test("middleware strips injected x-tenant-clinic-id header", async ({
-    request,
-  }) => {
+  test("middleware strips injected x-tenant-clinic-id header", async ({ request }) => {
     // An attacker could try to inject x-tenant-clinic-id on a root-domain
     // request to impersonate another tenant. The middleware MUST strip all
     // x-tenant-* headers from incoming requests before processing.
@@ -32,9 +30,7 @@ test.describe("Tenant isolation — header injection prevention", () => {
     expect(body.clinicId).not.toBe("attacker-injected-clinic-id");
   });
 
-  test("middleware strips injected x-tenant-clinic-name header", async ({
-    request,
-  }) => {
+  test("middleware strips injected x-tenant-clinic-name header", async ({ request }) => {
     const response = await request.get("/api/branding", {
       headers: {
         "x-tenant-clinic-name": "Attacker Clinic",
@@ -46,9 +42,7 @@ test.describe("Tenant isolation — header injection prevention", () => {
     expect(body.name).not.toBe("Attacker Clinic");
   });
 
-  test("middleware strips all x-tenant-* headers from incoming requests", async ({
-    request,
-  }) => {
+  test("middleware strips all x-tenant-* headers from incoming requests", async ({ request }) => {
     // Try injecting all tenant headers at once
     const response = await request.get("/api/branding", {
       headers: {
@@ -67,17 +61,13 @@ test.describe("Tenant isolation — header injection prevention", () => {
 });
 
 test.describe("Tenant isolation — API data scoping", () => {
-  test("GET /api/patients returns auth error without credentials", async ({
-    request,
-  }) => {
+  test("GET /api/patients returns auth error without credentials", async ({ request }) => {
     // Without auth, the API should reject — not leak cross-tenant data
     const response = await request.get("/api/patients");
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("POST /api/patients rejects unauthenticated cross-tenant creation", async ({
-    request,
-  }) => {
+  test("POST /api/patients rejects unauthenticated cross-tenant creation", async ({ request }) => {
     const response = await request.post("/api/patients", {
       data: {
         name: "Cross-Tenant Patient",
@@ -89,9 +79,7 @@ test.describe("Tenant isolation — API data scoping", () => {
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("notification dispatch API rejects unauthenticated requests", async ({
-    request,
-  }) => {
+  test("notification dispatch API rejects unauthenticated requests", async ({ request }) => {
     // POST /api/notifications requires staff-role auth.
     // An unauthenticated request trying to send notifications to
     // another clinic's users must be rejected.
@@ -106,9 +94,7 @@ test.describe("Tenant isolation — API data scoping", () => {
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("notification trigger API rejects unauthenticated requests", async ({
-    request,
-  }) => {
+  test("notification trigger API rejects unauthenticated requests", async ({ request }) => {
     const response = await request.post("/api/notifications/trigger", {
       data: {
         trigger: "new_booking",
@@ -121,9 +107,7 @@ test.describe("Tenant isolation — API data scoping", () => {
 });
 
 test.describe("Tenant isolation — booking endpoint scoping", () => {
-  test("POST /api/booking requires booking verification token", async ({
-    request,
-  }) => {
+  test("POST /api/booking requires booking verification token", async ({ request }) => {
     // The booking endpoint requires an x-booking-token header
     // to prevent unauthenticated spam.
     const response = await request.post("/api/booking", {
@@ -147,9 +131,7 @@ test.describe("Tenant isolation — booking endpoint scoping", () => {
     expect([401, 403, 429]).toContain(response.status());
   });
 
-  test("POST /api/booking rejects invalid booking token", async ({
-    request,
-  }) => {
+  test("POST /api/booking rejects invalid booking token", async ({ request }) => {
     const response = await request.post("/api/booking", {
       headers: {
         "x-booking-token": "invalid-token-value",
@@ -176,9 +158,7 @@ test.describe("Tenant isolation — booking endpoint scoping", () => {
 });
 
 test.describe("Tenant isolation — payment webhook scoping", () => {
-  test("Stripe webhook rejects requests without signature", async ({
-    request,
-  }) => {
+  test("Stripe webhook rejects requests without signature", async ({ request }) => {
     const response = await request.post("/api/payments/webhook", {
       data: JSON.stringify({
         type: "checkout.session.completed",
@@ -201,9 +181,7 @@ test.describe("Tenant isolation — payment webhook scoping", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("Stripe webhook rejects requests with invalid signature", async ({
-    request,
-  }) => {
+  test("Stripe webhook rejects requests with invalid signature", async ({ request }) => {
     const response = await request.post("/api/payments/webhook", {
       data: JSON.stringify({
         type: "checkout.session.completed",
@@ -226,9 +204,7 @@ test.describe("Tenant isolation — payment webhook scoping", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("CMI callback rejects requests with invalid hash", async ({
-    request,
-  }) => {
+  test("CMI callback rejects requests with invalid hash", async ({ request }) => {
     const formData = new URLSearchParams();
     formData.append("oid", "fake-order-id");
     formData.append("amount", "200.00");

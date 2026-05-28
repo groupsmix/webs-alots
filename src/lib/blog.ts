@@ -32,10 +32,10 @@ export type BlogCategory =
 
 export const BLOG_CATEGORIES: Record<BlogCategory, string> = {
   "gestion-cabinet": "Gestion de Cabinet",
-  "dentaire": "Dentaire",
-  "digital": "Digital & Innovation",
-  "communication": "Communication Patient",
-  "assurance": "Assurance & Facturation",
+  dentaire: "Dentaire",
+  digital: "Digital & Innovation",
+  communication: "Communication Patient",
+  assurance: "Assurance & Facturation",
 };
 
 // ── Post registry ──
@@ -53,8 +53,7 @@ const ALL_POSTS: BlogPost[] = [post1, post2, post3, post4, post5];
 /** All published posts sorted by date (newest first). */
 export function getAllPosts(): BlogPost[] {
   return [...ALL_POSTS].sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
 }
 

@@ -81,15 +81,15 @@ export function getPhonePrefix(phone: string): string {
 // ---- TVA (Tax) Calculation ----
 
 /** Standard Moroccan TVA rate */
-export const TVA_RATE = 0.20;
+export const TVA_RATE = 0.2;
 
 /** Reduced TVA rates */
 const TVA_RATES = {
-  standard: 0.20,    // 20% - default for services
-  reduced_14: 0.14,  // 14% - transport, certain food
-  reduced_10: 0.10,  // 10% - hospitality, certain goods
-  reduced_7: 0.07,   // 7% - basic necessities
-  exempt: 0,         // 0% - medical acts (some are exempt)
+  standard: 0.2, // 20% - default for services
+  reduced_14: 0.14, // 14% - transport, certain food
+  reduced_10: 0.1, // 10% - hospitality, certain goods
+  reduced_7: 0.07, // 7% - basic necessities
+  exempt: 0, // 0% - medical acts (some are exempt)
 } as const;
 
 type TVARate = keyof typeof TVA_RATES;
@@ -160,10 +160,12 @@ export function formatMAD(
  * e.g. "1 500,00 DH" (formal) or "1500 MAD" (informal)
  */
 export function formatMADFormal(amount: number): string {
-  return new Intl.NumberFormat("fr-MA", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount) + " DH";
+  return (
+    new Intl.NumberFormat("fr-MA", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount) + " DH"
+  );
 }
 
 // ---- Insurance Types ----
@@ -331,14 +333,14 @@ export function calculateResteACharge(
 
 type MoroccanPaymentMethod =
   | "cash"
-  | "cmi"           // CMI card payment
-  | "cashplus"      // CashPlus mobile money
-  | "wafacash"      // Wafacash transfer
-  | "baridbank"     // Barid Bank / Al Barid
+  | "cmi" // CMI card payment
+  | "cashplus" // CashPlus mobile money
+  | "wafacash" // Wafacash transfer
+  | "baridbank" // Barid Bank / Al Barid
   | "bank_transfer" // Virement bancaire
-  | "check"         // Chèque
-  | "insurance"     // Direct insurance payment
-  | "online";       // Online (generic)
+  | "check" // Chèque
+  | "insurance" // Direct insurance payment
+  | "online"; // Online (generic)
 
 interface PaymentMethodInfo {
   id: MoroccanPaymentMethod;
@@ -449,7 +451,7 @@ export const PAYMENT_METHODS: PaymentMethodInfo[] = [
 interface RamadanConfig {
   enabled: boolean;
   startDate: string; // ISO date
-  endDate: string;   // ISO date
+  endDate: string; // ISO date
   workingHours: Record<number, { open: string; close: string; enabled: boolean }>;
 }
 
@@ -459,12 +461,12 @@ interface RamadanConfig {
  */
 const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
   0: { open: "09:00", close: "15:00", enabled: false }, // Sunday
-  1: { open: "09:00", close: "15:00", enabled: true },  // Monday
+  1: { open: "09:00", close: "15:00", enabled: true }, // Monday
   2: { open: "09:00", close: "15:00", enabled: true },
   3: { open: "09:00", close: "15:00", enabled: true },
   4: { open: "09:00", close: "15:00", enabled: true },
   5: { open: "09:00", close: "15:00", enabled: true },
-  6: { open: "09:00", close: "13:00", enabled: true },  // Saturday
+  6: { open: "09:00", close: "13:00", enabled: true }, // Saturday
 };
 
 /**
@@ -564,11 +566,32 @@ export function calculateInstallments(
 // ---- Moroccan Cities ----
 
 export const MOROCCAN_CITIES = [
-  "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir",
-  "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Temara",
-  "Safi", "Mohammedia", "El Jadida", "Béni Mellal", "Nador",
-  "Taza", "Settat", "Berrechid", "Khouribga", "Khémisset",
-  "Larache", "Guelmim", "Errachidia", "Ifrane",
+  "Casablanca",
+  "Rabat",
+  "Marrakech",
+  "Fès",
+  "Tanger",
+  "Agadir",
+  "Meknès",
+  "Oujda",
+  "Kénitra",
+  "Tétouan",
+  "Salé",
+  "Temara",
+  "Safi",
+  "Mohammedia",
+  "El Jadida",
+  "Béni Mellal",
+  "Nador",
+  "Taza",
+  "Settat",
+  "Berrechid",
+  "Khouribga",
+  "Khémisset",
+  "Larache",
+  "Guelmim",
+  "Errachidia",
+  "Ifrane",
 ] as const;
 
 // ---- Garde / Astreinte Types ----

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import type { FeaturesConfig, ClinicFeatureKey } from "@/lib/features";
 import { isFeatureEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
@@ -142,27 +136,11 @@ export const SPECIALTY_FEATURES: Record<string, ClinicFeatureKey[]> = {
     "consent_forms",
   ],
   // Lab technician
-  lab_tech: [
-    "lab_results",
-    "lab_tests",
-    "lab_materials",
-    "lab_invoices",
-  ],
+  lab_tech: ["lab_results", "lab_tests", "lab_materials", "lab_invoices"],
   // Pharmacist
-  pharmacist: [
-    "prescriptions",
-    "stock",
-    "sales",
-    "parapharmacy",
-  ],
+  pharmacist: ["prescriptions", "stock", "sales", "parapharmacy"],
   // Optician
-  optician: [
-    "optical_prescriptions",
-    "lens_inventory",
-    "frame_catalog",
-    "stock",
-    "sales",
-  ],
+  optician: ["optical_prescriptions", "lens_inventory", "frame_catalog", "stock", "sales"],
   // Nutritionist
   nutritionist: [
     "appointments",
@@ -245,9 +223,7 @@ function ClinicFeaturesProvider({
   initialConfig?: FeaturesConfig | null;
   clinicTypeKey?: string | null;
 }) {
-  const [config, setConfig] = useState<FeaturesConfig | null>(
-    initialConfig ?? null,
-  );
+  const [config, setConfig] = useState<FeaturesConfig | null>(initialConfig ?? null);
   const [loaded, setLoaded] = useState(!!initialConfig);
 
   useEffect(() => {
@@ -270,7 +246,10 @@ function ClinicFeaturesProvider({
           setLoaded(true);
         }
       } catch (err) {
-        logger.warn("Failed to fetch clinic features, enabling all", { context: "clinic-features", error: err });
+        logger.warn("Failed to fetch clinic features, enabling all", {
+          context: "clinic-features",
+          error: err,
+        });
         if (!cancelled) {
           setConfig(null);
           setLoaded(true);
@@ -284,8 +263,7 @@ function ClinicFeaturesProvider({
     };
   }, [initialConfig, clinicTypeKey]);
 
-  const hasFeature = (key: ClinicFeatureKey) =>
-    !loaded || isFeatureEnabled(config, key);
+  const hasFeature = (key: ClinicFeatureKey) => !loaded || isFeatureEnabled(config, key);
 
   /**
    * Check if a feature is enabled, considering both clinic config AND user specialty
@@ -299,7 +277,7 @@ function ClinicFeaturesProvider({
 
     // Get the features allowed for this specialty
     const specialtyFeatureKeys = SPECIALTY_FEATURES[specialty.toLowerCase()] ?? [];
-    
+
     // If the feature is not in the specialty's list, don't show it
     if (specialtyFeatureKeys.length > 0 && !specialtyFeatureKeys.includes(key)) {
       return false;

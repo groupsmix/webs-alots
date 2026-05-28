@@ -28,7 +28,11 @@ const baseContext: ChatbotClinicContext = {
     { day_of_week: 0, start_time: "09:00", end_time: "12:00", is_available: false },
   ],
   faqs: [
-    { question: "Acceptez-vous les assurances?", answer: "Oui, nous acceptons CNSS et CNOPS.", keywords: ["assurance", "insurance", "cnss"] },
+    {
+      question: "Acceptez-vous les assurances?",
+      answer: "Oui, nous acceptons CNSS et CNOPS.",
+      keywords: ["assurance", "insurance", "cnss"],
+    },
   ],
   chatbotConfig: {
     enabled: true,

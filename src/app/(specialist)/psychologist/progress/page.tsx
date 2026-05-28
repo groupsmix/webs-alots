@@ -8,10 +8,10 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
 
-const MoodChart = dynamic(
-  () => import("./mood-chart").then((m) => m.MoodChart),
-  { ssr: false, loading: () => <div className="h-[300px] animate-pulse bg-muted rounded-lg" /> },
-);
+const MoodChart = dynamic(() => import("./mood-chart").then((m) => m.MoodChart), {
+  ssr: false,
+  loading: () => <div className="h-[300px] animate-pulse bg-muted rounded-lg" />,
+});
 
 export default function ProgressTrackingPage() {
   const [sessions, setSessions] = useState<TherapySessionNote[]>([]);
@@ -21,19 +21,24 @@ export default function ProgressTrackingPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    setSessions([]);
-    setLoading(false);
-  }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      setSessions([]);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -43,7 +48,9 @@ export default function ProgressTrackingPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -66,8 +73,12 @@ export default function ProgressTrackingPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">Not enough data to display progress charts.</p>
-            <p className="text-xs text-muted-foreground mt-1">Progress tracking will appear after recording therapy sessions with mood ratings.</p>
+            <p className="text-sm text-muted-foreground">
+              Not enough data to display progress charts.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Progress tracking will appear after recording therapy sessions with mood ratings.
+            </p>
           </CardContent>
         </Card>
       )}

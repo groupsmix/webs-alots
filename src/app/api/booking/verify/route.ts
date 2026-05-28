@@ -31,7 +31,11 @@ import { requireTenantWithConfig } from "@/lib/tenant";
 // allows leading "+", digits, parens, whitespace, and hyphens, which matches
 // every form (E.164, national, hyphenated) seen in production data.
 const bookingVerifySchema = z.object({
-  phone: z.string().min(6).max(30).regex(/^\+?[0-9()\s-]+$/, "Invalid phone format"),
+  phone: z
+    .string()
+    .min(6)
+    .max(30)
+    .regex(/^\+?[0-9()\s-]+$/, "Invalid phone format"),
 });
 
 /** Token validity period: 15 minutes. */
@@ -60,10 +64,9 @@ export const POST = withValidation(bookingVerifySchema, async (data, request: Ne
 
   const secret = process.env.BOOKING_TOKEN_SECRET;
   if (!secret) {
-    logger.error(
-      "BOOKING_TOKEN_SECRET is not configured — cannot issue booking tokens",
-      { context: "booking/verify" },
-    );
+    logger.error("BOOKING_TOKEN_SECRET is not configured — cannot issue booking tokens", {
+      context: "booking/verify",
+    });
     return apiError("Booking verification is not available. Contact the clinic.", 503);
   }
 

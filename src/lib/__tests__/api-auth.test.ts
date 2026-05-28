@@ -12,7 +12,9 @@ vi.mock("@/lib/crypto-utils", () => ({
   timingSafeEqual: vi.fn(),
 }));
 
-function createMockRequest(authHeader?: string): { headers: { get: (name: string) => string | null } } {
+function createMockRequest(authHeader?: string): {
+  headers: { get: (name: string) => string | null };
+} {
   return {
     headers: {
       get: (name: string) => {
@@ -80,9 +82,7 @@ describe("authenticateApiKey", () => {
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
                   limit: vi.fn().mockResolvedValue({
-                    data: [
-                      { clinic_id: "clinic-123", active: true, key_hash: "hashed_key" },
-                    ],
+                    data: [{ clinic_id: "clinic-123", active: true, key_hash: "hashed_key" }],
                     error: null,
                   }),
                 }),
@@ -111,9 +111,7 @@ describe("authenticateApiKey", () => {
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               limit: vi.fn().mockResolvedValue({
-                data: [
-                  { clinic_id: "clinic-123", active: true, key_hash: "different_hash" },
-                ],
+                data: [{ clinic_id: "clinic-123", active: true, key_hash: "different_hash" }],
                 error: null,
               }),
             }),

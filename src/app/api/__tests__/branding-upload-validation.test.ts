@@ -17,9 +17,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
 
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
   "image/jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
-  "image/png": [
-    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-  ],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
   "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
   "image/x-icon": [new Uint8Array([0x00, 0x00, 0x01, 0x00])],
   "image/vnd.microsoft.icon": [new Uint8Array([0x00, 0x00, 0x01, 0x00])],
@@ -28,9 +26,7 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   const signatures = MAGIC_BYTES[declaredType];
   if (!signatures) return false;
-  return signatures.some((sig) =>
-    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
-  );
+  return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
 }
 
 // ── ALLOWED_IMAGE_TYPES ──
@@ -65,9 +61,7 @@ describe("branding upload — validateFileContent", () => {
   });
 
   it("validates a PNG file", () => {
-    const buf = Buffer.from([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    ]);
+    const buf = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     expect(validateFileContent(buf, "image/png")).toBe(true);
   });
 

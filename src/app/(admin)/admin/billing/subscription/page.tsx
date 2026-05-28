@@ -1,8 +1,16 @@
 "use client";
 
 import {
-  CreditCard, Crown, Shield, Zap, Check, X,
-  ArrowUpRight, Settings, Loader2, BarChart3,
+  CreditCard,
+  Crown,
+  Shield,
+  Zap,
+  Check,
+  X,
+  ArrowUpRight,
+  Settings,
+  Loader2,
+  BarChart3,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useTenant } from "@/components/tenant-provider";
@@ -120,10 +128,14 @@ export default function SubscriptionBillingPage() {
 
   const planIcon = (slug: PlanSlug) => {
     switch (slug) {
-      case "free": return <Shield className="h-5 w-5" />;
-      case "starter": return <CreditCard className="h-5 w-5" />;
-      case "professional": return <Zap className="h-5 w-5" />;
-      case "enterprise": return <Crown className="h-5 w-5" />;
+      case "free":
+        return <Shield className="h-5 w-5" />;
+      case "starter":
+        return <CreditCard className="h-5 w-5" />;
+      case "professional":
+        return <Zap className="h-5 w-5" />;
+      case "enterprise":
+        return <Crown className="h-5 w-5" />;
     }
   };
 
@@ -149,11 +161,7 @@ export default function SubscriptionBillingPage() {
           </p>
         </div>
         {currentPlan !== "free" && (
-          <Button
-            variant="outline"
-            onClick={handleManageSubscription}
-            disabled={portalLoading}
-          >
+          <Button variant="outline" onClick={handleManageSubscription} disabled={portalLoading}>
             {portalLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
@@ -172,9 +180,7 @@ export default function SubscriptionBillingPage() {
               {planIcon(currentPlan)}
               Plan actuel
             </CardTitle>
-            <Badge className="text-sm px-3 py-1">
-              {currentPlanConfig.name}
-            </Badge>
+            <Badge className="text-sm px-3 py-1">{currentPlanConfig.name}</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -190,8 +196,22 @@ export default function SubscriptionBillingPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Statut</p>
-              <Badge variant={subInfo?.status === "active" ? "success" : subInfo?.status === "past_due" ? "destructive" : "secondary"}>
-                {subInfo?.status === "active" ? "Actif" : subInfo?.status === "past_due" ? "Impayé" : subInfo?.status === "cancelled" ? "Annulé" : "Actif"}
+              <Badge
+                variant={
+                  subInfo?.status === "active"
+                    ? "success"
+                    : subInfo?.status === "past_due"
+                      ? "destructive"
+                      : "secondary"
+                }
+              >
+                {subInfo?.status === "active"
+                  ? "Actif"
+                  : subInfo?.status === "past_due"
+                    ? "Impayé"
+                    : subInfo?.status === "cancelled"
+                      ? "Annulé"
+                      : "Actif"}
               </Badge>
             </div>
             <div>
@@ -335,7 +355,12 @@ export default function SubscriptionBillingPage() {
                         Upgrader
                       </Button>
                     ) : isDowngrade ? (
-                      <Button variant="ghost" size="sm" className="w-full text-muted-foreground" disabled>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-muted-foreground"
+                        disabled
+                      >
                         <X className="h-3.5 w-3.5 mr-1" />
                         Inférieur
                       </Button>
@@ -361,7 +386,9 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
     <div className="rounded-lg border p-3">
       <div className="flex items-center justify-between mb-1">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={`text-xs font-medium ${isExceeded ? "text-red-600" : isWarning ? "text-yellow-600" : ""}`}>
+        <p
+          className={`text-xs font-medium ${isExceeded ? "text-red-600" : isWarning ? "text-yellow-600" : ""}`}
+        >
           {used} / {isUnlimited ? "∞" : limit}
         </p>
       </div>
@@ -373,9 +400,7 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
           />
         </div>
       )}
-      {isUnlimited && (
-        <p className="text-[10px] text-muted-foreground">Illimité</p>
-      )}
+      {isUnlimited && <p className="text-[10px] text-muted-foreground">Illimité</p>}
     </div>
   );
 }

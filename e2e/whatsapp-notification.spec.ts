@@ -21,16 +21,12 @@ test.describe("WhatsApp webhook — GET verification", () => {
   });
 
   test("rejects verification without mode parameter", async ({ request }) => {
-    const response = await request.get(
-      "/api/webhooks?hub.verify_token=test&hub.challenge=test123",
-    );
+    const response = await request.get("/api/webhooks?hub.verify_token=test&hub.challenge=test123");
     expect(response.status()).toBe(403);
   });
 
   test("rejects verification without challenge", async ({ request }) => {
-    const response = await request.get(
-      "/api/webhooks?hub.mode=subscribe&hub.verify_token=test",
-    );
+    const response = await request.get("/api/webhooks?hub.mode=subscribe&hub.verify_token=test");
     expect(response.status()).toBe(403);
   });
 
@@ -60,9 +56,7 @@ test.describe("WhatsApp webhook — POST signature validation", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("rejects POST with invalid x-hub-signature-256", async ({
-    request,
-  }) => {
+  test("rejects POST with invalid x-hub-signature-256", async ({ request }) => {
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
       entry: [],
@@ -77,9 +71,7 @@ test.describe("WhatsApp webhook — POST signature validation", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("rejects POST with signature missing sha256= prefix", async ({
-    request,
-  }) => {
+  test("rejects POST with signature missing sha256= prefix", async ({ request }) => {
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
       entry: [],
@@ -111,9 +103,7 @@ test.describe("WhatsApp webhook — POST signature validation", () => {
 });
 
 test.describe("WhatsApp webhook — message payload structure", () => {
-  test("rejects POST with tampered payload (wrong signature)", async ({
-    request,
-  }) => {
+  test("rejects POST with tampered payload (wrong signature)", async ({ request }) => {
     // Simulate an attacker modifying the payload after signing
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
@@ -149,9 +139,7 @@ test.describe("WhatsApp webhook — message payload structure", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("rejects CONFIRM action from unverified source", async ({
-    request,
-  }) => {
+  test("rejects CONFIRM action from unverified source", async ({ request }) => {
     // An attacker tries to confirm an appointment via webhook
     // without a valid signature
     const payload = JSON.stringify({
@@ -215,9 +203,7 @@ test.describe("WhatsApp webhook — message payload structure", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("rejects RESCHEDULE action from unverified source", async ({
-    request,
-  }) => {
+  test("rejects RESCHEDULE action from unverified source", async ({ request }) => {
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
       entry: [
@@ -250,9 +236,7 @@ test.describe("WhatsApp webhook — message payload structure", () => {
 });
 
 test.describe("WhatsApp notification — trigger API access control", () => {
-  test("POST /api/notifications/trigger rejects unauthenticated request", async ({
-    request,
-  }) => {
+  test("POST /api/notifications/trigger rejects unauthenticated request", async ({ request }) => {
     const response = await request.post("/api/notifications/trigger", {
       data: {
         trigger: "booking_confirmation",
@@ -268,9 +252,7 @@ test.describe("WhatsApp notification — trigger API access control", () => {
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("POST /api/notifications rejects unauthenticated dispatch", async ({
-    request,
-  }) => {
+  test("POST /api/notifications rejects unauthenticated dispatch", async ({ request }) => {
     const response = await request.post("/api/notifications", {
       data: {
         trigger: "reminder_24h",
@@ -286,9 +268,7 @@ test.describe("WhatsApp notification — trigger API access control", () => {
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("GET /api/notifications rejects unauthenticated access", async ({
-    request,
-  }) => {
+  test("GET /api/notifications rejects unauthenticated access", async ({ request }) => {
     const response = await request.get("/api/notifications");
     expect([401, 403, 404, 405]).toContain(response.status());
   });
@@ -296,9 +276,7 @@ test.describe("WhatsApp notification — trigger API access control", () => {
   test("GET /api/notifications with userId param rejects unauthenticated access", async ({
     request,
   }) => {
-    const response = await request.get(
-      "/api/notifications?userId=other-user-id",
-    );
+    const response = await request.get("/api/notifications?userId=other-user-id");
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 });
@@ -316,9 +294,7 @@ test.describe("WhatsApp notification — supported triggers validation", () => {
   ];
 
   for (const trigger of triggers) {
-    test(`trigger "${trigger}" rejects unauthenticated request`, async ({
-      request,
-    }) => {
+    test(`trigger "${trigger}" rejects unauthenticated request`, async ({ request }) => {
       const response = await request.post("/api/notifications/trigger", {
         data: {
           trigger,
@@ -332,9 +308,7 @@ test.describe("WhatsApp notification — supported triggers validation", () => {
 });
 
 test.describe("WhatsApp webhook — status update processing", () => {
-  test("rejects status update webhook without valid signature", async ({
-    request,
-  }) => {
+  test("rejects status update webhook without valid signature", async ({ request }) => {
     // Simulate a delivery status update from Meta
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
@@ -368,9 +342,7 @@ test.describe("WhatsApp webhook — status update processing", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("rejects read receipt webhook without valid signature", async ({
-    request,
-  }) => {
+  test("rejects read receipt webhook without valid signature", async ({ request }) => {
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
       entry: [
@@ -403,9 +375,7 @@ test.describe("WhatsApp webhook — status update processing", () => {
     expect(response.status()).toBe(401);
   });
 
-  test("rejects failed status webhook without valid signature", async ({
-    request,
-  }) => {
+  test("rejects failed status webhook without valid signature", async ({ request }) => {
     const payload = JSON.stringify({
       object: "whatsapp_business_account",
       entry: [

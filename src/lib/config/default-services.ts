@@ -170,10 +170,7 @@ const CATEGORY_SERVICES: Record<string, DefaultService[]> = {
  * Get default services for a given clinic type and category.
  * First checks for type-specific services, then falls back to category defaults.
  */
-export function getDefaultServices(
-  typeKey: string,
-  category?: string,
-): DefaultService[] {
+export function getDefaultServices(typeKey: string, category?: string): DefaultService[] {
   if (TYPE_SERVICES[typeKey]) {
     return TYPE_SERVICES[typeKey];
   }

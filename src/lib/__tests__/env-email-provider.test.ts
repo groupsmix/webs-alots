@@ -79,9 +79,7 @@ describe("enforceEmailProviderExclusivity (F-10)", () => {
   it("throws in production when neither provider is configured", () => {
     vi.stubEnv("NODE_ENV", "production");
     clearEmailEnv();
-    expect(() => enforceEmailProviderExclusivity()).toThrow(
-      /No email provider is configured/,
-    );
+    expect(() => enforceEmailProviderExclusivity()).toThrow(/No email provider is configured/);
   });
 
   it("treats the relay as unconfigured when only SMTP_HOST is set without credentials", () => {
@@ -90,8 +88,6 @@ describe("enforceEmailProviderExclusivity (F-10)", () => {
     vi.stubEnv("NODE_ENV", "production");
     clearEmailEnv();
     vi.stubEnv("SMTP_HOST", "smtp.example.com");
-    expect(() => enforceEmailProviderExclusivity()).toThrow(
-      /No email provider is configured/,
-    );
+    expect(() => enforceEmailProviderExclusivity()).toThrow(/No email provider is configured/);
   });
 });

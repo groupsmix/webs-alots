@@ -88,9 +88,7 @@ export function calculateNextRetry(attempt: number): Date {
  * Insert a notification into the persistent queue for later delivery.
  * Returns the queue entry ID, or null if the insert failed.
  */
-export async function enqueueNotification(
-  params: EnqueueParams,
-): Promise<string | null> {
+export async function enqueueNotification(params: EnqueueParams): Promise<string | null> {
   try {
     const { createAdminClient } = await import("@/lib/supabase-server");
     const supabase = createAdminClient("notification") as ExtendedClient;
@@ -153,7 +151,9 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
     // Fetch pending items ready for processing
     const { data: items, error: fetchError } = await supabase
       .from("notification_queue")
-      .select("id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at")
+      .select(
+        "id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at",
+      )
       .in("status", ["pending", "failed"])
       .lte("next_attempt_at", new Date().toISOString())
       .order("next_attempt_at", { ascending: true })
@@ -181,7 +181,11 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
       result.processed++;
 
       try {
-        const payload = item.payload as { body: string, trigger?: string, metadata?: Record<string, string> };
+        const payload = item.payload as {
+          body: string;
+          trigger?: string;
+          metadata?: Record<string, string>;
+        };
         const sendResult = await deliverNotification(
           item.channel as NotificationChannel,
           item.recipient,
@@ -255,7 +259,10 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           .update({
             status: "failed",
             attempts: newAttempts,
-            next_attempt_at: newAttempts >= maxAttempts ? DEAD_LETTER_NEXT_ATTEMPT : calculateNextRetry(newAttempts).toISOString(),
+            next_attempt_at:
+              newAttempts >= maxAttempts
+                ? DEAD_LETTER_NEXT_ATTEMPT
+                : calculateNextRetry(newAttempts).toISOString(),
             error_message: errorMsg,
             updated_at: new Date().toISOString(),
           })

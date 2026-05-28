@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Plus, ClipboardList, Save, FlaskConical,
-} from "lucide-react";
+import { Plus, ClipboardList, Save, FlaskConical } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -11,14 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
-import {
-  fetchUrologyExams, createUrologyExam,
-  type UrologyExamView,
-} from "@/lib/data/specialists";
+import { fetchUrologyExams, createUrologyExam, type UrologyExamView } from "@/lib/data/specialists";
 
 const UROLOGY_TEMPLATES = [
   { value: "general", label: "General Urology Exam" },
@@ -48,27 +49,33 @@ export default function UrologyPage() {
     templateType: "general",
     findings: {} as Record<string, string>,
     labResults: {} as Record<string, string>,
-    diagnosis: "", plan: "",
+    diagnosis: "",
+    plan: "",
   });
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const e = await fetchUrologyExams(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const e = await fetchUrologyExams(user.clinic_id);
       if (controller.signal.aborted) return;
-    setExams(e);
-    setLoading(false);
-  }
+      setExams(e);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -78,7 +85,9 @@ export default function UrologyPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -88,17 +97,30 @@ export default function UrologyPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) return;
     const newId = await createUrologyExam({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
-      template_type: form.templateType, findings: form.findings,
-      lab_results: form.labResults, diagnosis: form.diagnosis, plan: form.plan,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
+      template_type: form.templateType,
+      findings: form.findings,
+      lab_results: form.labResults,
+      diagnosis: form.diagnosis,
+      plan: form.plan,
     });
     if (newId) {
-      setExams((prev) => [{
-        id: newId, patientId: user.id, patientName: "",
-        examDate: new Date().toISOString().split("T")[0],
-        templateType: form.templateType, findings: form.findings,
-        labResults: form.labResults, diagnosis: form.diagnosis, plan: form.plan,
-      }, ...prev]);
+      setExams((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          examDate: new Date().toISOString().split("T")[0],
+          templateType: form.templateType,
+          findings: form.findings,
+          labResults: form.labResults,
+          diagnosis: form.diagnosis,
+          plan: form.plan,
+        },
+        ...prev,
+      ]);
     }
     setForm({ templateType: "general", findings: {}, labResults: {}, diagnosis: "", plan: "" });
     setShowForm(false);
@@ -123,10 +145,12 @@ export default function UrologyPage() {
           </div>
 
           {exams.length === 0 ? (
-            <Card><CardContent className="py-8 text-center">
-              <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No urology exams recorded.</p>
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center">
+                <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No urology exams recorded.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
               {exams.map((exam) => (
@@ -136,7 +160,8 @@ export default function UrologyPage() {
                       <div className="flex items-center gap-2">
                         <ClipboardList className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium text-sm">
-                          {UROLOGY_TEMPLATES.find((t) => t.value === exam.templateType)?.label ?? exam.templateType}
+                          {UROLOGY_TEMPLATES.find((t) => t.value === exam.templateType)?.label ??
+                            exam.templateType}
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">{exam.examDate}</span>
@@ -151,8 +176,16 @@ export default function UrologyPage() {
                         ))}
                       </div>
                     )}
-                    {exam.diagnosis && <p className="text-sm"><span className="font-medium">Diagnosis:</span> {exam.diagnosis}</p>}
-                    {exam.plan && <p className="text-sm text-muted-foreground mt-1"><span className="font-medium">Plan:</span> {exam.plan}</p>}
+                    {exam.diagnosis && (
+                      <p className="text-sm">
+                        <span className="font-medium">Diagnosis:</span> {exam.diagnosis}
+                      </p>
+                    )}
+                    {exam.plan && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <span className="font-medium">Plan:</span> {exam.plan}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -161,48 +194,68 @@ export default function UrologyPage() {
         </TabsContent>
 
         <TabsContent value="labs">
-          <Card><CardContent className="py-8">
-            <div className="space-y-3">
-              {exams.filter((e) => Object.keys(e.labResults).length > 0).length === 0 ? (
-                <div className="text-center">
-                  <FlaskConical className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">No lab results tracked.</p>
-                </div>
-              ) : (
-                exams.filter((e) => Object.keys(e.labResults).length > 0).map((exam) => (
-                  <div key={exam.id} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">
-                        {UROLOGY_TEMPLATES.find((t) => t.value === exam.templateType)?.label ?? exam.templateType}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{exam.examDate}</span>
-                    </div>
-                    {Object.entries(exam.labResults).map(([key, value]) => (
-                      <div key={key} className="text-sm flex gap-2">
-                        <span className="font-medium">{key}:</span>
-                        <span className="text-muted-foreground">{value}</span>
-                      </div>
-                    ))}
+          <Card>
+            <CardContent className="py-8">
+              <div className="space-y-3">
+                {exams.filter((e) => Object.keys(e.labResults).length > 0).length === 0 ? (
+                  <div className="text-center">
+                    <FlaskConical className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">No lab results tracked.</p>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent></Card>
+                ) : (
+                  exams
+                    .filter((e) => Object.keys(e.labResults).length > 0)
+                    .map((exam) => (
+                      <div key={exam.id} className="rounded-lg border p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">
+                            {UROLOGY_TEMPLATES.find((t) => t.value === exam.templateType)?.label ??
+                              exam.templateType}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{exam.examDate}</span>
+                        </div>
+                        {Object.entries(exam.labResults).map(([key, value]) => (
+                          <div key={key} className="text-sm flex gap-2">
+                            <span className="font-medium">{key}:</span>
+                            <span className="text-muted-foreground">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>New Urology Exam</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>New Urology Exam</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Template</Label>
-              <Select value={form.templateType} onValueChange={(v) => setForm((p) => ({
-                ...p, templateType: v, findings: {},
-              }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={form.templateType}
+                onValueChange={(v) =>
+                  setForm((p) => ({
+                    ...p,
+                    templateType: v,
+                    findings: {},
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {UROLOGY_TEMPLATES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {UROLOGY_TEMPLATES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -211,11 +264,16 @@ export default function UrologyPage() {
               {(TEMPLATE_FIELDS[form.templateType] ?? []).map((field) => (
                 <div key={field} className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{field}</Label>
-                  <Input placeholder={`${field}...`}
+                  <Input
+                    placeholder={`${field}...`}
                     value={form.findings[field] ?? ""}
-                    onChange={(e) => setForm((p) => ({
-                      ...p, findings: { ...p.findings, [field]: e.target.value },
-                    }))} />
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        findings: { ...p.findings, [field]: e.target.value },
+                      }))
+                    }
+                  />
                 </div>
               ))}
             </div>
@@ -225,28 +283,44 @@ export default function UrologyPage() {
                 {["Urinalysis", "PSA", "Creatinine", "Culture"].map((lab) => (
                   <div key={lab} className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground">{lab}</Label>
-                    <Input className="h-7 text-xs" placeholder={lab}
+                    <Input
+                      className="h-7 text-xs"
+                      placeholder={lab}
                       value={form.labResults[lab] ?? ""}
-                      onChange={(e) => setForm((p) => ({
-                        ...p, labResults: { ...p.labResults, [lab]: e.target.value },
-                      }))} />
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          labResults: { ...p.labResults, [lab]: e.target.value },
+                        }))
+                      }
+                    />
                   </div>
                 ))}
               </div>
             </div>
             <div className="space-y-2">
               <Label>Diagnosis</Label>
-              <Textarea placeholder="Diagnosis..." value={form.diagnosis}
-                onChange={(e) => setForm((p) => ({ ...p, diagnosis: e.target.value }))} />
+              <Textarea
+                placeholder="Diagnosis..."
+                value={form.diagnosis}
+                onChange={(e) => setForm((p) => ({ ...p, diagnosis: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Plan</Label>
-              <Textarea placeholder="Treatment plan..." value={form.plan}
-                onChange={(e) => setForm((p) => ({ ...p, plan: e.target.value }))} />
+              <Textarea
+                placeholder="Treatment plan..."
+                value={form.plan}
+                onChange={(e) => setForm((p) => ({ ...p, plan: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button onClick={handleAdd}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAdd}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>

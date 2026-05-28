@@ -32,6 +32,6 @@ export const HEADER_COMPONENTS: Record<HeaderVariant, ComponentType<HeaderProps>
   "top-transparent": HeaderTransparent,
   "side-left": HeaderTopSticky, // fallback to sticky
   "bottom-bar": HeaderBottomBar,
-  "floating": HeaderFloating,
-  "overlay": HeaderTransparent, // similar to transparent
+  floating: HeaderFloating,
+  overlay: HeaderTransparent, // similar to transparent
 };

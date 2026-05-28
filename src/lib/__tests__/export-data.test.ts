@@ -27,9 +27,7 @@ function arrayToCSV<T extends Record<string, unknown>>(
   columns: { key: keyof T; label: string }[],
 ): string {
   const header = columns.map((c) => escapeCSV(c.label)).join(",");
-  const body = rows.map((row) =>
-    columns.map((c) => escapeCSV(row[c.key])).join(","),
-  );
+  const body = rows.map((row) => columns.map((c) => escapeCSV(row[c.key])).join(","));
   return [header, ...body].join("\n");
 }
 

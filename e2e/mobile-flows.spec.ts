@@ -45,17 +45,13 @@ test.describe("Mobile — critical page rendering", () => {
     await expect(page.locator("body")).not.toBeEmpty();
 
     // Should have at least one interactive element
-    const interactiveCount = await page
-      .locator("button, input, select, [role='button']")
-      .count();
+    const interactiveCount = await page.locator("button, input, select, [role='button']").count();
     expect(interactiveCount).toBeGreaterThan(0);
   });
 });
 
 test.describe("Mobile — touch target sizing", () => {
-  test("login page buttons meet 44x44px minimum touch target", async ({
-    page,
-  }) => {
+  test("login page buttons meet 44x44px minimum touch target", async ({ page }) => {
     await page.goto("/login");
 
     const submitBtn = page.locator('button[type="submit"]');
@@ -85,17 +81,13 @@ test.describe("Mobile — touch target sizing", () => {
 });
 
 test.describe("Mobile — form interactions", () => {
-  test("login form can be filled and submitted on mobile", async ({
-    page,
-  }) => {
+  test("login form can be filled and submitted on mobile", async ({ page }) => {
     // Use trailing slash to avoid 308 redirect mid-test
     await page.goto("/login/");
     await page.waitForLoadState("networkidle");
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
-    const passwordInput = page.locator(
-      'input[type="password"], input[name="password"]',
-    );
+    const passwordInput = page.locator('input[type="password"], input[name="password"]');
 
     // Fill email
     await emailInput.click();
@@ -115,9 +107,7 @@ test.describe("Mobile — form interactions", () => {
 });
 
 test.describe("Mobile — viewport meta", () => {
-  test("has viewport meta tag for proper mobile rendering", async ({
-    page,
-  }) => {
+  test("has viewport meta tag for proper mobile rendering", async ({ page }) => {
     await page.goto("/");
 
     const viewportMeta = page.locator('meta[name="viewport"]');
@@ -142,9 +132,7 @@ test.describe("Mobile — navigation", () => {
 
   test("page does not show desktop-only error overlays", async ({ page }) => {
     await page.goto("/");
-    const errorOverlay = page.locator(
-      "#__next-build-error, [data-nextjs-dialog]",
-    );
+    const errorOverlay = page.locator("#__next-build-error, [data-nextjs-dialog]");
     await expect(errorOverlay).toHaveCount(0);
   });
 });

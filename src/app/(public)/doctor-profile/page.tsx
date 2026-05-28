@@ -1,6 +1,13 @@
 import {
-  Award, Languages, GraduationCap, Briefcase, Stethoscope,
-  MapPin, Phone, Mail, Calendar,
+  Award,
+  Languages,
+  GraduationCap,
+  Briefcase,
+  Stethoscope,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -58,7 +65,10 @@ export default async function DoctorProfilePage() {
                   ) : (
                     <Avatar className="h-32 w-32">
                       <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                        {doctor.name.split(" ").map((n) => n[0]).join("")}
+                        {doctor.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -76,10 +86,7 @@ export default async function DoctorProfilePage() {
                         </Badge>
                       )}
                     </div>
-                    <Link
-                      href="/book"
-                      className={buttonVariants({ size: "sm" })}
-                    >
+                    <Link href="/book" className={buttonVariants({ size: "sm" })}>
                       <Calendar className="h-4 w-4 mr-1" />
                       Book Appointment
                     </Link>
@@ -89,7 +96,12 @@ export default async function DoctorProfilePage() {
                     {doctor.consultationFee > 0 && (
                       <div className="flex items-center gap-2 text-sm">
                         <Award className="h-4 w-4 text-primary" />
-                        <span>Consultation: <strong>{doctor.consultationFee} {tenantConfig.currency}</strong></span>
+                        <span>
+                          Consultation:{" "}
+                          <strong>
+                            {doctor.consultationFee} {tenantConfig.currency}
+                          </strong>
+                        </span>
                       </div>
                     )}
                     {doctor.languages.length > 0 && (

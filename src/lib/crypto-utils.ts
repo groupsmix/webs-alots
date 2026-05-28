@@ -72,10 +72,7 @@ export const TIMING_SAFE_EQUAL_MAX_LENGTH = 1024;
  * first and directly compares equal-length strings.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (
-    a.length > TIMING_SAFE_EQUAL_MAX_LENGTH ||
-    b.length > TIMING_SAFE_EQUAL_MAX_LENGTH
-  ) {
+  if (a.length > TIMING_SAFE_EQUAL_MAX_LENGTH || b.length > TIMING_SAFE_EQUAL_MAX_LENGTH) {
     return false;
   }
   if (a.length !== b.length) {
@@ -100,10 +97,7 @@ export async function sha256Hex(value: string): Promise<string> {
 /**
  * Compute hex-encoded HMAC-SHA256 using Web Crypto API.
  */
-export async function hmacSha256Hex(
-  secret: string,
-  message: string,
-): Promise<string> {
+export async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",

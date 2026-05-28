@@ -112,18 +112,14 @@ describe("Cron reminders — cron authentication", () => {
 describe("Cron reminders — notification template selection", () => {
   it("finds reminder_24h template", async () => {
     const { defaultNotificationTemplates } = await import("@/lib/notifications");
-    const tpl = defaultNotificationTemplates.find(
-      (t) => t.trigger === "reminder_24h" && t.enabled,
-    );
+    const tpl = defaultNotificationTemplates.find((t) => t.trigger === "reminder_24h" && t.enabled);
     expect(tpl).toBeDefined();
     expect(tpl!.channels).toContain("whatsapp");
   });
 
   it("finds reminder_1h template", async () => {
     const { defaultNotificationTemplates } = await import("@/lib/notifications");
-    const tpl = defaultNotificationTemplates.find(
-      (t) => t.trigger === "reminder_1h" && t.enabled,
-    );
+    const tpl = defaultNotificationTemplates.find((t) => t.trigger === "reminder_1h" && t.enabled);
     expect(tpl).toBeDefined();
     expect(tpl!.channels).toContain("whatsapp");
   });

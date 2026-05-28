@@ -11,7 +11,10 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 
-function getStockLabel(qty: number, min: number): { label: string; variant: "outline" | "secondary" | "destructive"; color: string } {
+function getStockLabel(
+  qty: number,
+  min: number,
+): { label: string; variant: "outline" | "secondary" | "destructive"; color: string } {
   if (qty === 0) return { label: "Out of Stock", variant: "destructive", color: "" };
   if (qty <= min) return { label: "Low Stock", variant: "secondary", color: "text-yellow-600" };
   return { label: "In Stock", variant: "outline", color: "text-emerald-600 border-emerald-600" };
@@ -19,7 +22,7 @@ function getStockLabel(qty: number, min: number): { label: string; variant: "out
 
 function buildWhatsAppUrl(phone: string, product: ProductInfo): string {
   const text = encodeURIComponent(
-    `Bonjour, je souhaite commander : ${product.name} (${product.price} ${product.currency}). Merci !`
+    `Bonjour, je souhaite commander : ${product.name} (${product.price} ${product.currency}). Merci !`,
   );
   const cleanPhone = phone.replace(/\s+/g, "");
   return `https://wa.me/${cleanPhone}?text=${text}`;
@@ -48,18 +51,14 @@ export function ProductSidePanel({
         <SheetHeader>
           <SheetTitle className="text-xl">{product.name}</SheetTitle>
           {product.genericName && (
-            <SheetDescription className="italic">
-              {product.genericName}
-            </SheetDescription>
+            <SheetDescription className="italic">{product.genericName}</SheetDescription>
           )}
         </SheetHeader>
 
         <div className="space-y-4 mt-6">
           {/* Badges row */}
           <div className="flex flex-wrap gap-2">
-            <Badge
-              variant={product.requiresPrescription ? "destructive" : "secondary"}
-            >
+            <Badge variant={product.requiresPrescription ? "destructive" : "secondary"}>
               {product.requiresPrescription ? "Rx Required" : "OTC"}
             </Badge>
             <Badge variant="outline" className="capitalize">

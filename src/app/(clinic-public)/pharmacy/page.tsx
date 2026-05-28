@@ -1,6 +1,17 @@
 import {
-  Pill, Search, Upload, Truck, Heart, Syringe, Shield,
-  Clock, MapPin, Phone, ArrowRight, Star, ShoppingBag,
+  Pill,
+  Search,
+  Upload,
+  Truck,
+  Heart,
+  Syringe,
+  Shield,
+  Clock,
+  MapPin,
+  Phone,
+  ArrowRight,
+  Star,
+  ShoppingBag,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -119,10 +130,30 @@ export default async function PharmacyHomePage() {
           </p>
           <div className="grid gap-8 md:grid-cols-4 max-w-4xl mx-auto">
             {[
-              { step: "1", title: "Upload", desc: "Take a photo of your prescription and upload it", icon: Upload },
-              { step: "2", title: "Review", desc: "Our pharmacist reviews and prepares your order", icon: Search },
-              { step: "3", title: "Notify", desc: "Get a WhatsApp notification when it's ready", icon: Phone },
-              { step: "4", title: "Collect", desc: "Pick up or get it delivered to your door", icon: Truck },
+              {
+                step: "1",
+                title: "Upload",
+                desc: "Take a photo of your prescription and upload it",
+                icon: Upload,
+              },
+              {
+                step: "2",
+                title: "Review",
+                desc: "Our pharmacist reviews and prepares your order",
+                icon: Search,
+              },
+              {
+                step: "3",
+                title: "Notify",
+                desc: "Get a WhatsApp notification when it's ready",
+                icon: Phone,
+              },
+              {
+                step: "4",
+                title: "Collect",
+                desc: "Pick up or get it delivered to your door",
+                icon: Truck,
+              },
             ].map((s) => (
               <div key={s.step} className="text-center">
                 <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center mx-auto mb-4">
@@ -151,7 +182,10 @@ export default async function PharmacyHomePage() {
               <Card key={product.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-3">
-                    <Badge variant={product.requiresPrescription ? "destructive" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={product.requiresPrescription ? "destructive" : "secondary"}
+                      className="text-xs"
+                    >
                       {product.requiresPrescription ? "Prescription" : "OTC"}
                     </Badge>
                     <Badge variant="outline" className="text-xs capitalize">
@@ -171,9 +205,15 @@ export default async function PharmacyHomePage() {
                     </span>
                     <Badge
                       variant={product.stockStatus !== "out" ? "outline" : "destructive"}
-                      className={product.stockStatus !== "out" ? "text-emerald-600 border-emerald-600" : ""}
+                      className={
+                        product.stockStatus !== "out" ? "text-emerald-600 border-emerald-600" : ""
+                      }
                     >
-                      {product.stockStatus === "out" ? "Out of Stock" : product.stockStatus === "low" ? "Low Stock" : "In Stock"}
+                      {product.stockStatus === "out"
+                        ? "Out of Stock"
+                        : product.stockStatus === "low"
+                          ? "Low Stock"
+                          : "In Stock"}
                     </Badge>
                   </div>
                 </CardContent>
@@ -221,7 +261,8 @@ export default async function PharmacyHomePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">On-Duty Pharmacy (Garde)</h2>
           <p className="text-emerald-100 mb-6 max-w-xl mx-auto">
-            Need medication after hours? Check our on-duty schedule to know when we&apos;re available for emergency pharmacy services.
+            Need medication after hours? Check our on-duty schedule to know when we&apos;re
+            available for emergency pharmacy services.
           </p>
           {onDuty ? (
             <div className="inline-flex items-center gap-2 bg-white/20 rounded-lg px-6 py-3 mb-6">
@@ -231,17 +272,26 @@ export default async function PharmacyHomePage() {
           ) : nextDuty ? (
             <div className="inline-flex items-center gap-2 bg-white/20 rounded-lg px-6 py-3 mb-6">
               <Clock className="h-5 w-5" />
-              <span>Next on-duty: <strong>{nextDuty.date}</strong> ({nextDuty.startTime} - {nextDuty.endTime})</span>
+              <span>
+                Next on-duty: <strong>{nextDuty.date}</strong> ({nextDuty.startTime} -{" "}
+                {nextDuty.endTime})
+              </span>
             </div>
           ) : (
             <p className="text-emerald-100 mb-6">No upcoming on-duty schedule available.</p>
           )}
           <div className="flex justify-center gap-3">
-            <Link href="/pharmacy/contact" className="inline-flex items-center justify-center rounded-lg bg-white text-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-50 transition-colors">
+            <Link
+              href="/pharmacy/contact"
+              className="inline-flex items-center justify-center rounded-lg bg-white text-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-50 transition-colors"
+            >
               <Phone className="mr-2 h-4 w-4" />
               Call Us
             </Link>
-            <Link href="/pharmacy/contact" className="inline-flex items-center justify-center rounded-lg border border-white/50 text-white px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors">
+            <Link
+              href="/pharmacy/contact"
+              className="inline-flex items-center justify-center rounded-lg border border-white/50 text-white px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
+            >
               <MapPin className="mr-2 h-4 w-4" />
               Find Us
             </Link>
@@ -254,7 +304,8 @@ export default async function PharmacyHomePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Upload Your Prescription?</h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Save time by uploading your prescription online. We&apos;ll prepare your medications and notify you via WhatsApp when they&apos;re ready.
+            Save time by uploading your prescription online. We&apos;ll prepare your medications and
+            notify you via WhatsApp when they&apos;re ready.
           </p>
           <Link href="/pharmacy/prescription-upload" className={linkBtnPrimary}>
             <Upload className="mr-2 h-4 w-4" />

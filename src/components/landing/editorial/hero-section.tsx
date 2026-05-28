@@ -72,8 +72,8 @@ export function EditorialHero() {
             maxWidth: "58%",
           }}
         >
-          Créez le site de votre cabinet, gérez les rendez-vous et développez
-          votre activité facilement.
+          Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité
+          facilement.
         </p>
 
         {/* Spacer */}

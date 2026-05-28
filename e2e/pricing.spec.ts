@@ -15,9 +15,7 @@ test.describe("Pricing page", () => {
   test("pricing page loads without errors", async ({ page }) => {
     await expect(page.locator("body")).not.toBeEmpty();
     // Should not show a server error
-    const errorOverlay = page.locator(
-      "#__next-build-error, [data-nextjs-dialog]",
-    );
+    const errorOverlay = page.locator("#__next-build-error, [data-nextjs-dialog]");
     await expect(errorOverlay).toHaveCount(0);
   });
 
@@ -25,9 +23,7 @@ test.describe("Pricing page", () => {
     // Each plan card has a plan name heading
     const planNames = ["Free", "Starter", "Professional", "Enterprise"];
     for (const name of planNames) {
-      await expect(
-        page.locator("h3").filter({ hasText: name }),
-      ).toBeVisible();
+      await expect(page.locator("h3").filter({ hasText: name })).toBeVisible();
     }
   });
 

@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Plus, Phone, Mail, MapPin, Star, Clock,
-  Truck, ShoppingCart, Package,
-} from "lucide-react";
+import { Plus, Phone, Mail, MapPin, Star, Clock, Truck, ShoppingCart, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -24,14 +21,21 @@ export default function SuppliersPage() {
     const controller = new AbortController();
     const cId = tenant?.clinicId ?? "";
     Promise.all([fetchSuppliers(cId), fetchPurchaseOrders(cId)])
-      .then(([s, o]) => { setAllSuppliers(s); setAllOrders(o); })
+      .then(([s, o]) => {
+        setAllSuppliers(s);
+        setAllOrders(o);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -41,7 +45,9 @@ export default function SuppliersPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -52,7 +58,9 @@ export default function SuppliersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Supplier Contacts</h1>
-          <p className="text-muted-foreground text-sm">Manage your supplier network and quick reorder</p>
+          <p className="text-muted-foreground text-sm">
+            Manage your supplier network and quick reorder
+          </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="mr-2 h-4 w-4" /> Add Supplier
@@ -62,7 +70,8 @@ export default function SuppliersPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {allSuppliers.map((supplier) => {
           const activeOrders = allOrders.filter(
-            (o) => o.supplierId === supplier.id && o.status !== "delivered" && o.status !== "cancelled"
+            (o) =>
+              o.supplierId === supplier.id && o.status !== "delivered" && o.status !== "cancelled",
           );
 
           return (
@@ -73,8 +82,10 @@ export default function SuppliersPage() {
                     <h3 className="font-semibold text-lg">{supplier.name}</h3>
                     <p className="text-sm text-muted-foreground">{supplier.contactPerson}</p>
                   </div>
-                  <Badge variant={supplier.active ? "outline" : "secondary"}
-                    className={supplier.active ? "text-emerald-600 border-emerald-600" : ""}>
+                  <Badge
+                    variant={supplier.active ? "outline" : "secondary"}
+                    className={supplier.active ? "text-emerald-600 border-emerald-600" : ""}
+                  >
                     {supplier.active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
@@ -90,7 +101,9 @@ export default function SuppliersPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{supplier.address}, {supplier.city}</span>
+                    <span>
+                      {supplier.address}, {supplier.city}
+                    </span>
                   </div>
                 </div>
 

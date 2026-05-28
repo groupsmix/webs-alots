@@ -36,10 +36,7 @@ interface ErrorBoundaryState {
  *
  * All strings are internationalised via the i18n system.
  */
-export class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -80,11 +77,7 @@ export class ErrorBoundary extends Component<
                 ? `${section} — ${t(locale, "error.loadFailed")}`
                 : t(locale, "error.sectionTitle")}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={this.handleReset}
-            >
+            <Button variant="outline" size="sm" onClick={this.handleReset}>
               <RefreshCw className="mr-1 h-3 w-3" />
               {t(locale, "error.retry")}
             </Button>
@@ -98,9 +91,7 @@ export class ErrorBoundary extends Component<
             <AlertTriangle className="h-5 w-5 text-destructive" />
           </div>
           <h3 className="mb-1 text-sm font-semibold">
-            {section
-              ? `${section} — ${t(locale, "error.sectionTitle")}`
-              : t(locale, "error.title")}
+            {section ? `${section} — ${t(locale, "error.sectionTitle")}` : t(locale, "error.title")}
           </h3>
           <p className="mb-4 text-xs text-muted-foreground">
             {t(locale, "error.sectionDescription")}

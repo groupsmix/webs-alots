@@ -60,7 +60,13 @@ export const COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Tarifs transparents en ligne",
     category: "pricing",
-    values: { oltigo: "full", iyada: "partial", smartdoc: "none", cabidoc: "none", pratisoft: "partial" },
+    values: {
+      oltigo: "full",
+      iyada: "partial",
+      smartdoc: "none",
+      cabidoc: "none",
+      pratisoft: "partial",
+    },
   },
   {
     label: "Pas d'engagement annuel obligatoire",
@@ -77,7 +83,13 @@ export const COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Suggestions diagnostiques IA",
     category: "ai",
-    values: { oltigo: "full", iyada: "none", smartdoc: "partial", cabidoc: "none", pratisoft: "none" },
+    values: {
+      oltigo: "full",
+      iyada: "none",
+      smartdoc: "partial",
+      cabidoc: "none",
+      pratisoft: "none",
+    },
   },
   {
     label: "Résumé automatique des consultations",
@@ -89,12 +101,24 @@ export const COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Application mobile (PWA)",
     category: "mobile",
-    values: { oltigo: "full", iyada: "partial", smartdoc: "none", cabidoc: "none", pratisoft: "partial" },
+    values: {
+      oltigo: "full",
+      iyada: "partial",
+      smartdoc: "none",
+      cabidoc: "none",
+      pratisoft: "partial",
+    },
   },
   {
     label: "Interface responsive complète",
     category: "mobile",
-    values: { oltigo: "full", iyada: "partial", smartdoc: "partial", cabidoc: "partial", pratisoft: "partial" },
+    values: {
+      oltigo: "full",
+      iyada: "partial",
+      smartdoc: "partial",
+      cabidoc: "partial",
+      pratisoft: "partial",
+    },
   },
   {
     label: "Portail patient mobile",
@@ -123,17 +147,35 @@ export const COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Facturation CNSS / CNOPS",
     category: "insurance",
-    values: { oltigo: "full", iyada: "partial", smartdoc: "partial", cabidoc: "full", pratisoft: "full" },
+    values: {
+      oltigo: "full",
+      iyada: "partial",
+      smartdoc: "partial",
+      cabidoc: "full",
+      pratisoft: "full",
+    },
   },
   {
     label: "Calcul automatique du reste à charge",
     category: "insurance",
-    values: { oltigo: "full", iyada: "none", smartdoc: "none", cabidoc: "partial", pratisoft: "partial" },
+    values: {
+      oltigo: "full",
+      iyada: "none",
+      smartdoc: "none",
+      cabidoc: "partial",
+      pratisoft: "partial",
+    },
   },
   {
     label: "Export comptable DGI",
     category: "insurance",
-    values: { oltigo: "full", iyada: "none", smartdoc: "none", cabidoc: "partial", pratisoft: "full" },
+    values: {
+      oltigo: "full",
+      iyada: "none",
+      smartdoc: "none",
+      cabidoc: "partial",
+      pratisoft: "full",
+    },
   },
 
   // QR Prescriptions
@@ -150,14 +192,26 @@ export const COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Base DCI marocaine intégrée",
     category: "prescriptions",
-    values: { oltigo: "full", iyada: "partial", smartdoc: "partial", cabidoc: "partial", pratisoft: "full" },
+    values: {
+      oltigo: "full",
+      iyada: "partial",
+      smartdoc: "partial",
+      cabidoc: "partial",
+      pratisoft: "full",
+    },
   },
 
   // Multi-tenant
   {
     label: "Multi-cabinet (SaaS)",
     category: "multi-tenant",
-    values: { oltigo: "full", iyada: "none", smartdoc: "none", cabidoc: "none", pratisoft: "partial" },
+    values: {
+      oltigo: "full",
+      iyada: "none",
+      smartdoc: "none",
+      cabidoc: "none",
+      pratisoft: "partial",
+    },
   },
   {
     label: "Sous-domaine personnalisé",
@@ -184,7 +238,13 @@ export const COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Consultation sans internet",
     category: "offline",
-    values: { oltigo: "partial", iyada: "none", smartdoc: "none", cabidoc: "none", pratisoft: "none" },
+    values: {
+      oltigo: "partial",
+      iyada: "none",
+      smartdoc: "none",
+      cabidoc: "none",
+      pratisoft: "none",
+    },
   },
 ];
 
@@ -205,7 +265,10 @@ export function getFeaturesByCategory(): Record<ComparisonCategory, ComparisonFe
 /**
  * Count how many "full" or "partial" features each competitor supports.
  */
-function _getCompetitorScores(): Record<CompetitorId, { full: number; partial: number; total: number }> {
+function _getCompetitorScores(): Record<
+  CompetitorId,
+  { full: number; partial: number; total: number }
+> {
   const scores = {} as Record<CompetitorId, { full: number; partial: number; total: number }>;
   for (const competitor of COMPETITORS) {
     scores[competitor.id] = { full: 0, partial: 0, total: COMPARISON_FEATURES.length };

@@ -1,20 +1,38 @@
 "use client";
 
-import { Search, FlaskConical, ArrowUpDown, TrendingUp, TrendingDown, Minus, Plus, Loader2, FileText } from "lucide-react";
+import {
+  Search,
+  FlaskConical,
+  ArrowUpDown,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Plus,
+  Loader2,
+  FileText,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { fetchLabTestOrders, fetchLabTestResults, saveLabTestResult } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestResultView } from "@/lib/data/client";
@@ -26,7 +44,8 @@ function FlagIcon({ flag }: { flag: string }) {
 }
 
 function flagColor(flag: string): string {
-  if (flag === "critical_high" || flag === "critical_low") return "bg-red-100 text-red-700 border-0";
+  if (flag === "critical_high" || flag === "critical_low")
+    return "bg-red-100 text-red-700 border-0";
   if (flag === "high") return "bg-orange-100 text-orange-700 border-0";
   if (flag === "low") return "bg-yellow-100 text-yellow-700 border-0";
   return "bg-emerald-100 text-emerald-700 border-0";
@@ -70,17 +89,21 @@ export default function ResultsPage() {
     const controller = new AbortController();
     fetchLabTestOrders(tenant?.clinicId ?? "")
       .then((all) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         const active = all.filter((o) => o.status !== "cancelled");
         setOrders(active);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   useEffect(() => {
@@ -110,7 +133,16 @@ export default function ResultsPage() {
         notes: entryForm.notes || undefined,
       });
       setEntryOpen(false);
-      setEntryForm({ testItemId: "", parameterName: "", value: "", unit: "", referenceMin: "", referenceMax: "", flag: "normal", notes: "" });
+      setEntryForm({
+        testItemId: "",
+        parameterName: "",
+        value: "",
+        unit: "",
+        referenceMin: "",
+        referenceMax: "",
+        flag: "normal",
+        notes: "",
+      });
       refreshResults();
     } finally {
       setEntrySaving(false);
@@ -159,7 +191,9 @@ export default function ResultsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -205,12 +239,17 @@ export default function ResultsPage() {
                       <p className="font-medium text-sm">{order.patientName}</p>
                       <p className="text-xs text-muted-foreground">{order.orderNumber}</p>
                     </div>
-                    <Badge className={
-                      order.status === "completed" ? "bg-emerald-100 text-emerald-700 border-0" :
-                      order.status === "validated" ? "bg-green-100 text-green-700 border-0" :
-                      order.status === "in_progress" ? "bg-blue-100 text-blue-700 border-0" :
-                      "bg-yellow-100 text-yellow-700 border-0"
-                    }>
+                    <Badge
+                      className={
+                        order.status === "completed"
+                          ? "bg-emerald-100 text-emerald-700 border-0"
+                          : order.status === "validated"
+                            ? "bg-green-100 text-green-700 border-0"
+                            : order.status === "in_progress"
+                              ? "bg-blue-100 text-blue-700 border-0"
+                              : "bg-yellow-100 text-yellow-700 border-0"
+                      }
+                    >
                       {order.status.replace("_", " ")}
                     </Badge>
                   </div>
@@ -247,13 +286,24 @@ export default function ResultsPage() {
                     Test Results
                   </h2>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{results.length} result{results.length !== 1 ? "s" : ""}</Badge>
+                    <Badge variant="outline">
+                      {results.length} result{results.length !== 1 ? "s" : ""}
+                    </Badge>
                     <Button size="sm" variant="outline" onClick={() => setEntryOpen(true)}>
                       <Plus className="h-3 w-3 mr-1" /> Add Result
                     </Button>
                     {results.length > 0 && (
-                      <Button size="sm" variant="outline" onClick={handleGeneratePdf} disabled={pdfGenerating}>
-                        {pdfGenerating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <FileText className="h-3 w-3 mr-1" />}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleGeneratePdf}
+                        disabled={pdfGenerating}
+                      >
+                        {pdfGenerating ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <FileText className="h-3 w-3 mr-1" />
+                        )}
                         Generate PDF
                       </Button>
                     )}
@@ -261,7 +311,9 @@ export default function ResultsPage() {
                 </div>
 
                 {results.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No results recorded yet for this order</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No results recorded yet for this order
+                  </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -284,16 +336,18 @@ export default function ResultsPage() {
                               {r.referenceMin != null && r.referenceMax != null
                                 ? `${r.referenceMin} - ${r.referenceMax}`
                                 : r.referenceMin != null
-                                ? `>= ${r.referenceMin}`
-                                : r.referenceMax != null
-                                ? `<= ${r.referenceMax}`
-                                : "—"}
+                                  ? `>= ${r.referenceMin}`
+                                  : r.referenceMax != null
+                                    ? `<= ${r.referenceMax}`
+                                    : "—"}
                             </td>
                             <td className="py-2">
                               {r.flag && (
                                 <Badge className={`${flagColor(r.flag)} text-xs`}>
                                   <FlagIcon flag={r.flag} />
-                                  <span className="ml-1 capitalize">{r.flag.replace("_", " ")}</span>
+                                  <span className="ml-1 capitalize">
+                                    {r.flag.replace("_", " ")}
+                                  </span>
                                 </Badge>
                               )}
                             </td>
@@ -322,11 +376,18 @@ export default function ResultsPage() {
             {selectedOrder && selectedOrder.tests.length > 0 && (
               <div className="grid gap-2">
                 <Label>Test</Label>
-                <Select value={entryForm.testItemId} onValueChange={(v) => setEntryForm((p) => ({ ...p, testItemId: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select test..." /></SelectTrigger>
+                <Select
+                  value={entryForm.testItemId}
+                  onValueChange={(v) => setEntryForm((p) => ({ ...p, testItemId: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select test..." />
+                  </SelectTrigger>
                   <SelectContent>
                     {selectedOrder.tests.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.testName}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.testName}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -334,32 +395,59 @@ export default function ResultsPage() {
             )}
             <div className="grid gap-2">
               <Label>Parameter Name</Label>
-              <Input placeholder="e.g., Glucose, Hemoglobin..." value={entryForm.parameterName} onChange={(e) => setEntryForm((p) => ({ ...p, parameterName: e.target.value }))} />
+              <Input
+                placeholder="e.g., Glucose, Hemoglobin..."
+                value={entryForm.parameterName}
+                onChange={(e) => setEntryForm((p) => ({ ...p, parameterName: e.target.value }))}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Value</Label>
-                <Input placeholder="e.g., 5.2" value={entryForm.value} onChange={(e) => setEntryForm((p) => ({ ...p, value: e.target.value }))} />
+                <Input
+                  placeholder="e.g., 5.2"
+                  value={entryForm.value}
+                  onChange={(e) => setEntryForm((p) => ({ ...p, value: e.target.value }))}
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Unit</Label>
-                <Input placeholder="e.g., g/dL" value={entryForm.unit} onChange={(e) => setEntryForm((p) => ({ ...p, unit: e.target.value }))} />
+                <Input
+                  placeholder="e.g., g/dL"
+                  value={entryForm.unit}
+                  onChange={(e) => setEntryForm((p) => ({ ...p, unit: e.target.value }))}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Reference Min</Label>
-                <Input type="number" placeholder="Min" value={entryForm.referenceMin} onChange={(e) => setEntryForm((p) => ({ ...p, referenceMin: e.target.value }))} />
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  value={entryForm.referenceMin}
+                  onChange={(e) => setEntryForm((p) => ({ ...p, referenceMin: e.target.value }))}
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Reference Max</Label>
-                <Input type="number" placeholder="Max" value={entryForm.referenceMax} onChange={(e) => setEntryForm((p) => ({ ...p, referenceMax: e.target.value }))} />
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={entryForm.referenceMax}
+                  onChange={(e) => setEntryForm((p) => ({ ...p, referenceMax: e.target.value }))}
+                />
               </div>
             </div>
             <div className="grid gap-2">
               <Label>Flag</Label>
-              <Select value={entryForm.flag} onValueChange={(v) => setEntryForm((p) => ({ ...p, flag: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={entryForm.flag}
+                onValueChange={(v) => setEntryForm((p) => ({ ...p, flag: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="low">Low</SelectItem>
@@ -371,12 +459,21 @@ export default function ResultsPage() {
             </div>
             <div className="grid gap-2">
               <Label>Notes (optional)</Label>
-              <Input placeholder="Additional notes..." value={entryForm.notes} onChange={(e) => setEntryForm((p) => ({ ...p, notes: e.target.value }))} />
+              <Input
+                placeholder="Additional notes..."
+                value={entryForm.notes}
+                onChange={(e) => setEntryForm((p) => ({ ...p, notes: e.target.value }))}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEntryOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddResult} disabled={entrySaving || !entryForm.parameterName || !entryForm.value}>
+            <Button variant="outline" onClick={() => setEntryOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddResult}
+              disabled={entrySaving || !entryForm.parameterName || !entryForm.value}
+            >
               {entrySaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Result
             </Button>

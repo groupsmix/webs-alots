@@ -201,7 +201,9 @@ function sanitizeOrderNumber(orderNumber: string): string {
   return orderNumber.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
 }
 
-export const POST = withAuthValidation(labReportSchema, async (body, request, { supabase, profile }) => {
+export const POST = withAuthValidation(
+  labReportSchema,
+  async (body, request, { supabase, profile }) => {
     const { orderId, patientName, orderNumber, results } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
@@ -315,4 +317,6 @@ export const POST = withAuthValidation(labReportSchema, async (body, request, { 
       // Backward-compat field for existing UI callers that read `pdfUrl`.
       pdfUrl: downloadUrl,
     });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

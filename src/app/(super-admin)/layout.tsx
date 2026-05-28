@@ -2,10 +2,6 @@
 // @/components/layouts/super-admin-layout-shell (a "use client" component).
 import SuperAdminLayoutShell from "@/components/layouts/super-admin-layout-shell";
 
-export default function SuperAdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   return <SuperAdminLayoutShell>{children}</SuperAdminLayoutShell>;
 }

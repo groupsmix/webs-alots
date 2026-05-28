@@ -36,7 +36,9 @@ interface LabTestCatalogRaw {
   price: number | null;
   currency: string;
   turnaround_hours: number;
-  reference_ranges: { parameter: string; unit: string; min: number | null; max: number | null }[] | null;
+  reference_ranges:
+    | { parameter: string; unit: string; min: number | null; max: number | null }[]
+    | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -144,8 +146,12 @@ export async function fetchLabTestOrders(clinicId: string): Promise<LabTestOrder
     id: r.id,
     patientId: r.patient_id,
     patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    orderingDoctorName: r.ordering_doctor_id ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
-    assignedTechnicianName: r.assigned_technician_id ? (_activeUserMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
+    orderingDoctorName: r.ordering_doctor_id
+      ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined)
+      : undefined,
+    assignedTechnicianName: r.assigned_technician_id
+      ? (_activeUserMap?.get(r.assigned_technician_id)?.name ?? undefined)
+      : undefined,
     orderNumber: r.order_number,
     status: r.status,
     priority: r.priority,
@@ -167,10 +173,16 @@ export async function fetchLabTestOrders(clinicId: string): Promise<LabTestOrder
   }));
 }
 
-export async function fetchPatientLabOrders(clinicId: string, patientId: string): Promise<LabTestOrderView[]> {
+export async function fetchPatientLabOrders(
+  clinicId: string,
+  patientId: string,
+): Promise<LabTestOrderView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<LabTestOrderRaw>("lab_test_orders", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["created_at", { ascending: false }],
   });
   const orderIds = rows.map((r) => r.id);
@@ -190,8 +202,12 @@ export async function fetchPatientLabOrders(clinicId: string, patientId: string)
     id: r.id,
     patientId: r.patient_id,
     patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    orderingDoctorName: r.ordering_doctor_id ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
-    assignedTechnicianName: r.assigned_technician_id ? (_activeUserMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
+    orderingDoctorName: r.ordering_doctor_id
+      ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined)
+      : undefined,
+    assignedTechnicianName: r.assigned_technician_id
+      ? (_activeUserMap?.get(r.assigned_technician_id)?.name ?? undefined)
+      : undefined,
     orderNumber: r.order_number,
     status: r.status,
     priority: r.priority,
@@ -286,7 +302,8 @@ export async function createLabTestOrder(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const orderNumber = `LAB-${Date.now().toString(36).toUpperCase()}`;
-  const { data: result, error } = await supabase.from("lab_test_orders")
+  const { data: result, error } = await supabase
+    .from("lab_test_orders")
     .insert({
       clinic_id: data.clinic_id,
       patient_id: data.patient_id,
@@ -320,10 +337,7 @@ export async function createLabTestOrder(data: {
   return orderId;
 }
 
-export async function updateLabOrderStatus(
-  orderId: string,
-  status: string,
-): Promise<boolean> {
+export async function updateLabOrderStatus(orderId: string, status: string): Promise<boolean> {
   const supabase = createClient();
   const updateData: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
   if (status === "sample_collected") {
@@ -377,7 +391,8 @@ export async function saveLabTestResult(data: {
   entered_by?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("lab_test_results")
+  const { data: result, error } = await supabase
+    .from("lab_test_results")
     .insert({
       order_id: data.order_id,
       test_item_id: data.test_item_id,
@@ -423,10 +438,7 @@ async function _updateLabTestResult(
   return true;
 }
 
-async function _updateLabOrderPdfUrl(
-  orderId: string,
-  pdfUrl: string,
-): Promise<boolean> {
+async function _updateLabOrderPdfUrl(orderId: string, pdfUrl: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase
     .from("lab_test_orders")

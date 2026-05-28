@@ -1,8 +1,14 @@
 "use client";
 
 import {
-  LayoutDashboard, ClipboardList, Package, ShoppingCart,
-  Receipt, AlertTriangle, Gift, Pill,
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  ShoppingCart,
+  Receipt,
+  AlertTriangle,
+  Gift,
+  Pill,
   Truck,
 } from "lucide-react";
 import {
@@ -27,14 +33,6 @@ const config: ClinicDashboardConfig = {
   ],
 };
 
-export function PharmacistLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <ClinicDashboardLayout config={config}>
-      {children}
-    </ClinicDashboardLayout>
-  );
+export function PharmacistLayoutShell({ children }: { children: React.ReactNode }) {
+  return <ClinicDashboardLayout config={config}>{children}</ClinicDashboardLayout>;
 }

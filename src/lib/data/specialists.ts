@@ -14,16 +14,11 @@ type TableName = keyof Database["public"]["Tables"];
 
 // ── Patient name resolution helper ──
 
-async function resolvePatientNames(
-  patientIds: string[],
-): Promise<Map<string, string>> {
+async function resolvePatientNames(patientIds: string[]): Promise<Map<string, string>> {
   if (patientIds.length === 0) return new Map();
   const supabase = createClient();
   const uniqueIds = [...new Set(patientIds)];
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, name")
-    .in("id", uniqueIds);
+  const { data, error } = await supabase.from("users").select("id, name").in("id", uniqueIds);
   if (error) {
     logger.warn("Failed to resolve patient names", { context: "data/specialists", error });
     return new Map();
@@ -79,13 +74,24 @@ export interface SkinPhotoView {
   tags: string[];
 }
 
-export async function fetchSkinPhotos(clinicId: string, patientId?: string): Promise<SkinPhotoView[]> {
+export async function fetchSkinPhotos(
+  clinicId: string,
+  patientId?: string,
+): Promise<SkinPhotoView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; body_region: string;
-    description: string | null; image_url: string | null; photo_date: string;
-    tags: string[] | null; created_at: string; updated_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    body_region: string;
+    description: string | null;
+    image_url: string | null;
+    photo_date: string;
+    tags: string[] | null;
+    created_at: string;
+    updated_at: string;
   }>("skin_photos", { eq, order: ["photo_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -102,14 +108,25 @@ export async function fetchSkinPhotos(clinicId: string, patientId?: string): Pro
 }
 
 export async function createSkinPhoto(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  body_region: string; description?: string; image_url?: string;
-  photo_date?: string; tags?: string[];
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  body_region: string;
+  description?: string;
+  image_url?: string;
+  photo_date?: string;
+  tags?: string[];
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("skin_photos").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("skin_photos")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -126,14 +143,26 @@ export interface SkinConditionView {
   treatments: { name: string; startDate: string; endDate?: string; notes?: string }[];
 }
 
-export async function fetchSkinConditions(clinicId: string, patientId?: string): Promise<SkinConditionView[]> {
+export async function fetchSkinConditions(
+  clinicId: string,
+  patientId?: string,
+): Promise<SkinConditionView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; condition_name: string; body_region: string;
-    severity: string | null; status: string; diagnosis_date: string; notes: string | null;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    condition_name: string;
+    body_region: string;
+    severity: string | null;
+    status: string;
+    diagnosis_date: string;
+    notes: string | null;
     treatments: { name: string; startDate: string; endDate?: string; notes?: string }[] | null;
-    created_at: string; updated_at: string;
+    created_at: string;
+    updated_at: string;
   }>("skin_conditions", { eq, order: ["diagnosis_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -151,13 +180,25 @@ export async function fetchSkinConditions(clinicId: string, patientId?: string):
 }
 
 export async function createSkinCondition(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  condition_name: string; body_region: string; severity?: string;
-  notes?: string; treatments?: unknown[];
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  condition_name: string;
+  body_region: string;
+  severity?: string;
+  notes?: string;
+  treatments?: unknown[];
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("skin_conditions").insert(data as Database["public"]["Tables"]["skin_conditions"]["Insert"]).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("skin_conditions")
+    .insert(data as Database["public"]["Tables"]["skin_conditions"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -166,9 +207,17 @@ export async function updateSkinCondition(
   data: { status?: string; severity?: string; notes?: string; treatments?: unknown[] },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("skin_conditions")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["skin_conditions"]["Update"]).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
+  const { error } = await supabase
+    .from("skin_conditions")
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["skin_conditions"]["Update"])
+    .eq("id", id);
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/specialists", error });
+    return false;
+  }
   return true;
 }
 
@@ -189,13 +238,25 @@ export interface ECGRecordView {
   isAbnormal: boolean;
 }
 
-export async function fetchECGRecords(clinicId: string, patientId?: string): Promise<ECGRecordView[]> {
+export async function fetchECGRecords(
+  clinicId: string,
+  patientId?: string,
+): Promise<ECGRecordView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; record_date: string; file_url: string | null;
-    heart_rate: number | null; rhythm: string | null; interpretation: string | null;
-    notes: string | null; is_abnormal: boolean; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    record_date: string;
+    file_url: string | null;
+    heart_rate: number | null;
+    rhythm: string | null;
+    interpretation: string | null;
+    notes: string | null;
+    is_abnormal: boolean;
+    created_at: string;
   }>("ecg_records", { eq, order: ["record_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -213,14 +274,27 @@ export async function fetchECGRecords(clinicId: string, patientId?: string): Pro
 }
 
 export async function createECGRecord(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  record_date?: string; file_url?: string; heart_rate?: number;
-  rhythm?: string; interpretation?: string; notes?: string; is_abnormal?: boolean;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  record_date?: string;
+  file_url?: string;
+  heart_rate?: number;
+  rhythm?: string;
+  interpretation?: string;
+  notes?: string;
+  is_abnormal?: boolean;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("ecg_records").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("ecg_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -236,13 +310,25 @@ export interface BloodPressureView {
   notes: string;
 }
 
-export async function fetchBloodPressureReadings(clinicId: string, patientId?: string): Promise<BloodPressureView[]> {
+export async function fetchBloodPressureReadings(
+  clinicId: string,
+  patientId?: string,
+): Promise<BloodPressureView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; systolic: number; diastolic: number;
-    heart_rate: number | null; reading_date: string; position: string | null;
-    arm: string | null; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    systolic: number;
+    diastolic: number;
+    heart_rate: number | null;
+    reading_date: string;
+    position: string | null;
+    arm: string | null;
+    notes: string | null;
+    created_at: string;
   }>("blood_pressure_readings", { eq, order: ["reading_date", { ascending: false }] });
   return rows.map((r) => ({
     id: r.id,
@@ -258,14 +344,26 @@ export async function fetchBloodPressureReadings(clinicId: string, patientId?: s
 }
 
 export async function createBloodPressureReading(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  systolic: number; diastolic: number; heart_rate?: number;
-  position?: string; arm?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  systolic: number;
+  diastolic: number;
+  heart_rate?: number;
+  position?: string;
+  arm?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("blood_pressure_readings").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("blood_pressure_readings")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -280,12 +378,24 @@ export interface HeartMonitoringNoteView {
   isAlert: boolean;
 }
 
-export async function fetchHeartMonitoringNotes(clinicId: string, patientId?: string): Promise<HeartMonitoringNoteView[]> {
+export async function fetchHeartMonitoringNotes(
+  clinicId: string,
+  patientId?: string,
+): Promise<HeartMonitoringNoteView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; note_date: string; category: string;
-    title: string; content: string | null; severity: string; is_alert: boolean; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    note_date: string;
+    category: string;
+    title: string;
+    content: string | null;
+    severity: string;
+    is_alert: boolean;
+    created_at: string;
   }>("heart_monitoring_notes", { eq, order: ["note_date", { ascending: false }] });
   return rows.map((r) => ({
     id: r.id,
@@ -300,13 +410,25 @@ export async function fetchHeartMonitoringNotes(clinicId: string, patientId?: st
 }
 
 export async function createHeartMonitoringNote(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  title: string; content?: string; category?: string;
-  severity?: string; is_alert?: boolean;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  title: string;
+  content?: string;
+  category?: string;
+  severity?: string;
+  is_alert?: boolean;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("heart_monitoring_notes").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("heart_monitoring_notes")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -328,14 +450,26 @@ export interface HearingTestView {
   notes: string;
 }
 
-export async function fetchHearingTests(clinicId: string, patientId?: string): Promise<HearingTestView[]> {
+export async function fetchHearingTests(
+  clinicId: string,
+  patientId?: string,
+): Promise<HearingTestView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; test_date: string; test_type: string;
-    left_ear_data: Record<string, number> | null; right_ear_data: Record<string, number> | null;
-    interpretation: string | null; hearing_loss_type: string | null;
-    hearing_loss_degree: string | null; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    test_date: string;
+    test_type: string;
+    left_ear_data: Record<string, number> | null;
+    right_ear_data: Record<string, number> | null;
+    interpretation: string | null;
+    hearing_loss_type: string | null;
+    hearing_loss_degree: string | null;
+    notes: string | null;
+    created_at: string;
   }>("hearing_tests", { eq, order: ["test_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -354,14 +488,27 @@ export async function fetchHearingTests(clinicId: string, patientId?: string): P
 }
 
 export async function createHearingTest(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  test_type?: string; left_ear_data?: Record<string, number>;
-  right_ear_data?: Record<string, number>; interpretation?: string;
-  hearing_loss_type?: string; hearing_loss_degree?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_type?: string;
+  left_ear_data?: Record<string, number>;
+  right_ear_data?: Record<string, number>;
+  interpretation?: string;
+  hearing_loss_type?: string;
+  hearing_loss_degree?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("hearing_tests").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("hearing_tests")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -380,8 +527,16 @@ export async function fetchENTExams(clinicId: string, patientId?: string): Promi
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; exam_date: string; template_type: string;
-    findings: Record<string, string> | null; diagnosis: string | null; plan: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    exam_date: string;
+    template_type: string;
+    findings: Record<string, string> | null;
+    diagnosis: string | null;
+    plan: string | null;
+    created_at: string;
   }>("ent_exam_records", { eq, order: ["exam_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -397,13 +552,24 @@ export async function fetchENTExams(clinicId: string, patientId?: string): Promi
 }
 
 export async function createENTExam(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  template_type?: string; findings?: Record<string, string>;
-  diagnosis?: string; plan?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  template_type?: string;
+  findings?: Record<string, string>;
+  diagnosis?: string;
+  plan?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("ent_exam_records").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("ent_exam_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -423,13 +589,24 @@ export interface XRayRecordView {
   diagnosis: string;
 }
 
-export async function fetchXRayRecords(clinicId: string, patientId?: string): Promise<XRayRecordView[]> {
+export async function fetchXRayRecords(
+  clinicId: string,
+  patientId?: string,
+): Promise<XRayRecordView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; record_date: string; body_part: string;
-    image_url: string | null; annotations: { x: number; y: number; label: string }[] | null;
-    findings: string | null; diagnosis: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    record_date: string;
+    body_part: string;
+    image_url: string | null;
+    annotations: { x: number; y: number; label: string }[] | null;
+    findings: string | null;
+    diagnosis: string | null;
+    created_at: string;
   }>("xray_records", { eq, order: ["record_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -446,14 +623,25 @@ export async function fetchXRayRecords(clinicId: string, patientId?: string): Pr
 }
 
 export async function createXRayRecord(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  body_part: string; image_url?: string; annotations?: unknown[];
-  findings?: string; diagnosis?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  body_part: string;
+  image_url?: string;
+  annotations?: unknown[];
+  findings?: string;
+  diagnosis?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("xray_records").insert(data as Database["public"]["Tables"]["xray_records"]["Insert"]).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("xray_records")
+    .insert(data as Database["public"]["Tables"]["xray_records"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -472,14 +660,28 @@ export interface FractureRecordView {
   xrayRecordId: string;
 }
 
-export async function fetchFractureRecords(clinicId: string, patientId?: string): Promise<FractureRecordView[]> {
+export async function fetchFractureRecords(
+  clinicId: string,
+  patientId?: string,
+): Promise<FractureRecordView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; location: string; fracture_type: string;
-    severity: string; status: string; injury_date: string; diagnosis_date: string;
-    expected_healing_date: string | null; notes: string | null;
-    xray_record_id: string | null; created_at: string; updated_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    location: string;
+    fracture_type: string;
+    severity: string;
+    status: string;
+    injury_date: string;
+    diagnosis_date: string;
+    expected_healing_date: string | null;
+    notes: string | null;
+    xray_record_id: string | null;
+    created_at: string;
+    updated_at: string;
   }>("fracture_records", { eq, order: ["diagnosis_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -499,14 +701,27 @@ export async function fetchFractureRecords(clinicId: string, patientId?: string)
 }
 
 export async function createFractureRecord(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  location: string; fracture_type: string; severity?: string;
-  injury_date: string; expected_healing_date?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  location: string;
+  fracture_type: string;
+  severity?: string;
+  injury_date: string;
+  expected_healing_date?: string;
+  notes?: string;
   xray_record_id?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("fracture_records").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("fracture_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -515,9 +730,14 @@ export async function updateFractureRecord(
   data: { status?: string; notes?: string; expected_healing_date?: string },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("fracture_records")
-    .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
+  const { error } = await supabase
+    .from("fracture_records")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/specialists", error });
+    return false;
+  }
   return true;
 }
 
@@ -534,14 +754,26 @@ export interface RehabPlanView {
   notes: string;
 }
 
-export async function fetchRehabPlans(clinicId: string, patientId?: string): Promise<RehabPlanView[]> {
+export async function fetchRehabPlans(
+  clinicId: string,
+  patientId?: string,
+): Promise<RehabPlanView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; title: string; condition: string;
-    start_date: string; target_end_date: string | null; status: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    title: string;
+    condition: string;
+    start_date: string;
+    target_end_date: string | null;
+    status: string;
     milestones: { title: string; targetDate: string; completed: boolean; notes?: string }[] | null;
-    notes: string | null; created_at: string; updated_at: string;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
   }>("rehab_plans", { eq, order: ["start_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -559,14 +791,26 @@ export async function fetchRehabPlans(clinicId: string, patientId?: string): Pro
 }
 
 export async function createRehabPlan(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  title: string; condition: string; start_date?: string;
-  target_end_date?: string; milestones?: unknown[]; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  title: string;
+  condition: string;
+  start_date?: string;
+  target_end_date?: string;
+  milestones?: unknown[];
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("rehab_plans").insert(data as Database["public"]["Tables"]["rehab_plans"]["Insert"]).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("rehab_plans")
+    .insert(data as Database["public"]["Tables"]["rehab_plans"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -575,9 +819,17 @@ async function _updateRehabPlan(
   data: { status?: string; milestones?: unknown[]; notes?: string; target_end_date?: string },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("rehab_plans")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["rehab_plans"]["Update"]).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
+  const { error } = await supabase
+    .from("rehab_plans")
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["rehab_plans"]["Update"])
+    .eq("id", id);
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/specialists", error });
+    return false;
+  }
   return true;
 }
 
@@ -600,14 +852,31 @@ export interface PsychSessionNoteView {
   accessLevel: string;
 }
 
-export async function fetchPsychSessionNotes(clinicId: string, doctorId: string, patientId?: string): Promise<PsychSessionNoteView[]> {
-  const eq: [string, unknown][] = [["clinic_id", clinicId], ["doctor_id", doctorId]];
+export async function fetchPsychSessionNotes(
+  clinicId: string,
+  doctorId: string,
+  patientId?: string,
+): Promise<PsychSessionNoteView[]> {
+  const eq: [string, unknown][] = [
+    ["clinic_id", clinicId],
+    ["doctor_id", doctorId],
+  ];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; session_date: string; session_number: number;
-    session_type: string; mood_rating: number | null; content: string | null;
-    observations: string | null; plan: string | null; is_confidential: boolean;
-    access_level: string; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    session_date: string;
+    session_number: number;
+    session_type: string;
+    mood_rating: number | null;
+    content: string | null;
+    observations: string | null;
+    plan: string | null;
+    is_confidential: boolean;
+    access_level: string;
+    created_at: string;
   }>("psych_session_notes", { eq, order: ["session_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -627,14 +896,28 @@ export async function fetchPsychSessionNotes(clinicId: string, doctorId: string,
 }
 
 export async function createPsychSessionNote(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  session_number?: number; session_type?: string; mood_rating?: number;
-  content?: string; observations?: string; plan?: string;
-  is_confidential?: boolean; access_level?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  session_number?: number;
+  session_type?: string;
+  mood_rating?: number;
+  content?: string;
+  observations?: string;
+  plan?: string;
+  is_confidential?: boolean;
+  access_level?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("psych_session_notes").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("psych_session_notes")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -654,15 +937,29 @@ export interface PsychMedicationView {
   dosageHistory: { date: string; dosage: string; reason?: string }[];
 }
 
-export async function fetchPsychMedications(clinicId: string, patientId?: string): Promise<PsychMedicationView[]> {
+export async function fetchPsychMedications(
+  clinicId: string,
+  patientId?: string,
+): Promise<PsychMedicationView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; medication_name: string; dosage: string;
-    frequency: string; start_date: string; end_date: string | null; status: string;
-    reason: string | null; side_effects: string | null; notes: string | null;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    medication_name: string;
+    dosage: string;
+    frequency: string;
+    start_date: string;
+    end_date: string | null;
+    status: string;
+    reason: string | null;
+    side_effects: string | null;
+    notes: string | null;
     dosage_history: { date: string; dosage: string; reason?: string }[] | null;
-    created_at: string; updated_at: string;
+    created_at: string;
+    updated_at: string;
   }>("psych_medications", { eq, order: ["start_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -683,24 +980,51 @@ export async function fetchPsychMedications(clinicId: string, patientId?: string
 }
 
 export async function createPsychMedication(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  medication_name: string; dosage: string; frequency: string;
-  reason?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  medication_name: string;
+  dosage: string;
+  frequency: string;
+  reason?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("psych_medications").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("psych_medications")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
 export async function updatePsychMedication(
   id: string,
-  data: { status?: string; dosage?: string; end_date?: string; notes?: string; side_effects?: string; dosage_history?: unknown[] },
+  data: {
+    status?: string;
+    dosage?: string;
+    end_date?: string;
+    notes?: string;
+    side_effects?: string;
+    dosage_history?: unknown[];
+  },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("psych_medications")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["psych_medications"]["Update"]).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
+  const { error } = await supabase
+    .from("psych_medications")
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["psych_medications"]["Update"])
+    .eq("id", id);
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/specialists", error });
+    return false;
+  }
   return true;
 }
 
@@ -721,13 +1045,25 @@ export interface EEGRecordView {
   notes: string;
 }
 
-export async function fetchEEGRecords(clinicId: string, patientId?: string): Promise<EEGRecordView[]> {
+export async function fetchEEGRecords(
+  clinicId: string,
+  patientId?: string,
+): Promise<EEGRecordView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; record_date: string; file_url: string | null;
-    duration_minutes: number | null; findings: string | null;
-    interpretation: string | null; is_abnormal: boolean; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    record_date: string;
+    file_url: string | null;
+    duration_minutes: number | null;
+    findings: string | null;
+    interpretation: string | null;
+    is_abnormal: boolean;
+    notes: string | null;
+    created_at: string;
   }>("eeg_records", { eq, order: ["record_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -745,14 +1081,27 @@ export async function fetchEEGRecords(clinicId: string, patientId?: string): Pro
 }
 
 export async function createEEGRecord(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  record_date?: string; file_url?: string; duration_minutes?: number;
-  findings?: string; interpretation?: string; is_abnormal?: boolean; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  record_date?: string;
+  file_url?: string;
+  duration_minutes?: number;
+  findings?: string;
+  interpretation?: string;
+  is_abnormal?: boolean;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("eeg_records").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("eeg_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -773,16 +1122,29 @@ export interface NeuroExamView {
   notes: string;
 }
 
-export async function fetchNeuroExams(clinicId: string, patientId?: string): Promise<NeuroExamView[]> {
+export async function fetchNeuroExams(
+  clinicId: string,
+  patientId?: string,
+): Promise<NeuroExamView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; exam_date: string;
-    mental_status: Record<string, string> | null; cranial_nerves: Record<string, string> | null;
-    motor_function: Record<string, string> | null; sensory_function: Record<string, string> | null;
-    reflexes: Record<string, string> | null; coordination: Record<string, string> | null;
-    gait: Record<string, string> | null; diagnosis: string | null;
-    plan: string | null; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    exam_date: string;
+    mental_status: Record<string, string> | null;
+    cranial_nerves: Record<string, string> | null;
+    motor_function: Record<string, string> | null;
+    sensory_function: Record<string, string> | null;
+    reflexes: Record<string, string> | null;
+    coordination: Record<string, string> | null;
+    gait: Record<string, string> | null;
+    diagnosis: string | null;
+    plan: string | null;
+    notes: string | null;
+    created_at: string;
   }>("neuro_exam_records", { eq, order: ["exam_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -804,15 +1166,30 @@ export async function fetchNeuroExams(clinicId: string, patientId?: string): Pro
 }
 
 export async function createNeuroExam(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  mental_status?: Record<string, string>; cranial_nerves?: Record<string, string>;
-  motor_function?: Record<string, string>; sensory_function?: Record<string, string>;
-  reflexes?: Record<string, string>; coordination?: Record<string, string>;
-  gait?: Record<string, string>; diagnosis?: string; plan?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  mental_status?: Record<string, string>;
+  cranial_nerves?: Record<string, string>;
+  motor_function?: Record<string, string>;
+  sensory_function?: Record<string, string>;
+  reflexes?: Record<string, string>;
+  coordination?: Record<string, string>;
+  gait?: Record<string, string>;
+  diagnosis?: string;
+  plan?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("neuro_exam_records").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("neuro_exam_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -834,13 +1211,24 @@ export interface UrologyExamView {
   plan: string;
 }
 
-export async function fetchUrologyExams(clinicId: string, patientId?: string): Promise<UrologyExamView[]> {
+export async function fetchUrologyExams(
+  clinicId: string,
+  patientId?: string,
+): Promise<UrologyExamView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; exam_date: string; template_type: string;
-    findings: Record<string, string> | null; lab_results: Record<string, string> | null;
-    diagnosis: string | null; plan: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    exam_date: string;
+    template_type: string;
+    findings: Record<string, string> | null;
+    lab_results: Record<string, string> | null;
+    diagnosis: string | null;
+    plan: string | null;
+    created_at: string;
   }>("urology_exams", { eq, order: ["exam_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -857,13 +1245,25 @@ export async function fetchUrologyExams(clinicId: string, patientId?: string): P
 }
 
 export async function createUrologyExam(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  template_type?: string; findings?: Record<string, string>;
-  lab_results?: Record<string, string>; diagnosis?: string; plan?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  template_type?: string;
+  findings?: Record<string, string>;
+  lab_results?: Record<string, string>;
+  diagnosis?: string;
+  plan?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("urology_exams").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("urology_exams")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -883,14 +1283,26 @@ export interface SpirometryRecordView {
   notes: string;
 }
 
-export async function fetchSpirometryRecords(clinicId: string, patientId?: string): Promise<SpirometryRecordView[]> {
+export async function fetchSpirometryRecords(
+  clinicId: string,
+  patientId?: string,
+): Promise<SpirometryRecordView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; test_date: string;
-    fvc: number | null; fev1: number | null; fev1_fvc_ratio: number | null;
-    pef: number | null; interpretation: string | null;
-    test_quality: string; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    test_date: string;
+    fvc: number | null;
+    fev1: number | null;
+    fev1_fvc_ratio: number | null;
+    pef: number | null;
+    interpretation: string | null;
+    test_quality: string;
+    notes: string | null;
+    created_at: string;
   }>("spirometry_records", { eq, order: ["test_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -909,14 +1321,27 @@ export async function fetchSpirometryRecords(clinicId: string, patientId?: strin
 }
 
 export async function createSpirometryRecord(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  fvc?: number; fev1?: number; fev1_fvc_ratio?: number; pef?: number;
-  interpretation?: string; test_quality?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  fvc?: number;
+  fev1?: number;
+  fev1_fvc_ratio?: number;
+  pef?: number;
+  interpretation?: string;
+  test_quality?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("spirometry_records").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("spirometry_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -930,12 +1355,23 @@ export interface RespiratoryTestView {
   notes: string;
 }
 
-export async function fetchRespiratoryTests(clinicId: string, patientId?: string): Promise<RespiratoryTestView[]> {
+export async function fetchRespiratoryTests(
+  clinicId: string,
+  patientId?: string,
+): Promise<RespiratoryTestView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; test_date: string; test_type: string;
-    results: Record<string, unknown> | null; interpretation: string | null; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    test_date: string;
+    test_type: string;
+    results: Record<string, unknown> | null;
+    interpretation: string | null;
+    notes: string | null;
+    created_at: string;
   }>("respiratory_tests", { eq, order: ["test_date", { ascending: false }] });
   return rows.map((r) => ({
     id: r.id,
@@ -949,14 +1385,24 @@ export async function fetchRespiratoryTests(clinicId: string, patientId?: string
 }
 
 export async function createRespiratoryTest(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  test_type: string; results?: Record<string, unknown>;
-  interpretation?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_type: string;
+  results?: Record<string, unknown>;
+  interpretation?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("respiratory_tests").insert(data as Database["public"]["Tables"]["respiratory_tests"]["Insert"]).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("respiratory_tests")
+    .insert(data as Database["public"]["Tables"]["respiratory_tests"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -972,12 +1418,23 @@ export interface BloodSugarReadingView {
   notes: string;
 }
 
-export async function fetchBloodSugarReadings(clinicId: string, patientId?: string): Promise<BloodSugarReadingView[]> {
+export async function fetchBloodSugarReadings(
+  clinicId: string,
+  patientId?: string,
+): Promise<BloodSugarReadingView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; reading_date: string;
-    glucose_level: number; reading_type: string; unit: string; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    reading_date: string;
+    glucose_level: number;
+    reading_type: string;
+    unit: string;
+    notes: string | null;
+    created_at: string;
   }>("blood_sugar_readings", { eq, order: ["reading_date", { ascending: false }] });
   return rows.map((r) => ({
     id: r.id,
@@ -991,13 +1448,24 @@ export async function fetchBloodSugarReadings(clinicId: string, patientId?: stri
 }
 
 export async function createBloodSugarReading(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  glucose_level: number; reading_type?: string; unit?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  glucose_level: number;
+  reading_type?: string;
+  unit?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("blood_sugar_readings").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("blood_sugar_readings")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -1013,13 +1481,25 @@ export interface HormoneLevelView {
   notes: string;
 }
 
-export async function fetchHormoneLevels(clinicId: string, patientId?: string): Promise<HormoneLevelView[]> {
+export async function fetchHormoneLevels(
+  clinicId: string,
+  patientId?: string,
+): Promise<HormoneLevelView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; test_date: string; hormone_name: string;
-    value: number; unit: string; reference_range: string | null;
-    is_abnormal: boolean; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    test_date: string;
+    hormone_name: string;
+    value: number;
+    unit: string;
+    reference_range: string | null;
+    is_abnormal: boolean;
+    notes: string | null;
+    created_at: string;
   }>("hormone_levels", { eq, order: ["test_date", { ascending: false }] });
   return rows.map((r) => ({
     id: r.id,
@@ -1035,14 +1515,26 @@ export async function fetchHormoneLevels(clinicId: string, patientId?: string): 
 }
 
 export async function createHormoneLevel(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  hormone_name: string; value: number; unit: string;
-  reference_range?: string; is_abnormal?: boolean; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  hormone_name: string;
+  value: number;
+  unit: string;
+  reference_range?: string;
+  is_abnormal?: boolean;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("hormone_levels").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("hormone_levels")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -1062,16 +1554,29 @@ export interface DiabetesManagementView {
   lastReviewDate: string;
 }
 
-export async function fetchDiabetesManagement(clinicId: string, patientId?: string): Promise<DiabetesManagementView[]> {
+export async function fetchDiabetesManagement(
+  clinicId: string,
+  patientId?: string,
+): Promise<DiabetesManagementView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; diabetes_type: string; diagnosis_date: string | null;
-    current_hba1c: number | null; target_hba1c: number;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    diabetes_type: string;
+    diagnosis_date: string | null;
+    current_hba1c: number | null;
+    target_hba1c: number;
     medications: { name: string; dosage: string; frequency: string }[] | null;
-    diet_plan: string | null; exercise_plan: string | null;
-    monitoring_frequency: string; notes: string | null; last_review_date: string | null;
-    created_at: string; updated_at: string;
+    diet_plan: string | null;
+    exercise_plan: string | null;
+    monitoring_frequency: string;
+    notes: string | null;
+    last_review_date: string | null;
+    created_at: string;
+    updated_at: string;
   }>("diabetes_management", { eq, order: ["created_at", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
@@ -1092,27 +1597,55 @@ export async function fetchDiabetesManagement(clinicId: string, patientId?: stri
 }
 
 export async function createDiabetesManagement(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  diabetes_type: string; diagnosis_date?: string; current_hba1c?: number;
-  target_hba1c?: number; medications?: unknown[];
-  diet_plan?: string; exercise_plan?: string; monitoring_frequency?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  diabetes_type: string;
+  diagnosis_date?: string;
+  current_hba1c?: number;
+  target_hba1c?: number;
+  medications?: unknown[];
+  diet_plan?: string;
+  exercise_plan?: string;
+  monitoring_frequency?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("diabetes_management").insert(data as Database["public"]["Tables"]["diabetes_management"]["Insert"]).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+    .from("diabetes_management")
+    .insert(data as Database["public"]["Tables"]["diabetes_management"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
 async function _updateDiabetesManagement(
   id: string,
-  data: { current_hba1c?: number; medications?: unknown[]; diet_plan?: string;
-    exercise_plan?: string; notes?: string; last_review_date?: string },
+  data: {
+    current_hba1c?: number;
+    medications?: unknown[];
+    diet_plan?: string;
+    exercise_plan?: string;
+    notes?: string;
+    last_review_date?: string;
+  },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("diabetes_management")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["diabetes_management"]["Update"]).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
+  const { error } = await supabase
+    .from("diabetes_management")
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["diabetes_management"]["Update"])
+    .eq("id", id);
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/specialists", error });
+    return false;
+  }
   return true;
 }
 
@@ -1133,15 +1666,26 @@ export interface JointAssessmentView {
   notes: string;
 }
 
-export async function fetchJointAssessments(clinicId: string, patientId?: string): Promise<JointAssessmentView[]> {
+export async function fetchJointAssessments(
+  clinicId: string,
+  patientId?: string,
+): Promise<JointAssessmentView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; assessment_date: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    assessment_date: string;
     joints_data: Record<string, { swollen: boolean; tender: boolean; notes?: string }> | null;
-    vas_pain_score: number | null; morning_stiffness_minutes: number | null;
-    swollen_joint_count: number; tender_joint_count: number;
-    das28_score: number | null; functional_status: string | null; notes: string | null;
+    vas_pain_score: number | null;
+    morning_stiffness_minutes: number | null;
+    swollen_joint_count: number;
+    tender_joint_count: number;
+    das28_score: number | null;
+    functional_status: string | null;
+    notes: string | null;
     created_at: string;
   }>("joint_assessments", { eq, order: ["assessment_date", { ascending: false }] });
   const names = await resolvePatientNames(rows.map((r) => r.patient_id));
@@ -1162,15 +1706,28 @@ export async function fetchJointAssessments(clinicId: string, patientId?: string
 }
 
 export async function createJointAssessment(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  joints_data?: Record<string, unknown>; vas_pain_score?: number;
-  morning_stiffness_minutes?: number; swollen_joint_count?: number;
-  tender_joint_count?: number; das28_score?: number;
-  functional_status?: string; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  joints_data?: Record<string, unknown>;
+  vas_pain_score?: number;
+  morning_stiffness_minutes?: number;
+  swollen_joint_count?: number;
+  tender_joint_count?: number;
+  das28_score?: number;
+  functional_status?: string;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("joint_assessments").insert(data as Database["public"]["Tables"]["joint_assessments"]["Insert"]).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("joint_assessments")
+    .insert(data as Database["public"]["Tables"]["joint_assessments"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }
 
@@ -1186,13 +1743,25 @@ export interface MobilityTestView {
   notes: string;
 }
 
-export async function fetchMobilityTests(clinicId: string, patientId?: string): Promise<MobilityTestView[]> {
+export async function fetchMobilityTests(
+  clinicId: string,
+  patientId?: string,
+): Promise<MobilityTestView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
   const rows = await fetchRows<{
-    id: string; clinic_id: string; patient_id: string; doctor_id: string; test_date: string; test_type: string;
-    joint: string; range_of_motion: Record<string, number> | null;
-    strength_score: number | null; pain_during_test: number | null; notes: string | null; created_at: string;
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    doctor_id: string;
+    test_date: string;
+    test_type: string;
+    joint: string;
+    range_of_motion: Record<string, number> | null;
+    strength_score: number | null;
+    pain_during_test: number | null;
+    notes: string | null;
+    created_at: string;
   }>("mobility_tests", { eq, order: ["test_date", { ascending: false }] });
   return rows.map((r) => ({
     id: r.id,
@@ -1208,12 +1777,25 @@ export async function fetchMobilityTests(clinicId: string, patientId?: string): 
 }
 
 export async function createMobilityTest(data: {
-  clinic_id: string; patient_id: string; doctor_id: string;
-  test_type: string; joint: string; range_of_motion?: Record<string, number>;
-  strength_score?: number; pain_during_test?: number; notes?: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_type: string;
+  joint: string;
+  range_of_motion?: Record<string, number>;
+  strength_score?: number;
+  pain_during_test?: number;
+  notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("mobility_tests").insert(data).select("id").single();
-  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
+  const { data: result, error } = await supabase
+    .from("mobility_tests")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/specialists", error });
+    return null;
+  }
   return result?.id ?? null;
 }

@@ -10,8 +10,9 @@ import { paymentInitiateSchema } from "@/lib/validations";
  *
  * Initiate a payment for an appointment.
  */
-export const POST = withAuthValidation(paymentInitiateSchema, async (body, request, { supabase }) => {
-
+export const POST = withAuthValidation(
+  paymentInitiateSchema,
+  async (body, request, { supabase }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
@@ -44,7 +45,10 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
     // Find or create patient using shared utility (prefers phone-based lookup
     // over name-based to avoid assigning payments to the wrong patient).
     const patientId = await findOrCreatePatient(
-      supabase, clinicId, body.patientId, body.patientName,
+      supabase,
+      clinicId,
+      body.patientId,
+      body.patientName,
     );
     if (!patientId) {
       return apiInternalError("Failed to resolve patient");
@@ -92,4 +96,6 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
       paymentId: payment.id,
       gatewaySessionId,
     });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

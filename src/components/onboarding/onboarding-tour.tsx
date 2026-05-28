@@ -1,8 +1,15 @@
 "use client";
 
 import {
-  Settings, Stethoscope, UserCog, Clock, Palette,
-  ChevronRight, ChevronLeft, X, Rocket,
+  Settings,
+  Stethoscope,
+  UserCog,
+  Clock,
+  Palette,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  Rocket,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -101,10 +108,10 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
                   i === currentStep
                     ? "bg-primary"
                     : completedSteps.includes(s.id)
-                    ? "bg-green-500"
-                    : i < currentStep
-                    ? "bg-primary/40"
-                    : "bg-muted"
+                      ? "bg-green-500"
+                      : i < currentStep
+                        ? "bg-primary/40"
+                        : "bg-muted"
                 }`}
               />
             ))}
@@ -113,8 +120,12 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
           {/* Step content */}
           <div className="p-6">
             <div className="flex items-start gap-4">
-              <div className={`rounded-lg p-3 ${isStepCompleted ? "bg-green-100" : "bg-primary/10"}`}>
-                <Icon className={`h-6 w-6 ${isStepCompleted ? "text-green-600" : "text-primary"}`} />
+              <div
+                className={`rounded-lg p-3 ${isStepCompleted ? "bg-green-100" : "bg-primary/10"}`}
+              >
+                <Icon
+                  className={`h-6 w-6 ${isStepCompleted ? "text-green-600" : "text-primary"}`}
+                />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -142,12 +153,7 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
 
           {/* Footer navigation */}
           <div className="flex items-center justify-between p-4 border-t bg-muted/30">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handlePrev}
-              disabled={isFirstStep}
-            >
+            <Button variant="ghost" size="sm" onClick={handlePrev} disabled={isFirstStep}>
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>

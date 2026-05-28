@@ -20,7 +20,7 @@ export interface FooterProps {
 /** Footer component map for dynamic selection. */
 export const FOOTER_COMPONENTS: Record<FooterVariant, ComponentType<FooterProps> | null> = {
   "classic-3col": FooterClassic,
-  "minimal": FooterMinimal,
-  "centered": FooterCentered,
-  "hidden": null,
+  minimal: FooterMinimal,
+  centered: FooterCentered,
+  hidden: null,
 };

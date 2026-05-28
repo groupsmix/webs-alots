@@ -53,18 +53,15 @@ const categoryColors: Record<string, string> = {
 };
 
 export default async function GalleryPage() {
-  const [cases, branding] = await Promise.all([
-    getApprovedBeforeAfterCases(),
-    getPublicBranding(),
-  ]);
+  const [cases, branding] = await Promise.all([getApprovedBeforeAfterCases(), getPublicBranding()]);
 
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Before & After Gallery</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Real results from our dental treatments at {branding.clinicName}.
-          All cases shown with patient consent.
+          Real results from our dental treatments at {branding.clinicName}. All cases shown with
+          patient consent.
         </p>
         <div className="flex items-center justify-center gap-2 mt-4">
           <Shield className="h-4 w-4 text-sky-600" />
@@ -79,8 +76,8 @@ export default async function GalleryPage() {
           <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-semibold mb-2">Gallery Coming Soon</h3>
           <p className="text-muted-foreground max-w-md mx-auto mb-6">
-            We are preparing our before and after gallery. Check back soon to see
-            real patient transformations.
+            We are preparing our before and after gallery. Check back soon to see real patient
+            transformations.
           </p>
           <Link href="/book" className={buttonVariants()}>
             <Calendar className="h-4 w-4 mr-2" />
@@ -92,10 +89,7 @@ export default async function GalleryPage() {
           {/* Category Filter */}
           <div className="flex flex-wrap gap-2 justify-center mb-8">
             {Array.from(new Set(cases.map((c) => c.category))).map((cat) => (
-              <Badge
-                key={cat}
-                className={categoryColors[cat] ?? "bg-gray-100 text-gray-700"}
-              >
+              <Badge key={cat} className={categoryColors[cat] ?? "bg-gray-100 text-gray-700"}>
                 {cat}
               </Badge>
             ))}
@@ -144,9 +138,7 @@ export default async function GalleryPage() {
 
       {/* CTA */}
       <div className="text-center mt-12">
-        <p className="text-muted-foreground mb-4">
-          Ready to transform your smile?
-        </p>
+        <p className="text-muted-foreground mb-4">Ready to transform your smile?</p>
         <Link href="/book" className={buttonVariants({ size: "lg" })}>
           <Calendar className="h-4 w-4 mr-2" />
           Book Your Consultation

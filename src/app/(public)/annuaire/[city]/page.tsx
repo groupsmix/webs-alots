@@ -1,6 +1,12 @@
 import {
-  MapPin, Stethoscope, Calendar, ArrowRight,
-  Phone, Languages, Award, Building2,
+  MapPin,
+  Stethoscope,
+  Calendar,
+  ArrowRight,
+  Phone,
+  Languages,
+  Award,
+  Building2,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -16,11 +22,7 @@ import {
   getDirectoryDoctorBySlug,
   getDirectoryDoctors,
 } from "@/lib/data/directory";
-import {
-  DIRECTORY_CITIES,
-  getCityBySlug,
-  getSpecialtyBySlug,
-} from "@/lib/directory-constants";
+import { DIRECTORY_CITIES, getCityBySlug, getSpecialtyBySlug } from "@/lib/directory-constants";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
@@ -62,7 +64,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         locale: "fr_MA",
         url: `${BASE_URL}/annuaire/${doctor.slug}`,
         siteName: "Oltigo",
-        ...(doctor.avatar ? { images: [{ url: doctor.avatar, width: 200, height: 200, alt: doctor.name }] } : {}),
+        ...(doctor.avatar
+          ? { images: [{ url: doctor.avatar, width: 200, height: 200, alt: doctor.name }] }
+          : {}),
       },
       alternates: { canonical: `${BASE_URL}/annuaire/${doctor.slug}` },
     };
@@ -126,7 +130,9 @@ function DoctorProfileView({
     worksFor: {
       "@type": "MedicalBusiness",
       name: doctor.clinicName,
-      ...(doctor.clinicSubdomain ? { url: `https://${doctor.clinicSubdomain}.${ROOT_DOMAIN}` } : {}),
+      ...(doctor.clinicSubdomain
+        ? { url: `https://${doctor.clinicSubdomain}.${ROOT_DOMAIN}` }
+        : {}),
     },
     ...(bookingUrl
       ? {
@@ -148,17 +154,24 @@ function DoctorProfileView({
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
-        <Link href="/annuaire" className="hover:text-foreground">Annuaire</Link>
+        <Link href="/annuaire" className="hover:text-foreground">
+          Annuaire
+        </Link>
         {city && (
           <>
             <span className="mx-2">/</span>
-            <Link href={`/annuaire/${city.slug}`} className="hover:text-foreground">{city.name}</Link>
+            <Link href={`/annuaire/${city.slug}`} className="hover:text-foreground">
+              {city.name}
+            </Link>
           </>
         )}
         {city && specialty && (
           <>
             <span className="mx-2">/</span>
-            <Link href={`/annuaire/${city.slug}/${specialty.slug}`} className="hover:text-foreground">
+            <Link
+              href={`/annuaire/${city.slug}/${specialty.slug}`}
+              className="hover:text-foreground"
+            >
               {specialty.nameFr}
             </Link>
           </>
@@ -183,7 +196,11 @@ function DoctorProfileView({
               ) : (
                 <Avatar className="h-32 w-32">
                   <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                    {doctor.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    {doctor.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
               )}
@@ -212,13 +229,17 @@ function DoctorProfileView({
                 {doctor.phone && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4 text-primary flex-shrink-0" />
-                    <a href={`tel:${doctor.phone}`} className="hover:text-foreground">{doctor.phone}</a>
+                    <a href={`tel:${doctor.phone}`} className="hover:text-foreground">
+                      {doctor.phone}
+                    </a>
                   </div>
                 )}
                 {doctor.consultationFee > 0 && (
                   <div className="flex items-center gap-2 text-sm">
                     <Award className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span>Consultation : <strong>{doctor.consultationFee} MAD</strong></span>
+                    <span>
+                      Consultation : <strong>{doctor.consultationFee} MAD</strong>
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -231,7 +252,9 @@ function DoctorProfileView({
                   <Languages className="h-4 w-4 text-primary" />
                   <div className="flex gap-1">
                     {doctor.languages.map((lang) => (
-                      <Badge key={lang} variant="outline" className="text-xs">{lang}</Badge>
+                      <Badge key={lang} variant="outline" className="text-xs">
+                        {lang}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -275,7 +298,9 @@ function DoctorProfileView({
             {doctor.phone && (
               <p className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0" />
-                <a href={`tel:${doctor.phone}`} className="hover:text-foreground">{doctor.phone}</a>
+                <a href={`tel:${doctor.phone}`} className="hover:text-foreground">
+                  {doctor.phone}
+                </a>
               </p>
             )}
           </div>
@@ -297,7 +322,10 @@ function DoctorProfileView({
       {/* Related links */}
       <div className="flex flex-wrap gap-3">
         {city && (
-          <Link href={`/annuaire/${city.slug}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link
+            href={`/annuaire/${city.slug}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
             Tous les médecins à {city.name}
           </Link>
         )}
@@ -351,7 +379,9 @@ function CityListingView({
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
-        <Link href="/annuaire" className="hover:text-foreground">Annuaire</Link>
+        <Link href="/annuaire" className="hover:text-foreground">
+          Annuaire
+        </Link>
         <span className="mx-2">/</span>
         <span className="text-foreground">{city.name}</span>
       </nav>
@@ -363,7 +393,8 @@ function CityListingView({
           <h1 className="text-3xl font-bold">Médecins à {city.name}</h1>
         </div>
         <p className="text-muted-foreground">
-          {doctors.length} professionnel{doctors.length !== 1 ? "s" : ""} de santé à {city.name}, {city.region}
+          {doctors.length} professionnel{doctors.length !== 1 ? "s" : ""} de santé à {city.name},{" "}
+          {city.region}
         </p>
       </div>
 
@@ -384,7 +415,9 @@ function CityListingView({
                   className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted transition-colors"
                 >
                   {specInfo?.nameFr ?? spec.name}
-                  <Badge variant="secondary" className="ml-1 text-xs">{spec.count}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {spec.count}
+                  </Badge>
                 </Link>
               );
             })}
@@ -418,7 +451,11 @@ function CityListingView({
                     ) : (
                       <Avatar className="h-12 w-12">
                         <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                          {doctor.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          {doctor.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                     )}
@@ -450,8 +487,7 @@ function CityListingView({
       <section className="mt-16">
         <h2 className="text-xl font-bold mb-4">Autres villes</h2>
         <div className="flex flex-wrap gap-2">
-          {DIRECTORY_CITIES
-            .filter((c) => c.slug !== citySlug)
+          {DIRECTORY_CITIES.filter((c) => c.slug !== citySlug)
             .slice(0, 12)
             .map((c) => (
               <Link
@@ -491,11 +527,6 @@ export default async function CityOrDoctorPage({ params }: PageProps) {
   ]);
 
   return (
-    <CityListingView
-      citySlug={slug}
-      city={city}
-      doctors={doctors}
-      specialties={specialties}
-    />
+    <CityListingView citySlug={slug} city={city} doctors={doctors} specialties={specialties} />
   );
 }

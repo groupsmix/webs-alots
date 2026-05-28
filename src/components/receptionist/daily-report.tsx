@@ -20,7 +20,10 @@ import {
 } from "@/lib/data/client";
 import { exportAppointments, exportInvoices } from "@/lib/export-data";
 
-const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
+const statusVariant: Record<
+  string,
+  "default" | "success" | "warning" | "destructive" | "secondary" | "outline"
+> = {
   scheduled: "outline",
   confirmed: "default",
   "in-progress": "warning",
@@ -44,7 +47,10 @@ export function DailyReport() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const today = new Date().toISOString().split("T")[0];
       const [appts, docs, pts, invs] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
@@ -65,11 +71,15 @@ export function DailyReport() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const completed = todayAppointments.filter((a) => a.status === "completed").length;
-  const pending = todayAppointments.filter((a) => a.status === "scheduled" || a.status === "confirmed").length;
+  const pending = todayAppointments.filter(
+    (a) => a.status === "scheduled" || a.status === "confirmed",
+  ).length;
   const noShows = todayAppointments.filter((a) => a.status === "no-show").length;
   const cancelled = todayAppointments.filter((a) => a.status === "cancelled").length;
 
@@ -95,12 +105,20 @@ export function DailyReport() {
     // they don't pose an XSS risk when properly handled by the browser.
     const clone = content.cloneNode(true) as HTMLElement;
     // Remove dangerous elements entirely
-    const dangerousElements = "script, iframe, object, embed, form, svg, math, base, link, meta, template";
+    const dangerousElements =
+      "script, iframe, object, embed, form, svg, math, base, link, meta, template";
     clone.querySelectorAll(dangerousElements).forEach((el) => el.remove());
     // Strip dangerous attributes
     const dangerousAttrs = new Set([
-      "srcdoc", "formaction", "xlink:href", "action", "background",
-      "dynsrc", "lowsrc", "ping", "poster",
+      "srcdoc",
+      "formaction",
+      "xlink:href",
+      "action",
+      "background",
+      "dynsrc",
+      "lowsrc",
+      "ping",
+      "poster",
     ]);
     clone.querySelectorAll("*").forEach((el) => {
       for (const attr of Array.from(el.attributes)) {
@@ -169,7 +187,9 @@ export function DailyReport() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -289,18 +309,30 @@ export function DailyReport() {
             <Card key={doctor.id} className="mb-4">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold">{doctor.name}</CardTitle>
-                <p className="text-xs text-muted-foreground">{doctor.specialty} - {doctorAppts.length} appointments</p>
+                <p className="text-xs text-muted-foreground">
+                  {doctor.specialty} - {doctorAppts.length} appointments
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">Time</th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">Patient</th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">Service</th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">Status</th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">Insurance</th>
+                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                          Time
+                        </th>
+                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                          Patient
+                        </th>
+                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                          Service
+                        </th>
+                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                          Status
+                        </th>
+                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                          Insurance
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -315,11 +347,17 @@ export function DailyReport() {
                                 <div>
                                   <span>{apt.patientName}</span>
                                   {apt.isFirstVisit && (
-                                    <Badge variant="secondary" className="ml-2 text-[10px]">New</Badge>
+                                    <Badge variant="secondary" className="ml-2 text-[10px]">
+                                      New
+                                    </Badge>
                                   )}
                                 </div>
                                 {patient?.phone && (
-                                  <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
+                                  <DataMask
+                                    value={patient.phone}
+                                    type="phone"
+                                    className="text-xs text-muted-foreground"
+                                  />
                                 )}
                               </td>
                               <td className="py-2 px-3">{apt.serviceName}</td>
@@ -328,7 +366,9 @@ export function DailyReport() {
                               </td>
                               <td className="py-2 px-3">
                                 {apt.hasInsurance ? (
-                                  <Badge variant="success" className="text-[10px]">Insured</Badge>
+                                  <Badge variant="success" className="text-[10px]">
+                                    Insured
+                                  </Badge>
                                 ) : (
                                   <span className="text-xs text-muted-foreground">No</span>
                                 )}

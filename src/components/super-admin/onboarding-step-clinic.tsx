@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
+import { Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,9 +87,7 @@ export function OnboardingStepClinic({
             <Input
               placeholder="e.g. Dermatology, General Medicine"
               value={clinicForm.specialty}
-              onChange={(e) =>
-                onUpdateField("specialty", e.target.value)
-              }
+              onChange={(e) => onUpdateField("specialty", e.target.value)}
             />
           </div>
         </div>
@@ -149,7 +143,8 @@ export function OnboardingStepClinic({
               <span className="text-sm text-muted-foreground whitespace-nowrap">.oltigo.com</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              The clinic will be accessible at <strong>{clinicForm.subdomain || "___"}.oltigo.com</strong>
+              The clinic will be accessible at{" "}
+              <strong>{clinicForm.subdomain || "___"}.oltigo.com</strong>
             </p>
           </div>
         </div>

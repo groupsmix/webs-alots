@@ -28,9 +28,33 @@ interface FamilyMember {
 }
 
 const initialMembers: FamilyMember[] = [
-  { id: "f1", name: "Laila Mansouri", relation: "Wife", age: 33, phone: "+212 6 11 22 33 55", gender: "F", insurance: "CNSS" },
-  { id: "f2", name: "Yassine Mansouri", relation: "Son", age: 8, phone: "\u2014", gender: "M", insurance: "CNSS" },
-  { id: "f3", name: "Sara Mansouri", relation: "Daughter", age: 5, phone: "\u2014", gender: "F", insurance: "CNSS" },
+  {
+    id: "f1",
+    name: "Laila Mansouri",
+    relation: "Wife",
+    age: 33,
+    phone: "+212 6 11 22 33 55",
+    gender: "F",
+    insurance: "CNSS",
+  },
+  {
+    id: "f2",
+    name: "Yassine Mansouri",
+    relation: "Son",
+    age: 8,
+    phone: "\u2014",
+    gender: "M",
+    insurance: "CNSS",
+  },
+  {
+    id: "f3",
+    name: "Sara Mansouri",
+    relation: "Daughter",
+    age: 5,
+    phone: "\u2014",
+    gender: "F",
+    insurance: "CNSS",
+  },
 ];
 
 const relationColors: Record<string, string> = {
@@ -45,7 +69,14 @@ export default function FamilyMembersPage() {
   const [members, setMembers] = useState(initialMembers);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [newMember, setNewMember] = useState({ name: "", relation: "Wife", age: "", phone: "", gender: "F", insurance: "" });
+  const [newMember, setNewMember] = useState({
+    name: "",
+    relation: "Wife",
+    age: "",
+    phone: "",
+    gender: "F",
+    insurance: "",
+  });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -67,7 +98,14 @@ export default function FamilyMembersPage() {
       setTimeout(() => {
         setAddOpen(false);
         setSuccess(false);
-        setNewMember({ name: "", relation: "Wife", age: "", phone: "", gender: "F", insurance: "" });
+        setNewMember({
+          name: "",
+          relation: "Wife",
+          age: "",
+          phone: "",
+          gender: "F",
+          insurance: "",
+        });
       }, 1500);
     }, 1000);
   };
@@ -84,7 +122,8 @@ export default function FamilyMembersPage() {
         <div>
           <h1 className="text-2xl font-bold">Family Members</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage family members under your account. {members.length} member{members.length !== 1 ? "s" : ""} added.
+            Manage family members under your account. {members.length} member
+            {members.length !== 1 ? "s" : ""} added.
           </p>
         </div>
         <Button onClick={() => setAddOpen(true)}>
@@ -100,12 +139,17 @@ export default function FamilyMembersPage() {
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="h-12 w-12">
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                    {member.name.split(" ").map((n) => n[0]).join("")}
+                    {member.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{member.name}</p>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${relationColors[member.relation] ?? "bg-gray-100 text-gray-700"}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${relationColors[member.relation] ?? "bg-gray-100 text-gray-700"}`}
+                  >
                     {member.relation}
                   </span>
                 </div>
@@ -120,7 +164,9 @@ export default function FamilyMembersPage() {
                   <span>{member.phone}</span>
                 </div>
                 {member.insurance && (
-                  <Badge variant="outline" className="text-xs">{member.insurance}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {member.insurance}
+                  </Badge>
                 )}
               </div>
               <div className="flex gap-2 mt-4 pt-3 border-t">
@@ -128,7 +174,12 @@ export default function FamilyMembersPage() {
                   <Edit2 className="h-3.5 w-3.5 mr-1" />
                   Edit
                 </Button>
-                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteId(member.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteId(member.id)}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -141,14 +192,18 @@ export default function FamilyMembersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Family Member</DialogTitle>
-            <DialogDescription>Add a spouse, child, or other family member to your account.</DialogDescription>
+            <DialogDescription>
+              Add a spouse, child, or other family member to your account.
+            </DialogDescription>
           </DialogHeader>
           {success ? (
             <div className="text-center py-6">
               <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mx-auto mb-3">
                 <UserPlus className="h-6 w-6 text-green-600" />
               </div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">Family member added successfully!</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                Family member added successfully!
+              </p>
             </div>
           ) : (
             <div className="space-y-4 mt-2">
@@ -239,13 +294,19 @@ export default function FamilyMembersPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Remove Family Member</DialogTitle>
-            <DialogDescription>Are you sure you want to remove this family member from your account?</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to remove this family member from your account?
+            </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 mt-4">
             <Button variant="outline" className="flex-1" onClick={() => setDeleteId(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" className="flex-1" onClick={() => deleteId && handleDelete(deleteId)}>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => deleteId && handleDelete(deleteId)}
+            >
               <Trash2 className="h-4 w-4 mr-1" />
               Remove
             </Button>

@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Apple, Plus, Trash2, ChevronDown, ChevronUp, Utensils,
-} from "lucide-react";
+import { Apple, Plus, Trash2, ChevronDown, ChevronUp, Utensils } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +40,12 @@ const EMPTY_ITEM: MealItem = {
   fat_g: 0,
 };
 
-export function MealPlanBuilder({ plans, editable = false, onAddMealItem, onRemoveMealItem }: MealPlanBuilderProps) {
+export function MealPlanBuilder({
+  plans,
+  editable = false,
+  onAddMealItem,
+  onRemoveMealItem,
+}: MealPlanBuilderProps) {
   const [expandedId, setExpandedId] = useState<string | null>(plans[0]?.id ?? null);
   const [expandedDay, setExpandedDay] = useState<number>(0);
   const [addingSlot, setAddingSlot] = useState<string | null>(null);
@@ -66,20 +69,30 @@ export function MealPlanBuilder({ plans, editable = false, onAddMealItem, onRemo
         const currentDay = plan.daily_plans[expandedDay];
         return (
           <Card key={plan.id}>
-            <CardHeader className="cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : plan.id)}>
+            <CardHeader
+              className="cursor-pointer"
+              onClick={() => setExpandedId(isExpanded ? null : plan.id)}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Apple className="h-5 w-5 text-green-600" />
                   <div>
                     <CardTitle className="text-sm">{plan.title}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {plan.patient_name} &middot; {plan.type} plan &middot; Target: {plan.target_calories} kcal
+                      {plan.patient_name} &middot; {plan.type} plan &middot; Target:{" "}
+                      {plan.target_calories} kcal
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={STATUS_VARIANT[plan.status]} className="text-xs">{plan.status}</Badge>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <Badge variant={STATUS_VARIANT[plan.status]} className="text-xs">
+                    {plan.status}
+                  </Badge>
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -93,7 +106,9 @@ export function MealPlanBuilder({ plans, editable = false, onAddMealItem, onRemo
                       <button
                         key={i}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                          expandedDay === i ? "bg-primary text-primary-foreground" : "border hover:bg-muted"
+                          expandedDay === i
+                            ? "bg-primary text-primary-foreground"
+                            : "border hover:bg-muted"
                         }`}
                         onClick={() => setExpandedDay(i)}
                       >
@@ -108,11 +123,15 @@ export function MealPlanBuilder({ plans, editable = false, onAddMealItem, onRemo
                     {/* Macros summary */}
                     <div className="grid grid-cols-4 gap-2">
                       <div className="text-center p-2 rounded-lg bg-orange-50 dark:bg-orange-950/20">
-                        <p className="text-lg font-bold text-orange-600">{currentDay.total_calories}</p>
+                        <p className="text-lg font-bold text-orange-600">
+                          {currentDay.total_calories}
+                        </p>
                         <p className="text-[10px] text-muted-foreground">Calories</p>
                       </div>
                       <div className="text-center p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
-                        <p className="text-lg font-bold text-red-600">{currentDay.total_protein}g</p>
+                        <p className="text-lg font-bold text-red-600">
+                          {currentDay.total_protein}g
+                        </p>
                         <p className="text-[10px] text-muted-foreground">Protein</p>
                       </div>
                       <div className="text-center p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20">
@@ -147,7 +166,11 @@ export function MealPlanBuilder({ plans, editable = false, onAddMealItem, onRemo
                                   <span className="text-muted-foreground">{item.quantity}</span>
                                   <span className="w-14 text-right">{item.calories} kcal</span>
                                   {editable && (
-                                    <button onClick={() => onRemoveMealItem?.(plan.id, expandedDay, slot, idx)}>
+                                    <button
+                                      onClick={() =>
+                                        onRemoveMealItem?.(plan.id, expandedDay, slot, idx)
+                                      }
+                                    >
                                       <Trash2 className="h-3 w-3 text-red-500" />
                                     </button>
                                   )}
@@ -162,40 +185,95 @@ export function MealPlanBuilder({ plans, editable = false, onAddMealItem, onRemo
                                   <div className="grid grid-cols-2 gap-2">
                                     <div>
                                       <Label className="text-[10px]">Food Item</Label>
-                                      <Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="e.g. Oatmeal" className="text-xs h-8" />
+                                      <Input
+                                        value={newItem.name}
+                                        onChange={(e) =>
+                                          setNewItem({ ...newItem, name: e.target.value })
+                                        }
+                                        placeholder="e.g. Oatmeal"
+                                        className="text-xs h-8"
+                                      />
                                     </div>
                                     <div>
                                       <Label className="text-[10px]">Quantity</Label>
-                                      <Input value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} className="text-xs h-8" />
+                                      <Input
+                                        value={newItem.quantity}
+                                        onChange={(e) =>
+                                          setNewItem({ ...newItem, quantity: e.target.value })
+                                        }
+                                        className="text-xs h-8"
+                                      />
                                     </div>
                                   </div>
                                   <div className="grid grid-cols-4 gap-1">
                                     <div>
                                       <Label className="text-[10px]">Cal</Label>
-                                      <Input type="number" value={newItem.calories} onChange={(e) => setNewItem({ ...newItem, calories: +e.target.value })} className="text-xs h-8" />
+                                      <Input
+                                        type="number"
+                                        value={newItem.calories}
+                                        onChange={(e) =>
+                                          setNewItem({ ...newItem, calories: +e.target.value })
+                                        }
+                                        className="text-xs h-8"
+                                      />
                                     </div>
                                     <div>
                                       <Label className="text-[10px]">Protein</Label>
-                                      <Input type="number" value={newItem.protein_g} onChange={(e) => setNewItem({ ...newItem, protein_g: +e.target.value })} className="text-xs h-8" />
+                                      <Input
+                                        type="number"
+                                        value={newItem.protein_g}
+                                        onChange={(e) =>
+                                          setNewItem({ ...newItem, protein_g: +e.target.value })
+                                        }
+                                        className="text-xs h-8"
+                                      />
                                     </div>
                                     <div>
                                       <Label className="text-[10px]">Carbs</Label>
-                                      <Input type="number" value={newItem.carbs_g} onChange={(e) => setNewItem({ ...newItem, carbs_g: +e.target.value })} className="text-xs h-8" />
+                                      <Input
+                                        type="number"
+                                        value={newItem.carbs_g}
+                                        onChange={(e) =>
+                                          setNewItem({ ...newItem, carbs_g: +e.target.value })
+                                        }
+                                        className="text-xs h-8"
+                                      />
                                     </div>
                                     <div>
                                       <Label className="text-[10px]">Fat</Label>
-                                      <Input type="number" value={newItem.fat_g} onChange={(e) => setNewItem({ ...newItem, fat_g: +e.target.value })} className="text-xs h-8" />
+                                      <Input
+                                        type="number"
+                                        value={newItem.fat_g}
+                                        onChange={(e) =>
+                                          setNewItem({ ...newItem, fat_g: +e.target.value })
+                                        }
+                                        className="text-xs h-8"
+                                      />
                                     </div>
                                   </div>
                                   <div className="flex gap-2">
-                                    <Button size="sm" onClick={() => handleAdd(plan.id, expandedDay, slot)}>Add</Button>
-                                    <Button size="sm" variant="outline" onClick={() => setAddingSlot(null)}>Cancel</Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleAdd(plan.id, expandedDay, slot)}
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setAddingSlot(null)}
+                                    >
+                                      Cancel
+                                    </Button>
                                   </div>
                                 </div>
                               ) : (
                                 <button
                                   className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
-                                  onClick={() => { setAddingSlot(`${plan.id}-${expandedDay}-${slot}`); setNewItem(EMPTY_ITEM); }}
+                                  onClick={() => {
+                                    setAddingSlot(`${plan.id}-${expandedDay}-${slot}`);
+                                    setNewItem(EMPTY_ITEM);
+                                  }}
                                 >
                                   <Plus className="h-3 w-3" /> Add item
                                 </button>

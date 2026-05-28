@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -64,7 +59,10 @@ export default function IopTrackingPage() {
   });
 
   // Issue 21: Auto-save draft for clinical form
-  const { saveDraft: saveIopDraft, clearDraft: clearIopDraft } = useOfflineDrafts<typeof form>("iop-tracking-form", { autoSaveMs: 5000 });
+  const { saveDraft: saveIopDraft, clearDraft: clearIopDraft } = useOfflineDrafts<typeof form>(
+    "iop-tracking-form",
+    { autoSaveMs: 5000 },
+  );
   const setForm: typeof setFormRaw = (val) => {
     setFormRaw((prev) => {
       const next = typeof val === "function" ? val(prev) : val;
@@ -99,7 +97,9 @@ export default function IopTrackingPage() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
   const reload = async () => {
@@ -126,7 +126,14 @@ export default function IopTrackingPage() {
     });
     setShowAdd(false);
     clearIopDraft();
-    setFormRaw({ patientId: "", measuredAt: new Date().toISOString().split("T")[0], odPressure: "", osPressure: "", method: "goldmann", notes: "" });
+    setFormRaw({
+      patientId: "",
+      measuredAt: new Date().toISOString().split("T")[0],
+      odPressure: "",
+      osPressure: "",
+      method: "goldmann",
+      notes: "",
+    });
     reload();
   };
 
@@ -144,7 +151,9 @@ export default function IopTrackingPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IOP Tracking" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IOP Tracking" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Intraocular Pressure (IOP)</h1>
         <Button onClick={() => setShowAdd(true)}>
@@ -154,12 +163,19 @@ export default function IopTrackingPage() {
 
       {/* Patient filter */}
       <div className="mb-6 max-w-xs">
-        <Select value={selectedPatient} onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="All patients" /></SelectTrigger>
+        <Select
+          value={selectedPatient}
+          onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All patients" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All patients</SelectItem>
             {patients.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -186,13 +202,9 @@ export default function IopTrackingPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       {data[0].patientName}
-                      {hasHighPressure && (
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                      )}
+                      {hasHighPressure && <AlertTriangle className="h-4 w-4 text-red-500" />}
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      Latest: {latest.measuredAt}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Latest: {latest.measuredAt}</p>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -202,7 +214,10 @@ export default function IopTrackingPage() {
                       <p className="text-xs text-muted-foreground">OD (Right)</p>
                       <p className="text-3xl font-bold">{latest.odPressure}</p>
                       <p className="text-xs">mmHg</p>
-                      <Badge variant={latest.odPressure > 21 ? "destructive" : "success"} className="mt-1">
+                      <Badge
+                        variant={latest.odPressure > 21 ? "destructive" : "success"}
+                        className="mt-1"
+                      >
                         {odStatus.label}
                       </Badge>
                     </div>
@@ -210,7 +225,10 @@ export default function IopTrackingPage() {
                       <p className="text-xs text-muted-foreground">OS (Left)</p>
                       <p className="text-3xl font-bold">{latest.osPressure}</p>
                       <p className="text-xs">mmHg</p>
-                      <Badge variant={latest.osPressure > 21 ? "destructive" : "success"} className="mt-1">
+                      <Badge
+                        variant={latest.osPressure > 21 ? "destructive" : "success"}
+                        className="mt-1"
+                      >
                         {osStatus.label}
                       </Badge>
                     </div>
@@ -224,10 +242,14 @@ export default function IopTrackingPage() {
                         {/* Reference lines */}
                         <div className="absolute left-0 right-0 top-0 h-full flex flex-col justify-between pointer-events-none">
                           <div className="border-b border-dashed border-red-300 dark:border-red-800 relative">
-                            <span className="absolute -top-3 right-0 text-[10px] text-red-400">21 mmHg</span>
+                            <span className="absolute -top-3 right-0 text-[10px] text-red-400">
+                              21 mmHg
+                            </span>
                           </div>
                           <div className="border-b border-dashed border-green-300 dark:border-green-800 relative">
-                            <span className="absolute -top-3 right-0 text-[10px] text-green-400">10 mmHg</span>
+                            <span className="absolute -top-3 right-0 text-[10px] text-green-400">
+                              10 mmHg
+                            </span>
                           </div>
                         </div>
 
@@ -238,7 +260,11 @@ export default function IopTrackingPage() {
                             const odH = Math.min((m.odPressure / maxP) * 100, 100);
                             const osH = Math.min((m.osPressure / maxP) * 100, 100);
                             return (
-                              <div key={m.id} className="flex-1 flex gap-[2px] items-end" title={`${m.measuredAt}: OD=${m.odPressure} OS=${m.osPressure}`}>
+                              <div
+                                key={m.id}
+                                className="flex-1 flex gap-[2px] items-end"
+                                title={`${m.measuredAt}: OD=${m.odPressure} OS=${m.osPressure}`}
+                              >
                                 <div
                                   className={`flex-1 rounded-t ${m.odPressure > 21 ? "bg-red-400" : "bg-blue-400"}`}
                                   style={{ height: `${odH}%` }}
@@ -254,7 +280,9 @@ export default function IopTrackingPage() {
                         <div className="flex gap-1 mt-1">
                           {data.map((m) => (
                             <div key={m.id} className="flex-1 text-center">
-                              <p className="text-[9px] text-muted-foreground truncate">{m.measuredAt.slice(5)}</p>
+                              <p className="text-[9px] text-muted-foreground truncate">
+                                {m.measuredAt.slice(5)}
+                              </p>
                             </div>
                           ))}
                         </div>
@@ -288,10 +316,14 @@ export default function IopTrackingPage() {
                         {[...data].reverse().map((m) => (
                           <tr key={m.id} className="border-b last:border-0">
                             <td className="py-2 pr-3">{m.measuredAt}</td>
-                            <td className={`py-2 pr-3 font-medium ${getPressureStatus(m.odPressure).color}`}>
+                            <td
+                              className={`py-2 pr-3 font-medium ${getPressureStatus(m.odPressure).color}`}
+                            >
                               {m.odPressure} mmHg
                             </td>
-                            <td className={`py-2 pr-3 font-medium ${getPressureStatus(m.osPressure).color}`}>
+                            <td
+                              className={`py-2 pr-3 font-medium ${getPressureStatus(m.osPressure).color}`}
+                            >
                               {m.osPressure} mmHg
                             </td>
                             <td className="py-2 pr-3 capitalize">{m.method.replace(/_/g, " ")}</td>
@@ -319,11 +351,18 @@ export default function IopTrackingPage() {
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Patient</Label>
-              <Select value={form.patientId} onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+              <Select
+                value={form.patientId}
+                onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select patient" />
+                </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -331,15 +370,26 @@ export default function IopTrackingPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Date</Label>
-                <Input type="date" value={form.measuredAt} onChange={(e) => setForm((p) => ({ ...p, measuredAt: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.measuredAt}
+                  onChange={(e) => setForm((p) => ({ ...p, measuredAt: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Method</Label>
-                <Select value={form.method} onValueChange={(v) => setForm((p) => ({ ...p, method: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.method}
+                  onValueChange={(v) => setForm((p) => ({ ...p, method: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {METHODS.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -348,20 +398,47 @@ export default function IopTrackingPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>OD Pressure (mmHg)</Label>
-                <Input type="number" step="0.5" min="0" max="60" value={form.odPressure} onChange={(e) => setForm((p) => ({ ...p, odPressure: e.target.value }))} placeholder="e.g., 16" />
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="60"
+                  value={form.odPressure}
+                  onChange={(e) => setForm((p) => ({ ...p, odPressure: e.target.value }))}
+                  placeholder="e.g., 16"
+                />
               </div>
               <div className="space-y-2">
                 <Label>OS Pressure (mmHg)</Label>
-                <Input type="number" step="0.5" min="0" max="60" value={form.osPressure} onChange={(e) => setForm((p) => ({ ...p, osPressure: e.target.value }))} placeholder="e.g., 15" />
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="60"
+                  value={form.osPressure}
+                  onChange={(e) => setForm((p) => ({ ...p, osPressure: e.target.value }))}
+                  placeholder="e.g., 15"
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Clinical observations..." />
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Clinical observations..."
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!form.patientId || !form.odPressure || !form.osPressure}>Save</Button>
+              <Button variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={!form.patientId || !form.odPressure || !form.osPressure}
+              >
+                Save
+              </Button>
             </div>
           </div>
         </DialogContent>

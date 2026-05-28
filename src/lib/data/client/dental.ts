@@ -92,7 +92,10 @@ async function _updateMedicalCertificate(
   },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("medical_certificates").update(data as Database["public"]["Tables"]["medical_certificates"]["Update"]).eq("id", id);
+  const { error } = await supabase
+    .from("medical_certificates")
+    .update(data as Database["public"]["Tables"]["medical_certificates"]["Update"])
+    .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return false;
@@ -111,11 +114,20 @@ export interface OdontogramView {
   lastUpdated?: string;
 }
 
-export async function fetchOdontogram(clinicId: string, patientId: string): Promise<OdontogramView[]> {
-  const rows = await fetchRows<{ tooth_number: number; status: string; notes: string | null }>("odontogram", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
-    order: ["tooth_number", { ascending: true }],
-  });
+export async function fetchOdontogram(
+  clinicId: string,
+  patientId: string,
+): Promise<OdontogramView[]> {
+  const rows = await fetchRows<{ tooth_number: number; status: string; notes: string | null }>(
+    "odontogram",
+    {
+      eq: [
+        ["clinic_id", clinicId],
+        ["patient_id", patientId],
+      ],
+      order: ["tooth_number", { ascending: true }],
+    },
+  );
   return rows.map((r) => ({
     toothNumber: r.tooth_number,
     status: r.status,
@@ -134,7 +146,14 @@ export interface TreatmentPlanView {
   doctorId: string;
   doctorName: string;
   title: string;
-  steps: { step: number; description: string; status: "pending" | "in_progress" | "completed"; date: string | null; cost: number; toothNumbers?: number[] }[];
+  steps: {
+    step: number;
+    description: string;
+    status: "pending" | "in_progress" | "completed";
+    date: string | null;
+    cost: number;
+    toothNumbers?: number[];
+  }[];
   totalCost: number;
   status: "planned" | "in_progress" | "completed" | "cancelled";
   createdAt: string;
@@ -147,14 +166,26 @@ interface TreatmentPlanRaw {
   patient_id: string;
   doctor_id: string;
   title: string;
-  steps: { step: number; description: string; status: string; date: string | null; cost?: number; toothNumbers?: number[] }[] | null;
+  steps:
+    | {
+        step: number;
+        description: string;
+        status: string;
+        date: string | null;
+        cost?: number;
+        toothNumbers?: number[];
+      }[]
+    | null;
   total_cost: number | null;
   status: string;
   created_at: string;
   updated_at: string;
 }
 
-export async function fetchTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanView[]> {
+export async function fetchTreatmentPlans(
+  clinicId: string,
+  doctorId?: string,
+): Promise<TreatmentPlanView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
@@ -169,7 +200,12 @@ export async function fetchTreatmentPlans(clinicId: string, doctorId?: string): 
     doctorId: r.doctor_id,
     doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     title: r.title,
-    steps: (r.steps ?? []).map((s) => ({ ...s, status: s.status as "pending" | "in_progress" | "completed", cost: s.cost ?? 0, toothNumbers: s.toothNumbers })),
+    steps: (r.steps ?? []).map((s) => ({
+      ...s,
+      status: s.status as "pending" | "in_progress" | "completed",
+      cost: s.cost ?? 0,
+      toothNumbers: s.toothNumbers,
+    })),
     totalCost: r.total_cost ?? 0,
     status: r.status as "planned" | "in_progress" | "completed" | "cancelled",
     createdAt: r.created_at?.split("T")[0] ?? "",
@@ -242,7 +278,10 @@ export async function createLabOrder(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("lab_orders")
-    .insert({ ...data, status: data.status ?? "pending" } as Database["public"]["Tables"]["lab_orders"]["Insert"])
+    .insert({
+      ...data,
+      status: data.status ?? "pending",
+    } as Database["public"]["Tables"]["lab_orders"]["Insert"])
     .select("id")
     .single();
   if (error) {
@@ -355,7 +394,10 @@ export interface BeforeAfterPhotoView {
   category: string;
 }
 
-export async function fetchBeforeAfterPhotos(clinicId: string, patientId?: string): Promise<BeforeAfterPhotoView[]> {
+export async function fetchBeforeAfterPhotos(
+  clinicId: string,
+  patientId?: string,
+): Promise<BeforeAfterPhotoView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -382,4 +424,3 @@ export async function fetchBeforeAfterPhotos(clinicId: string, patientId?: strin
     category: r.category ?? "General",
   }));
 }
-

@@ -12,11 +12,11 @@ everything else requires manual infrastructure action.
 
 ## Priority Legend
 
-| Priority | Meaning |
-|----------|---------|
-| P1 | Must fix before handling real patient data |
-| P2 | Fix within 2 weeks of launch |
-| P3 | Fix within 6 weeks of launch |
+| Priority | Meaning                                    |
+| -------- | ------------------------------------------ |
+| P1       | Must fix before handling real patient data |
+| P2       | Fix within 2 weeks of launch               |
+| P3       | Fix within 6 weeks of launch               |
 
 ---
 
@@ -29,12 +29,14 @@ record does not include `spf.resend.com`. All mail from Resend fails SPF
 alignment.
 
 **Action:**
+
 ```
 ; Replace current TXT record on oltigo.com
 oltigo.com.  TXT  "v=spf1 include:_spf.mx.cloudflare.net include:spf.resend.com ~all"
 ```
 
 **Verification:**
+
 ```bash
 dig TXT oltigo.com +short
 # Should include both includes
@@ -47,6 +49,7 @@ nslookup -type=txt oltigo.com
 best practice requires 2048-bit.
 
 **Action:**
+
 1. Log into the Resend dashboard
 2. Navigate to Domains > oltigo.com > DKIM
 3. Rotate to a 2048-bit key
@@ -59,11 +62,13 @@ best practice requires 2048-bit.
 `oltigo.com` freely.
 
 **Action -- Phase 1 (quarantine):**
+
 ```
 _dmarc.oltigo.com.  TXT  "v=DMARC1; p=quarantine; rua=mailto:dmarc@oltigo.com; ruf=mailto:dmarc@oltigo.com; sp=quarantine; adkim=s; aspf=s; pct=100; fo=1"
 ```
 
 **Action -- Phase 2 (reject, after 6 weeks of monitoring):**
+
 ```
 _dmarc.oltigo.com.  TXT  "v=DMARC1; p=reject; rua=mailto:dmarc@oltigo.com; ruf=mailto:dmarc@oltigo.com; sp=reject; adkim=s; aspf=s; pct=100; fo=1"
 ```
@@ -78,6 +83,7 @@ dmarcian, or EasyDMARC free tier) pointed at `dmarc@oltigo.com`.
 **Prerequisite:** DMARC must be at `p=reject` for 2+ weeks.
 
 **Action (after DMARC is at reject):**
+
 ```
 default._bimi.oltigo.com.  TXT  "v=BIMI1; l=https://oltigo.com/brand/logo.svg; a=https://oltigo.com/brand/vmc.pem"
 ```
@@ -91,6 +97,7 @@ Evaluate ROI before purchasing.
 DMARC `aspf=s` (strict SPF alignment).
 
 **Action:**
+
 1. In Resend dashboard, configure a custom Return-Path subdomain:
    `bounces.oltigo.com`
 2. Add the required DNS records (CNAME) that Resend provides
@@ -106,12 +113,14 @@ DMARC `aspf=s` (strict SPF alignment).
 off-path DNS injection can serve attacker A-records for oltigo.com.
 
 **Action:**
+
 1. In Cloudflare dashboard: DNS > DNSSEC > Enable DNSSEC
 2. Copy the DS record details from Cloudflare
 3. In Namecheap: Advanced DNS > DNSSEC > Add DS record
 4. Wait for propagation (up to 48h)
 
 **Verification:**
+
 ```bash
 dig DS oltigo.com +short
 # Should return DS record
@@ -124,6 +133,7 @@ dig +dnssec oltigo.com
 **Problem:** Any CA globally can issue a certificate for oltigo.com.
 
 **Action:** Add these CAA records in Cloudflare DNS:
+
 ```
 oltigo.com.  CAA  0 issue "letsencrypt.org"
 oltigo.com.  CAA  0 issue "pki.goog"
@@ -133,6 +143,7 @@ oltigo.com.  CAA  0 iodef "mailto:security@oltigo.com"
 ```
 
 **Verification:**
+
 ```bash
 dig CAA oltigo.com +short
 ```
@@ -142,6 +153,7 @@ dig CAA oltigo.com +short
 **Problem:** Inbound SMTP to oltigo.com mailboxes is not TLS-enforced.
 
 **Action:**
+
 1. Add TXT record:
    ```
    _mta-sts.oltigo.com.  TXT  "v=STSv1; id=20260430"
@@ -161,6 +173,7 @@ dig CAA oltigo.com +short
 **Problem:** No mechanism to receive TLS failure reports.
 
 **Action:**
+
 ```
 _smtp._tls.oltigo.com.  TXT  "v=TLSRPTv1; rua=mailto:tls-rpt@oltigo.com"
 ```
@@ -191,6 +204,7 @@ unknown subdomains, instead of redirecting to the root domain.
 ### A147-F1 (P2): No registry lock
 
 **Action:** Contact Namecheap support (requires Pro account) to apply:
+
 - `serverTransferProhibited`
 - `serverDeleteProhibited`
 - `serverUpdateProhibited`
@@ -198,6 +212,7 @@ unknown subdomains, instead of redirecting to the root domain.
 ### A147-F2 (P1): MFA on registrar account
 
 **Action:** If not already done:
+
 1. Enable mandatory 2FA on the Namecheap account
 2. Use a hardware key (YubiKey) if possible
 3. Store credentials in a shared 1Password vault (not personal devices)
@@ -205,6 +220,7 @@ unknown subdomains, instead of redirecting to the root domain.
 ### A147-F3 (P1): Auto-renew and billing alerts
 
 **Action:**
+
 1. Enable auto-renew on Namecheap for oltigo.com
 2. Add a calendar reminder 30 days before 2027-03-24 (current expiry)
 3. Set up billing alert emails to `domains@oltigo.com`
@@ -220,6 +236,7 @@ unknown subdomains, instead of redirecting to the root domain.
 ### A148-F4 (P2): Verify OCSP stapling
 
 **Action:**
+
 ```bash
 echo | openssl s_client -status -connect oltigo.com:443 2>/dev/null | grep -A 5 "OCSP Response"
 # Should show "OCSP Response Status: successful"
@@ -245,6 +262,7 @@ must support HTTPS indefinitely (removal takes 6+ months).
 DNSSEC + CAA + DMARC posture.
 
 Suggested domains to monitor/register:
+
 - oltigoo.com, olltigo.com, oltgio.com, 0ltigo.com
 
 ---
@@ -282,6 +300,7 @@ provider's settings (Google Workspace, Microsoft 365, etc.).
 
 **Action:** Configure impersonation protection rules at the destination
 email provider:
+
 1. Add executive names/emails to the protected users list
 2. Enable external sender warnings for messages claiming to be from
    internal addresses

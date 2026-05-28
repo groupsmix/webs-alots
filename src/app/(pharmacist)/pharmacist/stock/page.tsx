@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Search, Package, Plus, Filter,
-  ArrowUpDown, ShoppingCart,
-} from "lucide-react";
+import { Search, Package, Plus, Filter, ArrowUpDown, ShoppingCart } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
@@ -54,14 +51,20 @@ export default function StockPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchProducts(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setAllProducts(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const filtered = useMemo(() => {
@@ -79,7 +82,8 @@ export default function StockPage() {
     }
     results.sort((a, b) => {
       if (sortBy === "stock") return a.stockQuantity - b.stockQuantity;
-      if (sortBy === "expiry") return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+      if (sortBy === "expiry")
+        return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
       return a.name.localeCompare(b.name);
     });
     return results;
@@ -94,7 +98,9 @@ export default function StockPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -123,19 +129,26 @@ export default function StockPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Total Stock Value</p>
-            <p className="text-2xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">
+              {formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")}{" "}
+              <span className="text-sm font-normal">MAD</span>
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Low Stock Items</p>
-            <p className="text-2xl font-bold text-orange-500">{allProducts.filter((p) => getStockStatus(p) === "low").length}</p>
+            <p className="text-2xl font-bold text-orange-500">
+              {allProducts.filter((p) => getStockStatus(p) === "low").length}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Out of Stock</p>
-            <p className="text-2xl font-bold text-red-500">{allProducts.filter((p) => getStockStatus(p) === "out").length}</p>
+            <p className="text-2xl font-bold text-red-500">
+              {allProducts.filter((p) => getStockStatus(p) === "out").length}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -145,12 +158,20 @@ export default function StockPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search products..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10" />
+            <Input
+              placeholder="Search products..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
           <div className="flex gap-2">
             {stockFilters.map((f) => (
-              <button key={f.value} onClick={() => setStockFilter(f.value)}
-                className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap ${stockFilter === f.value ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+              <button
+                key={f.value}
+                onClick={() => setStockFilter(f.value)}
+                className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap ${stockFilter === f.value ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+              >
                 {f.label}
               </button>
             ))}
@@ -159,19 +180,31 @@ export default function StockPage() {
         <div className="flex gap-2 flex-wrap items-center">
           <Filter className="h-4 w-4 text-muted-foreground" />
           {categories.map((cat) => (
-            <button key={cat.value} onClick={() => setCategoryFilter(cat.value)}
-              className={`px-2.5 py-1 rounded text-xs ${categoryFilter === cat.value ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+            <button
+              key={cat.value}
+              onClick={() => setCategoryFilter(cat.value)}
+              className={`px-2.5 py-1 rounded text-xs ${categoryFilter === cat.value ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+            >
               {cat.label}
             </button>
           ))}
           <div className="ml-auto flex gap-2">
-            <button onClick={() => setSortBy("name")} className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "name" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+            <button
+              onClick={() => setSortBy("name")}
+              className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "name" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+            >
               <ArrowUpDown className="h-3 w-3" /> Name
             </button>
-            <button onClick={() => setSortBy("stock")} className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "stock" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+            <button
+              onClick={() => setSortBy("stock")}
+              className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "stock" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+            >
               <ArrowUpDown className="h-3 w-3" /> Stock
             </button>
-            <button onClick={() => setSortBy("expiry")} className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "expiry" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+            <button
+              onClick={() => setSortBy("expiry")}
+              className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "expiry" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+            >
               <ArrowUpDown className="h-3 w-3" /> Expiry
             </button>
           </div>
@@ -204,27 +237,43 @@ export default function StockPage() {
                       <td className="py-3 px-2">
                         <div>
                           <p className="font-medium">{product.name}</p>
-                          {product.genericName && <p className="text-xs text-muted-foreground">{product.genericName}</p>}
+                          {product.genericName && (
+                            <p className="text-xs text-muted-foreground">{product.genericName}</p>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-2">
-                        <Badge variant="outline" className="text-xs capitalize">{product.category.replace("-", " ")}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {product.category.replace("-", " ")}
+                        </Badge>
                       </td>
                       <td className="py-3 px-2 font-medium">{product.price} MAD</td>
                       <td className="py-3 px-2">
-                        <span className={`font-bold ${stock === "out" ? "text-red-500" : stock === "low" ? "text-orange-500" : "text-emerald-600"}`}>
+                        <span
+                          className={`font-bold ${stock === "out" ? "text-red-500" : stock === "low" ? "text-orange-500" : "text-emerald-600"}`}
+                        >
                           {product.stockQuantity}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-muted-foreground">{product.minimumStock}</td>
                       <td className="py-3 px-2">
-                        <span className={`text-sm ${expiry === "red" ? "text-red-500 font-bold" : expiry === "yellow" ? "text-yellow-600" : "text-muted-foreground"}`}>
+                        <span
+                          className={`text-sm ${expiry === "red" ? "text-red-500 font-bold" : expiry === "yellow" ? "text-yellow-600" : "text-muted-foreground"}`}
+                        >
                           {product.expiryDate}
                         </span>
                       </td>
                       <td className="py-3 px-2">
-                        <Badge variant={stock === "ok" ? "outline" : "destructive"}
-                          className={stock === "ok" ? "text-emerald-600 border-emerald-600 text-xs" : stock === "low" ? "bg-orange-100 text-orange-700 border-0 text-xs" : "text-xs"}>
+                        <Badge
+                          variant={stock === "ok" ? "outline" : "destructive"}
+                          className={
+                            stock === "ok"
+                              ? "text-emerald-600 border-emerald-600 text-xs"
+                              : stock === "low"
+                                ? "bg-orange-100 text-orange-700 border-0 text-xs"
+                                : "text-xs"
+                          }
+                        >
                           {stock === "ok" ? "OK" : stock === "low" ? "Low" : "Out"}
                         </Badge>
                       </td>

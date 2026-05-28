@@ -33,7 +33,7 @@ const LOAD_MANIFEST_PATH = path.join(
   "build",
   "patches",
   "plugins",
-  "load-manifest.js"
+  "load-manifest.js",
 );
 
 if (!fs.existsSync(LOAD_MANIFEST_PATH)) {
@@ -47,7 +47,7 @@ let content = fs.readFileSync(LOAD_MANIFEST_PATH, "utf-8");
 if (!content.includes("prefetch-hints")) {
   content = content.replace(
     "**/{*-manifest,required-server-files}.json",
-    "**/{*-manifest,required-server-files,prefetch-hints}.json"
+    "**/{*-manifest,required-server-files,prefetch-hints}.json",
   );
   console.log("✓ Added prefetch-hints.json to manifest glob");
 } else {

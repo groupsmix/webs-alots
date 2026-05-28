@@ -18,9 +18,7 @@ export default function BMIPage() {
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
 
-  const bmi = weight && height
-    ? (parseFloat(weight) / ((parseFloat(height) / 100) ** 2))
-    : null;
+  const bmi = weight && height ? parseFloat(weight) / (parseFloat(height) / 100) ** 2 : null;
 
   const validBMI = bmi && isFinite(bmi) && bmi > 0 ? bmi : null;
 
@@ -39,11 +37,23 @@ export default function BMIPage() {
           <CardContent className="space-y-4">
             <div>
               <Label>Weight (kg)</Label>
-              <Input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="e.g. 70" className="mt-1" />
+              <Input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="e.g. 70"
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>Height (cm)</Label>
-              <Input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="e.g. 170" className="mt-1" />
+              <Input
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="e.g. 170"
+                className="mt-1"
+              />
             </div>
           </CardContent>
         </Card>

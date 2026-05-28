@@ -1,6 +1,15 @@
 "use client";
 
-import { Search, Receipt, DollarSign, Plus, Minus, ShoppingCart, Loader2, Trash2 } from "lucide-react";
+import {
+  Search,
+  Receipt,
+  DollarSign,
+  Plus,
+  Minus,
+  ShoppingCart,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
@@ -8,16 +17,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { fetchDailySales, fetchParapharmacyProducts, createParapharmacySale } from "@/lib/data/client";
+import {
+  fetchDailySales,
+  fetchParapharmacyProducts,
+  createParapharmacySale,
+} from "@/lib/data/client";
 import type { DailySaleView, ProductView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -59,17 +80,21 @@ export default function ParapharmacySalesPage() {
       fetchParapharmacyProducts(tenant?.clinicId ?? ""),
     ])
       .then(([s, p]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setSales(s);
         setProducts(p);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const addToCart = (product: ProductView) => {
@@ -80,12 +105,15 @@ export default function ParapharmacySalesPage() {
           c.productId === product.id ? { ...c, quantity: c.quantity + 1 } : c,
         );
       }
-      return [...prev, {
-        productId: product.id,
-        productName: product.name,
-        unitPrice: product.price,
-        quantity: 1,
-      }];
+      return [
+        ...prev,
+        {
+          productId: product.id,
+          productName: product.name,
+          unitPrice: product.price,
+          quantity: 1,
+        },
+      ];
     });
   };
 
@@ -145,7 +173,9 @@ export default function ParapharmacySalesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -154,7 +184,10 @@ export default function ParapharmacySalesPage() {
   const filtered = sales.filter((s) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return s.patientName.toLowerCase().includes(q) || s.items.some((i) => i.productName.toLowerCase().includes(q));
+    return (
+      s.patientName.toLowerCase().includes(q) ||
+      s.items.some((i) => i.productName.toLowerCase().includes(q))
+    );
   });
 
   const today = new Date().toISOString().split("T")[0];
@@ -176,7 +209,9 @@ export default function ParapharmacySalesPage() {
             <DollarSign className="h-4 w-4 text-emerald-600" />
             <div>
               <p className="text-xs text-muted-foreground">Today&apos;s Revenue</p>
-              <p className="font-semibold">{formatCurrency(todayRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
+              <p className="font-semibold">
+                {formatCurrency(todayRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}
+              </p>
             </div>
           </div>
         </Card>
@@ -184,7 +219,12 @@ export default function ParapharmacySalesPage() {
 
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search sales..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input
+          placeholder="Search sales..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
       <div className="space-y-3">
@@ -199,13 +239,16 @@ export default function ParapharmacySalesPage() {
                   <div>
                     <p className="font-medium">{sale.patientName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {sale.date} {sale.time} &middot; {sale.items.length} item{sale.items.length !== 1 ? "s" : ""}
+                      {sale.date} {sale.time} &middot; {sale.items.length} item
+                      {sale.items.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">{sale.total} MAD</p>
-                  <Badge variant="outline" className="text-xs capitalize">{sale.paymentMethod}</Badge>
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {sale.paymentMethod}
+                  </Badge>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -238,12 +281,18 @@ export default function ParapharmacySalesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Customer Name *</Label>
-                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" />
+                <Input
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Customer name"
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Payment Method</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">Cash</SelectItem>
                     <SelectItem value="card">Card</SelectItem>
@@ -269,7 +318,10 @@ export default function ParapharmacySalesPage() {
                       key={p.id}
                       type="button"
                       className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex justify-between"
-                      onClick={() => { addToCart(p); setProductSearch(""); }}
+                      onClick={() => {
+                        addToCart(p);
+                        setProductSearch("");
+                      }}
                     >
                       <span>{p.name}</span>
                       <span className="text-muted-foreground">{p.price} MAD</span>
@@ -285,25 +337,50 @@ export default function ParapharmacySalesPage() {
             {/* Cart */}
             {cart.length > 0 && (
               <div className="border rounded-md">
-                <div className="px-3 py-2 bg-muted/50 text-sm font-medium">Cart ({cart.length} items)</div>
+                <div className="px-3 py-2 bg-muted/50 text-sm font-medium">
+                  Cart ({cart.length} items)
+                </div>
                 {cart.map((item) => (
-                  <div key={item.productId} className="flex items-center justify-between px-3 py-2 border-t text-sm">
+                  <div
+                    key={item.productId}
+                    className="flex items-center justify-between px-3 py-2 border-t text-sm"
+                  >
                     <div className="flex-1">
                       <p className="font-medium">{item.productName}</p>
                       <p className="text-xs text-muted-foreground">{item.unitPrice} MAD each</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="icon" variant="outline" className="h-6 w-6" aria-label="Decrease quantity" onClick={() => updateCartQty(item.productId, -1)}>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-6 w-6"
+                        aria-label="Decrease quantity"
+                        onClick={() => updateCartQty(item.productId, -1)}
+                      >
                         <Minus className="h-3 w-3" aria-hidden="true" />
                       </Button>
                       <span className="w-6 text-center">{item.quantity}</span>
-                      <Button size="icon" variant="outline" className="h-6 w-6" aria-label="Increase quantity" onClick={() => updateCartQty(item.productId, 1)}>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-6 w-6"
+                        aria-label="Increase quantity"
+                        onClick={() => updateCartQty(item.productId, 1)}
+                      >
                         <Plus className="h-3 w-3" aria-hidden="true" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" aria-label="Remove from cart" onClick={() => removeFromCart(item.productId)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-red-500"
+                        aria-label="Remove from cart"
+                        onClick={() => removeFromCart(item.productId)}
+                      >
                         <Trash2 className="h-3 w-3" aria-hidden="true" />
                       </Button>
-                      <span className="w-16 text-right font-medium">{(item.quantity * item.unitPrice).toFixed(2)}</span>
+                      <span className="w-16 text-right font-medium">
+                        {(item.quantity * item.unitPrice).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -315,8 +392,13 @@ export default function ParapharmacySalesPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPosOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateSale} disabled={saving || cart.length === 0 || !customerName}>
+            <Button variant="outline" onClick={() => setPosOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateSale}
+              disabled={saving || cart.length === 0 || !customerName}
+            >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Complete Sale ({cartTotal.toFixed(2)} MAD)
             </Button>

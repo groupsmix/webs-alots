@@ -193,7 +193,9 @@ interface EquipmentMaintenanceRaw {
   created_at: string;
 }
 
-export async function fetchEquipmentMaintenance(clinicId: string): Promise<EquipmentMaintenanceView[]> {
+export async function fetchEquipmentMaintenance(
+  clinicId: string,
+): Promise<EquipmentMaintenanceView[]> {
   const equipment = await fetchEquipmentInventory(clinicId);
   const equipMap = new Map(equipment.map((e) => [e.id, e.name]));
   const rows = await fetchRows<EquipmentMaintenanceRaw>("equipment_maintenance", {
@@ -241,7 +243,8 @@ export async function createEquipmentItem(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("equipment_inventory")
+  const { data: result, error } = await supabase
+    .from("equipment_inventory")
     .insert({
       ...data,
       currency: data.currency ?? "MAD",
@@ -283,7 +286,10 @@ export async function updateEquipmentItem(
   const supabase = createClient();
   const { error } = await supabase
     .from("equipment_inventory")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["equipment_inventory"]["Update"])
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["equipment_inventory"]["Update"])
     .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });

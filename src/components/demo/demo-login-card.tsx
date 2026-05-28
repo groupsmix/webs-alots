@@ -24,12 +24,15 @@ const PATIENT_DEMO = {
 declare global {
   interface Window {
     turnstile?: {
-      render: (container: string | HTMLElement, options: {
-        sitekey: string;
-        callback: (token: string) => void;
-        "error-callback"?: () => void;
-        "expired-callback"?: () => void;
-      }) => string;
+      render: (
+        container: string | HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "error-callback"?: () => void;
+          "expired-callback"?: () => void;
+        },
+      ) => string;
       reset: (widgetId: string) => void;
     };
   }
@@ -76,9 +79,15 @@ export function DemoLoginCard() {
 
     widgetId.current = window.turnstile.render(turnstileContainer.current, {
       sitekey: siteKey,
-      callback: (token: string) => { turnstileToken.current = token; },
-      "error-callback": () => { turnstileToken.current = null; },
-      "expired-callback": () => { turnstileToken.current = null; },
+      callback: (token: string) => {
+        turnstileToken.current = token;
+      },
+      "error-callback": () => {
+        turnstileToken.current = null;
+      },
+      "expired-callback": () => {
+        turnstileToken.current = null;
+      },
     });
   }, [siteKey, scriptLoaded]);
 
@@ -147,11 +156,7 @@ export function DemoLoginCard() {
           className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors ${PATIENT_DEMO.color} disabled:opacity-50`}
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/80">
-            {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Icon className="h-5 w-5" />
-            )}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">

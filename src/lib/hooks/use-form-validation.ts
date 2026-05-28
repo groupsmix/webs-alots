@@ -14,7 +14,7 @@ type FieldErrors = Record<string, string | null>;
  * Validates individual fields on change and provides error messages.
  */
 export function useFormValidation<T extends Record<string, unknown>>(
-  rules: Partial<Record<keyof T, ValidationRule<unknown>[]>>
+  rules: Partial<Record<keyof T, ValidationRule<unknown>[]>>,
 ) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -31,7 +31,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
       }
       return null;
     },
-    [rules]
+    [rules],
   );
 
   const onFieldChange = useCallback(
@@ -42,7 +42,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
         setErrors((prev) => ({ ...prev, [fieldKey]: error }));
       }
     },
-    [validateField, touched]
+    [validateField, touched],
   );
 
   const onFieldBlur = useCallback(
@@ -52,7 +52,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
       const error = validateField(field, value);
       setErrors((prev) => ({ ...prev, [fieldKey]: error }));
     },
-    [validateField]
+    [validateField],
   );
 
   const validateAll = useCallback(
@@ -72,7 +72,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
       setTouched(newTouched);
       return valid;
     },
-    [rules, validateField]
+    [rules, validateField],
   );
 
   const getFieldError = useCallback(
@@ -80,7 +80,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
       const fieldKey = field as string;
       return touched[fieldKey] ? (errors[fieldKey] ?? null) : null;
     },
-    [errors, touched]
+    [errors, touched],
   );
 
   return { errors, touched, onFieldChange, onFieldBlur, validateAll, getFieldError };

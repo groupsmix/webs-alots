@@ -10,11 +10,11 @@ and CNDP best practices.
 
 ## Review Schedule
 
-| Quarter | Due Date | Reviewer | Status |
-|---------|----------|----------|--------|
-| Q3 2026 | 2026-07-15 | [CTO] | Pending |
-| Q4 2026 | 2026-10-15 | [CTO] | Pending |
-| Q1 2027 | 2027-01-15 | [CTO] | Pending |
+| Quarter | Due Date   | Reviewer | Status  |
+| ------- | ---------- | -------- | ------- |
+| Q3 2026 | 2026-07-15 | [CTO]    | Pending |
+| Q4 2026 | 2026-10-15 | [CTO]    | Pending |
+| Q1 2027 | 2027-01-15 | [CTO]    | Pending |
 
 ---
 
@@ -22,31 +22,31 @@ and CNDP best practices.
 
 ### Cloudflare
 
-| User / Email | Role | Last Active | Action |
-|-------------|------|-------------|--------|
-| | Admin | | Keep / Revoke / Downgrade |
-| | Developer | | Keep / Revoke / Downgrade |
+| User / Email | Role      | Last Active | Action                    |
+| ------------ | --------- | ----------- | ------------------------- |
+|              | Admin     |             | Keep / Revoke / Downgrade |
+|              | Developer |             | Keep / Revoke / Downgrade |
 
 ### Supabase
 
-| User / Email | Role | Last Active | Action |
-|-------------|------|-------------|--------|
-| | Owner | | Keep / Revoke / Downgrade |
-| | Developer | | Keep / Revoke / Downgrade |
+| User / Email | Role      | Last Active | Action                    |
+| ------------ | --------- | ----------- | ------------------------- |
+|              | Owner     |             | Keep / Revoke / Downgrade |
+|              | Developer |             | Keep / Revoke / Downgrade |
 
 ### GitHub (groupsmix)
 
-| User / Handle | Role | Last Active | Action |
-|--------------|------|-------------|--------|
-| | Owner | | Keep / Revoke / Downgrade |
-| | Maintainer | | Keep / Revoke / Downgrade |
+| User / Handle | Role       | Last Active | Action                    |
+| ------------- | ---------- | ----------- | ------------------------- |
+|               | Owner      |             | Keep / Revoke / Downgrade |
+|               | Maintainer |             | Keep / Revoke / Downgrade |
 
 ## 2. Application Super-Admin Access
 
-| User | Email | Role | Clinic(s) | Action |
-|------|-------|------|-----------|--------|
-| | | super_admin | All | Keep / Revoke |
-| | | clinic_admin | [Clinic] | Keep / Revoke |
+| User | Email | Role         | Clinic(s) | Action        |
+| ---- | ----- | ------------ | --------- | ------------- |
+|      |       | super_admin  | All       | Keep / Revoke |
+|      |       | clinic_admin | [Clinic]  | Keep / Revoke |
 
 ### Verification Steps
 
@@ -56,34 +56,34 @@ and CNDP best practices.
 
 ## 3. API Keys & Service Accounts
 
-| Key Name | Service | Last Rotated | Scope | Action |
-|----------|---------|-------------|-------|--------|
-| SUPABASE_SERVICE_ROLE_KEY | Supabase | | Full DB | Rotate if > 90 days |
-| OPENAI_API_KEY | OpenAI | | AI features | Rotate if > 90 days |
-| CLOUDFLARE_API_TOKEN | Cloudflare | | Workers deploy | Rotate if > 90 days |
-| STRIPE_SECRET_KEY | Stripe | | Billing | Rotate if > 90 days |
-| RESEND_API_KEY | Resend | | Email | Rotate if > 90 days |
+| Key Name                  | Service    | Last Rotated | Scope          | Action              |
+| ------------------------- | ---------- | ------------ | -------------- | ------------------- |
+| SUPABASE_SERVICE_ROLE_KEY | Supabase   |              | Full DB        | Rotate if > 90 days |
+| OPENAI_API_KEY            | OpenAI     |              | AI features    | Rotate if > 90 days |
+| CLOUDFLARE_API_TOKEN      | Cloudflare |              | Workers deploy | Rotate if > 90 days |
+| STRIPE_SECRET_KEY         | Stripe     |              | Billing        | Rotate if > 90 days |
+| RESEND_API_KEY            | Resend     |              | Email          | Rotate if > 90 days |
 
 ## 4. Third-Party Integrations
 
-| Service | OAuth App / Integration | Permissions | Action |
-|---------|----------------------|-------------|--------|
-| Meta (WhatsApp) | WABA | Send messages | Keep / Review |
-| Stripe | Connected account | Payments | Keep / Review |
-| Sentry | Project access | Error monitoring | Keep / Review |
+| Service         | OAuth App / Integration | Permissions      | Action        |
+| --------------- | ----------------------- | ---------------- | ------------- |
+| Meta (WhatsApp) | WABA                    | Send messages    | Keep / Review |
+| Stripe          | Connected account       | Payments         | Keep / Review |
+| Sentry          | Project access          | Error monitoring | Keep / Review |
 
 ## 5. Departures Since Last Review
 
 | Name | Departure Date | Systems Deprovisioned | Verified By |
-|------|---------------|----------------------|-------------|
-| | | | |
+| ---- | -------------- | --------------------- | ----------- |
+|      |                |                       |             |
 
 ## Sign-Off
 
-| Role | Name | Date | Signature |
-|------|------|------|-----------|
-| Reviewer | | | |
-| Approver (CEO/CTO) | | | |
+| Role               | Name | Date | Signature |
+| ------------------ | ---- | ---- | --------- |
+| Reviewer           |      |      |           |
+| Approver (CEO/CTO) |      |      |           |
 
 ---
 

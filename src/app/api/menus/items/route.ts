@@ -28,65 +28,74 @@ const createMenuItemSchema = z.object({
 /**
  * GET /api/menus/items
  */
-export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiSuccess([]);
+export const GET = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiSuccess([]);
 
-  const menuId = request.nextUrl.searchParams.get("menuId");
+    const menuId = request.nextUrl.searchParams.get("menuId");
 
-  let query = auth.supabase
-    .from("menu_items")
-    .select("id, menu_id, clinic_id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order, created_at, updated_at")
-    .eq("clinic_id", clinicId)
-    .order("sort_order", { ascending: true })
-    .limit(500);
+    let query = auth.supabase
+      .from("menu_items")
+      .select(
+        "id, menu_id, clinic_id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order, created_at, updated_at",
+      )
+      .eq("clinic_id", clinicId)
+      .order("sort_order", { ascending: true })
+      .limit(500);
 
-  if (menuId) {
-    query = query.eq("menu_id", menuId);
-  }
+    if (menuId) {
+      query = query.eq("menu_id", menuId);
+    }
 
-  const { data, error } = await query;
-  if (error) return apiSupabaseError(error, "menu-items/list");
+    const { data, error } = await query;
+    if (error) return apiSupabaseError(error, "menu-items/list");
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin", "receptionist"],
+);
 
 /**
  * POST /api/menus/items
  */
-export const POST = withAuthValidation(createMenuItemSchema, async (body, _request, auth) => {
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) {
-    return apiSupabaseError({ message: "No clinic context" }, "menu-items/create");
-  }
+export const POST = withAuthValidation(
+  createMenuItemSchema,
+  async (body, _request, auth) => {
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) {
+      return apiSupabaseError({ message: "No clinic context" }, "menu-items/create");
+    }
 
-  const { data, error } = await auth.supabase
-    .from("menu_items")
-    .insert({
-      clinic_id: clinicId,
-      menu_id: body.menu_id,
-      category: body.category,
-      name: body.name,
-      description: body.description ?? null,
-      price: body.price,
-      photo_url: body.photo_url ?? null,
-      is_available: body.is_available,
-      allergens: body.allergens ?? [],
-      is_halal: body.is_halal,
-      sort_order: body.sort_order,
-    })
-    .select()
-    .single();
+    const { data, error } = await auth.supabase
+      .from("menu_items")
+      .insert({
+        clinic_id: clinicId,
+        menu_id: body.menu_id,
+        category: body.category,
+        name: body.name,
+        description: body.description ?? null,
+        price: body.price,
+        photo_url: body.photo_url ?? null,
+        is_available: body.is_available,
+        allergens: body.allergens ?? [],
+        is_halal: body.is_halal,
+        sort_order: body.sort_order,
+      })
+      .select()
+      .single();
 
-  if (error) return apiSupabaseError(error, "menu-items/create");
+    if (error) return apiSupabaseError(error, "menu-items/create");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "menu_item.created",
-    type: "admin",
-    clinicId,
-    description: `Menu item "${body.name}" created in menu ${body.menu_id}`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "menu_item.created",
+      type: "admin",
+      clinicId,
+      description: `Menu item "${body.name}" created in menu ${body.menu_id}`,
+    });
 
-  return apiSuccess(data, 201);
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess(data, 201);
+  },
+  ["super_admin", "clinic_admin"],
+);

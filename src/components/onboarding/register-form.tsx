@@ -115,11 +115,10 @@ export function RegisterForm() {
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-sm text-muted-foreground mb-4">
-            Un email de bienvenue a été envoyé. Vous allez être redirigé vers la page de connexion...
+            Un email de bienvenue a été envoyé. Vous allez être redirigé vers la page de
+            connexion...
           </p>
-          <Button onClick={() => router.push("/login")}>
-            Se connecter maintenant
-          </Button>
+          <Button onClick={() => router.push("/login")}>Se connecter maintenant</Button>
         </CardContent>
       </Card>
     );
@@ -240,11 +239,7 @@ export function RegisterForm() {
           )}
 
           {/* Submit */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -12,7 +12,9 @@ export default function DoctorDepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Departments" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Departments" }]}
+      />
       <h1 className="text-2xl font-bold">Departments</h1>
       <Tabs defaultValue="dashboard">
         <TabsList>

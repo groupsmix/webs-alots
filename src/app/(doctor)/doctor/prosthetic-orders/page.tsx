@@ -9,7 +9,9 @@ export default function DoctorProstheticOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Prosthetic Orders" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Prosthetic Orders" }]}
+      />
       <h1 className="text-2xl font-bold">Prosthetic Orders</h1>
       <ProstheticOrders orders={orders} editable />
     </div>

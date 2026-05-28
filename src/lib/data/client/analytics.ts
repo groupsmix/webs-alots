@@ -87,7 +87,12 @@ export interface AnalyticsData {
   period: AnalyticsPeriod;
 }
 
-function getPeriodRange(period: AnalyticsPeriod): { start: Date; end: Date; prevStart: Date; prevEnd: Date } {
+function getPeriodRange(period: AnalyticsPeriod): {
+  start: Date;
+  end: Date;
+  prevStart: Date;
+  prevEnd: Date;
+} {
   const now = new Date();
   const end = new Date(now);
   let start: Date;
@@ -143,8 +148,12 @@ function computeComparison(
   const prevStartStr = getLocalDateStr(prevStart);
   const prevEndStr = getLocalDateStr(prevEnd);
 
-  const currentAppts = appts.filter((a) => a.appointment_date >= startStr && a.appointment_date <= endStr);
-  const prevAppts = appts.filter((a) => a.appointment_date >= prevStartStr && a.appointment_date <= prevEndStr);
+  const currentAppts = appts.filter(
+    (a) => a.appointment_date >= startStr && a.appointment_date <= endStr,
+  );
+  const prevAppts = appts.filter(
+    (a) => a.appointment_date >= prevStartStr && a.appointment_date <= prevEndStr,
+  );
 
   const currentPayments = payments.filter((p) => {
     const d = p.created_at?.split("T")[0];
@@ -183,19 +192,47 @@ function computeComparison(
   };
 }
 
-type ApptRow = { id: string; appointment_date: string; start_time: string; status: string; patient_id: string; service_id: string | null; booking_source: string | null; doctor_id: string | null };
-type PaymentRow = { id: string; amount: number; created_at: string; payment_method: string | null; doctor_id: string | null; service_id: string | null };
+type ApptRow = {
+  id: string;
+  appointment_date: string;
+  start_time: string;
+  status: string;
+  patient_id: string;
+  service_id: string | null;
+  booking_source: string | null;
+  doctor_id: string | null;
+};
+type PaymentRow = {
+  id: string;
+  amount: number;
+  created_at: string;
+  payment_method: string | null;
+  doctor_id: string | null;
+  service_id: string | null;
+};
 type ReviewRow = { id: string; stars: number; created_at: string };
 type PatientRow = { id: string; created_at: string };
 
-export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod = "month"): Promise<AnalyticsData> {
+export async function fetchAnalytics(
+  clinicId: string,
+  period: AnalyticsPeriod = "month",
+): Promise<AnalyticsData> {
   const supabase = createClient();
 
   const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
-  supabase.from("appointments").select("id, appointment_date, start_time, status, patient_id, service_id, booking_source, doctor_id").eq("clinic_id", clinicId),
-  supabase.from("payments").select("id, amount, created_at, payment_method, doctor_id, service_id").eq("clinic_id", clinicId).eq("status", "completed"),
-  supabase.from("reviews").select("id, stars, created_at").eq("clinic_id", clinicId),
-  supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
+    supabase
+      .from("appointments")
+      .select(
+        "id, appointment_date, start_time, status, patient_id, service_id, booking_source, doctor_id",
+      )
+      .eq("clinic_id", clinicId),
+    supabase
+      .from("payments")
+      .select("id, amount, created_at, payment_method, doctor_id, service_id")
+      .eq("clinic_id", clinicId)
+      .eq("status", "completed"),
+    supabase.from("reviews").select("id, stars, created_at").eq("clinic_id", clinicId),
+    supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
 
   const appts = (apptsRes.data ?? []) as unknown as ApptRow[];
@@ -209,14 +246,23 @@ export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod =
   const periodComparison = computeComparison(appts, payments, period);
 
   // Daily analytics — adjust range based on selected period
-  const periodDays = period === "week" ? 7 : period === "month" ? 30 : period === "quarter" ? 90 : 365;
+  const periodDays =
+    period === "week" ? 7 : period === "month" ? 30 : period === "quarter" ? 90 : 365;
   const dailyMap = new Map<string, DailyAnalyticsView>();
   const now = new Date();
   for (let i = Math.min(periodDays, 30) - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
     const dateStr = getLocalDateStr(d);
-    dailyMap.set(dateStr, { date: dateStr, patientCount: 0, revenue: 0, appointments: 0, noShows: 0, walkIns: 0, onlineBookings: 0 });
+    dailyMap.set(dateStr, {
+      date: dateStr,
+      patientCount: 0,
+      revenue: 0,
+      appointments: 0,
+      noShows: 0,
+      walkIns: 0,
+      onlineBookings: 0,
+    });
   }
   for (const a of appts) {
     const day = dailyMap.get(a.appointment_date);
@@ -267,7 +313,9 @@ export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod =
   // Service popularity
   const serviceCount = new Map<string, { count: number; revenue: number }>();
   for (const a of appts) {
-    const svcName = a.service_id ? (_activeServiceMap?.get(a.service_id)?.name ?? "Other") : "Consultation";
+    const svcName = a.service_id
+      ? (_activeServiceMap?.get(a.service_id)?.name ?? "Other")
+      : "Consultation";
     const entry = serviceCount.get(svcName) ?? { count: 0, revenue: 0 };
     entry.count++;
     if (a.service_id) {
@@ -298,8 +346,10 @@ export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod =
   }
   const hourlyHeatmap: HourlyHeatmapView[] = dayNames.slice(1, 7).map((day) => ({
     day,
-    hours: [9, 10, 11, 12, 14, 15, 16, 17]
-      .map((hour) => ({ hour, count: heatmap.get(day)?.get(hour) ?? 0 })),
+    hours: [9, 10, 11, 12, 14, 15, 16, 17].map((hour) => ({
+      hour,
+      count: heatmap.get(day)?.get(hour) ?? 0,
+    })),
   }));
 
   // Review trends (last 6 months)
@@ -309,10 +359,15 @@ export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod =
     const monthStr = d.toISOString().slice(0, 7);
     const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
     const monthReviews = reviews.filter((r) => r.created_at?.startsWith(monthStr));
-    const avg = monthReviews.length > 0
-      ? monthReviews.reduce((s, r) => s + r.stars, 0) / monthReviews.length
-      : 0;
-    reviewTrends.push({ month: label, averageScore: Math.round(avg * 10) / 10, count: monthReviews.length });
+    const avg =
+      monthReviews.length > 0
+        ? monthReviews.reduce((s, r) => s + r.stars, 0) / monthReviews.length
+        : 0;
+    reviewTrends.push({
+      month: label,
+      averageScore: Math.round(avg * 10) / 10,
+      count: monthReviews.length,
+    });
   }
 
   // Patient retention (last 6 months)
@@ -410,11 +465,7 @@ async function _fetchRevenueAnalytics(
       .select("id, amount, created_at, payment_method, doctor_id, service_id")
       .eq("clinic_id", clinicId)
       .eq("status", "completed"),
-    supabase
-      .from("users")
-      .select("id, name")
-      .eq("clinic_id", clinicId)
-      .eq("role", "doctor"),
+    supabase.from("users").select("id, name").eq("clinic_id", clinicId).eq("role", "doctor"),
   ]);
 
   const appts = (apptsRes.data ?? []) as unknown as ApptRow[];
@@ -429,8 +480,12 @@ async function _fetchRevenueAnalytics(
   const prevStartStr = getLocalDateStr(prevStart);
   const prevEndStr = getLocalDateStr(prevEnd);
 
-  const currentAppts = appts.filter((a) => a.appointment_date >= startStr && a.appointment_date <= endStr);
-  const prevAppts = appts.filter((a) => a.appointment_date >= prevStartStr && a.appointment_date <= prevEndStr);
+  const currentAppts = appts.filter(
+    (a) => a.appointment_date >= startStr && a.appointment_date <= endStr,
+  );
+  const prevAppts = appts.filter(
+    (a) => a.appointment_date >= prevStartStr && a.appointment_date <= prevEndStr,
+  );
 
   const currentPayments = payments.filter((p) => {
     const d = p.created_at?.split("T")[0];
@@ -446,7 +501,8 @@ async function _fetchRevenueAnalytics(
   const patientsSeen = new Set(currentAppts.map((a) => a.patient_id)).size;
   const prevPatientsSeen = new Set(prevAppts.map((a) => a.patient_id)).size;
   const noShows = currentAppts.filter((a) => a.status === "no_show").length;
-  const noShowRate = currentAppts.length > 0 ? Math.round((noShows / currentAppts.length) * 100) : 0;
+  const noShowRate =
+    currentAppts.length > 0 ? Math.round((noShows / currentAppts.length) * 100) : 0;
   const averagePerPatient = patientsSeen > 0 ? Math.round(totalRevenue / patientsSeen) : 0;
 
   function pctChange(current: number, previous: number): number {
@@ -484,7 +540,8 @@ async function _fetchRevenueAnalytics(
   const serviceRevMap = new Map<string, { revenue: number; count: number }>();
   for (const p of currentPayments) {
     const sId = p.service_id ?? "unknown";
-    const svcName = sId !== "unknown" ? (_activeServiceMap?.get(sId)?.name ?? "Other") : "Consultation";
+    const svcName =
+      sId !== "unknown" ? (_activeServiceMap?.get(sId)?.name ?? "Other") : "Consultation";
     const entry = serviceRevMap.get(svcName) ?? { revenue: 0, count: 0 };
     entry.revenue += p.amount;
     entry.count++;
@@ -551,8 +608,18 @@ async function _fetchFeedbackStats(clinicId: string): Promise<FeedbackStatsData>
   const supabase = createClient();
 
   // patient_feedback table added by migration 00055 — cast through unknown
-  type FbQuery = { from(t: string): { select(s: string): { eq(c: string, v: string): { gt(c2: string, v2: number): Promise<{ data: FeedbackRow[] | null }> } } } };
-  const { data: feedback } = await (supabase as unknown as FbQuery).from("patient_feedback")
+  type FbQuery = {
+    from(t: string): {
+      select(s: string): {
+        eq(
+          c: string,
+          v: string,
+        ): { gt(c2: string, v2: number): Promise<{ data: FeedbackRow[] | null }> };
+      };
+    };
+  };
+  const { data: feedback } = await (supabase as unknown as FbQuery)
+    .from("patient_feedback")
     .select("id, rating, google_review_sent, created_at")
     .eq("clinic_id", clinicId)
     .gt("rating", 0);
@@ -562,9 +629,8 @@ async function _fetchFeedbackStats(clinicId: string): Promise<FeedbackStatsData>
   const positiveReviews = allFeedback.filter((f) => f.rating >= 4).length;
   const negativeReviews = allFeedback.filter((f) => f.rating > 0 && f.rating < 4).length;
   const googleReviewsSent = allFeedback.filter((f) => f.google_review_sent).length;
-  const averageRating = totalReviews > 0
-    ? allFeedback.reduce((s, f) => s + f.rating, 0) / totalReviews
-    : 0;
+  const averageRating =
+    totalReviews > 0 ? allFeedback.reduce((s, f) => s + f.rating, 0) / totalReviews : 0;
 
   const now = new Date();
   const recentRatings: { month: string; average: number; count: number }[] = [];
@@ -573,10 +639,15 @@ async function _fetchFeedbackStats(clinicId: string): Promise<FeedbackStatsData>
     const monthStr = d.toISOString().slice(0, 7);
     const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
     const monthFeedback = allFeedback.filter((f) => f.created_at?.startsWith(monthStr));
-    const avg = monthFeedback.length > 0
-      ? monthFeedback.reduce((s, f) => s + f.rating, 0) / monthFeedback.length
-      : 0;
-    recentRatings.push({ month: label, average: Math.round(avg * 10) / 10, count: monthFeedback.length });
+    const avg =
+      monthFeedback.length > 0
+        ? monthFeedback.reduce((s, f) => s + f.rating, 0) / monthFeedback.length
+        : 0;
+    recentRatings.push({
+      month: label,
+      average: Math.round(avg * 10) / 10,
+      count: monthFeedback.length,
+    });
   }
 
   return {

@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const faqs = [
   {
@@ -32,9 +27,7 @@ export function FaqSection() {
   return (
     <section className="py-16">
       <div className="container mx-auto px-4 max-w-3xl">
-        <h2 className="text-center text-3xl font-bold mb-4">
-          Questions Fréquentes
-        </h2>
+        <h2 className="text-center text-3xl font-bold mb-4">Questions Fréquentes</h2>
         <p className="text-center text-muted-foreground mb-8">
           Trouvez les réponses aux questions les plus courantes sur nos services.
         </p>

@@ -20,7 +20,14 @@ const LazyMoodLine = dynamic<{ data: { date: string; mood: number | null }[] }>(
               <XAxis dataKey="date" tick={{ fontSize: 10 }} />
               <YAxis domain={[1, 10]} tick={{ fontSize: 10 }} />
               <Tooltip />
-              <Line type="monotone" dataKey="mood" stroke="#9333ea" strokeWidth={2} dot={{ r: 4 }} name="Mood Rating" />
+              <Line
+                type="monotone"
+                dataKey="mood"
+                stroke="#9333ea"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                name="Mood Rating"
+              />
             </LineChart>
           </ResponsiveContainer>
         );

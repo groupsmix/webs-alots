@@ -51,4 +51,3 @@ export async function fetchServices(clinicId: string): Promise<ServiceView[]> {
   });
   return rows.map(mapService);
 }
-

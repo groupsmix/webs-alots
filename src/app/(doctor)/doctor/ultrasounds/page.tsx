@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -50,14 +45,17 @@ export default function UltrasoundsPage() {
     // Common measurements
     crl: "", // Crown-rump length
     bpd: "", // Biparietal diameter
-    hc: "",  // Head circumference
-    ac: "",  // Abdominal circumference
-    fl: "",  // Femur length
+    hc: "", // Head circumference
+    ac: "", // Abdominal circumference
+    fl: "", // Femur length
     efw: "", // Estimated fetal weight
   });
 
   // Issue 21: Auto-save draft for clinical form
-  const { saveDraft: saveUsDraft, clearDraft: clearUsDraft } = useOfflineDrafts<typeof form>("ultrasounds-form", { autoSaveMs: 5000 });
+  const { saveDraft: saveUsDraft, clearDraft: clearUsDraft } = useOfflineDrafts<typeof form>(
+    "ultrasounds-form",
+    { autoSaveMs: 5000 },
+  );
   const setForm: typeof setFormRaw = (val) => {
     setFormRaw((prev) => {
       const next = typeof val === "function" ? val(prev) : val;
@@ -92,7 +90,9 @@ export default function UltrasoundsPage() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
   const reload = async () => {
@@ -133,7 +133,21 @@ export default function UltrasoundsPage() {
     });
     setShowAdd(false);
     clearUsDraft();
-    setFormRaw({ pregnancyId: "", scanDate: new Date().toISOString().split("T")[0], trimester: "1", gestationalWeeks: "", gestationalDays: "", findings: "", notes: "", crl: "", bpd: "", hc: "", ac: "", fl: "", efw: "" });
+    setFormRaw({
+      pregnancyId: "",
+      scanDate: new Date().toISOString().split("T")[0],
+      trimester: "1",
+      gestationalWeeks: "",
+      gestationalDays: "",
+      findings: "",
+      notes: "",
+      crl: "",
+      bpd: "",
+      hc: "",
+      ac: "",
+      fl: "",
+      efw: "",
+    });
     reload();
   };
 
@@ -145,7 +159,9 @@ export default function UltrasoundsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Ultrasounds" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Ultrasounds" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Ultrasound Records</h1>
         <Button onClick={() => setShowAdd(true)} disabled={activePregnancies.length === 0}>
@@ -155,8 +171,13 @@ export default function UltrasoundsPage() {
 
       {/* Pregnancy filter */}
       <div className="mb-6 max-w-md">
-        <Select value={selectedPregnancy} onValueChange={(v) => setSelectedPregnancy(v === "all" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="All pregnancies" /></SelectTrigger>
+        <Select
+          value={selectedPregnancy}
+          onValueChange={(v) => setSelectedPregnancy(v === "all" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All pregnancies" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All pregnancies</SelectItem>
             {pregnancies.map((p) => (
@@ -174,7 +195,9 @@ export default function UltrasoundsPage() {
             <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No ultrasound records yet.</p>
             {activePregnancies.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-1">Create an active pregnancy first to add ultrasound records.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create an active pregnancy first to add ultrasound records.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -203,8 +226,13 @@ export default function UltrasoundsPage() {
                     <p className="text-xs font-medium mb-2">Measurements</p>
                     <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                       {Object.entries(u.measurements).map(([key, val]) => (
-                        <div key={key} className="text-center p-2 rounded bg-gray-50 dark:bg-gray-800">
-                          <p className="text-xs text-muted-foreground uppercase">{key.replace(/_/g, " ")}</p>
+                        <div
+                          key={key}
+                          className="text-center p-2 rounded bg-gray-50 dark:bg-gray-800"
+                        >
+                          <p className="text-xs text-muted-foreground uppercase">
+                            {key.replace(/_/g, " ")}
+                          </p>
                           <p className="text-sm font-medium">{String(val)}</p>
                         </div>
                       ))}
@@ -224,7 +252,13 @@ export default function UltrasoundsPage() {
                     <p className="text-xs font-medium mb-1">Images</p>
                     <div className="flex gap-2 flex-wrap">
                       {u.imageUrls.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs flex items-center gap-1">
+                        <a
+                          key={i}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline text-xs flex items-center gap-1"
+                        >
                           <ImageIcon className="h-3 w-3" /> Image {i + 1}
                         </a>
                       ))}
@@ -250,8 +284,13 @@ export default function UltrasoundsPage() {
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Pregnancy</Label>
-              <Select value={form.pregnancyId} onValueChange={(v) => setForm((p) => ({ ...p, pregnancyId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select active pregnancy" /></SelectTrigger>
+              <Select
+                value={form.pregnancyId}
+                onValueChange={(v) => setForm((p) => ({ ...p, pregnancyId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select active pregnancy" />
+                </SelectTrigger>
                 <SelectContent>
                   {activePregnancies.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
@@ -264,12 +303,21 @@ export default function UltrasoundsPage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Scan Date</Label>
-                <Input type="date" value={form.scanDate} onChange={(e) => setForm((p) => ({ ...p, scanDate: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.scanDate}
+                  onChange={(e) => setForm((p) => ({ ...p, scanDate: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Trimester</Label>
-                <Select value={form.trimester} onValueChange={(v) => setForm((p) => ({ ...p, trimester: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.trimester}
+                  onValueChange={(v) => setForm((p) => ({ ...p, trimester: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">1st</SelectItem>
                     <SelectItem value="2">2nd</SelectItem>
@@ -280,8 +328,22 @@ export default function UltrasoundsPage() {
               <div className="space-y-2">
                 <Label>GA (weeks+days)</Label>
                 <div className="flex gap-1">
-                  <Input type="number" min="0" max="42" placeholder="w" value={form.gestationalWeeks} onChange={(e) => setForm((p) => ({ ...p, gestationalWeeks: e.target.value }))} />
-                  <Input type="number" min="0" max="6" placeholder="d" value={form.gestationalDays} onChange={(e) => setForm((p) => ({ ...p, gestationalDays: e.target.value }))} />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="42"
+                    placeholder="w"
+                    value={form.gestationalWeeks}
+                    onChange={(e) => setForm((p) => ({ ...p, gestationalWeeks: e.target.value }))}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="6"
+                    placeholder="d"
+                    value={form.gestationalDays}
+                    onChange={(e) => setForm((p) => ({ ...p, gestationalDays: e.target.value }))}
+                  />
                 </div>
               </div>
             </div>
@@ -291,42 +353,83 @@ export default function UltrasoundsPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">CRL (mm)</Label>
-                  <Input type="number" step="0.1" value={form.crl} onChange={(e) => setForm((p) => ({ ...p, crl: e.target.value }))} />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={form.crl}
+                    onChange={(e) => setForm((p) => ({ ...p, crl: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">BPD (mm)</Label>
-                  <Input type="number" step="0.1" value={form.bpd} onChange={(e) => setForm((p) => ({ ...p, bpd: e.target.value }))} />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={form.bpd}
+                    onChange={(e) => setForm((p) => ({ ...p, bpd: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">HC (mm)</Label>
-                  <Input type="number" step="0.1" value={form.hc} onChange={(e) => setForm((p) => ({ ...p, hc: e.target.value }))} />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={form.hc}
+                    onChange={(e) => setForm((p) => ({ ...p, hc: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">AC (mm)</Label>
-                  <Input type="number" step="0.1" value={form.ac} onChange={(e) => setForm((p) => ({ ...p, ac: e.target.value }))} />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={form.ac}
+                    onChange={(e) => setForm((p) => ({ ...p, ac: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">FL (mm)</Label>
-                  <Input type="number" step="0.1" value={form.fl} onChange={(e) => setForm((p) => ({ ...p, fl: e.target.value }))} />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={form.fl}
+                    onChange={(e) => setForm((p) => ({ ...p, fl: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">EFW (g)</Label>
-                  <Input type="number" value={form.efw} onChange={(e) => setForm((p) => ({ ...p, efw: e.target.value }))} />
+                  <Input
+                    type="number"
+                    value={form.efw}
+                    onChange={(e) => setForm((p) => ({ ...p, efw: e.target.value }))}
+                  />
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Findings</Label>
-              <Textarea value={form.findings} onChange={(e) => setForm((p) => ({ ...p, findings: e.target.value }))} placeholder="Ultrasound findings..." />
+              <Textarea
+                value={form.findings}
+                onChange={(e) => setForm((p) => ({ ...p, findings: e.target.value }))}
+                placeholder="Ultrasound findings..."
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." />
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Additional notes..."
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!form.pregnancyId}>Save</Button>
+              <Button variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!form.pregnancyId}>
+                Save
+              </Button>
             </div>
           </div>
         </DialogContent>

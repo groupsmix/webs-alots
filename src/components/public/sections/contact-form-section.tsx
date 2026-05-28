@@ -16,8 +16,7 @@ export function ContactFormSection() {
       <div className="container mx-auto px-4 max-w-xl">
         <h2 className="text-center text-3xl font-bold mb-4">Contactez-nous</h2>
         <p className="text-center text-muted-foreground mb-8">
-          Vous avez une question ? Envoyez-nous un message et nous vous
-          répondrons rapidement.
+          Vous avez une question ? Envoyez-nous un message et nous vous répondrons rapidement.
         </p>
         <Card>
           <CardHeader>

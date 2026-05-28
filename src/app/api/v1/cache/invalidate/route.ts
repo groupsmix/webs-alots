@@ -20,7 +20,9 @@ const cacheInvalidateSchema = z.object({
   subdomain: z.string().min(1).max(100),
 });
 
-export const POST = withAuthValidation(cacheInvalidateSchema, async (data, _request: NextRequest) => {
+export const POST = withAuthValidation(
+  cacheInvalidateSchema,
+  async (data, _request: NextRequest) => {
     invalidateSubdomainCache(data.subdomain);
 
     logger.info("Subdomain cache invalidated", {
@@ -29,4 +31,6 @@ export const POST = withAuthValidation(cacheInvalidateSchema, async (data, _requ
     });
 
     return apiSuccess({ invalidated: data.subdomain });
-}, ["clinic_admin", "super_admin"]);
+  },
+  ["clinic_admin", "super_admin"],
+);

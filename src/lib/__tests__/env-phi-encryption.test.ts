@@ -5,8 +5,7 @@ import { enforcePhiEncryptionConfigured } from "../env";
 // Generate hex keys at runtime so no high-entropy literal lives in the source
 // tree (keeps gitleaks happy on this test file).
 const makeHexKey = (): string => randomBytes(32).toString("hex");
-const makeUpperHexKey = (): string =>
-  randomBytes(32).toString("hex").toUpperCase();
+const makeUpperHexKey = (): string => randomBytes(32).toString("hex").toUpperCase();
 
 vi.mock("../logger", () => ({
   logger: {
@@ -49,17 +48,13 @@ describe("enforcePhiEncryptionConfigured (Audit C-08)", () => {
   it("throws in production when key is the wrong length", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("PHI_ENCRYPTION_KEY", "a".repeat(32));
-    expect(() => enforcePhiEncryptionConfigured()).toThrow(
-      /must be exactly 64 hex characters/,
-    );
+    expect(() => enforcePhiEncryptionConfigured()).toThrow(/must be exactly 64 hex characters/);
   });
 
   it("throws in production when key contains non-hex characters", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("PHI_ENCRYPTION_KEY", "z".repeat(64));
-    expect(() => enforcePhiEncryptionConfigured()).toThrow(
-      /must be exactly 64 hex characters/,
-    );
+    expect(() => enforcePhiEncryptionConfigured()).toThrow(/must be exactly 64 hex characters/);
   });
 
   it("accepts a 64-char hex key in production", () => {

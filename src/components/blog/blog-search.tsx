@@ -4,13 +4,7 @@ import { Search, Clock, Tag, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { BlogPost, BlogCategory } from "@/lib/blog";
 import { BLOG_CATEGORIES } from "@/lib/blog";
@@ -22,9 +16,7 @@ interface BlogSearchProps {
 
 export function BlogSearch({ posts, categories }: BlogSearchProps) {
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<BlogCategory | null>(
-    null,
-  );
+  const [activeCategory, setActiveCategory] = useState<BlogCategory | null>(null);
 
   const filtered = useMemo(() => {
     let result = posts;
@@ -77,9 +69,7 @@ export function BlogSearch({ posts, categories }: BlogSearchProps) {
           <button
             key={cat}
             type="button"
-            onClick={() =>
-              setActiveCategory(activeCategory === cat ? null : cat)
-            }
+            onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               activeCategory === cat
                 ? "bg-primary text-primary-foreground border-primary"
@@ -99,11 +89,7 @@ export function BlogSearch({ posts, categories }: BlogSearchProps) {
       ) : (
         <div className="max-w-3xl mx-auto space-y-6">
           {filtered.map((post) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="block group"
-            >
+            <Link key={post.slug} href={`/blog/${post.slug}`} className="block group">
               <Card className="transition-shadow group-hover:shadow-md">
                 <CardHeader>
                   <div className="flex flex-wrap items-center gap-2 mb-2">

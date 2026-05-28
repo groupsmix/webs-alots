@@ -3,7 +3,7 @@ name: Migration Check
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/**'
+      - "supabase/migrations/**"
 
 # Least-privilege permissions
 permissions:

@@ -1,7 +1,4 @@
-import {
-  Clock, MapPin, Phone, Mail, Truck, Store,
-  ShieldCheck, CreditCard,
-} from "lucide-react";
+import { Clock, MapPin, Phone, Mail, Truck, Store, ShieldCheck, CreditCard } from "lucide-react";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,7 +110,9 @@ export default async function StoreInfoPage() {
               <CreditCard className="h-4 w-4 mt-1 text-muted-foreground" />
               <div>
                 <p className="font-medium">Payment Methods</p>
-                <p className="text-sm text-muted-foreground">Cash, Credit/Debit Cards, Mobile Payment</p>
+                <p className="text-sm text-muted-foreground">
+                  Cash, Credit/Debit Cards, Mobile Payment
+                </p>
               </div>
             </div>
           </CardContent>
@@ -133,9 +132,7 @@ export default async function StoreInfoPage() {
                 <div
                   key={wh.day}
                   className={`flex items-center justify-between py-2 px-3 rounded-lg text-sm ${
-                    wh.day === currentDay
-                      ? "bg-emerald-50 dark:bg-emerald-950/20 font-medium"
-                      : ""
+                    wh.day === currentDay ? "bg-emerald-50 dark:bg-emerald-950/20 font-medium" : ""
                   }`}
                 >
                   <span className="flex items-center gap-2">
@@ -144,7 +141,9 @@ export default async function StoreInfoPage() {
                     )}
                     {wh.day}
                   </span>
-                  <span className={wh.hours === "Closed" ? "text-red-500" : "text-muted-foreground"}>
+                  <span
+                    className={wh.hours === "Closed" ? "text-red-500" : "text-muted-foreground"}
+                  >
                     {wh.hours}
                   </span>
                 </div>

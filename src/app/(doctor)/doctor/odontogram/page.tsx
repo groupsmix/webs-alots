@@ -6,7 +6,14 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchPatients, fetchOdontogram, upsertOdontogramEntry, type PatientView, type OdontogramView } from "@/lib/data/client";
+import {
+  getCurrentUser,
+  fetchPatients,
+  fetchOdontogram,
+  upsertOdontogramEntry,
+  type PatientView,
+  type OdontogramView,
+} from "@/lib/data/client";
 import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
 
 export default function DoctorOdontogramPage() {
@@ -19,7 +26,10 @@ export default function DoctorOdontogramPage() {
     const controller = new AbortController();
     async function loadPatients() {
       const user = await getCurrentUser();
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const pts = await fetchPatients(user.clinic_id);
       setPatients(pts);
       if (pts.length > 0) {
@@ -30,7 +40,9 @@ export default function DoctorOdontogramPage() {
       setLoading(false);
     }
     loadPatients();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -82,7 +94,9 @@ export default function DoctorOdontogramPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Odontogram" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Odontogram" }]}
+      />
       <h1 className="text-2xl font-bold">Odontogram Editor</h1>
 
       <Card>
@@ -97,7 +111,9 @@ export default function DoctorOdontogramPage() {
             className="w-full rounded-lg border p-2 text-sm bg-background mt-1"
           >
             {patients.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         </CardContent>
@@ -105,7 +121,12 @@ export default function DoctorOdontogramPage() {
 
       {entries.length > 0 ? (
         <OdontogramChart
-          entries={entries.map(e => ({ toothNumber: e.toothNumber, status: e.status as OdontogramEntry["status"], notes: e.notes ?? "", lastUpdated: e.lastUpdated ?? "" }))}
+          entries={entries.map((e) => ({
+            toothNumber: e.toothNumber,
+            status: e.status as OdontogramEntry["status"],
+            notes: e.notes ?? "",
+            lastUpdated: e.lastUpdated ?? "",
+          }))}
           editable
           onUpdateEntry={handleUpdateEntry}
         />

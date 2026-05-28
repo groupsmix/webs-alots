@@ -41,12 +41,14 @@ function validateRedirectUrl(
  *
  * Requires: STRIPE_SECRET_KEY env var
  */
-export const POST = withAuthValidation(stripeCheckoutSchema, async (body, request, { user, profile }) => {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+export const POST = withAuthValidation(
+  stripeCheckoutSchema,
+  async (body, request, { user, profile }) => {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-  if (!stripeSecretKey) {
-    return apiError("Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.", 503);
-  }
+    if (!stripeSecretKey) {
+      return apiError("Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.", 503);
+    }
 
     const {
       amount,
@@ -156,4 +158,6 @@ export const POST = withAuthValidation(stripeCheckoutSchema, async (body, reques
       sessionId: session.id,
       url: session.url,
     });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

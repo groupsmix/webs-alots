@@ -5,11 +5,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  createClient,
-  fetchTodayAppointments,
-  type AppointmentView,
-} from "@/lib/data/client";
+import { createClient, fetchTodayAppointments, type AppointmentView } from "@/lib/data/client";
 
 interface RealtimeWaitingRoomProps {
   clinicId: string;
@@ -25,9 +21,7 @@ export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomP
     async function loadWaitingPatients() {
       const appts = await fetchTodayAppointments(clinicId);
       if (cancelled) return;
-      const waiting = appts.filter(
-        (a) => a.status === "confirmed" || a.status === "in-progress",
-      );
+      const waiting = appts.filter((a) => a.status === "confirmed" || a.status === "in-progress");
       setWaitingPatients(waiting);
     }
 
@@ -80,16 +74,11 @@ export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomP
       </CardHeader>
       <CardContent>
         {waitingPatients.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No patients waiting.
-          </p>
+          <p className="text-sm text-muted-foreground py-4 text-center">No patients waiting.</p>
         ) : (
           <div className="space-y-2">
             {waitingPatients.map((apt, i) => (
-              <div
-                key={apt.id}
-                className="flex items-center gap-2 rounded-lg border p-2"
-              >
+              <div key={apt.id} className="flex items-center gap-2 rounded-lg border p-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-700 text-xs font-bold shrink-0">
                   {i + 1}
                 </div>
@@ -98,9 +87,7 @@ export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomP
                   <p className="text-[10px] text-muted-foreground truncate">
                     {apt.serviceName} · {apt.time}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Est. wait: ~{(i + 1) * 15}min
-                  </p>
+                  <p className="text-[10px] text-muted-foreground">Est. wait: ~{(i + 1) * 15}min</p>
                 </div>
                 <div className="flex flex-col gap-1">
                   <Button

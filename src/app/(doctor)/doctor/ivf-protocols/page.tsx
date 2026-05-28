@@ -9,7 +9,9 @@ export default function DoctorIVFProtocolsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IVF Protocols" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IVF Protocols" }]}
+      />
       <h1 className="text-2xl font-bold">IVF Protocol Templates</h1>
       <ProtocolTemplates protocols={protocols} editable />
     </div>

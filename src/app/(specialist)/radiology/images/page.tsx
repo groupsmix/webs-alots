@@ -1,6 +1,15 @@
 "use client";
 
-import { Search, Image as ImageIcon, ExternalLink, Eye, FileImage, Upload, Loader2, X } from "lucide-react";
+import {
+  Search,
+  Image as ImageIcon,
+  ExternalLink,
+  Eye,
+  FileImage,
+  Upload,
+  Loader2,
+  X,
+} from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -58,17 +67,21 @@ export default function RadiologyImagesPage() {
     const controller = new AbortController();
     fetchRadiologyOrders(tenant?.clinicId ?? "")
       .then((all) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setAllOrders(all);
         setOrders(all.filter((o) => o.imageCount > 0));
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -117,7 +130,9 @@ export default function RadiologyImagesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -126,7 +141,11 @@ export default function RadiologyImagesPage() {
   const filtered = orders.filter((o) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return o.patientName.toLowerCase().includes(q) || o.modality.toLowerCase().includes(q) || (o.bodyPart?.toLowerCase().includes(q) ?? false);
+    return (
+      o.patientName.toLowerCase().includes(q) ||
+      o.modality.toLowerCase().includes(q) ||
+      (o.bodyPart?.toLowerCase().includes(q) ?? false)
+    );
   });
 
   return (
@@ -138,18 +157,24 @@ export default function RadiologyImagesPage() {
         </div>
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogTrigger asChild>
-            <Button><Upload className="h-4 w-4 mr-2" /> Upload Images</Button>
+            <Button>
+              <Upload className="h-4 w-4 mr-2" /> Upload Images
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Upload Radiology Images</DialogTitle>
-              <DialogDescription>Upload X-ray, MRI, CT, or DICOM images to a study order.</DialogDescription>
+              <DialogDescription>
+                Upload X-ray, MRI, CT, or DICOM images to a study order.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label>Study Order</Label>
                 <Select value={uploadOrderId} onValueChange={setUploadOrderId}>
-                  <SelectTrigger><SelectValue placeholder="Select an order..." /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an order..." />
+                  </SelectTrigger>
                   <SelectContent>
                     {allOrders.map((o) => (
                       <SelectItem key={o.id} value={o.id}>
@@ -163,7 +188,10 @@ export default function RadiologyImagesPage() {
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragOver ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20" : "border-muted-foreground/25 hover:border-muted-foreground/50"}`}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
@@ -189,9 +217,19 @@ export default function RadiologyImagesPage() {
                 <div className="space-y-2">
                   <Label>Selected Files ({uploadFiles.length})</Label>
                   {uploadFiles.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2">
-                      <span className="truncate mr-2">{file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
-                      <Button variant="ghost" size="sm" onClick={() => removeFile(i)} className="h-6 w-6 p-0">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2"
+                    >
+                      <span className="truncate mr-2">
+                        {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(i)}
+                        className="h-6 w-6 p-0"
+                      >
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
@@ -199,13 +237,16 @@ export default function RadiologyImagesPage() {
                 </div>
               )}
 
-              {uploadProgress && (
-                <p className="text-sm text-muted-foreground">{uploadProgress}</p>
-              )}
+              {uploadProgress && <p className="text-sm text-muted-foreground">{uploadProgress}</p>}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-              <Button onClick={handleUpload} disabled={uploading || !uploadOrderId || uploadFiles.length === 0}>
+              <Button variant="outline" onClick={() => setUploadOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpload}
+                disabled={uploading || !uploadOrderId || uploadFiles.length === 0}
+              >
                 {uploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Upload {uploadFiles.length} File{uploadFiles.length !== 1 ? "s" : ""}
               </Button>
@@ -216,7 +257,12 @@ export default function RadiologyImagesPage() {
 
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by patient, modality, body part..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input
+          placeholder="Search by patient, modality, body part..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -224,9 +270,19 @@ export default function RadiologyImagesPage() {
           <Card key={order.id} className="overflow-hidden">
             <div className="relative aspect-video bg-muted flex items-center justify-center">
               {order.images.length > 0 && order.images[0].thumbnailUrl ? (
-                <NextImage src={order.images[0].thumbnailUrl} alt={`${order.modality} - ${order.bodyPart}`} fill className="object-cover" />
+                <NextImage
+                  src={order.images[0].thumbnailUrl}
+                  alt={`${order.modality} - ${order.bodyPart}`}
+                  fill
+                  className="object-cover"
+                />
               ) : order.images.length > 0 && order.images[0].fileUrl ? (
-                <NextImage src={order.images[0].fileUrl} alt={`${order.modality} - ${order.bodyPart}`} fill className="object-cover" />
+                <NextImage
+                  src={order.images[0].fileUrl}
+                  alt={`${order.modality} - ${order.bodyPart}`}
+                  fill
+                  className="object-cover"
+                />
               ) : (
                 <FileImage className="h-16 w-16 text-muted-foreground/30" />
               )}
@@ -234,10 +290,14 @@ export default function RadiologyImagesPage() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="font-medium text-sm">{order.patientName}</p>
-                <Badge variant="outline" className="text-xs uppercase">{order.modality}</Badge>
+                <Badge variant="outline" className="text-xs uppercase">
+                  {order.modality}
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                {order.bodyPart ?? "N/A"} &middot; {order.imageCount} image{order.imageCount !== 1 ? "s" : ""} &middot; {new Date(order.createdAt).toLocaleDateString()}
+                {order.bodyPart ?? "N/A"} &middot; {order.imageCount} image
+                {order.imageCount !== 1 ? "s" : ""} &middot;{" "}
+                {new Date(order.createdAt).toLocaleDateString()}
               </p>
               <div className="flex gap-2">
                 {order.images.length > 0 && order.images[0].fileUrl && (

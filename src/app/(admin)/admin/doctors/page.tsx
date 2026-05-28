@@ -29,21 +29,26 @@ export default function ManageDoctorsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const docs = await fetchDoctors(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const docs = await fetchDoctors(user.clinic_id);
       if (controller.signal.aborted) return;
-    setDoctorsList(docs);
-    setLoading(false);
-  }
+      setDoctorsList(docs);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
@@ -83,20 +88,41 @@ export default function ManageDoctorsPage() {
 
   const handleSave = () => {
     if (!formName.trim()) return;
-    const langs = formLanguages.split(",").map((l) => l.trim()).filter(Boolean);
+    const langs = formLanguages
+      .split(",")
+      .map((l) => l.trim())
+      .filter(Boolean);
 
     if (editingDoctor) {
       setDoctorsList(
         doctorsList.map((d) =>
           d.id === editingDoctor.id
-            ? { ...d, name: formName, specialty: formSpecialty, specialtyId: formSpecialtyId, phone: formPhone, email: formEmail, consultationFee: formFee, languages: langs }
-            : d
-        )
+            ? {
+                ...d,
+                name: formName,
+                specialty: formSpecialty,
+                specialtyId: formSpecialtyId,
+                phone: formPhone,
+                email: formEmail,
+                consultationFee: formFee,
+                languages: langs,
+              }
+            : d,
+        ),
       );
     } else {
       setDoctorsList([
         ...doctorsList,
-        { id: `d${Date.now()}`, name: formName, specialty: formSpecialty, specialtyId: formSpecialtyId, phone: formPhone, email: formEmail, consultationFee: formFee, languages: langs },
+        {
+          id: `d${Date.now()}`,
+          name: formName,
+          specialty: formSpecialty,
+          specialtyId: formSpecialtyId,
+          phone: formPhone,
+          email: formEmail,
+          consultationFee: formFee,
+          languages: langs,
+        },
       ]);
     }
     setDialogOpen(false);
@@ -118,12 +144,13 @@ export default function ManageDoctorsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
-
 
   return (
     <div>
@@ -142,7 +169,10 @@ export default function ManageDoctorsPage() {
             <CardContent className="flex items-center gap-4 p-4">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {doctor.name.split(" ").map((n) => n[0]).join("")}
+                  {doctor.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
@@ -165,7 +195,12 @@ export default function ManageDoctorsPage() {
                 <Button variant="ghost" size="sm" onClick={() => openEditDialog(doctor)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => setDeleteConfirm(doctor.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-500"
+                  onClick={() => setDeleteConfirm(doctor.id)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -174,7 +209,9 @@ export default function ManageDoctorsPage() {
         ))}
         {doctorsList.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">No doctors added yet. Click &quot;Add Doctor&quot; to get started.</p>
+            <p className="text-sm text-muted-foreground">
+              No doctors added yet. Click &quot;Add Doctor&quot; to get started.
+            </p>
           </div>
         )}
       </div>
@@ -185,43 +222,76 @@ export default function ManageDoctorsPage() {
           <DialogHeader>
             <DialogTitle>{editingDoctor ? "Edit Doctor" : "Add New Doctor"}</DialogTitle>
             <DialogDescription>
-              {editingDoctor ? "Update the doctor's information below." : "Fill in the details to add a new doctor."}
+              {editingDoctor
+                ? "Update the doctor's information below."
+                : "Fill in the details to add a new doctor."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Full Name</Label>
-              <Input placeholder="Dr. Ahmed Benali" value={formName} onChange={(e) => setFormName(e.target.value)} />
+              <Input
+                placeholder="Dr. Ahmed Benali"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Specialty</Label>
-              <Input placeholder="General Medicine" value={formSpecialty} onChange={(e) => setFormSpecialty(e.target.value)} />
+              <Input
+                placeholder="General Medicine"
+                value={formSpecialty}
+                onChange={(e) => setFormSpecialty(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Specialty Category</Label>
-              <Input placeholder="Specialty category" value={formSpecialtyId} onChange={(e) => setFormSpecialtyId(e.target.value)} />
+              <Input
+                placeholder="Specialty category"
+                value={formSpecialtyId}
+                onChange={(e) => setFormSpecialtyId(e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Phone</Label>
-                <Input placeholder="+212 6 12 34 56 78" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+                <Input
+                  placeholder="+212 6 12 34 56 78"
+                  value={formPhone}
+                  onChange={(e) => setFormPhone(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Consultation Fee (MAD)</Label>
-                <Input type="number" value={formFee} onChange={(e) => setFormFee(Number(e.target.value))} />
+                <Input
+                  type="number"
+                  value={formFee}
+                  onChange={(e) => setFormFee(Number(e.target.value))}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input type="email" placeholder="doctor@clinic.ma" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} />
+              <Input
+                type="email"
+                placeholder="doctor@clinic.ma"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Languages (comma-separated)</Label>
-              <Input placeholder="Arabic, French, English" value={formLanguages} onChange={(e) => setFormLanguages(e.target.value)} />
+              <Input
+                placeholder="Arabic, French, English"
+                value={formLanguages}
+                onChange={(e) => setFormLanguages(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSave}>{editingDoctor ? "Save Changes" : "Add Doctor"}</Button>
           </DialogFooter>
         </DialogContent>
@@ -232,11 +302,20 @@ export default function ManageDoctorsPage() {
         <DialogContent onClose={() => setDeleteConfirm(null)} className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Remove Doctor</DialogTitle>
-            <DialogDescription>Are you sure you want to remove this doctor? This action cannot be undone.</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to remove this doctor? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>Remove</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              Remove
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

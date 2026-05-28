@@ -18,18 +18,21 @@ const eslintConfig = defineConfig([
   {
     plugins: {
       "react-hooks": reactHooksPlugin,
-      "i18next": i18nextPlugin,
+      i18next: i18nextPlugin,
     },
     rules: {
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/preserve-manual-memoization": "warn",
       "@typescript-eslint/no-require-imports": "error",
-      "@typescript-eslint/no-unused-vars": ["error", {
-        argsIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
-        caughtErrorsIgnorePattern: "^_",
-      }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       // Accessibility rules (Audit L9-12, A68-F1: upgraded warn→error)
       // jsx-a11y plugin is already registered by eslint-config-next.
       // These MUST be "error" so CI fails on new a11y violations.
@@ -43,23 +46,60 @@ const eslintConfig = defineConfig([
       "jsx-a11y/no-static-element-interactions": "error",
       "jsx-a11y/label-has-associated-control": "error",
       // Import ordering (Audit 5.2)
-      "import/order": ["error", {
-        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
-        "pathGroups": [{ "pattern": "@/**", "group": "internal", "position": "after" }],
-        "newlines-between": "never",
-        "alphabetize": { "order": "asc", "caseInsensitive": true },
-      }],
+      "import/order": [
+        "error",
+        {
+          groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
+          pathGroups: [{ pattern: "@/**", group: "internal", position: "after" }],
+          "newlines-between": "never",
+          alphabetize: { order: "asc", caseInsensitive: true },
+        },
+      ],
       // i18n rules to catch hardcoded literal strings in UI
       // AUDIT FINDING #22: Tightened config to reduce false positives from
       // Tailwind class names (gap-2, text-muted-foreground, etc.) by adding
       // ignoreCallee for utility functions and ignoreProperty for non-user-facing props.
-      "i18next/no-literal-string": ["warn", {
-        "markupOnly": true,
-        "onlyAttribute": [],
-        "ignoreAttribute": ["data-testid", "className", "style", "type", "id", "name", "value", "htmlFor", "role", "href", "target", "rel", "src", "alt", "variant", "size", "key", "placeholder", "aria-label"],
-        "ignoreCallee": ["clsx", "cn", "twMerge", "cva", "t", "z.object", "z.string", "z.enum", "logger", "console"],
-        "ignoreProperty": ["displayName", "key", "as", "variant", "size", "data-testid"],
-      }],
+      "i18next/no-literal-string": [
+        "warn",
+        {
+          markupOnly: true,
+          onlyAttribute: [],
+          ignoreAttribute: [
+            "data-testid",
+            "className",
+            "style",
+            "type",
+            "id",
+            "name",
+            "value",
+            "htmlFor",
+            "role",
+            "href",
+            "target",
+            "rel",
+            "src",
+            "alt",
+            "variant",
+            "size",
+            "key",
+            "placeholder",
+            "aria-label",
+          ],
+          ignoreCallee: [
+            "clsx",
+            "cn",
+            "twMerge",
+            "cva",
+            "t",
+            "z.object",
+            "z.string",
+            "z.enum",
+            "logger",
+            "console",
+          ],
+          ignoreProperty: ["displayName", "key", "as", "variant", "size", "data-testid"],
+        },
+      ],
     },
   },
   {
@@ -68,12 +108,18 @@ const eslintConfig = defineConfig([
     // service-role keys or Node-only APIs that must never reach the browser.
     files: ["src/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": ["error", {
-        patterns: [{
-          group: ["**/scripts/*", "**/scripts/**"],
-          message: "S-17: scripts/** must not be imported from src/** — they are not part of the Worker bundle.",
-        }],
-      }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/scripts/*", "**/scripts/**"],
+              message:
+                "S-17: scripts/** must not be imported from src/** — they are not part of the Worker bundle.",
+            },
+          ],
+        },
+      ],
     },
   },
   {
@@ -83,18 +129,22 @@ const eslintConfig = defineConfig([
     // Use describe.skipIf() with a documented env guard when genuinely needed.
     files: ["src/**/*.test.{ts,tsx}", "e2e/**/*.spec.ts"],
     rules: {
-      "no-restricted-syntax": ["error",
+      "no-restricted-syntax": [
+        "error",
         {
           selector: "CallExpression[callee.property.name='skip'][callee.object.name='describe']",
-          message: "A87-F10: describe.skip is forbidden in CI. Use describe.skipIf(condition) with a documented env guard, or remove the skip.",
+          message:
+            "A87-F10: describe.skip is forbidden in CI. Use describe.skipIf(condition) with a documented env guard, or remove the skip.",
         },
         {
           selector: "CallExpression[callee.property.name='skip'][callee.object.name='it']",
-          message: "A87-F10: it.skip is forbidden in CI. Use it.skipIf(condition) with a documented env guard, or remove the skip.",
+          message:
+            "A87-F10: it.skip is forbidden in CI. Use it.skipIf(condition) with a documented env guard, or remove the skip.",
         },
         {
           selector: "CallExpression[callee.property.name='skip'][callee.object.name='test']",
-          message: "A87-F10: test.skip is forbidden in CI. Use test.skipIf(condition) with a documented env guard, or remove the skip.",
+          message:
+            "A87-F10: test.skip is forbidden in CI. Use test.skipIf(condition) with a documented env guard, or remove the skip.",
         },
       ],
     },
@@ -106,15 +156,36 @@ const eslintConfig = defineConfig([
       "src/components/doctor/mfa-settings.tsx",
       "src/app/(auth)/login/**/*.{ts,tsx}",
       "src/app/(auth)/register/**/*.{ts,tsx}",
-      "src/app/(auth)/forgot-password/**/*.{ts,tsx}"
+      "src/app/(auth)/forgot-password/**/*.{ts,tsx}",
     ],
     rules: {
-      "i18next/no-literal-string": ["error", {
-        "markupOnly": true,
-        "ignoreAttribute": ["data-testid", "className", "type", "id", "name", "value", "htmlFor", "role", "href", "target", "rel", "src", "alt", "variant", "size", "key", "placeholder"],
-      }],
-    }
-  }
+      "i18next/no-literal-string": [
+        "error",
+        {
+          markupOnly: true,
+          ignoreAttribute: [
+            "data-testid",
+            "className",
+            "type",
+            "id",
+            "name",
+            "value",
+            "htmlFor",
+            "role",
+            "href",
+            "target",
+            "rel",
+            "src",
+            "alt",
+            "variant",
+            "size",
+            "key",
+            "placeholder",
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

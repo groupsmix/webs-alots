@@ -147,7 +147,8 @@ async function _createAppointment(data: {
   is_emergency?: boolean;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   const supabase = createClient();
-  const { data: appt, error } = await supabase.from("appointments")
+  const { data: appt, error } = await supabase
+    .from("appointments")
     .insert({
       ...data,
       status: "confirmed",
@@ -191,4 +192,3 @@ async function _fetchDentalTreatmentTypes(clinicId: string): Promise<DentalTreat
       description: s.description,
     }));
 }
-

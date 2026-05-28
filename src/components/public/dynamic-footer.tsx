@@ -20,10 +20,5 @@ export function DynamicFooter({ clinicName, footerVariant, template }: DynamicFo
 
   if (!FooterComponent) return null;
 
-  return (
-    <FooterComponent
-      clinicName={clinicName}
-      template={template}
-    />
-  );
+  return <FooterComponent clinicName={clinicName} template={template} />;
 }

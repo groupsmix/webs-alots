@@ -113,9 +113,7 @@ export function shouldBlockDemoRequest(
  * This replaces the path/method allow-list approach with an explicit
  * opt-in per route handler.
  */
-export function demoSafe<T extends (...args: never[]) => unknown>(
-  handler: T,
-): T {
+export function demoSafe<T extends (...args: never[]) => unknown>(handler: T): T {
   // Tag the handler so middleware or withAuth can check it
   (handler as unknown as Record<string, unknown>).__demoSafe = true;
   return handler;

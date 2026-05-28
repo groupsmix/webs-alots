@@ -9,7 +9,9 @@ export default function DoctorConsentFormsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Consent Forms" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Consent Forms" }]}
+      />
       <h1 className="text-2xl font-bold">Photo Consent Forms</h1>
       <ConsentFormManager consents={consents} editable />
     </div>

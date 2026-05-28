@@ -10,7 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { LabOrder } from "@/lib/types/dental";
 
-const STATUS_CONFIG: Record<string, { icon: typeof Clock; color: string; variant: "default" | "secondary" | "success" | "destructive" | "outline" | "warning" }> = {
+const STATUS_CONFIG: Record<
+  string,
+  {
+    icon: typeof Clock;
+    color: string;
+    variant: "default" | "secondary" | "success" | "destructive" | "outline" | "warning";
+  }
+> = {
   pending: { icon: Clock, color: "text-gray-500", variant: "outline" },
   sent: { icon: Send, color: "text-blue-500", variant: "default" },
   in_progress: { icon: FlaskConical, color: "text-purple-500", variant: "secondary" },
@@ -25,7 +32,12 @@ interface LabOrdersPanelProps {
   onAddOrder?: (order: Omit<LabOrder, "id" | "createdAt" | "updatedAt">) => void;
 }
 
-export function LabOrdersPanel({ orders, editable = false, onUpdateStatus, onAddOrder }: LabOrdersPanelProps) {
+export function LabOrdersPanel({
+  orders,
+  editable = false,
+  onUpdateStatus,
+  onAddOrder,
+}: LabOrdersPanelProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newOrder, setNewOrder] = useState({
     labName: "",
@@ -53,7 +65,13 @@ export function LabOrdersPanel({ orders, editable = false, onUpdateStatus, onAdd
     }
   };
 
-  const statusOrder: LabOrder["status"][] = ["pending", "sent", "in_progress", "ready", "delivered"];
+  const statusOrder: LabOrder["status"][] = [
+    "pending",
+    "sent",
+    "in_progress",
+    "ready",
+    "delivered",
+  ];
 
   const getNextStatus = (current: LabOrder["status"]): LabOrder["status"] | null => {
     const idx = statusOrder.indexOf(current);
@@ -128,8 +146,12 @@ export function LabOrdersPanel({ orders, editable = false, onUpdateStatus, onAdd
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAdd}>Create Order</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleAdd}>
+                Create Order
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -163,7 +185,9 @@ export function LabOrdersPanel({ orders, editable = false, onUpdateStatus, onAdd
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-0.5">
-                      <p>Patient: {order.patientName} &middot; Lab: {order.labName}</p>
+                      <p>
+                        Patient: {order.patientName} &middot; Lab: {order.labName}
+                      </p>
                       {order.dueDate && <p>Due: {order.dueDate}</p>}
                       {order.notes && <p className="italic">{order.notes}</p>}
                     </div>

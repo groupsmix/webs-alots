@@ -30,9 +30,7 @@ function arrayToCSV<T extends object>(
   columns: { key: keyof T; label: string }[],
 ): string {
   const header = columns.map((c) => escapeCSV(c.label)).join(",");
-  const body = rows.map((row) =>
-    columns.map((c) => escapeCSV(row[c.key])).join(","),
-  );
+  const body = rows.map((row) => columns.map((c) => escapeCSV(row[c.key])).join(","));
   return [header, ...body].join("\n");
 }
 
@@ -86,7 +84,10 @@ const appointmentColumns: { key: keyof ExportableAppointment; label: string }[] 
   { key: "notes", label: "Notes" },
 ];
 
-export function exportAppointments(appointments: ExportableAppointment[], filenamePrefix = "appointments") {
+export function exportAppointments(
+  appointments: ExportableAppointment[],
+  filenamePrefix = "appointments",
+) {
   const date = new Date().toISOString().split("T")[0];
   exportToCSV(appointments, appointmentColumns, `${filenamePrefix}-${date}.csv`);
 }

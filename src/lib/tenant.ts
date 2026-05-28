@@ -62,7 +62,9 @@ export async function getTenant(): Promise<TenantInfo | null> {
 export async function requireTenant(): Promise<TenantInfo> {
   const tenant = await getTenant();
   if (!tenant?.clinicId) {
-    throw new Error("Tenant context is required but was not resolved. Ensure the request includes a valid subdomain.");
+    throw new Error(
+      "Tenant context is required but was not resolved. Ensure the request includes a valid subdomain.",
+    );
   }
   logTenantContext(tenant.clinicId, "requireTenant");
   return tenant;
@@ -106,11 +108,7 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
   const { createTenantClient } = await import("@/lib/supabase-server");
   const supabase = await createTenantClient(clinicId);
 
-  const { data } = await supabase
-    .from("clinics")
-    .select("config")
-    .eq("id", clinicId)
-    .single();
+  const { data } = await supabase.from("clinics").select("config").eq("id", clinicId).single();
 
   /** Shape of the `clinics.config` JSONB column for tenant settings. */
   interface ClinicDbConfig {

@@ -42,9 +42,12 @@ export function ServiceWorkerRegister() {
         logger.info("Service worker registered", { context: "sw-register" });
 
         // Check for updates periodically (every 60 minutes)
-        const updateInterval = setInterval(() => {
-          registration.update().catch(() => {});
-        }, 60 * 60 * 1000);
+        const updateInterval = setInterval(
+          () => {
+            registration.update().catch(() => {});
+          },
+          60 * 60 * 1000,
+        );
 
         // Detect waiting worker (new version available)
         const onStateChange = () => {

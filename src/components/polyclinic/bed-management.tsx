@@ -45,16 +45,33 @@ interface BedManagementProps {
   editable?: boolean;
   onAdmit?: (bedId: string) => void;
   onDischarge?: (bedId: string) => void;
-  onAddRoom?: (room: { roomNumber: string; roomType: string; floor: string; totalBeds: number }) => void;
+  onAddRoom?: (room: {
+    roomNumber: string;
+    roomType: string;
+    floor: string;
+    totalBeds: number;
+  }) => void;
 }
 
-export function BedManagement({ rooms, editable = false, onAdmit, onDischarge, onAddRoom }: BedManagementProps) {
+export function BedManagement({
+  rooms,
+  editable = false,
+  onAdmit,
+  onDischarge,
+  onAddRoom,
+}: BedManagementProps) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ roomNumber: "", roomType: "ward", floor: "", totalBeds: "1" });
 
   const totalBeds = rooms.reduce((sum, r) => sum + r.beds.length, 0);
-  const occupiedBeds = rooms.reduce((sum, r) => sum + r.beds.filter((b) => b.status === "occupied").length, 0);
-  const availableBeds = rooms.reduce((sum, r) => sum + r.beds.filter((b) => b.status === "available").length, 0);
+  const occupiedBeds = rooms.reduce(
+    (sum, r) => sum + r.beds.filter((b) => b.status === "occupied").length,
+    0,
+  );
+  const availableBeds = rooms.reduce(
+    (sum, r) => sum + r.beds.filter((b) => b.status === "available").length,
+    0,
+  );
   const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
 
   const handleAddRoom = () => {
@@ -110,16 +127,27 @@ export function BedManagement({ rooms, editable = false, onAdmit, onDischarge, o
 
       {showForm && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Add Room</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm">Add Room</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Room Number</Label>
-                <Input value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} placeholder="101" className="text-sm" />
+                <Input
+                  value={form.roomNumber}
+                  onChange={(e) => setForm({ ...form, roomNumber: e.target.value })}
+                  placeholder="101"
+                  className="text-sm"
+                />
               </div>
               <div>
                 <Label className="text-xs">Room Type</Label>
-                <select value={form.roomType} onChange={(e) => setForm({ ...form, roomType: e.target.value })} className="w-full rounded-md border px-3 py-2 text-sm">
+                <select
+                  value={form.roomType}
+                  onChange={(e) => setForm({ ...form, roomType: e.target.value })}
+                  className="w-full rounded-md border px-3 py-2 text-sm"
+                >
                   <option value="ward">Ward</option>
                   <option value="private">Private</option>
                   <option value="icu">ICU</option>
@@ -132,16 +160,31 @@ export function BedManagement({ rooms, editable = false, onAdmit, onDischarge, o
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Floor</Label>
-                <Input value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })} placeholder="1st" className="text-sm" />
+                <Input
+                  value={form.floor}
+                  onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                  placeholder="1st"
+                  className="text-sm"
+                />
               </div>
               <div>
                 <Label className="text-xs">Total Beds</Label>
-                <Input type="number" min="1" value={form.totalBeds} onChange={(e) => setForm({ ...form, totalBeds: e.target.value })} className="text-sm" />
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.totalBeds}
+                  onChange={(e) => setForm({ ...form, totalBeds: e.target.value })}
+                  className="text-sm"
+                />
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAddRoom}>Create</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleAddRoom}>
+                Create
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -163,7 +206,9 @@ export function BedManagement({ rooms, editable = false, onAdmit, onDischarge, o
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">
                     Room {room.roomNumber}
-                    <Badge variant="outline" className="ml-2 text-[10px]">{room.roomType}</Badge>
+                    <Badge variant="outline" className="ml-2 text-[10px]">
+                      {room.roomType}
+                    </Badge>
                   </CardTitle>
                   <div className="text-xs text-muted-foreground">
                     {room.departmentName && <span>{room.departmentName} &middot; </span>}
@@ -176,18 +221,33 @@ export function BedManagement({ rooms, editable = false, onAdmit, onDischarge, o
                   {room.beds.map((bed) => {
                     const Icon = STATUS_ICONS[bed.status];
                     return (
-                      <div key={bed.id} className={`rounded-lg border p-2 text-center ${STATUS_COLORS[bed.status]}`}>
+                      <div
+                        key={bed.id}
+                        className={`rounded-lg border p-2 text-center ${STATUS_COLORS[bed.status]}`}
+                      >
                         <Icon className="h-4 w-4 mx-auto mb-1" />
                         <p className="text-xs font-medium">Bed {bed.bedNumber}</p>
                         <p className="text-[10px] capitalize">{bed.status}</p>
-                        {bed.patientName && <p className="text-[10px] mt-1 truncate">{bed.patientName}</p>}
+                        {bed.patientName && (
+                          <p className="text-[10px] mt-1 truncate">{bed.patientName}</p>
+                        )}
                         {editable && bed.status === "available" && (
-                          <Button size="sm" variant="outline" className="text-[10px] h-5 mt-1 w-full" onClick={() => onAdmit?.(bed.id)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-[10px] h-5 mt-1 w-full"
+                            onClick={() => onAdmit?.(bed.id)}
+                          >
                             Admit
                           </Button>
                         )}
                         {editable && bed.status === "occupied" && (
-                          <Button size="sm" variant="outline" className="text-[10px] h-5 mt-1 w-full" onClick={() => onDischarge?.(bed.id)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-[10px] h-5 mt-1 w-full"
+                            onClick={() => onDischarge?.(bed.id)}
+                          >
                             Discharge
                           </Button>
                         )}

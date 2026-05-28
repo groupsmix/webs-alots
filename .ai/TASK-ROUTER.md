@@ -19,21 +19,21 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 
 ## Quick-Reference Table
 
-| Task Type | Files to Edit | Files to NEVER Touch |
-|---|---|---|
-| Add new niche | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx` | Everything else |
-| Add new vertical | `src/lib/config/verticals.ts`, create new file in `src/lib/config/verticals/` | Core config files |
-| Add new template | `src/lib/templates.ts`, create new CSS file in `src/styles/templates/` | Core layout files |
-| Add new template preset | `src/lib/template-presets.ts` | Templates themselves |
-| Add new feature flag | `src/lib/features.ts`, `src/lib/hooks/use-clinic-features.tsx` | Auth, RLS, middleware |
-| Add new API route | Create under `src/app/api/[feature]/route.ts` | Existing API routes |
-| Add new AI feature | Create under `src/app/api/ai/[feature]/route.ts`, add feature flag | Core AI chatbot |
-| Add new dashboard page | Create under `src/app/(admin)/admin/[page]/page.tsx`, add nav entry in `src/components/layouts/admin-layout-shell.tsx` | Existing pages |
-| Add new public page | Create under `src/app/(clinic-public)/[page]/page.tsx` | Existing pages |
-| Add new payment gateway | Create under `src/app/api/payments/[gateway]/route.ts` | Existing payment routes |
-| Add new language | `src/lib/i18n.ts` | Everything else |
-| Add new component | Create under `src/components/[category]/` | Existing components |
-| Fix a bug | Depends on bug location — read error trace | Unrelated files |
+| Task Type               | Files to Edit                                                                                                                                                               | Files to NEVER Touch    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Add new niche           | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx` | Everything else         |
+| Add new vertical        | `src/lib/config/verticals.ts`, create new file in `src/lib/config/verticals/`                                                                                               | Core config files       |
+| Add new template        | `src/lib/templates.ts`, create new CSS file in `src/styles/templates/`                                                                                                      | Core layout files       |
+| Add new template preset | `src/lib/template-presets.ts`                                                                                                                                               | Templates themselves    |
+| Add new feature flag    | `src/lib/features.ts`, `src/lib/hooks/use-clinic-features.tsx`                                                                                                              | Auth, RLS, middleware   |
+| Add new API route       | Create under `src/app/api/[feature]/route.ts`                                                                                                                               | Existing API routes     |
+| Add new AI feature      | Create under `src/app/api/ai/[feature]/route.ts`, add feature flag                                                                                                          | Core AI chatbot         |
+| Add new dashboard page  | Create under `src/app/(admin)/admin/[page]/page.tsx`, add nav entry in `src/components/layouts/admin-layout-shell.tsx`                                                      | Existing pages          |
+| Add new public page     | Create under `src/app/(clinic-public)/[page]/page.tsx`                                                                                                                      | Existing pages          |
+| Add new payment gateway | Create under `src/app/api/payments/[gateway]/route.ts`                                                                                                                      | Existing payment routes |
+| Add new language        | `src/lib/i18n.ts`                                                                                                                                                           | Everything else         |
+| Add new component       | Create under `src/components/[category]/`                                                                                                                                   | Existing components     |
+| Fix a bug               | Depends on bug location — read error trace                                                                                                                                  | Unrelated files         |
 
 ---
 
@@ -99,7 +99,7 @@ const navItems: NavItem[] = [
     href: "/admin/your-page",
     label: "Your Page",
     icon: SomeIcon,
-    requiredFeature: "your_new_feature",  // optional: gate behind feature flag
+    requiredFeature: "your_new_feature", // optional: gate behind feature flag
   },
 ];
 ```
@@ -117,7 +117,7 @@ export const POST = withAuth(
     // Your logic here — always scope by clinicId
     return apiSuccess({ result: "ok" });
   },
-  ["clinic_admin", "receptionist"],  // allowed roles
+  ["clinic_admin", "receptionist"], // allowed roles
 );
 ```
 
@@ -164,41 +164,41 @@ export default function YourPublicPage() {
 
 ## Key Files Reference
 
-| Purpose | File |
-|---|---|
-| Clinic type definitions | `src/lib/config/clinic-types.ts` |
-| Default services per type | `src/lib/config/default-services.ts` |
-| Feature flags (server) | `src/lib/features.ts` |
-| Feature flags (client hook) | `src/lib/hooks/use-clinic-features.tsx` |
-| Template definitions | `src/lib/templates.ts` |
-| Vertical definitions | `src/lib/config/verticals.ts` |
-| Vertical registry | `src/lib/config/vertical-registry.ts` |
-| Specialist dashboards | `src/config/specialist-registry.ts` |
+| Purpose                       | File                                              |
+| ----------------------------- | ------------------------------------------------- |
+| Clinic type definitions       | `src/lib/config/clinic-types.ts`                  |
+| Default services per type     | `src/lib/config/default-services.ts`              |
+| Feature flags (server)        | `src/lib/features.ts`                             |
+| Feature flags (client hook)   | `src/lib/hooks/use-clinic-features.tsx`           |
+| Template definitions          | `src/lib/templates.ts`                            |
+| Vertical definitions          | `src/lib/config/verticals.ts`                     |
+| Vertical registry             | `src/lib/config/vertical-registry.ts`             |
+| Specialist dashboards         | `src/config/specialist-registry.ts`               |
 | Public layout (header/footer) | `src/components/layouts/clinic-public-layout.tsx` |
-| Public header | `src/components/public/header.tsx` |
-| Public footer | `src/components/public/footer.tsx` |
-| Public hero | `src/components/public/hero-section.tsx` |
-| Admin sidebar nav | `src/components/layouts/admin-layout-shell.tsx` |
-| Onboarding wizard | `src/app/(auth)/onboarding/page.tsx` |
-| Branding data fetch | `src/lib/data/public.ts` |
-| i18n translations | `src/lib/i18n.ts` |
-| API response helpers | `src/lib/api-response.ts` |
-| Auth wrapper | `src/lib/with-auth.ts` |
-| Tenant context | `src/lib/tenant.ts` |
-| Database types | `src/lib/types/database.ts` |
-| Middleware | `src/middleware.ts` |
+| Public header                 | `src/components/public/header.tsx`                |
+| Public footer                 | `src/components/public/footer.tsx`                |
+| Public hero                   | `src/components/public/hero-section.tsx`          |
+| Admin sidebar nav             | `src/components/layouts/admin-layout-shell.tsx`   |
+| Onboarding wizard             | `src/app/(auth)/onboarding/page.tsx`              |
+| Branding data fetch           | `src/lib/data/public.ts`                          |
+| i18n translations             | `src/lib/i18n.ts`                                 |
+| API response helpers          | `src/lib/api-response.ts`                         |
+| Auth wrapper                  | `src/lib/with-auth.ts`                            |
+| Tenant context                | `src/lib/tenant.ts`                               |
+| Database types                | `src/lib/types/database.ts`                       |
+| Middleware                    | `src/middleware.ts`                               |
 
 ---
 
 ## Project Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui |
-| Backend | Supabase (Auth, Database, Storage, Edge Functions) |
-| Notifications | WhatsApp Business API (Meta Cloud API) |
-| Hosting | Cloudflare Workers (via OpenNext) |
-| Payments | CMI Payment Gateway (optional), Stripe |
+| Layer         | Technology                                         |
+| ------------- | -------------------------------------------------- |
+| Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui    |
+| Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
+| Notifications | WhatsApp Business API (Meta Cloud API)             |
+| Hosting       | Cloudflare Workers (via OpenNext)                  |
+| Payments      | CMI Payment Gateway (optional), Stripe             |
 
 ## User Roles (order of privilege)
 

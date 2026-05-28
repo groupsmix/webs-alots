@@ -91,7 +91,9 @@ const SEGMENT_LABELS: Record<string, string> = {
 };
 
 function labelFor(segment: string): string {
-  return SEGMENT_LABELS[segment] ?? segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    SEGMENT_LABELS[segment] ?? segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 }
 
 /**

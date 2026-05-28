@@ -101,7 +101,12 @@ export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogP
                 <Label className="text-xs">Method</Label>
                 <select
                   value={newEntry.method}
-                  onChange={(e) => setNewEntry({ ...newEntry, method: e.target.value as SterilizationEntry["method"] })}
+                  onChange={(e) =>
+                    setNewEntry({
+                      ...newEntry,
+                      method: e.target.value as SterilizationEntry["method"],
+                    })
+                  }
                   className="w-full rounded-lg border p-2 text-sm bg-background"
                 >
                   <option value="autoclave">Autoclave</option>
@@ -120,8 +125,12 @@ export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogP
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAdd}>Log Entry</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleAdd}>
+                Log Entry
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -134,7 +143,9 @@ export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogP
             <Card key={entry.id} className={overdue ? "border-red-300 dark:border-red-800" : ""}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className={`h-5 w-5 mt-0.5 ${overdue ? "text-red-500" : "text-green-600"}`} />
+                  <ShieldCheck
+                    className={`h-5 w-5 mt-0.5 ${overdue ? "text-red-500" : "text-green-600"}`}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium">{entry.toolName}</p>
@@ -146,11 +157,25 @@ export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogP
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                      <p>By: {entry.sterilizedBy} &middot; {formatDisplayDate(new Date(entry.sterilizedAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}</p>
+                      <p>
+                        By: {entry.sterilizedBy} &middot;{" "}
+                        {formatDisplayDate(
+                          new Date(entry.sterilizedAt),
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "datetime",
+                        )}
+                      </p>
                       {entry.nextDue && (
-                        <p className={`flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : ""}`}>
+                        <p
+                          className={`flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : ""}`}
+                        >
                           <Clock className="h-3 w-3" />
-                          Next due: {formatDisplayDate(new Date(entry.nextDue), typeof locale !== "undefined" ? locale : "fr", "datetime")}
+                          Next due:{" "}
+                          {formatDisplayDate(
+                            new Date(entry.nextDue),
+                            typeof locale !== "undefined" ? locale : "fr",
+                            "datetime",
+                          )}
                           {overdue && " (OVERDUE)"}
                         </p>
                       )}

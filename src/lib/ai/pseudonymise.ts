@@ -31,8 +31,14 @@ const PHI_FIELDS = new Set([
 
 /** Deterministic placeholder names for consistency within a request. */
 const PSEUDONYM_NAMES = [
-  "Patient-A", "Patient-B", "Patient-C", "Patient-D",
-  "Patient-E", "Patient-F", "Patient-G", "Patient-H",
+  "Patient-A",
+  "Patient-B",
+  "Patient-C",
+  "Patient-D",
+  "Patient-E",
+  "Patient-F",
+  "Patient-G",
+  "Patient-H",
 ];
 
 export interface PseudonymMap {
@@ -50,21 +56,25 @@ export function createPseudonymMap(): PseudonymMap {
   };
 }
 
-function getOrCreatePseudonym(
-  map: PseudonymMap,
-  field: string,
-  value: string,
-): string {
+function getOrCreatePseudonym(map: PseudonymMap, field: string, value: string): string {
   const key = `${field}:${value}`;
   const existing = map.forward.get(key);
   if (existing) return existing;
 
   let pseudonym: string;
-  if (field === "name" || field === "patient_name" || field === "patientName" ||
-      field === "full_name" || field === "fullName" ||
-      field === "first_name" || field === "firstName" ||
-      field === "last_name" || field === "lastName") {
-    pseudonym = PSEUDONYM_NAMES[map.forward.size % PSEUDONYM_NAMES.length] ?? `Patient-${map.forward.size}`;
+  if (
+    field === "name" ||
+    field === "patient_name" ||
+    field === "patientName" ||
+    field === "full_name" ||
+    field === "fullName" ||
+    field === "first_name" ||
+    field === "firstName" ||
+    field === "last_name" ||
+    field === "lastName"
+  ) {
+    pseudonym =
+      PSEUDONYM_NAMES[map.forward.size % PSEUDONYM_NAMES.length] ?? `Patient-${map.forward.size}`;
   } else if (field === "phone") {
     // AI-004: Use random suffix instead of sequential counter to prevent
     // frequency-analysis reversal if pseudonymised transcripts are breached.

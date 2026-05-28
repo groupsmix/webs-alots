@@ -23,12 +23,7 @@ interface CelebrationPageProps {
   phone: string;
 }
 
-export function CelebrationPage({
-  clinicName,
-  subdomain,
-  ownerName,
-  phone,
-}: CelebrationPageProps) {
+export function CelebrationPage({ clinicName, subdomain, ownerName, phone }: CelebrationPageProps) {
   const router = useRouter();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
@@ -58,22 +53,17 @@ export function CelebrationPage({
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="text-5xl">🎉</div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Votre site est en ligne !
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Votre site est en ligne !</h1>
           <p className="text-muted-foreground text-lg">
-            F&eacute;licitations <strong>{ownerName}</strong>,{" "}
-            <strong>{clinicName}</strong> est pr&ecirc;t &agrave; recevoir des
-            rendez-vous.
+            F&eacute;licitations <strong>{ownerName}</strong>, <strong>{clinicName}</strong> est
+            pr&ecirc;t &agrave; recevoir des rendez-vous.
           </p>
         </div>
 
         {/* Live URL Card */}
         <Card className="border-2 border-primary/30 bg-primary/5">
           <CardContent className="p-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Votre site est accessible &agrave;
-            </p>
+            <p className="text-sm text-muted-foreground">Votre site est accessible &agrave;</p>
             <a
               href={clinicUrl}
               target="_blank"
@@ -125,9 +115,7 @@ export function CelebrationPage({
               ) : (
                 <div className="h-40 w-40 mx-auto bg-muted rounded-lg animate-pulse" />
               )}
-              <p className="text-xs text-muted-foreground">
-                Scannez pour visiter votre site
-              </p>
+              <p className="text-xs text-muted-foreground">Scannez pour visiter votre site</p>
             </CardContent>
           </Card>
 
@@ -149,9 +137,7 @@ export function CelebrationPage({
                   <MessageCircle className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">
-                    Partager sur WhatsApp
-                  </p>
+                  <p className="font-medium text-sm">Partager sur WhatsApp</p>
                   <p className="text-xs text-muted-foreground">
                     Envoyez le lien &agrave; vos contacts
                   </p>
@@ -170,16 +156,13 @@ export function CelebrationPage({
                 </div>
                 <div>
                   <p className="font-medium text-sm">Copier le lien</p>
-                  <p className="text-xs text-muted-foreground">
-                    {subdomain}.oltigo.com
-                  </p>
+                  <p className="text-xs text-muted-foreground">{subdomain}.oltigo.com</p>
                 </div>
               </button>
 
               {phone && (
                 <p className="text-xs text-muted-foreground text-center pt-2">
-                  Un message WhatsApp de bienvenue a &eacute;t&eacute;
-                  envoy&eacute; au {phone}
+                  Un message WhatsApp de bienvenue a &eacute;t&eacute; envoy&eacute; au {phone}
                 </p>
               )}
             </CardContent>
@@ -188,11 +171,7 @@ export function CelebrationPage({
 
         {/* Action Buttons */}
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => router.push("/admin/dashboard")}
-          >
+          <Button size="lg" className="w-full" onClick={() => router.push("/admin/dashboard")}>
             <LayoutDashboard className="h-4 w-4 mr-2" />
             Acc&eacute;der au tableau de bord
           </Button>
@@ -212,9 +191,9 @@ export function CelebrationPage({
         <Card className="bg-muted/50">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground text-center">
-              <strong>Prochaine &eacute;tape :</strong> Personnalisez
-              votre site depuis le tableau de bord &mdash; ajoutez votre logo,
-              modifiez les services, et invitez votre &eacute;quipe.
+              <strong>Prochaine &eacute;tape :</strong> Personnalisez votre site depuis le tableau
+              de bord &mdash; ajoutez votre logo, modifiez les services, et invitez votre
+              &eacute;quipe.
             </p>
           </CardContent>
         </Card>

@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -68,7 +63,10 @@ const MILESTONE_TEMPLATES: Record<string, { milestone: string; expectedAgeMonths
   ],
 };
 
-const statusIcons: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+const statusIcons: Record<
+  string,
+  { icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
   pending: { icon: Clock, color: "text-gray-400" },
   achieved: { icon: CheckCircle, color: "text-green-500" },
   delayed: { icon: AlertCircle, color: "text-yellow-500" },
@@ -90,7 +88,10 @@ export default function ChildInfoPage() {
   });
 
   // Issue 21: Auto-save draft for clinical form
-  const { saveDraft: saveChildDraft, clearDraft: clearChildDraft } = useOfflineDrafts<typeof form>("child-info-form", { autoSaveMs: 5000 });
+  const { saveDraft: saveChildDraft, clearDraft: clearChildDraft } = useOfflineDrafts<typeof form>(
+    "child-info-form",
+    { autoSaveMs: 5000 },
+  );
   const setForm: typeof setFormRaw = (val) => {
     setFormRaw((prev) => {
       const next = typeof val === "function" ? val(prev) : val;
@@ -125,7 +126,9 @@ export default function ChildInfoPage() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
   const reload = async () => {
@@ -151,7 +154,13 @@ export default function ChildInfoPage() {
     });
     setShowAdd(false);
     clearChildDraft();
-    setFormRaw({ patientId: "", category: "motor", milestone: "", expectedAgeMonths: "", notes: "" });
+    setFormRaw({
+      patientId: "",
+      category: "motor",
+      milestone: "",
+      expectedAgeMonths: "",
+      notes: "",
+    });
     reload();
   };
 
@@ -186,7 +195,9 @@ export default function ChildInfoPage() {
     const previousMilestones = [...milestones];
     const achievedDate = status === "achieved" ? new Date().toISOString().split("T")[0] : null;
     setMilestones((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status, achievedDate: achievedDate ?? m.achievedDate } : m))
+      prev.map((m) =>
+        m.id === id ? { ...m, status, achievedDate: achievedDate ?? m.achievedDate } : m,
+      ),
     );
     const updates: Record<string, unknown> = { status };
     if (status === "achieved") {
@@ -214,7 +225,9 @@ export default function ChildInfoPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Child Info" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Child Info" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Child Development & Milestones</h1>
         <div className="flex gap-2">
@@ -231,12 +244,19 @@ export default function ChildInfoPage() {
 
       {/* Patient filter */}
       <div className="mb-6 max-w-xs">
-        <Select value={selectedPatient} onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="Select a patient" /></SelectTrigger>
+        <Select
+          value={selectedPatient}
+          onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a patient" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All patients</SelectItem>
             {patients.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -248,7 +268,7 @@ export default function ChildInfoPage() {
             <Baby className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
               {selectedPatient
-                ? "No milestones recorded. Click \"Populate Defaults\" to add standard milestones."
+                ? 'No milestones recorded. Click "Populate Defaults" to add standard milestones.'
                 : "Select a patient to view their developmental milestones."}
             </p>
           </CardContent>
@@ -257,7 +277,9 @@ export default function ChildInfoPage() {
         <Tabs defaultValue="motor">
           <TabsList>
             {categories.map((cat) => (
-              <TabsTrigger key={cat} value={cat}>{categoryLabels[cat]}</TabsTrigger>
+              <TabsTrigger key={cat} value={cat}>
+                {categoryLabels[cat]}
+              </TabsTrigger>
             ))}
           </TabsList>
           {categories.map((cat) => {
@@ -267,37 +289,51 @@ export default function ChildInfoPage() {
                 <Card>
                   <CardContent className="pt-6">
                     {catMilestones.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-4">No {categoryLabels[cat]} milestones recorded.</p>
+                      <p className="text-center text-muted-foreground py-4">
+                        No {categoryLabels[cat]} milestones recorded.
+                      </p>
                     ) : (
                       <div className="space-y-3">
                         {catMilestones.map((m) => {
                           const si = statusIcons[m.status];
                           const StatusIcon = si.icon;
                           return (
-                            <div key={m.id} className="flex items-center justify-between rounded-lg border p-3">
+                            <div
+                              key={m.id}
+                              className="flex items-center justify-between rounded-lg border p-3"
+                            >
                               <div className="flex items-center gap-3">
                                 <StatusIcon className={`h-5 w-5 ${si.color}`} />
                                 <div>
                                   <p className="text-sm font-medium">{m.milestone}</p>
                                   <p className="text-xs text-muted-foreground">
                                     {m.patientName}
-                                    {m.expectedAgeMonths !== null && ` · Expected: ${m.expectedAgeMonths}m`}
+                                    {m.expectedAgeMonths !== null &&
+                                      ` · Expected: ${m.expectedAgeMonths}m`}
                                     {m.achievedDate && ` · Achieved: ${m.achievedDate}`}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Badge variant={
-                                  m.status === "achieved" ? "success" :
-                                  m.status === "delayed" ? "warning" :
-                                  m.status === "concern" ? "destructive" : "default"
-                                }>
+                                <Badge
+                                  variant={
+                                    m.status === "achieved"
+                                      ? "success"
+                                      : m.status === "delayed"
+                                        ? "warning"
+                                        : m.status === "concern"
+                                          ? "destructive"
+                                          : "default"
+                                  }
+                                >
                                   {m.status}
                                 </Badge>
                                 {m.status !== "achieved" && (
                                   <Select
                                     value=""
-                                    onValueChange={(v) => handleStatusUpdate(m.id, v as MilestoneView["status"])}
+                                    onValueChange={(v) =>
+                                      handleStatusUpdate(m.id, v as MilestoneView["status"])
+                                    }
                                   >
                                     <SelectTrigger className="w-[120px] h-8 text-xs">
                                       <SelectValue placeholder="Update" />
@@ -332,41 +368,74 @@ export default function ChildInfoPage() {
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Patient</Label>
-              <Select value={form.patientId} onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+              <Select
+                value={form.patientId}
+                onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select patient" />
+                </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v as MilestoneView["category"] }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={form.category}
+                onValueChange={(v) =>
+                  setForm((p) => ({ ...p, category: v as MilestoneView["category"] }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
-                    <SelectItem key={c} value={c}>{categoryLabels[c]}</SelectItem>
+                    <SelectItem key={c} value={c}>
+                      {categoryLabels[c]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Milestone</Label>
-              <Input value={form.milestone} onChange={(e) => setForm((p) => ({ ...p, milestone: e.target.value }))} placeholder="e.g., Walks independently" />
+              <Input
+                value={form.milestone}
+                onChange={(e) => setForm((p) => ({ ...p, milestone: e.target.value }))}
+                placeholder="e.g., Walks independently"
+              />
             </div>
             <div className="space-y-2">
               <Label>Expected Age (months)</Label>
-              <Input type="number" min="0" value={form.expectedAgeMonths} onChange={(e) => setForm((p) => ({ ...p, expectedAgeMonths: e.target.value }))} />
+              <Input
+                type="number"
+                min="0"
+                value={form.expectedAgeMonths}
+                onChange={(e) => setForm((p) => ({ ...p, expectedAgeMonths: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional observations..." />
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Optional observations..."
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!form.patientId || !form.milestone}>Save</Button>
+              <Button variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!form.patientId || !form.milestone}>
+                Save
+              </Button>
             </div>
           </div>
         </DialogContent>

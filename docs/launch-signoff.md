@@ -8,15 +8,15 @@ update the table.
 
 ## Reference run
 
-| Field | Value |
-| --- | --- |
-| Repository | [`groupsmix/webs-alots`](https://github.com/groupsmix/webs-alots) |
-| Base branch | `main` |
-| Latest reference SHA on `main` | [`113d727a`](https://github.com/groupsmix/webs-alots/commit/113d727a550486ff15fd6723e2cc0d2081458b62) |
-| Reference green CI run (PR #448, identical CI matrix as `main`) | [Run on commit `560ad983`](https://github.com/groupsmix/webs-alots/pull/448) |
-| Node version | 22.x (per CI workflow + repo `node_modules` lock) |
-| npm version | 10.x |
-| Date verified | 2026-04-28 |
+| Field                                                           | Value                                                                                                 |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Repository                                                      | [`groupsmix/webs-alots`](https://github.com/groupsmix/webs-alots)                                     |
+| Base branch                                                     | `main`                                                                                                |
+| Latest reference SHA on `main`                                  | [`113d727a`](https://github.com/groupsmix/webs-alots/commit/113d727a550486ff15fd6723e2cc0d2081458b62) |
+| Reference green CI run (PR #448, identical CI matrix as `main`) | [Run on commit `560ad983`](https://github.com/groupsmix/webs-alots/pull/448)                          |
+| Node version                                                    | 22.x (per CI workflow + repo `node_modules` lock)                                                     |
+| npm version                                                     | 10.x                                                                                                  |
+| Date verified                                                   | 2026-04-28                                                                                            |
 
 The CI workflow (`.github/workflows/ci.yml`) is triggered on every PR
 into `main` / `staging`, so the canonical "green CI run" is the
@@ -68,18 +68,18 @@ All 8/8 CI checks green on PR #555.
 
 ### Status per launch sub-task
 
-| Sub-task | Status | Evidence |
-| --- | --- | --- |
-| `npm ci` clean install | green | local run, `added 1432 packages`, `found 0 vulnerabilities` |
-| `npm run build` | green | local + CI (`Build & Deploy` in deploy workflow runs the same steps) |
-| `npm run lint` | green | 0 errors |
-| `npm run typecheck` | green | `tsc --noEmit` clean |
-| Unit tests pass | green | 814 passed / 16 skipped (82 test files) |
-| E2E tests pass | green | CI job `E2E Tests (Playwright)` green on PRs #553–#555 |
-| `npm audit` reviewed; remediate high/critical advisories | green | `0 vulnerabilities` (incl. `--omit=dev` in CI step `Check for vulnerable dependencies`) |
-| Tenant isolation tests | green | 17 tests in `src/lib/__tests__/integration/tenant-isolation.test.ts` |
-| RLS assertion tests | green | `src/lib/__tests__/integration/rls-assertions.test.ts` |
-| Document the green CI run | this file | — |
+| Sub-task                                                 | Status    | Evidence                                                                                |
+| -------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------- |
+| `npm ci` clean install                                   | green     | local run, `added 1432 packages`, `found 0 vulnerabilities`                             |
+| `npm run build`                                          | green     | local + CI (`Build & Deploy` in deploy workflow runs the same steps)                    |
+| `npm run lint`                                           | green     | 0 errors                                                                                |
+| `npm run typecheck`                                      | green     | `tsc --noEmit` clean                                                                    |
+| Unit tests pass                                          | green     | 814 passed / 16 skipped (82 test files)                                                 |
+| E2E tests pass                                           | green     | CI job `E2E Tests (Playwright)` green on PRs #553–#555                                  |
+| `npm audit` reviewed; remediate high/critical advisories | green     | `0 vulnerabilities` (incl. `--omit=dev` in CI step `Check for vulnerable dependencies`) |
+| Tenant isolation tests                                   | green     | 17 tests in `src/lib/__tests__/integration/tenant-isolation.test.ts`                    |
+| RLS assertion tests                                      | green     | `src/lib/__tests__/integration/rls-assertions.test.ts`                                  |
+| Document the green CI run                                | this file | —                                                                                       |
 
 ## Notes & caveats
 
@@ -94,7 +94,7 @@ All 8/8 CI checks green on PR #555.
   unrelated to source quality and does not appear in the PR CI
   matrix. Should be triaged separately before a real deploy attempt.
 - **Bundle size budget** is checked in CI as part of the `Lint, Type
-  Check & Tests` job (`Bundle size budget check` step) with a 250 kB
+Check & Tests` job (`Bundle size budget check` step) with a 250 kB
   shared-JS limit per `AGENTS.md`. The PR matrix is green, so the
   budget is currently respected.
 - **E2E** is run in CI with an ephemeral Supabase project. Re-running

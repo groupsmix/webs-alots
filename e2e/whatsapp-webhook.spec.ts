@@ -9,7 +9,9 @@ import { test, expect } from "@playwright/test";
 
 test.describe("WhatsApp webhook — GET verification", () => {
   test("rejects verification without valid token", async ({ request }) => {
-    const response = await request.get("/api/webhooks?hub.mode=subscribe&hub.verify_token=invalid&hub.challenge=test123");
+    const response = await request.get(
+      "/api/webhooks?hub.mode=subscribe&hub.verify_token=invalid&hub.challenge=test123",
+    );
     expect(response.status()).toBe(403);
   });
 

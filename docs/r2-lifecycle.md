@@ -17,7 +17,7 @@ a 2 MB orphan per abandoned attempt — but they accumulate over time.
 ## Required Lifecycle Rule
 
 Add a single lifecycle rule on the `R2_BUCKET_NAME` bucket that expires any
-object older than **24 hours** under the `clinics/` prefix that has *not*
+object older than **24 hours** under the `clinics/` prefix that has _not_
 been "promoted" to a confirmed upload. We rely on the rule to apply to the
 entire `clinics/` prefix because:
 

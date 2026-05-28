@@ -1,9 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import {
-  ClinicDashboardLayout,
-} from "@/components/layouts/clinic-dashboard-layout";
+import { ClinicDashboardLayout } from "@/components/layouts/clinic-dashboard-layout";
 import { getSpecialistConfigFromPathname } from "@/config/specialist-registry";
 
 /**
@@ -11,11 +9,7 @@ import { getSpecialistConfigFromPathname } from "@/config/specialist-registry";
  * Reads the current pathname to resolve specialist config, then delegates
  * to the shared ClinicDashboardLayout.
  */
-export function SpecialistLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function SpecialistLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   // Equipment has its own nested layout — pass children through
@@ -29,9 +23,5 @@ export function SpecialistLayoutShell({
     return <>{children}</>;
   }
 
-  return (
-    <ClinicDashboardLayout config={config}>
-      {children}
-    </ClinicDashboardLayout>
-  );
+  return <ClinicDashboardLayout config={config}>{children}</ClinicDashboardLayout>;
 }

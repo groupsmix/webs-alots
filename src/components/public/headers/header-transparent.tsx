@@ -44,11 +44,7 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
     ? "bg-background/95 backdrop-blur border-b shadow-sm"
     : "bg-transparent";
 
-  const textColor = scrolled
-    ? "text-foreground"
-    : isDark
-      ? "text-white"
-      : "text-white";
+  const textColor = scrolled ? "text-foreground" : isDark ? "text-white" : "text-white";
 
   return (
     <header
@@ -56,7 +52,10 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
       dir={isRtl ? "rtl" : undefined}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className={`flex items-center gap-2 text-xl font-bold transition-colors ${scrolled ? "text-foreground" : textColor}`}>
+        <Link
+          href="/"
+          className={`flex items-center gap-2 text-xl font-bold transition-colors ${scrolled ? "text-foreground" : textColor}`}
+        >
           {logoUrl && (
             <Image src={logoUrl} alt={displayName} width={32} height={32} className="h-8 w-auto" />
           )}
@@ -71,7 +70,9 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
               className={`text-sm transition-colors hover:opacity-80 ${
-                scrolled ? "text-muted-foreground hover:text-foreground" : `${textColor} hover:text-white/80`
+                scrolled
+                  ? "text-muted-foreground hover:text-foreground"
+                  : `${textColor} hover:text-white/80`
               }`}
             >
               {item.label}

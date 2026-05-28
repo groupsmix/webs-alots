@@ -121,7 +121,7 @@ export function searchProductsLocal(products: ProductView[], query: string): Pro
       (p.genericName?.toLowerCase().includes(q) ?? false) ||
       p.category.toLowerCase().includes(q) ||
       (p.barcode?.includes(q) ?? false) ||
-      (p.manufacturer?.toLowerCase().includes(q) ?? false)
+      (p.manufacturer?.toLowerCase().includes(q) ?? false),
   );
 }
 
@@ -235,7 +235,9 @@ interface PrescriptionRequestRaw {
   created_at: string;
 }
 
-export async function fetchPrescriptionRequests(clinicId: string): Promise<PharmacyPrescriptionView[]> {
+export async function fetchPrescriptionRequests(
+  clinicId: string,
+): Promise<PharmacyPrescriptionView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<PrescriptionRequestRaw>("prescription_requests", {
     eq: [["clinic_id", clinicId]],
@@ -320,7 +322,7 @@ export async function fetchLoyaltyMembers(clinicId: string): Promise<LoyaltyMemb
     const patient = _activeUserMap?.get(r.patient_id);
     const totalPts = r.points ?? 0;
     const redeemed = r.redeemed_points ?? 0;
-    const available = r.available_points ?? (totalPts - redeemed);
+    const available = r.available_points ?? totalPts - redeemed;
     return {
       id: r.id,
       patientId: r.patient_id,
@@ -385,7 +387,9 @@ export async function fetchPurchaseOrders(clinicId: string): Promise<PurchaseOrd
   const supabase = createClient();
   const { data: orders } = await supabase
     .from("purchase_orders")
-    .select("id, supplier_id, status, total_amount, notes, ordered_at, expected_delivery, received_at, created_at")
+    .select(
+      "id, supplier_id, status, total_amount, notes, ordered_at, expected_delivery, received_at, created_at",
+    )
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 
@@ -415,4 +419,3 @@ export async function fetchPurchaseOrders(clinicId: string): Promise<PurchaseOrd
     notes: o.notes ?? undefined,
   }));
 }
-

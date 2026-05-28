@@ -55,7 +55,14 @@ export interface ClinicSubscription {
 interface BillingEvent {
   id: string;
   clinicId: string;
-  type: "payment_succeeded" | "payment_failed" | "subscription_created" | "subscription_canceled" | "subscription_renewed" | "trial_ended" | "plan_changed";
+  type:
+    | "payment_succeeded"
+    | "payment_failed"
+    | "subscription_created"
+    | "subscription_canceled"
+    | "subscription_renewed"
+    | "trial_ended"
+    | "plan_changed";
   amount?: number;
   currency?: string;
   description: string;
@@ -88,7 +95,13 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 199,
     priceYearly: 1990,
     currency: "MAD",
-    features: ["Up to 5 doctors", "500 patients", "500 appointments/month", "SMS & WhatsApp (100/mo)", "CSV Export"],
+    features: [
+      "Up to 5 doctors",
+      "500 patients",
+      "500 appointments/month",
+      "SMS & WhatsApp (100/mo)",
+      "CSV Export",
+    ],
     maxDoctors: 5,
     maxPatients: 500,
     maxAppointmentsPerMonth: 500,
@@ -104,7 +117,15 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 599,
     priceYearly: 5990,
     currency: "MAD",
-    features: ["Unlimited doctors", "Unlimited patients", "Unlimited appointments", "SMS & WhatsApp (500/mo)", "Custom domain", "Video consultations", "Full analytics"],
+    features: [
+      "Unlimited doctors",
+      "Unlimited patients",
+      "Unlimited appointments",
+      "SMS & WhatsApp (500/mo)",
+      "Custom domain",
+      "Video consultations",
+      "Full analytics",
+    ],
     // MED-02: Use -1 sentinel for "unlimited" instead of Number.MAX_SAFE_INTEGER
     // which displays as 9007199254740991 in UIs and JSON responses.
     maxDoctors: -1,
@@ -122,7 +143,14 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 999,
     priceYearly: 9990,
     currency: "MAD",
-    features: ["Everything in Professional", "API access", "Priority support", "Unlimited SMS & WhatsApp", "White-label branding", "Multi-location"],
+    features: [
+      "Everything in Professional",
+      "API access",
+      "Priority support",
+      "Unlimited SMS & WhatsApp",
+      "White-label branding",
+      "Multi-location",
+    ],
     maxDoctors: -1,
     maxPatients: -1,
     maxAppointmentsPerMonth: -1,
@@ -139,7 +167,9 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
 export function getPlanConfig(plan: SubscriptionPlan): PlanConfig {
   const config = SUBSCRIPTION_PLANS.find((p) => p.id === plan);
   if (!config) {
-    throw new Error(`Unknown subscription plan: "${plan}". Valid plans: ${SUBSCRIPTION_PLANS.map((p) => p.id).join(", ")}`);
+    throw new Error(
+      `Unknown subscription plan: "${plan}". Valid plans: ${SUBSCRIPTION_PLANS.map((p) => p.id).join(", ")}`,
+    );
   }
   return config;
 }
@@ -261,7 +291,11 @@ export async function processRenewal(
   try {
     assertClinicId(clinicId, "subscription-billing:processRenewal");
   } catch (err) {
-    logger.warn("clinic_id assertion failed in processRenewal", { context: "subscription-billing", clinicId, error: err });
+    logger.warn("clinic_id assertion failed in processRenewal", {
+      context: "subscription-billing",
+      clinicId,
+      error: err,
+    });
     return { success: false, error: "Missing or invalid clinic_id — blocked for tenant safety" };
   }
 
@@ -271,7 +305,9 @@ export async function processRenewal(
   // Fetch current subscription
   const { data: sub, error: fetchError } = await supabase
     .from("clinic_subscriptions")
-    .select("id, clinic_id, plan, status, billing_interval, current_period_start, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id, trial_end")
+    .select(
+      "id, clinic_id, plan, status, billing_interval, current_period_start, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id, trial_end",
+    )
     .eq("clinic_id", clinicId)
     .single();
 

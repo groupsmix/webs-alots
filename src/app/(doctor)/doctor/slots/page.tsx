@@ -7,14 +7,23 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  getCurrentUser,
-  fetchTimeSlots,
-  type TimeSlotView,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchTimeSlots, type TimeSlotView } from "@/lib/data/client";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 function computeAvailableSlots(slots: TimeSlotView[], daysAhead: number) {
   const today = new Date();
@@ -43,21 +52,26 @@ export default function NextAvailableSlotsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const ts = await fetchTimeSlots(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const ts = await fetchTimeSlots(user.clinic_id);
       if (controller.signal.aborted) return;
-    setTimeSlots(ts);
-    setLoading(false);
-  }
+      setTimeSlots(ts);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -67,7 +81,9 @@ export default function NextAvailableSlotsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -141,7 +157,9 @@ export default function NextAvailableSlotsPage() {
               {availableSlots.length > 0 ? availableSlots[0].slots[0] : "—"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {availableSlots.length > 0 ? `Next: ${formatDate(availableSlots[0].date).day}, ${formatDate(availableSlots[0].date).month} ${formatDate(availableSlots[0].date).date}` : "No slots available"}
+              {availableSlots.length > 0
+                ? `Next: ${formatDate(availableSlots[0].date).day}, ${formatDate(availableSlots[0].date).month} ${formatDate(availableSlots[0].date).date}`
+                : "No slots available"}
             </p>
           </CardContent>
         </Card>
@@ -161,7 +179,9 @@ export default function NextAvailableSlotsPage() {
               <Card key={date}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Slots" }]} />
+                    <Breadcrumb
+                      items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Slots" }]}
+                    />
                     <CardTitle className="text-base flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
                       {formatted.day}, {formatted.month} {formatted.date}

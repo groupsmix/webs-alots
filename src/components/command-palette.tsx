@@ -1,13 +1,7 @@
 "use client";
 
 import { Search, X, User, Phone, CreditCard } from "lucide-react";
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  type ReactNode,
-} from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -103,15 +97,11 @@ export function CommandPalette({
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev < filtered.length - 1 ? prev + 1 : 0
-          );
+          setSelectedIndex((prev) => (prev < filtered.length - 1 ? prev + 1 : 0));
           break;
         case "ArrowUp":
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : filtered.length - 1
-          );
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filtered.length - 1));
           break;
         case "Enter":
           e.preventDefault();
@@ -126,7 +116,7 @@ export function CommandPalette({
           break;
       }
     },
-    [filtered, selectedIndex, handleClose]
+    [filtered, selectedIndex, handleClose],
   );
 
   // Scroll selected item into view
@@ -170,9 +160,7 @@ export function CommandPalette({
             aria-autocomplete="list"
             aria-controls="command-palette-list"
             aria-activedescendant={
-              filtered[selectedIndex]
-                ? `command-item-${filtered[selectedIndex].id}`
-                : undefined
+              filtered[selectedIndex] ? `command-item-${filtered[selectedIndex].id}` : undefined
             }
           />
           {query && (
@@ -208,9 +196,7 @@ export function CommandPalette({
                 aria-selected={index === selectedIndex}
                 className={cn(
                   "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  index === selectedIndex
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted"
+                  index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted",
                 )}
                 onClick={() => {
                   item.onSelect();
@@ -224,9 +210,7 @@ export function CommandPalette({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{item.label}</div>
                   {item.description && (
-                    <div className="text-xs text-muted-foreground truncate">
-                      {item.description}
-                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{item.description}</div>
                   )}
                 </div>
                 {item.badge && (
@@ -242,21 +226,15 @@ export function CommandPalette({
         {/* Footer hints */}
         <div className="flex items-center gap-4 border-t px-4 py-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-              ↑↓
-            </kbd>
+            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">↑↓</kbd>
             {t(locale, "commandPalette.navigate")}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-              ↵
-            </kbd>
+            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">↵</kbd>
             {t(locale, "commandPalette.select")}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-              esc
-            </kbd>
+            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">esc</kbd>
             {t(locale, "commandPalette.close")}
           </span>
         </div>

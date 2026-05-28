@@ -28,9 +28,21 @@ interface RebookingStatusProps {
 }
 
 const statusConfig: Record<string, { color: string; icon: typeof Clock; label: string }> = {
-  pending: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", icon: Clock, label: "Awaiting Response" },
-  rebooked: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle2, label: "Rebooked" },
-  expired: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", icon: XCircle, label: "Expired" },
+  pending: {
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    icon: Clock,
+    label: "Awaiting Response",
+  },
+  rebooked: {
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    icon: CheckCircle2,
+    label: "Rebooked",
+  },
+  expired: {
+    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    icon: XCircle,
+    label: "Expired",
+  },
 };
 
 export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
@@ -86,11 +98,15 @@ export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
         {/* Summary stats */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="text-center p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-            <p className="text-lg font-bold text-yellow-700 dark:text-yellow-300">{summary.pending}</p>
+            <p className="text-lg font-bold text-yellow-700 dark:text-yellow-300">
+              {summary.pending}
+            </p>
             <p className="text-[10px] text-muted-foreground">Pending</p>
           </div>
           <div className="text-center p-2 rounded-lg bg-green-50 dark:bg-green-950/20">
-            <p className="text-lg font-bold text-green-700 dark:text-green-300">{summary.rebooked}</p>
+            <p className="text-lg font-bold text-green-700 dark:text-green-300">
+              {summary.rebooked}
+            </p>
             <p className="text-[10px] text-muted-foreground">Rebooked</p>
           </div>
           <div className="text-center p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
@@ -131,10 +147,7 @@ export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
                   <StatusIcon className="h-3.5 w-3.5" />
                   <span className="text-xs">Appt: {req.appointment_id.slice(0, 8)}...</span>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className={`text-[10px] ${config.color}`}
-                >
+                <Badge variant="secondary" className={`text-[10px] ${config.color}`}>
                   {config.label}
                 </Badge>
               </div>

@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  ShoppingBag, AlertTriangle, Clock, Package,
-  ArrowRight, DollarSign,
-} from "lucide-react";
+import { ShoppingBag, AlertTriangle, Clock, Package, ArrowRight, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -33,22 +30,23 @@ export default function ParapharmacyDashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
     const cId = tenant?.clinicId ?? "";
-    Promise.all([
-      fetchParapharmacyProducts(cId),
-      fetchParapharmacyCategories(cId),
-    ])
+    Promise.all([fetchParapharmacyProducts(cId), fetchParapharmacyCategories(cId)])
       .then(([p, c]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setProducts(p);
         setCategories(c);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -58,7 +56,9 @@ export default function ParapharmacyDashboardPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -78,7 +78,11 @@ export default function ParapharmacyDashboardPage() {
         </div>
         <Badge variant="outline" className="text-pink-600 border-pink-600">
           <Clock className="h-3 w-3 mr-1" />
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
         </Badge>
       </div>
 
@@ -94,7 +98,10 @@ export default function ParapharmacyDashboardPage() {
                 <ShoppingBag className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/parapharmacy/catalog" className="text-sm text-pink-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/parapharmacy/catalog"
+              className="text-sm text-pink-600 hover:underline mt-2 inline-flex items-center"
+            >
               View Catalog <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -125,7 +132,10 @@ export default function ParapharmacyDashboardPage() {
                 <AlertTriangle className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/parapharmacy/inventory" className="text-sm text-pink-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/parapharmacy/inventory"
+              className="text-sm text-pink-600 hover:underline mt-2 inline-flex items-center"
+            >
               Manage Stock <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -136,7 +146,10 @@ export default function ParapharmacyDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Inventory Value</p>
-                <p className="text-3xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
+                <p className="text-3xl font-bold">
+                  {formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")}{" "}
+                  <span className="text-sm font-normal">MAD</span>
+                </p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
                 <DollarSign className="h-6 w-6" />
@@ -153,19 +166,28 @@ export default function ParapharmacyDashboardPage() {
             <h2 className="font-semibold text-lg mb-4">Product Categories</h2>
             <div className="space-y-3">
               {categories.map((cat) => (
-                <div key={cat.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div
+                  key={cat.id}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     {cat.icon && <span className="text-lg">{cat.icon}</span>}
                     <div>
                       <p className="font-medium text-sm">{cat.name}</p>
-                      {cat.description && <p className="text-xs text-muted-foreground">{cat.description}</p>}
+                      {cat.description && (
+                        <p className="text-xs text-muted-foreground">{cat.description}</p>
+                      )}
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">#{cat.sortOrder}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    #{cat.sortOrder}
+                  </Badge>
                 </div>
               ))}
               {categories.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No categories configured</p>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No categories configured
+                </p>
               )}
             </div>
           </CardContent>
@@ -176,29 +198,51 @@ export default function ParapharmacyDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">Stock Alerts</h2>
-              <Link href="/parapharmacy/inventory" className="text-sm text-pink-600 hover:underline">View All</Link>
+              <Link
+                href="/parapharmacy/inventory"
+                className="text-sm text-pink-600 hover:underline"
+              >
+                View All
+              </Link>
             </div>
             <div className="space-y-3">
               {outOfStock.map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/10 rounded-lg">
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/10 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-sm">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{p.category}</p>
                   </div>
-                  <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+                  <Badge variant="destructive" className="text-xs">
+                    Out of Stock
+                  </Badge>
                 </div>
               ))}
-              {lowStock.filter((p) => p.stockQuantity > 0).slice(0, 5).map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/10 rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">Stock: {p.stockQuantity} / Min: {p.minimumStock}</p>
+              {lowStock
+                .filter((p) => p.stockQuantity > 0)
+                .slice(0, 5)
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/10 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Stock: {p.stockQuantity} / Min: {p.minimumStock}
+                      </p>
+                    </div>
+                    <Badge className="bg-orange-100 text-orange-700 border-0 text-xs">
+                      Low Stock
+                    </Badge>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-700 border-0 text-xs">Low Stock</Badge>
-                </div>
-              ))}
+                ))}
               {outOfStock.length === 0 && lowStock.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">All stock levels healthy</p>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  All stock levels healthy
+                </p>
               )}
             </div>
           </CardContent>

@@ -1,9 +1,21 @@
 "use client";
 
 import {
-  Gift, Search, Users, Star, Crown, Award, Medal,
-  TrendingUp, Plus, CreditCard, Cake, UserPlus,
-  ArrowDown, ArrowUp, History,
+  Gift,
+  Search,
+  Users,
+  Star,
+  Crown,
+  Award,
+  Medal,
+  TrendingUp,
+  Plus,
+  CreditCard,
+  Cake,
+  UserPlus,
+  ArrowDown,
+  ArrowUp,
+  History,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -21,11 +33,34 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
 type TransactionType = "earned" | "redeemed" | "birthday_bonus" | "referral_bonus" | "expired";
 
-const tierConfig: Record<LoyaltyTier, { label: string; color: string; icon: React.ReactNode; min: number }> = {
-  bronze: { label: "Bronze", color: "bg-orange-100 text-orange-700", icon: <Medal className="h-3 w-3" />, min: 0 },
-  silver: { label: "Silver", color: "bg-gray-200 text-gray-700", icon: <Award className="h-3 w-3" />, min: 1000 },
-  gold: { label: "Gold", color: "bg-yellow-100 text-yellow-700", icon: <Star className="h-3 w-3" />, min: 3000 },
-  platinum: { label: "Platinum", color: "bg-purple-100 text-purple-700", icon: <Crown className="h-3 w-3" />, min: 5000 },
+const tierConfig: Record<
+  LoyaltyTier,
+  { label: string; color: string; icon: React.ReactNode; min: number }
+> = {
+  bronze: {
+    label: "Bronze",
+    color: "bg-orange-100 text-orange-700",
+    icon: <Medal className="h-3 w-3" />,
+    min: 0,
+  },
+  silver: {
+    label: "Silver",
+    color: "bg-gray-200 text-gray-700",
+    icon: <Award className="h-3 w-3" />,
+    min: 1000,
+  },
+  gold: {
+    label: "Gold",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: <Star className="h-3 w-3" />,
+    min: 3000,
+  },
+  platinum: {
+    label: "Platinum",
+    color: "bg-purple-100 text-purple-700",
+    icon: <Crown className="h-3 w-3" />,
+    min: 5000,
+  },
 };
 
 const transactionTypeConfig: Record<TransactionType, { label: string; color: string }> = {
@@ -52,14 +87,21 @@ export default function LoyaltyPage() {
     const controller = new AbortController();
     const cId = tenant?.clinicId ?? "";
     Promise.all([fetchLoyaltyMembers(cId), fetchLoyaltyTransactions(cId)])
-      .then(([m, t]) => { setAllMembers(m); setAllTransactions(t); })
+      .then(([m, t]) => {
+        setAllMembers(m);
+        setAllTransactions(t);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -69,16 +111,19 @@ export default function LoyaltyPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
 
   const filteredMembers = allMembers.filter(
-    (m) => m.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (m) =>
+      m.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.phone.includes(searchQuery) ||
-      m.referralCode.toLowerCase().includes(searchQuery.toLowerCase())
+      m.referralCode.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const totalMembers = allMembers.length;
@@ -94,7 +139,9 @@ export default function LoyaltyPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Loyalty Program</h1>
-          <p className="text-muted-foreground text-sm">Manage loyalty members, points, and rewards</p>
+          <p className="text-muted-foreground text-sm">
+            Manage loyalty members, points, and rewards
+          </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="mr-2 h-4 w-4" /> Add Member
@@ -118,7 +165,9 @@ export default function LoyaltyPage() {
               <TrendingUp className="h-4 w-4" />
               <p className="text-sm">Points Issued</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-600">{formatNumber(totalPointsIssued, typeof locale !== "undefined" ? locale : "fr")}</p>
+            <p className="text-2xl font-bold text-emerald-600">
+              {formatNumber(totalPointsIssued, typeof locale !== "undefined" ? locale : "fr")}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -127,7 +176,9 @@ export default function LoyaltyPage() {
               <Gift className="h-4 w-4" />
               <p className="text-sm">Points Redeemed</p>
             </div>
-            <p className="text-2xl font-bold text-purple-600">{formatNumber(totalRedeemed, typeof locale !== "undefined" ? locale : "fr")}</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {formatNumber(totalRedeemed, typeof locale !== "undefined" ? locale : "fr")}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -136,7 +187,9 @@ export default function LoyaltyPage() {
               <CreditCard className="h-4 w-4" />
               <p className="text-sm">Discount Value</p>
             </div>
-            <p className="text-2xl font-bold">{getPointsValue(totalRedeemed)} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">
+              {getPointsValue(totalRedeemed)} <span className="text-sm font-normal">MAD</span>
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -187,12 +240,19 @@ export default function LoyaltyPage() {
 
       {/* View Tabs */}
       <div className="flex gap-2 mb-4">
-        <button onClick={() => { setView("members"); setSelectedMember(null); }}
-          className={`px-4 py-2 rounded-lg text-sm ${view === "members" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+        <button
+          onClick={() => {
+            setView("members");
+            setSelectedMember(null);
+          }}
+          className={`px-4 py-2 rounded-lg text-sm ${view === "members" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+        >
           <Users className="h-4 w-4 inline mr-1" /> Members
         </button>
-        <button onClick={() => setView("transactions")}
-          className={`px-4 py-2 rounded-lg text-sm ${view === "transactions" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+        <button
+          onClick={() => setView("transactions")}
+          className={`px-4 py-2 rounded-lg text-sm ${view === "transactions" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+        >
           <History className="h-4 w-4 inline mr-1" /> Transactions
         </button>
       </div>
@@ -231,8 +291,16 @@ export default function LoyaltyPage() {
                       <Gift className="h-5 w-5" />
                       <span className="text-xs opacity-80">Pharmacie Centrale</span>
                     </div>
-                    <p className="text-2xl font-bold mb-1">{formatNumber(member.availablePoints, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">pts</span></p>
-                    <p className="text-xs opacity-80">= {getPointsValue(member.availablePoints)} MAD discount</p>
+                    <p className="text-2xl font-bold mb-1">
+                      {formatNumber(
+                        member.availablePoints,
+                        typeof locale !== "undefined" ? locale : "fr",
+                      )}{" "}
+                      <span className="text-sm font-normal">pts</span>
+                    </p>
+                    <p className="text-xs opacity-80">
+                      = {getPointsValue(member.availablePoints)} MAD discount
+                    </p>
                     <div className="flex items-center justify-between mt-3">
                       <span className="text-xs">{member.patientName}</span>
                       <span className="text-xs opacity-80">{member.referralCode}</span>
@@ -241,36 +309,68 @@ export default function LoyaltyPage() {
 
                   <div className="grid grid-cols-3 gap-2 text-center mb-3">
                     <div>
-                      <p className="text-sm font-bold text-emerald-600">{formatNumber(member.totalPoints, typeof locale !== "undefined" ? locale : "fr")}</p>
+                      <p className="text-sm font-bold text-emerald-600">
+                        {formatNumber(
+                          member.totalPoints,
+                          typeof locale !== "undefined" ? locale : "fr",
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground">Total</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-purple-600">{formatNumber(member.redeemedPoints, typeof locale !== "undefined" ? locale : "fr")}</p>
+                      <p className="text-sm font-bold text-purple-600">
+                        {formatNumber(
+                          member.redeemedPoints,
+                          typeof locale !== "undefined" ? locale : "fr",
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground">Redeemed</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold">{formatNumber(member.totalPurchases, typeof locale !== "undefined" ? locale : "fr")}</p>
+                      <p className="text-sm font-bold">
+                        {formatNumber(
+                          member.totalPurchases,
+                          typeof locale !== "undefined" ? locale : "fr",
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground">Purchases</p>
                     </div>
                   </div>
 
                   <div className="space-y-1 text-xs text-muted-foreground mb-3">
                     <p>Joined: {new Date(member.joinedAt).toLocaleDateString()}</p>
-                    <p>Birthday: {new Date(member.dateOfBirth).toLocaleDateString("en-US", { month: "long", day: "numeric" })}</p>
+                    <p>
+                      Birthday:{" "}
+                      {new Date(member.dateOfBirth).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
                     {member.referredBy && <p>Referred by: {member.referredBy}</p>}
                     {member.birthdayRewardClaimed && (
                       <Badge className="bg-pink-100 text-pink-700 border-0 text-xs">
-                        <Cake className="h-3 w-3 mr-1" /> Birthday reward claimed ({member.birthdayRewardYear})
+                        <Cake className="h-3 w-3 mr-1" /> Birthday reward claimed (
+                        {member.birthdayRewardYear})
                       </Badge>
                     )}
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 text-xs"
-                      onClick={() => { setSelectedMember(member.id); setView("transactions"); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs"
+                      onClick={() => {
+                        setSelectedMember(member.id);
+                        setView("transactions");
+                      }}
+                    >
                       <History className="mr-1 h-3 w-3" /> History
                     </Button>
-                    <Button size="sm" className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700">
+                    <Button
+                      size="sm"
+                      className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
+                    >
                       <Gift className="mr-1 h-3 w-3" /> Redeem
                     </Button>
                   </div>
@@ -307,7 +407,9 @@ export default function LoyaltyPage() {
                 </thead>
                 <tbody>
                   {memberTransactions.map((tx) => {
-                    const config = transactionTypeConfig[tx.type as TransactionType] ?? transactionTypeConfig.earned;
+                    const config =
+                      transactionTypeConfig[tx.type as TransactionType] ??
+                      transactionTypeConfig.earned;
                     const member = allMembers.find((m) => m.id === tx.memberId);
                     return (
                       <tr key={tx.id} className="border-b hover:bg-muted/50 text-sm">
@@ -319,10 +421,17 @@ export default function LoyaltyPage() {
                           </Badge>
                         </td>
                         <td className="py-3 px-2 text-muted-foreground">{tx.description}</td>
-                        <td className={`py-3 px-2 text-right font-bold ${tx.points > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        <td
+                          className={`py-3 px-2 text-right font-bold ${tx.points > 0 ? "text-emerald-600" : "text-red-600"}`}
+                        >
                           <span className="flex items-center justify-end gap-1">
-                            {tx.points > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                            {tx.points > 0 ? "+" : ""}{tx.points}
+                            {tx.points > 0 ? (
+                              <ArrowUp className="h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="h-3 w-3" />
+                            )}
+                            {tx.points > 0 ? "+" : ""}
+                            {tx.points}
                           </span>
                         </td>
                       </tr>

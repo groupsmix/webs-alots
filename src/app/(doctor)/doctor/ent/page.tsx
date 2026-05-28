@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Ear, Plus, Save, ClipboardList,
-} from "lucide-react";
+import { Ear, Plus, Save, ClipboardList } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -12,14 +10,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
 import {
-  fetchHearingTests, createHearingTest,
-  fetchENTExams, createENTExam,
-  type HearingTestView, type ENTExamView,
+  fetchHearingTests,
+  createHearingTest,
+  fetchENTExams,
+  createENTExam,
+  type HearingTestView,
+  type ENTExamView,
 } from "@/lib/data/specialists";
 
 const AUDIOGRAM_FREQUENCIES = ["250", "500", "1000", "2000", "4000", "8000"];
@@ -71,25 +78,30 @@ export default function ENTPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [t, e] = await Promise.all([
-      fetchHearingTests(user.clinic_id),
-      fetchENTExams(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [t, e] = await Promise.all([
+        fetchHearingTests(user.clinic_id),
+        fetchENTExams(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setHearingTests(t);
-    setExams(e);
-    setLoading(false);
-  }
+      setHearingTests(t);
+      setExams(e);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -99,7 +111,9 @@ export default function ENTPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -115,21 +129,44 @@ export default function ENTPage() {
       if (testForm.rightEar[f]) rightData[f] = parseInt(testForm.rightEar[f]);
     }
     const newId = await createHearingTest({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
-      test_type: testForm.testType, left_ear_data: leftData, right_ear_data: rightData,
-      interpretation: testForm.interpretation, hearing_loss_type: testForm.hearingLossType,
-      hearing_loss_degree: testForm.hearingLossDegree, notes: testForm.notes,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
+      test_type: testForm.testType,
+      left_ear_data: leftData,
+      right_ear_data: rightData,
+      interpretation: testForm.interpretation,
+      hearing_loss_type: testForm.hearingLossType,
+      hearing_loss_degree: testForm.hearingLossDegree,
+      notes: testForm.notes,
     });
     if (newId) {
-      setHearingTests((prev) => [{
-        id: newId, patientId: user.id, patientName: "",
-        testDate: new Date().toISOString().split("T")[0],
-        testType: testForm.testType, leftEarData: leftData, rightEarData: rightData,
-        interpretation: testForm.interpretation, hearingLossType: testForm.hearingLossType,
-        hearingLossDegree: testForm.hearingLossDegree, notes: testForm.notes,
-      }, ...prev]);
+      setHearingTests((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          testDate: new Date().toISOString().split("T")[0],
+          testType: testForm.testType,
+          leftEarData: leftData,
+          rightEarData: rightData,
+          interpretation: testForm.interpretation,
+          hearingLossType: testForm.hearingLossType,
+          hearingLossDegree: testForm.hearingLossDegree,
+          notes: testForm.notes,
+        },
+        ...prev,
+      ]);
     }
-    setTestForm({ testType: "pure_tone", leftEar: {}, rightEar: {}, interpretation: "", hearingLossType: "", hearingLossDegree: "", notes: "" });
+    setTestForm({
+      testType: "pure_tone",
+      leftEar: {},
+      rightEar: {},
+      interpretation: "",
+      hearingLossType: "",
+      hearingLossDegree: "",
+      notes: "",
+    });
     setShowTestForm(false);
   };
 
@@ -137,17 +174,28 @@ export default function ENTPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) return;
     const newId = await createENTExam({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
-      template_type: examForm.templateType, findings: examForm.findings,
-      diagnosis: examForm.diagnosis, plan: examForm.plan,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
+      template_type: examForm.templateType,
+      findings: examForm.findings,
+      diagnosis: examForm.diagnosis,
+      plan: examForm.plan,
     });
     if (newId) {
-      setExams((prev) => [{
-        id: newId, patientId: user.id, patientName: "",
-        examDate: new Date().toISOString().split("T")[0],
-        templateType: examForm.templateType, findings: examForm.findings,
-        diagnosis: examForm.diagnosis, plan: examForm.plan,
-      }, ...prev]);
+      setExams((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          examDate: new Date().toISOString().split("T")[0],
+          templateType: examForm.templateType,
+          findings: examForm.findings,
+          diagnosis: examForm.diagnosis,
+          plan: examForm.plan,
+        },
+        ...prev,
+      ]);
     }
     setExamForm({ templateType: "ear_exam", findings: {}, diagnosis: "", plan: "" });
     setShowExamForm(false);
@@ -190,8 +238,12 @@ export default function ENTPage() {
                         {test.testType.replace(/_/g, " ")} — {test.testDate}
                       </CardTitle>
                       <div className="flex gap-2">
-                        {test.hearingLossType && <Badge variant="outline">{test.hearingLossType}</Badge>}
-                        {test.hearingLossDegree && <Badge variant="outline">{test.hearingLossDegree}</Badge>}
+                        {test.hearingLossType && (
+                          <Badge variant="outline">{test.hearingLossType}</Badge>
+                        )}
+                        {test.hearingLossDegree && (
+                          <Badge variant="outline">{test.hearingLossDegree}</Badge>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
@@ -255,7 +307,8 @@ export default function ENTPage() {
                       <div className="flex items-center gap-2">
                         <ClipboardList className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium text-sm">
-                          {ENT_TEMPLATES.find((t) => t.value === exam.templateType)?.label ?? exam.templateType}
+                          {ENT_TEMPLATES.find((t) => t.value === exam.templateType)?.label ??
+                            exam.templateType}
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">{exam.examDate}</span>
@@ -271,10 +324,14 @@ export default function ENTPage() {
                       </div>
                     )}
                     {exam.diagnosis && (
-                      <p className="text-sm"><span className="font-medium">Diagnosis:</span> {exam.diagnosis}</p>
+                      <p className="text-sm">
+                        <span className="font-medium">Diagnosis:</span> {exam.diagnosis}
+                      </p>
                     )}
                     {exam.plan && (
-                      <p className="text-sm text-muted-foreground mt-1"><span className="font-medium">Plan:</span> {exam.plan}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <span className="font-medium">Plan:</span> {exam.plan}
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -287,12 +344,19 @@ export default function ENTPage() {
       {/* Hearing Test Dialog */}
       <Dialog open={showTestForm} onOpenChange={setShowTestForm}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Add Hearing Test</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add Hearing Test</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Test Type</Label>
-              <Select value={testForm.testType} onValueChange={(v) => setTestForm((p) => ({ ...p, testType: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={testForm.testType}
+                onValueChange={(v) => setTestForm((p) => ({ ...p, testType: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pure_tone">Pure Tone Audiometry</SelectItem>
                   <SelectItem value="speech">Speech Audiometry</SelectItem>
@@ -308,11 +372,18 @@ export default function ENTPage() {
                   {AUDIOGRAM_FREQUENCIES.map((f) => (
                     <div key={f}>
                       <Label className="text-[10px]">{f}Hz</Label>
-                      <Input type="number" className="h-7 text-xs" placeholder="dB"
+                      <Input
+                        type="number"
+                        className="h-7 text-xs"
+                        placeholder="dB"
                         value={testForm.leftEar[f] ?? ""}
-                        onChange={(e) => setTestForm((p) => ({
-                          ...p, leftEar: { ...p.leftEar, [f]: e.target.value },
-                        }))} />
+                        onChange={(e) =>
+                          setTestForm((p) => ({
+                            ...p,
+                            leftEar: { ...p.leftEar, [f]: e.target.value },
+                          }))
+                        }
+                      />
                     </div>
                   ))}
                 </div>
@@ -323,11 +394,18 @@ export default function ENTPage() {
                   {AUDIOGRAM_FREQUENCIES.map((f) => (
                     <div key={f}>
                       <Label className="text-[10px]">{f}Hz</Label>
-                      <Input type="number" className="h-7 text-xs" placeholder="dB"
+                      <Input
+                        type="number"
+                        className="h-7 text-xs"
+                        placeholder="dB"
                         value={testForm.rightEar[f] ?? ""}
-                        onChange={(e) => setTestForm((p) => ({
-                          ...p, rightEar: { ...p.rightEar, [f]: e.target.value },
-                        }))} />
+                        onChange={(e) =>
+                          setTestForm((p) => ({
+                            ...p,
+                            rightEar: { ...p.rightEar, [f]: e.target.value },
+                          }))
+                        }
+                      />
                     </div>
                   ))}
                 </div>
@@ -336,8 +414,13 @@ export default function ENTPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Loss Type</Label>
-                <Select value={testForm.hearingLossType} onValueChange={(v) => setTestForm((p) => ({ ...p, hearingLossType: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={testForm.hearingLossType}
+                  onValueChange={(v) => setTestForm((p) => ({ ...p, hearingLossType: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="conductive">Conductive</SelectItem>
@@ -348,8 +431,13 @@ export default function ENTPage() {
               </div>
               <div className="space-y-2">
                 <Label>Degree</Label>
-                <Select value={testForm.hearingLossDegree} onValueChange={(v) => setTestForm((p) => ({ ...p, hearingLossDegree: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={testForm.hearingLossDegree}
+                  onValueChange={(v) => setTestForm((p) => ({ ...p, hearingLossDegree: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="mild">Mild</SelectItem>
@@ -362,12 +450,19 @@ export default function ENTPage() {
             </div>
             <div className="space-y-2">
               <Label>Interpretation</Label>
-              <Textarea placeholder="Test interpretation..." value={testForm.interpretation}
-                onChange={(e) => setTestForm((p) => ({ ...p, interpretation: e.target.value }))} />
+              <Textarea
+                placeholder="Test interpretation..."
+                value={testForm.interpretation}
+                onChange={(e) => setTestForm((p) => ({ ...p, interpretation: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowTestForm(false)}>Cancel</Button>
-              <Button onClick={handleAddTest}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowTestForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddTest}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -376,16 +471,31 @@ export default function ENTPage() {
       {/* ENT Exam Dialog */}
       <Dialog open={showExamForm} onOpenChange={setShowExamForm}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>New ENT Exam</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>New ENT Exam</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Template</Label>
-              <Select value={examForm.templateType} onValueChange={(v) => setExamForm((p) => ({
-                ...p, templateType: v, findings: {},
-              }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={examForm.templateType}
+                onValueChange={(v) =>
+                  setExamForm((p) => ({
+                    ...p,
+                    templateType: v,
+                    findings: {},
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {ENT_TEMPLATES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {ENT_TEMPLATES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -394,27 +504,42 @@ export default function ENTPage() {
               {(TEMPLATE_FIELDS[examForm.templateType] ?? []).map((field) => (
                 <div key={field} className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{field}</Label>
-                  <Input placeholder={`${field} findings...`}
+                  <Input
+                    placeholder={`${field} findings...`}
                     value={examForm.findings[field] ?? ""}
-                    onChange={(e) => setExamForm((p) => ({
-                      ...p, findings: { ...p.findings, [field]: e.target.value },
-                    }))} />
+                    onChange={(e) =>
+                      setExamForm((p) => ({
+                        ...p,
+                        findings: { ...p.findings, [field]: e.target.value },
+                      }))
+                    }
+                  />
                 </div>
               ))}
             </div>
             <div className="space-y-2">
               <Label>Diagnosis</Label>
-              <Textarea placeholder="Diagnosis..." value={examForm.diagnosis}
-                onChange={(e) => setExamForm((p) => ({ ...p, diagnosis: e.target.value }))} />
+              <Textarea
+                placeholder="Diagnosis..."
+                value={examForm.diagnosis}
+                onChange={(e) => setExamForm((p) => ({ ...p, diagnosis: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Plan</Label>
-              <Textarea placeholder="Treatment plan..." value={examForm.plan}
-                onChange={(e) => setExamForm((p) => ({ ...p, plan: e.target.value }))} />
+              <Textarea
+                placeholder="Treatment plan..."
+                value={examForm.plan}
+                onChange={(e) => setExamForm((p) => ({ ...p, plan: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowExamForm(false)}>Cancel</Button>
-              <Button onClick={handleAddExam}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowExamForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddExam}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>

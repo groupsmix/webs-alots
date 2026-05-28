@@ -71,10 +71,7 @@ const LABELS = {
  * Calculate estimated wait time for each patient based on their position
  * in the queue and the average consultation duration.
  */
-function calculateEstimatedWait(
-  patients: QueuePatient[],
-  avgMinutes: number,
-): QueuePatient[] {
+function calculateEstimatedWait(patients: QueuePatient[], avgMinutes: number): QueuePatient[] {
   const waiting = patients.filter((p) => p.status === "waiting");
   return patients.map((p) => {
     if (p.status !== "waiting") return p;
@@ -157,7 +154,10 @@ export function TVQueueDisplay({
     if (calledTicket != null) {
       const timer1 = setTimeout(() => setFlashCalled(true), 0);
       const timer2 = setTimeout(() => setFlashCalled(false), 3000);
-      return () => { clearTimeout(timer1); clearTimeout(timer2); };
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [calledTicket]);
 
@@ -289,11 +289,7 @@ export function TVQueueDisplay({
                 {String(currentNumber).padStart(2, "0")}
               </span>
             </div>
-            {inConsultation && (
-              <p className="text-xl mt-4 text-blue-100">
-                {inConsultation.name}
-              </p>
-            )}
+            {inConsultation && <p className="text-xl mt-4 text-blue-100">{inConsultation.name}</p>}
           </div>
 
           {/* Called patient notification */}
@@ -327,17 +323,13 @@ export function TVQueueDisplay({
                 <div
                   key={patient.id}
                   className={`flex items-center justify-between p-4 rounded-xl transition-all ${
-                    index === 0
-                      ? "bg-yellow-500/20 border border-yellow-400/30"
-                      : "bg-white/5"
+                    index === 0 ? "bg-yellow-500/20 border border-yellow-400/30" : "bg-white/5"
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
-                        index === 0
-                          ? "bg-yellow-500 text-yellow-900"
-                          : "bg-white/10"
+                        index === 0 ? "bg-yellow-500 text-yellow-900" : "bg-white/10"
                       }`}
                     >
                       {String(patient.ticketNumber).padStart(2, "0")}
@@ -345,8 +337,7 @@ export function TVQueueDisplay({
                     <div>
                       <p className="font-medium text-lg">{patient.name}</p>
                       <p className="text-sm text-blue-200 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        ~{patient.estimatedWait} {labels.minutes}
+                        <Clock className="h-3 w-3" />~{patient.estimatedWait} {labels.minutes}
                       </p>
                     </div>
                   </div>
@@ -381,9 +372,14 @@ export function TVQueueDisplay({
             </div>
             <div className="bg-white/10 rounded-xl p-4 text-center">
               <p className="text-3xl font-bold">
-                ~{waitingPatients.length > 0 ? waitingPatients[waitingPatients.length - 1].estimatedWait : 0}
+                ~
+                {waitingPatients.length > 0
+                  ? waitingPatients[waitingPatients.length - 1].estimatedWait
+                  : 0}
               </p>
-              <p className="text-xs text-blue-200">{labels.estimatedWait} ({labels.minutes})</p>
+              <p className="text-xs text-blue-200">
+                {labels.estimatedWait} ({labels.minutes})
+              </p>
             </div>
           </div>
 

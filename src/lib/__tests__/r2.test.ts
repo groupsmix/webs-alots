@@ -117,9 +117,9 @@ describe("buildUploadKey secret enforcement (audit finding #8)", () => {
     delete process.env.R2_SECRET_ACCESS_KEY;
     vi.stubEnv("NODE_ENV", "production");
 
-    expect(() =>
-      buildUploadKey("clinic-1", "documents", "file.pdf"),
-    ).toThrow(/R2_SIGNED_URL_SECRET is required in production/);
+    expect(() => buildUploadKey("clinic-1", "documents", "file.pdf")).toThrow(
+      /R2_SIGNED_URL_SECRET is required in production/,
+    );
   });
 
   it("does not silently derive a key from a hardcoded salt in production", () => {

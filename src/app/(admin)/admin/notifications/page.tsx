@@ -46,17 +46,35 @@ import { formatDisplayDate } from "@/lib/utils";
 // ---- Status & Channel Badges ----
 
 const statusConfig: Record<string, { color: string; label: string }> = {
-  pending: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", label: "Pending" },
+  pending: {
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    label: "Pending",
+  },
   sent: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Sent" },
-  delivered: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "Delivered" },
+  delivered: {
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    label: "Delivered",
+  },
   failed: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", label: "Failed" },
-  read: { color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200", label: "Read" },
+  read: {
+    color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    label: "Read",
+  },
 };
 
 const channelConfig: Record<string, { color: string; label: string }> = {
-  whatsapp: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "WhatsApp" },
-  in_app: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "In-App" },
-  email: { color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", label: "Email" },
+  whatsapp: {
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    label: "WhatsApp",
+  },
+  in_app: {
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    label: "In-App",
+  },
+  email: {
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    label: "Email",
+  },
   sms: { color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200", label: "SMS" },
 };
 
@@ -108,7 +126,10 @@ export default function AdminNotificationsPage() {
     async function loadLogs() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
 
       const supabase = createClient();
       const { data, error: dbError } = await supabase
@@ -133,7 +154,9 @@ export default function AdminNotificationsPage() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   // ---- Notification Log Filtering ----
@@ -162,7 +185,9 @@ export default function AdminNotificationsPage() {
   };
 
   // ---- Stats ----
-  const totalSent = logs.filter((l) => l.status === "sent" || l.status === "delivered" || l.status === "read").length;
+  const totalSent = logs.filter(
+    (l) => l.status === "sent" || l.status === "delivered" || l.status === "read",
+  ).length;
   const totalFailed = logs.filter((l) => l.status === "failed").length;
   const totalWhatsApp = logs.filter((l) => l.channel === "whatsapp").length;
   const totalInApp = logs.filter((l) => l.channel === "in_app").length;
@@ -201,7 +226,9 @@ export default function AdminNotificationsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Notifications" }]} />
+      <Breadcrumb
+        items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Notifications" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Notification Center</h1>
@@ -332,7 +359,9 @@ export default function AdminNotificationsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-medium text-sm">{log.title}</span>
-                          <Badge className={`text-[10px] ${channelConfig[log.channel]?.color || ""}`}>
+                          <Badge
+                            className={`text-[10px] ${channelConfig[log.channel]?.color || ""}`}
+                          >
                             {channelConfig[log.channel]?.label || log.channel}
                           </Badge>
                           <Badge className={`text-[10px] ${statusConfig[log.status]?.color || ""}`}>
@@ -344,10 +373,16 @@ export default function AdminNotificationsPage() {
                         </div>
                         <p className="text-sm text-muted-foreground">{log.body}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>To: <strong>{log.recipientName}</strong> ({log.recipientRole})</span>
+                          <span>
+                            To: <strong>{log.recipientName}</strong> ({log.recipientRole})
+                          </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {formatDisplayDate(new Date(log.createdAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}
+                            {formatDisplayDate(
+                              new Date(log.createdAt),
+                              typeof locale !== "undefined" ? locale : "fr",
+                              "datetime",
+                            )}
                           </span>
                         </div>
                         {log.error && (
@@ -358,7 +393,9 @@ export default function AdminNotificationsPage() {
                         )}
                       </div>
                       <div className="shrink-0">
-                        {log.status === "delivered" && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                        {log.status === "delivered" && (
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        )}
                         {log.status === "failed" && <XCircle className="h-5 w-5 text-red-600" />}
                         {log.status === "read" && <Eye className="h-5 w-5 text-purple-600" />}
                         {log.status === "sent" && <Send className="h-5 w-5 text-blue-600" />}
@@ -423,7 +460,9 @@ export default function AdminNotificationsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingTemplate(editingTemplate === template.id ? null : template.id)}
+                          onClick={() =>
+                            setEditingTemplate(editingTemplate === template.id ? null : template.id)
+                          }
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -443,7 +482,9 @@ export default function AdminNotificationsPage() {
                           <p className="text-xs font-medium mb-1">In-App Message</p>
                           <Textarea
                             value={template.body}
-                            onChange={(e) => updateTemplateBody(template.id, "body", e.target.value)}
+                            onChange={(e) =>
+                              updateTemplateBody(template.id, "body", e.target.value)
+                            }
                             className="min-h-[60px]"
                           />
                         </div>
@@ -452,7 +493,9 @@ export default function AdminNotificationsPage() {
                             <p className="text-xs font-medium mb-1">WhatsApp Message</p>
                             <Textarea
                               value={template.whatsappBody}
-                              onChange={(e) => updateTemplateBody(template.id, "whatsappBody", e.target.value)}
+                              onChange={(e) =>
+                                updateTemplateBody(template.id, "whatsappBody", e.target.value)
+                              }
                               className="min-h-[60px]"
                             />
                           </div>
@@ -492,37 +535,48 @@ export default function AdminNotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
-                {(Object.entries(triggerMetadata) as [NotificationTrigger, { label: string; description: string }][]).map(
-                  ([trigger, meta]) => {
-                    const template = templates.find((t) => t.trigger === trigger);
-                    const logCount = logs.filter((l) => l.trigger === trigger).length;
-                    return (
-                      <div key={trigger} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-sm">{meta.label}</span>
-                          <div className="flex items-center gap-1">
-                            {template ? (
-                              <Badge variant={template.enabled ? "default" : "secondary"} className="text-[10px]">
-                                {template.enabled ? "Active" : "Inactive"}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px]">No Template</Badge>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">{meta.description}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {template && (
-                            <span>
-                              Channels: {template.channels.map((ch) => channelConfig[ch]?.label || ch).join(", ")}
-                            </span>
+                {(
+                  Object.entries(triggerMetadata) as [
+                    NotificationTrigger,
+                    { label: string; description: string },
+                  ][]
+                ).map(([trigger, meta]) => {
+                  const template = templates.find((t) => t.trigger === trigger);
+                  const logCount = logs.filter((l) => l.trigger === trigger).length;
+                  return (
+                    <div key={trigger} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm">{meta.label}</span>
+                        <div className="flex items-center gap-1">
+                          {template ? (
+                            <Badge
+                              variant={template.enabled ? "default" : "secondary"}
+                              className="text-[10px]"
+                            >
+                              {template.enabled ? "Active" : "Inactive"}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">
+                              No Template
+                            </Badge>
                           )}
-                          <span>{logCount} sent</span>
                         </div>
                       </div>
-                    );
-                  },
-                )}
+                      <p className="text-xs text-muted-foreground mb-2">{meta.description}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {template && (
+                          <span>
+                            Channels:{" "}
+                            {template.channels
+                              .map((ch) => channelConfig[ch]?.label || ch)
+                              .join(", ")}
+                          </span>
+                        )}
+                        <span>{logCount} sent</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -565,11 +619,13 @@ export default function AdminNotificationsPage() {
               <div className="text-xs text-muted-foreground">
                 <p className="font-medium mb-1">Sample Variables Used:</p>
                 <div className="grid grid-cols-2 gap-1">
-                  {Object.entries(previewVariables).slice(0, 8).map(([key, val]) => (
-                    <span key={key}>
-                      <code className="bg-muted px-1 rounded">{`{{${key}}}`}</code> = {val}
-                    </span>
-                  ))}
+                  {Object.entries(previewVariables)
+                    .slice(0, 8)
+                    .map(([key, val]) => (
+                      <span key={key}>
+                        <code className="bg-muted px-1 rounded">{`{{${key}}}`}</code> = {val}
+                      </span>
+                    ))}
                 </div>
               </div>
             </div>

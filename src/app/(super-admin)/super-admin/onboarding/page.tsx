@@ -126,24 +126,15 @@ export default function OnboardingPage() {
   }
 
   function addUser() {
-    setUsers((prev) => [
-      ...prev,
-      { role: "doctor", name: "", phone: "", email: "" },
-    ]);
+    setUsers((prev) => [...prev, { role: "doctor", name: "", phone: "", email: "" }]);
   }
 
   function removeUser(index: number) {
     setUsers((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function updateUser(
-    index: number,
-    field: keyof UserFormData,
-    value: string,
-  ) {
-    setUsers((prev) =>
-      prev.map((u, i) => (i === index ? { ...u, [field]: value } : u)),
-    );
+  function updateUser(index: number, field: keyof UserFormData, value: string) {
+    setUsers((prev) => prev.map((u, i) => (i === index ? { ...u, [field]: value } : u)));
   }
 
   function addService() {
@@ -157,22 +148,14 @@ export default function OnboardingPage() {
     setServices((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function updateService(
-    index: number,
-    field: keyof ServiceFormData,
-    value: string,
-  ) {
-    setServices((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
-    );
+  function updateService(index: number, field: keyof ServiceFormData, value: string) {
+    setServices((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
   }
 
   function addSlotToDoctor(doctorIndex: number) {
     setDoctorSlots((prev) =>
       prev.map((d, i) =>
-        i === doctorIndex
-          ? { ...d, slots: [...d.slots, { ...DEFAULT_SLOT }] }
-          : d,
+        i === doctorIndex ? { ...d, slots: [...d.slots, { ...DEFAULT_SLOT }] } : d,
       ),
     );
   }
@@ -180,9 +163,7 @@ export default function OnboardingPage() {
   function removeSlotFromDoctor(doctorIndex: number, slotIndex: number) {
     setDoctorSlots((prev) =>
       prev.map((d, i) =>
-        i === doctorIndex
-          ? { ...d, slots: d.slots.filter((_, si) => si !== slotIndex) }
-          : d,
+        i === doctorIndex ? { ...d, slots: d.slots.filter((_, si) => si !== slotIndex) } : d,
       ),
     );
   }
@@ -198,9 +179,7 @@ export default function OnboardingPage() {
         i === doctorIndex
           ? {
               ...d,
-              slots: d.slots.map((s, si) =>
-                si === slotIndex ? { ...s, [field]: value } : s,
-              ),
+              slots: d.slots.map((s, si) => (si === slotIndex ? { ...s, [field]: value } : s)),
             }
           : d,
       ),
@@ -220,7 +199,9 @@ export default function OnboardingPage() {
     }
     // Validate subdomain format
     if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(clinicForm.subdomain)) {
-      setError("Subdomain must contain only lowercase letters, numbers, and hyphens (cannot start or end with a hyphen)");
+      setError(
+        "Subdomain must contain only lowercase letters, numbers, and hyphens (cannot start or end with a hyphen)",
+      );
       return;
     }
     // Validate email format if provided
@@ -275,7 +256,9 @@ export default function OnboardingPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     for (const u of validUsers) {
       if (u.email && !emailRegex.test(u.email)) {
-        setError(`Invalid email for "${u.name}": ${u.email}. Please enter a valid email address or leave it empty.`);
+        setError(
+          `Invalid email for "${u.name}": ${u.email}. Please enter a valid email address or leave it empty.`,
+        );
         return;
       }
     }
@@ -287,9 +270,13 @@ export default function OnboardingPage() {
     }
 
     // Require email for all clinic_admin users — they need login credentials
-    const adminsWithoutEmail = validUsers.filter((u) => u.role === "clinic_admin" && !u.email?.trim());
+    const adminsWithoutEmail = validUsers.filter(
+      (u) => u.role === "clinic_admin" && !u.email?.trim(),
+    );
     if (adminsWithoutEmail.length > 0) {
-      setError(`Email is required for Clinic Admin "${adminsWithoutEmail[0].name || "(unnamed)"}" — they need an email to log in.`);
+      setError(
+        `Email is required for Clinic Admin "${adminsWithoutEmail[0].name || "(unnamed)"}" — they need an email to log in.`,
+      );
       return;
     }
 
@@ -306,7 +293,12 @@ export default function OnboardingPage() {
           email: u.email || undefined,
         };
         const user = await createUser(input);
-        created.push({ id: user.id, name: user.name, role: user.role, email: user.email ?? undefined });
+        created.push({
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          email: user.email ?? undefined,
+        });
       }
       setCreatedUsers(created);
       addToast(`${created.length} staff member(s) created`, "success");
@@ -318,16 +310,76 @@ export default function OnboardingPage() {
           doctorId: d.id,
           doctorName: d.name,
           slots: [
-            { day_of_week: 1, start_time: "09:00", end_time: "12:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 1, start_time: "14:00", end_time: "17:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 2, start_time: "09:00", end_time: "12:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 2, start_time: "14:00", end_time: "17:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 3, start_time: "09:00", end_time: "12:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 3, start_time: "14:00", end_time: "17:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 4, start_time: "09:00", end_time: "12:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 4, start_time: "14:00", end_time: "17:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 5, start_time: "09:00", end_time: "12:00", max_capacity: "1", buffer_minutes: "10" },
-            { day_of_week: 5, start_time: "14:00", end_time: "17:00", max_capacity: "1", buffer_minutes: "10" },
+            {
+              day_of_week: 1,
+              start_time: "09:00",
+              end_time: "12:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 1,
+              start_time: "14:00",
+              end_time: "17:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 2,
+              start_time: "09:00",
+              end_time: "12:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 2,
+              start_time: "14:00",
+              end_time: "17:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 3,
+              start_time: "09:00",
+              end_time: "12:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 3,
+              start_time: "14:00",
+              end_time: "17:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 4,
+              start_time: "09:00",
+              end_time: "12:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 4,
+              start_time: "14:00",
+              end_time: "17:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 5,
+              start_time: "09:00",
+              end_time: "12:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
+            {
+              day_of_week: 5,
+              start_time: "14:00",
+              end_time: "17:00",
+              max_capacity: "1",
+              buffer_minutes: "10",
+            },
           ],
         })),
       );
@@ -392,7 +444,8 @@ export default function OnboardingPage() {
           doctor.doctorId,
           createdClinicId,
           doctor.slots.map((s) => ({
-            day_of_week: typeof s.day_of_week === "string" ? parseInt(s.day_of_week as string) : s.day_of_week,
+            day_of_week:
+              typeof s.day_of_week === "string" ? parseInt(s.day_of_week as string) : s.day_of_week,
             start_time: s.start_time,
             end_time: s.end_time,
             max_capacity: parseInt(s.max_capacity) || 1,
@@ -430,7 +483,10 @@ export default function OnboardingPage() {
               <strong>{clinicForm.name}</strong> has been successfully set up.
             </p>
             <div className="text-sm text-muted-foreground space-y-1 mb-6">
-              <p>Clinic ID: <code className="bg-muted px-2 py-0.5 rounded text-xs">{createdClinicId}</code></p>
+              <p>
+                Clinic ID:{" "}
+                <code className="bg-muted px-2 py-0.5 rounded text-xs">{createdClinicId}</code>
+              </p>
               <p>{createdUsers.length} staff member(s) created</p>
               <p>{services.filter((s) => s.name.trim()).length} service(s) added</p>
             </div>
@@ -461,7 +517,11 @@ export default function OnboardingPage() {
                           )}
                         </td>
                         <td className="py-2 font-mono text-xs">
-                          {u.email ? STAFF_DEFAULT_PASSWORD : <span className="text-muted-foreground">—</span>}
+                          {u.email ? (
+                            STAFF_DEFAULT_PASSWORD
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -475,7 +535,8 @@ export default function OnboardingPage() {
               )}
               {createdUsers.some((u) => !u.email) && (
                 <p className="text-xs text-destructive mt-2">
-                  Staff without email cannot log in. Edit their profile in Admin to add an email and enable access.
+                  Staff without email cannot log in. Edit their profile in Admin to add an email and
+                  enable access.
                 </p>
               )}
             </div>
@@ -506,11 +567,14 @@ export default function OnboardingPage() {
                       className="text-primary underline font-mono"
                     >
                       {clinicForm.subdomain}.oltigo.com/login
-                    </a>
-                    {" "}using the credentials above.
+                    </a>{" "}
+                    using the credentials above.
                   </p>
                 )}
-                <p>Branding, colors, and website content can be customized from <strong>Admin → Branding</strong>.</p>
+                <p>
+                  Branding, colors, and website content can be customized from{" "}
+                  <strong>Admin → Branding</strong>.
+                </p>
               </div>
             </div>
             <div className="flex gap-3 justify-center">
@@ -530,10 +594,9 @@ export default function OnboardingPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Onboarding" },
-      ]} />
+      <Breadcrumb
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Onboarding" }]}
+      />
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Client Onboarding</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -546,26 +609,18 @@ export default function OnboardingPage() {
         {STEPS.map((s, i) => (
           <div key={s.id} className="flex items-center">
             {i > 0 && (
-              <div
-                className={`h-px w-8 mx-2 ${
-                  step > s.id - 1 ? "bg-primary" : "bg-border"
-                }`}
-              />
+              <div className={`h-px w-8 mx-2 ${step > s.id - 1 ? "bg-primary" : "bg-border"}`} />
             )}
             <div
               className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
                 step === s.id
                   ? "bg-primary text-primary-foreground"
                   : step > s.id
-                  ? "bg-primary/10 text-primary"
-                  : "bg-muted text-muted-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
               }`}
             >
-              {step > s.id ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <s.icon className="h-3.5 w-3.5" />
-              )}
+              {step > s.id ? <Check className="h-3.5 w-3.5" /> : <s.icon className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">{s.label}</span>
               <span className="sm:hidden">{s.id}</span>
             </div>

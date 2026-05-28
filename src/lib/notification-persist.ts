@@ -60,14 +60,20 @@ export async function insertInAppNotification(
       .single();
 
     if (error) {
-      logger.error("Failed to insert in-app notification", { context: "notification-persist", error });
+      logger.error("Failed to insert in-app notification", {
+        context: "notification-persist",
+        error,
+      });
       return { success: false, error: error.message };
     }
 
     return { success: true, id: data?.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    logger.error("Notification persistence failed", { context: "notification-persist", error: err });
+    logger.error("Notification persistence failed", {
+      context: "notification-persist",
+      error: err,
+    });
     return { success: false, error: message };
   }
 }

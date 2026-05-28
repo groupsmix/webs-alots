@@ -91,13 +91,10 @@ async function importEncryptionKey(): Promise<CryptoKey | null> {
 
   const keyBytes = hexToBytes(hexKey);
 
-  return crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "AES-GCM" },
-    false,
-    ["encrypt", "decrypt"],
-  );
+  return crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, [
+    "encrypt",
+    "decrypt",
+  ]);
 }
 
 /**
@@ -141,9 +138,7 @@ export function isEncryptionConfigured(): boolean {
  *
  * Returns null if encryption is not configured.
  */
-export async function encryptBuffer(
-  plaintext: Buffer | Uint8Array,
-): Promise<Buffer | null> {
+export async function encryptBuffer(plaintext: Buffer | Uint8Array): Promise<Buffer | null> {
   const key = await getEncryptionKey();
   if (!key) return null;
 
@@ -171,9 +166,7 @@ export async function encryptBuffer(
  *
  * Returns null if decryption fails or encryption is not configured.
  */
-export async function decryptBuffer(
-  encrypted: Buffer | Uint8Array,
-): Promise<Buffer | null> {
+export async function decryptBuffer(encrypted: Buffer | Uint8Array): Promise<Buffer | null> {
   const key = await getEncryptionKey();
   if (!key) return null;
 
@@ -189,11 +182,7 @@ export async function decryptBuffer(
   const ciphertext = encrypted.slice(12);
 
   try {
-    const plaintext = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      key,
-      ciphertext,
-    );
+    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
 
     return Buffer.from(plaintext);
   } catch (err) {
@@ -204,11 +193,7 @@ export async function decryptBuffer(
     const oldKey = await getOldEncryptionKey();
     if (oldKey) {
       try {
-        const plaintext = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv },
-          oldKey,
-          ciphertext,
-        );
+        const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, oldKey, ciphertext);
         logger.warn("Decrypted with PHI_ENCRYPTION_KEY_OLD — file needs re-encryption", {
           context: "encryption",
         });

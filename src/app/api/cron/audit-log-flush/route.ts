@@ -26,30 +26,36 @@ export async function GET(request: NextRequest) {
   let flushed = 0;
   let failed = 0;
 
-  const { data: pending, error: fetchErr } = await (admin as never as {
-    from(t: string): {
-      select(cols: string): {
-        order(col: string, opts: { ascending: boolean }): {
-          limit(n: number): Promise<{
-            data: Array<{
-              id: string;
-              event_type: string;
-              actor_id: string | null;
-              clinic_id: string | null;
-              entity_type: string | null;
-              entity_id: string | null;
-              metadata: Record<string, unknown> | null;
-              ip_address: string | null;
-              user_agent: string | null;
-              retry_count: number;
-              created_at: string;
-            }> | null;
-            error: { message: string } | null;
-          }>;
+  const { data: pending, error: fetchErr } = await (
+    admin as never as {
+      from(t: string): {
+        select(cols: string): {
+          order(
+            col: string,
+            opts: { ascending: boolean },
+          ): {
+            limit(n: number): Promise<{
+              data: Array<{
+                id: string;
+                event_type: string;
+                actor_id: string | null;
+                clinic_id: string | null;
+                entity_type: string | null;
+                entity_id: string | null;
+                metadata: Record<string, unknown> | null;
+                ip_address: string | null;
+                user_agent: string | null;
+                retry_count: number;
+                created_at: string;
+              }> | null;
+              error: { message: string } | null;
+            }>;
+          };
         };
       };
-    };
-  }).from("pending_audit_logs")
+    }
+  )
+    .from("pending_audit_logs")
     .select("*")
     .order("created_at", { ascending: true })
     .limit(BATCH_SIZE);
@@ -77,19 +83,17 @@ export async function GET(request: NextRequest) {
       };
     };
 
-    const { error: insertErr } = await untypedAdmin
-      .from("activity_logs")
-      .insert({
-        event_type: row.event_type,
-        actor_id: row.actor_id,
-        clinic_id: row.clinic_id,
-        entity_type: row.entity_type,
-        entity_id: row.entity_id,
-        metadata: row.metadata,
-        ip_address: row.ip_address,
-        user_agent: row.user_agent,
-        created_at: row.created_at,
-      });
+    const { error: insertErr } = await untypedAdmin.from("activity_logs").insert({
+      event_type: row.event_type,
+      actor_id: row.actor_id,
+      clinic_id: row.clinic_id,
+      entity_type: row.entity_type,
+      entity_id: row.entity_id,
+      metadata: row.metadata,
+      ip_address: row.ip_address,
+      user_agent: row.user_agent,
+      created_at: row.created_at,
+    });
 
     if (!insertErr) {
       await untypedAdmin.from("pending_audit_logs").delete().eq("id", row.id);

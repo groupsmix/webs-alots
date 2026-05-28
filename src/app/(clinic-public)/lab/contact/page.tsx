@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Contact — Laboratoire",
-  description: "Contactez notre laboratoire pour toute question concernant vos analyses ou résultats.",
+  description:
+    "Contactez notre laboratoire pour toute question concernant vos analyses ou résultats.",
 };
 
 export default function LabContactPage() {
@@ -28,7 +29,9 @@ export default function LabContactPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Phone</h3>
                   <p className="text-sm text-muted-foreground">+212 5 22 40 50 60</p>
-                  <p className="text-xs text-muted-foreground mt-1">Available during business hours</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Available during business hours
+                  </p>
                 </div>
               </div>
 
@@ -69,7 +72,10 @@ export default function LabContactPage() {
                 { day: "Saturday", hours: "07:00 - 13:00" },
                 { day: "Sunday", hours: "Closed" },
               ].map((item) => (
-                <div key={item.day} className="flex justify-between text-sm py-2 border-b last:border-0">
+                <div
+                  key={item.day}
+                  className="flex justify-between text-sm py-2 border-b last:border-0"
+                >
                   <span className="text-muted-foreground">{item.day}</span>
                   <span className="font-medium">{item.hours}</span>
                 </div>

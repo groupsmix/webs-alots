@@ -32,7 +32,5 @@ export function TenantProvider({
   tenant: ClientTenantInfo | null;
   children: ReactNode;
 }) {
-  return (
-    <TenantContext.Provider value={tenant}>{children}</TenantContext.Provider>
-  );
+  return <TenantContext.Provider value={tenant}>{children}</TenantContext.Provider>;
 }

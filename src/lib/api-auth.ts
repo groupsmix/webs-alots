@@ -60,22 +60,20 @@ export async function authenticateApiKey(
   // client to `any` just for this query. Row shape is validated at use.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const untypedClient = supabase as any;
-  const { data: candidates } = await untypedClient
+  const { data: candidates } = (await untypedClient
     .from("clinic_api_keys")
     .select("clinic_id, active, key_hash, expires_at, scopes")
     .eq("key_prefix", keyPrefix)
     .eq("active", true)
-    .limit(50) as {
-      data:
-        | Array<{
-            clinic_id: string;
-            active: boolean;
-            key_hash: string | null;
-            expires_at: string | null;
-            scopes: string[] | null;
-          }>
-        | null;
-    };
+    .limit(50)) as {
+    data: Array<{
+      clinic_id: string;
+      active: boolean;
+      key_hash: string | null;
+      expires_at: string | null;
+      scopes: string[] | null;
+    }> | null;
+  };
 
   if (!candidates || candidates.length === 0) return null;
 
@@ -120,7 +118,8 @@ export async function authenticateApiKey(
         .update({ last_used_at: new Date().toISOString() })
         .eq("key_hash", keyHash)
         .then(({ error }) => {
-          if (error) logger.warn("Failed to update API key last_used_at", { context: "api-auth", error });
+          if (error)
+            logger.warn("Failed to update API key last_used_at", { context: "api-auth", error });
         });
 
       // Append-only audit log for API key usage (durable forensics).

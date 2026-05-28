@@ -1,6 +1,12 @@
 "use client";
 
-import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap, type TableName } from "./_core";
+import {
+  fetchRows,
+  ensureLookups,
+  _activeUserMap,
+  _activeServiceMap,
+  type TableName,
+} from "./_core";
 import { fetchTodayAppointments } from "./appointments";
 
 // ─────────────────────────────────────────────
@@ -69,7 +75,9 @@ export interface WaitingRoomEntry {
 export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEntry[]> {
   const todayAppts = await fetchTodayAppointments(clinicId);
   return todayAppts
-    .filter((a) => a.status === "confirmed" || a.status === "checked-in" || a.status === "checked_in")
+    .filter(
+      (a) => a.status === "confirmed" || a.status === "checked-in" || a.status === "checked_in",
+    )
     .map((a) => ({
       id: a.id,
       patientName: a.patientName,
@@ -207,4 +215,3 @@ export async function fetchInstallmentPlans(clinicId: string): Promise<Installme
     };
   });
 }
-

@@ -13,11 +13,11 @@ This guide documents how to submit WhatsApp message templates for approval throu
 
 Meta classifies templates into three categories:
 
-| Category | Description | Approval Speed |
-|---|---|---|
-| **UTILITY** | Transaction-related (confirmations, reminders, receipts) | Usually fast (minutes to hours) |
-| **MARKETING** | Promotions, offers, re-engagement | Slower (hours to days) |
-| **AUTHENTICATION** | OTP / verification codes | Fast |
+| Category           | Description                                              | Approval Speed                  |
+| ------------------ | -------------------------------------------------------- | ------------------------------- |
+| **UTILITY**        | Transaction-related (confirmations, reminders, receipts) | Usually fast (minutes to hours) |
+| **MARKETING**      | Promotions, offers, re-engagement                        | Slower (hours to days)          |
+| **AUTHENTICATION** | OTP / verification codes                                 | Fast                            |
 
 Most clinic templates fall under **UTILITY** (appointment confirmations, reminders, prescriptions, payments).
 
@@ -71,106 +71,106 @@ Our code uses named `{{variable_name}}` placeholders, but Meta requires position
 
 ### 1. `booking_confirmation_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `date` | 2026-03-20 |
-| `{{4}}` | `time` | 09:00 |
-| `{{5}}` | `service_name` | استشارة عامة |
-| `{{6}}` | `clinic_address` | 123 شارع الحسن الثاني |
-| `{{7}}` | `manage_url` | https://clinic.ma/manage/123 |
-| `{{8}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable         | Example                      |
+| -------- | ---------------- | ---------------------------- |
+| `{{1}}`  | `patient_name`   | كريم                         |
+| `{{2}}`  | `doctor_name`    | أحمد بنعلي                   |
+| `{{3}}`  | `date`           | 2026-03-20                   |
+| `{{4}}`  | `time`           | 09:00                        |
+| `{{5}}`  | `service_name`   | استشارة عامة                 |
+| `{{6}}`  | `clinic_address` | 123 شارع الحسن الثاني        |
+| `{{7}}`  | `manage_url`     | https://clinic.ma/manage/123 |
+| `{{8}}`  | `clinic_name`    | عيادة الصحة                  |
 
 ### 2. `reminder_24h_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `time` | 09:00 |
-| `{{4}}` | `clinic_name` | عيادة الصحة |
-| `{{5}}` | `clinic_address` | 123 شارع الحسن الثاني |
+| Position | Variable         | Example               |
+| -------- | ---------------- | --------------------- |
+| `{{1}}`  | `patient_name`   | كريم                  |
+| `{{2}}`  | `doctor_name`    | أحمد بنعلي            |
+| `{{3}}`  | `time`           | 09:00                 |
+| `{{4}}`  | `clinic_name`    | عيادة الصحة           |
+| `{{5}}`  | `clinic_address` | 123 شارع الحسن الثاني |
 
 ### 3. `cancellation_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `date` | 2026-03-20 |
-| `{{4}}` | `time` | 09:00 |
-| `{{5}}` | `clinic_phone` | +212 6 00 00 00 00 |
-| `{{6}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable       | Example            |
+| -------- | -------------- | ------------------ |
+| `{{1}}`  | `patient_name` | كريم               |
+| `{{2}}`  | `doctor_name`  | أحمد بنعلي         |
+| `{{3}}`  | `date`         | 2026-03-20         |
+| `{{4}}`  | `time`         | 09:00              |
+| `{{5}}`  | `clinic_phone` | +212 6 00 00 00 00 |
+| `{{6}}`  | `clinic_name`  | عيادة الصحة        |
 
 ### 4. `prescription_ready_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `clinic_name` | عيادة الصحة |
-| `{{4}}` | `clinic_address` | 123 شارع الحسن الثاني |
+| Position | Variable         | Example               |
+| -------- | ---------------- | --------------------- |
+| `{{1}}`  | `patient_name`   | كريم                  |
+| `{{2}}`  | `doctor_name`    | أحمد بنعلي            |
+| `{{3}}`  | `clinic_name`    | عيادة الصحة           |
+| `{{4}}`  | `clinic_address` | 123 شارع الحسن الثاني |
 
 ### 5. `payment_received_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `amount` | 200 |
-| `{{3}}` | `currency` | MAD |
-| `{{4}}` | `payment_method` | بطاقة |
-| `{{5}}` | `invoice_id` | INV-001 |
-| `{{6}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable         | Example     |
+| -------- | ---------------- | ----------- |
+| `{{1}}`  | `patient_name`   | كريم        |
+| `{{2}}`  | `amount`         | 200         |
+| `{{3}}`  | `currency`       | MAD         |
+| `{{4}}`  | `payment_method` | بطاقة       |
+| `{{5}}`  | `invoice_id`     | INV-001     |
+| `{{6}}`  | `clinic_name`    | عيادة الصحة |
 
 ### 6. `welcome_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `clinic_name` | عيادة الصحة |
-| `{{3}}` | `clinic_phone` | +212 6 00 00 00 00 |
-| `{{4}}` | `clinic_address` | 123 شارع الحسن الثاني |
+| Position | Variable         | Example               |
+| -------- | ---------------- | --------------------- |
+| `{{1}}`  | `patient_name`   | كريم                  |
+| `{{2}}`  | `clinic_name`    | عيادة الصحة           |
+| `{{3}}`  | `clinic_phone`   | +212 6 00 00 00 00    |
+| `{{4}}`  | `clinic_address` | 123 شارع الحسن الثاني |
 
 ### 7. `review_request_darija` (MARKETING)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `booking_url` | https://clinic.ma/review |
-| `{{4}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable       | Example                  |
+| -------- | -------------- | ------------------------ |
+| `{{1}}`  | `patient_name` | كريم                     |
+| `{{2}}`  | `doctor_name`  | أحمد بنعلي               |
+| `{{3}}`  | `booking_url`  | https://clinic.ma/review |
+| `{{4}}`  | `clinic_name`  | عيادة الصحة              |
 
 > **Note**: Review requests are categorized as **MARKETING** and may take longer to approve.
 
 ### 8. `rescheduled_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `date` | 2026-03-25 |
-| `{{4}}` | `time` | 10:00 |
-| `{{5}}` | `clinic_phone` | +212 6 00 00 00 00 |
-| `{{6}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable       | Example            |
+| -------- | -------------- | ------------------ |
+| `{{1}}`  | `patient_name` | كريم               |
+| `{{2}}`  | `doctor_name`  | أحمد بنعلي         |
+| `{{3}}`  | `date`         | 2026-03-25         |
+| `{{4}}`  | `time`         | 10:00              |
+| `{{5}}`  | `clinic_phone` | +212 6 00 00 00 00 |
+| `{{6}}`  | `clinic_name`  | عيادة الصحة        |
 
 ### 9. `waiting_room_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `time` | 15 دقيقة |
-| `{{4}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable       | Example     |
+| -------- | -------------- | ----------- |
+| `{{1}}`  | `patient_name` | كريم        |
+| `{{2}}`  | `doctor_name`  | أحمد بنعلي  |
+| `{{3}}`  | `time`         | 15 دقيقة    |
+| `{{4}}`  | `clinic_name`  | عيادة الصحة |
 
 ### 10. `follow_up_darija` (UTILITY)
 
-| Position | Variable | Example |
-|---|---|---|
-| `{{1}}` | `patient_name` | كريم |
-| `{{2}}` | `doctor_name` | أحمد بنعلي |
-| `{{3}}` | `booking_url` | https://clinic.ma/book |
-| `{{4}}` | `clinic_name` | عيادة الصحة |
+| Position | Variable       | Example                |
+| -------- | -------------- | ---------------------- |
+| `{{1}}`  | `patient_name` | كريم                   |
+| `{{2}}`  | `doctor_name`  | أحمد بنعلي             |
+| `{{3}}`  | `booking_url`  | https://clinic.ma/book |
+| `{{4}}`  | `clinic_name`  | عيادة الصحة            |
 
 ## Approval Tips
 
@@ -196,6 +196,7 @@ curl -X GET \
 Go to [business.facebook.com/wa/manage/message-templates](https://business.facebook.com/wa/manage/message-templates) and check the **Status** column.
 
 Possible statuses:
+
 - **APPROVED** — Ready to use
 - **PENDING** — Under review
 - **REJECTED** — Fix issues and resubmit
@@ -204,12 +205,12 @@ Possible statuses:
 
 Common rejection reasons:
 
-| Reason | Fix |
-|---|---|
-| Missing sample values | Add realistic example values for every variable |
-| URL in body without URL button | Use a URL button component or remove the URL |
+| Reason                         | Fix                                                         |
+| ------------------------------ | ----------------------------------------------------------- |
+| Missing sample values          | Add realistic example values for every variable             |
+| URL in body without URL button | Use a URL button component or remove the URL                |
 | Promotional content in UTILITY | Change category to MARKETING or remove promotional language |
-| Duplicate template name | Use a unique name (our templates use `_darija` suffix) |
+| Duplicate template name        | Use a unique name (our templates use `_darija` suffix)      |
 
 ## Integration with Codebase
 

@@ -54,7 +54,9 @@ export async function getPublicLabTests(): Promise<LabTest[]> {
 
   const { data, error } = await supabase
     .from("lab_tests")
-    .select("id, name, category, description, preparation_instructions, turnaround_time, price, requires_fasting, sample_type, is_active")
+    .select(
+      "id, name, category, description, preparation_instructions, turnaround_time, price, requires_fasting, sample_type, is_active",
+    )
     .eq("clinic_id", clinicId)
     .order("name", { ascending: true });
 
@@ -100,7 +102,9 @@ export async function getPublicCollectionPoints(): Promise<CollectionPoint[]> {
 
   const { data, error } = await supabase
     .from("collection_points")
-    .select("id, name, address, city, phone, hours, is_main_lab, has_parking, wheelchair_accessible, lat, lng")
+    .select(
+      "id, name, address, city, phone, hours, is_main_lab, has_parking, wheelchair_accessible, lat, lng",
+    )
     .eq("clinic_id", clinicId)
     .order("is_main_lab", { ascending: false });
 
@@ -116,8 +120,6 @@ export async function getPublicCollectionPoints(): Promise<CollectionPoint[]> {
     isMainLab: (cp.is_main_lab as boolean) ?? false,
     hasParking: (cp.has_parking as boolean) ?? false,
     wheelchairAccessible: (cp.wheelchair_accessible as boolean) ?? false,
-    coordinates: cp.lat && cp.lng
-      ? { lat: cp.lat as number, lng: cp.lng as number }
-      : undefined,
+    coordinates: cp.lat && cp.lng ? { lat: cp.lat as number, lng: cp.lng as number } : undefined,
   }));
 }

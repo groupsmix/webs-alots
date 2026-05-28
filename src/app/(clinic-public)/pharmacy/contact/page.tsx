@@ -38,7 +38,9 @@ export default async function PharmacyContactPage() {
                   <div>
                     <h3 className="font-semibold">Phone</h3>
                     <p className="text-muted-foreground">+212 5 22 30 40 50</p>
-                    <p className="text-xs text-muted-foreground mt-1">Mon-Fri 08:30-20:00, Sat 09:00-18:00</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mon-Fri 08:30-20:00, Sat 09:00-18:00
+                    </p>
                   </div>
                 </div>
 
@@ -101,7 +103,9 @@ export default async function PharmacyContactPage() {
                 ].map((wh) => (
                   <div key={wh.day} className="flex justify-between text-sm">
                     <span className="font-medium">{wh.day}</span>
-                    <span className={wh.hours === "Closed" ? "text-red-500" : "text-muted-foreground"}>
+                    <span
+                      className={wh.hours === "Closed" ? "text-red-500" : "text-muted-foreground"}
+                    >
                       {wh.hours}
                     </span>
                   </div>

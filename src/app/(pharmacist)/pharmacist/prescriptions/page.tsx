@@ -1,8 +1,18 @@
 "use client";
 
 import {
-  Clock, Check, Eye, AlertCircle, Package, Truck,
-  Search, Phone, MessageCircle, RefreshCw, X, ClipboardList,
+  Clock,
+  Check,
+  Eye,
+  AlertCircle,
+  Package,
+  Truck,
+  Search,
+  Phone,
+  MessageCircle,
+  RefreshCw,
+  X,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -17,19 +27,64 @@ import type { PharmacyPrescriptionView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
-type PrescriptionStatus = "pending" | "reviewing" | "partially-ready" | "ready" | "picked-up" | "delivered" | "rejected";
+type PrescriptionStatus =
+  | "pending"
+  | "reviewing"
+  | "partially-ready"
+  | "ready"
+  | "picked-up"
+  | "delivered"
+  | "rejected";
 
-const statusConfig: Record<PrescriptionStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  pending: { label: "Pending", color: "bg-yellow-100 text-yellow-700", icon: <Clock className="h-3 w-3" /> },
-  reviewing: { label: "Reviewing", color: "bg-blue-100 text-blue-700", icon: <Eye className="h-3 w-3" /> },
-  "partially-ready": { label: "Partial", color: "bg-orange-100 text-orange-700", icon: <AlertCircle className="h-3 w-3" /> },
-  ready: { label: "Ready", color: "bg-emerald-100 text-emerald-700", icon: <Check className="h-3 w-3" /> },
-  "picked-up": { label: "Picked Up", color: "bg-gray-100 text-gray-700", icon: <Package className="h-3 w-3" /> },
-  delivered: { label: "Delivered", color: "bg-gray-100 text-gray-700", icon: <Truck className="h-3 w-3" /> },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-700", icon: <X className="h-3 w-3" /> },
+const statusConfig: Record<
+  PrescriptionStatus,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
+  pending: {
+    label: "Pending",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: <Clock className="h-3 w-3" />,
+  },
+  reviewing: {
+    label: "Reviewing",
+    color: "bg-blue-100 text-blue-700",
+    icon: <Eye className="h-3 w-3" />,
+  },
+  "partially-ready": {
+    label: "Partial",
+    color: "bg-orange-100 text-orange-700",
+    icon: <AlertCircle className="h-3 w-3" />,
+  },
+  ready: {
+    label: "Ready",
+    color: "bg-emerald-100 text-emerald-700",
+    icon: <Check className="h-3 w-3" />,
+  },
+  "picked-up": {
+    label: "Picked Up",
+    color: "bg-gray-100 text-gray-700",
+    icon: <Package className="h-3 w-3" />,
+  },
+  delivered: {
+    label: "Delivered",
+    color: "bg-gray-100 text-gray-700",
+    icon: <Truck className="h-3 w-3" />,
+  },
+  rejected: {
+    label: "Rejected",
+    color: "bg-red-100 text-red-700",
+    icon: <X className="h-3 w-3" />,
+  },
 };
 
-const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-ready", "ready", "picked-up", "delivered"];
+const statusFilters: PrescriptionStatus[] = [
+  "pending",
+  "reviewing",
+  "partially-ready",
+  "ready",
+  "picked-up",
+  "delivered",
+];
 
 export default function PrescriptionsPage() {
   const [locale] = useLocale();
@@ -44,14 +99,20 @@ export default function PrescriptionsPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchPrescriptionRequests(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setAllPrescriptions(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setAllPrescriptions(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -61,7 +122,9 @@ export default function PrescriptionsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -69,7 +132,8 @@ export default function PrescriptionsPage() {
 
   const filtered = allPrescriptions.filter((rx) => {
     if (filterStatus !== "all" && rx.status !== filterStatus) return false;
-    if (searchQuery && !rx.patientName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !rx.patientName.toLowerCase().includes(searchQuery.toLowerCase()))
+      return false;
     return true;
   });
 
@@ -142,10 +206,19 @@ export default function PrescriptionsPage() {
                         <Phone className="h-3 w-3" /> {rx.patientPhone}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {formatDisplayDate(new Date(rx.uploadedAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}
+                        <Clock className="h-3 w-3" />{" "}
+                        {formatDisplayDate(
+                          new Date(rx.uploadedAt),
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "datetime",
+                        )}
                       </span>
                       <span className="flex items-center gap-1">
-                        {rx.deliveryOption === "delivery" ? <Truck className="h-3 w-3" /> : <Package className="h-3 w-3" />}
+                        {rx.deliveryOption === "delivery" ? (
+                          <Truck className="h-3 w-3" />
+                        ) : (
+                          <Package className="h-3 w-3" />
+                        )}
                         {rx.deliveryOption === "delivery" ? "Delivery" : "Pickup"}
                       </span>
                     </div>
@@ -213,11 +286,13 @@ export default function PrescriptionsPage() {
                         <Package className="mr-2 h-4 w-4" /> Mark Picked Up
                       </Button>
                     )}
-                    {!rx.whatsappNotified && rx.status !== "picked-up" && rx.status !== "delivered" && (
-                      <Button variant="outline" className="w-full">
-                        <MessageCircle className="mr-2 h-4 w-4" /> Notify via WhatsApp
-                      </Button>
-                    )}
+                    {!rx.whatsappNotified &&
+                      rx.status !== "picked-up" &&
+                      rx.status !== "delivered" && (
+                        <Button variant="outline" className="w-full">
+                          <MessageCircle className="mr-2 h-4 w-4" /> Notify via WhatsApp
+                        </Button>
+                      )}
                     {rx.whatsappNotified && (
                       <p className="text-xs text-emerald-600 text-center">WhatsApp sent</p>
                     )}

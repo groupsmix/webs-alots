@@ -4,13 +4,7 @@
  * §5.10 Stat Block — value + 1px rule + mono label.
  * 4-up desktop, 2-up mobile. Never wrapped in a card.
  */
-export function StatBlock({
-  value,
-  label,
-}: {
-  value: string;
-  label: string;
-}) {
+export function StatBlock({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col gap-1">
       <span

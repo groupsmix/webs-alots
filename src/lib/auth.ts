@@ -43,7 +43,6 @@ export interface UserProfile {
   metadata: Record<string, unknown>;
 }
 
-
 // ============================================================
 // Auth Actions
 // ============================================================
@@ -103,7 +102,9 @@ export async function signInWithPassword(
       description: `Failed login attempt from IP ${clientIp}`,
       ipAddress: clientIp,
       success: false,
-    }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
+    }).catch((err) => {
+      logger.warn("Failed to log auth event", { context: "auth/signIn", error: err });
+    });
     return { error: error.message };
   }
 
@@ -125,7 +126,9 @@ export async function signInWithPassword(
       description: `Seed user login blocked in production from IP ${clientIp}`,
       ipAddress: clientIp,
       success: false,
-    }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
+    }).catch((err) => {
+      logger.warn("Failed to log auth event", { context: "auth/signIn", error: err });
+    });
     return { error: "auth.invalidCredentials" };
   }
 
@@ -152,7 +155,9 @@ export async function signInWithPassword(
     description: `Successful login from IP ${clientIp}`,
     ipAddress: clientIp,
     success: true,
-  }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
+  }).catch((err) => {
+    logger.warn("Failed to log auth event", { context: "auth/signIn", error: err });
+  });
 
   if (profile) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);
@@ -199,10 +204,7 @@ export async function signInWithOTP(phone: string): Promise<{ error: string | nu
  *
  * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`.
  */
-export async function verifyOTP(
-  phone: string,
-  token: string,
-): Promise<{ error: string | null }> {
+export async function verifyOTP(phone: string, token: string): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "auth.phoneDisabled" };
   }
@@ -306,10 +308,9 @@ export async function resetPassword(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    email.trim().toLowerCase(),
-    { redirectTo },
-  );
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo,
+  });
 
   // Always return success to prevent username enumeration.
   // Even if the email doesn't exist, we don't reveal that to the caller.
@@ -325,7 +326,9 @@ export async function resetPassword(
     actor: email.trim().toLowerCase(),
     description: `Password reset requested from IP ${clientIp}`,
     ipAddress: clientIp,
-  }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/resetPassword", error: err }); });
+  }).catch((err) => {
+    logger.warn("Failed to log auth event", { context: "auth/resetPassword", error: err });
+  });
 
   return { error: null };
 }
@@ -392,9 +395,7 @@ export async function requireAuth(): Promise<UserProfile> {
 /**
  * Require a specific role. If user doesn't have the role, redirect to their dashboard.
  */
-export async function requireRole(
-  ...allowedRoles: UserProfile["role"][]
-): Promise<UserProfile> {
+export async function requireRole(...allowedRoles: UserProfile["role"][]): Promise<UserProfile> {
   const profile = await requireAuth();
   if (!allowedRoles.includes(profile.role)) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);

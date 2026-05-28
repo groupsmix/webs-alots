@@ -118,9 +118,13 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
-        <Link href="/annuaire" className="hover:text-foreground">Annuaire</Link>
+        <Link href="/annuaire" className="hover:text-foreground">
+          Annuaire
+        </Link>
         <span className="mx-2">/</span>
-        <Link href={`/annuaire/${city.slug}`} className="hover:text-foreground">{city.name}</Link>
+        <Link href={`/annuaire/${city.slug}`} className="hover:text-foreground">
+          {city.name}
+        </Link>
         <span className="mx-2">/</span>
         <span className="text-foreground">{specialty.nameFr}</span>
       </nav>
@@ -131,17 +135,18 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
           {specialty.nameFr} à {city.name}
         </h1>
         <p className="text-muted-foreground">
-          {doctors.length} {specialty.nameFr.toLowerCase()}{doctors.length !== 1 ? "s" : ""} trouvé{doctors.length !== 1 ? "s" : ""} à {city.name}
+          {doctors.length} {specialty.nameFr.toLowerCase()}
+          {doctors.length !== 1 ? "s" : ""} trouvé{doctors.length !== 1 ? "s" : ""} à {city.name}
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {specialty.description}
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">{specialty.description}</p>
       </div>
 
       {/* Doctor list */}
       {doctors.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          <p>Aucun {specialty.nameFr.toLowerCase()} trouvé à {city.name} pour le moment.</p>
+          <p>
+            Aucun {specialty.nameFr.toLowerCase()} trouvé à {city.name} pour le moment.
+          </p>
           <div className="flex justify-center gap-4 mt-4">
             <Link href={`/annuaire/${city.slug}`} className="text-primary hover:underline">
               Tous les médecins à {city.name}
@@ -174,7 +179,11 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
                     ) : (
                       <Avatar className="h-16 w-16 flex-shrink-0">
                         <AvatarFallback className="text-lg bg-primary/10 text-primary">
-                          {doctor.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          {doctor.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                     )}
@@ -212,7 +221,9 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
                       {doctor.languages.length > 0 && (
                         <div className="flex gap-1 mt-2">
                           {doctor.languages.map((lang) => (
-                            <Badge key={lang} variant="outline" className="text-xs">{lang}</Badge>
+                            <Badge key={lang} variant="outline" className="text-xs">
+                              {lang}
+                            </Badge>
                           ))}
                         </div>
                       )}
@@ -227,10 +238,7 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
                         Voir le profil
                       </Link>
                       {bookingUrl && (
-                        <a
-                          href={bookingUrl}
-                          className={buttonVariants({ size: "sm" })}
-                        >
+                        <a href={bookingUrl} className={buttonVariants({ size: "sm" })}>
                           <Calendar className="h-3 w-3 mr-1" />
                           Prendre RDV
                         </a>

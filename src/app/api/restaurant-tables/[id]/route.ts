@@ -30,87 +30,98 @@ function extractId(request: NextRequest): string {
 /**
  * GET /api/restaurant-tables/[id]
  */
-export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const GET = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  const { data, error } = await auth.supabase
-    .from("restaurant_tables")
-    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at")
-    .eq("id", id)
-    .eq("clinic_id", clinicId)
-    .single();
+    const { data, error } = await auth.supabase
+      .from("restaurant_tables")
+      .select(
+        "id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at",
+      )
+      .eq("id", id)
+      .eq("clinic_id", clinicId)
+      .single();
 
-  if (error || !data) return apiNotFound("Table not found");
+    if (error || !data) return apiNotFound("Table not found");
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin", "receptionist"],
+);
 
 /**
  * PATCH /api/restaurant-tables/[id]
  */
-export const PATCH = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const PATCH = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON body", 422);
-  }
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiError("Invalid JSON body", 422);
+    }
 
-  const result = safeParse(updateTableSchema, body);
-  if (!result.success) return apiError(result.error, 422);
+    const result = safeParse(updateTableSchema, body);
+    if (!result.success) return apiError(result.error, 422);
 
-  const { data, error } = await auth.supabase
-    .from("restaurant_tables")
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-    .update(result.data)
-    .eq("id", id)
-    .eq("clinic_id", clinicId)
-    .select()
-    .single();
+    const { data, error } = await auth.supabase
+      .from("restaurant_tables")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .update(result.data)
+      .eq("id", id)
+      .eq("clinic_id", clinicId)
+      .select()
+      .single();
 
-  if (error) return apiSupabaseError(error, "restaurant-tables/update");
-  if (!data) return apiNotFound("Table not found");
+    if (error) return apiSupabaseError(error, "restaurant-tables/update");
+    if (!data) return apiNotFound("Table not found");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "restaurant_table.updated",
-    type: "admin",
-    clinicId,
-    description: `Table ${id} updated`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "restaurant_table.updated",
+      type: "admin",
+      clinicId,
+      description: `Table ${id} updated`,
+    });
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin"],
+);
 
 /**
  * DELETE /api/restaurant-tables/[id]
  */
-export const DELETE = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const DELETE = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  const { error } = await auth.supabase
-    .from("restaurant_tables")
-    .delete()
-    .eq("id", id)
-    .eq("clinic_id", clinicId);
+    const { error } = await auth.supabase
+      .from("restaurant_tables")
+      .delete()
+      .eq("id", id)
+      .eq("clinic_id", clinicId);
 
-  if (error) return apiSupabaseError(error, "restaurant-tables/delete");
+    if (error) return apiSupabaseError(error, "restaurant-tables/delete");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "restaurant_table.deleted",
-    type: "admin",
-    clinicId,
-    description: `Table ${id} deleted`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "restaurant_table.deleted",
+      type: "admin",
+      clinicId,
+      description: `Table ${id} deleted`,
+    });
 
-  return apiSuccess({ deleted: true });
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess({ deleted: true });
+  },
+  ["super_admin", "clinic_admin"],
+);

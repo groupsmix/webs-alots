@@ -3,7 +3,9 @@ import { logger } from "../logger";
 import { extractClientIp, createRateLimiter } from "../rate-limit";
 
 // Mock NextRequest
-function createMockRequest(headers: Record<string, string> = {}): { headers: { get: (name: string) => string | null } } {
+function createMockRequest(headers: Record<string, string> = {}): {
+  headers: { get: (name: string) => string | null };
+} {
   return {
     headers: {
       get: (name: string) => headers[name.toLowerCase()] ?? null,

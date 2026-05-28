@@ -190,7 +190,8 @@ describe("Webhook POST — signature verification (mutation gaps)", () => {
       body: rawBody,
       headers: {
         "content-type": "application/json",
-        "x-hub-signature-256": "sha256=0000000000000000000000000000000000000000000000000000000000000000",
+        "x-hub-signature-256":
+          "sha256=0000000000000000000000000000000000000000000000000000000000000000",
       },
     });
 

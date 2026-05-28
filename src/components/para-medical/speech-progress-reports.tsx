@@ -1,8 +1,13 @@
 "use client";
 
 import {
-  FileText, TrendingUp, TrendingDown, AlertCircle, CheckCircle2,
-  ChevronDown, ChevronUp,
+  FileText,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +36,7 @@ export function SpeechProgressReports({ reports }: SpeechProgressReportsProps) {
   const [expandedId, setExpandedId] = useState<string | null>(reports[0]?.id ?? null);
 
   const sorted = [...reports].sort(
-    (a, b) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
+    (a, b) => new Date(b.report_date).getTime() - new Date(a.report_date).getTime(),
   );
 
   return (
@@ -62,11 +67,18 @@ export function SpeechProgressReports({ reports }: SpeechProgressReportsProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={`text-xs flex items-center gap-1 ${PROGRESS_COLORS[report.overall_progress]}`}>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs flex items-center gap-1 ${PROGRESS_COLORS[report.overall_progress]}`}
+                  >
                     <ProgressIcon className="h-3 w-3" />
                     {report.overall_progress}
                   </Badge>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -94,7 +106,10 @@ export function SpeechProgressReports({ reports }: SpeechProgressReportsProps) {
                     </p>
                     <ul className="space-y-1">
                       {report.areas_of_improvement.map((area, i) => (
-                        <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                        <li
+                          key={i}
+                          className="text-xs text-muted-foreground flex items-start gap-1"
+                        >
                           <span className="text-green-600 mt-1">•</span> {area}
                         </li>
                       ))}
@@ -110,7 +125,10 @@ export function SpeechProgressReports({ reports }: SpeechProgressReportsProps) {
                     </p>
                     <ul className="space-y-1">
                       {report.areas_of_concern.map((area, i) => (
-                        <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                        <li
+                          key={i}
+                          className="text-xs text-muted-foreground flex items-start gap-1"
+                        >
                           <span className="text-orange-600 mt-1">•</span> {area}
                         </li>
                       ))}

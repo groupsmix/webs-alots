@@ -17,45 +17,31 @@ export default async function AnalyticsPage() {
   const clinicId = tenant.clinicId;
 
   // Fetch all data in parallel — read-only queries on existing tables.
-  const [
-    appointmentsRes,
-    paymentsRes,
-    servicesRes,
-    doctorsRes,
-    waitingListRes,
-    patientsRes,
-  ] = await Promise.all([
-    supabase
-      .from("appointments")
-      .select("id, status, slot_start, doctor_id, patient_id, service_id, is_first_visit, created_at")
-      .eq("clinic_id", clinicId)
-      .order("slot_start", { ascending: false })
-      .limit(2000),
-    supabase
-      .from("payments")
-      .select("id, amount, method, status, created_at, appointment_id")
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false })
-      .limit(2000),
-    supabase
-      .from("services")
-      .select("id, name, price")
-      .eq("clinic_id", clinicId),
-    supabase
-      .from("users")
-      .select("id, name")
-      .eq("clinic_id", clinicId)
-      .eq("role", "doctor"),
-    supabase
-      .from("waiting_list")
-      .select("id, status")
-      .eq("clinic_id", clinicId),
-    supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("role", "patient"),
-  ]);
+  const [appointmentsRes, paymentsRes, servicesRes, doctorsRes, waitingListRes, patientsRes] =
+    await Promise.all([
+      supabase
+        .from("appointments")
+        .select(
+          "id, status, slot_start, doctor_id, patient_id, service_id, is_first_visit, created_at",
+        )
+        .eq("clinic_id", clinicId)
+        .order("slot_start", { ascending: false })
+        .limit(2000),
+      supabase
+        .from("payments")
+        .select("id, amount, method, status, created_at, appointment_id")
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .limit(2000),
+      supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
+      supabase.from("users").select("id, name").eq("clinic_id", clinicId).eq("role", "doctor"),
+      supabase.from("waiting_list").select("id, status").eq("clinic_id", clinicId),
+      supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("clinic_id", clinicId)
+        .eq("role", "patient"),
+    ]);
 
   const appointments = (appointmentsRes.data ?? []) as {
     id: string;

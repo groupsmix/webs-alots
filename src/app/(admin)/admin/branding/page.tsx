@@ -17,13 +17,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -49,11 +43,7 @@ interface BrandingState {
 }
 
 // eslint-disable-next-line import/order
-import {
-  contrastRatio,
-  meetsWCAG_AA,
-  suggestAccessibleColor,
-} from "@/lib/contrast";
+import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 
 const FONT_OPTIONS = [
   "Geist",
@@ -84,7 +74,11 @@ const DEFAULT_BRANDING: BrandingState = {
 };
 
 export default function BrandingPage() {
-  const { data: initialBranding, loading, error } = useAsyncData(
+  const {
+    data: initialBranding,
+    loading,
+    error,
+  } = useAsyncData(
     (signal) =>
       fetch("/api/branding", { signal })
         .then((r) => {
@@ -162,10 +156,7 @@ export default function BrandingPage() {
     }
   };
 
-  const handleUpload = async (
-    field: "logo" | "favicon" | "hero" | "cover",
-    file: File,
-  ) => {
+  const handleUpload = async (field: "logo" | "favicon" | "hero" | "cover", file: File) => {
     setUploading(field);
     try {
       const formData = new FormData();
@@ -200,8 +191,7 @@ export default function BrandingPage() {
   };
 
   const onFileChange =
-    (field: "logo" | "favicon" | "hero" | "cover") =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (field: "logo" | "favicon" | "hero" | "cover") => (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) handleUpload(field, file);
     };
@@ -231,11 +221,19 @@ export default function BrandingPage() {
         <div>
           <h1 className="text-2xl font-bold">Branding</h1>
           <p className="text-sm text-muted-foreground">
-            Customize your clinic&apos;s look and feel. Changes apply instantly
-            to your public website.
+            Customize your clinic&apos;s look and feel. Changes apply instantly to your public
+            website.
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving || !colorsPassContrast} title={!colorsPassContrast ? "Corrigez le contraste des couleurs avant de sauvegarder" : undefined}>
+        <Button
+          onClick={handleSave}
+          disabled={saving || !colorsPassContrast}
+          title={
+            !colorsPassContrast
+              ? "Corrigez le contraste des couleurs avant de sauvegarder"
+              : undefined
+          }
+        >
           <Save className="h-4 w-4 mr-2" />
           {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
         </Button>
@@ -320,9 +318,7 @@ export default function BrandingPage() {
                   <Label>Clinic Name</Label>
                   <Input
                     value={branding.name}
-                    onChange={(e) =>
-                      setBranding((p) => ({ ...p, name: e.target.value }))
-                    }
+                    onChange={(e) => setBranding((p) => ({ ...p, name: e.target.value }))}
                     placeholder="My Clinic"
                   />
                 </div>
@@ -330,9 +326,7 @@ export default function BrandingPage() {
                   <Label>Tagline</Label>
                   <Input
                     value={branding.tagline}
-                    onChange={(e) =>
-                      setBranding((p) => ({ ...p, tagline: e.target.value }))
-                    }
+                    onChange={(e) => setBranding((p) => ({ ...p, tagline: e.target.value }))}
                     placeholder="Your Health, Our Priority"
                   />
                 </div>
@@ -345,9 +339,7 @@ export default function BrandingPage() {
                   </Label>
                   <Input
                     value={branding.phone}
-                    onChange={(e) =>
-                      setBranding((p) => ({ ...p, phone: e.target.value }))
-                    }
+                    onChange={(e) => setBranding((p) => ({ ...p, phone: e.target.value }))}
                     placeholder="+212 6 12 34 56 78"
                   />
                 </div>
@@ -358,9 +350,7 @@ export default function BrandingPage() {
                   </Label>
                   <Textarea
                     value={branding.address}
-                    onChange={(e) =>
-                      setBranding((p) => ({ ...p, address: e.target.value }))
-                    }
+                    onChange={(e) => setBranding((p) => ({ ...p, address: e.target.value }))}
                     placeholder="123 Bd Mohammed V, Casablanca"
                     rows={2}
                   />
@@ -375,10 +365,7 @@ export default function BrandingPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Working hours are managed from the{" "}
-                  <a
-                    href="/admin/working-hours"
-                    className="text-primary underline"
-                  >
+                  <a href="/admin/working-hours" className="text-primary underline">
                     Working Hours
                   </a>{" "}
                   page and are automatically displayed on your public site.
@@ -478,9 +465,7 @@ export default function BrandingPage() {
                   <ImageIcon className="h-4 w-4" />
                   Hero Image
                 </CardTitle>
-                <CardDescription>
-                  Main image in the homepage hero section
-                </CardDescription>
+                <CardDescription>Main image in the homepage hero section</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -521,9 +506,7 @@ export default function BrandingPage() {
                   <ImageIcon className="h-4 w-4" />
                   Cover Photo / Banner
                 </CardTitle>
-                <CardDescription>
-                  Wide banner image used across pages
-                </CardDescription>
+                <CardDescription>Wide banner image used across pages</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -634,12 +617,16 @@ export default function BrandingPage() {
                 const primaryOk = meetsWCAG_AA("#ffffff", branding.primary_color);
                 const secondaryOk = meetsWCAG_AA("#ffffff", branding.secondary_color);
                 const primaryRatio = contrastRatio("#ffffff", branding.primary_color).toFixed(1);
-                const secondaryRatio = contrastRatio("#ffffff", branding.secondary_color).toFixed(1);
-                return (!primaryOk || !secondaryOk) ? (
+                const secondaryRatio = contrastRatio("#ffffff", branding.secondary_color).toFixed(
+                  1,
+                );
+                return !primaryOk || !secondaryOk ? (
                   <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-3 flex items-start gap-2 text-sm">
                     <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="font-medium text-yellow-800 dark:text-yellow-200">Contraste insuffisant (WCAG AA)</p>
+                      <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                        Contraste insuffisant (WCAG AA)
+                      </p>
                       <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
                         Le texte blanc nécessite un ratio de contraste d&apos;au moins 4.5:1.
                         {!primaryOk && ` Primaire (${primaryRatio}:1) échoue.`}
@@ -652,8 +639,19 @@ export default function BrandingPage() {
                         onClick={() => {
                           setBranding((p) => ({
                             ...p,
-                            ...((!primaryOk) ? { primary_color: suggestAccessibleColor(p.primary_color, "#ffffff") } : {}),
-                            ...((!secondaryOk) ? { secondary_color: suggestAccessibleColor(p.secondary_color, "#ffffff") } : {}),
+                            ...(!primaryOk
+                              ? {
+                                  primary_color: suggestAccessibleColor(p.primary_color, "#ffffff"),
+                                }
+                              : {}),
+                            ...(!secondaryOk
+                              ? {
+                                  secondary_color: suggestAccessibleColor(
+                                    p.secondary_color,
+                                    "#ffffff",
+                                  ),
+                                }
+                              : {}),
                           }));
                         }}
                       >
@@ -701,9 +699,7 @@ export default function BrandingPage() {
                   <Label>Heading Font</Label>
                   <select
                     value={branding.heading_font}
-                    onChange={(e) =>
-                      setBranding((p) => ({ ...p, heading_font: e.target.value }))
-                    }
+                    onChange={(e) => setBranding((p) => ({ ...p, heading_font: e.target.value }))}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     {FONT_OPTIONS.map((f) => (
@@ -724,9 +720,7 @@ export default function BrandingPage() {
                   <Label>Body Font</Label>
                   <select
                     value={branding.body_font}
-                    onChange={(e) =>
-                      setBranding((p) => ({ ...p, body_font: e.target.value }))
-                    }
+                    onChange={(e) => setBranding((p) => ({ ...p, body_font: e.target.value }))}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     {FONT_OPTIONS.map((f) => (
@@ -735,10 +729,7 @@ export default function BrandingPage() {
                       </option>
                     ))}
                   </select>
-                  <p
-                    className="text-sm mt-2"
-                    style={{ fontFamily: branding.body_font }}
-                  >
+                  <p className="text-sm mt-2" style={{ fontFamily: branding.body_font }}>
                     Body text preview — The quick brown fox jumps over the lazy dog.
                   </p>
                 </div>
@@ -778,9 +769,7 @@ function PresetsGrid({
   ];
 
   const filtered =
-    filterVertical === "all"
-      ? presetList
-      : presetList.filter((p) => p.vertical === filterVertical);
+    filterVertical === "all" ? presetList : presetList.filter((p) => p.vertical === filterVertical);
 
   return (
     <div className="space-y-6">
@@ -791,8 +780,8 @@ function PresetsGrid({
             Template Presets
           </CardTitle>
           <CardDescription>
-            Pick a preset to instantly change your entire site&apos;s look and feel.
-            You can fine-tune colors and fonts afterwards.
+            Pick a preset to instantly change your entire site&apos;s look and feel. You can
+            fine-tune colors and fonts afterwards.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -883,11 +872,7 @@ function PresetsGrid({
                       )}
                       {isApplied ? "Applied!" : isApplying ? "Applying..." : "Apply"}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onCustomize(preset)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => onCustomize(preset)}>
                       <Palette className="h-3.5 w-3.5 mr-1" />
                       Customize
                     </Button>

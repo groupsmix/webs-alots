@@ -17,11 +17,7 @@ import { getTemplate } from "@/lib/templates";
  * Falls back to the default PublicHeader/PublicFooter for "top-sticky"
  * and "classic-3col" variants respectively.
  */
-export async function ClinicPublicLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export async function ClinicPublicLayout({ children }: { children: React.ReactNode }) {
   const branding = await getPublicBranding();
   const template = getTemplate(branding.templateId);
 
@@ -41,10 +37,7 @@ export async function ClinicPublicLayout({
       }
     >
       {useOriginalHeader ? (
-        <PublicHeader
-          logoUrl={branding.logoUrl}
-          clinicName={branding.clinicName}
-        />
+        <PublicHeader logoUrl={branding.logoUrl} clinicName={branding.clinicName} />
       ) : (
         <DynamicHeader
           logoUrl={branding.logoUrl}
@@ -53,7 +46,9 @@ export async function ClinicPublicLayout({
           template={template}
         />
       )}
-      <main id="main-content" className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">
+        {children}
+      </main>
       {useOriginalFooter ? (
         <PublicFooter clinicName={branding.clinicName} />
       ) : (

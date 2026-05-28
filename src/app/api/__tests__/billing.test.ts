@@ -128,7 +128,7 @@ describe("Billing API — cron authentication", () => {
     const { verifyCronSecret } = await import("@/lib/cron-auth");
     const mockReq = {
       headers: {
-        get: (name: string) => name.toLowerCase() === "authorization" ? "Bearer wrong" : null,
+        get: (name: string) => (name.toLowerCase() === "authorization" ? "Bearer wrong" : null),
       },
     };
     process.env.CRON_SECRET = "correct-secret-at-least-32-chars!";
@@ -141,7 +141,10 @@ describe("Billing API — cron authentication", () => {
     const { verifyCronSecret } = await import("@/lib/cron-auth");
     const mockReq = {
       headers: {
-        get: (name: string) => name.toLowerCase() === "authorization" ? "Bearer correct-secret-at-least-32-chars!" : null,
+        get: (name: string) =>
+          name.toLowerCase() === "authorization"
+            ? "Bearer correct-secret-at-least-32-chars!"
+            : null,
       },
     };
     process.env.CRON_SECRET = "correct-secret-at-least-32-chars!";

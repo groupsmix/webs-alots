@@ -41,9 +41,7 @@ export function withSentryCron(
       const response = await handler(request);
 
       // Determine success from the HTTP status code.
-      const status = response instanceof NextResponse
-        ? response.status
-        : response.status;
+      const status = response instanceof NextResponse ? response.status : response.status;
 
       const isSuccess = status >= 200 && status < 300;
 

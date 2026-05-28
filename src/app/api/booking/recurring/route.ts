@@ -32,13 +32,13 @@ function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Da
  *
  * Create a recurring booking series or cancel one.
  */
-export const POST = withAuthValidation(recurringSchema, async (body, request, { supabase }) => {
-
+export const POST = withAuthValidation(
+  recurringSchema,
+  async (body, request, { supabase }) => {
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
     if (body.action === "create") {
-
       // Input length validation to prevent DoS via oversized payloads
       if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
         return apiError("Input exceeds maximum allowed length");
@@ -56,7 +56,10 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
 
       // Find or create patient (prefer phone-based lookup to avoid name collisions)
       const patientId = await findOrCreatePatient(
-        supabase, clinicId, body.patientId, body.patientName,
+        supabase,
+        clinicId,
+        body.patientId,
+        body.patientName,
         { phone: body.patientPhone },
       );
       if (!patientId) {
@@ -70,7 +73,9 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
       const duration = service?.duration ?? tenantConfig.booking.slotDuration;
       const { endTime, overflows } = computeEndTime(body.time, duration);
       if (overflows) {
-        return apiError("Appointment would extend past midnight. Please choose an earlier time or shorter duration.");
+        return apiError(
+          "Appointment would extend past midnight. Please choose an earlier time or shorter duration.",
+        );
       }
 
       // Build all appointment records first, then batch insert in a single query
@@ -146,7 +151,9 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
         }
         if (conflictDates.size > 0) {
           // Remove conflicting rows and add to skippedDates
-          const filtered = appointmentRows.filter((r) => !conflictDates.has(r.appointment_date as string));
+          const filtered = appointmentRows.filter(
+            (r) => !conflictDates.has(r.appointment_date as string),
+          );
           skippedDates.push(...conflictDates);
           appointmentRows.length = 0;
           appointmentRows.push(...filtered);
@@ -199,7 +206,10 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
       }
 
       const cancelIds = toCancel
-        .filter((a) => a.status !== APPOINTMENT_STATUS.CANCELLED && a.status !== APPOINTMENT_STATUS.COMPLETED)
+        .filter(
+          (a) =>
+            a.status !== APPOINTMENT_STATUS.CANCELLED && a.status !== APPOINTMENT_STATUS.COMPLETED,
+        )
         .map((a) => a.id);
 
       if (cancelIds.length > 0) {
@@ -217,4 +227,6 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
     }
 
     return apiError("action must be 'create' or 'cancel'");
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

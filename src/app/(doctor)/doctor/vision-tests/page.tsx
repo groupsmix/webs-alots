@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -66,7 +61,9 @@ export default function VisionTestsPage() {
   });
 
   // Issue 21: Auto-save draft for clinical form
-  const { saveDraft: saveVisionDraft, clearDraft: clearVisionDraft } = useOfflineDrafts<typeof form>("vision-tests-form", { autoSaveMs: 5000 });
+  const { saveDraft: saveVisionDraft, clearDraft: clearVisionDraft } = useOfflineDrafts<
+    typeof form
+  >("vision-tests-form", { autoSaveMs: 5000 });
   const setForm: typeof setFormRaw = (val) => {
     setFormRaw((prev) => {
       const next = typeof val === "function" ? val(prev) : val;
@@ -101,7 +98,9 @@ export default function VisionTestsPage() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
   const reload = async () => {
@@ -136,7 +135,22 @@ export default function VisionTestsPage() {
     });
     setShowAdd(false);
     clearVisionDraft();
-    setFormRaw({ patientId: "", testDate: new Date().toISOString().split("T")[0], odAcuity: "", osAcuity: "", odSphere: "", odCylinder: "", odAxis: "", osSphere: "", osCylinder: "", osAxis: "", odAdd: "", osAdd: "", pdMm: "", notes: "" });
+    setFormRaw({
+      patientId: "",
+      testDate: new Date().toISOString().split("T")[0],
+      odAcuity: "",
+      osAcuity: "",
+      odSphere: "",
+      odCylinder: "",
+      odAxis: "",
+      osSphere: "",
+      osCylinder: "",
+      osAxis: "",
+      odAdd: "",
+      osAdd: "",
+      pdMm: "",
+      notes: "",
+    });
     reload();
   };
 
@@ -146,7 +160,9 @@ export default function VisionTestsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Vision Tests" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Vision Tests" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Vision Tests & Prescriptions</h1>
         <Button onClick={() => setShowAdd(true)}>
@@ -156,12 +172,19 @@ export default function VisionTestsPage() {
 
       {/* Patient filter */}
       <div className="mb-6 max-w-xs">
-        <Select value={selectedPatient} onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="All patients" /></SelectTrigger>
+        <Select
+          value={selectedPatient}
+          onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All patients" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All patients</SelectItem>
             {patients.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -211,13 +234,25 @@ export default function VisionTestsPage() {
                     <div className="space-y-2">
                       <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                         <p className="text-xs text-muted-foreground">OD (Right)</p>
-                        <p className="text-sm font-mono">{formatRx(t.odSphere, t.odCylinder, t.odAxis)}</p>
-                        {t.odAdd !== null && <p className="text-xs text-muted-foreground">Add: +{t.odAdd?.toFixed(2)}</p>}
+                        <p className="text-sm font-mono">
+                          {formatRx(t.odSphere, t.odCylinder, t.odAxis)}
+                        </p>
+                        {t.odAdd !== null && (
+                          <p className="text-xs text-muted-foreground">
+                            Add: +{t.odAdd?.toFixed(2)}
+                          </p>
+                        )}
                       </div>
                       <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
                         <p className="text-xs text-muted-foreground">OS (Left)</p>
-                        <p className="text-sm font-mono">{formatRx(t.osSphere, t.osCylinder, t.osAxis)}</p>
-                        {t.osAdd !== null && <p className="text-xs text-muted-foreground">Add: +{t.osAdd?.toFixed(2)}</p>}
+                        <p className="text-sm font-mono">
+                          {formatRx(t.osSphere, t.osCylinder, t.osAxis)}
+                        </p>
+                        {t.osAdd !== null && (
+                          <p className="text-xs text-muted-foreground">
+                            Add: +{t.osAdd?.toFixed(2)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -229,9 +264,7 @@ export default function VisionTestsPage() {
                   </div>
                 )}
 
-                {t.notes && (
-                  <p className="text-xs text-muted-foreground mt-3">{t.notes}</p>
-                )}
+                {t.notes && <p className="text-xs text-muted-foreground mt-3">{t.notes}</p>}
               </CardContent>
             </Card>
           ))}
@@ -250,18 +283,29 @@ export default function VisionTestsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Patient</Label>
-                <Select value={form.patientId} onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+                <Select
+                  value={form.patientId}
+                  onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select patient" />
+                  </SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Test Date</Label>
-                <Input type="date" value={form.testDate} onChange={(e) => setForm((p) => ({ ...p, testDate: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.testDate}
+                  onChange={(e) => setForm((p) => ({ ...p, testDate: e.target.value }))}
+                />
               </div>
             </div>
 
@@ -271,11 +315,19 @@ export default function VisionTestsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs">OD (Right Eye)</Label>
-                  <Input value={form.odAcuity} onChange={(e) => setForm((p) => ({ ...p, odAcuity: e.target.value }))} placeholder="e.g., 20/20" />
+                  <Input
+                    value={form.odAcuity}
+                    onChange={(e) => setForm((p) => ({ ...p, odAcuity: e.target.value }))}
+                    placeholder="e.g., 20/20"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs">OS (Left Eye)</Label>
-                  <Input value={form.osAcuity} onChange={(e) => setForm((p) => ({ ...p, osAcuity: e.target.value }))} placeholder="e.g., 20/25" />
+                  <Input
+                    value={form.osAcuity}
+                    onChange={(e) => setForm((p) => ({ ...p, osAcuity: e.target.value }))}
+                    placeholder="e.g., 20/25"
+                  />
                 </div>
               </div>
             </div>
@@ -291,15 +343,34 @@ export default function VisionTestsPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Sphere</Label>
-                      <Input type="number" step="0.25" value={form.odSphere} onChange={(e) => setForm((p) => ({ ...p, odSphere: e.target.value }))} placeholder="±0.00" />
+                      <Input
+                        type="number"
+                        step="0.25"
+                        value={form.odSphere}
+                        onChange={(e) => setForm((p) => ({ ...p, odSphere: e.target.value }))}
+                        placeholder="±0.00"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Cylinder</Label>
-                      <Input type="number" step="0.25" value={form.odCylinder} onChange={(e) => setForm((p) => ({ ...p, odCylinder: e.target.value }))} placeholder="±0.00" />
+                      <Input
+                        type="number"
+                        step="0.25"
+                        value={form.odCylinder}
+                        onChange={(e) => setForm((p) => ({ ...p, odCylinder: e.target.value }))}
+                        placeholder="±0.00"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Axis (°)</Label>
-                      <Input type="number" min="0" max="180" value={form.odAxis} onChange={(e) => setForm((p) => ({ ...p, odAxis: e.target.value }))} placeholder="0–180" />
+                      <Input
+                        type="number"
+                        min="0"
+                        max="180"
+                        value={form.odAxis}
+                        onChange={(e) => setForm((p) => ({ ...p, odAxis: e.target.value }))}
+                        placeholder="0–180"
+                      />
                     </div>
                   </div>
                 </div>
@@ -308,15 +379,34 @@ export default function VisionTestsPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Sphere</Label>
-                      <Input type="number" step="0.25" value={form.osSphere} onChange={(e) => setForm((p) => ({ ...p, osSphere: e.target.value }))} placeholder="±0.00" />
+                      <Input
+                        type="number"
+                        step="0.25"
+                        value={form.osSphere}
+                        onChange={(e) => setForm((p) => ({ ...p, osSphere: e.target.value }))}
+                        placeholder="±0.00"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Cylinder</Label>
-                      <Input type="number" step="0.25" value={form.osCylinder} onChange={(e) => setForm((p) => ({ ...p, osCylinder: e.target.value }))} placeholder="±0.00" />
+                      <Input
+                        type="number"
+                        step="0.25"
+                        value={form.osCylinder}
+                        onChange={(e) => setForm((p) => ({ ...p, osCylinder: e.target.value }))}
+                        placeholder="±0.00"
+                      />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Axis (°)</Label>
-                      <Input type="number" min="0" max="180" value={form.osAxis} onChange={(e) => setForm((p) => ({ ...p, osAxis: e.target.value }))} placeholder="0–180" />
+                      <Input
+                        type="number"
+                        min="0"
+                        max="180"
+                        value={form.osAxis}
+                        onChange={(e) => setForm((p) => ({ ...p, osAxis: e.target.value }))}
+                        placeholder="0–180"
+                      />
                     </div>
                   </div>
                 </div>
@@ -329,26 +419,52 @@ export default function VisionTestsPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs">OD Add</Label>
-                  <Input type="number" step="0.25" value={form.odAdd} onChange={(e) => setForm((p) => ({ ...p, odAdd: e.target.value }))} placeholder="+0.00" />
+                  <Input
+                    type="number"
+                    step="0.25"
+                    value={form.odAdd}
+                    onChange={(e) => setForm((p) => ({ ...p, odAdd: e.target.value }))}
+                    placeholder="+0.00"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs">OS Add</Label>
-                  <Input type="number" step="0.25" value={form.osAdd} onChange={(e) => setForm((p) => ({ ...p, osAdd: e.target.value }))} placeholder="+0.00" />
+                  <Input
+                    type="number"
+                    step="0.25"
+                    value={form.osAdd}
+                    onChange={(e) => setForm((p) => ({ ...p, osAdd: e.target.value }))}
+                    placeholder="+0.00"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs">PD (mm)</Label>
-                  <Input type="number" step="0.5" value={form.pdMm} onChange={(e) => setForm((p) => ({ ...p, pdMm: e.target.value }))} placeholder="62.0" />
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={form.pdMm}
+                    onChange={(e) => setForm((p) => ({ ...p, pdMm: e.target.value }))}
+                    placeholder="62.0"
+                  />
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Clinical observations..." />
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Clinical observations..."
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!form.patientId}>Save</Button>
+              <Button variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!form.patientId}>
+                Save
+              </Button>
             </div>
           </div>
         </DialogContent>

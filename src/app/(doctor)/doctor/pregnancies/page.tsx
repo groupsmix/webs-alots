@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -57,7 +52,10 @@ export default function PregnanciesPage() {
   });
 
   // Issue 21: Auto-save draft for clinical form
-  const { saveDraft: savePregDraft, clearDraft: clearPregDraft } = useOfflineDrafts<typeof form>("pregnancies-form", { autoSaveMs: 5000 });
+  const { saveDraft: savePregDraft, clearDraft: clearPregDraft } = useOfflineDrafts<typeof form>(
+    "pregnancies-form",
+    { autoSaveMs: 5000 },
+  );
   const setForm: typeof setFormRaw = (val) => {
     setFormRaw((prev) => {
       const next = typeof val === "function" ? val(prev) : val;
@@ -99,7 +97,9 @@ export default function PregnanciesPage() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
   const reload = async () => {
@@ -129,7 +129,15 @@ export default function PregnanciesPage() {
     });
     setShowAdd(false);
     clearPregDraft();
-    setFormRaw({ patientId: "", lmpDate: "", gravida: "", para: "", bloodType: "", rhFactor: "", notes: "" });
+    setFormRaw({
+      patientId: "",
+      lmpDate: "",
+      gravida: "",
+      para: "",
+      bloodType: "",
+      rhFactor: "",
+      notes: "",
+    });
     reload();
   };
 
@@ -170,11 +178,14 @@ export default function PregnanciesPage() {
   const active = pregnancies.filter((p) => p.status === "active");
   const completed = pregnancies.filter((p) => p.status !== "active");
 
-  const trimesterLabel = (t: number) => t === 1 ? "1st Trimester" : t === 2 ? "2nd Trimester" : "3rd Trimester";
+  const trimesterLabel = (t: number) =>
+    t === 1 ? "1st Trimester" : t === 2 ? "2nd Trimester" : "3rd Trimester";
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Pregnancies" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Pregnancies" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Pregnancy Tracking</h1>
         <Button onClick={() => setShowAdd(true)}>
@@ -184,12 +195,19 @@ export default function PregnanciesPage() {
 
       {/* Patient filter */}
       <div className="mb-6 max-w-xs">
-        <Select value={selectedPatient} onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="All patients" /></SelectTrigger>
+        <Select
+          value={selectedPatient}
+          onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All patients" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All patients</SelectItem>
             {patients.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -216,7 +234,9 @@ export default function PregnanciesPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-xs text-muted-foreground">Gestational Age</p>
-                      <p className="text-lg font-semibold">{p.gestationalWeeks}w {p.gestationalDays}d</p>
+                      <p className="text-lg font-semibold">
+                        {p.gestationalWeeks}w {p.gestationalDays}d
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">EDD</p>
@@ -228,7 +248,9 @@ export default function PregnanciesPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">G/P</p>
-                      <p className="text-sm font-medium">G{p.gravida ?? "?"} P{p.para ?? "?"}</p>
+                      <p className="text-sm font-medium">
+                        G{p.gravida ?? "?"} P{p.para ?? "?"}
+                      </p>
                     </div>
                   </div>
 
@@ -346,18 +368,29 @@ export default function PregnanciesPage() {
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Patient</Label>
-              <Select value={form.patientId} onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+              <Select
+                value={form.patientId}
+                onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select patient" />
+                </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Last Menstrual Period (LMP)</Label>
-              <Input type="date" value={form.lmpDate} onChange={(e) => setForm((p) => ({ ...p, lmpDate: e.target.value }))} />
+              <Input
+                type="date"
+                value={form.lmpDate}
+                onChange={(e) => setForm((p) => ({ ...p, lmpDate: e.target.value }))}
+              />
               {form.lmpDate && (
                 <p className="text-xs text-muted-foreground">
                   Estimated Due Date: {addDays(form.lmpDate, 280)}
@@ -367,29 +400,53 @@ export default function PregnanciesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Gravida</Label>
-                <Input type="number" min="1" value={form.gravida} onChange={(e) => setForm((p) => ({ ...p, gravida: e.target.value }))} placeholder="G?" />
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.gravida}
+                  onChange={(e) => setForm((p) => ({ ...p, gravida: e.target.value }))}
+                  placeholder="G?"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Para</Label>
-                <Input type="number" min="0" value={form.para} onChange={(e) => setForm((p) => ({ ...p, para: e.target.value }))} placeholder="P?" />
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.para}
+                  onChange={(e) => setForm((p) => ({ ...p, para: e.target.value }))}
+                  placeholder="P?"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Blood Type</Label>
-                <Select value={form.bloodType} onValueChange={(v) => setForm((p) => ({ ...p, bloodType: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={form.bloodType}
+                  onValueChange={(v) => setForm((p) => ({ ...p, bloodType: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     {["A", "B", "AB", "O"].map((bt) => (
-                      <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                      <SelectItem key={bt} value={bt}>
+                        {bt}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Rh Factor</Label>
-                <Select value={form.rhFactor} onValueChange={(v) => setForm((p) => ({ ...p, rhFactor: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={form.rhFactor}
+                  onValueChange={(v) => setForm((p) => ({ ...p, rhFactor: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="positive">Positive (+)</SelectItem>
                     <SelectItem value="negative">Negative (−)</SelectItem>
@@ -399,11 +456,19 @@ export default function PregnanciesPage() {
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Risk factors, observations..." />
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Risk factors, observations..."
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!form.patientId || !form.lmpDate}>Save</Button>
+              <Button variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!form.patientId || !form.lmpDate}>
+                Save
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -418,8 +483,13 @@ export default function PregnanciesPage() {
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Preferred Delivery Type</Label>
-              <Select value={birthPlanForm.deliveryType} onValueChange={(v) => setBirthPlanForm((p) => ({ ...p, deliveryType: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
+              <Select
+                value={birthPlanForm.deliveryType}
+                onValueChange={(v) => setBirthPlanForm((p) => ({ ...p, deliveryType: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preference" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vaginal">Vaginal</SelectItem>
                   <SelectItem value="cesarean">Cesarean</SelectItem>
@@ -432,12 +502,16 @@ export default function PregnanciesPage() {
               <Textarea
                 rows={6}
                 value={birthPlanForm.birthPlanNotes}
-                onChange={(e) => setBirthPlanForm((p) => ({ ...p, birthPlanNotes: e.target.value }))}
+                onChange={(e) =>
+                  setBirthPlanForm((p) => ({ ...p, birthPlanNotes: e.target.value }))
+                }
                 placeholder="Hospital preferences, pain management, special requests..."
               />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowBirthPlan(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowBirthPlan(false)}>
+                Cancel
+              </Button>
               <Button onClick={handleSaveBirthPlan}>Save</Button>
             </div>
           </div>

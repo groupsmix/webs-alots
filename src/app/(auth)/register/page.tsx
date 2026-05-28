@@ -114,9 +114,7 @@ export default function RegisterPage() {
               <UserPlus className="h-6 w-6 text-muted-foreground" />
             </div>
             <CardTitle className="text-xl">{t(locale, "register.unavailableTitle")}</CardTitle>
-            <CardDescription>
-              {t(locale, "register.unavailableDesc")}
-            </CardDescription>
+            <CardDescription>{t(locale, "register.unavailableDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Link
@@ -129,10 +127,7 @@ export default function RegisterPage() {
           <CardFooter className="justify-center border-t pt-4">
             <p className="text-sm text-muted-foreground">
               {t(locale, "auth.hasAccount")}{" "}
-              <Link
-                href="/login"
-                className="text-primary hover:underline font-medium"
-              >
+              <Link href="/login" className="text-primary hover:underline font-medium">
                 {t(locale, "auth.signIn")}
               </Link>
             </p>
@@ -167,9 +162,7 @@ export default function RegisterPage() {
             {step === "info" ? t(locale, "register.createAccount") : t(locale, "auth.verifyNumber")}
           </CardTitle>
           <CardDescription>
-            {step === "info"
-              ? t(locale, "register.desc")
-              : `${t(locale, "auth.otpSent")} ${phone}`}
+            {step === "info" ? t(locale, "register.desc") : `${t(locale, "auth.otpSent")} ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -305,10 +298,7 @@ export default function RegisterPage() {
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
             {t(locale, "auth.hasAccount")}{" "}
-            <Link
-              href="/login"
-              className="text-primary hover:underline font-medium"
-            >
+            <Link href="/login" className="text-primary hover:underline font-medium">
               {t(locale, "auth.signIn")}
             </Link>
           </p>

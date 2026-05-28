@@ -1,8 +1,14 @@
 "use client";
 
 import {
-  Package, HandCoins, Wrench, Clock,
-  ArrowRight, AlertTriangle, CheckCircle, Bell,
+  Package,
+  HandCoins,
+  Wrench,
+  Clock,
+  ArrowRight,
+  AlertTriangle,
+  CheckCircle,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -10,8 +16,16 @@ import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
-import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
+import {
+  fetchEquipmentInventory,
+  fetchEquipmentRentals,
+  fetchEquipmentMaintenance,
+} from "@/lib/data/client";
+import type {
+  EquipmentItemView,
+  EquipmentRentalView,
+  EquipmentMaintenanceView,
+} from "@/lib/data/client";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
 import { useEquipmentLocale } from "../layout";
 
@@ -34,18 +48,22 @@ export default function EquipmentDashboardPage() {
       fetchEquipmentMaintenance(cId),
     ])
       .then(([inv, rent, maint]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setInventory(inv);
         setRentals(rent);
         setMaintenance(maint);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -55,7 +73,9 @@ export default function EquipmentDashboardPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -140,13 +160,18 @@ export default function EquipmentDashboardPage() {
               <div>
                 <p className="text-sm text-muted-foreground">{t("totalEquipment")}</p>
                 <p className="text-3xl font-bold">{inventory.length}</p>
-                <p className="text-xs text-muted-foreground">{available.length} {t("available")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {available.length} {t("available")}
+                </p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
                 <Package className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/equipment/inventory" className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/equipment/inventory"
+              className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center"
+            >
               {t("viewInventory")} <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
@@ -163,7 +188,10 @@ export default function EquipmentDashboardPage() {
                 <HandCoins className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/equipment/rentals" className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/equipment/rentals"
+              className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center"
+            >
               {t("viewRentals")} <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
@@ -194,7 +222,10 @@ export default function EquipmentDashboardPage() {
                 <Wrench className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/equipment/maintenance" className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/equipment/maintenance"
+              className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center"
+            >
               {t("viewSchedule")} <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
@@ -207,24 +238,38 @@ export default function EquipmentDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">{t("activeRentalsTitle")}</h2>
-              <Link href="/equipment/rentals" className="text-sm text-amber-600 hover:underline">{t("viewAll")}</Link>
+              <Link href="/equipment/rentals" className="text-sm text-amber-600 hover:underline">
+                {t("viewAll")}
+              </Link>
             </div>
             <div className="space-y-3">
               {[...overdueRentals, ...activeRentals].slice(0, 5).map((rental) => (
-                <div key={rental.id} className={`flex items-center justify-between p-3 rounded-lg ${rental.status === "overdue" ? "bg-red-50 dark:bg-red-950/10" : "bg-muted/50"}`}>
+                <div
+                  key={rental.id}
+                  className={`flex items-center justify-between p-3 rounded-lg ${rental.status === "overdue" ? "bg-red-50 dark:bg-red-950/10" : "bg-muted/50"}`}
+                >
                   <div>
                     <p className="font-medium text-sm">{rental.equipmentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.clientName} &middot; {t("since")} {new Date(rental.rentalStart).toLocaleDateString(dateFmt)}
+                      {rental.clientName} &middot; {t("since")}{" "}
+                      {new Date(rental.rentalStart).toLocaleDateString(dateFmt)}
                     </p>
                   </div>
-                  <Badge className={rental.status === "overdue" ? "bg-red-100 text-red-700 border-0" : "bg-blue-100 text-blue-700 border-0"}>
+                  <Badge
+                    className={
+                      rental.status === "overdue"
+                        ? "bg-red-100 text-red-700 border-0"
+                        : "bg-blue-100 text-blue-700 border-0"
+                    }
+                  >
                     {statusLabel(rental.status)}
                   </Badge>
                 </div>
               ))}
               {activeRentals.length === 0 && overdueRentals.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">{t("noActiveRentals")}</p>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {t("noActiveRentals")}
+                </p>
               )}
             </div>
           </CardContent>
@@ -238,23 +283,38 @@ export default function EquipmentDashboardPage() {
             </div>
             <div className="space-y-3">
               {needsRepair.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/10 rounded-lg">
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/10 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-sm">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{t("serialNumber")}: {item.serialNumber ?? "N/A"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("serialNumber")}: {item.serialNumber ?? "N/A"}
+                    </p>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-700 border-0">{t("needsRepair")}</Badge>
+                  <Badge className="bg-orange-100 text-orange-700 border-0">
+                    {t("needsRepair")}
+                  </Badge>
                 </div>
               ))}
               {upcomingMaint.slice(0, 3).map((m) => (
-                <div key={m.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-sm">{m.equipmentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {typeLabel(m.type)} &middot; {t("nextDue")}: {m.nextDue ? new Date(m.nextDue).toLocaleDateString(dateFmt) : new Date(m.performedAt).toLocaleDateString(dateFmt)}
+                      {typeLabel(m.type)} &middot; {t("nextDue")}:{" "}
+                      {m.nextDue
+                        ? new Date(m.nextDue).toLocaleDateString(dateFmt)
+                        : new Date(m.performedAt).toLocaleDateString(dateFmt)}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs capitalize">{typeLabel(m.type)}</Badge>
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {typeLabel(m.type)}
+                  </Badge>
                 </div>
               ))}
               {needsRepair.length === 0 && upcomingMaint.length === 0 && (

@@ -12,20 +12,9 @@ interface ExternalLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
  * Automatically sets `target="_blank"` and `rel="noopener noreferrer"` so
  * every outbound link is safe and consistent (Issue 42).
  */
-export function ExternalLink({
-  href,
-  children,
-  className,
-  ...props
-}: ExternalLinkProps) {
+export function ExternalLink({ href, children, className, ...props }: ExternalLinkProps) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(className)}
-      {...props}
-    >
+    <a href={href} target="_blank" rel="noopener noreferrer" className={cn(className)} {...props}>
       {children}
     </a>
   );

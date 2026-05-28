@@ -44,9 +44,8 @@ export function InstallmentForm({
   const [submitted, setSubmitted] = useState(false);
 
   const remainingAfterDown = data.totalAmount - data.downPayment;
-  const monthlyAmount = data.numberOfInstallments > 0
-    ? Math.ceil(remainingAfterDown / data.numberOfInstallments)
-    : 0;
+  const monthlyAmount =
+    data.numberOfInstallments > 0 ? Math.ceil(remainingAfterDown / data.numberOfInstallments) : 0;
 
   const generateSchedule = () => {
     const schedule = [];
@@ -57,9 +56,10 @@ export function InstallmentForm({
       schedule.push({
         month: i + 1,
         date: date.toISOString().split("T")[0],
-        amount: i < data.numberOfInstallments - 1
-          ? monthlyAmount
-          : remainingAfterDown - monthlyAmount * (data.numberOfInstallments - 1),
+        amount:
+          i < data.numberOfInstallments - 1
+            ? monthlyAmount
+            : remainingAfterDown - monthlyAmount * (data.numberOfInstallments - 1),
       });
     }
     return schedule;
@@ -79,7 +79,8 @@ export function InstallmentForm({
           <CreditCard className="h-8 w-8 mx-auto text-green-600 mb-3" />
           <p className="text-sm font-medium">Installment plan created!</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {data.numberOfInstallments} monthly payments of ~{formatCurrency(monthlyAmount, typeof locale !== "undefined" ? locale : "fr", "MAD")}
+            {data.numberOfInstallments} monthly payments of ~
+            {formatCurrency(monthlyAmount, typeof locale !== "undefined" ? locale : "fr", "MAD")}
           </p>
         </CardContent>
       </Card>
@@ -129,7 +130,9 @@ export function InstallmentForm({
               min={1}
               max={24}
               value={data.numberOfInstallments}
-              onChange={(e) => setData({ ...data, numberOfInstallments: parseInt(e.target.value) || 1 })}
+              onChange={(e) =>
+                setData({ ...data, numberOfInstallments: parseInt(e.target.value) || 1 })
+              }
               className="text-sm"
             />
           </div>
@@ -167,15 +170,21 @@ export function InstallmentForm({
           </div>
           <div className="grid grid-cols-3 gap-2 text-center mb-3">
             <div>
-              <p className="text-lg font-bold">{formatNumber(data.totalAmount, typeof locale !== "undefined" ? locale : "fr")}</p>
+              <p className="text-lg font-bold">
+                {formatNumber(data.totalAmount, typeof locale !== "undefined" ? locale : "fr")}
+              </p>
               <p className="text-[10px] text-muted-foreground">Total (MAD)</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-blue-600">{formatNumber(data.downPayment, typeof locale !== "undefined" ? locale : "fr")}</p>
+              <p className="text-lg font-bold text-blue-600">
+                {formatNumber(data.downPayment, typeof locale !== "undefined" ? locale : "fr")}
+              </p>
               <p className="text-[10px] text-muted-foreground">Down Payment</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-primary">{formatNumber(monthlyAmount, typeof locale !== "undefined" ? locale : "fr")}</p>
+              <p className="text-lg font-bold text-primary">
+                {formatNumber(monthlyAmount, typeof locale !== "undefined" ? locale : "fr")}
+              </p>
               <p className="text-[10px] text-muted-foreground">~Monthly (MAD)</p>
             </div>
           </div>
@@ -190,10 +199,17 @@ export function InstallmentForm({
             </p>
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {schedule.map((s) => (
-                <div key={s.month} className="flex items-center justify-between rounded border p-2 text-sm">
+                <div
+                  key={s.month}
+                  className="flex items-center justify-between rounded border p-2 text-sm"
+                >
                   <span className="text-muted-foreground">Month {s.month}</span>
-                  <span className="text-xs text-muted-foreground">{formatDisplayDate(s.date, "fr", "short")}</span>
-                  <span className="font-medium">{formatCurrency(s.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDisplayDate(s.date, "fr", "short")}
+                  </span>
+                  <span className="font-medium">
+                    {formatCurrency(s.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")}
+                  </span>
                 </div>
               ))}
             </div>

@@ -16,11 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { t, type TranslationKey } from "@/lib/i18n";
-import {
-  enrollMFA,
-  verifyMFAEnrollment,
-  generateBackupCodes,
-} from "@/lib/mfa";
+import { enrollMFA, verifyMFAEnrollment, generateBackupCodes } from "@/lib/mfa";
 import type { MFAEnrollment } from "@/lib/mfa";
 import { formatDisplayDate } from "@/lib/utils";
 
@@ -116,7 +112,7 @@ export default function Setup2FAPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-muted-foreground">{ t(locale, "mfa.setupTitle") + "..." }</p>
+            <p className="text-muted-foreground">{t(locale, "mfa.setupTitle") + "..."}</p>
           </CardContent>
         </Card>
       </div>
@@ -131,8 +127,8 @@ export default function Setup2FAPage() {
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
               <AlertTriangle className="h-6 w-6 text-amber-600" />
             </div>
-            <CardTitle className="text-xl">{ t(locale, "mfa.backupCodes") }</CardTitle>
-            <CardDescription>{ t(locale, "mfa.backupCodesDesc") }</CardDescription>
+            <CardTitle className="text-xl">{t(locale, "mfa.backupCodes")}</CardTitle>
+            <CardDescription>{t(locale, "mfa.backupCodesDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted rounded-lg p-4">
@@ -149,35 +145,30 @@ export default function Setup2FAPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleCopyBackupCodes}
-              >
+              <Button variant="outline" className="flex-1" onClick={handleCopyBackupCodes}>
                 {backupCopied ? (
                   <Check className="h-4 w-4 mr-1" />
                 ) : (
                   <Copy className="h-4 w-4 mr-1" />
                 )}
-                {backupCopied ? t(locale, "action.copied" as TranslationKey) || "Copié" : t(locale, "action.copy" as TranslationKey) || "Copier"}
+                {backupCopied
+                  ? t(locale, "action.copied" as TranslationKey) || "Copié"
+                  : t(locale, "action.copy" as TranslationKey) || "Copier"}
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleDownloadBackupCodes}
-              >
+              <Button variant="outline" className="flex-1" onClick={handleDownloadBackupCodes}>
                 <Download className="h-4 w-4 mr-1" />
                 {t(locale, "mfa.downloadCodes")}
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center">{ t(locale, "mfa.backupCodesDesc") }</p>
+            <p className="text-xs text-muted-foreground text-center">
+              {t(locale, "mfa.backupCodesDesc")}
+            </p>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() => router.push("/doctor/dashboard")}
-            >{ t(locale, "mfa.goToDashboard") }</Button>
+            <Button className="w-full" onClick={() => router.push("/doctor/dashboard")}>
+              {t(locale, "mfa.goToDashboard")}
+            </Button>
           </CardFooter>
         </Card>
       </div>
@@ -192,9 +183,11 @@ export default function Setup2FAPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <ShieldCheck className="h-6 w-6 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold mb-2">{ t(locale, "mfa.enabled") }</h2>
-            <p className="text-muted-foreground mb-6">{ t(locale, "mfa.setupCompleteDesc") }</p>
-            <Button onClick={() => router.push("/doctor/dashboard")}>{ t(locale, "mfa.goToDashboard") }</Button>
+            <h2 className="text-xl font-bold mb-2">{t(locale, "mfa.enabled")}</h2>
+            <p className="text-muted-foreground mb-6">{t(locale, "mfa.setupCompleteDesc")}</p>
+            <Button onClick={() => router.push("/doctor/dashboard")}>
+              {t(locale, "mfa.goToDashboard")}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -209,21 +202,17 @@ export default function Setup2FAPage() {
             <ShieldCheck className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">{ t(locale, "mfa.setupTitle") }</h1>
-        <p className="text-sm text-muted-foreground">{ t(locale, "mfa.setupDesc") }</p>
+        <h1 className="text-xl font-bold">{t(locale, "mfa.setupTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t(locale, "mfa.setupDesc")}</p>
       </div>
 
       <Card>
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-lg">
-            {step === "qr"
-              ? t(locale, "mfa.scanQR")
-              : t(locale, "mfa.verifyTitle")}
+            {step === "qr" ? t(locale, "mfa.scanQR") : t(locale, "mfa.verifyTitle")}
           </CardTitle>
           <CardDescription>
-            {step === "qr"
-              ? t(locale, "mfa.setupDesc")
-              : t(locale, "mfa.verifyDesc")}
+            {step === "qr" ? t(locale, "mfa.setupDesc") : t(locale, "mfa.verifyDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -266,24 +255,13 @@ export default function Setup2FAPage() {
                   <code className="flex-1 text-xs font-mono bg-muted rounded px-3 py-2 text-center break-all">
                     {enrollment.secret}
                   </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopySecret}
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
+                  <Button variant="ghost" size="sm" onClick={handleCopySecret}>
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
 
-              <Button
-                className="w-full"
-                onClick={() => setStep("verify")}
-              >
+              <Button className="w-full" onClick={() => setStep("verify")}>
                 {t(locale, "action.next" as TranslationKey) || "Suivant"}
               </Button>
             </div>
@@ -309,12 +287,10 @@ export default function Setup2FAPage() {
                   autoFocus
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || code.length !== 6}
-              >
-                {loading ? t(locale, "mfa.verifying" as TranslationKey) : t(locale, "mfa.verify" as TranslationKey)}
+              <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
+                {loading
+                  ? t(locale, "mfa.verifying" as TranslationKey)
+                  : t(locale, "mfa.verify" as TranslationKey)}
               </Button>
               <Button
                 type="button"

@@ -140,10 +140,7 @@ describe("sendEmail", () => {
       html: "<p>Hello</p>",
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.resend.com/emails",
-      expect.anything(),
-    );
+    expect(mockFetch).toHaveBeenCalledWith("https://api.resend.com/emails", expect.anything());
 
     vi.unstubAllGlobals();
   });
@@ -156,18 +153,14 @@ describe("sendNotificationEmail", () => {
       "test@example.com",
       '<script>alert("xss")</script>',
       "<b>bold</b>",
-      '<img src=x onerror=alert(1)>',
+      "<img src=x onerror=alert(1)>",
     );
     // Without a provider it should fail gracefully
     expect(result.success).toBe(false);
   });
 
   it("uses default clinic name when not provided", async () => {
-    const result = await sendNotificationEmail(
-      "test@example.com",
-      "Subject",
-      "Body",
-    );
+    const result = await sendNotificationEmail("test@example.com", "Subject", "Body");
     expect(result.success).toBe(false);
     expect(result.error).toContain("No email provider configured");
   });
@@ -205,12 +198,7 @@ describe("sendNotificationEmail", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    await sendNotificationEmail(
-      "patient@example.com",
-      "Test Subject",
-      "Test body",
-      "Test Clinic",
-    );
+    await sendNotificationEmail("patient@example.com", "Test Subject", "Test body", "Test Clinic");
 
     const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(callBody.html).toContain("/patient/preferences");

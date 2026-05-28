@@ -97,7 +97,10 @@ vi.mock("@/lib/data/server", () => ({
 const CLINIC_ID = "11111111-1111-1111-1111-111111111111";
 const OTHER_CLINIC_ID = "22222222-2222-2222-2222-222222222222";
 
-function authedAs(role: "doctor" | "clinic_admin" | "patient" | "super_admin", clinicId: string | null) {
+function authedAs(
+  role: "doctor" | "clinic_admin" | "patient" | "super_admin",
+  clinicId: string | null,
+) {
   mockSupabase.auth.getUser.mockResolvedValue({
     data: { user: { id: "auth-user-1", email: "user@test.com" } },
     error: null,
@@ -164,10 +167,14 @@ describe("POST /api/lab/report-html — encrypted PHI storage", () => {
       data: { id: "order-1", clinic_id: CLINIC_ID, patient_id: "patient-1" },
       error: null,
     });
-    encryptAndUploadMock.mockResolvedValueOnce("https://r2.example/clinics/x/lab-reports/abc.html.enc");
+    encryptAndUploadMock.mockResolvedValueOnce(
+      "https://r2.example/clinics/x/lab-reports/abc.html.enc",
+    );
 
     const { POST } = await import("@/app/api/lab/report-html/route");
-    const response = await POST(buildJsonRequest("http://t.test/api/lab/report-html", validReportBody));
+    const response = await POST(
+      buildJsonRequest("http://t.test/api/lab/report-html", validReportBody),
+    );
     const json = await response.json();
 
     expect(response.status).toBe(200);
@@ -201,7 +208,9 @@ describe("POST /api/lab/report-html — encrypted PHI storage", () => {
     encryptAndUploadMock.mockResolvedValueOnce(publicR2Url);
 
     const { POST } = await import("@/app/api/lab/report-html/route");
-    const response = await POST(buildJsonRequest("http://t.test/api/lab/report-html", validReportBody));
+    const response = await POST(
+      buildJsonRequest("http://t.test/api/lab/report-html", validReportBody),
+    );
     const json = await response.json();
 
     expect(response.status).toBe(200);
@@ -228,7 +237,9 @@ describe("POST /api/lab/report-html — encrypted PHI storage", () => {
     mockChainable.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const { POST } = await import("@/app/api/lab/report-html/route");
-    const response = await POST(buildJsonRequest("http://t.test/api/lab/report-html", validReportBody));
+    const response = await POST(
+      buildJsonRequest("http://t.test/api/lab/report-html", validReportBody),
+    );
     const json = await response.json();
 
     expect(response.status).toBe(404);
@@ -246,7 +257,9 @@ describe("POST /api/lab/report-html — encrypted PHI storage", () => {
     });
 
     const { POST } = await import("@/app/api/lab/report-html/route");
-    const response = await POST(buildJsonRequest("http://t.test/api/lab/report-html", validReportBody));
+    const response = await POST(
+      buildJsonRequest("http://t.test/api/lab/report-html", validReportBody),
+    );
     const json = await response.json();
 
     expect(response.status).toBe(503);
@@ -269,7 +282,9 @@ describe("POST /api/lab/report-html — encrypted PHI storage", () => {
     encryptAndUploadMock.mockResolvedValueOnce(null);
 
     const { POST } = await import("@/app/api/lab/report-html/route");
-    const response = await POST(buildJsonRequest("http://t.test/api/lab/report-html", validReportBody));
+    const response = await POST(
+      buildJsonRequest("http://t.test/api/lab/report-html", validReportBody),
+    );
     const json = await response.json();
 
     expect(response.status).toBe(503);
@@ -291,7 +306,9 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
 
     const { GET } = await import("@/app/api/files/download/route");
     const response = await GET(
-      buildGetRequest(`http://t.test/api/files/download?key=clinics/${CLINIC_ID}/lab-reports/x.html`),
+      buildGetRequest(
+        `http://t.test/api/files/download?key=clinics/${CLINIC_ID}/lab-reports/x.html`,
+      ),
     );
 
     expect(response.status).toBe(401);
@@ -303,7 +320,9 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
 
     const { GET } = await import("@/app/api/files/download/route");
     const response = await GET(
-      buildGetRequest(`http://t.test/api/files/download?key=clinics/${OTHER_CLINIC_ID}/lab-reports/x.html`),
+      buildGetRequest(
+        `http://t.test/api/files/download?key=clinics/${OTHER_CLINIC_ID}/lab-reports/x.html`,
+      ),
     );
 
     expect(response.status).toBe(403);
@@ -315,7 +334,9 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
 
     const { GET } = await import("@/app/api/files/download/route");
     const response = await GET(
-      buildGetRequest(`http://t.test/api/files/download?key=${encodeURIComponent("clinics/" + CLINIC_ID + "/../" + OTHER_CLINIC_ID + "/x.html")}`),
+      buildGetRequest(
+        `http://t.test/api/files/download?key=${encodeURIComponent("clinics/" + CLINIC_ID + "/../" + OTHER_CLINIC_ID + "/x.html")}`,
+      ),
     );
 
     expect(response.status).toBe(400);
@@ -407,7 +428,12 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
         type: string;
         clinicId: string;
         actor: string | null | undefined;
-        metadata: { key: string; role: string; crossTenant: boolean; callerClinicId: string | null };
+        metadata: {
+          key: string;
+          role: string;
+          crossTenant: boolean;
+          callerClinicId: string | null;
+        };
       },
     ];
     expect(params.action).toBe("file_downloaded");
@@ -449,7 +475,9 @@ describe("download route helpers", () => {
     const { expectedDownloadPrefixForProfile } = await import("@/app/api/files/download/route");
 
     expect(expectedDownloadPrefixForProfile("doctor", CLINIC_ID)).toBe(`clinics/${CLINIC_ID}/`);
-    expect(expectedDownloadPrefixForProfile("clinic_admin", CLINIC_ID)).toBe(`clinics/${CLINIC_ID}/`);
+    expect(expectedDownloadPrefixForProfile("clinic_admin", CLINIC_ID)).toBe(
+      `clinics/${CLINIC_ID}/`,
+    );
     expect(expectedDownloadPrefixForProfile("patient", CLINIC_ID)).toBe(`clinics/${CLINIC_ID}/`);
     expect(expectedDownloadPrefixForProfile("super_admin", null)).toBe("clinics/");
     expect(expectedDownloadPrefixForProfile("super_admin", CLINIC_ID)).toBe("clinics/");
