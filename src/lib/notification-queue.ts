@@ -213,6 +213,26 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
               attempts: newAttempts,
               lastError: sendResult.error,
             });
+
+            // R-13: Alert Sentry on dead-lettered notifications so operators
+            // notice delivery outages (e.g. Meta API down) within minutes.
+            try {
+              const Sentry = await import("@sentry/nextjs");
+              Sentry.captureException(
+                new Error(`Notification ${item.id} dead-lettered after ${newAttempts} attempts`),
+                {
+                  tags: { compliance: "notification_delivery", channel: item.channel },
+                  extra: {
+                    notificationId: item.id,
+                    channel: item.channel,
+                    attempts: newAttempts,
+                    lastError: sendResult.error,
+                  },
+                },
+              );
+            } catch {
+              // Sentry unavailable
+            }
           } else {
             // Schedule retry with exponential backoff
             const nextRetry = calculateNextRetry(newAttempts);

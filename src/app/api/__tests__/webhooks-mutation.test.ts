@@ -19,24 +19,27 @@ import { hmacSha256Hex } from "@/lib/crypto-utils";
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 
-vi.mock("@/lib/supabase-server", () => ({
-  createClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => ({ data: null, error: null })),
-          order: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              maybeSingle: vi.fn(() => ({ data: null, error: null })),
-            })),
+const mockSupabaseClient = () => ({
+  from: vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: vi.fn(() => ({ data: null, error: null })),
+        order: vi.fn(() => ({
+          limit: vi.fn(() => ({
+            maybeSingle: vi.fn(() => ({ data: null, error: null })),
           })),
         })),
       })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({ error: null })),
-      })),
+    })),
+    update: vi.fn(() => ({
+      eq: vi.fn(() => ({ error: null })),
     })),
   })),
+});
+
+vi.mock("@/lib/supabase-server", () => ({
+  createClient: vi.fn(mockSupabaseClient),
+  createAdminClient: vi.fn(mockSupabaseClient),
 }));
 
 vi.mock("@/lib/tenant-context", () => ({

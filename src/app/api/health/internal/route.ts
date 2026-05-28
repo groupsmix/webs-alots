@@ -52,6 +52,27 @@ export async function GET(request: NextRequest) {
     };
   }
 
+  // R-14: Surface pending_audit_logs count so operators detect accumulation
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && serviceKey) {
+      const adminClient = _createSupabaseClient(supabaseUrl, serviceKey);
+      const { count, error: palErr } = await adminClient
+        .from("pending_audit_logs")
+        .select("id", { count: "exact", head: true });
+      if (!palErr) {
+        const pending = count ?? 0;
+        checks.pendingAuditLogs = {
+          status: pending > 100 ? "degraded" : "ok",
+          ...(pending > 0 && { error: `${pending} pending audit log(s)` }),
+        };
+      }
+    }
+  } catch {
+    // Non-critical — skip if table doesn't exist
+  }
+
   checks.r2 = _isR2Configured()
     ? { status: "ok" }
     : { status: "degraded", error: "R2 storage not configured" };

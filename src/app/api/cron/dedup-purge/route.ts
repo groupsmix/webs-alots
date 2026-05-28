@@ -17,11 +17,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
 
 const RETENTION_DAYS = 90;
 
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
@@ -82,3 +83,5 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ ok: true, purged: results, cutoff, retentionDays: RETENTION_DAYS });
 }
+
+export const GET = withSentryCron("dedup-purge-daily", "0 4 * * *", handler);

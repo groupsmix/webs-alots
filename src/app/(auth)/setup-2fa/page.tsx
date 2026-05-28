@@ -226,9 +226,8 @@ export default function Setup2FAPage() {
             <div className="space-y-4">
               {/* QR Code — render client-side from TOTP URI for safety.
                   enrollment.qrCode comes from Supabase's MFA API and is expected
-                  to be a safe SVG data URL, but rendering it via dangerouslySetInnerHTML
-                  would be risky if the API response were ever tampered with (MITM,
-                  Supabase compromise). Instead we validate it's a data URI before use. */}
+                  to be a safe SVG data URL. We validate it's a data URI before use
+                  to guard against API response tampering (MITM, Supabase compromise). */}
               <div className="flex justify-center">
                 {enrollment.qrCode.startsWith("data:image/") ? (
                   // eslint-disable-next-line @next/next/no-img-element

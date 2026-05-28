@@ -3,7 +3,7 @@ import { apiForbidden, apiInternalError, apiSuccess, apiUnauthorized } from "@/l
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { dispatchNotification, type TemplateVariables } from "@/lib/notifications";
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 
 // ── WhatsApp Webhook payload types ──
@@ -193,6 +193,10 @@ export async function POST(request: NextRequest) {
     const entries = body.entry ?? [];
 
     const supabase = await createClient();
+    // R-07: Use admin client for notification_log updates — webhooks have no
+    // user session, so the anon client would silently match 0 rows under RLS.
+    // nosemgrep: admin-client-guard
+    const admin = createAdminClient("webhook");
 
     for (const entry of entries) {
       // ── Process delivery/read status updates ──────────────────────
@@ -213,7 +217,7 @@ export async function POST(request: NextRequest) {
               ).toISOString();
             }
 
-            await supabase
+            await admin
               .from("notification_log")
               // @ts-expect-error -- Supabase generated types lag behind actual DB schema
               .update(updateData)
