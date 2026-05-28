@@ -13,22 +13,25 @@ function SupportIcon({ value }: { value: FeatureSupport }) {
   switch (value) {
     case "full":
       return (
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+        <span className="inline-flex h-6 w-6 items-center justify-center text-primary">
+          <Check className="h-4 w-4" aria-hidden="true" />
           <span className="sr-only">Inclus</span>
         </span>
       );
     case "partial":
       return (
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-          <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+        <span
+          className="inline-flex h-6 w-6 items-center justify-center"
+          style={{ color: "var(--signal-amber)" }}
+        >
+          <Minus className="h-4 w-4" aria-hidden="true" />
           <span className="sr-only">Partiel</span>
         </span>
       );
     case "none":
       return (
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        <span className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground/40">
+          <X className="h-4 w-4" aria-hidden="true" />
           <span className="sr-only">Non inclus</span>
         </span>
       );
@@ -46,16 +49,16 @@ function _ComparisonSection() {
   const previewFeatures = highlightCategories.flatMap((cat) => grouped[cat]?.slice(0, 2) ?? []);
 
   return (
-    <section id="comparatif" className="bg-gray-50 py-20 sm:py-28">
+    <section id="comparatif" className="bg-muted py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
+        <div className="max-w-2xl">
+          <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
             Comparatif
           </p>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Pourquoi choisir Oltigo ?
           </h2>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg text-muted-foreground">
             Comparez les fonctionnalités d&apos;Oltigo avec les autres solutions du marché marocain.
           </p>
         </div>
@@ -64,13 +67,15 @@ function _ComparisonSection() {
         <div className="mt-12 hidden overflow-x-auto md:block">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="py-4 pr-4 text-left font-medium text-gray-500">Fonctionnalité</th>
+              <tr className="border-b border-border">
+                <th className="py-4 pr-4 text-left font-medium text-muted-foreground">
+                  Fonctionnalité
+                </th>
                 {COMPETITORS.map((c) => (
                   <th
                     key={c.id}
                     className={`px-4 py-4 text-center font-semibold ${
-                      c.highlight ? "text-blue-600" : "text-gray-700"
+                      c.highlight ? "text-primary" : "text-foreground"
                     }`}
                   >
                     {c.name}
@@ -80,8 +85,11 @@ function _ComparisonSection() {
             </thead>
             <tbody>
               {previewFeatures.map((feature, idx) => (
-                <tr key={feature.label} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="py-3 pr-4 text-gray-700">{feature.label}</td>
+                <tr
+                  key={feature.label}
+                  className={idx % 2 === 0 ? "bg-transparent" : "bg-muted/50"}
+                >
+                  <td className="py-3 pr-4 text-foreground">{feature.label}</td>
                   {COMPETITORS.map((c) => (
                     <td key={c.id} className="px-4 py-3 text-center">
                       <SupportIcon value={feature.values[c.id]} />
@@ -96,13 +104,17 @@ function _ComparisonSection() {
         {/* Mobile cards */}
         <div className="mt-12 space-y-4 md:hidden">
           {previewFeatures.map((feature) => (
-            <div key={feature.label} className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="mb-3 font-medium text-gray-900">{feature.label}</p>
+            <div key={feature.label} className="rounded-lg border border-border bg-card p-4">
+              <p className="mb-3 font-medium text-foreground">{feature.label}</p>
               <div className="grid grid-cols-2 gap-2">
                 {COMPETITORS.map((c) => (
                   <div key={c.id} className="flex items-center gap-2 text-sm">
                     <SupportIcon value={feature.values[c.id]} />
-                    <span className={c.highlight ? "font-semibold text-blue-600" : "text-gray-600"}>
+                    <span
+                      className={
+                        c.highlight ? "font-semibold text-primary" : "text-muted-foreground"
+                      }
+                    >
                       {c.name}
                     </span>
                   </div>
@@ -113,7 +125,7 @@ function _ComparisonSection() {
         </div>
 
         {/* Legend */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <SupportIcon value="full" />
             <span>Inclus</span>
@@ -132,7 +144,7 @@ function _ComparisonSection() {
         <div className="mt-10 text-center">
           <Link
             href="/compare"
-            className="group inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700"
+            className="group inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Voir le comparatif complet
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -154,7 +166,7 @@ export function FullComparisonTable() {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
       {/* Legend */}
-      <div className="mb-8 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+      <div className="mb-8 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <SupportIcon value="full" />
           <span>Inclus</span>
@@ -172,14 +184,16 @@ export function FullComparisonTable() {
       {/* Desktop table */}
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-white">
-            <tr className="border-b-2 border-gray-200">
-              <th className="py-4 pr-4 text-left font-medium text-gray-500">Fonctionnalité</th>
+          <thead className="sticky top-0 z-10 bg-background">
+            <tr className="border-b border-border">
+              <th className="py-4 pr-4 text-left font-medium text-muted-foreground">
+                Fonctionnalité
+              </th>
               {COMPETITORS.map((c) => (
                 <th
                   key={c.id}
                   className={`px-4 py-4 text-center font-semibold ${
-                    c.highlight ? "text-blue-600" : "text-gray-700"
+                    c.highlight ? "text-primary" : "text-foreground"
                   }`}
                 >
                   {c.name}
@@ -193,14 +207,17 @@ export function FullComparisonTable() {
                 <tr key={`cat-${category}`}>
                   <td
                     colSpan={COMPETITORS.length + 1}
-                    className="pb-2 pt-6 text-xs font-bold uppercase tracking-widest text-blue-600"
+                    className="pb-2 pt-6 font-mono text-xs font-bold uppercase tracking-[0.2em] text-primary"
                   >
                     {CATEGORY_LABELS[category]}
                   </td>
                 </tr>
                 {grouped[category].map((feature, idx) => (
-                  <tr key={feature.label} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="py-3 pr-4 text-gray-700">{feature.label}</td>
+                  <tr
+                    key={feature.label}
+                    className={idx % 2 === 0 ? "bg-transparent" : "bg-muted/50"}
+                  >
+                    <td className="py-3 pr-4 text-foreground">{feature.label}</td>
                     {COMPETITORS.map((c) => (
                       <td key={c.id} className="px-4 py-3 text-center">
                         <SupportIcon value={feature.values[c.id]} />
@@ -218,19 +235,21 @@ export function FullComparisonTable() {
       <div className="space-y-8 md:hidden">
         {categories.map((category) => (
           <div key={category}>
-            <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-blue-600">
+            <h3 className="mb-4 font-mono text-xs font-bold uppercase tracking-[0.2em] text-primary">
               {CATEGORY_LABELS[category]}
             </h3>
             <div className="space-y-3">
               {grouped[category].map((feature) => (
-                <div key={feature.label} className="rounded-xl border border-gray-200 bg-white p-4">
-                  <p className="mb-3 font-medium text-gray-900">{feature.label}</p>
+                <div key={feature.label} className="rounded-lg border border-border bg-card p-4">
+                  <p className="mb-3 font-medium text-foreground">{feature.label}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {COMPETITORS.map((c) => (
                       <div key={c.id} className="flex items-center gap-2 text-sm">
                         <SupportIcon value={feature.values[c.id]} />
                         <span
-                          className={c.highlight ? "font-semibold text-blue-600" : "text-gray-600"}
+                          className={
+                            c.highlight ? "font-semibold text-primary" : "text-muted-foreground"
+                          }
                         >
                           {c.name}
                         </span>
@@ -245,18 +264,18 @@ export function FullComparisonTable() {
       </div>
 
       {/* Score summary */}
-      <div className="mt-12 rounded-2xl border border-blue-100 bg-blue-50 p-8 text-center">
-        <p className="text-lg font-semibold text-gray-900">
+      <div className="mt-12 rounded-lg border border-border bg-muted p-8 text-center">
+        <p className="text-lg font-semibold text-foreground">
           Oltigo couvre{" "}
-          <span className="text-blue-600">
+          <span className="text-primary">
             {COMPARISON_FEATURES.filter((f) => f.values.oltigo === "full").length}
           </span>{" "}
-          fonctionnalités sur <span className="text-blue-600">{COMPARISON_FEATURES.length}</span> —
+          fonctionnalités sur <span className="text-primary">{COMPARISON_FEATURES.length}</span> —
           plus que tout autre concurrent.
         </p>
         <Link
           href="/register-clinic"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Commencer gratuitement
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

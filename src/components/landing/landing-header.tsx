@@ -47,6 +47,7 @@ export function LandingHeader() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* Wordmark */}
+        {/* eslint-disable i18next/no-literal-string -- brand name, never translated */}
         <Link
           href="/"
           style={{
@@ -57,8 +58,9 @@ export function LandingHeader() {
             textDecoration: "none",
           }}
         >
-          Oltigo
+          Oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
         </Link>
+        {/* eslint-enable i18next/no-literal-string */}
 
         {/* Desktop nav */}
         <nav

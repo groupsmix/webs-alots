@@ -75,7 +75,7 @@ export function EditorialFooter() {
                 textDecoration: "none",
               }}
             >
-              oltigo
+              oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
             </Link>
             <p
               style={{
