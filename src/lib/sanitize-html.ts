@@ -126,7 +126,7 @@ export function sanitizeHtml(dirty: string): string {
     // data:image/* (DOMPurify allows http/https/mailto/tel/ftp/file by
     // default; we further restrict via ALLOWED_URI_REGEXP below).
     ALLOWED_URI_REGEXP:
-      /^(?:(?:https?|mailto|tel):|data:image\/(?:png|jpe?g|gif|webp|svg\+xml);|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+      /^(?:(?:https?|mailto|tel):|data:image\/(?:png|jpe?g|gif|webp);|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
     // Strip the wrapping <html>/<body> that DOMPurify sometimes adds.
     WHOLE_DOCUMENT: false,
     RETURN_TRUSTED_TYPE: false,
