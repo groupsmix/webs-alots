@@ -130,21 +130,9 @@ export async function POST(request: NextRequest) {
           }
           logTenantContext(clinicId, "payments/webhook:checkout.completed");
 
-          // Audit 3.8 Fix: Webhook Deduplication / Replay Protection
-          // We check if this exact Stripe event ID has already been processed to
-          // prevent duplicate processing in case of Stripe retries.
-          const { data: existingPayment } = await supabase
-            .from("payments")
-            .select("id")
-            .eq("reference", session.id)
-            .maybeSingle();
-
-          if (existingPayment) {
-            logger.info(`Stripe webhook event already processed: ${session.id}`, {
-              context: "payments/webhook",
-            });
-            break; // Skip processing since it's already handled
-          }
+          // A10-04: Redundant existence check removed. The upsert below
+          // uses onConflict: "reference" so concurrent webhooks for the
+          // same session.id are idempotent at the DB level.
 
           // API-002 / SEC-014: Verify that the appointment actually belongs
           // to the clinic specified in metadata. A forged or replayed webhook

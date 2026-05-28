@@ -7,6 +7,7 @@
 ## Context
 
 Multi-tenant SaaS applications must isolate tenants. The two common URL strategies are:
+
 - **Path-based**: `app.oltigo.com/clinics/:slug/dashboard`
 - **Subdomain-based**: `:slug.oltigo.com/dashboard`
 
