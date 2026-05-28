@@ -67,6 +67,47 @@ export type Database = {
           },
         ]
       }
+      ai_usage: {
+        Row: {
+          id: string
+          clinic_id: string
+          month: string
+          tokens_in: number
+          tokens_out: number
+          request_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          month: string
+          tokens_in?: number
+          tokens_out?: number
+          request_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          month?: string
+          tokens_in?: number
+          tokens_out?: number
+          request_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admissions: {
         Row: {
           admission_date: string
@@ -900,9 +941,11 @@ export type Database = {
           active: boolean
           clinic_id: string
           created_at: string | null
+          expires_at: string | null
           id: string
           key: string | null
           key_hash: string
+          key_prefix: string | null
           label: string | null
           last_used_at: string | null
           updated_at: string | null
@@ -911,9 +954,11 @@ export type Database = {
           active?: boolean
           clinic_id: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           key?: string | null
           key_hash: string
+          key_prefix?: string | null
           label?: string | null
           last_used_at?: string | null
           updated_at?: string | null
@@ -922,9 +967,11 @@ export type Database = {
           active?: boolean
           clinic_id?: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           key?: string | null
           key_hash?: string
+          key_prefix?: string | null
           label?: string | null
           last_used_at?: string | null
           updated_at?: string | null
@@ -1224,6 +1271,35 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clinic_types"
             referencedColumns: ["type_key"]
+          },
+        ]
+      }
+      cmi_callbacks_seen: {
+        Row: {
+          id: string
+          clinic_id: string
+          transaction_id: string
+          received_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          transaction_id: string
+          received_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          transaction_id?: string
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmi_callbacks_seen_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -5316,6 +5392,30 @@ export type Database = {
           },
         ]
       }
+      pending_audit_logs: {
+        Row: {
+          id: string
+          payload: Json
+          last_error: string | null
+          retry_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          payload: Json
+          last_error?: string | null
+          retry_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          payload?: Json
+          last_error?: string | null
+          retry_count?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -5893,6 +5993,35 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      processed_stripe_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          clinic_id: string | null
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          clinic_id?: string | null
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          clinic_id?: string | null
+          processed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processed_stripe_events_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {

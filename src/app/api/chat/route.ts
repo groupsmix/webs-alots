@@ -76,9 +76,7 @@ function sanitizeUserInput(text: string): string {
 /**
  * AI-002: Increment monthly AI token usage for the clinic.
  * Uses upsert so the first call in a month creates the row.
- * Note: ai_usage table is created by migration 00083; the generated
- * Database types won't include it until types are regenerated, so we
- * use `as never` casts on the table name.
+ * Note: ai_usage table is created by migration 00083.
  */
 async function trackAIUsage(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -87,8 +85,7 @@ async function trackAIUsage(
   tokensOut: number,
 ): Promise<void> {
   const month = new Date().toISOString().slice(0, 7) + "-01";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  await supabase
     .from("ai_usage")
     .upsert(
       {
@@ -189,13 +186,12 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   // AI-002: Check monthly AI token budget before making any AI call.
   // The ai_usage table tracks per-clinic monthly consumption.
   const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // e.g., "2026-05-01"
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: usage } = (await (supabaseForAuth as any)
+  const { data: usage } = await supabaseForAuth
     .from("ai_usage")
     .select("tokens_in, tokens_out")
     .eq("clinic_id", clinicId)
     .eq("month", currentMonth)
-    .maybeSingle()) as { data: { tokens_in: number; tokens_out: number } | null };
+    .maybeSingle();
 
   const AI_MONTHLY_TOKEN_LIMIT = 500_000;
   const totalTokens = (usage?.tokens_in ?? 0) + (usage?.tokens_out ?? 0);
