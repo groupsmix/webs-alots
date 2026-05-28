@@ -65,8 +65,8 @@ function getSupabaseHost(): string {
     }
   }
   // L-03: Placeholder weakens CSP connect-src — log so this surfaces in monitoring.
+  // nosemgrep: semgrep.env-access — NODE_ENV is a standard runtime guard, not a secret
   if (process.env.NODE_ENV === "production") {
-    // nosemgrep: env-access — NODE_ENV is a standard runtime guard
     // Edge middleware — console.error is appropriate here since the
     // structured logger may not be available in the edge runtime.
     console.error(
