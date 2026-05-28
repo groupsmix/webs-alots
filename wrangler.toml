@@ -126,6 +126,7 @@ crons = [
   "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders
   "0 2 * * *",    # 02:00 UTC daily — subscription billing
   "0 3 * * *",    # 03:00 UTC daily — GDPR patient data purge
+  "0 4 * * *",    # 04:00 UTC daily — M-03/M-04 dedup table TTL purge
   "0 5 * * *",    # 05:00 UTC daily — BL-002 Stripe payment reconciliation
 ]
 

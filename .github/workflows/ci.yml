@@ -147,6 +147,19 @@ jobs:
             exit 1
           fi
 
+      # H-02: Reject migrations that use the broken `app.clinic_id` session
+      # variable pattern instead of the canonical `get_request_clinic_id()`
+      # or `get_user_clinic_id()` helpers. Two migrations (00083, 00084)
+      # shipped this bug silently — this gate prevents recurrence.
+      - name: Guard RLS migration pattern
+        run: |
+          HITS=$(grep -rl "current_setting('app\.clinic_id'" supabase/migrations/ 2>/dev/null || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::Broken RLS pattern 'app.clinic_id' found in migrations (use get_request_clinic_id() or get_user_clinic_id()):"
+            echo "$HITS"
+            exit 1
+          fi
+
       # CI-01: Check for pending DB migrations. Fails if migration files
       # have been added but the migration-check workflow hasn't verified them.
       - name: Migration file check

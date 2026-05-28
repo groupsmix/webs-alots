@@ -20,11 +20,12 @@ import { NextResponse } from "next/server";
  * Review this list quarterly and after any new sanctions announcement.
  */
 const SANCTIONED_COUNTRIES = new Set([
+  "BY", // Belarus (EU comprehensive sanctions since 2022)
   "CU", // Cuba
   "IR", // Iran
   "KP", // North Korea (DPRK)
-  "SY", // Syria
   "RU", // Russia (comprehensive since 2022)
+  "SY", // Syria
 ]);
 
 /**
