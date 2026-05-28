@@ -83,10 +83,12 @@ async function reportCronError(
         environment: env.NODE_ENV || "production",
       });
 
+    const headers = new Headers();
+    headers.set("Content-Type", "application/x-sentry-envelope");
     await fetch(`https://${sentryHost}/api/${projectId}/envelope/?sentry_key=${publicKey}`, {
       method: "POST",
       body: envelope,
-      headers: { "Content-Type": "application/x-sentry-envelope" },
+      headers,
     });
   } catch {
     // Sentry reporting is best-effort; error already logged to console
