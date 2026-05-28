@@ -93,6 +93,7 @@ export function t(
   // [003]: A missing en/ar value silently renders the French string. That is
   // invisible in production, so in development we prefix an explicit marker
   // to force the gap into review. Production behaviour is unchanged.
+  // nosemgrep: semgrep.env-access — dev-only guard, not a runtime config variable
   if (usedFrenchFallback && locale !== "fr" && process.env.NODE_ENV === "development") {
     return `[MISSING:${locale}:${resolvedKey as string}] ${text}`;
   }
