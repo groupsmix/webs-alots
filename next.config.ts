@@ -70,6 +70,29 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // [023]: Explicit CDN cache headers for public marketing pages.
+      // s-maxage allows Cloudflare to cache for 5 minutes; stale-while-
+      // revalidate serves the stale version for up to 24 hours while
+      // revalidating in the background, improving TTFB for SEO crawlers.
+      {
+        source: "/",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=300, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source:
+          "/(services|about|testimonials|reviews|terms|privacy|accessibility|how-to-book|compare|location|doctor-services|doctor-profile|blog|annuaire)/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=300, stale-while-revalidate=86400",
+          },
+        ],
+      },
     ];
   },
 
