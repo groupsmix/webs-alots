@@ -20,7 +20,17 @@ export const timeHHMM = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM");
  * Use `safeText` for free-form fields and `safeName` for short identifiers.
  */
 export function normalizeText(value: string): string {
-  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").normalize("NFC");
+  return (
+    value
+      // Strip C0 control characters and DEL
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+      // IV-01: Strip bidi override/embedding characters that can spoof
+      // visual text direction in staff UIs (e.g. patient name display)
+      .replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g, "")
+      // A14-05: NFKC normalization (compatibility decomposition + canonical
+      // composition) — prevents visually identical but byte-different strings
+      .normalize("NFKC")
+  );
 }
 
 /**

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiForbidden, apiInternalError, apiSuccess, apiUnauthorized } from "@/lib/api-response";
+import {
+  apiForbidden,
+  apiError,
+  apiInternalError,
+  apiSuccess,
+  apiUnauthorized,
+} from "@/lib/api-response";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { dispatchNotification, type TemplateVariables } from "@/lib/notifications";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { readWebhookBody } from "@/lib/webhook-body";
 
 // ── WhatsApp Webhook payload types ──
 
@@ -131,14 +138,14 @@ function extractStatusUpdates(entry: WaEntry): Array<{
   messageId: string;
   status: string;
   timestamp: string;
-  recipientPhone: string;
+  recipientPhone: string | null;
   errors?: Array<{ code: number; title: string }>;
 }> {
   const results: Array<{
     messageId: string;
     status: string;
     timestamp: string;
-    recipientPhone: string;
+    recipientPhone: string | null;
     errors?: Array<{ code: number; title: string }>;
   }> = [];
   const changes = entry.changes;
@@ -155,7 +162,12 @@ function extractStatusUpdates(entry: WaEntry): Array<{
           status: status.status,
           timestamp:
             typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
-          recipientPhone: typeof status.recipient_id === "string" ? status.recipient_id : "",
+          // FP-08: Use null instead of empty string when recipient_id is missing
+          // to prevent matching other empty rows in queries
+          recipientPhone:
+            typeof status.recipient_id === "string" && status.recipient_id
+              ? status.recipient_id
+              : null,
           errors: status.errors,
         });
       }
@@ -178,15 +190,13 @@ const MAX_WEBHOOK_BYTES = 1 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
-    // AUDIT FINDING #24: Reject oversized webhook payloads before parsing.
-    // Body parsing happens before signature verification, so an attacker
-    // could force memory allocation with a massive forged payload.
-    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
-    if (contentLength > MAX_WEBHOOK_BYTES) {
-      return new NextResponse("Payload too large", { status: 413 });
+    // DIFF-01: Stream-based body cap replaces Content-Length-only check.
+    // Chunked Transfer-Encoding can bypass Content-Length validation,
+    // allowing unbounded memory allocation before signature verification.
+    const rawBody = await readWebhookBody(request, MAX_WEBHOOK_BYTES);
+    if (rawBody === null) {
+      return apiError("Payload too large", 413);
     }
-
-    const rawBody = await request.text();
 
     // Verify Meta webhook signature
     const signatureHeader = request.headers.get("x-hub-signature-256");

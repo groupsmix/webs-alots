@@ -25,10 +25,12 @@ async function handler(request: NextRequest) {
     const supabase = createAdminClient("cron");
 
     // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
+    // S1-A27-01: Exclude soft-deleted clinics
     const { count } = await supabase
       .from("clinics")
       .select("*", { count: "exact", head: true })
-      .eq("status", "active");
+      .eq("status", "active")
+      .is("deleted_at", null);
     if (!count || count === 0) {
       return apiSuccess({ message: "No active clinics, skipping cron", sent: 0 });
     }
@@ -51,14 +53,16 @@ async function handler(request: NextRequest) {
       patients: RbPerson | RbPerson[] | null;
       doctors: { id: string; name: string } | Array<{ id: string; name: string }> | null;
     };
+    type RbUpdateChain = {
+      eq(c: string, v: string): RbUpdateChain;
+      then: Promise<{ error: { message: string } | null }>["then"];
+    };
     type RbCronClient = {
       from(t: string): {
         select(s: string): {
           eq(c: string, v: string): RbCronChain;
         };
-        update(row: Record<string, unknown>): {
-          eq(c: string, v: string): Promise<void>;
-        };
+        update(row: Record<string, unknown>): RbUpdateChain;
       };
     };
     type RbCronChain = {
@@ -94,6 +98,7 @@ async function handler(request: NextRequest) {
       .limit(100);
 
     let remindersSent = 0;
+    let remindersFailed = 0;
 
     for (const req of needsReminder ?? []) {
       const patientRaw = req.patients;
@@ -127,17 +132,22 @@ async function handler(request: NextRequest) {
         });
 
         if (result.success) {
+          // AUTH-02: Include clinic_id filter for tenant isolation
           await rbCron
             .from("rebooking_requests")
             .update({ reminded_at: now.toISOString() })
-            .eq("id", req.id);
+            .eq("id", req.id)
+            .eq("clinic_id", req.clinic_id);
           remindersSent++;
         }
       } catch (err) {
+        // S1-A10-07: Increment failure counter to surface silent cron failures
+        remindersFailed++;
+        const errMessage = err instanceof Error ? err.message : String(err);
         logger.warn("Failed to send rebooking reminder", {
           context: "cron/rebooking-reminders",
           requestId: req.id,
-          error: err,
+          error: errMessage,
         });
       }
     }
@@ -164,7 +174,12 @@ async function handler(request: NextRequest) {
 
     for (const req of expiredRequests ?? []) {
       // Mark the rebooking request as expired
-      await rbCron.from("rebooking_requests").update({ status: "expired" }).eq("id", req.id);
+      // AUTH-02: Include clinic_id filter for defense-in-depth tenant isolation
+      await rbCron
+        .from("rebooking_requests")
+        .update({ status: "expired" })
+        .eq("id", req.id)
+        .eq("clinic_id", req.clinic_id);
       expiredCount++;
 
       // Cancel the original appointment
@@ -194,25 +209,40 @@ async function handler(request: NextRequest) {
               `your rebooking response. Please contact us to schedule a new appointment.`,
           );
         } catch (err) {
+          // S1-A8-03: Destructure error for structured logging
+          const errMessage = err instanceof Error ? err.message : String(err);
           logger.warn("Failed to send cancellation notice", {
             context: "cron/rebooking-reminders",
             requestId: req.id,
-            error: err,
+            error: errMessage,
           });
         }
       }
     }
 
+    // S1-A10-07: Include failure counts so monitoring can alert on silent drops
+    if (remindersFailed > 0) {
+      logger.warn("Rebooking cron completed with failures", {
+        context: "cron/rebooking-reminders",
+        remindersFailed,
+        remindersSent,
+        expiredCount,
+      });
+    }
+
     return apiSuccess({
       message: "Rebooking reminders processed",
       remindersSent,
+      remindersFailed,
       expiredCount,
       cancelledCount,
     });
   } catch (err) {
-    logger.warn("Failed to send rebooking reminders", {
+    // S1-A8-03: Destructure error for structured logging
+    const errMessage = err instanceof Error ? err.message : String(err);
+    logger.error("Failed to send rebooking reminders", {
       context: "cron/rebooking-reminders",
-      error: err,
+      error: errMessage,
     });
     return apiInternalError("Failed to process rebooking reminders");
   }

@@ -268,7 +268,9 @@ export function withAuth(
         const shouldLog =
           process.env.NODE_ENV !== "production" || isPhiEndpoint || Math.random() < 0.01;
         if (shouldLog) {
-          logger.info(`API Read Access: ${request.method} ${pathname}`, {
+          // INJ-02: Sanitize pathname to prevent log injection via CRLF/tab
+          const safePath = pathname.replace(/[\r\n\t]/g, "?");
+          logger.info(`API Read Access: ${request.method} ${safePath}`, {
             context: "audit-read",
             userId: profile.id,
             role: profile.role,

@@ -46,7 +46,8 @@ const bookingRequestSchema = z.object({
       .min(8)
       .max(30)
       .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format"),
-    email: z.string().email().optional(),
+    // IV-03: RFC 5321 caps email at 254 characters
+    email: z.string().email().max(254).optional(),
     reason: z.string().max(1000).optional(),
   }),
   slotDuration: z.number().int().positive(),
@@ -91,6 +92,11 @@ interface BookingTokenResult {
  * Returns true for the first matching secret (constant-time per attempt).
  */
 async function verifyHmac(secret: string, payload: string, signature: string): Promise<boolean> {
+  // FP-24: Cap signature length to prevent CPU amplification via
+  // oversized attacker-supplied signatures (bespoke loop runs
+  // Math.max(expected, actual) iterations).
+  if (signature.length > 128) return false;
+
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -275,7 +281,9 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
   // AUDIT-04: Bind the verified phone from the token to the submitted
   // patient phone. Prevents a user from verifying one phone number and
   // then booking under a different one.
-  const normalizePhone = (p: string) => p.replace(/[\s\-()]/g, "");
+  // IV-02: Strip non-digit characters including '+' so OTP-verified
+  // and user-submitted phones compare identically (E.164 digits-only)
+  const normalizePhone = (p: string) => p.replace(/[^\d]/g, "");
   if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
     return apiForbidden("Booking token does not match the submitted patient phone number");
   }

@@ -58,11 +58,19 @@ function slugify(input: string): string {
 
 /**
  * Generate a candidate subdomain from a clinic name.
- * Appends a short numeric suffix to reduce collision probability.
+ * Appends a cryptographically random suffix to reduce collision probability.
+ *
+ * CVE-003: Uses crypto.getRandomValues instead of Math.random to produce
+ * an unpredictable suffix. Math.random has only ~9000 distinct values and
+ * is non-cryptographic, making subdomains brute-forceable in seconds.
  */
 export function generateSubdomain(clinicName: string): string {
   const base = slugify(clinicName);
-  // 4-digit random suffix
-  const suffix = Math.floor(1000 + Math.random() * 9000).toString();
+  const buf = new Uint8Array(4);
+  crypto.getRandomValues(buf);
+  const suffix = ((buf[0] << 16) | (buf[1] << 8) | buf[2])
+    .toString(36)
+    .padStart(5, "0")
+    .slice(0, 6);
   return `${base}-${suffix}`;
 }
