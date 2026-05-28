@@ -30,6 +30,10 @@ import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 // For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
 // (SECURITY DEFINER function that bypasses users-table RLS).
 
+// IV-01: Strip Unicode bidi override characters that can spoof display direction.
+const BIDI_CONTROLS = /[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g;
+const stripBidi = (s: string) => s.replace(BIDI_CONTROLS, "");
+
 const bookingRequestSchema = z.object({
   specialtyId: z.string().min(1),
   doctorId: z.string().min(1),
@@ -40,14 +44,18 @@ const bookingRequestSchema = z.object({
   isFirstVisit: z.boolean(),
   hasInsurance: z.boolean(),
   patient: z.object({
-    name: z.string().min(2).max(200),
+    name: z.string().min(2).max(200).transform(stripBidi),
     phone: z
       .string()
       .min(8)
       .max(30)
       .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format"),
-    email: z.string().email().optional(),
-    reason: z.string().max(1000).optional(),
+    email: z.string().email().max(254).optional(),
+    reason: z
+      .string()
+      .max(1000)
+      .optional()
+      .transform((v) => (v ? stripBidi(v) : v)),
   }),
   slotDuration: z.number().int().positive(),
   bufferTime: z.number().int().min(0),
@@ -91,6 +99,10 @@ interface BookingTokenResult {
  * Returns true for the first matching secret (constant-time per attempt).
  */
 async function verifyHmac(secret: string, payload: string, signature: string): Promise<boolean> {
+  // FP-24: Cap attacker-controlled signature length to avoid CPU amplification.
+  // SHA-256 HMAC produces 64 hex chars; reject anything longer.
+  if (signature.length > 128) return false;
+
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -103,15 +115,13 @@ async function verifyHmac(secret: string, payload: string, signature: string): P
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  // A6-05: Compare via constant-time loop without length precheck.
-  // Both are 64-char hex strings, but skipping the length guard avoids
-  // leaking length info if the format ever changes.
-  const maxLen = Math.max(expectedSig.length, signature.length);
-  let mismatch = expectedSig.length ^ signature.length;
-  for (let i = 0; i < maxLen; i++) {
-    mismatch |= (expectedSig.charCodeAt(i) || 0) ^ (signature.charCodeAt(i) || 0);
+  // A6-05: Constant-time comparison.
+  if (expectedSig.length !== signature.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expectedSig.length; i++) {
+    diff |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
   }
-  return mismatch === 0;
+  return diff === 0;
 }
 
 async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
@@ -275,7 +285,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
   // AUDIT-04: Bind the verified phone from the token to the submitted
   // patient phone. Prevents a user from verifying one phone number and
   // then booking under a different one.
-  const normalizePhone = (p: string) => p.replace(/[\s\-()]/g, "");
+  const normalizePhone = (p: string) => p.replace(/[^\d]/g, "");
   if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
     return apiForbidden("Booking token does not match the submitted patient phone number");
   }
