@@ -514,6 +514,12 @@ export const POST = withAuthValidation(
       void logAiUsage(supabase, clinicId, userId);
 
       // F-AI-08: Audit log for AI invocation
+      // W8-L-01: Pseudonymise the question before writing to the audit log.
+      // The raw question may contain patient names, CINs, or phone numbers.
+      const safeQuestion = data.question
+        .slice(0, 200)
+        .replace(/(?:\+212|0)([ .\-]?\d){9}/g, "[REDACTED_PHONE]")
+        .replace(/\b[A-Z]{1,2}\d{5,7}\b/g, "[REDACTED_CIN]");
       void logAuditEvent({
         supabase,
         action: "ai_manager_invocation",
@@ -521,7 +527,7 @@ export const POST = withAuthValidation(
         clinicId,
         actor: userId,
         description: "AI Manager query",
-        metadata: { question: data.question.slice(0, 200) },
+        metadata: { question: safeQuestion },
       });
 
       return apiSuccess({

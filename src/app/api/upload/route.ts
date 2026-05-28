@@ -447,6 +447,77 @@ export const PUT = withAuthValidation(
       return apiError("File content does not match declared type");
     }
 
+    // W8-A9-01: Mirror the GIF block from POST in PUT — clinical categories
+    // must not receive GIF via presigned uploads either.
+    if (
+      contentType === "image/gif" &&
+      confirmCategory &&
+      CLINICAL_CATEGORIES.has(normalizePhiCategory(confirmCategory))
+    ) {
+      logger.warn("Pre-signed upload blocked GIF in clinical category, deleting", {
+        context: "upload",
+        key,
+        category: confirmCategory,
+      });
+      await deleteFromR2(key);
+      return apiError(
+        "GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.",
+      );
+    }
+
+    // W8-R-01: AV scan for presigned uploads. The POST path runs ClamAV but
+    // the PUT (confirm) path did not — an inconsistent control. Fetch the
+    // full object body and send it to the AV scanner.
+    // nosemgrep: semgrep.env-access — AV_SCAN_URL validated at boot in env.ts
+    if (process.env.AV_SCAN_URL) {
+      try {
+        const fullBody = await readR2ObjectHead(key, metadata.contentLength);
+        if (fullBody) {
+          // nosemgrep: semgrep.env-access — same var, second access
+          const avResponse = await fetch(process.env.AV_SCAN_URL, {
+            method: "POST",
+            body: new Uint8Array(fullBody),
+            headers: { "Content-Type": contentType },
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (avResponse.ok) {
+            const avResult = (await avResponse.json()) as { clean?: boolean; malware?: string };
+            if (avResult.clean === false) {
+              logger.warn("AV scan detected malware in presigned upload, deleting", {
+                context: "upload",
+                malware: avResult.malware,
+                key,
+              });
+              await deleteFromR2(key);
+              return apiError("File failed virus scan", 400);
+            }
+          } else {
+            logger.warn("AV scan service returned non-OK for presigned upload", {
+              context: "upload",
+              status: avResponse.status,
+              key,
+            });
+            // nosemgrep: semgrep.env-access — AV_SCAN_REQUIRED checked at runtime for fail-closed
+            if (process.env.AV_SCAN_REQUIRED === "true") {
+              await deleteFromR2(key);
+              return apiError("Virus scan unavailable — upload rejected", 503);
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn("AV scan service unreachable for presigned upload", {
+          context: "upload",
+          error: err instanceof Error ? err.message : String(err),
+          key,
+        });
+        // nosemgrep: semgrep.env-access — AV_SCAN_REQUIRED checked at runtime for fail-closed
+        if (process.env.AV_SCAN_REQUIRED === "true") {
+          await deleteFromR2(key);
+          return apiError("Virus scan unavailable — upload rejected", 503);
+        }
+      }
+    }
+
     return apiSuccess({ valid: true });
   },
   ["super_admin", "clinic_admin", "receptionist", "doctor"],
@@ -476,6 +547,14 @@ export const GET = withAuth(
 
     if (!ALLOWED_TYPES.has(contentType)) {
       return apiError(`File type not allowed: ${contentType}`);
+    }
+
+    // W8-A9-01: Block GIF in clinical categories for presigned uploads too.
+    const normGetCat = normalizePhiCategory(category);
+    if (contentType === "image/gif" && CLINICAL_CATEGORIES.has(normGetCat)) {
+      return apiError(
+        "GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.",
+      );
     }
 
     // AUDIT-01: PHI categories MUST go through the POST handler which encrypts

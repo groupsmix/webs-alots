@@ -107,6 +107,16 @@ export function extractClientIp(request: NextRequest): string {
     return realIp;
   }
 
+  // FP-04: In production without CF-Connecting-IP, all spoofable headers
+  // failed. Return "unknown" which groups all unidentified requests into
+  // a single bucket — effectively fail-closed for rate limiting since
+  // the shared bucket fills quickly under abuse.
+  if (isProduction) {
+    logger.error(
+      "Rate limiter: no trusted IP source available in production (CF-Connecting-IP, XFF, X-Real-IP all absent)",
+      { context: "rate-limit" },
+    );
+  }
   return "unknown";
 }
 
