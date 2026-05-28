@@ -185,9 +185,17 @@ export function register() {
       enforceEnvValidation();
     })
     .catch((err) => {
+      // M-26: Capture to Sentry before crashing so the failure is visible
+      // in the dashboard, not buried in Workers Logs / console output.
+      console.error("[FATAL] Environment validation failed:", err);
+      if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+        Sentry.captureException(
+          err instanceof Error ? err : new Error(`Environment validation failed: ${err}`),
+          { tags: { component: "instrumentation", phase: "env-validation" }, level: "fatal" },
+        );
+      }
       // Re-throw to ensure the Worker/server process crashes on missing
       // required env vars instead of silently serving traffic.
-      console.error("[FATAL] Environment validation failed:", err);
       throw err;
     });
 

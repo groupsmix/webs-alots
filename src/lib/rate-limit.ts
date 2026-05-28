@@ -81,6 +81,17 @@ export function extractClientIp(request: NextRequest): string {
             context: "rate-limit",
           },
         );
+        // M-15: Surface XFF fallback to Sentry as a breadcrumb so ops
+        // can track frequency without grepping Workers Logs.
+        import("@sentry/nextjs")
+          .then((Sentry) =>
+            Sentry.addBreadcrumb({
+              category: "rate-limit",
+              message: "XFF fallback: CF-Connecting-IP absent",
+              level: "warning",
+            }),
+          )
+          .catch(() => {});
       }
       return first;
     }
