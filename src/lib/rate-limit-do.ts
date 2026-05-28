@@ -131,6 +131,7 @@ interface DurableObjectStorage {
  * Check if Durable Objects rate limiting is available.
  */
 export function shouldUseDO(): boolean {
+  // nosemgrep: semgrep.env-access — boot-time backend selection, validated below
   const explicit = process.env.RATE_LIMIT_BACKEND;
   if (explicit === "do") return true;
   if (explicit === "kv" || explicit === "supabase" || explicit === "memory") return false;
