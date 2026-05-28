@@ -9,8 +9,10 @@ rules:
   #   - Queries in cron jobs that intentionally iterate over all clinics
   #   - Admin client queries (createAdminClient) used for cross-tenant ops
   #   - Auth/registration flows before a clinic_id exists
+  #   - Chained queries where .eq("clinic_id", ...) appears after other .eq() calls
+  #   - Insert/upsert with clinic_id in the data object
   #
-  # These should use a `// semgrep-ignore: tenant-scoping` comment.
+  # These should use a `// nosemgrep: semgrep.tenant-scoping` comment.
   - id: tenant-scoping
     patterns:
       - pattern: |
@@ -19,6 +21,23 @@ rules:
           $CLIENT.from($TABLE).$METHOD(...).eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).eq('clinic_id', ...)
+      # Handle deeper chains: .select().eq().eq("clinic_id", ...)
+      - pattern-not: |
+          $CLIENT.from($TABLE).$METHOD(...).$CHAIN1(...).eq("clinic_id", ...)
+      - pattern-not: |
+          $CLIENT.from($TABLE).$METHOD(...).$CHAIN1(...).eq('clinic_id', ...)
+      # Handle 3-deep chains: .select().eq().eq().eq("clinic_id", ...)
+      - pattern-not: |
+          $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq("clinic_id", ...)
+      - pattern-not: |
+          $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq('clinic_id', ...)
+      # Handle insert/upsert with clinic_id in data object
+      - pattern-not: |
+          $CLIENT.from($TABLE).insert({clinic_id: ..., ...})
+      - pattern-not: |
+          $CLIENT.from($TABLE).upsert({clinic_id: ..., ...})
+      - pattern-not: |
+          $CLIENT.from($TABLE).insert([..., {clinic_id: ..., ...}, ...])
       - metavariable-regex:
           metavariable: $METHOD
           regex: ^(select|insert|update|delete|upsert)$
@@ -28,6 +47,10 @@ rules:
       isolation (see AGENTS.md).
     severity: WARNING
     languages: [typescript, javascript]
+    paths:
+      exclude:
+        - "src/lib/__tests__/integration/rls-*.test.ts"
+        - "src/lib/__tests__/integration/rls-*.test.tsx"
     metadata:
       category: security
       technology:
