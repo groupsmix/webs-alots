@@ -152,6 +152,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
   // Only enforced for the modern EMAIL_RELAY_HOST env var — the legacy
   // SMTP_HOST path is a backwards-compat fallback for existing deployments
   // and will be removed in a future migration.
+  // nosemgrep: semgrep.env-access — relay host check for allowlist enforcement
   if (process.env.EMAIL_RELAY_HOST) {
     const allowedHosts = [
       "api.mailgun.net",

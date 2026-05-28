@@ -106,6 +106,7 @@ export const POST = withAuthValidation(
     // server-side invalidation, audit queries, and concurrent session limits.
     let sessionId: string | null = null;
     try {
+      // nosemgrep: semgrep.admin-client-guard — intentional: impersonation session creation requires cross-tenant admin access
       const adminClient = createAdminClient("impersonate");
       const expiresAt = new Date(Date.now() + sessionMaxAge * 1000).toISOString();
 

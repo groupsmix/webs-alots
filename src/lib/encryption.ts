@@ -130,6 +130,7 @@ async function importOldEncryptionKey(): Promise<CryptoKey | null> {
  * in files uploaded unencrypted.
  */
 export function isEncryptionConfigured(): boolean {
+  // nosemgrep: semgrep.env-access — encryption key presence check; not in env.ts to avoid eager import of crypto
   const hexKey = process.env.PHI_ENCRYPTION_KEY;
   if (!hexKey) return false;
   if (hexKey.length !== 64) return false;
