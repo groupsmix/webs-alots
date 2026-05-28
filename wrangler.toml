@@ -50,9 +50,8 @@ binding = "ASSETS"
 #   wrangler kv:namespace create RATE_LIMIT_KV --preview
 #   Then paste the returned IDs below.
 #
-# IMPORTANT: Replace the placeholder IDs below with real values from
-# `wrangler kv:namespace create` output. Deploy will fail until these
-# are set to valid KV namespace IDs.
+# A31-1: These are the canonical production KV namespace IDs (not
+# placeholders). They are resource identifiers, not secrets.
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"

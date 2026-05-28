@@ -10,9 +10,11 @@
  *   import { fetchAllowlisted } from "@/lib/egress-allowlist";
  *   const res = await fetchAllowlisted("https://api.openai.com/v1/chat", { ... });
  *
- * When `EGRESS_ALLOWLIST_ENFORCE` is set to "true" in production, requests
- * to non-allowlisted hosts are rejected with an error. Otherwise the
- * allowlist is logged-only (monitor mode) for safe rollout.
+ * A39-2: Enforce mode is now ON by default (`EGRESS_ALLOWLIST_ENFORCE`
+ * defaults to "true"). Set to "false" explicitly only for safe rollout.
+ *
+ * A50-1: Private-IP / link-local / loopback / cloud-metadata addresses
+ * are unconditionally blocked regardless of the hostname allowlist.
  */
 
 import { logger } from "@/lib/logger";
@@ -63,13 +65,65 @@ function getSupabaseHost(): string | null {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// A50-1: SSRF guard — block private / reserved / metadata IP ranges
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true when `hostname` is an IP-literal (v4 or bracketed v6)
+ * that falls within a private, loopback, link-local, or cloud-metadata
+ * range. This prevents SSRF to internal infrastructure even when the
+ * hostname allowlist is bypassed (e.g. via DNS rebinding).
+ */
+export function isPrivateOrReservedIP(hostname: string): boolean {
+  // Strip IPv6 brackets if present
+  const raw = hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+
+  // --- IPv4 ---
+  const v4Parts = raw.split(".");
+  if (v4Parts.length === 4 && v4Parts.every((p) => /^\d{1,3}$/.test(p))) {
+    const octets = v4Parts.map(Number);
+    if (octets.some((o) => o > 255)) return false;
+    const [a, b] = octets;
+
+    if (a === 127) return true; // 127.0.0.0/8 loopback
+    if (a === 10) return true; // 10.0.0.0/8 private
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a === 192 && b === 168) return true; // 192.168.0.0/16
+    if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local + metadata
+    if (a === 0) return true; // 0.0.0.0/8
+    if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+    if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15 benchmarking
+    return false;
+  }
+
+  // --- IPv6 ---
+  const lower = raw.toLowerCase();
+  if (lower === "::1") return true; // loopback
+  if (lower === "::") return true; // unspecified
+  if (lower.startsWith("fe80")) return true; // link-local
+  if (lower.startsWith("fc") || lower.startsWith("fd")) return true; // ULA
+  // ::ffff:<ipv4> mapped addresses
+  if (lower.startsWith("::ffff:")) {
+    const mapped = lower.slice(7);
+    return isPrivateOrReservedIP(mapped);
+  }
+
+  return false;
+}
+
 /**
  * Check whether a URL targets an allowlisted egress host.
+ * A50-1: IP-literal URLs pointing at private/reserved ranges are
+ * unconditionally rejected before the hostname allowlist is consulted.
  */
 export function isEgressAllowed(url: string | URL): boolean {
   try {
     const parsed = typeof url === "string" ? new URL(url) : url;
     const hostname = parsed.hostname;
+
+    // A50-1: Block private / reserved IPs unconditionally
+    if (isPrivateOrReservedIP(hostname)) return false;
 
     if (ALLOWED_EGRESS_HOSTS.has(hostname)) return true;
 
@@ -91,6 +145,8 @@ export function isEgressAllowed(url: string | URL): boolean {
 /**
  * Guarded fetch wrapper. In enforce mode, rejects requests to
  * non-allowlisted hosts. In monitor mode, logs a warning and proceeds.
+ *
+ * A39-2: Defaults to enforce mode (`EGRESS_ALLOWLIST_ENFORCE !== "false"`).
  */
 export async function fetchAllowlisted(
   input: string | URL | Request,
@@ -108,7 +164,8 @@ export async function fetchAllowlisted(
       }
     })();
 
-    const enforce = process.env.EGRESS_ALLOWLIST_ENFORCE === "true";
+    // A39-2: Default to enforce mode — only disable with explicit "false"
+    const enforce = process.env.EGRESS_ALLOWLIST_ENFORCE !== "false";
 
     logger.warn("Egress fetch to non-allowlisted host", {
       context: "egress-allowlist",

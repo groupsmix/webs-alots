@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    warn: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 function createMockRequest(origin?: string): { headers: { get: (name: string) => string | null } } {
   return {
     headers: {
@@ -11,21 +19,30 @@ function createMockRequest(origin?: string): { headers: { get: (name: string) =>
   };
 }
 
+// Writable reference to process.env that avoids TS read-only errors on NODE_ENV
+const env = process.env as Record<string, string | undefined>;
+
 describe("CORS module", () => {
-  const originalEnv = process.env.ALLOWED_API_ORIGINS;
+  const originalAllowedOrigins = env.ALLOWED_API_ORIGINS;
+  const originalNodeEnv = env.NODE_ENV;
 
   afterEach(() => {
-    if (originalEnv !== undefined) {
-      process.env.ALLOWED_API_ORIGINS = originalEnv;
+    if (originalAllowedOrigins !== undefined) {
+      env.ALLOWED_API_ORIGINS = originalAllowedOrigins;
     } else {
-      delete process.env.ALLOWED_API_ORIGINS;
+      delete env.ALLOWED_API_ORIGINS;
+    }
+    if (originalNodeEnv !== undefined) {
+      env.NODE_ENV = originalNodeEnv;
+    } else {
+      delete env.NODE_ENV;
     }
     vi.resetModules();
   });
 
   describe("deny-by-default when env var is unset", () => {
     beforeEach(() => {
-      delete process.env.ALLOWED_API_ORIGINS;
+      delete env.ALLOWED_API_ORIGINS;
       vi.resetModules();
     });
 
@@ -36,23 +53,23 @@ describe("CORS module", () => {
       expect(headers["Access-Control-Allow-Origin"]).toBeUndefined();
     });
 
-    it("still includes standard CORS method and header entries", async () => {
+    // A49-3: When origin is denied, ALL CORS headers are omitted
+    it("omits all CORS headers when origin is denied", async () => {
       const mod = await import("../cors");
-      const req = createMockRequest();
+      const req = createMockRequest("https://evil.com");
       const headers = mod.getCorsHeaders(req as never);
-      expect(headers["Access-Control-Allow-Methods"]).toBe("GET, POST, OPTIONS");
-      expect(headers["Access-Control-Allow-Headers"]).toBe("Content-Type, Authorization");
-      expect(headers["Access-Control-Max-Age"]).toBe("86400");
+      expect(Object.keys(headers)).toHaveLength(0);
     });
   });
 
   describe("wildcard origin (dev mode)", () => {
     beforeEach(() => {
-      process.env.ALLOWED_API_ORIGINS = "*";
+      env.ALLOWED_API_ORIGINS = "*";
+      delete env.NODE_ENV;
       vi.resetModules();
     });
 
-    it("returns * for any origin when wildcard is configured", async () => {
+    it("returns * for any origin when wildcard is configured in dev", async () => {
       const mod = await import("../cors");
       const req = createMockRequest("https://anything.com");
       const headers = mod.getCorsHeaders(req as never);
@@ -67,9 +84,25 @@ describe("CORS module", () => {
     });
   });
 
+  // A49-2: Wildcard blocked in production
+  describe("wildcard origin blocked in production", () => {
+    beforeEach(() => {
+      env.ALLOWED_API_ORIGINS = "*";
+      env.NODE_ENV = "production";
+      vi.resetModules();
+    });
+
+    it("denies all origins when wildcard is set in production", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://anything.com");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(Object.keys(headers)).toHaveLength(0);
+    });
+  });
+
   describe("explicit allowlist", () => {
     beforeEach(() => {
-      process.env.ALLOWED_API_ORIGINS = "https://app.oltigo.com,https://admin.oltigo.com";
+      env.ALLOWED_API_ORIGINS = "https://app.oltigo.com,https://admin.oltigo.com";
       vi.resetModules();
     });
 
@@ -111,7 +144,7 @@ describe("CORS module", () => {
 
   describe("handlePreflight", () => {
     beforeEach(() => {
-      delete process.env.ALLOWED_API_ORIGINS;
+      delete env.ALLOWED_API_ORIGINS;
       vi.resetModules();
     });
 
