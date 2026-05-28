@@ -65,6 +65,16 @@ function getSupabaseHost(): string {
       // fall through to default
     }
   }
+  // L-03: Placeholder weakens CSP connect-src — log so this surfaces in monitoring.
+  // nosemgrep: semgrep.env-access — NODE_ENV is a standard runtime guard, not a secret
+  if (process.env.NODE_ENV === "production") {
+    // Edge middleware — console.error is appropriate here since the
+    // structured logger may not be available in the edge runtime.
+    console.error(
+      // nosemgrep: no-console
+      "[security-headers] NEXT_PUBLIC_SUPABASE_URL is not set; CSP connect-src falls back to placeholder.supabase.co",
+    );
+  }
   return "placeholder.supabase.co";
 }
 

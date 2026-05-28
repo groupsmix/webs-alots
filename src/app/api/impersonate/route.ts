@@ -118,6 +118,17 @@ export const POST = withAuthValidation(
 
       if (profile) {
         const untypedClient = createUntypedAdminClient("impersonate");
+
+        // M-03: Expire any previous active sessions for this actor before
+        // creating a new one. Prevents stale sessions from lingering after
+        // the cookie maxAge expires but before the DB row is cleaned up.
+        await untypedClient
+          // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant: expires all active sessions for this actor regardless of clinic
+          .from("impersonation_sessions")
+          .update({ ended_at: new Date().toISOString(), ended_reason: "superseded" })
+          .eq("actor_id", profile.id)
+          .is("ended_at", null);
+
         const { data: session, error: sessionError } = await untypedClient
           .from("impersonation_sessions")
           .insert({
