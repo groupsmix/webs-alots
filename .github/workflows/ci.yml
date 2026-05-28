@@ -231,6 +231,12 @@ jobs:
             exit 1
           fi
 
+      # AUD-007 / TASK-012: Every Supabase mutation in API routes must
+      # reference clinic_id within ±20 lines (or be in the verified-safe
+      # allowlist). Prevents future PRs from introducing unscoped mutations.
+      - name: Guard tenant scoping on Supabase mutations
+        run: node scripts/check-tenant-scoping.mjs
+
       # F-060: Verify typedoc generation succeeds. Catches broken JSDoc,
       # missing re-exports, and TypeScript errors in doc comments before
       # they reach main.
