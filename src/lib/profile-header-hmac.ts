@@ -76,7 +76,9 @@ function getOldProfileHeaderSecret(): string | null {
 }
 
 function buildPayload(profile: SignedProfile, iat: number): string {
-  return `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}:${iat}`;
+  // FP-01: JSON-encode to avoid delimiter collision — a role containing ":"
+  // would let a forged (id, "role:clinic_X", "", iat) match (id, "role", "clinic_X", iat).
+  return JSON.stringify([profile.id, profile.role, profile.clinic_id ?? "", iat]);
 }
 
 function bytesToHex(bytes: Uint8Array): string {

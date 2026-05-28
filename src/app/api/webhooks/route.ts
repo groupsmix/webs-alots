@@ -213,14 +213,14 @@ export async function POST(request: NextRequest) {
             const updateData: Record<string, string> = {
               status: statusUpdate.status,
             };
+            // FP-27: Use explicit isNaN check instead of falsy || for timestamp.
+            // parseInt("0") returns 0 which is falsy, causing incorrect Date.now() fallback.
+            const parsedTs = parseInt(statusUpdate.timestamp);
+            const tsMs = isNaN(parsedTs) ? Date.now() : parsedTs * 1000;
             if (statusUpdate.status === "delivered") {
-              updateData.delivered_at = new Date(
-                parseInt(statusUpdate.timestamp) * 1000 || Date.now(),
-              ).toISOString();
+              updateData.delivered_at = new Date(tsMs).toISOString();
             } else if (statusUpdate.status === "read") {
-              updateData.read_at = new Date(
-                parseInt(statusUpdate.timestamp) * 1000 || Date.now(),
-              ).toISOString();
+              updateData.read_at = new Date(tsMs).toISOString();
             }
 
             await admin
