@@ -188,9 +188,9 @@ Automated subdomain provisioning through the Cloudflare API is gated behind an e
 
 When the flag is `true` the app refuses to boot if any of those vars are missing. When it is `false` (the default) the env vars are optional and the `/api/dns/*` endpoints respond with `503 CUSTOM_DOMAINS_DISABLED`.
 
-## Per-Client Deployment
+## Per-Clinic Configuration
 
-To deploy for a new client, only edit `src/config/clinic.config.ts` with their details (name, contact, features, working hours).
+`src/config/clinic.config.ts` provides **compile-time defaults** (logo path, theme tokens, default working hours). Runtime tenant data — clinic name, contact details, enabled features, subscription tier — is stored in the `clinics` database table and managed through the Super Admin dashboard. You do not need to edit `clinic.config.ts` to onboard a new clinic.
 
 ## Database
 
