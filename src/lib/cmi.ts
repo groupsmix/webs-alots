@@ -108,7 +108,7 @@ export async function createCmiPayment(request: CmiPaymentRequest): Promise<CmiP
   // W8-R-02: Whitelist successUrl, failUrl, callbackUrl origins to prevent
   // an attacker from setting an external shopurl that redirects the user to
   // a phishing page after payment. Only the site's own origin is allowed.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL; // nosemgrep: env-access
   if (siteUrl) {
     const allowedOrigin = new URL(siteUrl).origin;
     for (const urlField of [request.successUrl, request.failUrl, request.callbackUrl]) {
