@@ -220,6 +220,16 @@ const ENV_RULES: EnvRule[] = [
     group: "observability",
   },
 
+  // R-24: Require explicit Plausible host when analytics domain is configured
+  // to prevent CSP from falling back to the upstream plausible.io domain.
+  {
+    name: "NEXT_PUBLIC_PLAUSIBLE_HOST",
+    required: !!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && process.env.NODE_ENV === "production",
+    description:
+      "Self-hosted Plausible Analytics host URL (required in production when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set)",
+    group: "observability",
+  },
+
   // ── Security: AV scanning (Audit Finding #5) ────────────────────────
   // AV_SCAN_URL is required in production so malicious files (PDFs,
   // polyglots) cannot be uploaded into clinical categories and served

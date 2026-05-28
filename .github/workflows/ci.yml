@@ -50,6 +50,28 @@ jobs:
           BASELINE=$(cat .eslint-warning-baseline | tr -d '[:space:]')
           npx eslint --max-warnings "$BASELINE"
 
+      # R-06: Prevent increasing the ESLint warning baseline in PRs.
+      - name: Guard ESLint baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_BASELINE=$(cat .eslint-warning-baseline | tr -d '[:space:]')
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          MAIN_BASELINE=$(git show "origin/${{ github.event.pull_request.base.ref }}:.eslint-warning-baseline" 2>/dev/null | tr -d '[:space:]' || echo "$PR_BASELINE")
+          if [ "$PR_BASELINE" -gt "$MAIN_BASELINE" ]; then
+            echo "::error::ESLint warning baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
+            exit 1
+          fi
+
+      # R-08: Ban direct process.env.CRON_SECRET access outside cron-auth.ts
+      - name: Guard CRON_SECRET access
+        run: |
+          HITS=$(git ls-files 'src/**/*.ts' 'src/**/*.tsx' | xargs grep -l 'process\.env\.CRON_SECRET' | grep -vE 'src/lib/(cron-auth|env)\.ts|__tests__/' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::Direct process.env.CRON_SECRET access found outside cron-auth.ts:"
+            echo "$HITS"
+            exit 1
+          fi
+
       - name: Check for DB dumps in tree (Audit P1 #14)
         run: |
           if git ls-files | grep -E 'full_backup\.sql|\.dump$|pg_dump'; then
@@ -143,7 +165,8 @@ jobs:
         run: |
           # L8-F3: Explicit file list instead of broad regex to prevent new public pages
           # from silently introducing unsanitized dangerouslySetInnerHTML usage.
-          ALLOWED='src/lib/json-ld\.ts|src/lib/sanitize-html\.ts|src/components/analytics-script\.tsx|src/app/\(auth\)/setup-2fa/page\.tsx|src/app/\(public\)/annuaire/\[city\]/\[specialty\]/page\.tsx|src/app/\(public\)/annuaire/\[city\]/page\.tsx|src/app/\(public\)/annuaire/page\.tsx|src/app/\(public\)/blog/\[slug\]/page\.tsx|src/app/\(public\)/book/page\.tsx|src/app/\(public\)/contact/page\.tsx|src/app/\(public\)/page\.tsx|src/app/\(public\)/reviews/page\.tsx|src/app/\(public\)/services/page\.tsx'
+          # R-25: Removed setup-2fa (uses <img> not dangerouslySetInnerHTML)
+          ALLOWED='src/lib/json-ld\.ts|src/lib/sanitize-html\.ts|src/components/analytics-script\.tsx|src/app/\(public\)/annuaire/\[city\]/\[specialty\]/page\.tsx|src/app/\(public\)/annuaire/\[city\]/page\.tsx|src/app/\(public\)/annuaire/page\.tsx|src/app/\(public\)/blog/\[slug\]/page\.tsx|src/app/\(public\)/book/page\.tsx|src/app/\(public\)/contact/page\.tsx|src/app/\(public\)/page\.tsx|src/app/\(public\)/reviews/page\.tsx|src/app/\(public\)/services/page\.tsx'
           HITS=$(git ls-files '*.ts' '*.tsx' | xargs grep -l "dangerouslySetInnerHTML" | grep -vE "$ALLOWED" || true)
           if [ -n "$HITS" ]; then
             echo "::error::dangerouslySetInnerHTML found outside allowlist:"

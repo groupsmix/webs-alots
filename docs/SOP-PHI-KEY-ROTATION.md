@@ -5,6 +5,23 @@
 This document outlines the procedure for rotating the `PHI_ENCRYPTION_KEY` used to encrypt Patient Health Information (PHI) stored in Cloudflare R2.
 Under Moroccan Law 09-08 and GDPR, encryption keys must be rotated periodically or immediately upon suspected compromise.
 
+## Key Custody & Escrow (R-02)
+
+The `PHI_ENCRYPTION_KEY` is the single most sensitive secret in the system.
+Loss of this key means **irreversible loss of all encrypted PHI files**.
+
+| Item                   | Detail                                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Storage location**   | Cloudflare Workers Secrets (`PHI_ENCRYPTION_KEY` binding)                                                                                                          |
+| **Backup copies**      | Two human custodians each hold a sealed envelope with the key (split knowledge: custodian A holds the first 32 hex chars, custodian B holds the last 32 hex chars) |
+| **Recovery quorum**    | Both custodians must be present to reconstruct the full key                                                                                                        |
+| **Custody log**        | Each rotation must be recorded in `docs/compliance/key-custody-log.md` with date, custodian names (not the key itself), and rotation reason                        |
+| **Escrow alternative** | If using a password manager (e.g. 1Password), store in a shared vault accessible only to the two designated custodians with MFA enforced                           |
+
+**Migration path (recommended):** Move to envelope encryption with a managed KMS
+(per-file DEK wrapped by a KEK in AWS KMS or HashiCorp Vault). This eliminates
+the single-key-loss failure mode entirely.
+
 ## Rotation Cadence
 
 | Trigger                           | Timeline                                            |
