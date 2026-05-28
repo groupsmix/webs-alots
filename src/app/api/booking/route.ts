@@ -110,12 +110,13 @@ async function verifyHmac(secret: string, payload: string, signature: string): P
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  const maxLen = Math.max(expectedSig.length, signature.length);
-  let mismatch = expectedSig.length ^ signature.length;
-  for (let i = 0; i < maxLen; i++) {
-    mismatch |= (expectedSig.charCodeAt(i) || 0) ^ (signature.charCodeAt(i) || 0);
+  // A6-05: Constant-time comparison.
+  if (expectedSig.length !== signature.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expectedSig.length; i++) {
+    diff |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
   }
-  return mismatch === 0;
+  return diff === 0;
 }
 
 async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
