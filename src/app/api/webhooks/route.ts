@@ -131,14 +131,14 @@ function extractStatusUpdates(entry: WaEntry): Array<{
   messageId: string;
   status: string;
   timestamp: string;
-  recipientPhone: string;
+  recipientPhone: string | null;
   errors?: Array<{ code: number; title: string }>;
 }> {
   const results: Array<{
     messageId: string;
     status: string;
     timestamp: string;
-    recipientPhone: string;
+    recipientPhone: string | null;
     errors?: Array<{ code: number; title: string }>;
   }> = [];
   const changes = entry.changes;
@@ -155,7 +155,10 @@ function extractStatusUpdates(entry: WaEntry): Array<{
           status: status.status,
           timestamp:
             typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
-          recipientPhone: typeof status.recipient_id === "string" ? status.recipient_id : "",
+          recipientPhone:
+            typeof status.recipient_id === "string" && status.recipient_id
+              ? status.recipient_id
+              : null,
           errors: status.errors,
         });
       }
