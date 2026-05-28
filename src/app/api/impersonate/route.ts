@@ -41,8 +41,10 @@ export const POST = withAuthValidation(
     const { clinicId, clinicName, password, reason } = body;
 
     // AUTH-02: Prevent impersonation of other super_admin accounts.
-    // Check if the target clinic has any super_admin users — if so, block.
-    const { data: superAdminsInClinic } = await supabase
+    // W8-A30-01: Use admin client for the pre-check so RLS cannot hide
+    // super_admin rows in other clinics and silently bypass the block.
+    const precheckClient = createAdminClient("impersonate-precheck");
+    const { data: superAdminsInClinic } = await precheckClient
       .from("users")
       .select("id")
       .eq("clinic_id", clinicId)
@@ -53,6 +55,9 @@ export const POST = withAuthValidation(
       return apiUnauthorized("Cannot impersonate a clinic with super_admin accounts");
     }
 
+    // W8-A-03: Use a disposable admin-level client for re-authentication so
+    // signInWithPassword does not mint a second user session cookie.
+    // Sign out immediately afterwards to discard the ephemeral token.
     const reauthClient = await createClient();
     const { error: reauthError } = await reauthClient.auth.signInWithPassword({
       email: user.email ?? "",
@@ -62,6 +67,9 @@ export const POST = withAuthValidation(
     if (reauthError) {
       return apiUnauthorized("Re-authentication failed. Please verify your password.");
     }
+
+    // Dispose the ephemeral session — we only needed password verification.
+    await reauthClient.auth.signOut().catch(() => {});
 
     // Verify the clinic exists
     const { data: clinic } = await supabase

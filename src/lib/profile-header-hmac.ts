@@ -169,17 +169,23 @@ export async function verifyProfileHeader(input: VerifyHeaderInput): Promise<Sig
   const payload = new TextEncoder().encode(buildPayload(profile, iat));
 
   // SEC-003: Try the current key first, then the old key for rotation overlap.
+  // W8-A1-01: Compute HMAC for ALL configured keys regardless of whether the
+  // first one matches. This eliminates the ~30 µs timing delta between the
+  // "current key matched" and "old key matched" paths.
   const keysToTry = [getProfileHeaderSecret(), getOldProfileHeaderSecret()].filter(
     (k): k is string => k !== null,
   );
   if (keysToTry.length === 0) return null;
 
+  let matched = false;
   for (const secret of keysToTry) {
     const key = await importHmacKey(secret, "sign");
     const expected = await crypto.subtle.sign("HMAC", key, payload);
     const expectedHex = bytesToHex(new Uint8Array(expected));
-    if (timingSafeHexEqual(expectedHex, input.signature)) return profile;
+    if (timingSafeHexEqual(expectedHex, input.signature)) {
+      matched = true;
+    }
   }
 
-  return null;
+  return matched ? profile : null;
 }
