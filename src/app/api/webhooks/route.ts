@@ -23,6 +23,7 @@ interface WaInteractive {
 }
 
 interface WaMessage {
+  id?: string;
   from?: string;
   type?: string;
   text?: WaTextMessage;
@@ -87,7 +88,9 @@ async function verifyWebhookSignature(
  * Extracts the message text and sender phone from a WhatsApp webhook payload.
  * Supports both regular text messages and interactive button replies.
  */
-function extractMessageInfo(entry: WaEntry): { text: string; senderPhone: string } | null {
+function extractMessageInfo(
+  entry: WaEntry,
+): { text: string; senderPhone: string; messageId: string } | null {
   const changes = entry.changes;
   if (!changes) return null;
   for (const change of changes) {
@@ -99,19 +102,22 @@ function extractMessageInfo(entry: WaEntry): { text: string; senderPhone: string
       const from = msg.from;
       if (!from) continue;
 
+      const messageId = msg.id;
+      if (!messageId) continue;
+
       // Handle interactive button replies (quick replies from reminders)
       const interactive = msg.interactive;
       if (interactive?.type === "button_reply") {
         const buttonReply = interactive.button_reply;
         if (buttonReply && typeof buttonReply.id === "string") {
-          return { text: buttonReply.id, senderPhone: from };
+          return { text: buttonReply.id, senderPhone: from, messageId };
         }
       }
 
       // Handle regular text messages
       const text = msg.text;
       if (text && typeof text.body === "string") {
-        return { text: text.body, senderPhone: from };
+        return { text: text.body, senderPhone: from, messageId };
       }
     }
   }
@@ -282,6 +288,41 @@ export async function POST(request: NextRequest) {
       logTenantContext(clinicId, "webhooks/whatsapp", {
         senderPhone: msgInfo.senderPhone,
       });
+
+      // R-16: Insert-on-conflict idempotency guard — same pattern as
+      // processed_stripe_events in billing/webhook/route.ts.
+      // If the message was already processed, skip it to prevent duplicate
+      // appointments, notifications, and audit-log entries on Meta retries.
+      const { error: dedupErr } = await (
+        admin as never as {
+          from(t: string): {
+            insert(
+              r: Record<string, unknown>,
+            ): Promise<{ error: { code?: string; message: string } | null }>;
+          };
+        }
+      )
+        .from("processed_whatsapp_messages")
+        .insert({
+          message_id: msgInfo.messageId,
+          clinic_id: clinicId,
+        });
+
+      if (dedupErr) {
+        if (dedupErr.code === "23505") {
+          logger.info("WhatsApp webhook replay detected — ignoring duplicate", {
+            context: "webhooks/whatsapp",
+            messageId: msgInfo.messageId,
+            clinicId,
+          });
+          continue;
+        }
+        logger.warn("WhatsApp message dedup insert failed", {
+          context: "webhooks/whatsapp",
+          messageId: msgInfo.messageId,
+          error: dedupErr.message,
+        });
+      }
 
       // Patient lookup is now always scoped to the resolved clinic.
       // C-05: Use .maybeSingle() instead of .single() to avoid crashing
