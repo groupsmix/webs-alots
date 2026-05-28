@@ -707,7 +707,7 @@ export const aiPrescriptionLimiter = createRateLimiter({
 
 /** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic)
  * R-22: Set failClosed: true for webhook endpoint integrity */
-export const webhookLimiter = createRateLimiter({
+const webhookLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 100,
   failClosed: true,
@@ -781,7 +781,7 @@ export const globalPageLimiter = createRateLimiter({
  * S0-11-02: CSP report endpoint — 60 req / 60s per IP.
  * Matches the route-local limiter for defense-in-depth via middleware.
  */
-export const cspReportLimiter = createRateLimiter({
+const cspReportLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 60,
 });
