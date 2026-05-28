@@ -36,7 +36,7 @@ function isAllowedOrigin(origin: string, rootDomain: string | undefined): boolea
     // Development: allow localhost
     if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
       // nosemgrep: semgrep.env-access — runtime env check for dev-only localhost CORS
-    return process.env.NODE_ENV !== "production";
+      return process.env.NODE_ENV !== "production";
     }
 
     const domain = rootDomain || "oltigo.com";
