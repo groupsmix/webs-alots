@@ -166,6 +166,7 @@ async function handler(request: NextRequest) {
       // Mark the rebooking request as expired
       await rbCron
         .from("rebooking_requests")
+        // nosemgrep: tenant-scoping — clinic_id filter is on the next line
         .update({ status: "expired" })
         .eq("id", req.id)
         .eq("clinic_id", req.clinic_id);
