@@ -18,19 +18,6 @@ export interface AlternativeSlot {
   label: string;
 }
 
-export interface AffectedAppointment {
-  id: string;
-  patientId: string;
-  patientName: string;
-  patientPhone: string;
-  doctorId: string;
-  doctorName: string;
-  serviceName: string;
-  date: string;
-  time: string;
-  status: string;
-}
-
 /** Working-hours shape expected by the slot generator. */
 export interface WorkingHoursEntry {
   open: string;

@@ -166,7 +166,30 @@ When deprecating a service:
 
 ---
 
-## 7. Related Documents
+## 7. Recovery Objectives (RTO / RPO)
+
+> **Status:** Pending confirmation of Supabase PITR tier. Values below
+> represent current best-case estimates based on nightly `pg_dump` +
+> GPG backup (`backup.yml` at 02:00 UTC) and monthly restore drill
+> (`restore-test.yml`). Once PITR is confirmed, RPO should improve to
+> ≤ 5 minutes.
+
+| Metric                             | Current estimate       | Target (post-PITR) | Notes                                          |
+| ---------------------------------- | ---------------------- | ------------------ | ---------------------------------------------- |
+| **RPO** (Recovery Point Objective) | ≤ 24 h                 | ≤ 5 min            | Gap = nightly `pg_dump` window; PITR closes it |
+| **RTO** (Recovery Time Objective)  | Undefined — est. 1–2 h | ≤ 30 min           | Restore from R2 backup + Workers redeploy      |
+
+### Action items (R-06)
+
+1. Confirm Supabase tier supports PITR (Pro or higher).
+2. Document actual PITR retention window once confirmed.
+3. Run a PITR drill (restore to N minutes ago) and record evidence
+   in `docs/restore-drill-evidence.md`.
+4. Measure actual RTO during monthly restore drill; update table above.
+
+---
+
+## 8. Related Documents
 
 - [Incident Response Runbook](./incident-response.md)
 - [On-Call Rotation](./oncall.md)

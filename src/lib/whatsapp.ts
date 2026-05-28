@@ -66,16 +66,6 @@ interface WhatsAppSendResult {
   provider: WhatsAppProvider;
 }
 
-type WhatsAppMessageStatus = "sent" | "delivered" | "read" | "failed";
-
-export interface WhatsAppStatusUpdate {
-  messageId: string;
-  status: WhatsAppMessageStatus;
-  timestamp: string;
-  recipientPhone: string;
-  errors?: Array<{ code: number; title: string }>;
-}
-
 const META_API_URL = "https://graph.facebook.com/v21.0";
 const TWILIO_API_URL = "https://api.twilio.com/2010-04-01";
 

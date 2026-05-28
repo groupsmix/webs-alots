@@ -7,7 +7,6 @@
  */
 
 export { normalizeText, safeText, safeName } from "./primitives";
-export { isoDate, timeHHMM, phoneNumber } from "./primitives";
 
 export {
   bookingCancelSchema,
@@ -32,7 +31,7 @@ export {
   subscriptionCheckoutSchema,
   subscriptionPortalSchema,
 } from "./payments";
-export type { StripeWebhookEvent, CmiCallbackFields, SubscriptionWebhookEvent } from "./payments";
+export type { StripeWebhookEvent, SubscriptionWebhookEvent } from "./payments";
 
 export { notificationDispatchSchema, notificationTriggerSchema } from "./notifications";
 
@@ -45,7 +44,6 @@ export {
   brandingUpdateSchema,
   applyPresetSchema,
   consentSchema,
-  clinicFeaturesQuerySchema,
   verifyEmailSendSchema,
   verifyEmailConfirmSchema,
 } from "./admin";
@@ -55,7 +53,6 @@ export {
   radiologyOrderCreateSchema,
   radiologyOrderPatchSchema,
   radiologyReportPdfSchema,
-  uploadPresignedSchema,
   uploadConfirmSchema,
   petProfileCreateSchema,
   petProfileUpdateSchema,
@@ -70,14 +67,6 @@ export {
   aiDrugCheckOverrideSchema,
   aiManagerRequestSchema,
   aiAutoSuggestRequestSchema,
-} from "./chat";
-export type {
-  AiPrescriptionRequest,
-  AiPatientSummaryRequest,
-  AiDrugCheckRequest,
-  AiDrugCheckOverride,
-  AiManagerRequest,
-  AiAutoSuggestRequest,
 } from "./chat";
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";

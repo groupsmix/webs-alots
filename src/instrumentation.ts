@@ -160,6 +160,29 @@ export function register() {
             }
           }
         }
+        // R-11: Redact PHI patterns from error message strings and
+        // breadcrumb messages. Sentry error messages may contain DB
+        // row data from PostgREST errors — regex catches Moroccan
+        // phone numbers, CIN, email addresses, and insurance IDs.
+        const PHI_PATTERNS = [
+          /\+212\d{9}/g, // Moroccan phone
+          /0[5-7]\d{8}/g, // Local Moroccan phone
+          /[A-Z]{1,2}\d{5,7}/g, // CIN pattern
+          /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, // Email
+          /\b\d{7,13}\b/g, // AMO/CNSS/CNOPS numbers
+        ];
+        const redactPHIStrings = (str: string): string => {
+          let result = str;
+          for (const pattern of PHI_PATTERNS) {
+            result = result.replace(pattern, "[REDACTED]");
+          }
+          return result;
+        };
+        if (event.exception?.values) {
+          for (const ex of event.exception.values) {
+            if (ex.value) ex.value = redactPHIStrings(ex.value);
+          }
+        }
         return event;
       },
 
@@ -169,6 +192,18 @@ export function register() {
           delete breadcrumb.data.body;
           delete breadcrumb.data.request_body;
           delete breadcrumb.data.response_body;
+        }
+        if (breadcrumb.message) {
+          const PHI_PATTERNS = [
+            /\+212\d{9}/g,
+            /0[5-7]\d{8}/g,
+            /[A-Z]{1,2}\d{5,7}/g,
+            /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+            /\b\d{7,13}\b/g,
+          ];
+          for (const pattern of PHI_PATTERNS) {
+            breadcrumb.message = breadcrumb.message.replace(pattern, "[REDACTED]");
+          }
         }
         return breadcrumb;
       },

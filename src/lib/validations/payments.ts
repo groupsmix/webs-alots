@@ -121,8 +121,6 @@ export const cmiCallbackFieldsSchema = z
     { message: "Unknown parameter in CMI callback — potential tampering" },
   );
 
-export type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
-
 export const cmiPaymentSchema = z.object({
   amount: z.number().positive().finite(),
   description: z

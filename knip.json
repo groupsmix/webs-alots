@@ -7,16 +7,10 @@
     "src/app/**/loading.tsx",
     "src/app/**/error.tsx",
     "src/app/**/not-found.tsx",
-    "src/app/**/default.tsx",
-    "src/app/**/template.tsx",
-    "src/app/global-error.tsx",
-    "src/middleware.ts",
-    "src/instrumentation.ts",
     "sentry.*.config.ts",
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/*/index.ts",
     "worker-cron-handler.ts",
-    "extract-locales.{ts,mjs}",
     "open-next.config.ts"
   ],
   "project": [
@@ -24,17 +18,14 @@
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/**/*.ts",
     "e2e/**/*.ts",
-    "*.config.{ts,mjs}",
-    "worker-cron-handler.ts",
-    "extract-locales.{ts,mjs}"
+    "*.config.{ts,mjs}"
   ],
-  "ignore": ["src/lib/types/database.ts", ".open-next/worker.js"],
+  "ignore": ["src/lib/types/database.ts", "src/config/clinic.config.ts"],
   "ignoreBinaries": ["supabase"],
   "ignoreUnresolved": [".open-next/worker.js"],
   "ignoreDependencies": [
     "eslint-plugin-jsx-a11y",
     "tailwindcss",
-    "postcss",
     "eslint-plugin-react-hooks",
     "tw-animate-css",
     "shadcn"

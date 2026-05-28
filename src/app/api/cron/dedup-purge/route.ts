@@ -4,6 +4,7 @@
  * Deletes rows older than 90 days from:
  * - `processed_stripe_events` (migration 00092)
  * - `cmi_callbacks_seen` (migration 00084/00091)
+ * - `processed_whatsapp_messages` (migration 00094, R-16)
  *
  * These tables grow unbounded without purging. The 90-day window is
  * generous — Stripe webhook replay is at most 30 days, and CMI
@@ -56,7 +57,24 @@ export async function GET(request: NextRequest) {
   }
   results.cmi_callbacks_seen = cmiCount ?? 0;
 
-  const total = results.processed_stripe_events + results.cmi_callbacks_seen;
+  // Purge processed_whatsapp_messages (R-16)
+  const { count: waCount, error: waErr } = await admin
+    .from("processed_whatsapp_messages")
+    .delete({ count: "exact" })
+    .lt("processed_at", cutoff);
+
+  if (waErr) {
+    logger.error("dedup-purge: failed to purge processed_whatsapp_messages", {
+      context: "cron/dedup-purge",
+      error: waErr.message,
+    });
+  }
+  results.processed_whatsapp_messages = waCount ?? 0;
+
+  const total =
+    results.processed_stripe_events +
+    results.cmi_callbacks_seen +
+    results.processed_whatsapp_messages;
   logger.info(`dedup-purge: purged ${total} rows older than ${RETENTION_DAYS} days`, {
     context: "cron/dedup-purge",
     ...results,

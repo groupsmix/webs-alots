@@ -36,14 +36,10 @@ export const aiPrescriptionRequestSchema = z.object({
     .optional(),
 });
 
-export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
-
 export const aiPatientSummaryRequestSchema = z.object({
   patientId: z.string().min(1),
   forceRefresh: z.boolean().optional().default(false),
 });
-
-export type AiPatientSummaryRequest = z.infer<typeof aiPatientSummaryRequestSchema>;
 
 export const aiDrugCheckRequestSchema = z.object({
   medications: z.array(z.string().min(1).max(200)).min(1).max(50),
@@ -51,8 +47,6 @@ export const aiDrugCheckRequestSchema = z.object({
   patientAllergies: z.array(z.string().max(200)).optional(),
   useAiFallback: z.boolean().optional().default(true),
 });
-
-export type AiDrugCheckRequest = z.infer<typeof aiDrugCheckRequestSchema>;
 
 export const aiDrugCheckOverrideSchema = z.object({
   patientId: z.string().min(1).optional(),
@@ -62,8 +56,6 @@ export const aiDrugCheckOverrideSchema = z.object({
   reason: z.string().min(1).max(2000),
   medications: z.array(z.string()).min(1),
 });
-
-export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 export const aiManagerRequestSchema = z.object({
   question: z.string().min(1).max(2000),
@@ -79,8 +71,6 @@ export const aiManagerRequestSchema = z.object({
     .default([]),
 });
 
-export type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
-
 export const aiAutoSuggestRequestSchema = z.object({
   diagnosis: z.string().min(1).max(2000),
   patientId: z.string().min(1).optional(),
@@ -95,5 +85,3 @@ export const aiAutoSuggestRequestSchema = z.object({
     })
     .optional(),
 });
-
-export type AiAutoSuggestRequest = z.infer<typeof aiAutoSuggestRequestSchema>;
