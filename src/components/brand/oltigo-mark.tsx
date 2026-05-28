@@ -32,6 +32,7 @@ export function OltigoWordmark({
         WORDMARK_SIZE[size],
         className,
       )}
+      role="img"
       aria-label="Oltigo"
     >
       <span aria-hidden>oltig</span>
@@ -75,6 +76,7 @@ export function OltigoMonogram({
         color: "var(--primary)",
         backgroundColor: "var(--card)",
       }}
+      role="img"
       aria-label="Oltigo"
     >
       <span aria-hidden>o</span>
