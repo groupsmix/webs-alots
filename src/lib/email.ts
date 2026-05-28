@@ -125,6 +125,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
   }
   // TF-04: Validate relay host against allowlist to prevent exfiltration
   // via a compromised EMAIL_RELAY_HOST env var. Only enforced in production.
+  // nosemgrep: env-access — NODE_ENV is a standard runtime guard, not a secret
   if (process.env.NODE_ENV === "production") {
     const ALLOWED_RELAY_HOSTS = ["api.mailgun.net", "api.eu.mailgun.net", "api.postmarkapp.com"];
     const hostRoot = host.split("/")[0].toLowerCase();
