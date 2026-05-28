@@ -948,6 +948,7 @@ export type Database = {
           key_prefix: string | null
           label: string | null
           last_used_at: string | null
+          scopes: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -961,6 +962,7 @@ export type Database = {
           key_prefix?: string | null
           label?: string | null
           last_used_at?: string | null
+          scopes?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -974,6 +976,7 @@ export type Database = {
           key_prefix?: string | null
           label?: string | null
           last_used_at?: string | null
+          scopes?: string[] | null
           updated_at?: string | null
         }
         Relationships: [

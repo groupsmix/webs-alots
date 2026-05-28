@@ -2,6 +2,8 @@
 
 import { X } from "lucide-react";
 import * as React from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface DialogProps {
@@ -52,6 +54,8 @@ function DialogContent({
   onClose,
   ...props
 }: React.ComponentProps<"div"> & { onClose?: () => void }) {
+  const [locale] = useLocale();
+  const closeLabel = t(locale, "action.close");
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   // Focus management: trap focus inside modal and restore on close
@@ -124,10 +128,10 @@ function DialogContent({
             type="button"
             className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={closeLabel}
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Fermer</span>
+            <span className="sr-only">{closeLabel}</span>
           </button>
         )}
       </div>

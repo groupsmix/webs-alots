@@ -6,11 +6,10 @@
  *
  * IMPORTANT: All tenant-specific data (clinic_id, timezone, booking config,
  * working hours, currency) MUST come from request context or DB — never
- * from the static clinicConfig file.
+ * from static config files.
  */
 
 import { headers } from "next/headers";
-import { clinicConfig } from "@/config/clinic.config";
 import { DEFAULT_TIMEZONE } from "@/lib/constants";
 import { logTenantContext } from "@/lib/tenant-context";
 
@@ -74,7 +73,7 @@ export async function requireTenant(): Promise<TenantInfo> {
 
 /**
  * Per-tenant booking configuration resolved from the clinics table `config`
- * JSONB column, with fallbacks to static clinicConfig defaults.
+ * JSONB column, with hardcoded sensible defaults.
  */
 export interface TenantClinicConfig {
   timezone: string;
@@ -92,16 +91,35 @@ export interface TenantClinicConfig {
   };
 }
 
+/** Sensible defaults for working hours (Mon-Fri 09-17, Sat 09-13, Sun off). */
+const DEFAULT_WORKING_HOURS: TenantClinicConfig["workingHours"] = {
+  0: { open: "09:00", close: "17:00", enabled: false },
+  1: { open: "09:00", close: "17:00", enabled: true },
+  2: { open: "09:00", close: "17:00", enabled: true },
+  3: { open: "09:00", close: "17:00", enabled: true },
+  4: { open: "09:00", close: "17:00", enabled: true },
+  5: { open: "09:00", close: "17:00", enabled: true },
+  6: { open: "09:00", close: "13:00", enabled: true },
+};
+
+const DEFAULT_BOOKING: TenantClinicConfig["booking"] = {
+  slotDuration: 30,
+  bufferTime: 10,
+  maxAdvanceDays: 30,
+  maxPerSlot: 1,
+  cancellationHours: 24,
+  depositAmount: undefined,
+  depositPercentage: 20,
+  maxRecurringWeeks: 12,
+};
+
 /**
  * Fetch tenant-specific clinic configuration from the DB.
  *
  * Reads the `config` JSONB column from the `clinics` table for the
- * current tenant and merges with static defaults from clinicConfig.
+ * current tenant and merges with hardcoded defaults.
  * This ensures each tenant can have its own timezone, currency,
  * working hours, and booking settings.
- *
- * Use in API routes and server-side logic instead of accessing
- * clinicConfig directly for these business-critical settings.
  */
 export async function getClinicConfig(clinicId: string): Promise<TenantClinicConfig> {
   // Dynamic import to avoid circular dependency
@@ -127,20 +145,20 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
 
   const dbConfig = (data?.config ?? {}) as ClinicDbConfig;
 
-  // Merge DB config with static defaults (DB takes precedence)
+  // Merge DB config with hardcoded defaults (DB takes precedence)
   return {
-    timezone: dbConfig.timezone ?? clinicConfig.timezone ?? DEFAULT_TIMEZONE,
-    currency: dbConfig.currency ?? clinicConfig.currency ?? "MAD",
-    workingHours: dbConfig.workingHours ?? clinicConfig.workingHours,
+    timezone: dbConfig.timezone ?? DEFAULT_TIMEZONE,
+    currency: dbConfig.currency ?? "MAD",
+    workingHours: dbConfig.workingHours ?? DEFAULT_WORKING_HOURS,
     booking: {
-      slotDuration: dbConfig.slotDuration ?? clinicConfig.booking.slotDuration,
-      bufferTime: dbConfig.bufferTime ?? clinicConfig.booking.bufferTime,
-      maxAdvanceDays: dbConfig.maxAdvanceDays ?? clinicConfig.booking.maxAdvanceDays,
-      maxPerSlot: dbConfig.maxPerSlot ?? clinicConfig.booking.maxPerSlot,
-      cancellationHours: dbConfig.cancellationHours ?? clinicConfig.booking.cancellationHours,
-      depositAmount: dbConfig.depositAmount ?? clinicConfig.booking.depositAmount,
-      depositPercentage: dbConfig.depositPercentage ?? clinicConfig.booking.depositPercentage,
-      maxRecurringWeeks: dbConfig.maxRecurringWeeks ?? clinicConfig.booking.maxRecurringWeeks,
+      slotDuration: dbConfig.slotDuration ?? DEFAULT_BOOKING.slotDuration,
+      bufferTime: dbConfig.bufferTime ?? DEFAULT_BOOKING.bufferTime,
+      maxAdvanceDays: dbConfig.maxAdvanceDays ?? DEFAULT_BOOKING.maxAdvanceDays,
+      maxPerSlot: dbConfig.maxPerSlot ?? DEFAULT_BOOKING.maxPerSlot,
+      cancellationHours: dbConfig.cancellationHours ?? DEFAULT_BOOKING.cancellationHours,
+      depositAmount: dbConfig.depositAmount ?? DEFAULT_BOOKING.depositAmount,
+      depositPercentage: dbConfig.depositPercentage ?? DEFAULT_BOOKING.depositPercentage,
+      maxRecurringWeeks: dbConfig.maxRecurringWeeks ?? DEFAULT_BOOKING.maxRecurringWeeks,
     },
   };
 }

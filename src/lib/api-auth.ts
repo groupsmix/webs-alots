@@ -56,24 +56,12 @@ export async function authenticateApiKey(
   // By iterating over candidates, we gracefully handle collisions.
   //
   // AUDIT-13: Select `expires_at` and `scopes` for enforcement.
-  // These columns may not yet be in the generated DB types, so cast the
-  // client to `any` just for this query. Row shape is validated at use.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const untypedClient = supabase as any;
-  const { data: candidates } = (await untypedClient
+  const { data: candidates } = await supabase
     .from("clinic_api_keys")
     .select("clinic_id, active, key_hash, expires_at, scopes")
     .eq("key_prefix", keyPrefix)
     .eq("active", true)
-    .limit(50)) as {
-    data: Array<{
-      clinic_id: string;
-      active: boolean;
-      key_hash: string | null;
-      expires_at: string | null;
-      scopes: string[] | null;
-    }> | null;
-  };
+    .limit(50);
 
   if (!candidates || candidates.length === 0) return null;
 

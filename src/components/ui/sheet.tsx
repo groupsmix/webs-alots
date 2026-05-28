@@ -2,6 +2,8 @@
 
 import { X } from "lucide-react";
 import * as React from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface SheetProps {
@@ -34,6 +36,8 @@ function SheetContent({
   onClose,
   ...props
 }: React.ComponentProps<"div"> & { side?: "left" | "right"; onClose?: () => void }) {
+  const [locale] = useLocale();
+  const closeLabel = t(locale, "action.close");
   return (
     <>
       <div
@@ -63,7 +67,7 @@ function SheetContent({
           onClick={onClose}
         >
           <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{closeLabel}</span>
         </button>
       </div>
     </>

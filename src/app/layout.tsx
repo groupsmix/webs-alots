@@ -64,14 +64,15 @@ export const viewport: Viewport = {
 /**
  * SEO-01: Locale-aware metadata via i18n instead of hardcoded French.
  *
- * F-A89-01: The locale is defaulted to "fr" for now (same as the layout).
- * Per-tenant locale headers are not yet implemented. See #628.
+ * Resolution order: x-tenant-locale header (set by middleware from clinic
+ * config) > preferred-locale cookie (user preference) > "fr" default.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  // Default locale — see #628 for per-tenant locale support.
+  const h = await headers();
+  const tenantLocale = h.get("x-tenant-locale") as Locale | null;
   const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
-  const locale = preferredLocale || ("fr" as Locale);
+  const locale = tenantLocale || preferredLocale || ("fr" as Locale);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
   return {
