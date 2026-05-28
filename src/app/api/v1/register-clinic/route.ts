@@ -186,7 +186,12 @@ const registerClinicSchema = z
       .transform(normalizeText)
       .pipe(z.string().min(2, "Le nom du docteur est requis").max(200)),
     email: z.string().email("Email invalide").max(254),
-    phone: z.string().min(8, "Numéro de téléphone invalide").max(30),
+    // S0-04-05: Reject non-phone shapes early instead of failing downstream.
+    phone: z
+      .string()
+      .min(8, "Numéro de téléphone invalide")
+      .max(30)
+      .regex(/^\+?[0-9 ()\-]{8,30}$/, "Numéro de téléphone invalide"),
     specialty: z
       .string()
       .transform(normalizeText)
