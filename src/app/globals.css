@@ -48,73 +48,84 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * App-wide theme — Oltigo editorial-institutional.
+ *
+ * These shadcn tokens drive every dashboard, auth, and tenant surface built
+ * on the UI primitives. They are mapped onto the editorial design tokens in
+ * tokens.css (--ink / --bone / --oltigo-green / --rule) so the whole product
+ * shares one palette. Light mode = ink-on-bone; dark mode swaps ink<->bone
+ * with the green accent held constant (see design direction rule 4).
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: var(--bone); /* #f4f1ea */
+  --foreground: var(--ink); /* #0b0f0e */
+  --card: #faf8f2; /* paper, one tier above bone */
+  --card-foreground: var(--ink);
+  --popover: #faf8f2;
+  --popover-foreground: var(--ink);
+  --primary: var(--oltigo-green); /* #005a3b */
+  --primary-foreground: var(--bone);
+  --secondary: #eae6db; /* deeper bone */
+  --secondary-foreground: var(--ink);
+  --muted: #eae6db;
+  --muted-foreground: rgba(11, 15, 14, 0.66);
+  --accent: #e3e9e4; /* faint green-tinted neutral (hover) */
+  --accent-foreground: var(--ink);
+  --destructive: var(--signal-red); /* #b42318 */
+  --border: var(--rule); /* ink @12% */
+  --input: var(--rule);
+  --ring: var(--oltigo-green);
+  /* Charts: editorial sequence — green, ink tiers, status amber. */
+  --chart-1: var(--oltigo-green);
+  --chart-2: rgba(11, 15, 14, 0.72);
+  --chart-3: var(--signal-amber);
+  --chart-4: rgba(11, 15, 14, 0.4);
+  --chart-5: #3f6f5a;
+  --radius: 0.5rem;
+  --sidebar: #efebe1; /* distinct from bone canvas */
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--oltigo-green);
+  --sidebar-primary-foreground: var(--bone);
+  --sidebar-accent: #e3e9e4;
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--oltigo-green);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.75 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Ink<->bone swap; green accent held constant. */
+  --background: var(--ink); /* #0b0f0e */
+  --foreground: var(--bone); /* #f4f1ea */
+  --card: #121615; /* one tier above ink */
+  --card-foreground: var(--bone);
+  --popover: #121615;
+  --popover-foreground: var(--bone);
+  --primary: #2f8f63; /* lifted green for legibility on ink */
+  --primary-foreground: #06110c;
+  --secondary: #1b211f;
+  --secondary-foreground: var(--bone);
+  --muted: #1b211f;
+  --muted-foreground: rgba(244, 241, 234, 0.64);
+  --accent: #1b211f;
+  --accent-foreground: var(--bone);
+  --destructive: #e5615a;
+  --border: rgba(244, 241, 234, 0.14);
+  --input: rgba(244, 241, 234, 0.16);
+  --ring: #2f8f63;
+  --chart-1: #2f8f63;
+  --chart-2: rgba(244, 241, 234, 0.7);
+  --chart-3: var(--signal-amber);
+  --chart-4: rgba(244, 241, 234, 0.4);
+  --chart-5: #5fae8a;
+  --sidebar: #0e1312;
+  --sidebar-foreground: var(--bone);
+  --sidebar-primary: #2f8f63;
+  --sidebar-primary-foreground: #06110c;
+  --sidebar-accent: #1b211f;
+  --sidebar-accent-foreground: var(--bone);
+  --sidebar-border: rgba(244, 241, 234, 0.14);
+  --sidebar-ring: #2f8f63;
 }
 
 @layer base {
