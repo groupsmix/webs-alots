@@ -305,7 +305,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (error) {
           logger.error("Rate limiter query failed", { context: "rate-limit", error });
           recordFailure(circuitBreaker, options);
-          reportRateLimitBackendError("query", error);
+          void reportRateLimitBackendError("query", error);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
@@ -328,7 +328,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
               error: upsertError,
             });
             recordFailure(circuitBreaker, options);
-            reportRateLimitBackendError("upsert", upsertError);
+            void reportRateLimitBackendError("upsert", upsertError);
             if (circuitBreaker.failClosed) return false;
             if (circuitBreaker.fallback) {
               return circuitBreaker.fallback.check(key);
@@ -354,7 +354,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (updateError) {
           logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
           recordFailure(circuitBreaker, options);
-          reportRateLimitBackendError("update", updateError);
+          void reportRateLimitBackendError("update", updateError);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
@@ -378,7 +378,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         logger.error("Rate limiter network failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
-        reportRateLimitBackendError("network", err);
+        void reportRateLimitBackendError("network", err);
         if (circuitBreaker.failClosed) return false;
         if (circuitBreaker.fallback) {
           return circuitBreaker.fallback.check(key);
@@ -491,7 +491,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (circuitBreaker.failClosed) return false;
         const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
         if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
-        reportRateLimitBackendError("kv", err);
+        void reportRateLimitBackendError("kv", err);
         if (circuitBreaker.fallback) {
           return circuitBreaker.fallback.check(key);
         }
@@ -670,6 +670,7 @@ const apiMutationLimiter = createRateLimiter({
 const uploadLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10,
+  failClosed: true,
 });
 
 /** Onboarding (clinic creation): 5 req / 60s per IP — security-critical (registration). */
@@ -713,12 +714,14 @@ export const bookingLimiter = createRateLimiter({
 export const waitingListLimiter = createRateLimiter({
   windowMs: 60 * 60_000,
   max: 3,
+  failClosed: true,
 });
 
 /** Email verification: 5 req / 60s per IP (prevent OTP/link abuse) */
 const emailVerificationLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
+  failClosed: true,
 });
 
 /** AI Patient Summary: 30 req / 24h per doctor (included in plan limits) */
@@ -760,6 +763,7 @@ export const aiAutoSuggestLimiter = createRateLimiter({
 export const globalPageLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 120,
+  failClosed: false,
 });
 
 /**

@@ -163,10 +163,10 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (dedupPayment?.clinic_id) {
-        const { error: dedupErr } = await adminClient.from("cmi_callbacks_seen" as never).insert({
+        const { error: dedupErr } = await adminClient.from("cmi_callbacks_seen").insert({
           clinic_id: dedupPayment.clinic_id,
           transaction_id: callbackData.transactionId,
-        } as never);
+        });
 
         if (dedupErr) {
           // 23505 = unique_violation → duplicate callback, ACK but do nothing
