@@ -35,6 +35,9 @@ export async function applyRateLimit(
   // is not internet-facing so rate limiting provides no security value.
   // Gate on GITHUB_ACTIONS (not CI) per src/lib/env.ts convention —
   // CI=true is easy to set accidentally on a real deployment.
+  // M-05: This bypass is intentional and accepted. E2E tests exercise the
+  // application logic; rate-limiting is validated via unit tests in
+  // src/lib/__tests__/rate-limit.test.ts.
   if (process.env.GITHUB_ACTIONS === "true") {
     return { response: null };
   }
