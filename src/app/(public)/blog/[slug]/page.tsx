@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
+import { t } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 
@@ -93,7 +94,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
       >
         <ArrowLeft className="h-4 w-4" />
-        Retour au blog
+        {t("fr", "blog.backToList")}
       </Link>
 
       {/* Post header */}

@@ -50,10 +50,11 @@ export interface UserProfile {
 /**
  * Extract client IP from request headers for server action rate limiting.
  *
- * Only CF-Connecting-IP is used — it is set by Cloudflare's edge and cannot
- * be spoofed by the client. X-Forwarded-For is intentionally NOT used because
- * it is attacker-controlled when the request does not pass through a trusted
- * proxy that overwrites it.
+ * Only CF-Connecting-IP is used — in production it is set by Cloudflare's
+ * edge and cannot be spoofed by the client. In local dev (NODE_ENV=development)
+ * the header is absent, so the fallback is "unknown".
+ * X-Forwarded-For is intentionally NOT used because it is attacker-controlled
+ * when the request does not pass through a trusted proxy that overwrites it.
  */
 async function getClientIp(): Promise<string> {
   const hdrs = await headers();

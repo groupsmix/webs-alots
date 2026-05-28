@@ -39,10 +39,8 @@ function isCmiSourceAllowed(request: NextRequest): boolean {
       .map((ip) => ip.trim())
       .filter(Boolean),
   );
-  const clientIp =
-    request.headers.get("cf-connecting-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    null;
+  // L3-M-04: Use CF-Connecting-IP only — XFF is attacker-controlled outside Cloudflare
+  const clientIp = request.headers.get("cf-connecting-ip") ?? null;
 
   if (!clientIp) {
     logger.warn("CMI callback: no client IP available for allowlist check", {

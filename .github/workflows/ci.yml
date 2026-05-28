@@ -141,7 +141,9 @@ jobs:
       # outside of known-safe helper files (safeJsonLdStringify, sanitizeHtml).
       - name: Guard dangerouslySetInnerHTML allowlist
         run: |
-          ALLOWED='src/lib/json-ld\.ts|src/lib/sanitize-html\.ts|src/app/\(public\)/.*page\.tsx|src/components/analytics-script\.tsx|src/app/\(auth\)/setup-2fa/page\.tsx'
+          # L8-F3: Explicit file list instead of broad regex to prevent new public pages
+          # from silently introducing unsanitized dangerouslySetInnerHTML usage.
+          ALLOWED='src/lib/json-ld\.ts|src/lib/sanitize-html\.ts|src/components/analytics-script\.tsx|src/app/\(auth\)/setup-2fa/page\.tsx|src/app/\(public\)/annuaire/\[city\]/\[specialty\]/page\.tsx|src/app/\(public\)/annuaire/\[city\]/page\.tsx|src/app/\(public\)/annuaire/page\.tsx|src/app/\(public\)/blog/\[slug\]/page\.tsx|src/app/\(public\)/book/page\.tsx|src/app/\(public\)/contact/page\.tsx|src/app/\(public\)/page\.tsx|src/app/\(public\)/reviews/page\.tsx|src/app/\(public\)/services/page\.tsx'
           HITS=$(git ls-files '*.ts' '*.tsx' | xargs grep -l "dangerouslySetInnerHTML" | grep -vE "$ALLOWED" || true)
           if [ -n "$HITS" ]; then
             echo "::error::dangerouslySetInnerHTML found outside allowlist:"

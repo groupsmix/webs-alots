@@ -1,10 +1,11 @@
-import { AnalyticsScript } from "@/components/analytics-script";
 import { Chatbot } from "@/components/chatbot";
+import { ConsentGatedAnalytics } from "@/components/consent-gated-analytics";
 import { CookieConsent } from "@/components/cookie-consent";
 import { DemoBanner } from "@/components/demo-banner";
 import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
 import { getPublicBranding, type ClinicBranding } from "@/lib/data/public";
+import { t } from "@/lib/i18n";
 import { getTenant } from "@/lib/tenant";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -38,12 +39,12 @@ export default async function PublicLayout({ children }: { children: React.React
       }
     >
       {isDemo && <DemoBanner />}
-      <AnalyticsScript gaId={gaId} gtmId={gtmId} />
+      <ConsentGatedAnalytics gaId={gaId} gtmId={gtmId} />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
       >
-        Aller au contenu principal
+        {t("fr", "nav.skipToContent")}
       </a>
       <PublicHeader logoUrl={branding.logoUrl} clinicName={branding.clinicName} />
       <main id="main-content" className="flex-1">

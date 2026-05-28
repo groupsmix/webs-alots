@@ -39,12 +39,13 @@ export function reopenCookieConsent(): void {
 
 /**
  * Read stored cookie preferences from localStorage.
- * Returns `null` when no consent has been given yet.
+ * L6-M-10: Returns defaults (all non-essential off) instead of null
+ * when no consent has been given, eliminating nullable paths.
  */
-export function getStoredCookiePreferences(): CookiePreferences | null {
-  if (typeof window === "undefined") return null;
+export function getStoredCookiePreferences(): CookiePreferences {
+  if (typeof window === "undefined") return DEFAULT_PREFERENCES;
   const raw = localStorage.getItem("cookie-consent");
-  if (!raw) return null;
+  if (!raw) return DEFAULT_PREFERENCES;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (
@@ -61,7 +62,7 @@ export function getStoredCookiePreferences(): CookiePreferences | null {
     if (raw === "accepted") return ALL_ACCEPTED;
     if (raw === "declined") return DEFAULT_PREFERENCES;
   }
-  return null;
+  return DEFAULT_PREFERENCES;
 }
 
 /**
@@ -120,8 +121,9 @@ export function CookieConsent() {
   const [locale] = useLocale();
   const [visible, setVisible] = useState(() => {
     if (typeof window === "undefined") return false;
-    const stored = getStoredCookiePreferences();
-    if (stored) {
+    const hasConsent = localStorage.getItem("cookie-consent") !== null;
+    if (hasConsent) {
+      const stored = getStoredCookiePreferences();
       applyAnalyticsConsent(stored.analytics);
       return false;
     }
@@ -174,6 +176,7 @@ export function CookieConsent() {
 
   return (
     <div
+      id="cookie-consent-banner"
       role="dialog"
       aria-label={t(locale, "cookie.ariaLabel")}
       className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background shadow-lg"

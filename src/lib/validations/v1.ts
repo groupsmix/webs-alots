@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phoneNumber } from "@/lib/validations/primitives";
 
 export const v1AppointmentCreateSchema = z.object({
   patient_id: z.string().min(1).max(100),
@@ -13,7 +14,7 @@ export const v1AppointmentCreateSchema = z.object({
 export const v1PatientCreateSchema = z.object({
   full_name: z.string().min(1).max(200),
   email: z.string().email().max(254).optional().or(z.literal("")),
-  phone: z.string().max(30).optional(),
+  phone: phoneNumber.optional(),
   date_of_birth: z.string().optional(),
   gender: z.string().max(20).optional(),
   insurance_type: z.string().max(100).optional(),
