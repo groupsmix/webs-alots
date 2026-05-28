@@ -15,6 +15,7 @@
 import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
+import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -121,7 +122,10 @@ Identifie les interactions médicamenteuses supplémentaires qui pourraient ne p
     const data = (await response.json()) as {
       choices?: { message?: { content?: string } }[];
     };
-    const content = data.choices?.[0]?.message?.content;
+    const rawContent = data.choices?.[0]?.message?.content;
+    if (!rawContent) return null;
+
+    const content = validateAIOutput(rawContent);
     if (!content) return null;
 
     let jsonStr = content.trim();

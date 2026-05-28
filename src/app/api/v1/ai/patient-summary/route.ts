@@ -16,6 +16,7 @@ import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
+import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -393,15 +394,25 @@ export const POST = withAuthValidation(
       const aiData = (await aiResponse.json()) as {
         choices?: { message?: { content?: string } }[];
       };
-      const content = aiData.choices?.[0]?.message?.content;
+      const rawContent = aiData.choices?.[0]?.message?.content;
 
-      if (!content) {
+      if (!rawContent) {
         logger.warn("AI returned empty response", {
           context: "ai-patient-summary",
           clinicId,
           doctorId,
         });
         return apiInternalError("Le service IA n'a pas retourné de réponse valide.");
+      }
+
+      const content = validateAIOutput(rawContent);
+      if (!content) {
+        logger.warn("AI output rejected by safety validator", {
+          context: "ai-patient-summary/output-safety",
+          clinicId,
+          doctorId,
+        });
+        return apiInternalError("La réponse IA a été rejetée par le validateur de sécurité.");
       }
 
       // F-AI-04: Depseudonymise the AI response to restore real patient data
