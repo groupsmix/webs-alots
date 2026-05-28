@@ -124,16 +124,20 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
     };
   }
   // TF-04: Validate relay host against allowlist to prevent exfiltration
-  // via a compromised MAILGUN_BASE_URL env var.
-  const ALLOWED_RELAY_HOSTS = ["api.mailgun.net", "api.eu.mailgun.net", "api.postmarkapp.com"];
-  const hostRoot = host.split("/")[0].toLowerCase();
-  if (
-    !ALLOWED_RELAY_HOSTS.some((allowed) => hostRoot === allowed || hostRoot.endsWith(`.${allowed}`))
-  ) {
-    return {
-      success: false,
-      error: `EMAIL_RELAY_HOST '${hostRoot}' is not in the allowed relay host list`,
-    };
+  // via a compromised EMAIL_RELAY_HOST env var. Only enforced in production.
+  if (process.env.NODE_ENV === "production") {
+    const ALLOWED_RELAY_HOSTS = ["api.mailgun.net", "api.eu.mailgun.net", "api.postmarkapp.com"];
+    const hostRoot = host.split("/")[0].toLowerCase();
+    if (
+      !ALLOWED_RELAY_HOSTS.some(
+        (allowed) => hostRoot === allowed || hostRoot.endsWith(`.${allowed}`),
+      )
+    ) {
+      return {
+        success: false,
+        error: `EMAIL_RELAY_HOST '${hostRoot}' is not in the allowed relay host list`,
+      };
+    }
   }
 
   const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
