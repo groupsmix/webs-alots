@@ -48,16 +48,6 @@ export interface DirectoryDoctor {
   clinicId: string;
 }
 
-export interface DirectoryClinic {
-  id: string;
-  name: string;
-  subdomain: string | null;
-  city: string | null;
-  address: string | null;
-  phone: string | null;
-  logoUrl: string | null;
-}
-
 // ── Helpers ──
 
 function nameToSlug(name: string): string {

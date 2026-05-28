@@ -20,8 +20,7 @@
  * @see https://opennext.js.org/cloudflare/howtos/custom-worker
  */
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — .open-next/worker.js is generated at build time
+// @ts-expect-error — .open-next/worker.js is generated at build time
 import { default as handler } from "./.open-next/worker.js";
 
 /**

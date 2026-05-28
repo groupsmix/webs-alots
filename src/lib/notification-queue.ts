@@ -19,22 +19,6 @@ type ExtendedClient = SupabaseClient<Database>;
 
 // ── Types ──
 
-export interface QueuedNotification {
-  id: string;
-  clinic_id: string;
-  channel: NotificationChannel;
-  recipient: string;
-  template_id: string | null;
-  payload: unknown;
-  status: "pending" | "processing" | "sent" | "failed";
-  attempts: number;
-  max_attempts: number;
-  next_attempt_at: string;
-  error_message: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 interface EnqueueParams {
   clinicId: string;
   channel: NotificationChannel;

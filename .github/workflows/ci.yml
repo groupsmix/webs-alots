@@ -95,6 +95,9 @@ jobs:
 
       # R-02: Per-file coverage thresholds for security-critical modules.
       # Reads the JSON summary produced by the coverage step above.
+      # FR-203/FR-281: Advisory-only (continue-on-error: true) until the
+      # overall coverage floor reaches 40%+, at which point security-critical
+      # files should be above their per-file thresholds consistently.
       - name: Security coverage thresholds
         run: node scripts/check-security-coverage.mjs
         continue-on-error: true
@@ -130,9 +133,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
           # Raw (uncompressed) limit on shared root chunks + polyfills.
-          # Current baseline ≈ 560 kB; 1024 kB leaves headroom and fails
-          # closed on runaway shared bundle growth (~ 250 kB gzipped).
-          BUNDLE_BUDGET_KB: "1024"
+          # Current baseline ≈ 560 kB; 800 kB leaves headroom and fails
+          # closed on runaway shared bundle growth (R-17).
+          BUNDLE_BUDGET_KB: "800"
 
       # AUDIT FINDING #20: Guard against unsafe dangerouslySetInnerHTML usage
       # outside of known-safe helper files (safeJsonLdStringify, sanitizeHtml).

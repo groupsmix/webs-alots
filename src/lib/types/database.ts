@@ -6026,6 +6026,32 @@ export type Database = {
           },
         ]
       }
+      processed_whatsapp_messages: {
+        Row: {
+          message_id: string
+          clinic_id: string
+          processed_at: string
+        }
+        Insert: {
+          message_id: string
+          clinic_id: string
+          processed_at?: string
+        }
+        Update: {
+          message_id?: string
+          clinic_id?: string
+          processed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processed_whatsapp_messages_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           age_group: string | null

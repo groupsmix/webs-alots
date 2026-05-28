@@ -1,0 +1,33 @@
+rules:
+  # R-02: Guard against direct createAdminClient() usage outside the
+  # authorised module. All service-role access should go through the
+  # wrapper in supabase-server.ts so that clinic_id scoping is enforced
+  # at the call site. Callers that intentionally need cross-tenant
+  # service-role access (e.g. cron jobs iterating all clinics) should
+  # add a `// nosemgrep: admin-client-guard` inline suppression.
+  - id: admin-client-guard
+    patterns:
+      - pattern: createAdminClient(...)
+      - pattern-not-inside: |
+          export function createAdminClient(...) { ... }
+      - pattern-not-inside: |
+          export function createUntypedAdminClient(...) { ... }
+    message: >
+      Direct createAdminClient() usage detected — prefer the
+      tenant-scoped wrapper in supabase-server.ts. If cross-tenant
+      access is intentional, suppress with
+      `// nosemgrep: admin-client-guard`.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      include:
+        - "src/"
+      exclude:
+        - "src/lib/supabase-server.ts"
+        - "src/lib/__tests__/**"
+    metadata:
+      category: security
+      technology:
+        - supabase
+      references:
+        - https://github.com/groupsmix/webs-alots/blob/main/AGENTS.md

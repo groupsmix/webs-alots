@@ -75,35 +75,6 @@ export interface NotificationTemplate {
   recipientRoles: ("patient" | "doctor" | "receptionist" | "clinic_admin")[];
 }
 
-// ---- In-App Notification ----
-
-export interface InAppNotification {
-  id: string;
-  userId: string;
-  trigger: NotificationTrigger;
-  title: string;
-  message: string;
-  channel: "in_app";
-  status: NotificationStatus;
-  priority: NotificationPriority;
-  metadata?: Record<string, string>;
-  createdAt: string;
-  readAt?: string;
-}
-
-// ---- WhatsApp Message ----
-
-export interface WhatsAppMessage {
-  id: string;
-  to: string;
-  trigger: NotificationTrigger;
-  body: string;
-  status: NotificationStatus;
-  sentAt: string;
-  deliveredAt?: string;
-  error?: string;
-}
-
 // ---- Notification Log Entry ----
 
 export interface NotificationLogEntry {
@@ -122,24 +93,6 @@ export interface NotificationLogEntry {
   sentAt?: string;
   readAt?: string;
   error?: string;
-}
-
-// ---- User Notification Preferences ----
-
-export interface NotificationPreferences {
-  userId: string;
-  channels: {
-    whatsapp: boolean;
-    in_app: boolean;
-    email: boolean;
-    sms: boolean;
-  };
-  triggers: Partial<Record<NotificationTrigger, boolean>>;
-  quietHours?: {
-    enabled: boolean;
-    start: string; // "22:00"
-    end: string; // "08:00"
-  };
 }
 
 // ---- Template Variable Substitution Engine ----

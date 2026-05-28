@@ -6,7 +6,7 @@
  */
 
 /** The well-known UUID for the demo clinic (seeded in migration 00046). */
-export const DEMO_CLINIC_ID = process.env.DEMO_CLINIC_ID || "c0000000-de00-0000-0000-000000000001";
+const DEMO_CLINIC_ID = process.env.DEMO_CLINIC_ID || "c0000000-de00-0000-0000-000000000001";
 
 /** The subdomain used for the demo tenant. */
 export const DEMO_SUBDOMAIN = "demo";
@@ -40,13 +40,6 @@ export const DEMO_USERS = {
  */
 function isDemoClinic(clinicId: string | null | undefined): boolean {
   return clinicId === DEMO_CLINIC_ID;
-}
-
-/**
- * Check if a subdomain belongs to the demo tenant.
- */
-export function isDemoSubdomain(subdomain: string | null | undefined): boolean {
-  return subdomain === DEMO_SUBDOMAIN;
 }
 
 /**
@@ -99,32 +92,4 @@ export function shouldBlockDemoRequest(
   }
 
   return true;
-}
-
-/**
- * F-39: Decorator-style wrapper that marks a route handler as safe for
- * demo mode. Handlers NOT wrapped with demoSafe will be blocked by
- * default when the request targets the demo tenant with a destructive
- * HTTP method.
- *
- * Usage:
- *   export const POST = demoSafe(withAuth(async (req, ctx) => { ... }));
- *
- * This replaces the path/method allow-list approach with an explicit
- * opt-in per route handler.
- */
-export function demoSafe<T extends (...args: never[]) => unknown>(handler: T): T {
-  // Tag the handler so middleware or withAuth can check it
-  (handler as unknown as Record<string, unknown>).__demoSafe = true;
-  return handler;
-}
-
-/**
- * Check if a handler has been marked as demo-safe via the demoSafe wrapper.
- */
-export function isDemoSafeHandler(handler: unknown): boolean {
-  return (
-    typeof handler === "function" &&
-    (handler as unknown as Record<string, unknown>).__demoSafe === true
-  );
 }

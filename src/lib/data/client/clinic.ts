@@ -89,22 +89,6 @@ export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEnt
 }
 
 // ─────────────────────────────────────────────
-// Emergency Slots
-// ─────────────────────────────────────────────
-
-export interface EmergencySlotView {
-  id: string;
-  doctorId: string;
-  doctorName: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  reason?: string;
-  isBooked: boolean;
-  createdAt: string;
-}
-
-// ─────────────────────────────────────────────
 // Installment Plans (grouped view)
 // ─────────────────────────────────────────────
 

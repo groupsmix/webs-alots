@@ -10,7 +10,7 @@
  * Exits non-zero if:
  *   - the manifest or referenced files are missing,
  *   - the computed size is 0, or
- *   - the total exceeds BUNDLE_BUDGET_KB (default 1024 kB raw).
+ *   - the total exceeds BUNDLE_BUDGET_KB (default 800 kB raw).
  */
 
 import { existsSync, statSync, readFileSync } from "node:fs";
@@ -18,7 +18,7 @@ import { join } from "node:path";
 
 const MANIFEST = ".next/build-manifest.json";
 const STATIC_ROOT = ".next";
-const BUDGET_KB = Number.parseInt(process.env.BUNDLE_BUDGET_KB ?? "1024", 10);
+const BUDGET_KB = Number.parseInt(process.env.BUNDLE_BUDGET_KB ?? "800", 10);
 
 if (!Number.isFinite(BUDGET_KB) || BUDGET_KB <= 0) {
   console.error(`::error::Invalid BUNDLE_BUDGET_KB: ${process.env.BUNDLE_BUDGET_KB}`);
