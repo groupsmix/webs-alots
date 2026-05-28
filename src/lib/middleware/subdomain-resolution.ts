@@ -1,7 +1,7 @@
 /**
  * §3.5 — Subdomain → clinic resolution with in-memory cache.
  *
- * Extracted from proxy.ts to keep the orchestrator under ~300 lines.
+ * Extracted from middleware.ts to keep the orchestrator under ~300 lines.
  */
 import { createServerClient } from "@supabase/ssr";
 import {

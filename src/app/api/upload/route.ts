@@ -60,7 +60,7 @@ import { withAuth } from "@/lib/with-auth";
  * 2 MB is too small for real clinical workflows: PDFs, scanned scripts,
  * lab reports, and radiology images routinely exceed it. We size each
  * category to its real-world payload, capped at MAX_UPLOAD_BYTES so the
- * middleware-level body limit (`MAX_BODY_BYTES` in `src/proxy.ts`)
+ * middleware-level body limit (`MAX_BODY_BYTES` in `src/middleware.ts`)
  * is the global ceiling.
  *
  * Keys are normalized via `normalizeCategory()` so callers may use

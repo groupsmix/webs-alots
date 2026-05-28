@@ -21,11 +21,11 @@ import { TENANT_HEADERS } from "@/lib/tenant";
 //
 // Since the middleware function itself depends on heavy imports
 // (Supabase, etc.), we test the header-stripping invariant in isolation
-// by replicating the exact logic from proxy.ts.
+// by replicating the exact logic from middleware.ts.
 
 describe("Tenant header stripping — method-independent (mutation gaps)", () => {
   /**
-   * Replicate the exact header-stripping logic from proxy.ts (lines 140-146).
+   * Replicate the exact header-stripping logic from middleware.ts (lines 140-146).
    * This is the code under test — if it were mutated to skip certain methods,
    * these tests would catch it.
    */
