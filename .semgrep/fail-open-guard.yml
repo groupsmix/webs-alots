@@ -1,0 +1,30 @@
+rules:
+  # B-03: Require a FAIL_OPEN_REASON comment on any `failOpen: true` usage.
+  # Passing failOpen: true to withAuth/withAuthAnyRole weakens tenant
+  # isolation by allowing requests to proceed when setTenantContext fails.
+  # Each usage must be a deliberate, audited decision with a documented reason.
+  - id: fail-open-guard
+    patterns:
+      - pattern: "failOpen: true"
+      - pattern-not-inside: |
+          // FAIL_OPEN_REASON: ...
+          ...
+    message: >
+      `failOpen: true` detected without a `// FAIL_OPEN_REASON: ...` comment.
+      Passing failOpen weakens tenant isolation — each usage must include a
+      comment explaining why fail-open is safe for this specific route.
+      Add `// FAIL_OPEN_REASON: <explanation>` on the line above.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      include:
+        - "src/"
+      exclude:
+        - "src/lib/__tests__/**"
+        - "src/lib/with-auth.ts"
+    metadata:
+      category: security
+      technology:
+        - supabase
+      references:
+        - https://github.com/groupsmix/webs-alots/blob/main/AGENTS.md

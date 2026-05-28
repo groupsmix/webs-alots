@@ -13,9 +13,9 @@ rules:
       - pattern-not-inside: |
           export function createUntypedAdminClient(...) { ... }
     message: >
-      Direct createAdminClient() usage detected — prefer the
-      tenant-scoped wrapper in supabase-server.ts. If cross-tenant
-      access is intentional, suppress with
+      Direct createAdminClient() usage detected — prefer
+      createScopedAdminClient(purpose, clinicId) for single-tenant
+      operations. If cross-tenant access is intentional, suppress with
       `// nosemgrep: admin-client-guard`.
     severity: WARNING
     languages: [typescript, javascript]

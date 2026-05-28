@@ -39,9 +39,16 @@ const MAX_DEMO_ROLE = "patient" as const;
 const ALLOWED_DEMO_EMAILS: Set<string> = new Set(Object.values(DEMO_USERS).map((u) => u.email));
 
 export async function POST(request: NextRequest) {
+  // Sec-09: Refuse demo login in production unless explicitly enabled.
+  // In production, DEMO_ENABLED must be "true" to allow demo login.
+  // This prevents the demo path from being accidentally accessible in
+  // production routing — a known attack vector class (audit finding #25).
+  if (process.env.NODE_ENV === "production" && process.env.DEMO_ENABLED !== "true") {
+    return apiForbidden("Demo mode is disabled in production");
+  }
+
   // SEC-006: Refuse demo login when NEXT_PUBLIC_FEATURE_DEMO_MODE is
-  // explicitly set to "false". Production builds should disable this route
-  // entirely rather than relying solely on the clinic-row existence check.
+  // explicitly set to "false".
   if (process.env.NEXT_PUBLIC_FEATURE_DEMO_MODE === "false") {
     return apiForbidden("Demo mode is disabled");
   }

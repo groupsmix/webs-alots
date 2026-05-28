@@ -15,6 +15,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
+import { applyCors } from "@/lib/middleware/cors";
 import { validateCsrf } from "@/lib/middleware/csrf";
 import { checkGeoRestriction } from "@/lib/middleware/geo-restriction";
 import { enforceMfa } from "@/lib/middleware/mfa-enforcement";
@@ -178,6 +179,10 @@ export async function middleware(request: NextRequest) {
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
+
+  // --- Sec-07: CORS preflight handling ---
+  const corsResult = applyCors(request, null);
+  if (corsResult) return withSecurityHeaders(corsResult, cspHeaders);
 
   // --- CSRF protection (delegated to composable module) ---
   const csrfResult = validateCsrf(request, hostname, cspHeaders, withSecurityHeaders);

@@ -116,11 +116,17 @@ const ENV_RULES: EnvRule[] = [
   // Audit Finding #8: PHI file paths and signed URLs are derived from this
   // secret. A hardcoded fallback ("default-salt") is never acceptable in
   // production, so we refuse to boot without a dedicated R2_SIGNED_URL_SECRET.
+  // Sec-08: Require in production and staging so that staging environments
+  // exercise the same PHI-signed-URL path as production. A missing secret in
+  // staging silently falls back to R2_SECRET_ACCESS_KEY, hiding misconfigurations.
   {
     name: "R2_SIGNED_URL_SECRET",
-    required: process.env.NODE_ENV === "production",
+    required:
+      process.env.NODE_ENV === "production" ||
+      process.env.DEPLOY_ENV === "staging" ||
+      process.env.NEXT_PUBLIC_DEPLOY_ENV === "staging",
     description:
-      "HMAC secret for R2 signed URLs and upload filename hashing (required in production; `openssl rand -hex 32`)",
+      "HMAC secret for R2 signed URLs and upload filename hashing (required in production and staging; `openssl rand -hex 32`)",
     group: "storage",
   },
   // Consumed by `src/lib/r2-cleanup.ts` — the fraction (0..1) of keys in a
@@ -354,6 +360,18 @@ export function validateEnv(): EnvValidationResult {
         warnings.push({ name: rule.name, description: rule.description, group: rule.group });
       }
     }
+  }
+
+  // Sec-10: When WhatsApp provider is Meta, META_APP_SECRET must be set.
+  // Without it, webhook signature verification always returns false and
+  // appointment confirmations via WhatsApp silently break (401 to Meta).
+  if (process.env.WHATSAPP_PROVIDER === "meta" && !process.env.META_APP_SECRET) {
+    missing.push({
+      name: "META_APP_SECRET",
+      description:
+        "Meta app secret for webhook HMAC verification (required when WHATSAPP_PROVIDER=meta)",
+      group: "whatsapp",
+    });
   }
 
   // Cross-field: when custom domains are enabled, require either
