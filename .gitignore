@@ -52,8 +52,10 @@ next-env.d.ts
 # AI eval results (generated, uploaded as CI artifacts)
 evals/results/
 
+# Supabase CLI ephemeral files
+supabase/.temp/
+
 # Database dumps
 full_backup.sql
-lint.txt
 lint.txt
 *.log
