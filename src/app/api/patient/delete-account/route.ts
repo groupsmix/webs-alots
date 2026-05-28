@@ -27,6 +27,7 @@ export const POST = withAuth(
       .from("users")
       .select("id, role, deletion_requested_at")
       .eq("id", profile.id)
+      .eq("clinic_id", profile.clinic_id)
       .maybeSingle();
 
     if (!userRow) {
@@ -53,7 +54,8 @@ export const POST = withAuth(
     const { error } = await typed
       .from("users")
       .update({ deletion_requested_at: now })
-      .eq("id", profile.id);
+      .eq("id", profile.id)
+      .eq("clinic_id", profile.clinic_id);
 
     if (error) {
       return apiInternalError("Failed to request deletion");
@@ -94,6 +96,7 @@ export const DELETE = withAuth(
       .from("users")
       .select("id, deletion_requested_at")
       .eq("id", profile.id)
+      .eq("clinic_id", profile.clinic_id)
       .maybeSingle();
 
     if (!userRow) {
@@ -107,7 +110,8 @@ export const DELETE = withAuth(
     const { error } = await typed
       .from("users")
       .update({ deletion_requested_at: null })
-      .eq("id", profile.id);
+      .eq("id", profile.id)
+      .eq("clinic_id", profile.clinic_id);
 
     if (error) {
       return apiInternalError("Failed to cancel deletion");

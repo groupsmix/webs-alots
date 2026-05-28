@@ -150,13 +150,13 @@ export function isEgressAllowed(url: string | URL): boolean {
 function resolveServiceName(url: string): string {
   try {
     const hostname = new URL(url).hostname;
-    if (hostname.includes("openai.com")) return "openai";
-    if (hostname.includes("stripe.com")) return "stripe";
-    if (hostname.includes("facebook.com")) return "whatsapp";
-    if (hostname.includes("resend.com")) return "resend";
-    if (hostname.includes("sentry.io")) return "sentry";
-    if (hostname.includes("cmi.co.ma")) return "cmi";
-    if (hostname.includes("slack.com")) return "slack";
+    if (hostname === "openai.com" || hostname.endsWith(".openai.com")) return "openai";
+    if (hostname === "stripe.com" || hostname.endsWith(".stripe.com")) return "stripe";
+    if (hostname === "facebook.com" || hostname.endsWith(".facebook.com")) return "whatsapp";
+    if (hostname === "resend.com" || hostname.endsWith(".resend.com")) return "resend";
+    if (hostname === "sentry.io" || hostname.endsWith(".sentry.io")) return "sentry";
+    if (hostname === "cmi.co.ma" || hostname.endsWith(".cmi.co.ma")) return "cmi";
+    if (hostname === "slack.com" || hostname.endsWith(".slack.com")) return "slack";
     return "default";
   } catch {
     return "default";
