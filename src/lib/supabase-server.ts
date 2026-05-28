@@ -39,7 +39,10 @@ export async function createClient() {
               cookieStore.set(name, value, options),
             );
           } catch (err) {
-            logger.warn("Cookie setAll called from Server Component", { context: "supabase-server", error: err });
+            logger.warn("Cookie setAll called from Server Component", {
+              context: "supabase-server",
+              error: err,
+            });
           }
         },
       },
@@ -84,7 +87,10 @@ export async function createTenantClient(clinicId: string) {
               cookieStore.set(name, value, options),
             );
           } catch (err) {
-            logger.warn("Cookie setAll called from Server Component", { context: "supabase-server/tenant", error: err });
+            logger.warn("Cookie setAll called from Server Component", {
+              context: "supabase-server/tenant",
+              error: err,
+            });
           }
         },
       },
@@ -124,8 +130,7 @@ export async function createTenantClient(clinicId: string) {
     // Permission errors mean the GUC layer is unavailable but header-based
     // isolation (x-clinic-id) is still active. Throwing here would break E2E
     // tests and any code path that uses a non-service-role client.
-    const isPermissionDenied =
-      err instanceof Error && err.message.includes("permission denied");
+    const isPermissionDenied = err instanceof Error && err.message.includes("permission denied");
     if (!isPermissionDenied) {
       throw new Error(`Tenant context could not be established for clinic ${clinicId}`);
     }
@@ -149,8 +154,7 @@ export type AdminPurpose =
   | "impersonate"
   | "features"
   | "directory"
-  | "instrumentation"
-  | "whatsapp_receptionist";
+  | "instrumentation";
 
 /**
  * Create a Supabase admin client using the service role key.

@@ -7,6 +7,7 @@
 ## Context
 
 API rate limiting is critical for a healthcare SaaS exposed to the public internet (booking endpoints, webhook receivers). A single backend is insufficient because:
+
 - In-memory counters reset on Worker restarts and don't share state across isolates.
 - Supabase queries add latency to every request.
 - KV is eventually consistent and may miss bursts.

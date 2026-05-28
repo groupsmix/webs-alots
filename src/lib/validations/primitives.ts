@@ -23,6 +23,17 @@ export function normalizeText(value: string): string {
   return value.replace(/\u0000/g, "").normalize("NFC");
 }
 
+/**
+ * S0-04-05: Phone number validation.
+ * Accepts international formats: +212 6XX XXX XXX, (0)5XX-XXX-XXX, etc.
+ * Rejects strings that don't look like phone numbers at all.
+ */
+export const phoneNumber = z
+  .string()
+  .min(8, "Phone number too short")
+  .max(30, "Phone number too long")
+  .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format");
+
 /** Free-form user-supplied text (notes, content, descriptions). */
 export const safeText = z.string().transform(normalizeText);
 

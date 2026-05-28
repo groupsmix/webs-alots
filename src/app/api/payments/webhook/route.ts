@@ -26,6 +26,40 @@ import type { StripeWebhookEvent } from "@/lib/validations";
 /** AUDIT FINDING #24: Max webhook payload size (1 MB). */
 const MAX_WEBHOOK_BYTES = 1 * 1024 * 1024;
 
+/**
+ * S0-11-05: Streaming body reader that enforces a hard byte cap regardless
+ * of whether Content-Length is present (chunked TE bypass).
+ * Pattern identical to readBodyWithLimit in CMI callback route.
+ */
+async function readBodyWithLimit(request: NextRequest, maxBytes: number): Promise<string | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try {
+        await reader.cancel();
+      } catch {
+        /* best effort */
+      }
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(out);
+}
+
 export async function POST(request: NextRequest) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -34,14 +68,12 @@ export async function POST(request: NextRequest) {
     return apiError("Stripe not configured", 503);
   }
 
-  // AUDIT FINDING #24: Reject oversized webhook payloads before parsing.
-  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
-  if (contentLength > MAX_WEBHOOK_BYTES) {
-    return apiError("Payload too large", 413);
-  }
-
   try {
-    const rawBody = await request.text();
+    // S0-11-05: Stream-based body cap replaces Content-Length-only check.
+    const rawBody = await readBodyWithLimit(request, MAX_WEBHOOK_BYTES);
+    if (rawBody === null) {
+      return apiError("Payload too large", 413);
+    }
     const signature = request.headers.get("stripe-signature");
 
     // Verify webhook signature — webhook secret MUST be configured
@@ -98,21 +130,9 @@ export async function POST(request: NextRequest) {
           }
           logTenantContext(clinicId, "payments/webhook:checkout.completed");
 
-          // Audit 3.8 Fix: Webhook Deduplication / Replay Protection
-          // We check if this exact Stripe event ID has already been processed to
-          // prevent duplicate processing in case of Stripe retries.
-          const { data: existingPayment } = await supabase
-            .from("payments")
-            .select("id")
-            .eq("reference", session.id)
-            .maybeSingle();
-
-          if (existingPayment) {
-            logger.info(`Stripe webhook event already processed: ${session.id}`, {
-              context: "payments/webhook",
-            });
-            break; // Skip processing since it's already handled
-          }
+          // A10-04: Redundant existence check removed. The upsert below
+          // uses onConflict: "reference" so concurrent webhooks for the
+          // same session.id are idempotent at the DB level.
 
           // API-002 / SEC-014: Verify that the appointment actually belongs
           // to the clinic specified in metadata. A forged or replayed webhook

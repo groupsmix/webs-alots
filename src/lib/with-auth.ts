@@ -29,8 +29,8 @@ import type { Database } from "@/lib/types/database";
 // Lightweight in-memory sliding window per authenticated user ID.
 // Supplements the per-IP middleware limits to catch authenticated abuse.
 const USER_RATE_WINDOW_MS = 60_000; // 1 minute
-const USER_RATE_MAX = 100;          // max requests per window per user
-const USER_RATE_MAX_KEYS = 10_000;  // prevent unbounded memory growth
+const USER_RATE_MAX = 100; // max requests per window per user
+const USER_RATE_MAX_KEYS = 10_000; // prevent unbounded memory growth
 
 interface UserRateEntry {
   count: number;
@@ -91,10 +91,7 @@ export interface AuthContext {
   profile: { id: string; role: UserRole; clinic_id: string | null };
 }
 
-type AuthenticatedHandler = (
-  request: NextRequest,
-  auth: AuthContext,
-) => Promise<NextResponse>;
+type AuthenticatedHandler = (request: NextRequest, auth: AuthContext) => Promise<NextResponse>;
 
 /**
  * Options for the `withAuth` / `withAuthAnyRole` wrappers.
@@ -140,10 +137,7 @@ export function withAuth(
       } = await supabase.auth.getUser();
 
       if (!user) {
-        return NextResponse.json(
-          { error: "Not authenticated" },
-          { status: 401 },
-        );
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
       }
 
       // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8).
@@ -164,10 +158,13 @@ export function withAuth(
         : null;
 
       if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
-        logger.warn("Profile headers present but signature could not be verified — falling back to DB", {
-          context: "with-auth",
-          userId: user.id,
-        });
+        logger.warn(
+          "Profile headers present but signature could not be verified — falling back to DB",
+          {
+            context: "with-auth",
+            userId: user.id,
+          },
+        );
       }
 
       if (!profile) {
@@ -181,10 +178,7 @@ export function withAuth(
       }
 
       if (!profile) {
-        return NextResponse.json(
-          { error: "User profile not found" },
-          { status: 404 },
-        );
+        return NextResponse.json({ error: "User profile not found" }, { status: 404 });
       }
 
       // If specific roles are required, enforce them.
@@ -209,10 +203,7 @@ export function withAuth(
               subdomainClinicId: tenant.clinicId,
               userId: profile.id,
             });
-            return NextResponse.json(
-              { error: "Forbidden — tenant mismatch" },
-              { status: 403 },
-            );
+            return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });
           }
         } catch (tenantErr) {
           logger.warn("Could not resolve tenant for assertion", {
@@ -241,10 +232,7 @@ export function withAuth(
             error: tenantErr,
           });
           if (!failOpen) {
-            return NextResponse.json(
-              { error: "Tenant context unavailable" },
-              { status: 503 },
-            );
+            return NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 });
           }
         }
       }
@@ -272,10 +260,12 @@ export function withAuth(
       // can be downsampled to reduce volume.
       if (request.method === "GET") {
         const pathname = request.nextUrl.pathname;
-        const isPhiEndpoint = /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(pathname);
-        const shouldLog = process.env.NODE_ENV !== "production"
-          || isPhiEndpoint
-          || Math.random() < 0.01;
+        const isPhiEndpoint =
+          /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(
+            pathname,
+          );
+        const shouldLog =
+          process.env.NODE_ENV !== "production" || isPhiEndpoint || Math.random() < 0.01;
         if (shouldLog) {
           logger.info(`API Read Access: ${request.method} ${pathname}`, {
             context: "audit-read",
@@ -288,17 +278,23 @@ export function withAuth(
         }
       }
 
-      return handler(request, {
+      const response = await handler(request, {
         supabase,
         user,
-        profile: { id: profile.id, role: profile.role as UserRole, clinic_id: profile.clinic_id ?? null },
+        profile: {
+          id: profile.id,
+          role: profile.role as UserRole,
+          clinic_id: profile.clinic_id ?? null,
+        },
       });
+      // A53-02: Prevent Cloudflare / browser from caching PHI responses.
+      if (!response.headers.has("Cache-Control")) {
+        response.headers.set("Cache-Control", "private, no-store");
+      }
+      return response;
     } catch (err) {
       logger.error("Authentication failed", { context: "with-auth", error: err });
-      return NextResponse.json(
-        { error: "Authentication failed" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
     }
   };
 }
@@ -310,10 +306,7 @@ export function withAuth(
  * Usage:
  *   export const POST = withAuthAnyRole(handler);
  */
-export function withAuthAnyRole(
-  handler: AuthenticatedHandler,
-  options: WithAuthOptions = {},
-) {
+export function withAuthAnyRole(handler: AuthenticatedHandler, options: WithAuthOptions = {}) {
   const failOpen = options.failOpen === true;
   // Pass an empty array to withAuth, then check that the user is authenticated
   // without enforcing any specific role. This is a "deny-by-default with
@@ -327,10 +320,7 @@ export function withAuthAnyRole(
       } = await supabase.auth.getUser();
 
       if (!user) {
-        return NextResponse.json(
-          { error: "Not authenticated" },
-          { status: 401 },
-        );
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
       }
 
       // Check for signed profile headers from middleware
@@ -352,10 +342,13 @@ export function withAuthAnyRole(
       // with bad signatures still leave a trail. Routes migrated from
       // withAuth(handler, null) to withAuthAnyRole would otherwise lose this.
       if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
-        logger.warn("Profile headers present but signature could not be verified — falling back to DB", {
-          context: "with-auth-any-role",
-          userId: user.id,
-        });
+        logger.warn(
+          "Profile headers present but signature could not be verified — falling back to DB",
+          {
+            context: "with-auth-any-role",
+            userId: user.id,
+          },
+        );
       }
 
       if (!profile) {
@@ -368,10 +361,7 @@ export function withAuthAnyRole(
       }
 
       if (!profile) {
-        return NextResponse.json(
-          { error: "User profile not found" },
-          { status: 404 },
-        );
+        return NextResponse.json({ error: "User profile not found" }, { status: 404 });
       }
 
       // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
@@ -388,10 +378,7 @@ export function withAuthAnyRole(
               subdomainClinicId: tenant.clinicId,
               userId: profile.id,
             });
-            return NextResponse.json(
-              { error: "Forbidden — tenant mismatch" },
-              { status: 403 },
-            );
+            return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });
           }
         } catch (tenantErr) {
           logger.warn("Could not resolve tenant for assertion", {
@@ -413,10 +400,7 @@ export function withAuthAnyRole(
             error: tenantErr,
           });
           if (!failOpen) {
-            return NextResponse.json(
-              { error: "Tenant context unavailable" },
-              { status: 503 },
-            );
+            return NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 });
           }
         }
       }
@@ -426,17 +410,26 @@ export function withAuthAnyRole(
         role: profile.role,
       });
 
-      return handler(request, {
+      const response = await handler(request, {
         supabase,
         user,
-        profile: { id: profile.id, role: profile.role as UserRole, clinic_id: profile.clinic_id ?? null },
+        profile: {
+          id: profile.id,
+          role: profile.role as UserRole,
+          clinic_id: profile.clinic_id ?? null,
+        },
       });
+      // A53-02: Prevent Cloudflare / browser from caching PHI responses.
+      if (!response.headers.has("Cache-Control")) {
+        response.headers.set("Cache-Control", "private, no-store");
+      }
+      return response;
     } catch (err) {
-      logger.error("Authentication failed in withAuthAnyRole", { context: "with-auth", error: err });
-      return NextResponse.json(
-        { error: "Authentication failed" },
-        { status: 500 },
-      );
+      logger.error("Authentication failed in withAuthAnyRole", {
+        context: "with-auth",
+        error: err,
+      });
+      return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
     }
   };
 }

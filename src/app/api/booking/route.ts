@@ -41,7 +41,11 @@ const bookingRequestSchema = z.object({
   hasInsurance: z.boolean(),
   patient: z.object({
     name: z.string().min(2).max(200),
-    phone: z.string().min(6).max(30),
+    phone: z
+      .string()
+      .min(8)
+      .max(30)
+      .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format"),
     email: z.string().email().optional(),
     reason: z.string().max(1000).optional(),
   }),
@@ -99,10 +103,13 @@ async function verifyHmac(secret: string, payload: string, signature: string): P
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  if (expectedSig.length !== signature.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < expectedSig.length; i++) {
-    mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
+  // A6-05: Compare via constant-time loop without length precheck.
+  // Both are 64-char hex strings, but skipping the length guard avoids
+  // leaking length info if the format ever changes.
+  const maxLen = Math.max(expectedSig.length, signature.length);
+  let mismatch = expectedSig.length ^ signature.length;
+  for (let i = 0; i < maxLen; i++) {
+    mismatch |= (expectedSig.charCodeAt(i) || 0) ^ (signature.charCodeAt(i) || 0);
   }
   return mismatch === 0;
 }
@@ -213,7 +220,7 @@ async function validateBookingRequest(
     Fri: 5,
     Sat: 6,
   };
-  const parsedDate = new Date(body.date + "T12:00:00");
+  const parsedDate = new Date(body.date + "T12:00:00Z");
   const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
   const hours = workingHours[dayOfWeek];
   if (!hours?.enabled) {
@@ -430,9 +437,30 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
 
   // ── Dispatch notifications (fire-and-forget) ──────────────────
   // Notification failure must NOT affect the booking outcome.
-  // Build the manage/cancel URL so the patient can self-service
-  const siteOrigin = request.headers.get("origin") ?? request.nextUrl.origin;
-  const manageUrl = `${siteOrigin}/book?manage=${appointment.id}`;
+  // S0-01-04: Derive manage URL from server config, not request origin.
+  // S0-06-04: Sign the manage token so only the patient can cancel.
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
+  const manageExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+  const managePayload = `${appointment.id}:${body.patient.phone}:${manageExpiry}`;
+  let manageUrl = `${siteOrigin}/book?manage=${appointment.id}`;
+  const manageSecret = process.env.BOOKING_TOKEN_SECRET;
+  if (manageSecret) {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(manageSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(managePayload));
+    const manageToken = `${appointment.id}:${body.patient.phone}:${manageExpiry}:${Array.from(
+      new Uint8Array(sig),
+    )
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")}`;
+    manageUrl = `${siteOrigin}/book?manage=${encodeURIComponent(manageToken)}`;
+  }
 
   const notifVars: TemplateVariables = {
     patient_name: body.patient.name,

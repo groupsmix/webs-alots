@@ -58,7 +58,6 @@ function setTenantHeaders(
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
-
 export async function middleware(request: NextRequest) {
   // AUDIT-25: Record middleware start time for CPU telemetry.
   // Cloudflare Workers CPU budget is set to 50ms in wrangler.toml (Paid plan).
@@ -120,10 +119,7 @@ export async function middleware(request: NextRequest) {
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return withSecurityHeaders(
-      NextResponse.json(
-        { error: "Payload too large" },
-        { status: 413 },
-      ),
+      NextResponse.json({ error: "Payload too large" }, { status: 413 }),
       cspHeaders,
     );
   }
@@ -191,7 +187,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Rate limiting (delegated to composable module) ---
-  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaders, withSecurityHeaders);
+  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(
+    request,
+    cspHeaders,
+    withSecurityHeaders,
+  );
   if (rateLimitResponse) {
     // Add rate limit headers to the response
     if (rateLimitInfo) {
@@ -249,33 +249,27 @@ export async function middleware(request: NextRequest) {
   // Note: Real rate-limit state is enforced by the rate limiter above.
   // These placeholder headers are omitted to avoid misleading API consumers.
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request: { headers: requestHeaders },
-          });
-          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
-          // Re-apply tenant headers so they survive token-refresh responses
-          if (resolvedClinic) {
-            setTenantHeaders(supabaseResponse, resolvedClinic);
-          }
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        supabaseResponse = NextResponse.next({
+          request: { headers: requestHeaders },
+        });
+        applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
+        // Re-apply tenant headers so they survive token-refresh responses
+        if (resolvedClinic) {
+          setTenantHeaders(supabaseResponse, resolvedClinic);
+        }
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options),
+        );
+      },
+    },
+  });
 
   // --- Resolve clinic from subdomain (delegated to composable module) ---
   let resolvedClinic: CachedClinic | undefined;
@@ -299,7 +293,10 @@ export async function middleware(request: NextRequest) {
     resolvedClinic = clinic;
 
     // --- Demo tenant guard: block destructive API requests ---
-    if (clinic.subdomain === DEMO_SUBDOMAIN && shouldBlockDemoRequest(request.method, pathname, clinic.id)) {
+    if (
+      clinic.subdomain === DEMO_SUBDOMAIN &&
+      shouldBlockDemoRequest(request.method, pathname, clinic.id)
+    ) {
       return withSecurityHeaders(
         NextResponse.json(
           { ok: false, error: "Les modifications ne sont pas autorisées en mode démo." },
@@ -343,7 +340,7 @@ export async function middleware(request: NextRequest) {
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).
-  let profile: { id: string, role: string, clinic_id: string | null } | null = null;
+  let profile: { id: string; role: string; clinic_id: string | null } | null = null;
   if (user) {
     const needsProfile =
       (isPublicRoute(pathname) && (pathname === "/login" || pathname === "/register")) ||
@@ -472,8 +469,7 @@ export async function middleware(request: NextRequest) {
 
     // Check if user is accessing their allowed routes
     if (!pathname.startsWith(allowedPrefix)) {
-      const dashboardPath =
-        ROLE_DASHBOARD_MAP[profile.role] || allowedPrefix;
+      const dashboardPath = ROLE_DASHBOARD_MAP[profile.role] || allowedPrefix;
       return secureRedirect(new URL(dashboardPath, request.url));
     }
   }

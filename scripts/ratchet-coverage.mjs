@@ -81,5 +81,7 @@ if (changed) {
 } else {
   console.log("Coverage floor unchanged — actual coverage has not improved beyond current floor.");
   console.log(`  Current: ${JSON.stringify(current)}`);
-  console.log(`  Actual:  statements=${actual.statements.toFixed(1)}%, branches=${actual.branches.toFixed(1)}%, lines=${actual.lines.toFixed(1)}%, functions=${actual.functions.toFixed(1)}%`);
+  console.log(
+    `  Actual:  statements=${actual.statements.toFixed(1)}%, branches=${actual.branches.toFixed(1)}%, lines=${actual.lines.toFixed(1)}%, functions=${actual.functions.toFixed(1)}%`,
+  );
 }

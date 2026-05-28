@@ -232,21 +232,24 @@ export function BookingForm() {
   const service = services.find((s) => s.id === selectedService);
 
   // Move focus to the new step's heading on step transitions (Issue 25)
-  const goToStep = useCallback((newStep: number) => {
-    setStep(newStep);
-    // Use requestAnimationFrame to wait for the new step content to render
-    requestAnimationFrame(() => {
-      stepHeadingRefs.current[newStep]?.focus();
-    });
-    // Announce step change to screen readers
-    if (stepAnnouncerRef.current) {
-      stepAnnouncerRef.current.textContent = t(locale, "booking.stepAnnounce", {
-        step: steps[newStep],
-        current: newStep + 1,
-        total: steps.length,
+  const goToStep = useCallback(
+    (newStep: number) => {
+      setStep(newStep);
+      // Use requestAnimationFrame to wait for the new step content to render
+      requestAnimationFrame(() => {
+        stepHeadingRefs.current[newStep]?.focus();
       });
-    }
-  }, []);
+      // Announce step change to screen readers
+      if (stepAnnouncerRef.current) {
+        stepAnnouncerRef.current.textContent = t(locale, "booking.stepAnnounce", {
+          step: steps[newStep],
+          current: newStep + 1,
+          total: steps.length,
+        });
+      }
+    },
+    [locale, steps],
+  );
 
   const canNext = () => {
     if (step === 0) return !!selectedService && !!selectedDoctor;
@@ -302,6 +305,7 @@ export function BookingForm() {
     selectedTime,
     patientPhone,
     confirmChecked,
+    locale,
   ]);
 
   const handleJoinWaitingList = async (slot: string) => {
