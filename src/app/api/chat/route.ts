@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
+import { validateAIOutput } from "@/lib/ai/validate-output";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
@@ -104,20 +105,13 @@ async function trackAIUsage(
 }
 
 /**
- * API-010: Output validator for AI responses. Hard-rejects content that
- * contains role-elevation language or unredacted Moroccan PII patterns.
- * Returns the sanitised string, or null if the response is unsafe.
+ * A72-03/A108-03: Wrap the shared validator with the EU AI Act
+ * transparency prefix required on chat responses.
  */
-function validateAIOutput(text: string): string | null {
-  const roleElevation =
-    /\b(i am now|role changed to|switched to admin|access granted|patient list|dump all|SELECT \*)\b/i;
-  if (roleElevation.test(text)) return null;
-  // Redact any Moroccan phone numbers that slipped past pseudonymisation
-  const cleaned = text.replace(/(?:\+212|0)([ .\-]?\d){9}/g, "[REDACTED_PHONE]");
-  // Redact anything that looks like a CIN (Moroccan national ID)
-  const redacted = cleaned.replace(/\b[A-Z]{1,2}\d{5,7}\b/g, "[REDACTED_ID]");
-  // A72-03/A108-03: Prefix AI output for EU AI Act transparency
-  return `[AI‑Generated] ${redacted}`;
+function validateAndPrefixAIOutput(text: string): string | null {
+  const safe = validateAIOutput(text);
+  if (!safe) return null;
+  return `[AI‑Generated] ${safe}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -239,7 +233,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       const rawContent = cfData.result?.response;
       if (rawContent) {
         // API-010: Validate AI output before returning to client
-        const content = validateAIOutput(rawContent);
+        const content = validateAndPrefixAIOutput(rawContent);
         if (!content) {
           logger.warn("AI output rejected by safety validator", {
             context: "chat/output-safety",

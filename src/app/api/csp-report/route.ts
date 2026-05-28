@@ -21,7 +21,7 @@ import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
  *   real violations in noise.
  */
 
-const MAX_CSP_REPORT_BYTES = 16 * 1024;
+const MAX_CSP_REPORT_BYTES = 8 * 1024;
 const MAX_FIELD_CHARS = 500;
 
 interface CspViolationReport {

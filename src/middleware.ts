@@ -54,6 +54,16 @@ function setTenantHeaders(
   response.headers.set(TENANT_HEADERS.clinicTier, clinic.tier);
 }
 
+/**
+ * S0-1-03: Sanitize a post-login redirect path. Rejects protocol-relative
+ * values (`//evil.example`) and anything that isn't a simple same-origin
+ * path, preventing open-redirect attacks via the `?redirect=` query param.
+ */
+function safeRedirectPath(raw: string): string {
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
+}
+
 /** Global body size cap (25 MB). Requests advertising a larger payload are
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
@@ -231,7 +241,7 @@ export async function middleware(request: NextRequest) {
     // Non-production: allow demo-mode rendering.
     if (isProtectedRoute(pathname)) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", safeRedirectPath(pathname));
       return secureRedirect(loginUrl);
     }
     const noSupabaseResponse = NextResponse.next({
@@ -444,7 +454,7 @@ export async function middleware(request: NextRequest) {
   // If protected route and not authenticated, redirect to login
   if (isProtectedRoute(pathname) && !user) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("redirect", safeRedirectPath(pathname));
     return secureRedirect(loginUrl);
   }
 

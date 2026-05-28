@@ -189,7 +189,22 @@ When deprecating a service:
 
 ---
 
-## 8. Related Documents
+## 8. Financial Rounding Policy (A29-02)
+
+All monetary values in the platform are stored as **integer centimes** (MAD subunit) to avoid floating-point drift.
+
+| Context              | Rounding Rule                         | Rationale                                               |
+| -------------------- | ------------------------------------- | ------------------------------------------------------- |
+| Invoice line items   | Truncate (floor) to centime           | Conservative; never overcharge the patient              |
+| Tax (TVA 20%)        | Banker's rounding (`ROUND_HALF_EVEN`) | Minimizes cumulative rounding bias across many invoices |
+| Subscription billing | Exact centimes (no rounding needed)   | Fixed monthly amounts in centimes                       |
+| Refunds              | Match original charge exactly         | No partial-centime refunds                              |
+
+**Implementation:** `amount_cents INTEGER` columns in `billing_events`, `billing_subscriptions`, and `payments` tables. All arithmetic stays in integer centimes until display, where `(amount_cents / 100).toFixed(2)` formats for the user.
+
+---
+
+## 9. Related Documents
 
 - [Incident Response Runbook](./incident-response.md)
 - [On-Call Rotation](./oncall.md)

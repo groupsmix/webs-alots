@@ -7,11 +7,11 @@ export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM
 export const timeHHMM = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM");
 
 /**
- * A14-04 / A14-05: canonical text normalization.
+ * A14-04 / A14-05 / S0-4-03: canonical text normalization.
  *
- * - Strips ASCII NUL (`\u0000`) bytes, which Postgres TEXT accepts but which
- *   confuse downstream consumers (logs, JSON, CLI tooling) and can be used
- *   to truncate values in C-string–based code paths.
+ * - Strips C0 control characters (U+0000–U+0008, U+000B, U+000C,
+ *   U+000E–U+001F) and DEL (U+007F). Tabs (\t), newlines (\n), and
+ *   carriage returns (\r) are preserved for multiline fields.
  * - Normalizes to Unicode NFC. Without this, attackers can register two
  *   visually identical names (e.g. composed vs. decomposed accents) that
  *   compare unequal byte-for-byte, defeating uniqueness checks and
@@ -20,7 +20,7 @@ export const timeHHMM = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM");
  * Use `safeText` for free-form fields and `safeName` for short identifiers.
  */
 export function normalizeText(value: string): string {
-  return value.replace(/\u0000/g, "").normalize("NFC");
+  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").normalize("NFC");
 }
 
 /**

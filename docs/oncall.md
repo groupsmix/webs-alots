@@ -158,7 +158,29 @@ Weekly handoff meeting: Friday 4pm
 
 ---
 
-## 7. Related Documents
+## 7. Break-Glass Account (A38-03)
+
+A sealed **break-glass super_admin** account exists for emergency access when normal authentication paths are unavailable (e.g., IdP compromise, MFA lockout).
+
+### Access Protocol
+
+1. **Two-person rule:** Break-glass credentials require two authorized personnel to retrieve (split-knowledge: one holds the email, one holds the password).
+2. **Storage:** Credentials are stored in a sealed envelope in the physical safe, **not** in any digital password manager accessible to a single person.
+3. **Usage:** Only permitted during a declared SEV-1 incident when all other admin accounts are inaccessible.
+4. **Audit:** Every break-glass login generates an `activity_logs` entry with `type='break_glass'`. The on-call engineer must file a post-mortem within 24 hours documenting why break-glass was needed.
+5. **Rotation:** After every use, rotate the break-glass password immediately and reseal.
+
+### Post-Use Checklist
+
+- [ ] Rotate break-glass password
+- [ ] Reseal credentials in physical safe
+- [ ] File post-mortem documenting usage
+- [ ] Review whether the root cause (IdP outage, MFA failure) has been resolved
+- [ ] Notify security lead within 4 hours
+
+---
+
+## 8. Related Documents
 
 - [SLO Document](./slo.md)
 - [Incident Response Runbook](./incident-response.md)
