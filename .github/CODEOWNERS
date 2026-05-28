@@ -31,8 +31,8 @@ scripts/*                       @groupsmix
 sentry.server.config.ts         @groupsmix
 sentry.client.config.ts         @groupsmix
 
-# Proxy — CSRF, tenant resolution, security headers
-src/proxy.ts                     @groupsmix
+# Middleware — CSRF, tenant resolution, security headers
+src/middleware.ts                @groupsmix
 src/lib/middleware/*             @groupsmix
 
 # A2-05: Build-time / postinstall patcher scripts.

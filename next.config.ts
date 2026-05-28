@@ -7,7 +7,7 @@ const withAnalyzer = withBundleAnalyzer({
 });
 
 // Security headers (X-Frame-Options, HSTS, X-Content-Type-Options, CSP, etc.)
-// are applied exclusively in proxy.ts to avoid duplication and ensure
+// are applied exclusively in middleware.ts to avoid duplication and ensure
 // consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
@@ -107,7 +107,7 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    // WWW → non-www redirect is handled in proxy.ts so it works
+    // WWW → non-www redirect is handled in middleware.ts so it works
     // on Cloudflare Workers (next.config redirects are not supported
     // by OpenNext on Workers). This block is kept for any future
     // non-host-based redirects.

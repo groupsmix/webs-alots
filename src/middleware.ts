@@ -1,5 +1,5 @@
 /**
- * Next.js Proxy (formerly Middleware)
+ * Next.js Middleware
  *
  * Composable modules:
  *   - @/lib/middleware/security-headers      — CSP, HSTS, nonce generation
@@ -68,8 +68,8 @@ function safeRedirectPath(raw: string): string {
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
-export async function proxy(request: NextRequest) {
-  // AUDIT-25: Record proxy start time for CPU telemetry.
+export async function middleware(request: NextRequest) {
+  // AUDIT-25: Record middleware start time for CPU telemetry.
   // Cloudflare Workers CPU budget is set to 50ms in wrangler.toml (Paid plan).
   // This timing helps identify when middleware complexity approaches that
   // threshold so the team can optimize before p99 latency degrades.
