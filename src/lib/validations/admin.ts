@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { phoneNumber } from "./primitives";
 
 export const onboardingSchema = z.object({
   clinic_type_key: z.string().min(1).max(100),
   category: z.string().max(100).optional(),
   clinic_name: z.string().min(1).max(200),
   owner_name: z.string().min(1).max(200),
-  phone: z.string().min(1).max(30),
+  phone: phoneNumber,
   email: z.string().email().max(254).optional(),
   city: z.string().max(200).optional(),
 });
@@ -62,7 +63,7 @@ export const brandingUpdateSchema = z.object({
   body_font: z.string().max(100).optional(),
   name: z.string().max(200).optional(),
   tagline: z.string().max(500).optional(),
-  phone: z.string().max(30).optional(),
+  phone: phoneNumber.optional(),
   address: z.string().max(500).optional(),
   template_id: z.string().max(50).optional(),
   section_visibility: z.record(z.string(), z.boolean()).optional(),

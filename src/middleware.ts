@@ -1,13 +1,15 @@
 /**
  * Next.js Middleware
  *
- * Refactored from a monolithic 557-line file into composable modules:
- *   - @/lib/middleware/security-headers — CSP, HSTS, nonce generation
- *   - @/lib/middleware/csrf             — Origin-based CSRF validation
- *   - @/lib/middleware/rate-limiting    — Per-IP rate limiting for API routes
- *   - @/lib/middleware/routes           — Route classification helpers
+ * Composable modules:
+ *   - @/lib/middleware/security-headers      — CSP, HSTS, nonce generation
+ *   - @/lib/middleware/csrf                  — Origin-based CSRF validation
+ *   - @/lib/middleware/rate-limiting         — Per-IP rate limiting for API routes
+ *   - @/lib/middleware/routes                — Route classification helpers
+ *   - @/lib/middleware/subdomain-resolution  — Subdomain → clinic cache + DB lookup
+ *   - @/lib/middleware/mfa-enforcement       — MFA gating per role
  *
- * This file orchestrates the modules and handles Supabase auth + subdomain resolution.
+ * This file orchestrates the modules and handles Supabase auth.
  */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -15,6 +17,7 @@ import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { validateCsrf } from "@/lib/middleware/csrf";
 import { checkGeoRestriction } from "@/lib/middleware/geo-restriction";
+import { enforceMfa } from "@/lib/middleware/mfa-enforcement";
 import { applyRateLimit } from "@/lib/middleware/rate-limiting";
 import {
   isPublicRoute,
@@ -30,24 +33,11 @@ import {
   secureRedirect,
   applyAllSecurityHeaders,
 } from "@/lib/middleware/security-headers";
+import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";
-import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache, negativeSubdomainCache, NEGATIVE_CACHE_TTL_MS, setNegativeSubdomainCache } from "@/lib/subdomain-cache";
 import { TENANT_HEADERS } from "@/lib/tenant";
-
-// ── Subdomain → clinic resolution cache ──────────────────────────
-// Cache is now shared via @/lib/subdomain-cache so API routes can
-// invalidate entries when a clinic's subdomain changes.
-interface CachedClinic {
-  id: string;
-  name: string;
-  subdomain: string;
-  type: string;
-  tier: string;
-  patient_message_locale?: string;
-  cachedAt: number;
-}
 
 /**
  * Set tenant headers on a response so downstream Server Components
@@ -67,7 +57,6 @@ function setTenantHeaders(
 /** Global body size cap (25 MB). Requests advertising a larger payload are
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
-
 
 export async function middleware(request: NextRequest) {
   // AUDIT-25: Record middleware start time for CPU telemetry.
@@ -130,10 +119,7 @@ export async function middleware(request: NextRequest) {
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return withSecurityHeaders(
-      NextResponse.json(
-        { error: "Payload too large" },
-        { status: 413 },
-      ),
+      NextResponse.json({ error: "Payload too large" }, { status: 413 }),
       cspHeaders,
     );
   }
@@ -201,7 +187,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Rate limiting (delegated to composable module) ---
-  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaders, withSecurityHeaders);
+  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(
+    request,
+    cspHeaders,
+    withSecurityHeaders,
+  );
   if (rateLimitResponse) {
     // Add rate limit headers to the response
     if (rateLimitInfo) {
@@ -259,86 +249,32 @@ export async function middleware(request: NextRequest) {
   // Note: Real rate-limit state is enforced by the rate limiter above.
   // These placeholder headers are omitted to avoid misleading API consumers.
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request: { headers: requestHeaders },
-          });
-          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
-          // Re-apply tenant headers so they survive token-refresh responses
-          if (resolvedClinic) {
-            setTenantHeaders(supabaseResponse, resolvedClinic);
-          }
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        supabaseResponse = NextResponse.next({
+          request: { headers: requestHeaders },
+        });
+        applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
+        // Re-apply tenant headers so they survive token-refresh responses
+        if (resolvedClinic) {
+          setTenantHeaders(supabaseResponse, resolvedClinic);
+        }
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options),
+        );
+      },
+    },
+  });
 
-  // --- Resolve clinic from subdomain (with in-memory cache) ---
-  // Track resolved clinic so tenant headers can be re-applied if setAll
-  // recreates supabaseResponse during token refresh.
+  // --- Resolve clinic from subdomain (delegated to composable module) ---
   let resolvedClinic: CachedClinic | undefined;
   if (subdomain) {
-    let clinic: CachedClinic | undefined;
-    const cached = subdomainCache.get(subdomain);
-    const negativeCached = negativeSubdomainCache.get(subdomain);
-
-    if (cached && Date.now() - cached.cachedAt < SUBDOMAIN_CACHE_TTL_MS) {
-      clinic = cached;
-    } else if (negativeCached && Date.now() - negativeCached.cachedAt < NEGATIVE_CACHE_TTL_MS) {
-      // Subdomain is known to be invalid — bypass Supabase entirely
-      clinic = undefined;
-    } else {
-      // Use a separate anon-only Supabase client (no user session cookies)
-      // for subdomain resolution. The RLS policy on `clinics` allows
-      // unauthenticated reads (auth.uid() IS NULL) for active clinics,
-      // but blocks authenticated users whose clinic_id doesn't match.
-      // By omitting cookies, the query always runs as unauthenticated,
-      // ensuring subdomain resolution works for all users.
-      const anonSupabase = createServerClient(
-        supabaseUrl,
-        supabaseAnonKey,
-        {
-          cookies: {
-            getAll() { return []; },
-            setAll() { /* no-op */ },
-          },
-        }
-      );
-
-      // S-07 (migration 00068): anon callers can no longer SELECT from
-      // `clinics` directly. They read from the narrower
-      // `public_clinic_directory` view instead, which exposes only the
-      // columns needed for tenant header population.
-      const { data } = await anonSupabase
-        .from("public_clinic_directory")
-        .select("id, name, type, tier, subdomain, patient_message_locale")
-        .eq("subdomain", subdomain)
-        .single();
-
-      if (data) {
-        clinic = { ...data, subdomain: data.subdomain ?? subdomain, cachedAt: Date.now() };
-        setSubdomainCache(subdomain, clinic);
-      } else {
-        // Evict stale entry if the subdomain was previously valid
-        subdomainCache.delete(subdomain);
-        // Add to negative cache to prevent Supabase queries on random subdomains
-        setNegativeSubdomainCache(subdomain);
-      }
-    }
+    const clinic = await resolveSubdomainClinic(subdomain, supabaseUrl, supabaseAnonKey);
 
     if (!clinic) {
       // A146-F2: Unknown subdomain — return a hard 404 with X-Robots-Tag
@@ -357,7 +293,10 @@ export async function middleware(request: NextRequest) {
     resolvedClinic = clinic;
 
     // --- Demo tenant guard: block destructive API requests ---
-    if (clinic.subdomain === DEMO_SUBDOMAIN && shouldBlockDemoRequest(request.method, pathname, clinic.id)) {
+    if (
+      clinic.subdomain === DEMO_SUBDOMAIN &&
+      shouldBlockDemoRequest(request.method, pathname, clinic.id)
+    ) {
       return withSecurityHeaders(
         NextResponse.json(
           { ok: false, error: "Les modifications ne sont pas autorisées en mode démo." },
@@ -401,7 +340,7 @@ export async function middleware(request: NextRequest) {
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).
-  let profile: { id: string, role: string, clinic_id: string | null } | null = null;
+  let profile: { id: string; role: string; clinic_id: string | null } | null = null;
   if (user) {
     const needsProfile =
       (isPublicRoute(pathname) && (pathname === "/login" || pathname === "/register")) ||
@@ -523,46 +462,14 @@ export async function middleware(request: NextRequest) {
       return secureRedirect(new URL("/login?error=unauthorized_role", request.url));
     }
 
-    // Super admin: MUST have MFA enrolled AND verified (AAL2).
-    // MEDIUM-5: A super_admin compromise = total platform compromise.
-    // If no factors are enrolled, redirect to setup; if enrolled but not
-    // verified this session, redirect to verify.
-    if (profile.role === "super_admin") {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData?.currentLevel !== "aal2") {
-        if (aalData?.nextLevel === "aal2") {
-          return secureRedirect(new URL("/login?mfa=required", request.url));
-        }
-        // No factors enrolled — redirect to setup (allow the setup page itself)
-        if (!pathname.startsWith("/setup-2fa")) {
-          return secureRedirect(new URL("/setup-2fa?required=super_admin", request.url));
-        }
-      }
-      return supabaseResponse;
-    }
-
-    // Doctor: complete MFA if configured (existing behavior, not mandatory)
-    if (profile.role === "doctor") {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-        return secureRedirect(new URL("/login?mfa=required", request.url));
-      }
-    }
-
-    // Enforce 2FA for clinic_admin role: if admin has MFA factors but
-    // current session is only AAL1, redirect to the 2FA setup/verify page.
-    // This ensures admins cannot access admin routes without completing MFA.
-    if (profile.role === "clinic_admin" && pathname.startsWith("/admin")) {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-        return secureRedirect(new URL("/login?mfa=required", request.url));
-      }
-    }
+    // MFA enforcement (delegated to composable module)
+    const mfaRedirect = await enforceMfa(supabase, profile.role, pathname, request.url);
+    if (mfaRedirect) return mfaRedirect;
+    if (profile.role === "super_admin") return supabaseResponse;
 
     // Check if user is accessing their allowed routes
     if (!pathname.startsWith(allowedPrefix)) {
-      const dashboardPath =
-        ROLE_DASHBOARD_MAP[profile.role] || allowedPrefix;
+      const dashboardPath = ROLE_DASHBOARD_MAP[profile.role] || allowedPrefix;
       return secureRedirect(new URL(dashboardPath, request.url));
     }
   }

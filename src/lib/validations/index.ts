@@ -7,7 +7,7 @@
  */
 
 export { normalizeText, safeText, safeName } from "./primitives";
-export { isoDate, timeHHMM } from "./primitives";
+export { isoDate, timeHHMM, phoneNumber } from "./primitives";
 
 export {
   bookingCancelSchema,
@@ -32,16 +32,9 @@ export {
   subscriptionCheckoutSchema,
   subscriptionPortalSchema,
 } from "./payments";
-export type {
-  StripeWebhookEvent,
-  CmiCallbackFields,
-  SubscriptionWebhookEvent,
-} from "./payments";
+export type { StripeWebhookEvent, CmiCallbackFields, SubscriptionWebhookEvent } from "./payments";
 
-export {
-  notificationDispatchSchema,
-  notificationTriggerSchema,
-} from "./notifications";
+export { notificationDispatchSchema, notificationTriggerSchema } from "./notifications";
 
 export {
   onboardingSchema,
@@ -87,10 +80,7 @@ export type {
   AiAutoSuggestRequest,
 } from "./chat";
 
-export {
-  v1AppointmentCreateSchema,
-  v1PatientCreateSchema,
-} from "./v1";
+export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
 export {
   menuCreateSchema,
