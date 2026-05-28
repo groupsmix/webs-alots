@@ -78,6 +78,12 @@ jobs:
           fi
           echo "No seed credentials found outside fixtures."
 
+      # FR-103: Ensure Prettier formatting is enforced in CI.
+      # lint-staged runs prettier on staged files locally; this catches
+      # any files that slipped through without the pre-commit hook.
+      - name: Prettier format check
+        run: npx prettier --check .
+
       - name: Type check
         run: npx tsc --noEmit
 
