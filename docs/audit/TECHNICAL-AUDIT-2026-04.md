@@ -543,7 +543,7 @@ This is excellent for a healthcare platform. No risk of PHI leaking through unst
 ### What's Hidden Complexity
 
 - **68 migration files (non-contiguous)** -- each new developer must replay all 68 to set up a local DB; migration 00001 is 333 lines, total is likely 5000+ lines of SQL
-- **Notification system spans 4+ files** -- `notifications.ts`, `notification-queue.ts`, `whatsapp.ts`, `whatsapp-templates-darija.ts`
+- **Notification system spans 3+ files** -- `notifications.ts`, `notification-queue.ts`, `whatsapp.ts`
 - **Specialist module explosion** -- 13+ specialist verticals (nutritionist, optician, physiotherapist, psychologist, radiology, speech therapist, etc.) each with their own routes and pages
 
 ### What Will Bite You

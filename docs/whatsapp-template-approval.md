@@ -30,7 +30,7 @@ Most clinic templates fall under **UTILITY** (appointment confirmations, reminde
 3. Click **Create Template**
 4. Fill in:
    - **Category**: Select `Utility` for transactional messages
-   - **Name**: Use the `metaTemplateName` from `whatsapp-templates-darija.ts` (e.g., `booking_confirmation_darija`)
+   - **Name**: Use the template name with `_darija` suffix (e.g., `booking_confirmation_darija`)
    - **Language**: Select **Arabic** (`ar`) — Meta does not have a "Darija" option, so Arabic is used as the base language
 5. Add template body with variables:
    - Use `{{1}}`, `{{2}}`, etc. as positional parameters (Meta format)
@@ -214,7 +214,7 @@ Common rejection reasons:
 
 ## Integration with Codebase
 
-The Darija templates are defined in `src/lib/whatsapp-templates-darija.ts`. Each template has a `metaTemplateName` field that corresponds to the name used when submitting to Meta.
+The Darija templates follow the naming convention `{trigger}_darija` (e.g., `booking_confirmation_darija`). Each template name corresponds to the name used when submitting to Meta.
 
 The `sendNotificationWhatsApp()` function in `src/lib/whatsapp.ts` accepts a `locale` parameter. When set to `"darija"`, it automatically uses the Darija template set.
 
