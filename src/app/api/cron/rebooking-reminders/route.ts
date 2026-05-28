@@ -210,7 +210,7 @@ async function handler(request: NextRequest) {
       cancelledCount,
     });
   } catch (err) {
-    logger.warn("Operation failed", {
+    logger.warn("Failed to send rebooking reminders", {
       context: "cron/rebooking-reminders",
       error: err,
     });

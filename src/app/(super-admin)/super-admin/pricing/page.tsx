@@ -71,7 +71,7 @@ export default function PricingPage() {
       setTiers(tiersData);
       setToggles(togglesData);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load pricing page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

@@ -540,7 +540,7 @@ export async function GET(request: NextRequest) {
       { "Cache-Control": "public, max-age=60" },
     );
   } catch (err) {
-    logger.warn("Operation failed", { context: "booking/route", error: err });
+    logger.warn("Failed to process booking request", { context: "booking/route", error: err });
     return apiInternalError("Failed to fetch available slots");
   }
 }

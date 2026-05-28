@@ -163,7 +163,7 @@ export function ChatbotProvider({
           setMessages((prev) => [...prev, assistantMsg]);
         }
       } catch (error) {
-        logger.warn("Operation failed", { context: "chatbot-provider", error });
+        logger.warn("Failed to process chatbot message", { context: "chatbot-provider", error });
         const errorMsg: ChatMessage = {
           id: `msg-${Date.now()}-error`,
           role: "assistant",

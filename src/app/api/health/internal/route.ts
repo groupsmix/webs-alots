@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       }
     }
   } catch (err) {
-    _logger.warn("Operation failed", { context: "health-internal", error: err });
+    _logger.warn("Internal health check failed", { context: "health-internal", error: err });
     checks.database = {
       status: "down",
       error: "Database unreachable",

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   const { data, count, error } = await query;
 
   if (error) {
-    logger.warn("Operation failed", { context: "v1/patients", error });
+    logger.warn("Failed to list patients", { context: "v1/patients", error });
     return apiInternalError("Failed to fetch patients");
   }
 
@@ -116,7 +116,7 @@ export const POST = withValidation(v1PatientCreateSchema, async (body, request: 
     .single();
 
   if (error) {
-    logger.warn("Operation failed", { context: "v1/patients", error });
+    logger.warn("Failed to create patient", { context: "v1/patients", error });
     return apiInternalError("Failed to create patient");
   }
 

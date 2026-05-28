@@ -91,7 +91,10 @@ async function handler(request: NextRequest) {
     const { data: firstPage, error: firstError } = await firstQuery;
 
     if (firstError) {
-      logger.warn("Operation failed", { context: "cron/reminders", error: firstError });
+      logger.warn("Failed to send reminder batch", {
+        context: "cron/reminders",
+        error: firstError,
+      });
       return apiInternalError("Failed to query appointments");
     }
 
@@ -115,7 +118,7 @@ async function handler(request: NextRequest) {
           .limit(PAGE_SIZE);
 
         if (error) {
-          logger.warn("Operation failed", { context: "cron/reminders", error });
+          logger.warn("Failed to send individual reminder", { context: "cron/reminders", error });
           return apiInternalError("Failed to query appointments");
         }
 
@@ -349,7 +352,7 @@ async function handler(request: NextRequest) {
       results,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "cron/reminders", error: err });
+    logger.warn("Failed to run reminders cron", { context: "cron/reminders", error: err });
     return apiInternalError("Failed to process reminders");
   }
 }

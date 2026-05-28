@@ -59,7 +59,7 @@ export async function GET() {
       }
     }
   } catch (err) {
-    logger.warn("Operation failed", { context: "health", error: err });
+    logger.warn("Health check failed", { context: "health", error: err });
     checks.database = {
       status: "down",
       error: "Database unreachable",

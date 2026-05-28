@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
 
     return apiSuccess({ received: true });
   } catch (err) {
-    logger.warn("Operation failed", { context: "billing/webhook", error: err });
+    logger.warn("Failed to process billing webhook", { context: "billing/webhook", error: err });
     return apiInternalError("Failed to process webhook");
   }
 }

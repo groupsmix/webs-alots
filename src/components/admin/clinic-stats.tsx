@@ -48,7 +48,7 @@ export function ClinicStats() {
         setTodayCount(todayAppts.length);
       })
       .catch((err) => {
-        logger.warn("Operation failed", { context: "clinic-stats", error: err });
+        logger.warn("Failed to load clinic statistics", { context: "clinic-stats", error: err });
       });
     return () => {
       cancelled = true;

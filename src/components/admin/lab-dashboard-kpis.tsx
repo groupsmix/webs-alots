@@ -47,7 +47,10 @@ export function LabDashboardKPIsComponent() {
         if (!cancelled) setData(result);
       })
       .catch((err: unknown) => {
-        logger.warn("Operation failed", { context: "lab-dashboard-kpis", error: err });
+        logger.warn("Failed to load lab dashboard KPIs", {
+          context: "lab-dashboard-kpis",
+          error: err,
+        });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

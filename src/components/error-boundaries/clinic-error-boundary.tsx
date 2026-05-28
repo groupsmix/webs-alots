@@ -39,7 +39,7 @@ export default function ClinicErrorBoundary({
   const descKey = variant === "page" ? "error.description" : "error.sectionDescription";
 
   useEffect(() => {
-    logger.warn("Operation failed", { context: `${context}-error`, error });
+    logger.warn("Clinic component render error", { context: `${context}-error`, error });
   }, [error, context]);
 
   return (

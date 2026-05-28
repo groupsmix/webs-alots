@@ -41,7 +41,7 @@ export const GET = withAuth(
 
       return apiSuccess({ definitions: data ?? [] });
     } catch (err) {
-      logger.warn("Operation failed", { context: "custom-fields", error: err });
+      logger.warn("Failed to list custom fields", { context: "custom-fields", error: err });
       return apiInternalError("Failed to process request");
     }
   },
@@ -95,7 +95,7 @@ export const POST = withAuthValidation(
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields", error });
+      logger.warn("Failed to create custom field", { context: "custom-fields", error });
       return apiInternalError("Failed to create custom field definition");
     }
 
@@ -145,7 +145,7 @@ export const PATCH = withAuthValidation(
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields", error });
+      logger.warn("Failed to update custom field", { context: "custom-fields", error });
       return apiInternalError("Failed to update custom field definition");
     }
 
@@ -185,7 +185,7 @@ export const DELETE = withAuth(
       .eq("id", id);
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields", error });
+      logger.warn("Failed to delete custom field", { context: "custom-fields", error });
       return apiInternalError("Failed to delete custom field definition");
     }
 

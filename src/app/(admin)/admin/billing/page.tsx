@@ -56,7 +56,7 @@ export default function ClientBillingPage() {
       setCurrentSub(sub);
       setAllTiers(tiers);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load admin billing page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

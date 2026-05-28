@@ -131,7 +131,7 @@ export async function GET() {
 
     return apiSuccess(publicData, 200, { "Cache-Control": "public, max-age=300" });
   } catch (err) {
-    logger.warn("Operation failed", { context: "branding", error: err });
+    logger.warn("Failed to fetch branding", { context: "branding", error: err });
     return apiInternalError("Failed to fetch branding");
   }
 }
@@ -179,7 +179,7 @@ export const PUT = withAuthValidation(
       .eq("id", clinicId);
 
     if (error) {
-      logger.warn("Operation failed", { context: "branding", error });
+      logger.warn("Failed to update branding", { context: "branding", error });
       return apiInternalError("Failed to update branding");
     }
 
@@ -259,7 +259,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     .eq("id", clinicId);
 
   if (error) {
-    logger.warn("Operation failed", { context: "branding", error });
+    logger.warn("Failed to create branding", { context: "branding", error });
     return apiInternalError("Upload succeeded but failed to save URL");
   }
 

@@ -52,7 +52,10 @@ export function ClinicCenterDashboardKPIsComponent() {
         if (!cancelled) setData(result);
       })
       .catch((err: unknown) => {
-        logger.warn("Operation failed", { context: "clinic-center-dashboard-kpis", error: err });
+        logger.warn("Failed to load clinic center KPIs", {
+          context: "clinic-center-dashboard-kpis",
+          error: err,
+        });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

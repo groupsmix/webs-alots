@@ -74,7 +74,7 @@ export const GET = withAuth(
 
       return apiSuccess({ pets: data ?? [] });
     } catch (err) {
-      logger.warn("Operation failed", { context: "pets", error: err });
+      logger.warn("Failed to process pets request", { context: "pets", error: err });
       return apiInternalError("Failed to process request");
     }
   },

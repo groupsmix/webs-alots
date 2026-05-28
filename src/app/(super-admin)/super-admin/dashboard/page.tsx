@@ -101,7 +101,7 @@ export default function SuperAdminDashboardPage() {
       setAnnouncementList(announcements);
       setActivityLogList(logs);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load super-admin dashboard", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

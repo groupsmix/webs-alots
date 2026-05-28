@@ -15,7 +15,7 @@ export default function PageError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.warn("Operation failed", { context: "super-admin-page-error", error });
+    logger.warn("Super-admin billing render error", { context: "super-admin-page-error", error });
   }, [error]);
 
   return (

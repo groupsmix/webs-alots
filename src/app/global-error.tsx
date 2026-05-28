@@ -22,7 +22,7 @@ export default function GlobalError({
 
   useEffect(() => {
     Sentry.captureException(error);
-    logger.warn("Operation failed", { context: "global-error", error });
+    logger.warn("Unhandled application error", { context: "global-error", error });
   }, [error]);
 
   return (

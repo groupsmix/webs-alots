@@ -198,7 +198,7 @@ export default function AllClinicsPage() {
       });
       setList(mapped);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load clinics list", { context: "page", error: err });
     } finally {
       setLoadingData(false);
     }
@@ -272,7 +272,7 @@ export default function AllClinicsPage() {
         "success",
       );
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to search clinics", { context: "page", error: err });
       addToast("Failed to update clinic status", "error");
     } finally {
       setActionLoading(false);
@@ -765,7 +765,7 @@ export default function AllClinicsPage() {
                       addToast(data.error || "Impersonation failed", "error");
                     }
                   } catch (err) {
-                    logger.warn("Operation failed", { context: "page", error: err });
+                    logger.warn("Failed to update clinic status", { context: "page", error: err });
                     addToast("Failed to start impersonation", "error");
                   } finally {
                     setActionLoading(false);

@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    logger.warn("Operation failed", { context: "v1/appointments", error });
+    logger.warn("Failed to list appointments", { context: "v1/appointments", error });
     return apiInternalError("Failed to fetch appointments");
   }
 
@@ -172,7 +172,7 @@ export const POST = withValidation(
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "v1/appointments", error });
+      logger.warn("Failed to create appointment", { context: "v1/appointments", error });
       return apiInternalError("Failed to create appointment");
     }
 

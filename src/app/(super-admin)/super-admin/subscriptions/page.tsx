@@ -66,7 +66,7 @@ export default function SubscriptionsPage() {
       const data = await fetchClientSubscriptions();
       setSubscriptions(data);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load subscriptions page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

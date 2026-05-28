@@ -50,7 +50,7 @@ export default function BillingPage() {
       const data = await fetchBillingRecords();
       setRecords(data);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load super-admin billing", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

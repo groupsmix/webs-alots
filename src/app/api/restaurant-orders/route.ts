@@ -58,7 +58,10 @@ export const GET = withAuth(
 
       return apiSuccess({ orders: data ?? [] });
     } catch (err) {
-      logger.warn("Operation failed", { context: "restaurant-orders", error: err });
+      logger.warn("Failed to process restaurant order", {
+        context: "restaurant-orders",
+        error: err,
+      });
       return apiInternalError("Failed to process request");
     }
   },

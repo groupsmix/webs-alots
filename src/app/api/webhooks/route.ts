@@ -582,7 +582,7 @@ export async function POST(request: NextRequest) {
 
     return apiSuccess({ status: "ok" });
   } catch (err) {
-    logger.warn("Operation failed", { context: "webhooks", error: err });
+    logger.warn("Failed to process WhatsApp webhook", { context: "webhooks", error: err });
     return apiInternalError("Failed to process webhook");
   }
 }

@@ -337,7 +337,7 @@ export const GET = withAuth(
         summary: { total, rebooked, pending, expired },
       });
     } catch (err) {
-      logger.warn("Operation failed", {
+      logger.warn("Failed to process doctor unavailability", {
         context: "doctor-unavailability/GET",
         error: err,
       });

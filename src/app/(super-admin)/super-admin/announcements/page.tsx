@@ -45,7 +45,7 @@ export default function AnnouncementsPage() {
       const data = await fetchAnnouncements();
       setList(data);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load announcements page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

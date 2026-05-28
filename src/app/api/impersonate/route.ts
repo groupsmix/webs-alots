@@ -268,7 +268,10 @@ export const DELETE = withAuth(
 
       return response;
     } catch (err) {
-      logger.warn("Operation failed", { context: "impersonate/route", error: err });
+      logger.warn("Failed to process impersonation request", {
+        context: "impersonate/route",
+        error: err,
+      });
       return apiInternalError("Failed to end impersonation");
     }
   },

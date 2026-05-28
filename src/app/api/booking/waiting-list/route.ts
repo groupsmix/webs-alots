@@ -80,7 +80,7 @@ export const POST = withAuthValidation(
       .single();
 
     if (error || !entry) {
-      logger.warn("Operation failed", { context: "booking/waiting-list", error });
+      logger.warn("Failed to fetch waiting list", { context: "booking/waiting-list", error });
       return apiError("Failed to add to waiting list");
     }
 
@@ -187,7 +187,7 @@ export const DELETE = withAuthValidation(
       .eq("clinic_id", clinicId);
 
     if (error) {
-      logger.warn("Operation failed", { context: "booking/waiting-list", error });
+      logger.warn("Failed to add to waiting list", { context: "booking/waiting-list", error });
       return apiError("Failed to remove from waiting list");
     }
 

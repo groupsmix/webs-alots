@@ -29,7 +29,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     .single();
 
   if (error && error.code !== "PGRST116") {
-    logger.warn("Operation failed", { context: "custom-fields/values", error });
+    logger.warn("Failed to fetch custom field values", { context: "custom-fields/values", error });
     return apiInternalError("Failed to fetch custom field values");
   }
 
@@ -120,7 +120,10 @@ export const POST = withAuthValidation(
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields/values", error });
+      logger.warn("Failed to create custom field value", {
+        context: "custom-fields/values",
+        error,
+      });
       return apiInternalError("Failed to save custom field values");
     }
 
@@ -223,7 +226,10 @@ export const PATCH = withAuthValidation(
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields/values", error });
+      logger.warn("Failed to update custom field value", {
+        context: "custom-fields/values",
+        error,
+      });
       return apiInternalError("Failed to update custom field values");
     }
 

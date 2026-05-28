@@ -50,7 +50,7 @@ export default function FeatureTogglesPage() {
       setFeatures(feats);
       setTotalClinicsCount(clinics.length);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load features page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }
