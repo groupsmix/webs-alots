@@ -59,7 +59,7 @@ export function EditorialFooter() {
               href="/"
               className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-bold tracking-[-0.02em] text-[var(--ink)] no-underline"
             >
-              oltigo
+              oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
             </Link>
             <p className="mt-[var(--space-3)] font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)] max-w-[240px]">
               La plateforme complète pour gérer votre cabinet médical au Maroc.

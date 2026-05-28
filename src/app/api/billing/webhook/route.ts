@@ -163,11 +163,18 @@ export async function POST(request: NextRequest) {
             });
             return apiSuccess({ received: true, duplicate: true });
           }
+          // FP-07: Non-duplicate dedup failure — surface to Sentry so
+          // operators can detect table truncation or schema drift.
           logger.warn("Stripe event dedup insert failed", {
             context: "billing/webhook",
             eventId: stripeEventId,
             error: dedupErr.message,
           });
+          import("@sentry/nextjs")
+            .then((Sentry) =>
+              Sentry.captureMessage(`Stripe dedup insert failed: ${dedupErr.message}`, "warning"),
+            )
+            .catch(() => {});
         }
       } catch (dedupCatchErr) {
         logger.warn("Stripe event dedup threw — continuing without dedup", {

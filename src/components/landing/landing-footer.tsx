@@ -53,7 +53,9 @@ export function LandingFooter() {
           {/* Col 1: Wordmark + address */}
           <div>
             <Link href="/" className="text-[17px] font-medium text-[var(--ink)] no-underline">
-              {"Oltigo"}
+              {/* eslint-disable i18next/no-literal-string -- brand name, never translated */}
+              Oltig<span className="text-[var(--oltigo-green)]">o</span>
+              {/* eslint-enable i18next/no-literal-string */}
             </Link>
             <address className="mt-[var(--space-4)] not-italic text-[length:var(--text-small)] leading-[var(--lh-small)] text-[var(--ink-60)]">
               {"Casablanca, Morocco"}

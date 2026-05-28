@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 /** OWASP-recommended HSTS max-age: 2 years (63 072 000 seconds). */
 const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
@@ -63,6 +64,16 @@ function getSupabaseHost(): string {
     } catch {
       // fall through to default
     }
+  }
+  // L-03: Placeholder weakens CSP connect-src — log so this surfaces in monitoring.
+  // nosemgrep: semgrep.env-access — NODE_ENV is a standard runtime guard, not a secret
+  if (process.env.NODE_ENV === "production") {
+    // Edge middleware — console.error is appropriate here since the
+    // structured logger may not be available in the edge runtime.
+    console.error(
+      // nosemgrep: no-console
+      "[security-headers] NEXT_PUBLIC_SUPABASE_URL is not set; CSP connect-src falls back to placeholder.supabase.co",
+    );
   }
   return "placeholder.supabase.co";
 }
@@ -227,6 +238,9 @@ export function withSecurityHeaders(response: NextResponse, csp: CspHeaderValues
     response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
     response.headers.delete("Content-Security-Policy");
   } else {
+    logger.error("CSP misconfiguration: both enforce and reportOnly are empty", {
+      context: "security-headers/withSecurityHeaders",
+    });
     response.headers.delete("Content-Security-Policy");
     response.headers.delete("Content-Security-Policy-Report-Only");
   }
@@ -273,6 +287,9 @@ export function applyAllSecurityHeaders(
     response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
     response.headers.delete("Content-Security-Policy");
   } else {
+    logger.error("CSP misconfiguration: both enforce and reportOnly are empty", {
+      context: "security-headers/applyAllSecurityHeaders",
+    });
     response.headers.delete("Content-Security-Policy");
     response.headers.delete("Content-Security-Policy-Report-Only");
   }

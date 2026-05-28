@@ -44,7 +44,7 @@ export function EditorialHeader({
             href="/"
             className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-bold tracking-[-0.02em] text-[var(--ink)] no-underline"
           >
-            oltigo
+            oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
           </Link>
 
           {/* Desktop nav links */}

@@ -36,12 +36,14 @@ export function LandingHeader() {
     >
       <div className="mx-auto flex h-full items-center justify-between px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)] max-w-[var(--container-max)]">
         {/* Wordmark */}
+        {/* eslint-disable i18next/no-literal-string -- brand name, never translated */}
         <Link
           href="/"
           className="text-[17px] font-medium text-[var(--ink)] tracking-[-0.01em] no-underline"
         >
-          Oltigo
+          Oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
         </Link>
+        {/* eslint-enable i18next/no-literal-string */}
 
         {/* Desktop nav */}
         <nav

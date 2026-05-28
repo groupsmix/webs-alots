@@ -30,6 +30,7 @@ Every database operation **must** be scoped to a `clinic_id`. Failing to do so c
 4. **RLS is defense-in-depth** — Application-level scoping is required even though database RLS policies exist. Both layers must agree.
 5. **Webhooks must resolve tenant** — In webhook handlers (WhatsApp, Stripe), resolve the `clinic_id` from the webhook payload (e.g., WABA phone number ID, Stripe metadata). If resolution fails, skip processing — never query across tenants.
 6. **Cron jobs iterate per-clinic** — Scheduled tasks must iterate over clinics and scope each operation to the current clinic's ID.
+7. **Never spread request body into DB** — Always destructure and pick specific fields: `.insert({ name: body.name, phone: body.phone })`. Never `.insert({ ...body })` or `.insert(body)` — this prevents mass-assignment of unintended columns (e.g., `role`, `clinic_id`).
 
 ### Key Files
 

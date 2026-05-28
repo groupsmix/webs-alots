@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, Heart, Mail, Check } from "lucide-react";
+import { ArrowLeft, Mail, Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { OltigoWordmark } from "@/components/brand/oltigo-mark";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,14 +54,12 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-            <Heart className="h-5 w-5 text-primary-foreground" />
-          </div>
-        </div>
-        <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
-        <p className="text-sm text-muted-foreground">{t(locale, "forgot.resetSubtitle")}</p>
+      <div className="mb-8 text-center">
+        <OltigoWordmark size="lg" className="justify-center" />
+        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+          {t(locale, "auth.portalTitle")}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t(locale, "forgot.resetSubtitle")}</p>
       </div>
 
       <Card>

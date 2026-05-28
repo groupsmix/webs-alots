@@ -39,6 +39,17 @@ jobs:
       - name: Check for vulnerable dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # W8-CI-03: Warn (non-blocking) on critical CVEs in devdeps.
+      # A compromised devdep can hijack the CI runner. This step is
+      # informational — it exits 0 regardless so CI is not broken
+      # by unfixed upstream devdep CVEs, but the output is visible.
+      - name: Check devdeps for critical vulnerabilities
+        run: npm audit --audit-level=critical || true
+
+      # W8-A-02: Verify every /api/cron/ route calls verifyCronSecret
+      - name: Check cron auth guard
+        run: npx tsx scripts/check-cron-auth.ts
+
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 

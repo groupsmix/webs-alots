@@ -152,6 +152,8 @@ export type AdminPurpose =
   | "super_admin"
   | "register_clinic"
   | "impersonate"
+  | "impersonate-precheck"
+  | "payments/cmi"
   | "features"
   | "directory"
   | "instrumentation";

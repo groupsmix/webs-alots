@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
 
 export const metadata: Metadata = {
   title: "Politique de Confidentialité",
@@ -11,30 +12,29 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPage() {
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mx-auto max-w-3xl prose prose-gray">
-        <h1 className="text-3xl font-bold mb-8">Politique de Confidentialité</h1>
-
-        <p className="text-muted-foreground mb-6">Dernière mise à jour : mars 2026</p>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">1. Introduction</h2>
-          <p className="text-muted-foreground mb-4">
-            La présente politique de confidentialité décrit comment Oltigo (&quot;nous&quot;,
-            &quot;notre&quot;, &quot;la plateforme&quot;) collecte, utilise et protège vos données
-            personnelles conformément au Règlement Général sur la Protection des Données (RGPD) et à
-            la loi marocaine n° 09-08 relative à la protection des personnes physiques à
-            l&apos;égard du traitement des données à caractère personnel.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">2. Données Collectées</h2>
-          <p className="text-muted-foreground mb-4">
-            Dans le cadre de nos services, nous pouvons collecter les données suivantes :
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground space-y-2 mb-4">
+  const sections: LegalDocSection[] = [
+    {
+      id: "introduction",
+      number: "01",
+      title: "Introduction",
+      children: (
+        <p>
+          La présente politique de confidentialité décrit comment Oltigo (&quot;nous&quot;,
+          &quot;notre&quot;, &quot;la plateforme&quot;) collecte, utilise et protège vos données
+          personnelles conformément au Règlement Général sur la Protection des Données (RGPD) et à
+          la loi marocaine n° 09-08 relative à la protection des personnes physiques à l&apos;égard
+          du traitement des données à caractère personnel.
+        </p>
+      ),
+    },
+    {
+      id: "donnees-collectees",
+      number: "02",
+      title: "Données Collectées",
+      children: (
+        <>
+          <p>Dans le cadre de nos services, nous pouvons collecter les données suivantes :</p>
+          <ul>
             <li>
               <strong>Données d&apos;identification :</strong> nom, prénom, adresse e-mail, numéro
               de téléphone.
@@ -51,55 +51,70 @@ export default function PrivacyPage() {
               <strong>Données de rendez-vous :</strong> dates, heures, praticiens consultés.
             </li>
           </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">3. Finalités du Traitement</h2>
-          <p className="text-muted-foreground mb-4">
-            Vos données sont traitées pour les finalités suivantes :
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground space-y-2 mb-4">
+        </>
+      ),
+    },
+    {
+      id: "finalites",
+      number: "03",
+      title: "Finalités du Traitement",
+      children: (
+        <>
+          <p>Vos données sont traitées pour les finalités suivantes :</p>
+          <ul>
             <li>Gestion des rendez-vous et du suivi médical.</li>
             <li>Communication avec les patients (rappels, confirmations).</li>
             <li>Amélioration de nos services et de l&apos;expérience utilisateur.</li>
             <li>Respect des obligations légales et réglementaires.</li>
           </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">4. Protection des Données</h2>
-          <p className="text-muted-foreground mb-4">
-            Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour
-            protéger vos données personnelles contre tout accès non autorisé, modification,
-            divulgation ou destruction. Les données de santé font l&apos;objet de mesures de
-            protection renforcées.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">5. Partage des Données</h2>
-          <p className="text-muted-foreground mb-4">
-            Vos données personnelles ne sont partagées qu&apos;avec les praticiens et le personnel
-            médical impliqués dans votre prise en charge. Nous ne vendons ni ne louons vos données à
-            des tiers.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">6. Conservation des Données</h2>
-          <p className="text-muted-foreground mb-4">
-            Vos données sont conservées pendant la durée nécessaire aux finalités pour lesquelles
-            elles ont été collectées, et conformément aux délais de conservation prévus par la
-            réglementation en vigueur.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">7. Vos Droits</h2>
-          <p className="text-muted-foreground mb-4">
-            Conformément à la réglementation applicable, vous disposez des droits suivants :
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground space-y-2 mb-4">
+        </>
+      ),
+    },
+    {
+      id: "protection",
+      number: "04",
+      title: "Protection des Données",
+      children: (
+        <p>
+          Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour
+          protéger vos données personnelles contre tout accès non autorisé, modification,
+          divulgation ou destruction. Les données de santé font l&apos;objet de mesures de
+          protection renforcées.
+        </p>
+      ),
+    },
+    {
+      id: "partage",
+      number: "05",
+      title: "Partage des Données",
+      children: (
+        <p>
+          Vos données personnelles ne sont partagées qu&apos;avec les praticiens et le personnel
+          médical impliqués dans votre prise en charge. Nous ne vendons ni ne louons vos données à
+          des tiers.
+        </p>
+      ),
+    },
+    {
+      id: "conservation",
+      number: "06",
+      title: "Conservation des Données",
+      children: (
+        <p>
+          Vos données sont conservées pendant la durée nécessaire aux finalités pour lesquelles
+          elles ont été collectées, et conformément aux délais de conservation prévus par la
+          réglementation en vigueur.
+        </p>
+      ),
+    },
+    {
+      id: "vos-droits",
+      number: "07",
+      title: "Vos Droits",
+      children: (
+        <>
+          <p>Conformément à la réglementation applicable, vous disposez des droits suivants :</p>
+          <ul>
             <li>
               <strong>Droit d&apos;accès :</strong> obtenir une copie de vos données personnelles.
             </li>
@@ -118,23 +133,24 @@ export default function PrivacyPage() {
               structuré.
             </li>
           </ul>
-          <p className="text-muted-foreground mb-4">
-            Pour exercer ces droits, veuillez nous contacter via notre page de contact.
-          </p>
-        </section>
+          <p>Pour exercer ces droits, veuillez nous contacter via notre page de contact.</p>
+        </>
+      ),
+    },
+    {
+      id: "contact",
+      number: "08",
+      title: "Contact",
+      children: (
+        <p>
+          Pour toute question relative à cette politique de confidentialité ou à la protection de
+          vos données, vous pouvez nous contacter via notre <a href="/contact">page de contact</a>.
+        </p>
+      ),
+    },
+  ];
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">8. Contact</h2>
-          <p className="text-muted-foreground mb-4">
-            Pour toute question relative à cette politique de confidentialité ou à la protection de
-            vos données, vous pouvez nous contacter via notre{" "}
-            <a href="/contact" className="text-primary hover:underline">
-              page de contact
-            </a>
-            .
-          </p>
-        </section>
-      </div>
-    </div>
+  return (
+    <LegalDoc title="Politique de Confidentialité" lastUpdated="MARS 2026" sections={sections} />
   );
 }
