@@ -85,7 +85,7 @@ export const consentSchema = z.object({
   granted: z.boolean(),
 });
 
-export const clinicFeaturesQuerySchema = z.object({
+const _clinicFeaturesQuerySchema = z.object({
   type_key: z.string().min(1).max(100),
 });
 

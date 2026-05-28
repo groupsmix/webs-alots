@@ -71,15 +71,6 @@ export {
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
-export {
-  menuCreateSchema,
-  menuUpdateSchema,
-  menuItemCreateSchema,
-  menuItemUpdateSchema,
-  restaurantTableCreateSchema,
-  restaurantTableUpdateSchema,
-  restaurantOrderCreateSchema,
-  restaurantOrderUpdateSchema,
-} from "./restaurant";
+export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
 
 export { safeParse } from "./helpers";

@@ -143,7 +143,7 @@ Each clinic is accessible at `clinicname.yourdomain.com`. The middleware extract
 
 **Setup:**
 
-1. Add a `subdomain` value to each clinic row in the `clinics` table (run migration `00004_add_clinic_subdomain.sql`)
+1. Add a `subdomain` value to each clinic row in the `clinics` table (applied automatically by `supabase/migrations/`)
 2. Set `ROOT_DOMAIN=yourdomain.com` in `.env.local`
 3. Configure a wildcard DNS record: `*.yourdomain.com → your server`
 
