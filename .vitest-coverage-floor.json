@@ -2,5 +2,11 @@
   "statements": 13,
   "branches": 10,
   "lines": 13,
-  "functions": 9
+  "functions": 9,
+  "target": {
+    "statements": 80,
+    "branches": 70,
+    "lines": 70,
+    "functions": 60
+  }
 }

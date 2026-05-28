@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     return apiError("Missing phone parameter", 400);
   }
 
-  // If a URL-supplied clinicId is present, it must match the subdomain.
+  // Legacy: URL-supplied clinicId for kiosk clients. Sunset target: 2026-09-01.
   if (urlClinicId && urlClinicId !== clinicId) {
     return apiError("clinicId does not match subdomain", 403);
   }

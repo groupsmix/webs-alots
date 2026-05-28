@@ -1,15 +1,14 @@
 import { createClient as _createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger as _logger } from "@/lib/logger";
 import { isR2Configured as _isR2Configured } from "@/lib/r2";
 
 export async function GET(request: NextRequest) {
-  // Gate by CRON_SECRET or a specific monitoring token
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return apiError("Unauthorized", 401);
-  }
+  // L6-F1: Use shared timing-safe helper (was inline string compare)
+  const authErr = verifyCronSecret(request);
+  if (authErr) return authErr;
 
   const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
 

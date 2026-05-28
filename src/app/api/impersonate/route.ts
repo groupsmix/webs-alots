@@ -75,10 +75,8 @@ export const POST = withAuthValidation(
     }
 
     // AUTH-02: Log IP and user agent for every impersonation event
-    const clientIp =
-      request.headers.get("cf-connecting-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown";
+    // L3-F2: Use CF-Connecting-IP only — XFF is attacker-controlled outside Cloudflare
+    const clientIp = request.headers.get("cf-connecting-ip") ?? "unknown";
     const userAgent = request.headers.get("user-agent") ?? "unknown";
 
     // Log the impersonation for security audit

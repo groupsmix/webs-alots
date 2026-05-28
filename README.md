@@ -38,6 +38,26 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the public website.
 
+### Running Tests Locally
+
+```bash
+# Unit tests (Vitest)
+npm run test
+
+# Unit tests in watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+
+# E2E tests (requires dev server running on :3000)
+npm run dev &            # start dev server in background
+npx playwright install   # one-time: install browser binaries
+npm run test:e2e         # run Playwright against localhost:3000
+```
+
+E2E tests run against Chromium, Firefox, WebKit, Mobile Chrome, and Mobile Safari (see `playwright.config.ts`). Individual specs live in `e2e/`.
+
 ## Project Structure
 
 ```

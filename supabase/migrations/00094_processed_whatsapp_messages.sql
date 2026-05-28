@@ -1,6 +1,7 @@
 -- R-16: WhatsApp message idempotency table.
 -- Prevents duplicate processing when Meta retries webhook deliveries.
 -- Same pattern as processed_stripe_events (00092) and cmi_callbacks_seen (00084).
+-- Rows older than 90 days are purged by /api/cron/dedup-purge (see worker-cron-handler.ts).
 
 CREATE TABLE IF NOT EXISTS processed_whatsapp_messages (
   message_id TEXT PRIMARY KEY,
