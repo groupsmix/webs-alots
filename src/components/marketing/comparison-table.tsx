@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowRight, Check, X, Minus } from "lucide-react";
 import Link from "next/link";
 import {
