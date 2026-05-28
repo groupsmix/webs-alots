@@ -14,7 +14,8 @@ jwt_expiry = 3600
 enable_signup = true
 
 # Password requirements
-minimum_password_length = 8
+# A54-2: Raised from 8 to 12 for healthcare/admin accounts (NIST 800-63B).
+minimum_password_length = 12
 
 # MFA — enable TOTP for doctors and admins
 [auth.mfa]
@@ -37,10 +38,12 @@ sms_sent = 10
 # Require email confirmation before signing in
 enable_confirmations = true
 
-# Session settings
-# [auth.sessions]
-# timebox = "24h"
-# inactivity_timeout = "30m"
+# A54-1: Session timeout enabled for PHI app. Walk-away kiosk /
+# receptionist sessions now expire after 30 min inactivity or 24 h
+# absolute (OWASP ASVS V3).
+[auth.sessions]
+timebox = "24h"
+inactivity_timeout = "30m"
 
 [db]
 # The database major version to use

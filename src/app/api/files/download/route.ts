@@ -22,6 +22,7 @@
  * Auditing: every successful download is recorded via `logAuditEvent`.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, apiForbidden, apiInternalError, apiNotFound } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -29,6 +30,34 @@ import { logger } from "@/lib/logger";
 import { downloadAndDecrypt } from "@/lib/r2-encrypted";
 import type { UserRole } from "@/lib/types/database";
 import { withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
+
+// A47-3: Typed interface for the patient_files table. This table exists
+// in production but is not yet included in the auto-generated Database
+// types (no migration in supabase/migrations/). Once a migration is
+// added, regenerate types and remove this manual definition.
+interface PatientFileRecord {
+  id: string;
+  patient_id: string;
+}
+
+/**
+ * A47-3: Type-safe wrapper for querying patient_files. Replaces the
+ * inline `as unknown as {...}` cast with a single well-documented
+ * boundary. Remove this function once patient_files is in database.ts.
+ */
+async function lookupPatientFile(
+  supabase: SupabaseClient,
+  clinicId: string,
+  r2Key: string,
+): Promise<PatientFileRecord | null> {
+  const { data } = await supabase
+    .from("patient_files")
+    .select("id, patient_id")
+    .eq("clinic_id", clinicId)
+    .eq("r2_key", r2Key)
+    .maybeSingle<PatientFileRecord>();
+  return data;
+}
 
 const ALLOWED_DOWNLOAD_ROLES: ReadonlySet<UserRole> = new Set<UserRole>([
   "super_admin",
@@ -155,32 +184,8 @@ async function handler(
   // (doctor, receptionist, clinic_admin) are allowed to access any
   // file within their clinic.
   if (profile.role === "patient" && profile.clinic_id) {
-    // patient_files may not be in the generated DB types yet — use
-    // an untyped query to avoid TS errors while still enforcing the check.
-    const { data: fileRecord } = await (
-      supabase as unknown as {
-        from(table: string): {
-          select(cols: string): {
-            eq(
-              col: string,
-              val: string,
-            ): {
-              eq(
-                col2: string,
-                val2: string,
-              ): {
-                maybeSingle(): Promise<{ data: { id: string; patient_id: string } | null }>;
-              };
-            };
-          };
-        };
-      }
-    )
-      .from("patient_files")
-      .select("id, patient_id")
-      .eq("clinic_id", profile.clinic_id)
-      .eq("r2_key", baseKey)
-      .maybeSingle();
+    // A47-3: Use the typed helper instead of an inline `as unknown` cast.
+    const fileRecord = await lookupPatientFile(supabase, profile.clinic_id, baseKey);
 
     // M-02/A7-01: Patients must have a patient_files record linking the
     // file to their profile. Legacy files without records are NOT accessible

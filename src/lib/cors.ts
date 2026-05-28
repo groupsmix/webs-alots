@@ -21,6 +21,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 /**
  * Parse the allowed origins from the environment once.
@@ -42,6 +43,15 @@ function parseAllowedOrigins(): string[] | null {
     return null;
   }
   if (raw.trim() === "*") {
+    // A49-2: Hard-block wildcard CORS in production to prevent
+    // credentialed cross-origin requests from any origin.
+    if (process.env.NODE_ENV === "production") {
+      logger.warn("ALLOWED_API_ORIGINS=* is blocked in production — treating as deny-all", {
+        context: "cors",
+      });
+      _parsedOrigins = null;
+      return null;
+    }
     _parsedOrigins = ["*"];
     return _parsedOrigins;
   }
@@ -75,18 +85,21 @@ function resolveOrigin(request: NextRequest): string | null {
  */
 export function getCorsHeaders(request: NextRequest): Record<string, string> {
   const origin = resolveOrigin(request);
+
+  // A49-3: When the origin is denied, omit all CORS headers entirely
+  // to avoid leaking supported methods/headers to disallowed origins.
+  if (!origin) return {};
+
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
+    "Access-Control-Allow-Origin": origin,
   };
-  if (origin) {
-    headers["Access-Control-Allow-Origin"] = origin;
-    // When returning a specific origin (not *), the Vary header is
-    // required so caches don't serve the wrong CORS response.
-    if (origin !== "*") {
-      headers["Vary"] = "Origin";
-    }
+  // When returning a specific origin (not *), the Vary header is
+  // required so caches don't serve the wrong CORS response.
+  if (origin !== "*") {
+    headers["Vary"] = "Origin";
   }
   return headers;
 }
