@@ -118,6 +118,50 @@ When service is restored:
 2. Verify RLS policies intact
 3. Run post-incident health check
 
+### 3.1.1 Supabase Region Outage — Vendor-Exit Playbook (A248-02)
+
+**Scenario:** Supabase's primary region (eu-central-1) is unavailable for >4 hours, or Supabase announces extended downtime.
+
+**Assessment:**
+
+1. Confirm scope: region outage vs global outage vs project-level issue
+2. Check Supabase status page (status.supabase.com) for ETA
+3. Evaluate if failover is warranted (>4h outage or no ETA)
+
+**Failover Options (in order of preference):**
+
+1. **Supabase read replica (if Pro plan PITR enabled):**
+   - Promote read replica to primary via Supabase Dashboard
+   - Update `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Cloudflare Workers env
+   - Re-deploy via `wrangler deploy`
+   - Caveat: Read replica may have up to 1 minute of replication lag
+
+2. **Neon PostgreSQL (cold standby):**
+   - Restore from latest nightly R2 backup (see `docs/bcp.md`)
+   - Create Neon project, import backup
+   - Update connection strings in Workers env
+   - Caveat: RLS policies and auth.users must be manually verified
+
+3. **Self-hosted PostgreSQL:**
+   - Provision a Hetzner/OVH VPS in EU
+   - Restore from R2 backup
+   - Update connection strings
+   - Caveat: No Supabase Auth — must use JWT verification only
+
+**Recovery (after Supabase restores):**
+
+1. Compare data between failover and primary: identify any writes during outage
+2. Merge/reconcile conflicts manually
+3. Switch connection strings back to Supabase
+4. Re-deploy and verify RLS policies
+
+**RPO/RTO Posture (A74-02):**
+
+- **Current RPO:** 24 hours (nightly R2 backup)
+- **With Supabase Pro PITR:** ~1 minute (continuous WAL archiving)
+- **Target RTO:** 1 hour for read-only mode, 4 hours for full read-write failover
+- **Recommendation:** Enable Supabase Pro PITR to reduce RPO from 24h to ~1min
+
 ### 3.2 R2 Down
 
 **Symptoms:**
