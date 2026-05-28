@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase-server";
 import type { Json } from "@/lib/types/database";
 import { subscriptionWebhookEventSchema } from "@/lib/validations";
 import type { SubscriptionWebhookEvent } from "@/lib/validations";
+import { readWebhookBody } from "@/lib/webhook-body";
 
 /**
  * Q-01: Stripe API timeout. If Stripe is degraded, an unbounded fetch here
@@ -89,7 +90,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const rawBody = await request.text();
+    // AUD-011: Use shared streaming body reader with 1 MB cap (consistent with payments/webhook).
+    const rawBody = await readWebhookBody(request);
+    if (rawBody === null) {
+      return apiError("Payload too large", 413);
+    }
     const signature = request.headers.get("stripe-signature");
 
     // Verify webhook signature — webhook secret MUST be configured
