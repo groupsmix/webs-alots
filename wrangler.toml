@@ -76,6 +76,9 @@ RATE_LIMIT_BACKEND = "kv"
 # ── Production Environment ────────────────────────────────────────────
 # INF-004: Explicit production block prevents top-level debug toggles
 # from silently leaking into production. Deploy with: wrangler deploy --env production
+# W8-A31-01: Wrangler v3+/v4 env blocks do NOT inherit top-level bindings.
+# Every binding (kv_namespaces, routes, triggers, observability, limits) must
+# be explicitly redeclared per environment.
 [env.production]
 name = "webs-alots"
 [env.production.assets]
@@ -88,6 +91,39 @@ RATE_LIMIT_BACKEND = "kv"
 [[env.production.r2_buckets]]
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads"
+
+# W8-A31-01: KV namespace binding (was missing — rate limiter fell open)
+[[env.production.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "7ac37dff0a794542b0c766f38e73f105"
+preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
+
+# W8-A31-01: Routes (was missing — worker would not receive traffic)
+[env.production.routes]
+routes = [
+  { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
+  { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
+]
+
+# W8-A31-01: Cron triggers (was missing — scheduled jobs would not run)
+[env.production.triggers]
+crons = [
+  "*/15 * * * *",
+  "*/30 * * * *",
+  "0 * * * *",
+  "0 2 * * *",
+  "0 3 * * *",
+  "0 4 * * *",
+  "0 5 * * *",
+]
+
+# W8-A31-01: Observability (was missing — Workers Logs disabled per-env)
+[env.production.observability]
+enabled = true
+
+# W8-A31-01: Limits (was missing — default CPU limit instead of 50ms)
+[env.production.limits]
+cpu_ms = 50
 
 # ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
@@ -104,6 +140,39 @@ RATE_LIMIT_BACKEND = "kv"
 [[env.staging.r2_buckets]]
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
+
+# W8-A31-01: KV namespace binding for staging
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "7ac37dff0a794542b0c766f38e73f105"
+preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
+
+# W8-A31-01: Routes for staging (uses staging subdomain)
+[env.staging.routes]
+routes = [
+  { pattern = "staging.oltigo.com/*", zone_name = "oltigo.com" },
+  { pattern = "*.staging.oltigo.com/*", zone_name = "oltigo.com" },
+]
+
+# W8-A31-01: Cron triggers for staging
+[env.staging.triggers]
+crons = [
+  "*/15 * * * *",
+  "*/30 * * * *",
+  "0 * * * *",
+  "0 2 * * *",
+  "0 3 * * *",
+  "0 4 * * *",
+  "0 5 * * *",
+]
+
+# W8-A31-01: Observability for staging
+[env.staging.observability]
+enabled = true
+
+# W8-A31-01: Limits for staging
+[env.staging.limits]
+cpu_ms = 50
 
 # ── Limits ────────────────────────────────────────────────────────────
 [limits]

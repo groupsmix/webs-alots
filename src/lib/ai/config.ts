@@ -20,21 +20,22 @@ import { logger } from "@/lib/logger";
  * Prevents an operator from redirecting AI calls to a rogue endpoint
  * that could exfiltrate PHI sent in prompts.
  */
-const ALLOWED_AI_BASE_URLS = new Set([
-  "https://api.openai.com/v1",
-  "https://api.openai.com",
-  // Azure OpenAI endpoints follow this pattern:
-  // https://<resource>.openai.azure.com/openai/deployments/<model>
-  // We allow the azure.com domain broadly:
-]);
+const ALLOWED_AI_BASE_URLS = new Set(["https://api.openai.com/v1", "https://api.openai.com"]);
 
+// W8-S-02: Pin Azure OpenAI to an explicit resource name rather than
+// accepting any *.openai.azure.com subdomain. Set AZURE_OPENAI_RESOURCE_NAME
+// in env (e.g. "oltigo-prod") to allowlist only that resource.
 function isAllowedBaseUrl(url: string): boolean {
-  // Exact match
   if (ALLOWED_AI_BASE_URLS.has(url)) return true;
-  // Azure OpenAI pattern
   try {
     const parsed = new URL(url);
-    if (parsed.hostname.endsWith(".openai.azure.com")) return true;
+    if (parsed.hostname.endsWith(".openai.azure.com")) {
+      // nosemgrep: semgrep.env-access — pinned Azure resource name, validated at boot
+      const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME;
+      if (!resourceName) return false;
+      const expected = `${resourceName}.openai.azure.com`;
+      return parsed.hostname === expected;
+    }
   } catch {
     return false;
   }
@@ -48,6 +49,14 @@ function isAllowedBaseUrl(url: string): boolean {
  * unexpected behaviour changes when OpenAI updates the alias.
  */
 const DEFAULT_MODEL = "gpt-4o-mini-2024-07-18";
+
+// W8-S-03: Only dated snapshot model names are allowed. Floating aliases
+// (e.g. "gpt-4o-mini") are rejected to prevent silent safety regressions.
+const ALLOWED_MODELS = new Set([
+  "gpt-4o-mini-2024-07-18",
+  "gpt-4o-2024-08-06",
+  "gpt-4o-2024-11-20",
+]);
 
 // ── Public API ──
 
@@ -99,7 +108,20 @@ export async function resolveAIConfig(): Promise<
   }
 
   // F-AI-07: Pinned model version
+  // W8-S-03: Reject models not in the allowlist to prevent operators from
+  // switching to a floating alias or a less safety-tuned model.
   const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
+  if (!ALLOWED_MODELS.has(model)) {
+    logger.error("OPENAI_MODEL is not in the allowlist", {
+      context: "ai-config",
+      model,
+    });
+    return {
+      ok: false,
+      reason: "AI model configuration error",
+      statusCode: 500,
+    };
+  }
 
   return { ok: true, config: { apiKey, baseUrl, model } };
 }

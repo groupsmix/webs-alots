@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiInternalError } from "@/lib/api-response";
 import { verifyCmiCallback } from "@/lib/cmi";
 import { logger } from "@/lib/logger";
-import { createAdminClient, createClient } from "@/lib/supabase-server";
+import { createAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { cmiCallbackFieldsSchema } from "@/lib/validations";
@@ -179,17 +179,27 @@ export async function POST(request: NextRequest) {
               headers: { "Content-Type": "text/plain" },
             });
           }
-          // Other DB errors — log but continue (fail-open for payment processing)
-          logger.error("CMI dedup insert failed", {
+          // W8-W-01: Treat non-duplicate DB errors as fail-closed. Return 503
+          // so CMI retries rather than risk double-processing a payment.
+          logger.error("CMI dedup insert failed — fail-closed, requesting retry", {
             context: "payments/cmi/callback",
             error: dedupErr,
             transactionId: callbackData.transactionId,
+          });
+          return new NextResponse("ACTION=CALLBACK_ERROR", {
+            status: 503,
+            headers: { "Content-Type": "text/plain" },
           });
         }
       }
     }
 
-    const supabase = await createClient();
+    // W8-T-01: Use admin client for the second SELECT and UPDATEs. CMI
+    // callbacks carry no Supabase session cookies, so the anon client
+    // has auth.uid() IS NULL and RLS may return zero rows on legitimate
+    // callbacks, leaving payments stuck at 'pending'.
+    // nosemgrep: semgrep.admin-client-guard — CMI callbacks have no user session; admin needed for RLS bypass
+    const supabase = createAdminClient("payments/cmi");
 
     if (callbackData.status === "approved") {
       // Find the payment by order ID (stored as gateway_session_id)

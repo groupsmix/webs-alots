@@ -17,6 +17,7 @@
  */
 
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+import { logger } from "@/lib/logger";
 
 // ---- Types ----
 
@@ -103,6 +104,35 @@ export async function createCmiPayment(request: CmiPaymentRequest): Promise<CmiP
   }
 
   const currency = request.currency || "504"; // 504 = MAD (ISO 4217)
+
+  // W8-R-02: Whitelist successUrl, failUrl, callbackUrl origins to prevent
+  // an attacker from setting an external shopurl that redirects the user to
+  // a phishing page after payment. Only the site's own origin is allowed.
+  // nosemgrep: semgrep.env-access — NEXT_PUBLIC_SITE_URL used for origin allowlist
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (siteUrl) {
+    const allowedOrigin = new URL(siteUrl).origin;
+    for (const urlField of [request.successUrl, request.failUrl, request.callbackUrl]) {
+      try {
+        const origin = new URL(urlField).origin;
+        if (origin !== allowedOrigin) {
+          return {
+            success: false,
+            formUrl: "",
+            formFields: {},
+            error: `Redirect URL origin (${origin}) does not match site URL (${allowedOrigin})`,
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          formUrl: "",
+          formFields: {},
+          error: `Invalid redirect URL: ${urlField}`,
+        };
+      }
+    }
+  }
 
   // Build form fields for CMI hosted payment page
   const fields: Record<string, string> = {
@@ -198,6 +228,10 @@ export async function verifyCmiCallback(
   ]);
 
   const fieldsToHash: Record<string, string> = {};
+  // W8-W-02: Track lowercase keys to detect case-duplicates (e.g. OID + oid
+  // in the same callback). If CMI ever sends both, the second would silently
+  // overwrite the first in fieldsToHash, changing the HMAC input.
+  const seenLowerKeys = new Set<string>();
   for (const [key, value] of Object.entries(params)) {
     const lowerKey = key.toLowerCase();
     if (lowerKey !== "hash" && lowerKey !== "encoding" && lowerKey !== "hashalgorithm") {
@@ -207,6 +241,14 @@ export async function verifyCmiCallback(
         lowerKey.startsWith("rnd_") ||
         key.startsWith("EXTRA.")
       ) {
+        if (seenLowerKeys.has(lowerKey)) {
+          logger.warn("CMI callback contains case-duplicate field, rejecting", {
+            context: "cmi",
+            duplicateKey: key,
+          });
+          return null;
+        }
+        seenLowerKeys.add(lowerKey);
         fieldsToHash[key] = value;
       }
     }
