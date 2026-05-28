@@ -19,11 +19,10 @@ export function LocationSection() {
                   src={loc.googleMapsEmbedUrl}
                   width="100%"
                   height="300"
-                  style={{ border: 0 }}
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  className="rounded-lg"
+                  className="rounded-lg border-0"
                   title="Localisation du cabinet"
                 />
               ) : (

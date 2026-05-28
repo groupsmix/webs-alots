@@ -6,6 +6,18 @@ vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
 }));
 
+const getTenantMock = vi.fn().mockResolvedValue(null);
+vi.mock("@/lib/tenant", () => ({
+  getTenant: (...args: unknown[]) => getTenantMock(...args),
+  TENANT_HEADERS: {
+    clinicId: "x-tenant-clinic-id",
+    clinicName: "x-tenant-clinic-name",
+    subdomain: "x-tenant-subdomain",
+    clinicType: "x-tenant-clinic-type",
+    clinicTier: "x-tenant-clinic-tier",
+  },
+}));
+
 // Default mock keeps tenant-context a no-op so the existing happy-path tests
 // (which use synthetic non-UUID clinic IDs like "clinic-1") don't trip the
 // new fail-closed 503 behavior. Individual tests that need to exercise the
@@ -398,6 +410,89 @@ describe("withAuth", () => {
       expect(response.status).toBe(429);
       expect(body.code).toBe("USER_RATE_LIMIT");
       expect(handler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("withAuthAnyRole tenant mismatch", () => {
+    beforeEach(() => {
+      getTenantMock.mockReset();
+      getTenantMock.mockResolvedValue(null);
+      setTenantContextMock.mockReset();
+      setTenantContextMock.mockResolvedValue(undefined);
+    });
+
+    it("returns 403 when profile.clinic_id does not match subdomain tenant", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "receptionist", clinic_id: "clinic-A" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      getTenantMock.mockResolvedValue({ clinicId: "clinic-B", subdomain: "other" });
+
+      const handler = vi.fn();
+      const wrappedHandler = withAuthAnyRole(handler);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+      const body = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(body.error).toContain("tenant mismatch");
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("allows request when profile.clinic_id matches subdomain tenant", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "doctor", clinic_id: "clinic-X" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      getTenantMock.mockResolvedValue({ clinicId: "clinic-X", subdomain: "myClinic" });
+
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const wrappedHandler = withAuthAnyRole(handler);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("continues when getTenant throws (graceful degradation)", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "receptionist", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      getTenantMock.mockRejectedValue(new Error("Headers unavailable"));
+
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const wrappedHandler = withAuthAnyRole(handler);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("sets Cache-Control: private, no-store on successful response", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "patient", clinic_id: null },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const wrappedHandler = withAuthAnyRole(handler);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     });
   });
 });

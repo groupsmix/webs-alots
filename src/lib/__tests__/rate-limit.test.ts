@@ -55,6 +55,33 @@ describe("extractClientIp", () => {
     });
     expect(extractClientIp(req as never)).toBe("3.3.3.3");
   });
+
+  it("rejects forged XFF with control characters", () => {
+    const req = createMockRequest({ "x-forwarded-for": "evil\x00ip" });
+    expect(extractClientIp(req as never)).toBe("unknown");
+  });
+
+  it("rejects overly long IP addresses (>45 chars)", () => {
+    const req = createMockRequest({ "x-forwarded-for": "a".repeat(46) });
+    expect(extractClientIp(req as never)).toBe("unknown");
+  });
+
+  it("accepts valid IPv6 addresses", () => {
+    const req = createMockRequest({
+      "x-forwarded-for": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+    });
+    expect(extractClientIp(req as never)).toBe("2001:0db8:85a3:0000:0000:8a2e:0370:7334");
+  });
+
+  it("rejects XFF with protocol prefix", () => {
+    const req = createMockRequest({ "x-forwarded-for": "https://1.2.3.4" });
+    expect(extractClientIp(req as never)).toBe("unknown");
+  });
+
+  it("rejects empty XFF value", () => {
+    const req = createMockRequest({ "x-forwarded-for": "" });
+    expect(extractClientIp(req as never)).toBe("unknown");
+  });
 });
 
 describe("createRateLimiter (in-memory)", () => {
@@ -109,5 +136,27 @@ describe("createRateLimiter (in-memory)", () => {
     limiter.check("ip-1");
     limiter.check("ip-2");
     expect(limiter.check("ip-1")).toBe(true); // existing key still works
+  });
+
+  it("resets counter after window expires", () => {
+    vi.useFakeTimers();
+    try {
+      const limiter = createRateLimiter({ windowMs: 1_000, max: 2 });
+      expect(limiter.check("ip-x")).toBe(true);
+      expect(limiter.check("ip-x")).toBe(true);
+      expect(limiter.check("ip-x")).toBe(false);
+
+      vi.advanceTimersByTime(1_001);
+
+      expect(limiter.check("ip-x")).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("max: 1 allows exactly one request", () => {
+    const limiter = createRateLimiter({ windowMs: 60_000, max: 1 });
+    expect(limiter.check("single")).toBe(true);
+    expect(limiter.check("single")).toBe(false);
   });
 });

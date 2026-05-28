@@ -47,6 +47,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useCallback } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
@@ -695,7 +696,10 @@ export default function DoctorLayoutShell({ children }: { children: React.ReactN
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex flex-col">
-        <h2 className="text-lg font-semibold mb-4">{t(locale, "doctorNav.title")}</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <OltigoMonogram size="sm" />
+          <h2 className="text-lg font-semibold">{t(locale, "doctorNav.title")}</h2>
+        </div>
         <SidebarContent
           pathname={pathname}
           visibleItems={visibleItems}
@@ -711,9 +715,7 @@ export default function DoctorLayoutShell({ children }: { children: React.ReactN
         {/* Mobile Header */}
         <header className="flex items-center justify-between border-b p-3 md:hidden">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <Stethoscope className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
+            <OltigoMonogram size="sm" />
             <span className="font-semibold text-sm">{t(locale, "doctorNav.title")}</span>
           </div>
           <Button
@@ -731,9 +733,7 @@ export default function DoctorLayoutShell({ children }: { children: React.ReactN
           <MobileMenuOverlay onClose={() => setMobileMenuOpen(false)}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Stethoscope className="h-4 w-4 text-primary-foreground" />
-                </div>
+                <OltigoMonogram size="sm" />
                 <h2 className="text-lg font-semibold">{t(locale, "doctorNav.title")}</h2>
               </div>
               <Button

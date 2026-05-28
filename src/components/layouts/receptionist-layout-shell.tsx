@@ -9,11 +9,11 @@ import {
   FileText,
   Menu,
   X,
-  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { PatientSearchPalette } from "@/components/patient-search-palette";
@@ -74,7 +74,10 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:block">
-        <h2 className="text-lg font-semibold mb-6">Reception Panel</h2>
+        <div className="flex items-center gap-2 mb-6">
+          <OltigoMonogram size="sm" />
+          <h2 className="text-lg font-semibold">Reception Panel</h2>
+        </div>
         <NavLinks pathname={pathname} />
         <div className="mt-auto pt-6 border-t mt-6">
           <SignOutButton />
@@ -85,9 +88,7 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
         {/* Mobile Header */}
         <header className="flex items-center justify-between border-b p-3 md:hidden">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <ClipboardList className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
+            <OltigoMonogram size="sm" />
             <span className="font-semibold text-sm">Reception Panel</span>
           </div>
           <Button
@@ -111,9 +112,7 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
             <div className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 shadow-lg">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                    <ClipboardList className="h-4 w-4 text-primary-foreground" />
-                  </div>
+                  <OltigoMonogram size="sm" />
                   <h2 className="text-lg font-semibold">Reception Panel</h2>
                 </div>
                 <Button

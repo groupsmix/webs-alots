@@ -56,6 +56,7 @@ function sanitizeUserInput(text: string): string {
       .replace(/[\u200B-\u200D\u2028-\u202F\uFEFF\u00AD]/g, "")
       // Strip attempts to impersonate system/assistant roles
       // (covers whitespace/zero-width tricks between characters)
+      // PERF-01: ^-anchored so .replace is O(n); safe from ReDoS.
       .replace(/^\s*(s\s*y\s*s\s*t\s*e\s*m|a\s*s\s*s\s*i\s*s\s*t\s*a\s*n\s*t)\s*:/gi, "")
       // Remove markdown-style "instruction" fences
       .replace(/```(system|instructions?)[\s\S]*?```/gi, "")

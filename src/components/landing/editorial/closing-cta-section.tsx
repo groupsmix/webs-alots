@@ -10,82 +10,28 @@ import { HairlineRule } from "./hairline-rule";
  */
 export function ClosingCtaSection() {
   return (
-    <section
-      style={{
-        backgroundColor: "var(--bone)",
-        paddingBlock: "var(--space-9)",
-      }}
-    >
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <section className="bg-[var(--bone)] py-[var(--space-9)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
         <HairlineRule />
-        <div style={{ paddingBlock: "var(--space-7)", maxWidth: 720 }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-h1)",
-              lineHeight: "var(--lh-h1)",
-              letterSpacing: "var(--ls-h1)",
-              fontWeight: 500,
-              color: "var(--ink)",
-            }}
-          >
+        <div className="py-[var(--space-7)] max-w-[720px]">
+          <h2 className="font-[var(--font-sans-landing)] text-[length:var(--text-h1)] leading-[var(--lh-h1)] tracking-[var(--ls-h1)] font-medium text-[var(--ink)]">
             Prêt à simplifier votre cabinet&nbsp;?
           </h2>
-          <p
-            style={{
-              marginTop: "var(--space-5)",
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-body-lg)",
-              lineHeight: "var(--lh-body-lg)",
-              color: "var(--ink-70)",
-            }}
-          >
+          <p className="mt-[var(--space-5)] font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink-70)]">
             Créez votre compte en 2 minutes. Aucune carte bancaire requise.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
               href="/register-clinic"
-              className="group inline-flex items-center gap-2"
-              style={{
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-small)",
-                fontWeight: 500,
-                height: 44,
-                paddingInline: 24,
-                borderRadius: "var(--radius-landing)",
-                backgroundColor: "var(--oltigo-green)",
-                color: "var(--bone)",
-                textDecoration: "none",
-                transition: `opacity var(--duration) var(--easing)`,
-              }}
+              className="group inline-flex items-center gap-2 font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium h-11 px-6 rounded-[var(--radius-landing)] bg-[var(--oltigo-green)] text-[var(--bone)] no-underline transition-opacity duration-[var(--duration)] ease-[var(--easing)]"
             >
               Ouvrir un compte
-              <ArrowRight
-                style={{
-                  width: 16,
-                  height: 16,
-                  transition: `transform var(--duration) var(--easing)`,
-                }}
-                className="group-hover:translate-x-0.5"
-              />
+              <ArrowRight className="size-4 transition-transform duration-[var(--duration)] ease-[var(--easing)] group-hover:translate-x-0.5" />
             </Link>
             <a
               href="#contact"
-              style={{
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-small)",
-                fontWeight: 500,
-                color: "var(--oltigo-green)",
-                textDecoration: "none",
-              }}
-              className="hover:underline"
+              className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--oltigo-green)] no-underline hover:underline"
             >
               Parler aux ventes →
             </a>

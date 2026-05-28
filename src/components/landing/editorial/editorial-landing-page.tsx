@@ -60,18 +60,12 @@ export function EditorialLandingPage() {
     <div
       dir={rtl ? "rtl" : "ltr"}
       data-theme={theme}
-      style={{
-        backgroundColor: "var(--bone)",
-        color: "var(--ink)",
-        fontFamily: "var(--font-sans-landing)",
-        minHeight: "100vh",
-      }}
+      className="bg-[var(--bone)] text-[var(--ink)] font-[var(--font-sans-landing)] min-h-screen"
     >
       {/* Skip to content */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium"
-        style={{ backgroundColor: "var(--oltigo-green)", color: "var(--bone)" }}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium bg-[var(--oltigo-green)] text-[var(--bone)]"
       >
         {rtl ? "الانتقال إلى المحتوى الرئيسي" : "Aller au contenu principal"}
       </a>

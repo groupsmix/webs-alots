@@ -9,7 +9,6 @@ import {
   Menu,
   Bell,
   ChevronDown,
-  Shield,
   Settings,
   User,
   Megaphone,
@@ -22,6 +21,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { CommandPalette, type CommandPaletteItem } from "@/components/command-palette";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { LocaleSwitcher } from "@/components/locale-switcher";
@@ -243,9 +243,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
         {/* Desktop Sidebar */}
         <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
           <div className="flex items-center gap-2 mb-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Shield className="h-4 w-4" />
-            </div>
+            <OltigoMonogram size="sm" />
             <div>
               <h2 className="text-sm font-semibold">Master Control</h2>
               <p className="text-[10px] text-muted-foreground">Super Admin Panel</p>
@@ -368,7 +366,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           <SheetContent side="left" onClose={() => setMobileOpen(false)}>
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <OltigoMonogram size="sm" />
                 Master Control
               </SheetTitle>
             </SheetHeader>

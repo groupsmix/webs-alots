@@ -226,7 +226,7 @@ export function DailyReport() {
       </div>
 
       <div ref={reportRef}>
-        <div className="print-header" style={{ display: "none" }}>
+        <div className="print-header hidden print:block">
           <h1>Daily Patient Report</h1>
           <p className="date">
             {new Date().toLocaleDateString("en-US", {
