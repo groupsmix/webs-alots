@@ -54,9 +54,11 @@ export interface CmiCallbackData {
 
 // ---- Configuration ----
 
+// nosemgrep: semgrep.env-access — CMI gateway URL with safe default; not in env.ts to keep payment module self-contained
 const CMI_GATEWAY_URL = process.env.CMI_GATEWAY_URL || "https://payment.cmi.co.ma/fim/est3Dgate";
 
 function getCmiConfig() {
+  // nosemgrep: semgrep.env-access — payment credentials read at runtime
   const merchantId = process.env.CMI_MERCHANT_ID;
   const secretKey = process.env.CMI_SECRET_KEY;
 

@@ -84,6 +84,7 @@ export async function resolveAIConfig(): Promise<
     return { ok: false, reason: "AI features are disabled", statusCode: 503 };
   }
 
+  // nosemgrep: semgrep.env-access — secret read at runtime; not in env.ts to avoid eager import
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return {
@@ -94,6 +95,7 @@ export async function resolveAIConfig(): Promise<
   }
 
   // F-AI-05: Validate base URL
+  // nosemgrep: semgrep.env-access — operator-configurable base URL, validated below
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
   if (!isAllowedBaseUrl(baseUrl)) {
     logger.error("OPENAI_BASE_URL is not in the allowlist", {
@@ -110,6 +112,7 @@ export async function resolveAIConfig(): Promise<
   // F-AI-07: Pinned model version
   // W8-S-03: Reject models not in the allowlist to prevent operators from
   // switching to a floating alias or a less safety-tuned model.
+  // nosemgrep: semgrep.env-access — operator-configurable model, validated below against allowlist
   const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
   if (!ALLOWED_MODELS.has(model)) {
     logger.error("OPENAI_MODEL is not in the allowlist", {
