@@ -99,6 +99,14 @@ export default function CustomFieldsAdminPage() {
         url += `&entity_type=${encodeURIComponent(selectedEntity)}`;
       }
       const res = await fetch(url);
+      if (!res.ok) {
+        logger.warn("Failed to load custom field definitions", {
+          context: "custom-fields",
+          status: res.status,
+        });
+        setDefinitions([]);
+        return;
+      }
       const json = await res.json();
       const data = json.data ?? json;
       setDefinitions(data.definitions ?? []);
@@ -121,7 +129,12 @@ export default function CustomFieldsAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce champ ?")) return;
     try {
-      await fetch(`/api/custom-fields?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/custom-fields?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.error ?? "Échec de la suppression du champ");
+        return;
+      }
       loadDefinitions();
     } catch (err) {
       logger.warn("Failed to delete custom field", { context: "custom-fields", error: err });
