@@ -1,8 +1,10 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import i18nextPlugin from "eslint-plugin-i18next";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
+import storybook from "eslint-plugin-storybook";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -205,6 +207,13 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    files: ["src/**/*.stories.{ts,tsx}"],
+    rules: {
+      "i18next/no-literal-string": "off",
+    },
+  },
+  ...storybook.configs["flat/recommended"],
 ]);
 
 export default eslintConfig;

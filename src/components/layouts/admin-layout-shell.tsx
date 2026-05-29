@@ -258,7 +258,11 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
           {children}
         </main>
         <OnboardingTourOverlay />
-        <SessionTimeoutWarning onLogout={() => signOut()} />
+        <SessionTimeoutWarning
+          warningAfterMinutes={13}
+          logoutAfterMinutes={2}
+          onLogout={() => signOut()}
+        />
 
         {/* Mobile bottom tab bar */}
         <MobileTabBar tabs={adminMobileTabs} onMoreClick={() => setMobileOpen(true)} />
