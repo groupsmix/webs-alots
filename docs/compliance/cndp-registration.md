@@ -48,6 +48,18 @@ Once the CNDP registration number is received:
 >
 > **Expiry:** _N/A (no expiry for autorisations, but subject to periodic review)_
 
+## Launch-Blocking Checklist (A70-1 / A71-1)
+
+> **IMPORTANT:** Moroccan Law 09-08 requires CNDP registration **before**
+> processing personal data in production. Do NOT go live until items 1–3
+> are completed.
+
+- [ ] **CNDP autorisation préalable** — Submit dossier and obtain registration number
+- [ ] **Cross-border transfer authorization** — Obtain CNDP authorization for Morocco → EU/US data transfers (PHI stored in AWS eu-west-1, processed by US sub-processors)
+- [ ] **Update this file** — Record registration number and date above
+- [ ] **Display registration number** — Add to footer and privacy policy (`src/app/(public)/privacy/page.tsx`)
+- [ ] **Privacy policy processor sync (A70-2)** — Verify the public privacy policy lists **all** sub-processors in `data-flow-map.md`: Supabase, Cloudflare, Stripe, CMI, Meta WhatsApp, Twilio, Resend, OpenAI, Sentry, Plausible
+
 ## Related Documents
 
 - `docs/compliance/cndp.md` — CNDP compliance framework

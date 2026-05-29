@@ -191,8 +191,9 @@ export function CookieConsent() {
             </a>
             .
           </p>
+          {/* A69-3: Decline has equal visual weight as Accept All (EDPB 03/2022) */}
           <div className="flex flex-wrap gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={declineAll}>
+            <Button size="sm" onClick={declineAll}>
               {t(locale, "cookie.decline")}
             </Button>
             <Button

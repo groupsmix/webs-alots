@@ -61,15 +61,30 @@ For a 99.9% SLO over 30 days:
 - Allowed downtime: 43.2 minutes (0.1%)
 - Error budget: 43.2 minutes of downtime
 
-### 3.2 Burn Rate Alerts
+### 3.2 Burn Rate Alerts (Multi-Window Multi-Burn-Rate)
+
+> **A85-2:** Updated from single-window alerts to a **multi-window multi-burn-rate** model
+> per Google SRE Workbook Chapter 5. Fast-burn alerts catch sudden outages within minutes;
+> slow-burn alerts detect gradual degradation over hours/days.
 
 When error budget consumption exceeds thresholds, trigger alerts:
 
-| Burn Rate                 | Alert Level | Action                                   |
-| ------------------------- | ----------- | ---------------------------------------- |
-| > 50% in 7 days           | Warning     | Monitor closely, investigate root causes |
-| > 75% in 3 days           | Critical    | Active incident, all hands on deck       |
-| > 100% (budget exhausted) | Emergency   | Page on-call immediately                 |
+#### Fast-burn (page immediately)
+
+| Burn Rate | Long Window | Short Window (confirmation) | Alert Level | Action                         |
+| --------- | ----------- | --------------------------- | ----------- | ------------------------------ |
+| **14.4×** | **1 hour**  | **5 minutes**               | Page        | Immediate incident — all hands |
+| **6×**    | **6 hours** | **30 minutes**              | Page        | Active incident — investigate  |
+
+_A 14.4× burn exhausts a 30-day 0.1% budget in ~50 hours; the 1h + 5m windows detect it within minutes. The short window prevents stale pages from resolved spikes._
+
+#### Slow-burn (ticket / warning)
+
+| Burn Rate                 | Window  | Alert Level | Action                                   |
+| ------------------------- | ------- | ----------- | ---------------------------------------- |
+| > 50% in 7 days (≈ 2.1×)  | 7 days  | Warning     | Monitor closely, investigate root causes |
+| > 75% in 3 days (≈ 7.5×)  | 3 days  | Critical    | Active incident, all hands on deck       |
+| > 100% (budget exhausted) | 30 days | Emergency   | Page on-call immediately                 |
 
 ### 3.3 Error Budget Spending Policy
 
@@ -204,7 +219,24 @@ All monetary values in the platform are stored as **integer centimes** (MAD subu
 
 ---
 
-## 9. Related Documents
+## 9. Graceful Shutdown & Long-Running Jobs (A83-1)
+
+Oltigo Health runs on **Cloudflare Workers** which impose a hard execution time
+limit (30 s for standard Workers, 15 min for Cron Triggers via Scheduled Events).
+
+| Concern                      | Platform behavior                                           | Mitigation                                                                      |
+| ---------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Graceful shutdown**        | Workers are stateless; no persistent process to shut down   | N/A — each request is isolated; no shutdown hook needed                         |
+| **Long-running jobs**        | 30 s wall time per request; Cron Triggers up to 15 min      | Keep per-request work < 25 s; paginate heavy cron jobs with cursor/continuation |
+| **Queue draining**           | Notification queue uses Supabase rows, not in-memory queues | No drain needed; pending items survive Worker restarts                          |
+| **Concurrent request limit** | Workers auto-scale; no fixed concurrency cap                | Rate limiting + circuit breakers (A74-2) prevent cascade overload               |
+
+> **Assumption:** The platform delegates long-running work (>30 s) to Supabase
+> Edge Functions or GitHub Actions (backup cron). If a migration to a
+> container-based platform occurs, add `SIGTERM` handlers for queue drain
+> and connection cleanup with a configurable shutdown grace period (default 10 s).
+
+## 10. Related Documents
 
 - [Incident Response Runbook](./incident-response.md)
 - [On-Call Rotation](./oncall.md)

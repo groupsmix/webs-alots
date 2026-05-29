@@ -41,3 +41,13 @@ Oltigo Health **never** receives, stores, processes, or transmits cardholder dat
 - [ ] Verify Stripe and CMI PCI AOC certificates are current
 - [ ] Confirm no new flows introduce direct card handling
 - [ ] File updated SAQ-A with acquiring bank if required
+
+## 5. ASV Scan & Penetration Test Evidence (A65-2)
+
+| Activity           | Cadence   | Last completed | Next due | Evidence location           |
+| ------------------ | --------- | -------------- | -------- | --------------------------- |
+| ASV external scan  | Quarterly | _Pending_      | _TBD_    | `docs/compliance/asv/`      |
+| Penetration test   | Annual    | _Pending_      | _TBD_    | `docs/compliance/pentest/`  |
+| Internal vuln scan | Quarterly | _Pending_      | _TBD_    | `docs/compliance/vulnscan/` |
+
+> Track scan reports and remediation evidence in the directories listed above.

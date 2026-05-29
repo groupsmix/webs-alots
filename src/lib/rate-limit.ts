@@ -239,6 +239,10 @@ function recordSuccess(state: CircuitBreakerState): void {
 
 /**
  * F-06: Report rate-limit backend errors to Sentry at error severity.
+ *
+ * A81-2: Tags use only bounded-cardinality values (`operation`). Never
+ * pass raw IPs, hostnames, or rate-limit keys as Sentry tags — those
+ * are unbounded and will explode metric/trace cardinality.
  */
 async function reportRateLimitBackendError(operation: string, error: unknown): Promise<void> {
   try {

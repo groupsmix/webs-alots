@@ -26,6 +26,29 @@
 - Filing reference: _To be completed_
 - Receipt stored at: `docs/compliance/cndp.md` (once filed)
 
+## Cross-Border Transfer Basis (A71-1)
+
+### Morocco → EU (Ireland / Cloudflare edge)
+
+| Transfer leg        | Provider              | Basis                                                                           |
+| ------------------- | --------------------- | ------------------------------------------------------------------------------- |
+| PHI → AWS eu-west-1 | Supabase              | CNDP autorisation préalable (pending — see `cndp-registration.md`) + signed DPA |
+| PHI docs → edge     | Cloudflare R2/Workers | CNDP autorisation préalable (pending) + signed DPA, AES-256-GCM at rest         |
+
+### Morocco → US
+
+| Transfer leg                      | Provider        | Basis                                                   |
+| --------------------------------- | --------------- | ------------------------------------------------------- |
+| Payment metadata                  | Stripe          | SCCs + signed DPA, PCI DSS Level 1                      |
+| Patient phone + message templates | Meta (WhatsApp) | Explicit patient consent + SCCs + signed DPA            |
+| Phone + OTP                       | Twilio          | Explicit patient consent + SCCs + signed DPA            |
+| Email + notification content      | Resend          | SCCs + signed DPA                                       |
+| De-identified clinical context    | OpenAI          | Explicit consent + pseudonymisation + SCCs + signed DPA |
+| Error traces (PHI stripped)       | Sentry          | Legitimate interest + SCCs + `beforeSend` PHI filter    |
+
+> **A71-1 action:** CNDP cross-border transfer authorization must be obtained before
+> production launch for the Morocco → EU/US legs. See `cndp-registration.md` launch checklist.
+
 ## Safeguards for US Transfers
 
 For providers based in the US (Stripe, Meta, Twilio, Resend, OpenAI, Sentry):

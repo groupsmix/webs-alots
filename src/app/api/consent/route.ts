@@ -9,8 +9,12 @@
  * AUDIT F-02: Replaced inline createServerClient() with createClient() /
  * createTenantClient() to ensure the tenant context header (x-clinic-id)
  * is set on all database operations.
+ *
+ * X-1: Replaced `as unknown as ConsentInsertClient` with properly-typed
+ * SupabaseClient<Database> from database-extended.ts.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
@@ -18,7 +22,10 @@ import { logger } from "@/lib/logger";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
+import type { Database } from "@/lib/types/database-extended";
 import { consentSchema } from "@/lib/validations";
+
+type ExtendedClient = SupabaseClient<Database>;
 
 // S-22: Rate limit keyed on IP + clinic subdomain. Fail-closed if backend unavailable.
 const consentLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 60, failClosed: true });
@@ -42,7 +49,7 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
   if (!tenant?.clinicId) {
     return apiError("Tenant context required for consent logging", 400, "TENANT_REQUIRED");
   }
-  const supabase = await createTenantClient(tenant.clinicId);
+  const supabase = (await createTenantClient(tenant.clinicId)) as ExtendedClient;
 
   // User may or may not be authenticated (cookie consent can happen pre-login)
   const {
@@ -61,20 +68,8 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
 
   const ip = extractClientIp(request);
 
-  // consent_logs is not yet in the generated Database types — cast through
-  // unknown until types are regenerated (pre-existing issue, not introduced
-  // by AUDIT F-02).
-  type ConsentInsertClient = {
-    from(t: string): {
-      insert(row: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
-    };
-  };
-  const consentClient = supabase as unknown as ConsentInsertClient;
-  // Include clinic_id when tenant context is available so the log row is
-  // scoped for RLS and downstream GDPR queries. Pre-login consent on the
-  // root domain has no tenant — leave the column null in that case.
-  const { error } = await consentClient.from("consent_logs").insert({
-    clinic_id: tenant?.clinicId ?? null,
+  const { error } = await supabase.from("consent_logs").insert({
+    clinic_id: tenant.clinicId,
     user_id: userId,
     consent_type: consentType as string,
     granted,
