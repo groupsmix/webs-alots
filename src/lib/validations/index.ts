@@ -95,6 +95,26 @@ export type { AIAgentType } from "./ai-team";
 
 export { safeParse } from "./helpers";
 
+export {
+  faqCreateSchema,
+  faqUpdateSchema,
+  faqDeleteSchema,
+  faqSearchSchema,
+  ticketCreateSchema,
+  ticketUpdateSchema,
+  ticketRatingSchema,
+  ticketMessageSchema,
+  whatsappInboundSchema,
+  supportDashboardQuerySchema,
+  detectLanguageSchema,
+  SUPPORTED_LANGUAGES,
+  FAQ_CATEGORIES,
+  TICKET_CHANNELS,
+  TICKET_STATUSES,
+  TICKET_PRIORITIES,
+} from "./support";
+export type { SupportedLanguage } from "./support";
+
 export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
 export type { PasswordStrength } from "./password-policy";
 
