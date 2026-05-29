@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, ArrowLeft, Lock, Key } from "lucide-react";
+import { Phone, ArrowLeft, Lock, Key, Mail } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { OltigoWordmark } from "@/components/brand/oltigo-mark";
@@ -16,7 +16,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
+import {
+  signInWithOTP,
+  verifyOTP,
+  signInWithPassword,
+  signInWithEmailOTP,
+  verifyEmailOTP,
+} from "@/lib/auth";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
@@ -24,8 +30,11 @@ const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true"
 
 export default function LoginPage() {
   const [locale] = useLocale();
-  const [method, setMethod] = useState<"email" | "phone">("email");
-  const [step, setStep] = useState<"credentials" | "otp" | "mfa" | "backup">("credentials");
+  const [method, setMethod] = useState<"email" | "phone" | "email-otp">("email");
+  const [step, setStep] = useState<"credentials" | "otp" | "email-otp-verify" | "mfa" | "backup">(
+    "credentials",
+  );
+  const [emailOtpCode, setEmailOtpCode] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -210,6 +219,55 @@ export default function LoginPage() {
     }
   }
 
+  async function handleSendEmailOTP(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    setError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setFieldErrors({ email: t(locale, "auth.invalidEmail") });
+      return;
+    }
+    setFieldErrors({});
+    setLoading(true);
+
+    try {
+      const result = await signInWithEmailOTP(trimmedEmail);
+
+      if (result.error) {
+        setError(t(locale, result.error as TranslationKey));
+        setLoading(false);
+        return;
+      }
+
+      setStep("email-otp-verify");
+      startOtpCooldown();
+      setLoading(false);
+    } catch (err) {
+      logger.warn("Email OTP send failed", { context: "login", error: err });
+      setError(t(locale, "error.unexpected"));
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyEmailOTP(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const result = await verifyEmailOTP(email.trim(), emailOtpCode);
+      if (result.error) {
+        setError(t(locale, result.error as TranslationKey));
+        setLoading(false);
+      }
+    } catch (err) {
+      logger.warn("Email OTP verification failed", { context: "login", error: err });
+      setError(t(locale, "error.unexpected"));
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="mb-8 text-center">
@@ -225,22 +283,28 @@ export default function LoginPage() {
           <CardTitle className="text-xl">
             {step === "otp"
               ? t(locale, "auth.verifyNumber")
-              : step === "mfa"
-                ? t(locale, "auth.mfaTitle" as TranslationKey)
-                : step === "backup"
-                  ? t(locale, "auth.mfaBackupTitle" as TranslationKey)
-                  : t(locale, "auth.login")}
+              : step === "email-otp-verify"
+                ? t(locale, "auth.verifyEmail" as TranslationKey)
+                : step === "mfa"
+                  ? t(locale, "auth.mfaTitle" as TranslationKey)
+                  : step === "backup"
+                    ? t(locale, "auth.mfaBackupTitle" as TranslationKey)
+                    : t(locale, "auth.login")}
           </CardTitle>
           <CardDescription>
             {step === "otp"
               ? `${t(locale, "auth.otpSent")} ${phone}`
-              : step === "mfa"
-                ? t(locale, "auth.mfaDesc" as TranslationKey)
-                : step === "backup"
-                  ? t(locale, "auth.mfaBackupDesc" as TranslationKey)
-                  : method === "email"
-                    ? t(locale, "auth.emailLoginDesc")
-                    : t(locale, "auth.phoneLoginDesc")}
+              : step === "email-otp-verify"
+                ? `${t(locale, "auth.emailOtpSent" as TranslationKey)} ${email.trim()}`
+                : step === "mfa"
+                  ? t(locale, "auth.mfaDesc" as TranslationKey)
+                  : step === "backup"
+                    ? t(locale, "auth.mfaBackupDesc" as TranslationKey)
+                    : method === "email-otp"
+                      ? t(locale, "auth.emailOtpDesc" as TranslationKey)
+                      : method === "email"
+                        ? t(locale, "auth.emailLoginDesc")
+                        : t(locale, "auth.phoneLoginDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -382,6 +446,107 @@ export default function LoginPage() {
                 {t(locale, "auth.useAnotherNumber")}
               </Button>
             </form>
+          ) : step === "email-otp-verify" ? (
+            <form className="space-y-4" onSubmit={handleVerifyEmailOTP}>
+              <div className="space-y-2">
+                <Label htmlFor="email-otp-code">{t(locale, "auth.otpLabel")}</Label>
+                <Input
+                  id="email-otp-code"
+                  placeholder="00000000"
+                  maxLength={8}
+                  className="text-center text-2xl tracking-widest font-mono"
+                  value={emailOtpCode}
+                  onChange={(e) => setEmailOtpCode(e.target.value.replace(/\D/g, ""))}
+                  required
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground text-center">
+                  {t(locale, "auth.otpNotReceived")}{" "}
+                  <button
+                    type="button"
+                    className={`text-primary hover:underline ${otpCooldown > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                    onClick={() => handleSendEmailOTP()}
+                    disabled={otpCooldown > 0}
+                  >
+                    {otpCooldown > 0
+                      ? `${t(locale, "auth.resendCountdown")} (${otpCooldown}s)`
+                      : t(locale, "auth.resend")}
+                  </button>
+                </p>
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || emailOtpCode.length < 6}
+              >
+                {loading ? t(locale, "auth.verifying") : t(locale, "auth.verifyAndLogin")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setStep("credentials");
+                  setEmailOtpCode("");
+                  setError(null);
+                }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                {t(locale, "auth.useAnotherEmail" as TranslationKey)}
+              </Button>
+            </form>
+          ) : method === "email-otp" ? (
+            <form className="space-y-4" onSubmit={handleSendEmailOTP}>
+              <div className="space-y-2">
+                <Label htmlFor="email-otp">{t(locale, "auth.email")}</Label>
+                <Input
+                  id="email-otp"
+                  type="email"
+                  placeholder={t(locale, "auth.emailPlaceholder")}
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email)
+                      setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
+                  required
+                  className={`text-base ${fieldErrors.email ? "border-destructive" : ""}`}
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? "email-otp-error" : undefined}
+                />
+                {fieldErrors.email && (
+                  <p id="email-otp-error" className="text-xs text-destructive">
+                    {fieldErrors.email}
+                  </p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading
+                  ? t(locale, "auth.sendingEmailCode" as TranslationKey)
+                  : t(locale, "auth.sendEmailCode" as TranslationKey)}
+              </Button>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMethod("email");
+                  setError(null);
+                  setFieldErrors({});
+                }}
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                {t(locale, "auth.signInWithEmail")}
+              </Button>
+            </form>
           ) : method === "email" ? (
             <form className="space-y-4" onSubmit={handleEmailLogin}>
               <div className="space-y-2">
@@ -438,31 +603,40 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? t(locale, "auth.signingIn") : t(locale, "auth.signIn")}
               </Button>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMethod("email-otp");
+                  setError(null);
+                  setFieldErrors({});
+                }}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                {t(locale, "auth.signInWithEmailCode" as TranslationKey)}
+              </Button>
               {PHONE_AUTH_ENABLED && (
-                <>
-                  <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        {t(locale, "auth.or")}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      setMethod("phone");
-                      setError(null);
-                    }}
-                  >
-                    <Phone className="h-4 w-4 mr-2" />
-                    {t(locale, "auth.signInWithPhone")}
-                  </Button>
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setMethod("phone");
+                    setError(null);
+                  }}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  {t(locale, "auth.signInWithPhone")}
+                </Button>
               )}
             </form>
           ) : PHONE_AUTH_ENABLED ? (

@@ -232,6 +232,106 @@ export async function verifyOTP(phone: string, token: string): Promise<{ error: 
   redirect("/patient/dashboard");
 }
 
+// ============================================================
+// Email OTP (Passwordless)
+// ============================================================
+
+/**
+ * Send a one-time code to the user's email address via Supabase Auth.
+ * The user can sign in without a password by entering the code.
+ *
+ * Rate-limited per IP (3 req/60s) and per email (3 req/60s) to prevent
+ * email bombing.
+ */
+export async function signInWithEmailOTP(email: string): Promise<{ error: string | null }> {
+  const clientIp = await getClientIp();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return { error: "auth.invalidEmail" };
+  }
+
+  // Per-IP rate limit: 3 email OTP sends per 60 seconds
+  const ipAllowed = await otpSendLimiter.check(`otp:email:ip:${clientIp}`);
+  if (!ipAllowed) {
+    return { error: "auth.rateLimitOtp" };
+  }
+
+  // Per-email rate limit: 3 OTP sends per 60 seconds
+  const emailAllowed = await otpSendLimiter.check(`otp:email:${normalizedEmail}`);
+  if (!emailAllowed) {
+    return { error: "auth.rateLimitOtp" };
+  }
+
+  // Block seed users in production
+  if (await isSeedUserBlocked(normalizedEmail)) {
+    return { error: "auth.invalidCredentials" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: normalizedEmail,
+  });
+
+  if (error) {
+    // Do not reveal whether the email exists — generic error
+    logger.warn("Email OTP send failed", { context: "auth/emailOtp", error });
+    return { error: "auth.emailOtpSendError" };
+  }
+
+  return { error: null };
+}
+
+/**
+ * Verify the email OTP code entered by the user.
+ * On success, redirects to the appropriate dashboard based on user role.
+ */
+export async function verifyEmailOTP(
+  email: string,
+  token: string,
+): Promise<{ error: string | null }> {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail || !token || token.length < 6 || token.length > 8) {
+    return { error: "auth.invalidOtp" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.verifyOtp({
+    email: normalizedEmail,
+    token,
+    type: "email",
+  });
+
+  if (error) {
+    return { error: "auth.invalidOtp" };
+  }
+
+  // Fetch user profile to determine redirect
+  const profile = await getUserProfile();
+
+  // Log successful email OTP login
+  logAuthEvent({
+    supabase,
+    action: "login.email_otp",
+    actor: normalizedEmail,
+    clinicId: profile?.clinic_id ?? undefined,
+    description: "Successful email OTP login",
+    success: true,
+  }).catch((err) => {
+    logger.warn("Failed to log auth event", { context: "auth/emailOtp", error: err });
+  });
+
+  if (profile) {
+    redirect(ROLE_DASHBOARD_MAP[profile.role]);
+  }
+
+  // Fallback: redirect to patient dashboard
+  redirect("/patient/dashboard");
+}
+
 /**
  * Register a new patient account.
  * Sends OTP to the phone number. The auth trigger in the DB
