@@ -58,28 +58,18 @@ id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
 # ── Durable Objects ───────────────────────────────────────────────────
-# H-03: Strongly consistent rate limiting across all edge locations.
-# Each rate-limited key (IP, email) maps to a single DO instance,
-# providing atomic counter increments with no eventual-consistency races.
-#
-# To activate:
-#   1. Deploy this config: wrangler deploy
-#   2. Set RATE_LIMIT_BACKEND=do in [vars] below
-#   3. The factory in rate-limit.ts auto-detects the DO binding
-#
-# To keep using KV (current): leave RATE_LIMIT_BACKEND=kv (no change needed)
-#
-# NOTE: Durable Objects require Workers Paid plan. The DO class is exported
-# from src/lib/rate-limit-do.ts. After deploying, Cloudflare automatically
-# provisions DO instances on demand.
-[durable_objects]
-bindings = [
-  { name = "RATE_LIMITER_DO", class_name = "RateLimiterDO" }
-]
-
-[[migrations]]
-tag = "v1"
-new_classes = ["RateLimiterDO"]
+# H-03 (DEFERRED): Strongly consistent rate limiting via a RateLimiterDO
+# Durable Object was scaffolded in src/lib/rate-limit-do.ts, but the
+# @opennextjs/cloudflare build does NOT re-export custom Durable Object
+# classes from the generated entrypoint (.open-next/worker.js). Declaring the
+# binding/migration here therefore made every `wrangler deploy` fail with:
+#   "Your Worker depends on the following Durable Objects, which are not
+#    exported in your entrypoint file: RateLimiterDO."
+# blocking ALL production deploys. The DO is unused (RATE_LIMIT_BACKEND is
+# kv/memory, never "do") and the limiter factory in rate-limit.ts already
+# falls back gracefully when the binding is absent, so the binding and its
+# migration are removed until the DO is properly wired through OpenNext
+# (e.g. a custom worker entry that re-exports RateLimiterDO).
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
