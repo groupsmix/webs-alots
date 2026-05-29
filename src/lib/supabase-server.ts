@@ -118,10 +118,13 @@ export async function createTenantClient(clinicId: string) {
     if (isPermissionDenied) {
       // Expected when using anon/authenticated key (migration 00057).
       // Header-based isolation (x-clinic-id) is still active.
-      logger.debug("setTenantContext RPC unavailable (restricted to service_role) — using header-only isolation", {
-        context: "supabase-server",
-        clinicId,
-      });
+      logger.debug(
+        "setTenantContext RPC unavailable (restricted to service_role) — using header-only isolation",
+        {
+          context: "supabase-server",
+          clinicId,
+        },
+      );
     } else {
       logger.error("setTenantContext RPC failed", {
         context: "supabase-server",
