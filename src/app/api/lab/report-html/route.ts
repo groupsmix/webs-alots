@@ -27,8 +27,7 @@ import { getDirection, isRTL, t, type Locale } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { buildUploadKey } from "@/lib/r2";
 import { encryptAndUpload } from "@/lib/r2-encrypted";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
+import { formatDisplayDate } from "@/lib/utils";
 import { labReportSchema } from "@/lib/validations";
 
 const SUPPORTED_LOCALES: readonly Locale[] = ["fr", "ar", "en"] as const;
