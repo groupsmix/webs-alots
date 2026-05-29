@@ -148,3 +148,12 @@ export {
   financialSummaryQuerySchema,
   revenueInsightsQuerySchema,
 } from "./billing";
+
+export {
+  whatsappConsentGrantSchema,
+  whatsappConsentRevokeSchema,
+  whatsappConsentExportSchema,
+  whatsappConsentDeleteSchema,
+  whatsappVoiceWebhookSchema,
+  wabaPhoneNumberIdSchema,
+} from "./whatsapp";
