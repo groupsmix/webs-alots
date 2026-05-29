@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface MarkUnavailableDialogProps {
   doctorId: string;
@@ -123,7 +124,7 @@ export function MarkUnavailableDialog({
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
+                      min={getLocalDateStr()}
                     />
                   </div>
                   <div className="space-y-2">
@@ -132,7 +133,7 @@ export function MarkUnavailableDialog({
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate || new Date().toISOString().split("T")[0]}
+                      min={startDate || getLocalDateStr()}
                     />
                   </div>
                 </div>

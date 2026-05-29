@@ -27,6 +27,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { getLocalDateStr } from "@/lib/utils";
 
 const METHODS = [
   { value: "goldmann", label: "Goldmann Applanation" },
@@ -51,7 +52,7 @@ export default function IopTrackingPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setFormRaw] = useState({
     patientId: "",
-    measuredAt: new Date().toISOString().split("T")[0],
+    measuredAt: getLocalDateStr(),
     odPressure: "",
     osPressure: "",
     method: "goldmann",
@@ -128,7 +129,7 @@ export default function IopTrackingPage() {
     clearIopDraft();
     setFormRaw({
       patientId: "",
-      measuredAt: new Date().toISOString().split("T")[0],
+      measuredAt: getLocalDateStr(),
       odPressure: "",
       osPressure: "",
       method: "goldmann",

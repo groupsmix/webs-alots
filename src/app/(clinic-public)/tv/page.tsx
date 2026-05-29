@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { TVQueueDisplay } from "@/components/morocco/tv-queue-display";
 import { createClient } from "@/lib/supabase-client";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface QueuePatient {
   id: string;
@@ -42,7 +43,7 @@ function mapStatus(status: string): "waiting" | "called" | "in-consultation" | n
  * Uses appointments with statuses that indicate the patient is present.
  */
 async function fetchQueue(supabase: ReturnType<typeof createClient>): Promise<QueuePatient[]> {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
 
   const { data } = await supabase
     .from("appointments")
@@ -156,7 +157,7 @@ export default function TVPage() {
   const handleRealtimeSubscribe = useCallback(
     (callback: (patients: QueuePatient[]) => void) => {
       const supabase = createClient();
-      const today = new Date().toISOString().split("T")[0];
+      const today = getLocalDateStr();
 
       const channel = supabase
         .channel("tv-queue-realtime")

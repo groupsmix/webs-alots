@@ -32,6 +32,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
 import { fetchBillingRecords, type BillingRecord } from "@/lib/super-admin-actions";
+import { getLocalDateStr } from "@/lib/utils";
 
 type StatusFilter = "all" | "paid" | "pending" | "overdue" | "cancelled";
 
@@ -96,7 +97,7 @@ export default function BillingPage() {
               ...r,
               status: "paid" as const,
               amountPaid: r.amountDue,
-              paidDate: new Date().toISOString().split("T")[0],
+              paidDate: getLocalDateStr(),
             }
           : r,
       ),

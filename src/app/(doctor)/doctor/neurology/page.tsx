@@ -21,6 +21,7 @@ import {
   type EEGRecordView,
   type NeuroExamView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const NEURO_EXAM_SECTIONS = [
   {
@@ -162,7 +163,7 @@ export default function NeurologyPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          recordDate: new Date().toISOString().split("T")[0],
+          recordDate: getLocalDateStr(),
           fileUrl: "",
           durationMinutes: eegForm.durationMinutes ? parseInt(eegForm.durationMinutes) : null,
           findings: eegForm.findings,
@@ -207,7 +208,7 @@ export default function NeurologyPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          examDate: new Date().toISOString().split("T")[0],
+          examDate: getLocalDateStr(),
           mentalStatus: examForm.sections["mentalStatus"] ?? {},
           cranialNerves: examForm.sections["cranialNerves"] ?? {},
           motorFunction: examForm.sections["motorFunction"] ?? {},

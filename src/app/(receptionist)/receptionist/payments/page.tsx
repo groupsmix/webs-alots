@@ -15,6 +15,7 @@ import {
   fetchInvoices,
   type InvoiceView,
 } from "@/lib/data/client";
+import { formatCurrency } from "@/lib/utils";
 
 interface PaymentEntry {
   id: string;
@@ -128,13 +129,13 @@ export default function PaymentsPage() {
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-6">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{totalCollected} MAD</p>
+            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalCollected)}</p>
             <p className="text-xs text-muted-foreground">Total Collected</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-orange-600">{totalPending} MAD</p>
+            <p className="text-2xl font-bold text-orange-600">{formatCurrency(totalPending)}</p>
             <p className="text-xs text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
@@ -186,7 +187,7 @@ export default function PaymentsPage() {
                     <p className="text-xs text-muted-foreground">{entry.serviceName}</p>
                   </div>
                   <div className="text-right mr-2">
-                    <p className="text-sm font-bold">{entry.amount} MAD</p>
+                    <p className="text-sm font-bold">{formatCurrency(entry.amount)}</p>
                     {entry.status === "paid" && (
                       <p className="text-xs text-muted-foreground capitalize">{entry.method}</p>
                     )}

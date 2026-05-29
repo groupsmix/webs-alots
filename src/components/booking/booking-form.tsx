@@ -24,7 +24,8 @@ import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "
 import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
-import { formatDisplayDate } from "@/lib/utils";
+import { formatCurrency, formatDisplayDate } from "@/lib/utils";
+import { phoneNumber } from "@/lib/validations/primitives";
 import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
 
@@ -45,14 +46,8 @@ const STEP_KEYS = [
   "booking.steps.confirmation",
 ] as const;
 
-/**
- * Validate Moroccan phone numbers.
- * Accepted formats: +212 6XXXXXXXX, +212 7XXXXXXXX, 06XXXXXXXX, 07XXXXXXXX
- * (with or without spaces/dashes).
- */
 function isValidMoroccanPhone(phone: string): boolean {
-  const digits = phone.replace(/[\s\-().]/g, "");
-  return /^(?:\+212|0)[67]\d{8}$/.test(digits);
+  return phoneNumber.safeParse(phone).success;
 }
 
 interface Doctor {
@@ -623,7 +618,7 @@ export function BookingForm() {
                         <p className="text-xs text-muted-foreground">{d.specialty}</p>
                       </div>
                       <Badge variant="outline" className="text-xs shrink-0">
-                        {d.consultationFee} MAD
+                        {formatCurrency(d.consultationFee)}
                       </Badge>
                     </div>
                   </button>

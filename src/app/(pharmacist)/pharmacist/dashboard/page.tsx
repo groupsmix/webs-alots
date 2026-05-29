@@ -39,7 +39,7 @@ import type {
   PurchaseOrderView,
   LoyaltyMemberView,
 } from "@/lib/data/client";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 // ── Date helpers ──
 
@@ -57,7 +57,7 @@ function startOfMonth(d: Date): Date {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return getLocalDateStr(d);
 }
 
 export default function PharmacistDashboardPage() {
@@ -677,7 +677,7 @@ export default function PharmacistDashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-sm">{sale.total} MAD</p>
+                    <p className="font-semibold text-sm">{formatCurrency(sale.total)}</p>
                     <Badge variant="outline" className="text-xs capitalize">
                       {sale.paymentMethod}
                     </Badge>

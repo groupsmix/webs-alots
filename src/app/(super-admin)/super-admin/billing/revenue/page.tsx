@@ -17,6 +17,7 @@ import {
   fetchRevenueStats as fetchRevenueStatsAction,
   type RevenueStats,
 } from "@/lib/super-admin-actions";
+import { formatCurrency } from "@/lib/utils";
 
 export default function RevenueDashboardPage() {
   const [stats, setStats] = useState<RevenueStats | null>(null);
@@ -125,7 +126,7 @@ export default function RevenueDashboardPage() {
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium">{plan.name}</h4>
                         <Badge variant="outline" className="text-[10px]">
-                          {plan.price === 0 ? "Gratuit" : `${plan.price} MAD`}
+                          {plan.price === 0 ? "Gratuit" : `${formatCurrency(plan.price)}`}
                         </Badge>
                       </div>
                       <p className="text-3xl font-bold">{count}</p>
@@ -133,7 +134,7 @@ export default function RevenueDashboardPage() {
                         <p className="text-xs text-muted-foreground">{percentage}% des cliniques</p>
                         {plan.price > 0 && (
                           <p className="text-xs font-medium text-green-600">
-                            {revenue.toLocaleString()} MAD/mois
+                            {formatCurrency(revenue)}/mois
                           </p>
                         )}
                       </div>
@@ -167,9 +168,7 @@ export default function RevenueDashboardPage() {
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
                       <span className="text-sm font-medium">{entry.month}</span>
-                      <span className="text-sm font-bold">
-                        {entry.revenue.toLocaleString()} MAD
-                      </span>
+                      <span className="text-sm font-bold">{formatCurrency(entry.revenue)}</span>
                     </div>
                   ))}
                 </div>
@@ -182,7 +181,7 @@ export default function RevenueDashboardPage() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     MRR estimé actuel :{" "}
-                    <span className="font-medium">{stats.mrr.toLocaleString()} MAD</span>
+                    <span className="font-medium">{formatCurrency(stats.mrr)}</span>
                   </p>
                 </div>
               )}

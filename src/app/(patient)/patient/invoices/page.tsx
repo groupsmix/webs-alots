@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchInvoices, type InvoiceView } from "@/lib/data/client";
+import { formatCurrency } from "@/lib/utils";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   paid: "success",
@@ -90,7 +91,7 @@ export default function PatientInvoicesPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Paid</p>
-              <p className="text-lg font-bold">{totalPaid} MAD</p>
+              <p className="text-lg font-bold">{formatCurrency(totalPaid)}</p>
             </div>
           </CardContent>
         </Card>
@@ -101,7 +102,7 @@ export default function PatientInvoicesPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Pending</p>
-              <p className="text-lg font-bold">{totalPending} MAD</p>
+              <p className="text-lg font-bold">{formatCurrency(totalPending)}</p>
             </div>
           </CardContent>
         </Card>

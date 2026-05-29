@@ -10,6 +10,7 @@ import { assertClinicId } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { logTenantContext } from "@/lib/tenant-context";
+import { getLocalDateStr } from "@/lib/utils";
 
 // ---- Types ----
 
@@ -220,8 +221,8 @@ export function calculateNextPeriod(
     end.setUTCDate(Math.min(dayOfMonth, lastDayOfTargetMonth));
   }
   return {
-    start: start.toISOString().split("T")[0],
-    end: end.toISOString().split("T")[0],
+    start: getLocalDateStr(start),
+    end: getLocalDateStr(end),
   };
 }
 
@@ -239,7 +240,7 @@ async function _checkPlanLimits(
 
   // Run all three independent count queries in parallel
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const [doctorResult, patientResult, appointmentResult] = await Promise.all([
     supabase
@@ -434,7 +435,7 @@ async function chargeViaStripe(
   // HIGH-02: Add idempotency key to prevent duplicate charges on retry.
   // The key is scoped to the customer + current date to ensure that a
   // failed cron retry on the same day does not create a second charge.
-  const idempotencyKey = `renewal-${customerId}-${new Date().toISOString().split("T")[0]}`;
+  const idempotencyKey = `renewal-${customerId}-${getLocalDateStr()}`;
 
   const response = await fetch("https://api.stripe.com/v1/payment_intents", {
     method: "POST",

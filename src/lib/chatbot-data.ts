@@ -6,6 +6,7 @@
 
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { createClient } from "@/lib/supabase-server";
+import { formatCurrency } from "@/lib/utils";
 
 /** Shape of the `clinics.config` JSONB column (subset used by chatbot). */
 interface ClinicConfigJson {
@@ -171,7 +172,7 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     services.length > 0
       ? services
           .map((s) => {
-            const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
+            const price = s.price != null ? `${formatCurrency(s.price)}` : "Prix sur demande";
             const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
             return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
           })
@@ -303,13 +304,15 @@ export function getBasicResponse(userMessage: string, ctx: ChatbotClinicContext)
 
     if (matchedService) {
       const price =
-        matchedService.price != null ? `${matchedService.price} MAD` : "Prix sur demande";
+        matchedService.price != null
+          ? `${formatCurrency(matchedService.price)}`
+          : "Prix sur demande";
       return `${matchedService.name} chez ${clinicName} : ${price} (durée : ${matchedService.duration_minutes} min).\nVoulez-vous prendre rendez-vous ?`;
     }
 
     const list = services
       .map((s) => {
-        const price = s.price != null ? `${s.price} MAD` : "Sur demande";
+        const price = s.price != null ? `${formatCurrency(s.price)}` : "Sur demande";
         return `• ${s.name} — ${price}`;
       })
       .join("\n");

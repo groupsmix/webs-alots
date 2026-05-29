@@ -10,8 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchDailySales } from "@/lib/data/client";
 import type { DailySaleView } from "@/lib/data/client";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function SalesPage() {
   const [locale] = useLocale();
@@ -20,11 +19,11 @@ export default function SalesPage() {
   const [allSales, setAllSales] = useState<DailySaleView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const today = new Date().toISOString().split("T")[0] ?? "";
+  const today = getLocalDateStr() ?? "";
   const yesterday = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split("T")[0] ?? "";
+    return getLocalDateStr(d) ?? "";
   })();
   const [dateFilter, setDateFilter] = useState(today);
 
@@ -197,12 +196,14 @@ export default function SalesPage() {
                       <div className="space-y-0.5">
                         {sale.items.map((item, idx) => (
                           <p key={idx} className="text-xs">
-                            {item.productName} x{item.quantity} = {item.price} MAD
+                            {item.productName} x{item.quantity} = {formatCurrency(item.price)}
                           </p>
                         ))}
                       </div>
                     </td>
-                    <td className="py-3 px-2 font-bold text-emerald-600">{sale.total} MAD</td>
+                    <td className="py-3 px-2 font-bold text-emerald-600">
+                      {formatCurrency(sale.total)}
+                    </td>
                     <td className="py-3 px-2">
                       <Badge variant="outline" className="text-xs capitalize gap-1">
                         {paymentIcon[sale.paymentMethod]}

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchParapharmacyProducts, getStockStatus, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
+import { formatCurrency } from "@/lib/utils";
 
 export default function ParapharmacyInventoryPage() {
   const tenant = useTenant();
@@ -129,7 +130,7 @@ export default function ParapharmacyInventoryPage() {
                     )}
                   </td>
                   <td className="py-3 text-muted-foreground">{p.category}</td>
-                  <td className="py-3 text-right">{p.price} MAD</td>
+                  <td className="py-3 text-right">{formatCurrency(p.price)}</td>
                   <td className="py-3 text-right font-medium">{p.stockQuantity}</td>
                   <td className="py-3 text-right text-muted-foreground">{p.minimumStock}</td>
                   <td className="py-3">

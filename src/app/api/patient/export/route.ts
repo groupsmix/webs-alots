@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiNotFound } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { getLocalDateStr } from "@/lib/utils";
 import { withAuth } from "@/lib/with-auth";
 
 /** Characters that trigger formula execution in Excel/Google Sheets. */
@@ -145,7 +146,7 @@ export const GET = withAuth(
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Content-Disposition": `attachment; filename="my-data-${new Date().toISOString().split("T")[0]}.json"`,
+          "Content-Disposition": `attachment; filename="my-data-${getLocalDateStr()}.json"`,
         },
       });
     }
@@ -184,7 +185,7 @@ export const GET = withAuth(
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="my-data-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="my-data-${getLocalDateStr()}.csv"`,
       },
     });
   },

@@ -42,7 +42,7 @@ import { useToast } from "@/components/ui/toast";
 import { exportToCSV } from "@/lib/export-data";
 import { logger } from "@/lib/logger";
 import { fetchClinics, updateClinicStatus } from "@/lib/super-admin-actions";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 /** Subset of the clinics.config JSONB column used in clinic management. */
 interface ClinicConfigJson {
@@ -251,7 +251,7 @@ export default function AllClinicsPage() {
         { key: "userCountRange", label: "Users (range)" },
         { key: "createdAt", label: "Created" },
       ],
-      `clinics-export-${new Date().toISOString().split("T")[0]}.csv`,
+      `clinics-export-${getLocalDateStr()}.csv`,
     );
   }
 

@@ -9,7 +9,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getCurrentUser, fetchInstallmentPlans, type InstallmentPlanView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function DoctorInstallmentsPage() {
   const [locale] = useLocale();
@@ -66,7 +66,7 @@ export default function DoctorInstallmentsPage() {
           ...p,
           installments: p.installments.map((i) =>
             i.id === installmentId
-              ? { ...i, status: "paid" as const, paidDate: new Date().toISOString().split("T")[0] }
+              ? { ...i, status: "paid" as const, paidDate: getLocalDateStr() }
               : i,
           ),
         };

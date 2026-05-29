@@ -26,6 +26,7 @@ import {
   type PlanSlug,
 } from "@/lib/config/subscription-plans";
 import { logger } from "@/lib/logger";
+import { formatCurrency } from "@/lib/utils";
 
 interface ClinicSubscriptionInfo {
   plan: PlanSlug;
@@ -188,7 +189,9 @@ export default function SubscriptionBillingPage() {
             <div>
               <p className="text-xs text-muted-foreground mb-1">Prix</p>
               <p className="text-lg font-bold">
-                {currentPlanConfig.price === 0 ? "Gratuit" : `${currentPlanConfig.price} MAD`}
+                {currentPlanConfig.price === 0
+                  ? "Gratuit"
+                  : formatCurrency(currentPlanConfig.price)}
               </p>
               {currentPlanConfig.price > 0 && (
                 <p className="text-xs text-muted-foreground">/ mois</p>

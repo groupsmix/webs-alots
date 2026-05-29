@@ -24,6 +24,7 @@ import {
 } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, getCityBySlug, getSpecialtyBySlug } from "@/lib/directory-constants";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { formatCurrency } from "@/lib/utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";
@@ -238,7 +239,7 @@ function DoctorProfileView({
                   <div className="flex items-center gap-2 text-sm">
                     <Award className="h-4 w-4 text-primary flex-shrink-0" />
                     <span>
-                      Consultation : <strong>{doctor.consultationFee} MAD</strong>
+                      Consultation : <strong>{formatCurrency(doctor.consultationFee)}</strong>
                     </span>
                   </div>
                 )}
@@ -467,7 +468,9 @@ function CityListingView({
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     {doctor.consultationFee > 0 && (
-                      <span className="text-sm font-medium">{doctor.consultationFee} MAD</span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(doctor.consultationFee)}
+                      </span>
                     )}
                     {doctor.clinicSubdomain && (
                       <span className={buttonVariants({ variant: "outline", size: "sm" })}>

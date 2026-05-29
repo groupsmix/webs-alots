@@ -1,4 +1,5 @@
-"use client";
+import { getLocalDateStr } from "@/lib/utils";
+("use client");
 
 /**
  * Data export utilities — CSV generation and download for clinic data.
@@ -88,7 +89,7 @@ export function exportAppointments(
   appointments: ExportableAppointment[],
   filenamePrefix = "appointments",
 ) {
-  const date = new Date().toISOString().split("T")[0];
+  const date = getLocalDateStr();
   exportToCSV(appointments, appointmentColumns, `${filenamePrefix}-${date}.csv`);
 }
 
@@ -118,7 +119,7 @@ const patientColumns: { key: keyof ExportablePatient; label: string }[] = [
 ];
 
 export function exportPatients(patients: ExportablePatient[], filenamePrefix = "patients") {
-  const date = new Date().toISOString().split("T")[0];
+  const date = getLocalDateStr();
   exportToCSV(patients, patientColumns, `${filenamePrefix}-${date}.csv`);
 }
 
@@ -144,6 +145,6 @@ const invoiceColumns: { key: keyof ExportableInvoice; label: string }[] = [
 ];
 
 export function exportInvoices(invoices: ExportableInvoice[], filenamePrefix = "invoices") {
-  const date = new Date().toISOString().split("T")[0];
+  const date = getLocalDateStr();
   exportToCSV(invoices, invoiceColumns, `${filenamePrefix}-${date}.csv`);
 }

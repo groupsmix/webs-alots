@@ -27,6 +27,7 @@ import {
   type PregnancyView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function UltrasoundsPage() {
   const [ultrasounds, setUltrasounds] = useState<UltrasoundView[]>([]);
@@ -36,7 +37,7 @@ export default function UltrasoundsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setFormRaw] = useState({
     pregnancyId: "",
-    scanDate: new Date().toISOString().split("T")[0],
+    scanDate: getLocalDateStr(),
     trimester: "1",
     gestationalWeeks: "",
     gestationalDays: "",
@@ -135,7 +136,7 @@ export default function UltrasoundsPage() {
     clearUsDraft();
     setFormRaw({
       pregnancyId: "",
-      scanDate: new Date().toISOString().split("T")[0],
+      scanDate: getLocalDateStr(),
       trimester: "1",
       gestationalWeeks: "",
       gestationalDays: "",

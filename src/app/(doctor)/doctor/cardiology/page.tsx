@@ -31,6 +31,7 @@ import {
   type BloodPressureView,
   type HeartMonitoringNoteView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 function bpCategory(systolic: number, diastolic: number): { label: string; color: string } {
   // AHA BP classification (checked top-down; Stage 2 must be tested before Stage 1)
@@ -143,7 +144,7 @@ export default function CardiologyPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          recordDate: new Date().toISOString().split("T")[0],
+          recordDate: getLocalDateStr(),
           fileUrl: "",
           heartRate: ecgForm.heartRate ? parseInt(ecgForm.heartRate) : null,
           rhythm: ecgForm.rhythm,
@@ -186,7 +187,7 @@ export default function CardiologyPage() {
           systolic: parseInt(bpForm.systolic),
           diastolic: parseInt(bpForm.diastolic),
           heartRate: bpForm.heartRate ? parseInt(bpForm.heartRate) : null,
-          readingDate: new Date().toISOString().split("T")[0],
+          readingDate: getLocalDateStr(),
           position: bpForm.position,
           arm: bpForm.arm,
           notes: bpForm.notes,
@@ -223,7 +224,7 @@ export default function CardiologyPage() {
         {
           id: newId,
           patientId: user.id,
-          noteDate: new Date().toISOString().split("T")[0],
+          noteDate: getLocalDateStr(),
           category: noteForm.category,
           title: noteForm.title,
           content: noteForm.content,

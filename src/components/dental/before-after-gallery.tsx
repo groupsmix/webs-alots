@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BeforeAfterPhotoView } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface BeforeAfterGalleryProps {
   photos: BeforeAfterPhotoView[];
@@ -34,7 +35,7 @@ export function BeforeAfterGallery({
         patientName: newPhoto.patientName || "Patient",
         treatmentPlanId: "",
         description: newPhoto.description,
-        beforeDate: new Date().toISOString().split("T")[0],
+        beforeDate: getLocalDateStr(),
         afterDate: null,
         category: newPhoto.category || "General",
       });

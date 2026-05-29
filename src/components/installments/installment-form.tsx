@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { formatDisplayDate } from "@/lib/utils";
+import { getLocalDateStr, formatDisplayDate } from "@/lib/utils";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface InstallmentFormProps {
@@ -38,7 +38,7 @@ export function InstallmentForm({
     totalAmount: defaultTotal,
     downPayment: 0,
     numberOfInstallments: 6,
-    startDate: new Date().toISOString().split("T")[0],
+    startDate: getLocalDateStr(),
     whatsappReminder: true,
   });
   const [submitted, setSubmitted] = useState(false);
@@ -55,7 +55,7 @@ export function InstallmentForm({
       date.setMonth(date.getMonth() + i + 1);
       schedule.push({
         month: i + 1,
-        date: date.toISOString().split("T")[0],
+        date: getLocalDateStr(date),
         amount:
           i < data.numberOfInstallments - 1
             ? monthlyAmount

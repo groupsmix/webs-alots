@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { formatCurrency } from "@/lib/utils";
 import { buildSystemPrompt, getBasicResponse, type ChatbotClinicContext } from "../chatbot-data";
 
 const baseContext: ChatbotClinicContext = {
@@ -62,7 +63,7 @@ describe("buildSystemPrompt", () => {
   it("includes services and prices", () => {
     const result = buildSystemPrompt(baseContext);
     expect(result).toContain("Consultation générale");
-    expect(result).toContain("200 MAD");
+    expect(result).toContain(formatCurrency(200));
     expect(result).toContain("30 min");
   });
 
@@ -164,13 +165,13 @@ describe("getBasicResponse", () => {
     const result = getBasicResponse("Quels sont vos tarifs?", baseContext);
     expect(result).toContain("services et tarifs");
     expect(result).toContain("Consultation générale");
-    expect(result).toContain("200 MAD");
+    expect(result).toContain(formatCurrency(200));
   });
 
   it("responds to specific service query", () => {
     const result = getBasicResponse("Combien coûte une consultation générale?", baseContext);
     expect(result).toContain("Consultation générale");
-    expect(result).toContain("200 MAD");
+    expect(result).toContain(formatCurrency(200));
     expect(result).toContain("30 min");
   });
 

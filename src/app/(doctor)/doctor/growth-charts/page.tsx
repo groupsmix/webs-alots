@@ -27,6 +27,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { getLocalDateStr } from "@/lib/utils";
 
 // WHO Weight-for-age reference data (boys, simplified percentiles: 3rd, 50th, 97th)
 const WHO_WEIGHT_BOYS: Record<number, [number, number, number]> = {
@@ -81,7 +82,7 @@ export default function GrowthChartsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setFormRaw] = useState({
     patientId: "",
-    measuredAt: new Date().toISOString().split("T")[0],
+    measuredAt: getLocalDateStr(),
     ageMonths: "",
     weightKg: "",
     heightCm: "",
@@ -163,7 +164,7 @@ export default function GrowthChartsPage() {
     clearGrowthDraft();
     setFormRaw({
       patientId: "",
-      measuredAt: new Date().toISOString().split("T")[0],
+      measuredAt: getLocalDateStr(),
       ageMonths: "",
       weightKg: "",
       heightCm: "",
