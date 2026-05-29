@@ -9315,6 +9315,241 @@ export type Database = {
           },
         ]
       }
+      telemedicine_sessions: {
+        Row: {
+          id: string
+          clinic_id: string
+          patient_id: string
+          doctor_id: string
+          appointment_id: string | null
+          scheduled_at: string
+          started_at: string | null
+          ended_at: string | null
+          duration_minutes: number | null
+          status: string
+          room_url: string | null
+          recording_url: string | null
+          consultation_notes: string | null
+          prescription_id: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          patient_id: string
+          doctor_id: string
+          appointment_id?: string | null
+          scheduled_at: string
+          started_at?: string | null
+          ended_at?: string | null
+          duration_minutes?: number | null
+          status?: string
+          room_url?: string | null
+          recording_url?: string | null
+          consultation_notes?: string | null
+          prescription_id?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          patient_id?: string
+          doctor_id?: string
+          appointment_id?: string | null
+          scheduled_at?: string
+          started_at?: string | null
+          ended_at?: string | null
+          duration_minutes?: number | null
+          status?: string
+          room_url?: string | null
+          recording_url?: string | null
+          consultation_notes?: string | null
+          prescription_id?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemedicine_sessions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemedicine_sessions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemedicine_sessions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_invitations: {
+        Row: {
+          id: string
+          clinic_id: string
+          email: string
+          role: string
+          invited_by: string
+          token: string
+          status: string
+          expires_at: string
+          accepted_at: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          email: string
+          role: string
+          invited_by: string
+          token: string
+          status?: string
+          expires_at: string
+          accepted_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          email?: string
+          role?: string
+          invited_by?: string
+          token?: string
+          status?: string
+          expires_at?: string
+          accepted_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_invitations_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_claims: {
+        Row: {
+          id: string
+          clinic_id: string
+          patient_id: string
+          doctor_id: string | null
+          appointment_id: string | null
+          insurance_type: string
+          policy_number: string | null
+          claim_number: string | null
+          amount_claimed: number
+          amount_approved: number | null
+          currency: string
+          status: string
+          submitted_at: string | null
+          resolved_at: string | null
+          rejection_reason: string | null
+          diagnosis_code: string | null
+          treatment_description: string | null
+          documents: Json | null
+          notes: string | null
+          created_by: string | null
+          reviewer_notes: string | null
+          line_items: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          patient_id: string
+          doctor_id?: string | null
+          appointment_id?: string | null
+          insurance_type: string
+          policy_number?: string | null
+          claim_number?: string | null
+          amount_claimed: number
+          amount_approved?: number | null
+          currency?: string
+          status?: string
+          submitted_at?: string | null
+          resolved_at?: string | null
+          rejection_reason?: string | null
+          diagnosis_code?: string | null
+          treatment_description?: string | null
+          documents?: Json | null
+          notes?: string | null
+          created_by?: string | null
+          reviewer_notes?: string | null
+          line_items?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          patient_id?: string
+          doctor_id?: string | null
+          appointment_id?: string | null
+          insurance_type?: string
+          policy_number?: string | null
+          claim_number?: string | null
+          amount_claimed?: number
+          amount_approved?: number | null
+          currency?: string
+          status?: string
+          submitted_at?: string | null
+          resolved_at?: string | null
+          rejection_reason?: string | null
+          diagnosis_code?: string | null
+          treatment_description?: string | null
+          documents?: Json | null
+          notes?: string | null
+          created_by?: string | null
+          reviewer_notes?: string | null
+          line_items?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

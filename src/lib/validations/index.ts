@@ -190,7 +190,38 @@ export {
 } from "./fhir";
 
 export {
+  whatsappConsentGrantSchema,
+  whatsappConsentRevokeSchema,
+  whatsappConsentExportSchema,
+  whatsappConsentDeleteSchema,
+  whatsappVoiceWebhookSchema,
+  wabaPhoneNumberIdSchema,
+} from "./whatsapp";
+
+export {
   cdssCheckRequestSchema,
   doseValidationRequestSchema,
   news2RequestSchema,
 } from "./clinical-cdss";
+
+export {
+  admissionCreateSchema,
+  dischargeSchema,
+  transferSchema,
+  admissionQuerySchema,
+} from "./adt";
+
+export {
+  telemedicineCreateSchema,
+  telemedicineUpdateSchema,
+  telemedicineQuerySchema,
+} from "./telemedicine";
+
+export {
+  staffInviteSchema,
+  staffInviteAcceptSchema,
+  staffInviteRevokeSchema,
+  staffInviteQuerySchema,
+} from "./staff-invitations";
+
+export { insuranceClaimQuerySchema } from "./insurance-claims";
