@@ -136,6 +136,12 @@ const PUBLIC_API_ROUTES = [
   "/api/v1/appointments",
   // Stripe billing webhook — authenticated via stripe-signature HMAC
   "/api/billing/webhook",
+  // QR scan check-in — patients scan QR at clinic entrance without session
+  "/api/checkin/qr-scan",
+  // NPS survey response — patients submit via WhatsApp link without session
+  "/api/nps/respond",
+  // Waiting queue — public display on waiting room screens
+  "/api/waiting-queue",
   // Public chatbot — basic (keyword) tier serves anonymous clinic visitors
   "/api/chat",
   // Demo login (dev/staging only, guarded in handler)
