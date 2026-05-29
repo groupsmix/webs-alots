@@ -89,3 +89,6 @@ export {
   waitingQueueUpdateSchema,
   npsSurveyResponseSchema,
 } from "./patient-experience";
+
+export { timelineQuerySchema, TIMELINE_EVENT_TYPES } from "./patient-timeline";
+export type { TimelineEventType, TimelineQuery } from "./patient-timeline";
