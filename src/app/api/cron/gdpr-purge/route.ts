@@ -119,8 +119,8 @@ async function handler(request: NextRequest) {
           const { error: delError } = await supabase
             .from(table)
             .delete()
-            .eq(column, user.id)
-            .eq("clinic_id", user.clinic_id);
+            .eq("clinic_id", user.clinic_id)
+            .eq(column, user.id);
 
           if (delError) {
             // Log but continue — some tables may not exist
