@@ -148,3 +148,10 @@ export {
   financialSummaryQuerySchema,
   revenueInsightsQuerySchema,
 } from "./billing";
+
+export {
+  fhirSearchSchema,
+  fhirImportPatientSchema,
+  prescriptionTransitionSchema,
+  prescriptionCreateSchema,
+} from "./fhir";
