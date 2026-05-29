@@ -117,7 +117,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
               patient_id: a.patient_id,
               appointment_date: a.appointment_date ?? "",
               slot_start: a.slot_start,
-              patient_name: nameMap.get(a.patient_id) ?? "Unknown",
+              patient_name: nameMap.get(a.patient_id) ?? "Inconnu",
               status: a.status,
             })),
           );
@@ -252,7 +252,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <CalendarClock className="h-4 w-4" />
-          Receptionist AI
+          IA Réceptionniste
         </CardTitle>
         <div className="flex gap-1 mt-2">
           <Button
@@ -262,7 +262,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             onClick={() => setActiveTab("schedule")}
           >
             <TrendingUp className="h-3 w-3 mr-1" />
-            Overview
+            Aperçu
           </Button>
           <Button
             variant={activeTab === "waitlist" ? "default" : "ghost"}
@@ -271,7 +271,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             onClick={() => setActiveTab("waitlist")}
           >
             <ListOrdered className="h-3 w-3 mr-1" />
-            Waitlist
+            Liste d&apos;attente
             {waitlistEntries.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-4 text-[10px]">
                 {waitlistEntries.length}
@@ -285,7 +285,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             onClick={() => setActiveTab("noshow")}
           >
             <UserX className="h-3 w-3 mr-1" />
-            No-Shows
+            Absences
             {noShowAlerts.length > 0 && (
               <Badge variant="destructive" className="ml-1 h-4 text-[10px]">
                 {noShowAlerts.length}
@@ -299,7 +299,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             onClick={() => setActiveTab("reminders")}
           >
             <Bell className="h-3 w-3 mr-1" />
-            Reminders
+            Rappels
           </Button>
         </div>
       </CardHeader>
@@ -309,26 +309,27 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border p-2 text-center">
                 <p className="text-lg font-bold text-orange-600">{noShowAlerts.length}</p>
-                <p className="text-[10px] text-muted-foreground">Potential No-Shows</p>
+                <p className="text-[10px] text-muted-foreground">Absences potentielles</p>
               </div>
               <div className="rounded-lg border p-2 text-center">
                 <p className="text-lg font-bold text-blue-600">{waitlistEntries.length}</p>
-                <p className="text-[10px] text-muted-foreground">Waitlist Queue</p>
+                <p className="text-[10px] text-muted-foreground">File d&apos;attente</p>
               </div>
               <div className="rounded-lg border p-2 text-center">
                 <p className="text-lg font-bold text-green-600">{reminderSummary.sentToday}</p>
-                <p className="text-[10px] text-muted-foreground">Reminders Sent</p>
+                <p className="text-[10px] text-muted-foreground">Rappels envoyés</p>
               </div>
               <div className="rounded-lg border p-2 text-center">
                 <p className="text-lg font-bold text-red-600">{flaggedPatientCount}</p>
-                <p className="text-[10px] text-muted-foreground">Flagged Patients</p>
+                <p className="text-[10px] text-muted-foreground">Patients signalés</p>
               </div>
             </div>
             {reminderSummary.pending24h + reminderSummary.pending2h > 0 && (
               <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-2">
                 <p className="text-xs font-medium text-yellow-800 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {reminderSummary.pending24h + reminderSummary.pending2h} pending reminders to send
+                  {reminderSummary.pending24h + reminderSummary.pending2h} rappels en attente
+                  d&apos;envoi
                 </p>
               </div>
             )}
@@ -336,7 +337,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
               <div className="rounded-lg border border-red-200 bg-red-50 p-2">
                 <p className="text-xs font-medium text-red-800 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
-                  {reminderSummary.failedToday} reminders failed today
+                  {reminderSummary.failedToday} rappels échoués aujourd&apos;hui
                 </p>
               </div>
             )}
@@ -346,7 +347,9 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
         {activeTab === "waitlist" && (
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
             {waitlistEntries.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No patients in waitlist.</p>
+              <p className="text-sm text-muted-foreground">
+                Aucun patient en liste d&apos;attente.
+              </p>
             ) : (
               waitlistEntries.map((entry, index) => (
                 <div key={entry.id} className="flex items-center gap-2 rounded-lg border p-2">
@@ -356,7 +359,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground">
                       {entry.preferred_date}
-                      {entry.preferred_time ? ` at ${entry.preferred_time}` : ""}
+                      {entry.preferred_time ? ` à ${entry.preferred_time}` : ""}
                     </p>
                   </div>
                   <Badge variant={urgencyBadge[entry.urgency ?? "normal"]} className="text-[10px]">
@@ -376,7 +379,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
         {activeTab === "noshow" && (
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
             {noShowAlerts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No potential no-shows detected.</p>
+              <p className="text-sm text-muted-foreground">Aucune absence potentielle détectée.</p>
             ) : (
               noShowAlerts.map((alert) => (
                 <div
@@ -387,7 +390,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{alert.patient_name}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      Scheduled at {alert.slot_start} &mdash; not arrived
+                      Prévu à {alert.slot_start} &mdash; non arrivé
                     </p>
                   </div>
                   <Badge variant="warning" className="text-[10px] shrink-0">
@@ -400,7 +403,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
               <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2">
                 <p className="text-xs text-red-800 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
-                  {flaggedPatientCount} patient(s) flagged as repeat no-show offenders
+                  {flaggedPatientCount} patient(s) signalé(s) comme récidivistes
                 </p>
               </div>
             )}
@@ -411,23 +414,23 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border p-2">
-                <p className="text-xs text-muted-foreground">24h Reminders</p>
+                <p className="text-xs text-muted-foreground">Rappels 24h</p>
                 <p className="text-lg font-bold">{reminderSummary.pending24h}</p>
-                <p className="text-[10px] text-muted-foreground">pending</p>
+                <p className="text-[10px] text-muted-foreground">en attente</p>
               </div>
               <div className="rounded-lg border p-2">
-                <p className="text-xs text-muted-foreground">2h Reminders</p>
+                <p className="text-xs text-muted-foreground">Rappels 2h</p>
                 <p className="text-lg font-bold">{reminderSummary.pending2h}</p>
-                <p className="text-[10px] text-muted-foreground">pending</p>
+                <p className="text-[10px] text-muted-foreground">en attente</p>
               </div>
             </div>
             <div className="rounded-lg border p-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Sent today</span>
+                <span className="text-muted-foreground">Envoyés aujourd&apos;hui</span>
                 <span className="font-medium text-green-600">{reminderSummary.sentToday}</span>
               </div>
               <div className="flex justify-between text-xs mt-1">
-                <span className="text-muted-foreground">Failed today</span>
+                <span className="text-muted-foreground">Échoués aujourd&apos;hui</span>
                 <span className="font-medium text-red-600">{reminderSummary.failedToday}</span>
               </div>
             </div>
