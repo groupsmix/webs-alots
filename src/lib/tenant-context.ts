@@ -60,15 +60,20 @@ export async function setTenantContext(
   });
 
   if (error) {
-    logger.error("Failed to set tenant context", {
-      context: "tenant-context",
-      clinicId,
-      error,
-    });
     const message =
       typeof error === "object" && error !== null && "message" in error
         ? (error as { message: string }).message
         : String(error);
+    const isPermissionDenied = message.includes("permission denied");
+    // Permission denied is expected when using anon/authenticated keys
+    // (migration 00057 restricted to service_role). Log at debug to
+    // avoid flooding server output — the caller decides the severity.
+    const logFn = isPermissionDenied ? logger.debug : logger.error;
+    logFn.call(logger, "Failed to set tenant context", {
+      context: "tenant-context",
+      clinicId,
+      error,
+    });
     throw new Error(`Tenant context error: failed to set app.current_clinic_id: ${message}`);
   }
 }
