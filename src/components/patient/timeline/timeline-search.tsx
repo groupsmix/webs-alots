@@ -20,7 +20,7 @@ export function TimelineSearch({ value, onChange, className }: TimelineSearchPro
       <Input
         ref={inputRef}
         type="text"
-        placeholder="Search timeline..."
+        placeholder="Rechercher dans l'historique..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9 pr-8 h-9"
@@ -32,7 +32,7 @@ export function TimelineSearch({ value, onChange, className }: TimelineSearchPro
             inputRef.current?.focus();
           }}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-muted"
-          aria-label="Clear search"
+          aria-label="Effacer la recherche"
         >
           <X className="h-3 w-3 text-muted-foreground" />
         </button>
