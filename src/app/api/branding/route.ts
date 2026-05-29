@@ -54,6 +54,9 @@ const FIELD_MAP: Record<string, string> = {
 };
 
 // ── GET — return current branding ──
+// Intentionally public (no auth wrapper): this endpoint serves branding assets
+// (logo, colors, fonts) needed to render the clinic's public booking page.
+// Sensitive PII (phone, address) is redacted from the response below.
 
 export async function GET() {
   try {
