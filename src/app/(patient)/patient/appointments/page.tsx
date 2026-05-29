@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  Calendar,
-  Clock,
-  User,
-  MapPin,
-  X,
-  RefreshCw,
-  AlertTriangle,
-  Repeat,
-  Plus,
-} from "lucide-react";
+import { Calendar, Clock, User, X, RefreshCw, AlertTriangle, Repeat, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
@@ -253,10 +243,6 @@ export default function PatientAppointmentsPage() {
                       <span className="flex items-center gap-1">
                         <User className="h-3.5 w-3.5" />
                         {appt.doctorName}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        Room 1
                       </span>
                     </div>
                     {appt.cancellationReason && (
