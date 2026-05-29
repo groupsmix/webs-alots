@@ -83,38 +83,15 @@ BEGIN
   END IF;
 END $$;
 
--- ── Insurance Claims ────────────────────────────────────────────────────
--- Adapted from Health-Pay's insurance claim review patterns for CNSS/CNOPS/AMO.
+-- ── Insurance Claims (enhance existing table) ──────────────────────────
+-- Table already created in 00110. Add columns needed by Health-Pay patterns.
 
-CREATE TABLE IF NOT EXISTS insurance_claims (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  clinic_id uuid NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-  patient_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  invoice_id uuid,
-  claim_number text NOT NULL,
-  insurance_type text NOT NULL CHECK (insurance_type IN ('CNSS', 'CNOPS', 'AMO', 'RAMED')),
-  status text NOT NULL DEFAULT 'draft'
-    CHECK (status IN ('draft', 'submitted', 'under_review', 'approved', 'partially_approved', 'rejected', 'appealed')),
-  claimed_amount_centimes integer NOT NULL,
-  approved_amount_centimes integer,
-  patient_share_centimes integer,
-  rejection_reason text,
-  submitted_at timestamptz,
-  reviewed_at timestamptz,
-  reviewer_notes text,
-  document_urls jsonb DEFAULT '[]'::jsonb,
-  line_items jsonb DEFAULT '[]'::jsonb,
-  metadata jsonb DEFAULT '{}'::jsonb,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+ALTER TABLE insurance_claims ADD COLUMN IF NOT EXISTS reviewer_notes text;
+ALTER TABLE insurance_claims ADD COLUMN IF NOT EXISTS line_items jsonb DEFAULT '[]'::jsonb;
 
-CREATE INDEX IF NOT EXISTS idx_insurance_claims_clinic_id ON insurance_claims(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_insurance_claims_patient_id ON insurance_claims(clinic_id, patient_id);
 CREATE INDEX IF NOT EXISTS idx_insurance_claims_status ON insurance_claims(clinic_id, status);
 CREATE INDEX IF NOT EXISTS idx_insurance_claims_type ON insurance_claims(clinic_id, insurance_type);
-
-ALTER TABLE insurance_claims ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN

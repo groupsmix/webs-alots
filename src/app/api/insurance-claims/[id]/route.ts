@@ -47,13 +47,7 @@ export const PATCH = withAuth(async (request: NextRequest, { supabase, profile }
   const parsed = safeParse(insuranceClaimUpdateSchema, rawBody);
   if (!parsed.success) return apiError(parsed.error, 422, "VALIDATION_ERROR");
 
-  const {
-    status,
-    approved_amount_centimes,
-    patient_share_centimes,
-    rejection_reason,
-    reviewer_notes,
-  } = parsed.data;
+  const { status, amount_approved, rejection_reason, reviewer_notes } = parsed.data;
 
   const isReviewed =
     status === "approved" || status === "partially_approved" || status === "rejected";
@@ -63,12 +57,11 @@ export const PATCH = withAuth(async (request: NextRequest, { supabase, profile }
     .update({
       updated_at: new Date().toISOString(),
       ...(status !== undefined ? { status } : {}),
-      ...(approved_amount_centimes !== undefined ? { approved_amount_centimes } : {}),
-      ...(patient_share_centimes !== undefined ? { patient_share_centimes } : {}),
+      ...(amount_approved !== undefined ? { amount_approved } : {}),
       ...(rejection_reason !== undefined ? { rejection_reason } : {}),
       ...(reviewer_notes !== undefined ? { reviewer_notes } : {}),
       ...(status === "submitted" ? { submitted_at: new Date().toISOString() } : {}),
-      ...(isReviewed ? { reviewed_at: new Date().toISOString() } : {}),
+      ...(isReviewed ? { resolved_at: new Date().toISOString() } : {}),
     })
     .eq("clinic_id", clinicId)
     .eq("id", id)

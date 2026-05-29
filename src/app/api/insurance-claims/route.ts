@@ -56,8 +56,7 @@ export const POST = withAuthValidation(
     const clinicId = profile.clinic_id;
     if (!clinicId) return apiError("Contexte clinique requis", 403);
 
-    const { patient_id, invoice_id, insurance_type, claimed_amount_centimes, line_items, notes } =
-      body;
+    const { patient_id, insurance_type, amount_claimed, line_items, notes } = body;
 
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
@@ -75,13 +74,13 @@ export const POST = withAuthValidation(
       .insert({
         clinic_id: clinicId,
         patient_id,
-        invoice_id: invoice_id ?? null,
         claim_number: claimNumber,
         insurance_type,
         status: "draft",
-        claimed_amount_centimes,
-        line_items: JSON.parse(JSON.stringify(line_items)),
-        metadata: notes ? { notes } : {},
+        amount_claimed,
+        line_items: line_items ? JSON.parse(JSON.stringify(line_items)) : [],
+        notes: notes ?? null,
+        created_by: profile.id,
       })
       .select()
       .single();
@@ -105,7 +104,7 @@ export const POST = withAuthValidation(
         claim_id: claim.id,
         claim_number: claimNumber,
         insurance_type,
-        claimed_amount_centimes,
+        amount_claimed,
       },
     });
 

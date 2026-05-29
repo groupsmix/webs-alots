@@ -11,14 +11,14 @@ interface InsuranceClaim {
   claim_number: string;
   insurance_type: string;
   status: string;
-  claimed_amount_centimes: number;
-  approved_amount_centimes: number | null;
-  patient_share_centimes: number | null;
+  amount_claimed: number;
+  amount_approved: number | null;
+  patient_share: number | null;
   rejection_reason: string | null;
   reviewer_notes: string | null;
   line_items: ClaimLineItem[];
   submitted_at: string | null;
-  reviewed_at: string | null;
+  resolved_at: string | null;
   created_at: string;
 }
 
@@ -98,7 +98,7 @@ export function InsuranceClaimsDashboard() {
     rejectionReason?: string,
   ) => {
     const body: Record<string, unknown> = { status };
-    if (approvedAmount !== undefined) body.approved_amount_centimes = approvedAmount;
+    if (approvedAmount !== undefined) body.amount_approved = approvedAmount;
     if (rejectionReason) body.rejection_reason = rejectionReason;
 
     const res = await fetch(`/api/insurance-claims/${id}`, {
@@ -183,13 +183,13 @@ export function InsuranceClaimsDashboard() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Montant réclamé</p>
-              <p className="font-medium">{formatCentimes(selectedClaim.claimed_amount_centimes)}</p>
+              <p className="font-medium">{formatCentimes(selectedClaim.amount_claimed)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Montant approuvé</p>
               <p className="font-medium">
-                {selectedClaim.approved_amount_centimes !== null
-                  ? formatCentimes(selectedClaim.approved_amount_centimes)
+                {selectedClaim.amount_approved !== null
+                  ? formatCentimes(selectedClaim.amount_approved)
                   : "—"}
               </p>
             </div>
@@ -231,7 +231,7 @@ export function InsuranceClaimsDashboard() {
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() =>
-                  handleReview(selectedClaim.id, "approved", selectedClaim.claimed_amount_centimes)
+                  handleReview(selectedClaim.id, "approved", selectedClaim.amount_claimed)
                 }
                 className="rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
               >
@@ -285,13 +285,9 @@ export function InsuranceClaimsDashboard() {
                       {STATUS_LABELS[claim.status] ?? claim.status}
                     </Badge>
                   </td>
+                  <td className="px-4 py-3 text-right">{formatCentimes(claim.amount_claimed)}</td>
                   <td className="px-4 py-3 text-right">
-                    {formatCentimes(claim.claimed_amount_centimes)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {claim.approved_amount_centimes !== null
-                      ? formatCentimes(claim.approved_amount_centimes)
-                      : "—"}
+                    {claim.amount_approved !== null ? formatCentimes(claim.amount_approved) : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {new Date(claim.created_at).toLocaleDateString("fr-FR")}

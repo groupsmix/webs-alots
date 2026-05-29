@@ -9459,20 +9459,25 @@ export type Database = {
           id: string
           clinic_id: string
           patient_id: string
-          invoice_id: string | null
-          claim_number: string
+          doctor_id: string | null
+          appointment_id: string | null
           insurance_type: string
+          policy_number: string | null
+          claim_number: string | null
+          amount_claimed: number
+          amount_approved: number | null
+          currency: string
           status: string
-          claimed_amount_centimes: number
-          approved_amount_centimes: number | null
-          patient_share_centimes: number | null
-          rejection_reason: string | null
           submitted_at: string | null
-          reviewed_at: string | null
+          resolved_at: string | null
+          rejection_reason: string | null
+          diagnosis_code: string | null
+          treatment_description: string | null
+          documents: Json | null
+          notes: string | null
+          created_by: string | null
           reviewer_notes: string | null
-          document_urls: Json | null
           line_items: Json | null
-          metadata: Json | null
           created_at: string
           updated_at: string
         }
@@ -9480,20 +9485,25 @@ export type Database = {
           id?: string
           clinic_id: string
           patient_id: string
-          invoice_id?: string | null
-          claim_number: string
+          doctor_id?: string | null
+          appointment_id?: string | null
           insurance_type: string
+          policy_number?: string | null
+          claim_number?: string | null
+          amount_claimed: number
+          amount_approved?: number | null
+          currency?: string
           status?: string
-          claimed_amount_centimes: number
-          approved_amount_centimes?: number | null
-          patient_share_centimes?: number | null
-          rejection_reason?: string | null
           submitted_at?: string | null
-          reviewed_at?: string | null
+          resolved_at?: string | null
+          rejection_reason?: string | null
+          diagnosis_code?: string | null
+          treatment_description?: string | null
+          documents?: Json | null
+          notes?: string | null
+          created_by?: string | null
           reviewer_notes?: string | null
-          document_urls?: Json | null
           line_items?: Json | null
-          metadata?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -9501,20 +9511,25 @@ export type Database = {
           id?: string
           clinic_id?: string
           patient_id?: string
-          invoice_id?: string | null
-          claim_number?: string
+          doctor_id?: string | null
+          appointment_id?: string | null
           insurance_type?: string
+          policy_number?: string | null
+          claim_number?: string | null
+          amount_claimed?: number
+          amount_approved?: number | null
+          currency?: string
           status?: string
-          claimed_amount_centimes?: number
-          approved_amount_centimes?: number | null
-          patient_share_centimes?: number | null
-          rejection_reason?: string | null
           submitted_at?: string | null
-          reviewed_at?: string | null
+          resolved_at?: string | null
+          rejection_reason?: string | null
+          diagnosis_code?: string | null
+          treatment_description?: string | null
+          documents?: Json | null
+          notes?: string | null
+          created_by?: string | null
           reviewer_notes?: string | null
-          document_urls?: Json | null
           line_items?: Json | null
-          metadata?: Json | null
           created_at?: string
           updated_at?: string
         }

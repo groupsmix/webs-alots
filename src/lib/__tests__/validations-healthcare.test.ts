@@ -383,7 +383,7 @@ describe("insuranceClaimCreateSchema", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "CNSS",
-      claimed_amount_centimes: 150000,
+      amount_claimed: 150000,
       line_items: [
         {
           description: "Consultation générale",
@@ -400,19 +400,18 @@ describe("insuranceClaimCreateSchema", () => {
       const result = insuranceClaimCreateSchema.safeParse({
         patient_id: validUUID,
         insurance_type,
-        claimed_amount_centimes: 100000,
+        amount_claimed: 100000,
         line_items: [{ description: "Acte", unit_price_centimes: 100000, quantity: 1 }],
       });
       expect(result.success).toBe(true);
     }
   });
 
-  it("accepts optional invoice_id and notes", () => {
+  it("accepts optional notes and line_items", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "CNOPS",
-      claimed_amount_centimes: 200000,
-      invoice_id: validUUID,
+      amount_claimed: 200000,
       notes: "Réclamation urgente",
       line_items: [{ description: "Chirurgie", unit_price_centimes: 200000, quantity: 1 }],
     });
@@ -423,8 +422,7 @@ describe("insuranceClaimCreateSchema", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "INVALID",
-      claimed_amount_centimes: 100000,
-      line_items: [],
+      amount_claimed: 100000,
     });
     expect(result.success).toBe(false);
   });
@@ -432,18 +430,16 @@ describe("insuranceClaimCreateSchema", () => {
   it("rejects missing patient_id", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       insurance_type: "CNSS",
-      claimed_amount_centimes: 100000,
-      line_items: [],
+      amount_claimed: 100000,
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects negative claimed_amount_centimes", () => {
+  it("rejects negative amount_claimed", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "CNSS",
-      claimed_amount_centimes: -100,
-      line_items: [],
+      amount_claimed: -100,
     });
     expect(result.success).toBe(false);
   });
@@ -452,7 +448,7 @@ describe("insuranceClaimCreateSchema", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "AMO",
-      claimed_amount_centimes: 50000,
+      amount_claimed: 50000,
       line_items: [{ unit_price_centimes: 50000, quantity: 1 }],
     });
     expect(result.success).toBe(false);
@@ -462,20 +458,19 @@ describe("insuranceClaimCreateSchema", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "AMO",
-      claimed_amount_centimes: 50000,
+      amount_claimed: 50000,
       line_items: [{ description: "Acte", unit_price_centimes: 50000, quantity: 0 }],
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects empty line_items array", () => {
+  it("accepts without line_items (optional)", () => {
     const result = insuranceClaimCreateSchema.safeParse({
       patient_id: validUUID,
       insurance_type: "CNSS",
-      claimed_amount_centimes: 50000,
-      line_items: [],
+      amount_claimed: 50000,
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });
 
@@ -508,9 +503,9 @@ describe("insuranceClaimUpdateSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts approved_amount_centimes", () => {
+  it("accepts amount_approved", () => {
     const result = insuranceClaimUpdateSchema.safeParse({
-      approved_amount_centimes: 80000,
+      amount_approved: 80000,
     });
     expect(result.success).toBe(true);
   });

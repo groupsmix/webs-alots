@@ -437,7 +437,7 @@ describe("POST /api/insurance-claims", () => {
       buildPost("http://localhost/api/insurance-claims", {
         patient_id: UUID1,
         insurance_type: "CNSS",
-        claimed_amount_centimes: 150000,
+        amount_claimed: 150000,
         line_items: [{ description: "Consultation", unit_price_centimes: 150000, quantity: 1 }],
       }),
     );
@@ -453,7 +453,7 @@ describe("POST /api/insurance-claims", () => {
       buildPost("http://localhost/api/insurance-claims", {
         patient_id: UUID1,
         insurance_type: "INVALID",
-        claimed_amount_centimes: 100000,
+        amount_claimed: 100000,
         line_items: [{ description: "A", unit_price_centimes: 100000, quantity: 1 }],
       }),
     );
@@ -469,7 +469,7 @@ describe("POST /api/insurance-claims", () => {
       buildPost("http://localhost/api/insurance-claims", {
         patient_id: UUID1,
         insurance_type: "AMO",
-        claimed_amount_centimes: 200000,
+        amount_claimed: 200000,
         line_items: [{ description: "Chirurgie", unit_price_centimes: 200000, quantity: 1 }],
       }),
     );
@@ -731,7 +731,7 @@ describe("PATCH /api/insurance-claims/[id]", () => {
   it("approves a claim", async () => {
     setProfile("clinic_admin");
     setQueryResult({
-      data: { id: "c1", status: "approved", approved_amount_centimes: 120000 },
+      data: { id: "c1", status: "approved", amount_approved: 120000 },
       error: null,
     });
 
@@ -739,7 +739,7 @@ describe("PATCH /api/insurance-claims/[id]", () => {
     const res = await PATCH(
       buildPatch("http://localhost/api/insurance-claims/c1", {
         status: "approved",
-        approved_amount_centimes: 120000,
+        amount_approved: 120000,
       }),
     );
     expect(res.status).toBe(200);
@@ -789,8 +789,7 @@ describe("PATCH /api/insurance-claims/[id]", () => {
     const res = await PATCH(
       buildPatch("http://localhost/api/insurance-claims/c1", {
         status: "partially_approved",
-        approved_amount_centimes: 80000,
-        patient_share_centimes: 70000,
+        amount_approved: 80000,
         reviewer_notes: "Partiellement approuvé",
       }),
     );

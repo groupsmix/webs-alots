@@ -134,10 +134,43 @@ export { timelineQuerySchema, TIMELINE_EVENT_TYPES } from "./patient-timeline";
 export type { TimelineEventType, TimelineQuery } from "./patient-timeline";
 
 export {
+  expenseCategoryCreateSchema,
+  expenseCategoryUpdateSchema,
+  expenseCreateSchema,
+  expenseUpdateSchema,
+  campaignCreateSchema,
+  campaignUpdateSchema,
+  patientAcquisitionCreateSchema,
+  insuranceClaimCreateSchema,
+  insuranceClaimUpdateSchema,
+  revenueQuerySchema,
+} from "./clinic-owner";
+
+export {
   clinicProvisionSchema,
   churnPredictionQuerySchema,
   revenueForecastQuerySchema,
 } from "./super-admin";
+
+export {
+  oneClickCheckinSchema,
+  phoneHandlerLookupSchema,
+  attestationCreateSchema,
+  attestationSignSchema,
+  attestationListSchema,
+  familyLinkCreateSchema,
+  familyLinkDeleteSchema,
+  familyMembersListSchema,
+  prescriptionRenewalRequestSchema,
+  prescriptionRenewalReviewSchema,
+  prescriptionRenewalDispenseSchema,
+  waitTimeEstimateSchema,
+  doctorDelayUpdateSchema,
+  inventoryItemCreateSchema,
+  inventoryItemUpdateSchema,
+  inventoryTransactionSchema,
+  inventoryAlertsSchema,
+} from "./batch4c";
 
 export {
   invoiceCreateSchema,
@@ -148,6 +181,12 @@ export {
   financialSummaryQuerySchema,
   revenueInsightsQuerySchema,
 } from "./billing";
+
+export {
+  cdssCheckRequestSchema,
+  doseValidationRequestSchema,
+  news2RequestSchema,
+} from "./clinical-cdss";
 
 export {
   admissionCreateSchema,
@@ -169,8 +208,4 @@ export {
   staffInviteQuerySchema,
 } from "./staff-invitations";
 
-export {
-  insuranceClaimCreateSchema,
-  insuranceClaimUpdateSchema,
-  insuranceClaimQuerySchema,
-} from "./insurance-claims";
+export { insuranceClaimQuerySchema } from "./insurance-claims";

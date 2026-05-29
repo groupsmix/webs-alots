@@ -10,10 +10,9 @@ const claimLineItemSchema = z.object({
 /** Create an insurance claim — adapted from Health-Pay claim review patterns. */
 export const insuranceClaimCreateSchema = z.object({
   patient_id: z.string().uuid(),
-  invoice_id: z.string().uuid().optional(),
   insurance_type: z.enum(["CNSS", "CNOPS", "AMO", "RAMED"]),
-  claimed_amount_centimes: z.number().int().positive(),
-  line_items: z.array(claimLineItemSchema).min(1).max(100),
+  amount_claimed: z.number().int().positive(),
+  line_items: z.array(claimLineItemSchema).max(100).optional(),
   notes: z.string().max(5000).optional(),
 });
 
@@ -30,8 +29,7 @@ export const insuranceClaimUpdateSchema = z.object({
       "appealed",
     ])
     .optional(),
-  approved_amount_centimes: z.number().int().nonnegative().optional(),
-  patient_share_centimes: z.number().int().nonnegative().optional(),
+  amount_approved: z.number().int().nonnegative().optional(),
   rejection_reason: z.string().max(2000).optional(),
   reviewer_notes: z.string().max(5000).optional(),
 });
