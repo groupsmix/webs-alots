@@ -38,6 +38,6 @@ BEGIN
     CREATE POLICY webhook_retry_queue_clinic_isolation
       ON webhook_retry_queue
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
