@@ -20,6 +20,7 @@
  * @see https://developers.cloudflare.com/durable-objects/
  */
 
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 import type { RateLimiter, RateLimiterOptions } from "./rate-limit";
 
@@ -149,8 +150,10 @@ export function createDORateLimiter(options: RateLimiterOptions): RateLimiter {
   return {
     async check(key: string): Promise<boolean> {
       try {
-        const ns = (globalThis as unknown as { RATE_LIMITER_DO?: DurableObjectNamespace })
-          .RATE_LIMITER_DO;
+        // Bindings live on getCloudflareContext().env under
+        // @opennextjs/cloudflare (v1.17+), NOT on globalThis — resolve at
+        // request time, falling back to globalThis for tests/dev.
+        const ns = await getWorkerBinding<DurableObjectNamespace>("RATE_LIMITER_DO");
 
         if (!ns) {
           logger.warn("Rate limiter DO binding not available", { context: "rate-limit" });
