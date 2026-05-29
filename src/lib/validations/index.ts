@@ -183,6 +183,13 @@ export {
 } from "./billing";
 
 export {
+  fhirSearchSchema,
+  fhirImportPatientSchema,
+  prescriptionTransitionSchema,
+  prescriptionCreateSchema,
+} from "./fhir";
+
+export {
   whatsappConsentGrantSchema,
   whatsappConsentRevokeSchema,
   whatsappConsentExportSchema,
