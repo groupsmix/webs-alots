@@ -1,6 +1,7 @@
 import { createClient as _createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
+import { verifyPoolerEndpoint, verifyDirectDbPooler } from "@/lib/connection-pooling";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger as _logger } from "@/lib/logger";
 import { isR2Configured as _isR2Configured } from "@/lib/r2";
@@ -83,6 +84,14 @@ export async function GET(request: NextRequest) {
   checks.whatsapp = whatsappConfigured
     ? { status: "ok" }
     : { status: "degraded", error: "WhatsApp API not configured" };
+
+  // Connection pooling verification
+  const poolerCheck = verifyPoolerEndpoint();
+  const directDbCheck = verifyDirectDbPooler();
+  checks.connectionPooling = {
+    status: poolerCheck.isPooled ? "ok" : "degraded",
+    error: poolerCheck.recommendation ?? directDbCheck.recommendation ?? undefined,
+  };
 
   const rateLimitBackend = process.env.RATE_LIMIT_BACKEND || "auto";
   const hasKV = rateLimitBackend === "kv";

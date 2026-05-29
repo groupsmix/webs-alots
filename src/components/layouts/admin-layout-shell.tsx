@@ -25,6 +25,8 @@ import {
   Boxes,
   FileText,
   Brain,
+  ScrollText,
+  DatabaseZap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -118,6 +120,9 @@ const navItems: NavItem[] = [
   },
   // AI-powered features (Professional+ plan)
   { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
+  // Security & Compliance
+  { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
+  { href: "/admin/data-retention", label: "Data Retention", icon: DatabaseZap },
 ];
 
 function OnboardingChecklistSidebar() {
@@ -258,11 +263,7 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
           {children}
         </main>
         <OnboardingTourOverlay />
-        <SessionTimeoutWarning
-          warningAfterMinutes={13}
-          logoutAfterMinutes={2}
-          onLogout={() => signOut()}
-        />
+        <SessionTimeoutWarning onLogout={() => signOut()} />
 
         {/* Mobile bottom tab bar */}
         <MobileTabBar tabs={adminMobileTabs} onMoreClick={() => setMobileOpen(true)} />

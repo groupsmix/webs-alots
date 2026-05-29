@@ -25,12 +25,25 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Cache static assets for 1 year
-        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot)",
+        // CDN-01: Cache static assets (images, fonts) for 1 year.
+        // These are content-hashed by Next.js, so immutable is safe.
+        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot|css)",
         headers: [
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        // CDN-02: Next.js hashed JS/CSS bundles under _next/static are
+        // safe to cache indefinitely. Cloudflare edge caches these via
+        // s-maxage and serves them without hitting the Worker.
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, s-maxage=31536000, immutable",
           },
         ],
       },
