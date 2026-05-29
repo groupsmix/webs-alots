@@ -14,9 +14,9 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: true
 
-# A174: contents:write needed for attaching SBOM to releases
+# Least-privilege: contents:write is scoped to sbom-release job only
 permissions:
-  contents: write
+  contents: read
   id-token: write
   attestations: write
 
