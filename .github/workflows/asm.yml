@@ -1,0 +1,115 @@
+# A213: Continuous Attack-Surface Management (ASM)
+#
+# Daily scan of the wildcard multi-tenant domain for new subdomains,
+# certificates, and exposed services. Alerts on changes via GitHub
+# issue creation.
+#
+# Runs at 06:00 UTC daily and on manual trigger.
+
+name: ASM — Attack Surface Monitor
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  asm-scan:
+    runs-on: ubuntu-latest
+    name: Subdomain & Certificate Monitor
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # A213: Enumerate subdomains via Certificate Transparency logs.
+      # crt.sh is a free, unauthenticated CT log aggregator. We query
+      # for any certificates issued for *.oltigo.com and compare against
+      # the previous scan stored as a workflow artifact.
+      - name: Query CT logs for subdomains
+        run: |
+          set -euo pipefail
+          DOMAIN="${ASM_ROOT_DOMAIN:-oltigo.com}"
+          echo "Scanning CT logs for: ${DOMAIN}"
+
+          # Fetch current certificates from crt.sh
+          curl -s "https://crt.sh/?q=%25.${DOMAIN}&output=json" \
+            | jq -r '.[].name_value' 2>/dev/null \
+            | sort -u \
+            | grep -v '^\*\.' \
+            > current-subdomains.txt || true
+
+          echo "Found $(wc -l < current-subdomains.txt) unique subdomains"
+          cat current-subdomains.txt
+
+      - name: Download previous scan
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: asm-subdomains-previous
+          path: previous/
+        continue-on-error: true
+
+      - name: Diff and alert on new subdomains
+        run: |
+          set -euo pipefail
+
+          if [ -f previous/current-subdomains.txt ]; then
+            # Find new subdomains not in previous scan
+            comm -13 previous/current-subdomains.txt current-subdomains.txt > new-subdomains.txt || true
+          else
+            echo "First run — no previous baseline to diff against."
+            cp current-subdomains.txt new-subdomains.txt
+          fi
+
+          NEW_COUNT=$(wc -l < new-subdomains.txt)
+          echo "new_count=${NEW_COUNT}" >> "$GITHUB_ENV"
+
+          if [ "$NEW_COUNT" -gt 0 ]; then
+            echo "⚠️  ${NEW_COUNT} new subdomain(s) detected:"
+            cat new-subdomains.txt
+          else
+            echo "No new subdomains detected."
+          fi
+
+      - name: Create alert issue for new subdomains
+        if: env.new_count != '0'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const fs = require('fs');
+            const newSubs = fs.readFileSync('new-subdomains.txt', 'utf8').trim();
+            if (!newSubs) return;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[ASM] ${process.env.new_count} new subdomain(s) detected`,
+              body: [
+                '## Attack Surface Change Detected (A213)',
+                '',
+                'The daily ASM scan found new subdomains in Certificate Transparency logs:',
+                '',
+                '```',
+                newSubs,
+                '```',
+                '',
+                '**Action required:**',
+                '- Verify each subdomain is intentional',
+                '- Confirm TLS configuration is correct',
+                '- Check for unintended service exposure',
+                '',
+                `Scan date: ${new Date().toISOString().slice(0, 10)}`,
+              ].join('\n'),
+              labels: ['security', 'asm'],
+            });
+
+      - name: Upload current scan as baseline
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: asm-subdomains-previous
+          path: current-subdomains.txt
+          retention-days: 90
+          overwrite: true

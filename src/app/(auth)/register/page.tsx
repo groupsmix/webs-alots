@@ -26,6 +26,7 @@ import {
 import { registerPatient, verifyOTP } from "@/lib/auth";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { isMinorByAge, MINOR_AGE_THRESHOLD } from "@/lib/minors";
 
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
@@ -40,14 +41,23 @@ export default function RegisterPage() {
   const [gender, setGender] = useState("");
   const [insurance, setInsurance] = useState("");
   const [otp, setOtp] = useState("");
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const parsedAge = age ? parseInt(age, 10) : undefined;
+  const patientIsMinor = parsedAge !== undefined && !isNaN(parsedAge) && isMinorByAge(parsedAge);
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
     if (!PHONE_AUTH_ENABLED) {
       setError(t(locale, "auth.phoneDisabled"));
+      return;
+    }
+
+    if (patientIsMinor && !guardianConsent) {
+      setError(t(locale, "register.guardianConsentRequired" as TranslationKey));
       return;
     }
 
@@ -58,9 +68,10 @@ export default function RegisterPage() {
         phone,
         name: `${firstName} ${lastName}`.trim(),
         email: email || undefined,
-        age: age ? parseInt(age, 10) : undefined,
+        age: parsedAge,
         gender: gender || undefined,
         insurance: insurance || undefined,
+        guardianConsent: patientIsMinor ? guardianConsent : undefined,
       });
 
       if (result.error) {
@@ -251,7 +262,31 @@ export default function RegisterPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              {patientIsMinor && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <p className="text-sm font-medium text-amber-900">
+                    {`Ce patient a moins de ${MINOR_AGE_THRESHOLD} ans. Le consentement d'un parent ou tuteur légal est requis (Loi 09-08 / RGPD Art. 8).`}
+                  </p>
+                  <label className="flex items-start gap-2 text-sm text-amber-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={guardianConsent}
+                      onChange={(e) => setGuardianConsent(e.target.checked)}
+                      className="mt-0.5 rounded border-amber-300"
+                    />
+                    <span>
+                      {
+                        "Je confirme être le parent ou tuteur légal de ce patient mineur et je consens au traitement de ses données de santé."
+                      }
+                    </span>
+                  </label>
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || (patientIsMinor && !guardianConsent)}
+              >
                 {loading ? t(locale, "register.creating") : t(locale, "register.createAccount")}
               </Button>
             </form>

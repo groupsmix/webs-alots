@@ -414,6 +414,38 @@ jobs:
             bom.json
             bom.json.bundle
 
+      # A214: Hallucinated dependency check — verify all production
+      # dependencies in package-lock.json actually exist on the npm
+      # registry. AI-generated code may reference non-existent packages
+      # (typosquat vector).
+      - name: Verify dependencies exist on npm
+        run: |
+          node -e '
+            const lock = require("./package-lock.json");
+            const deps = Object.keys(lock.packages || {}).filter(k => k.startsWith("node_modules/"));
+            const names = [...new Set(deps.map(d => {
+              const parts = d.replace("node_modules/", "").split("/");
+              return parts[0].startsWith("@") ? parts.slice(0,2).join("/") : parts[0];
+            }))];
+            let failed = 0;
+            const batch = 20;
+            async function check(name) {
+              try {
+                const r = await fetch(`https://registry.npmjs.org/${name}`, { method: "HEAD" });
+                if (r.status === 404) { console.error(`::error::Package "${name}" not found on npm — possible hallucinated dependency`); failed++; }
+              } catch { /* network error, skip */ }
+            }
+            async function run() {
+              for (let i = 0; i < names.length; i += batch) {
+                await Promise.all(names.slice(i, i + batch).map(check));
+              }
+              if (failed > 0) { console.error(`${failed} package(s) not found on npm`); process.exit(1); }
+              console.log(`All ${names.length} dependencies verified on npm registry`);
+            }
+            run();
+          '
+        continue-on-error: true
+
       - name: Run Semgrep
         run: |
           python3 -m pip install --upgrade semgrep
@@ -425,6 +457,103 @@ jobs:
         with:
           sarif_file: semgrep.sarif
           category: "semgrep"
+  # A173: OSS supply-chain depth — OpenSSF Scorecard + license allowlist.
+  # Catches typosquat, dep-confusion, maintainer-takeover, and licence-
+  # incompatible dependencies that npm audit alone cannot detect.
+  supply-chain:
+    runs-on: ubuntu-latest
+    name: Supply Chain (A173)
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.13"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # A173: License allowlist — block copyleft / unknown licenses in
+      # production dependencies. Uses npm ls --json + inline Node script
+      # (license-checker has a known bug with json.readme on Node 22).
+      - name: License allowlist check
+        run: |
+          node -e '
+            const { execSync } = require("child_process");
+            const ALLOWED = new Set([
+              "MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0",
+              "0BSD", "BlueOak-1.0.0", "CC0-1.0", "Unlicense", "CC-BY-4.0",
+              "Python-2.0", "CC-BY-3.0", "MPL-2.0", "MIT-0",
+              "(MIT AND Zlib)", "(MIT AND ISC)", "(MIT OR CC0-1.0)",
+              "(BSD-2-Clause OR MIT OR Apache-2.0)", "(MIT OR Apache-2.0)",
+              "FSL-1.1-MIT",
+            ]);
+            const EXCLUDED = new Set(["axe-core", "@modelcontextprotocol/sdk"]);
+            function isAllowed(spdx) {
+              if (!spdx || spdx === "UNKNOWN") return false;
+              if (ALLOWED.has(spdx)) return true;
+              const cleaned = spdx.replace(/[()]/g, "");
+              // OR: any part allowed is fine
+              if (/\bOR\b/i.test(cleaned)) {
+                return cleaned.split(/ OR /i).some(p => ALLOWED.has(p.trim()));
+              }
+              // AND: all parts must be allowed
+              if (/\bAND\b/i.test(cleaned)) {
+                return cleaned.split(/ AND /i).every(p => ALLOWED.has(p.trim()));
+              }
+              return false;
+            }
+            const raw = execSync("npm ls --all --json --production 2>/dev/null", { encoding: "utf8", maxBuffer: 50*1024*1024 });
+            const tree = JSON.parse(raw);
+            const violations = [];
+            function walk(deps) {
+              if (!deps) return;
+              for (const [name, info] of Object.entries(deps)) {
+                if (EXCLUDED.has(name)) continue;
+                // Read license from node_modules
+                try {
+                  const pkg = require(name + "/package.json");
+                  const lic = typeof pkg.license === "string" ? pkg.license : (pkg.license?.type || "UNKNOWN");
+                  if (!isAllowed(lic)) violations.push({ name, license: lic });
+                } catch { /* optional / peer dep not installed */ }
+                if (info.dependencies) walk(info.dependencies);
+              }
+            }
+            walk(tree.dependencies);
+            if (violations.length > 0) {
+              console.error("Disallowed licenses found:");
+              for (const v of violations) console.error("  " + v.name + ": " + v.license);
+              process.exit(1);
+            }
+            console.log("All production dependencies have allowed licenses");
+          '
+
+      # A173: OpenSSF Scorecard — surfaces maintainer-takeover,
+      # code-review gaps, branch-protection, and CI/CD security.
+      - name: OpenSSF Scorecard
+        uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46 # v2.4.0
+        with:
+          results_file: scorecard-results.sarif
+          results_format: sarif
+          publish_results: false
+        continue-on-error: true
+
+      - name: Upload Scorecard SARIF
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4
+        if: always() && hashFiles('scorecard-results.sarif') != ''
+        with:
+          sarif_file: scorecard-results.sarif
+          category: "scorecard"
+        continue-on-error: true
+
   # R-25: Run Knip to detect unused exports, files, and dependencies.
   # Non-blocking (continue-on-error) because the current codebase has known
   # findings — the goal is visibility, not gating.

@@ -138,8 +138,38 @@ export default function PrivacyPage() {
       ),
     },
     {
-      id: "contact",
+      id: "mineurs",
       number: "08",
+      title: "Données des Mineurs",
+      children: (
+        <>
+          <p>
+            Conformément à la loi marocaine n° 09-08 et au RGPD (article 8), le traitement des
+            données personnelles des patients mineurs (moins de 18 ans) nécessite le consentement
+            préalable d&apos;un parent ou tuteur légal.
+          </p>
+          <ul>
+            <li>
+              <strong>Consentement parental :</strong> lors de l&apos;inscription d&apos;un patient
+              mineur, le consentement explicite du parent ou tuteur légal est recueilli et
+              enregistré.
+            </li>
+            <li>
+              <strong>Pas de profilage comportemental :</strong> aucune analyse comportementale,
+              publicité ciblée ou traitement automatisé à des fins de profilage n&apos;est effectué
+              sur les données des patients mineurs.
+            </li>
+            <li>
+              <strong>Droits du tuteur :</strong> le parent ou tuteur légal peut exercer les droits
+              d&apos;accès, de rectification et de suppression pour le compte du mineur.
+            </li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      id: "contact",
+      number: "09",
       title: "Contact",
       children: (
         <p>
