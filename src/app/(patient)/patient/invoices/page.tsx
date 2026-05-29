@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, CreditCard, Eye, FileText, CheckCircle2 } from "lucide-react";
+import { Download, CreditCard, FileText, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -154,9 +154,6 @@ export default function PatientInvoicesPage() {
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button variant="ghost" size="sm" title="View">
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
