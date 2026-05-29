@@ -192,6 +192,8 @@ export default function BrandingPage() {
               ? "cover_photo_url"
               : "hero_image_url";
       setBranding((prev) => ({ ...prev, [urlField]: url }));
+    } catch {
+      alert("Upload failed");
     } finally {
       setUploading(null);
     }
@@ -291,7 +293,11 @@ export default function BrandingPage() {
                     secondary_color: preset.theme.secondaryColor,
                   }));
                   setTimeout(() => setAppliedPreset(null), 3000);
+                } else {
+                  alert("Failed to apply preset");
                 }
+              } catch {
+                alert("Failed to apply preset");
               } finally {
                 setApplyingPreset(null);
               }
