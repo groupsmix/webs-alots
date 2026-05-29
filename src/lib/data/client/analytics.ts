@@ -219,19 +219,32 @@ export async function fetchAnalytics(
 ): Promise<AnalyticsData> {
   const supabase = createClient();
 
+  const { prevStart, end } = getPeriodRange(period);
+  const periodStart = getLocalDateStr(prevStart);
+  const periodEnd = getLocalDateStr(end);
+
   const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
     supabase
       .from("appointments")
       .select(
         "id, appointment_date, start_time, status, patient_id, service_id, booking_source, doctor_id",
       )
-      .eq("clinic_id", clinicId),
+      .eq("clinic_id", clinicId)
+      .gte("appointment_date", periodStart)
+      .lte("appointment_date", periodEnd),
     supabase
       .from("payments")
       .select("id, amount, created_at, payment_method, doctor_id, service_id")
       .eq("clinic_id", clinicId)
-      .eq("status", "completed"),
-    supabase.from("reviews").select("id, stars, created_at").eq("clinic_id", clinicId),
+      .eq("status", "completed")
+      .gte("created_at", `${periodStart}T00:00:00`)
+      .lte("created_at", `${periodEnd}T23:59:59`),
+    supabase
+      .from("reviews")
+      .select("id, stars, created_at")
+      .eq("clinic_id", clinicId)
+      .gte("created_at", `${periodStart}T00:00:00`)
+      .lte("created_at", `${periodEnd}T23:59:59`),
     supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
 
