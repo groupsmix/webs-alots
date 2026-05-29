@@ -16,9 +16,6 @@ import { test, expect } from "@playwright/test";
  * conformance statement and roadmap.
  *
  * Known exclusions:
- * - color-contrast: Some brand colours are intentionally low-contrast
- *   on decorative elements; the core content meets AA. We exclude the
- *   rule here and rely on manual design review for contrast.
  * - aria-prohibited-attr: shadcn/radix components set aria-describedby
  *   on elements where axe 4.11 considers it prohibited. Upstream fix
  *   tracked; excluded here to avoid false positives.
@@ -38,14 +35,19 @@ async function stableGoto(page: import("@playwright/test").Page, path: string) {
   await page.waitForTimeout(500);
 }
 
+const DECORATIVE_SELECTORS = [
+  ".decorative-gradient",
+  ".brand-watermark",
+  "[data-decorative='true']",
+];
+
 test.describe("Accessibility — WCAG 2.2 AA", () => {
   test("public landing page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/");
 
-    const results = await new AxeBuilder({ page })
-      .withTags(AXE_TAGS)
-      .disableRules(EXCLUDED_RULES)
-      .analyze();
+    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
+    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
+    const results = await builder.analyze();
 
     expect(results.violations).toEqual([]);
   });
@@ -53,10 +55,9 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
   test("booking page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/booking");
 
-    const results = await new AxeBuilder({ page })
-      .withTags(AXE_TAGS)
-      .disableRules(EXCLUDED_RULES)
-      .analyze();
+    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
+    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
+    const results = await builder.analyze();
 
     expect(results.violations).toEqual([]);
   });
@@ -64,10 +65,9 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
   test("login page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/login");
 
-    const results = await new AxeBuilder({ page })
-      .withTags(AXE_TAGS)
-      .disableRules(EXCLUDED_RULES)
-      .analyze();
+    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
+    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
+    const results = await builder.analyze();
 
     expect(results.violations).toEqual([]);
   });
@@ -75,10 +75,9 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
   test("privacy policy page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/privacy");
 
-    const results = await new AxeBuilder({ page })
-      .withTags(AXE_TAGS)
-      .disableRules(EXCLUDED_RULES)
-      .analyze();
+    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
+    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
+    const results = await builder.analyze();
 
     expect(results.violations).toEqual([]);
   });

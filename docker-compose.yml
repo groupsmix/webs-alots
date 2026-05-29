@@ -24,7 +24,9 @@ services:
   #   docker pull supabase/postgres:<tag> && docker inspect --format='{{index .RepoDigests 0}}' supabase/postgres:<tag>
   # then use the full image@sha256:... reference here.
   db:
-    image: supabase/postgres:15.8.1.145
+    # A32-2: Pinned by digest for reproducible builds.
+    # To update: docker pull supabase/postgres:<new-tag> && docker inspect --format='{{index .RepoDigests 0}}' supabase/postgres:<new-tag>
+    image: supabase/postgres:15.14.1.131@sha256:ae15b4d243438161fe310172a9f37510dd54a6b59ee55dbad3482249bf227f32
     ports:
       # A31.2 / A31.19: Bind to localhost only, not 0.0.0.0
       - "127.0.0.1:54322:5432"
@@ -49,7 +51,8 @@ services:
   # A32-2: Studio tag is dated 2024-01-01 — consider bumping to a
   # recent release and pinning by digest (see A32-2 note on db above).
   studio:
-    image: supabase/studio:20240101
+    # A32-2: Pinned by digest. Bumped from 20240101 to latest release.
+    image: supabase/studio:2026.05.25-sha-65c570e@sha256:c18b922ab1afdc4f25600f5c5bba701c302823013df5388927205a472ea95a10
     ports:
       # A31.5 / A31.12: Bind to localhost only (unauthenticated DB admin UI)
       - "127.0.0.1:54323:3000"
@@ -69,7 +72,8 @@ services:
   # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
   # A32-2: Pin by digest when updating (see note on db above).
   minio:
-    image: minio/minio:RELEASE.2025-05-01T22-06-42Z
+    # A32-2: Pinned by digest. To update: docker pull minio/minio:<tag> && docker inspect --format='{{index .RepoDigests 0}}' minio/minio:<tag>
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
     ports:
       # A31.7: Bind MinIO API to localhost only
       - "127.0.0.1:9000:9000"

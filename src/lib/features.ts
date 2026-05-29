@@ -101,7 +101,7 @@ export type ClinicFeatureKey =
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
 
 /**
- * Cloudflare KV binding type
+ * Cloudflare KV binding type.
  */
 interface CloudflareKV {
   get(
@@ -109,6 +109,23 @@ interface CloudflareKV {
     options?: { type: "text" | "json" },
   ): Promise<string | Record<string, unknown> | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
+/**
+ * A90-2: Typed accessor for the Workers KV binding.
+ *
+ * Replaces the ad-hoc `(globalThis as unknown as { ... }).FEATURE_FLAGS_KV`
+ * casts scattered in the codebase with a single, type-safe helper.
+ */
+interface WorkersEnvBindings {
+  FEATURE_FLAGS_KV?: CloudflareKV;
+  RATE_LIMIT_KV?: CloudflareKV;
+}
+
+export function getKVBinding<K extends keyof WorkersEnvBindings>(
+  name: K,
+): WorkersEnvBindings[K] | undefined {
+  return (globalThis as unknown as WorkersEnvBindings)[name];
 }
 
 /**
@@ -124,7 +141,7 @@ export async function isAIEnabled(): Promise<boolean> {
   if (process.env.AI_DISABLED === "true") return false;
 
   try {
-    const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
+    const kv = getKVBinding("FEATURE_FLAGS_KV");
     if (!kv) {
       // No KV binding — default to enabled (backwards-compatible)
       return true;
