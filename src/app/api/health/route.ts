@@ -2,33 +2,46 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { isR2Configured } from "@/lib/r2";
+
+export type HealthStatus = "healthy" | "degraded" | "unhealthy";
+
+export interface HealthCheckResult {
+  status: string;
+  latencyMs?: number;
+  error?: string;
+  backend?: string;
+}
+
+export interface HealthResponse {
+  status: HealthStatus;
+  checks: {
+    supabase: HealthCheckResult;
+    r2: HealthCheckResult;
+    rateLimiter: HealthCheckResult;
+  };
+  timestamp: string;
+}
+
 /**
  * GET /api/health
  *
- * Health check endpoint for monitoring and load balancer probes.
- * Returns service status, uptime, database connectivity, and
- * component-level health for R2, WhatsApp, and rate limiter.
+ * Enhanced health check endpoint. Returns structured JSON with
+ * per-dependency status, latency, and an overall status indicator.
  *
  * Uses a direct Supabase client (anon key, no cookies) instead of the
  * cookie-based `createClient()` from `supabase-server.ts`.  Health
  * checks are hit by load balancers and monitoring tools that don't
- * carry browser cookies, and depending on `next/headers` cookies()
- * can fail in certain Cloudflare Workers edge contexts.
- *
- * Audit P2 #23: Deeper monitoring checks (latency, auth probe, etc.)
- * are also exposed via /api/health/internal which is gated by
- * CRON_SECRET to prevent abuse.
+ * carry browser cookies.
  */
 export async function GET() {
-  const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
+  let supabaseCheck: HealthCheckResult;
 
-  // Database connectivity check
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      checks.database = {
+      supabaseCheck = {
         status: "degraded",
         error: "Supabase credentials not configured",
       };
@@ -38,71 +51,50 @@ export async function GET() {
       const { error } = await supabase.from("clinics").select("id").limit(1);
       const dbLatency = Date.now() - dbStart;
 
-      checks.database = error
+      supabaseCheck = error
         ? { status: "degraded", latencyMs: dbLatency, error: "Database query failed" }
         : { status: "ok", latencyMs: dbLatency };
-
-      // L6-H2: Deep Supabase connectivity check — verify Auth service is reachable
-      // beyond the basic PostgREST query above. This catches scenarios where the
-      // database is up but the Auth or GoTrue service is degraded.
-      if (!error) {
-        try {
-          const authStart = Date.now();
-          const { error: authError } = await supabase.auth.getSession();
-          const authLatency = Date.now() - authStart;
-          checks.auth = authError
-            ? { status: "degraded", latencyMs: authLatency, error: "Auth service query failed" }
-            : { status: "ok", latencyMs: authLatency };
-        } catch {
-          checks.auth = { status: "degraded", error: "Auth service unreachable" };
-        }
-      }
     }
   } catch (err) {
     logger.warn("Health check failed", { context: "health", error: err });
-    checks.database = {
-      status: "down",
-      error: "Database unreachable",
-    };
+    supabaseCheck = { status: "down", error: "Database unreachable" };
   }
 
-  // R2 storage availability check
-  checks.r2 = isR2Configured()
+  const r2Check: HealthCheckResult = isR2Configured()
     ? { status: "ok" }
     : { status: "degraded", error: "R2 storage not configured" };
 
-  // WhatsApp API availability check
-  const whatsappConfigured =
-    !!(process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN) ||
-    !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
-  checks.whatsapp = whatsappConfigured
-    ? { status: "ok" }
-    : { status: "degraded", error: "WhatsApp API not configured" };
-
-  // Rate limiter backend check
   const rateLimitBackend = process.env.RATE_LIMIT_BACKEND || "auto";
   const hasKV = rateLimitBackend === "kv";
   const hasSupabase = !!(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   );
-  checks.rateLimiter = {
+  const resolvedBackend = hasKV ? "kv" : hasSupabase ? "supabase" : "memory";
+  const rateLimiterCheck: HealthCheckResult = {
     status: hasKV || hasSupabase ? "ok" : "degraded",
+    backend: resolvedBackend,
     error:
       !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
   };
 
-  const overallStatus = Object.values(checks).every((c) => c.status === "ok")
-    ? "ok"
-    : Object.values(checks).some((c) => c.status === "down")
-      ? "down"
+  const allChecks = [supabaseCheck, r2Check, rateLimiterCheck];
+  const overallStatus: HealthStatus = allChecks.every((c) => c.status === "ok")
+    ? "healthy"
+    : allChecks.some((c) => c.status === "down")
+      ? "unhealthy"
       : "degraded";
 
-  // O-04: Anon /api/health returns only `{ ok: boolean }` plus the HTTP
-  // status code (200 when healthy/degraded, 503 when down). Status
-  // strings, timestamps, and per-dependency detail are reserved for the
-  // gated /api/health/internal endpoint so unauthenticated callers cannot
-  // fingerprint our infrastructure.
-  return apiSuccess({ ok: overallStatus !== "down" }, overallStatus === "down" ? 503 : 200, {
+  const payload: HealthResponse = {
+    status: overallStatus,
+    checks: {
+      supabase: supabaseCheck,
+      r2: r2Check,
+      rateLimiter: rateLimiterCheck,
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  return apiSuccess(payload, overallStatus === "unhealthy" ? 503 : 200, {
     "Cache-Control": "public, max-age=30",
   });
 }

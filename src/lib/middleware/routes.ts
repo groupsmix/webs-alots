@@ -45,7 +45,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 /** Lightweight API routes that skip heavy middleware processing */
-export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health"]);
+export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health", "/api/v1/health"]);
 
 /**
  * Role to allowed route prefix mapping.
@@ -142,6 +142,21 @@ const PUBLIC_API_ROUTES = [
   "/api/auth/demo-login",
   // CSP report endpoint
   "/api/csp-report",
+  // Versioned (v1) equivalents of public routes — rewrites in next.config.ts
+  // map these to the underlying unversioned handlers, but middleware auth
+  // runs before rewrites so each must be allowlisted explicitly.
+  "/api/v1/booking",
+  "/api/v1/booking/verify",
+  "/api/v1/booking/cancel",
+  "/api/v1/webhooks",
+  "/api/v1/payments/webhook",
+  "/api/v1/payments/cmi/callback",
+  "/api/v1/checkin/lookup",
+  "/api/v1/checkin/confirm",
+  "/api/v1/checkin/status",
+  "/api/v1/chat",
+  "/api/v1/consent",
+  "/api/v1/notifications",
 ];
 
 /**
