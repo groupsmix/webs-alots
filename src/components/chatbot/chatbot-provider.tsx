@@ -9,6 +9,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 
@@ -45,6 +46,7 @@ export function ChatbotProvider({
   clinicId?: string;
   children: ReactNode;
 }) {
+  const [locale] = useLocale();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -167,7 +169,7 @@ export function ChatbotProvider({
         const errorMsg: ChatMessage = {
           id: `msg-${Date.now()}-error`,
           role: "assistant",
-          content: t("fr", "chatbot.error"),
+          content: t(locale, "chatbot.error"),
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorMsg]);
@@ -176,7 +178,7 @@ export function ChatbotProvider({
         setIsLoading(false);
       }
     },
-    [clinicId],
+    [clinicId, locale],
   );
 
   const clearMessages = useCallback(() => {
