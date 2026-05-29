@@ -12,6 +12,7 @@
 # secrets) remain in CI secrets / Cloudflare dashboard.
 #
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+# Last key rotation: 2026-05-29
 # =============================================================================
 
 name = "webs-alots"
