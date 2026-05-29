@@ -43,6 +43,8 @@ const ALLOWLIST = new Set([
   "src/app/api/onboarding/route.ts",
   // Consent — uses user-scoped client, no direct clinic_id in insert
   "src/app/api/consent/route.ts",
+  // Revenue forecast — platform-wide aggregation tables (revenue_snapshots, revenue_forecasts) have no clinic_id
+  "src/app/api/admin/revenue-forecast/route.ts",
 ]);
 
 const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;
