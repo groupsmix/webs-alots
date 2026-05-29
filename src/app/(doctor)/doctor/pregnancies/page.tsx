@@ -28,11 +28,12 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { getLocalDateStr } from "@/lib/utils";
 
 function addDays(date: string, days: number): string {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return getLocalDateStr(d);
 }
 
 export default function PregnanciesPage() {
