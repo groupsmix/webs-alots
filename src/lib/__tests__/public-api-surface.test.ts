@@ -87,6 +87,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/cron/gdpr-purge",
   "/api/cron/notifications",
   "/api/cron/nps-survey",
+  "/api/cron/payment-reminders",
   "/api/cron/r2-cleanup",
   "/api/cron/rebooking-reminders",
   "/api/cron/reminders",
