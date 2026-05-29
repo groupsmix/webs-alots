@@ -73,6 +73,15 @@ export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
 export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
 
+export {
+  aiTeamChatSchema,
+  aiTeamTaskUpdateSchema,
+  aiTeamAlertReadSchema,
+  aiTeamGenerateSchema,
+  AI_AGENT_TYPES,
+} from "./ai-team";
+export type { AIAgentType } from "./ai-team";
+
 export { safeParse } from "./helpers";
 
 export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
