@@ -54,7 +54,7 @@ export default function PatientTimelinePage() {
       setEvents(data.events);
       setPagination(data.pagination);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load timeline");
+      setError(err instanceof Error ? err.message : "Échec du chargement de l'historique");
     } finally {
       setLoading(false);
     }
@@ -80,9 +80,9 @@ export default function PatientTimelinePage() {
         <div className="space-y-1">
           <Breadcrumb
             items={[
-              { label: "Doctor", href: "/doctor" },
+              { label: "Médecin", href: "/doctor" },
               { label: "Patients", href: "/doctor/patients" },
-              { label: "Timeline" },
+              { label: "Historique" },
             ]}
           />
           <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function PatientTimelinePage() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight">Patient Timeline</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Historique du patient</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export default function PatientTimelinePage() {
             className="print:hidden"
           >
             <Printer className="h-4 w-4" />
-            Print Dossier
+            Imprimer le dossier
           </Button>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function PatientTimelinePage() {
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
           <Button variant="outline" size="sm" className="ml-3" onClick={loadTimeline}>
-            Retry
+            Réessayer
           </Button>
         </div>
       )}
@@ -140,11 +140,11 @@ export default function PatientTimelinePage() {
       {!loading && !error && events.length === 0 && (
         <EmptyState
           icon={Clock}
-          title="No events found"
+          title="Aucun événement trouvé"
           description={
             activeFilter || searchQuery || dateFrom || dateTo
-              ? "Try adjusting your filters or search query"
-              : "This patient has no recorded interactions yet"
+              ? "Essayez d'ajuster vos filtres ou votre recherche"
+              : "Ce patient n'a encore aucune interaction enregistrée"
           }
           action={
             (activeFilter || searchQuery || dateFrom || dateTo) && (
@@ -158,7 +158,7 @@ export default function PatientTimelinePage() {
                   setDateTo("");
                 }}
               >
-                Clear all filters
+                Effacer tous les filtres
               </Button>
             )
           }
@@ -169,10 +169,10 @@ export default function PatientTimelinePage() {
         <>
           {/* Stats */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground print:hidden">
-            <Badge variant="secondary">{pagination?.total ?? events.length} events</Badge>
+            <Badge variant="secondary">{pagination?.total ?? events.length} événements</Badge>
             {pagination && pagination.totalPages > 1 && (
               <span>
-                Page {pagination.page} of {pagination.totalPages}
+                Page {pagination.page} sur {pagination.totalPages}
               </span>
             )}
           </div>
@@ -202,7 +202,7 @@ export default function PatientTimelinePage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                Previous
+                Précédent
               </Button>
               <span className="text-sm text-muted-foreground">
                 {page} / {pagination.totalPages}
@@ -213,7 +213,7 @@ export default function PatientTimelinePage() {
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                Suivant
               </Button>
             </div>
           )}
@@ -248,8 +248,8 @@ function formatGroupDate(dateStr: string): string {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (dateStr === today.toISOString().split("T")[0]) return "Today";
-  if (dateStr === yesterday.toISOString().split("T")[0]) return "Yesterday";
+  if (dateStr === today.toISOString().split("T")[0]) return "Aujourd'hui";
+  if (dateStr === yesterday.toISOString().split("T")[0]) return "Hier";
 
   return date.toLocaleDateString("fr-FR", {
     weekday: "long",
