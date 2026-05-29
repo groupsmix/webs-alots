@@ -27,6 +27,7 @@
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 import { createDORateLimiter, shouldUseDO } from "@/lib/rate-limit-do";
 
@@ -452,34 +453,49 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
     return Number.isFinite(parsed) ? parsed : DEFAULT_KV_GRACE_MS;
   };
 
+  /**
+   * Backend is unreachable (binding missing, KV error, or circuit open).
+   *
+   * Defense-in-depth: a `failClosed: false` limiter must NEVER return `false`
+   * just because the backend is down — a single backend outage must not take
+   * the whole site offline. It always degrades to the in-memory limiter, which
+   * still allows/limits by real per-isolate count. Only `failClosed: true`
+   * limiters (security-critical endpoints) may hard-deny, and only once the
+   * grace period since the first failure has elapsed.
+   */
+  const degradeOrFailClosed = (key: string): boolean | Promise<boolean> => {
+    if (!circuitBreaker.fallback) {
+      circuitBreaker.fallback = createMemoryRateLimiter(options);
+    }
+    if (failClosed) {
+      const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
+      if (elapsed > getKvGraceMs()) {
+        logger.error("Rate limiter KV grace period expired, failing closed", {
+          context: "rate-limit",
+          key,
+          elapsedMs: elapsed,
+        });
+        return false;
+      }
+    }
+    return circuitBreaker.fallback.check(key);
+  };
+
   return {
     async check(key: string): Promise<boolean> {
       // If circuit breaker is tripped, degrade to in-memory rate limiting.
       if (isCircuitOpen(circuitBreaker)) {
-        if (circuitBreaker.fallback) {
-          // Enforce the grace period fail-closed boundary
-          const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
-          if (elapsed > getKvGraceMs()) {
-            logger.error("Rate limiter KV grace period expired, failing closed", {
-              context: "rate-limit",
-              key,
-              elapsedMs: elapsed,
-            });
-            return false;
-          }
-          return circuitBreaker.fallback.check(key);
-        }
-        return !failClosed;
+        return degradeOrFailClosed(key);
       }
 
       const now = Date.now();
       const windowStart = now - windowMs;
 
       try {
-        // Get existing timestamps from KV
-        // In production, RATE_LIMIT_KV would be bound to the Worker
-        // For now, we'll check if the binding exists
-        const kv = (globalThis as unknown as { RATE_LIMIT_KV?: CloudflareKV }).RATE_LIMIT_KV;
+        // A: bindings live on getCloudflareContext().env under
+        // @opennextjs/cloudflare (v1.17+), NOT on globalThis — resolve at
+        // request time, falling back to globalThis for tests/dev.
+        const kv = await getWorkerBinding<CloudflareKV>("RATE_LIMIT_KV");
 
         if (!kv) {
           // KV binding not available, fall back to memory
@@ -487,13 +503,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
             context: "rate-limit",
           });
           recordFailure(circuitBreaker, options);
-          if (circuitBreaker.failClosed) return false;
-          const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
-          if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
-          if (circuitBreaker.fallback) {
-            return circuitBreaker.fallback.check(key);
-          }
-          return !failClosed;
+          return degradeOrFailClosed(key);
         }
 
         const stored = await kv.get(`rate_limit:${key}`, { type: "json" });
@@ -523,14 +533,8 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         logger.error("Rate limiter KV failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
-        if (circuitBreaker.failClosed) return false;
-        const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
-        if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
         void reportRateLimitBackendError("kv", err);
-        if (circuitBreaker.fallback) {
-          return circuitBreaker.fallback.check(key);
-        }
-        return !failClosed;
+        return degradeOrFailClosed(key);
       }
     },
   };

@@ -19,6 +19,7 @@
  *   const enabled = await isFeatureEnabledForClinic(clinicId, 'appointments');
  */
 
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 
 /** All possible feature-flag keys stored in features_config. */
@@ -116,6 +117,11 @@ interface CloudflareKV {
  *
  * Replaces the ad-hoc `(globalThis as unknown as { ... }).FEATURE_FLAGS_KV`
  * casts scattered in the codebase with a single, type-safe helper.
+ *
+ * Resolves the binding via `getCloudflareContext().env` (where
+ * @opennextjs/cloudflare v1.17+ exposes bindings) at request time, falling
+ * back to `globalThis` for tests/dev. Async because the OpenNext context must
+ * be loaded lazily so this never throws at module-init.
  */
 interface WorkersEnvBindings {
   FEATURE_FLAGS_KV?: CloudflareKV;
@@ -124,8 +130,8 @@ interface WorkersEnvBindings {
 
 export function getKVBinding<K extends keyof WorkersEnvBindings>(
   name: K,
-): WorkersEnvBindings[K] | undefined {
-  return (globalThis as unknown as WorkersEnvBindings)[name];
+): Promise<WorkersEnvBindings[K] | undefined> {
+  return getWorkerBinding<NonNullable<WorkersEnvBindings[K]>>(name as string);
 }
 
 /**
@@ -141,7 +147,7 @@ export async function isAIEnabled(): Promise<boolean> {
   if (process.env.AI_DISABLED === "true") return false;
 
   try {
-    const kv = getKVBinding("FEATURE_FLAGS_KV");
+    const kv = await getKVBinding("FEATURE_FLAGS_KV");
     if (!kv) {
       // No KV binding — default to enabled (backwards-compatible)
       return true;
