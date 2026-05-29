@@ -797,6 +797,20 @@ export const aiAutoSuggestLimiter = createRateLimiter({
   failClosed: true,
 });
 
+/** AI Voice-to-Notes (SOAP structuring): 50 req / 24h per doctor */
+export const aiVoiceNoteLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 50,
+  failClosed: true,
+});
+
+/** AI Smart Prescription Writer: 100 req / 24h per doctor */
+export const aiSmartPrescriptionLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 100,
+  failClosed: true,
+});
+
 /**
  * A80-01 / A114-01: Per-clinic AI cost ceiling.
  * Caps total AI API invocations per clinic per 24h to prevent any single

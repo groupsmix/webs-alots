@@ -85,3 +85,72 @@ export const aiAutoSuggestRequestSchema = z.object({
     })
     .optional(),
 });
+
+// ── Batch 4A: Doctor AI schemas ──
+
+export const aiVoiceNoteRequestSchema = z.object({
+  patientId: z.string().min(1),
+  appointmentId: z.string().min(1).optional(),
+  rawTranscript: z.string().min(1).max(10000),
+  language: z.enum(["fr", "ar", "darija"]).default("fr"),
+});
+
+export const aiVoiceNoteSaveSchema = z.object({
+  id: z.string().min(1).optional(),
+  patientId: z.string().min(1),
+  appointmentId: z.string().min(1).optional(),
+  rawTranscript: z.string().min(1).max(10000),
+  language: z.enum(["fr", "ar", "darija"]).default("fr"),
+  soapSubjective: z.string().max(5000).optional(),
+  soapObjective: z.string().max(5000).optional(),
+  soapAssessment: z.string().max(5000).optional(),
+  soapPlan: z.string().max(5000).optional(),
+  status: z.enum(["draft", "structured", "reviewed", "finalized"]).default("draft"),
+});
+
+export const aiSmartPrescriptionRequestSchema = z.object({
+  patientId: z.string().min(1),
+  appointmentId: z.string().min(1).optional(),
+  diagnosis: z.string().min(1).max(2000),
+  symptoms: z.string().max(2000).optional(),
+  drugName: z.string().min(1).max(200),
+  patientContext: z
+    .object({
+      age: z.number().int().min(0).max(150).optional(),
+      gender: z.enum(["M", "F"]).optional(),
+      allergies: z.array(z.string().max(200)).optional(),
+      currentMedications: z.array(z.string().max(200)).optional(),
+      chronicConditions: z.array(z.string().max(200)).optional(),
+      weight: z.number().positive().max(500).optional(),
+    })
+    .optional(),
+});
+
+export const aiPrescriptionSaveSchema = z.object({
+  id: z.string().min(1).optional(),
+  patientId: z.string().min(1),
+  appointmentId: z.string().min(1).optional(),
+  diagnosis: z.string().min(1).max(2000),
+  medications: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(200),
+        dosage: z.string().max(200),
+        frequency: z.string().max(200),
+        duration: z.string().max(200),
+        instructions: z.string().max(500).optional(),
+      }),
+    )
+    .min(1)
+    .max(50),
+  notes: z.string().max(5000).optional(),
+  warnings: z.array(z.string().max(500)).optional(),
+  status: z.enum(["draft", "reviewed", "signed", "printed", "dispensed"]).default("draft"),
+});
+
+export const aiDrugInteractionCheckRequestSchema = z.object({
+  medications: z.array(z.string().min(1).max(200)).min(1).max(50),
+  patientId: z.string().min(1).optional(),
+  patientAllergies: z.array(z.string().max(200)).optional(),
+  currentMedications: z.array(z.string().max(200)).optional(),
+});
