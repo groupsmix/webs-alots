@@ -36,6 +36,7 @@ import {
   type PricingTierRow,
   type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
+import { formatCurrency } from "@/lib/utils";
 
 type TabView = "tiers" | "features";
 type SystemFilter = "all" | SystemType;
@@ -449,9 +450,7 @@ export default function PricingPage() {
                           <td className="py-3 px-4 hidden md:table-cell text-muted-foreground capitalize">
                             {sub.billingCycle === "monthly" ? "Mensuel" : "Annuel"}
                           </td>
-                          <td className="py-3 px-4 font-medium">
-                            {sub.amount.toLocaleString()} MAD
-                          </td>
+                          <td className="py-3 px-4 font-medium">{formatCurrency(sub.amount)}</td>
                           <td className="py-3 px-4">
                             <Badge
                               variant={

@@ -43,6 +43,7 @@ import {
   type FractureRecordView,
   type RehabPlanView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const FRACTURE_STATUSES: Record<
   string,
@@ -144,7 +145,7 @@ export default function OrthopedicsPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          recordDate: new Date().toISOString().split("T")[0],
+          recordDate: getLocalDateStr(),
           bodyPart: xrayForm.bodyPart,
           imageUrl: "",
           annotations: [],
@@ -168,7 +169,7 @@ export default function OrthopedicsPage() {
       location: fractureForm.location,
       fracture_type: fractureForm.fractureType,
       severity: fractureForm.severity,
-      injury_date: fractureForm.injuryDate || new Date().toISOString().split("T")[0],
+      injury_date: fractureForm.injuryDate || getLocalDateStr(),
       expected_healing_date: fractureForm.expectedHealingDate || undefined,
       notes: fractureForm.notes,
     });
@@ -182,8 +183,8 @@ export default function OrthopedicsPage() {
           fractureType: fractureForm.fractureType,
           severity: fractureForm.severity,
           status: "diagnosed",
-          injuryDate: fractureForm.injuryDate || new Date().toISOString().split("T")[0],
-          diagnosisDate: new Date().toISOString().split("T")[0],
+          injuryDate: fractureForm.injuryDate || getLocalDateStr(),
+          diagnosisDate: getLocalDateStr(),
           expectedHealingDate: fractureForm.expectedHealingDate,
           notes: fractureForm.notes,
           xrayRecordId: "",
@@ -229,7 +230,7 @@ export default function OrthopedicsPage() {
           patientName: "",
           title: rehabForm.title,
           condition: rehabForm.condition,
-          startDate: new Date().toISOString().split("T")[0],
+          startDate: getLocalDateStr(),
           targetEndDate: rehabForm.targetEndDate,
           status: "active",
           milestones,

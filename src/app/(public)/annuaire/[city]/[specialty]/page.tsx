@@ -15,6 +15,7 @@ import {
   TOP_CITY_SPECIALTY_COMBOS,
 } from "@/lib/directory-constants";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { formatCurrency } from "@/lib/utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";
@@ -215,7 +216,7 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
                       </div>
                       {doctor.consultationFee > 0 && (
                         <p className="text-sm font-medium mt-2">
-                          Consultation : {doctor.consultationFee} MAD
+                          Consultation : {formatCurrency(doctor.consultationFee)}
                         </p>
                       )}
                       {doctor.languages.length > 0 && (

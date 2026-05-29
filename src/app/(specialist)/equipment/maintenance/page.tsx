@@ -34,6 +34,7 @@ import {
 } from "@/lib/data/client";
 import type { EquipmentMaintenanceView, EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { getLocalDateStr } from "@/lib/utils";
 import { useEquipmentLocale } from "../layout";
 
 const STATUS_OPTIONS = ["all", "scheduled", "in_progress", "completed", "cancelled"] as const;
@@ -71,7 +72,7 @@ const emptyForm: MaintenanceFormState = {
   type: "routine",
   description: "",
   performedBy: "",
-  performedAt: new Date().toISOString().split("T")[0],
+  performedAt: getLocalDateStr(),
   nextDue: "",
   cost: "",
   status: "scheduled",

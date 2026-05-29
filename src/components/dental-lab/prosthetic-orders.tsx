@@ -13,6 +13,7 @@ import type {
   ProstheticOrderStatus,
   ProstheticPriority,
 } from "@/lib/types/database";
+import { formatCurrency } from "@/lib/utils";
 
 interface OrderView {
   id: string;
@@ -357,7 +358,7 @@ export function ProstheticOrders({
                         )}
                         {order.price !== null && (
                           <span className="font-medium">
-                            {order.price.toLocaleString()} MAD
+                            {formatCurrency(order.price)}
                             {order.isPaid ? (
                               <CheckCircle className="h-3 w-3 inline ml-0.5 text-green-600" />
                             ) : (

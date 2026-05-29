@@ -42,6 +42,16 @@ export const phoneNumber = z
   .max(30, "Phone number too long")
   .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format");
 
+/**
+ * Validate Moroccan phone numbers.
+ * Accepted formats: +212 6XXXXXXXX, +212 7XXXXXXXX, 06XXXXXXXX, 07XXXXXXXX
+ * (with or without spaces/dashes).
+ */
+export function isValidMoroccanPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-().]/g, "");
+  return /^(?:\+212|0)[67]\d{8}$/.test(digits);
+}
+
 /** Free-form user-supplied text (notes, content, descriptions). */
 export const safeText = z.string().transform(normalizeText);
 

@@ -22,6 +22,7 @@ import {
   type AppointmentView,
   type DoctorView,
 } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 import { ManualBookingDialog } from "./manual-booking-dialog";
 import { WalkInDialog } from "./walk-in-dialog";
 
@@ -112,7 +113,7 @@ export function ReceptionistBookingCalendar() {
   };
 
   const weekDates = getWeekDates();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
 
   const prevWeek = () => {
     const d = new Date(currentDate);

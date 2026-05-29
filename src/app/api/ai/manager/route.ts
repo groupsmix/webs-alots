@@ -22,6 +22,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { aiClinicCeilingLimiter, aiManagerLimiter } from "@/lib/rate-limit";
+import { formatCurrency } from "@/lib/utils";
 import { aiManagerRequestSchema } from "@/lib/validations";
 import type { AuthContext } from "@/lib/with-auth";
 
@@ -301,8 +302,8 @@ function buildUserMessage(
   }
 
   parts.push(`\nREVENUS:`);
-  parts.push(`- Ce mois: ${metrics.revenueThisMonth} MAD`);
-  parts.push(`- Mois dernier: ${metrics.revenueLastMonth} MAD`);
+  parts.push(`- Ce mois: ${formatCurrency(metrics.revenueThisMonth)}`);
+  parts.push(`- Mois dernier: ${formatCurrency(metrics.revenueLastMonth)}`);
   if (metrics.revenueLastMonth > 0) {
     const change = (
       ((metrics.revenueThisMonth - metrics.revenueLastMonth) / metrics.revenueLastMonth) *

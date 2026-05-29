@@ -10,6 +10,7 @@ import { z } from "zod";
 import { apiSuccess, apiSupabaseError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { formatCurrency } from "@/lib/utils";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const orderItemSchema = z.object({
@@ -100,7 +101,7 @@ export const POST = withAuthValidation(
       action: "order.created",
       type: "payment",
       clinicId,
-      description: `Order created: ${body.items.length} items, total ${total} MAD`,
+      description: `Order created: ${body.items.length} items, total ${formatCurrency(total)}`,
     });
 
     return apiSuccess(data, 201);

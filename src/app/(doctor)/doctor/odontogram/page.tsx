@@ -15,6 +15,7 @@ import {
   type OdontogramView,
 } from "@/lib/data/client";
 import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function DoctorOdontogramPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -79,7 +80,7 @@ export default function DoctorOdontogramPage() {
       toothNumber,
       status,
       notes,
-      lastUpdated: new Date().toISOString().split("T")[0],
+      lastUpdated: getLocalDateStr(),
     };
     setEntries((prev) => {
       const existingIdx = prev.findIndex((e) => e.toothNumber === toothNumber);

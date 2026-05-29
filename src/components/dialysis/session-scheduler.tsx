@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DialysisSessionStatus, DialysisRecurrencePattern } from "@/lib/types/database";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface SessionView {
   id: string;
@@ -99,7 +100,7 @@ export function SessionScheduler({
     }
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDateStr();
   const todaySessions = sessions.filter((s) => s.sessionDate === todayStr);
   const upcomingSessions = sessions.filter((s) => s.sessionDate > todayStr);
 

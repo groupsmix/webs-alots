@@ -29,6 +29,7 @@ import {
   type Announcement,
   type ActivityLog,
 } from "@/lib/super-admin-actions";
+import { formatCurrency } from "@/lib/utils";
 
 /** Subset of the clinics.config JSONB column used in the dashboard. */
 interface ClinicConfigJson {
@@ -146,7 +147,7 @@ export default function SuperAdminDashboardPage() {
     {
       icon: TrendingUp,
       label: t(locale, "superAdmin.monthlyRevenue"),
-      value: `${totalRevenue.toLocaleString()} MAD`,
+      value: `${formatCurrency(totalRevenue)}`,
       change: t(locale, "superAdmin.fromPayments"),
       color: "text-orange-600",
       bg: "bg-orange-50",
@@ -156,7 +157,7 @@ export default function SuperAdminDashboardPage() {
   const financialStats = [
     {
       label: t(locale, "superAdmin.mrr"),
-      value: `${mrr.toLocaleString()} MAD`,
+      value: `${formatCurrency(mrr)}`,
       icon: CreditCard,
       color: "text-emerald-600",
     },

@@ -3,6 +3,7 @@ import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
+import { getLocalDateStr } from "@/lib/utils";
 
 /**
  * GET /api/checkin/lookup?phone=...
@@ -77,7 +78,7 @@ async function findTodayAppointments(
   patientId: string,
   clinicId: string,
 ) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
 
   const { data: appointments } = await supabase
     .from("appointments")

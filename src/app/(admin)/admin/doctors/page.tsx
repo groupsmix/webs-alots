@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getCurrentUser, fetchDoctors, type DoctorView } from "@/lib/data/client";
+import { formatCurrency } from "@/lib/utils";
 
 type Doctor = DoctorView;
 
@@ -187,7 +188,7 @@ export default function ManageDoctorsPage() {
                 </div>
               </div>
               <div className="text-right text-sm text-muted-foreground">
-                <p>Consultation: {doctor.consultationFee} MAD</p>
+                <p>Consultation: {formatCurrency(doctor.consultationFee)}</p>
                 <p>{doctor.phone}</p>
                 <p className="text-xs">{doctor.email}</p>
               </div>

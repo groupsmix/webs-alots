@@ -677,7 +677,7 @@ export default function PharmacistDashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-sm">{sale.total} MAD</p>
+                    <p className="font-semibold text-sm">{formatCurrency(sale.total)}</p>
                     <Badge variant="outline" className="text-xs capitalize">
                       {sale.paymentMethod}
                     </Badge>

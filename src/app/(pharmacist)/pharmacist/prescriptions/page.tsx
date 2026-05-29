@@ -238,7 +238,7 @@ export default function PrescriptionsPage() {
                               <span className="text-muted-foreground">x{item.quantity}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span>{item.price} MAD</span>
+                              <span>{formatCurrency(item.price)}</span>
                               {!item.available && item.notes && (
                                 <span className="text-xs text-orange-500">{item.notes}</span>
                               )}
@@ -269,7 +269,9 @@ export default function PrescriptionsPage() {
                   {/* Actions */}
                   <div className="flex flex-col gap-2 min-w-[180px]">
                     <div className="text-right mb-2">
-                      <p className="text-2xl font-bold text-emerald-600">{rx.totalPrice} MAD</p>
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {formatCurrency(rx.totalPrice)}
+                      </p>
                     </div>
                     {rx.status === "pending" && (
                       <Button className="bg-blue-600 hover:bg-blue-700 w-full">

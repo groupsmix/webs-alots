@@ -29,6 +29,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { getLocalDateStr } from "@/lib/utils";
 
 const MILESTONE_TEMPLATES: Record<string, { milestone: string; expectedAgeMonths: number }[]> = {
   motor: [
@@ -193,7 +194,7 @@ export default function ChildInfoPage() {
   const handleStatusUpdate = async (id: string, status: MilestoneView["status"]) => {
     // Issue 22: Optimistic UI — update milestone status locally before server response
     const previousMilestones = [...milestones];
-    const achievedDate = status === "achieved" ? new Date().toISOString().split("T")[0] : null;
+    const achievedDate = status === "achieved" ? getLocalDateStr() : null;
     setMilestones((prev) =>
       prev.map((m) =>
         m.id === id ? { ...m, status, achievedDate: achievedDate ?? m.achievedDate } : m,

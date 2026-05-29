@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 interface Template {
   id: string;
@@ -246,7 +246,7 @@ export default function TemplateManagerPage() {
                 type: formType,
                 clinicType: formClinicType,
                 content: formContent,
-                updatedAt: new Date().toISOString().split("T")[0],
+                updatedAt: getLocalDateStr(),
               }
             : t,
         ),
@@ -259,8 +259,8 @@ export default function TemplateManagerPage() {
         type: formType,
         clinicType: formClinicType,
         content: formContent,
-        createdAt: new Date().toISOString().split("T")[0],
-        updatedAt: new Date().toISOString().split("T")[0],
+        createdAt: getLocalDateStr(),
+        updatedAt: getLocalDateStr(),
         usageCount: 0,
         active: true,
       };
@@ -275,8 +275,8 @@ export default function TemplateManagerPage() {
       ...item,
       id: `tpl-${Date.now()}`,
       name: `${item.name} (Copy)`,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
+      createdAt: getLocalDateStr(),
+      updatedAt: getLocalDateStr(),
       usageCount: 0,
     };
     setTemplates((prev) => [dup, ...prev]);

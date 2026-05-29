@@ -6,6 +6,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchTreatmentPlans, updateTreatmentPlan } from "@/lib/data/client";
 import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function DoctorTreatmentPlansPage() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
@@ -73,11 +74,11 @@ export default function DoctorTreatmentPlansPage() {
           status,
           date:
             status === "completed" || status === "in_progress"
-              ? new Date().toISOString().split("T")[0]
+              ? getLocalDateStr()
               : steps[stepIndex].date,
         };
         updatedSteps = steps;
-        return { ...p, steps, updatedAt: new Date().toISOString().split("T")[0] };
+        return { ...p, steps, updatedAt: getLocalDateStr() };
       }),
     );
 
@@ -115,7 +116,7 @@ export default function DoctorTreatmentPlansPage() {
           ...p,
           steps: allSteps,
           totalCost: p.totalCost + cost,
-          updatedAt: new Date().toISOString().split("T")[0],
+          updatedAt: getLocalDateStr(),
         };
       }),
     );
@@ -149,7 +150,7 @@ export default function DoctorTreatmentPlansPage() {
           ...p,
           steps: remainingSteps,
           totalCost: p.totalCost - removedCost,
-          updatedAt: new Date().toISOString().split("T")[0],
+          updatedAt: getLocalDateStr(),
         };
       }),
     );

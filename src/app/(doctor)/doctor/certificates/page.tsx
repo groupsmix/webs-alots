@@ -13,6 +13,7 @@ import {
   type MedicalCertificateView,
   type PatientView,
 } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function DoctorCertificatesPage() {
   const tenant = useTenant();
@@ -91,8 +92,8 @@ export default function DoctorCertificatesPage() {
         doctorName: user.name ?? "Doctor",
         type: data.type,
         content: data.content,
-        issuedDate: new Date().toISOString().split("T")[0],
-        createdAt: new Date().toISOString().split("T")[0],
+        issuedDate: getLocalDateStr(),
+        createdAt: getLocalDateStr(),
       };
       setCertificates((prev) => [newCert, ...prev]);
     }
