@@ -29,7 +29,6 @@ const IBAN_PATTERN = /\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}([A-Z0-9]?){0,16}\b/g;
 const MOROCCAN_PASSPORT = /\b[A-Z]{2}\d{7}\b/g;
 const CNSS_NUMBER = /\b\d{9}\b/g;
 
-
 export function validateAIOutput(text: string): string | null {
   // W8-A26-01: NFKC-normalize to collapse Unicode tricks (e.g. fullwidth
   // Latin letters, combining characters) that could bypass the regex.
