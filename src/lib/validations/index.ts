@@ -148,3 +148,9 @@ export {
   financialSummaryQuerySchema,
   revenueInsightsQuerySchema,
 } from "./billing";
+
+export {
+  cdssCheckRequestSchema,
+  doseValidationRequestSchema,
+  news2RequestSchema,
+} from "./clinical-cdss";
