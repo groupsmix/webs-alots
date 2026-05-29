@@ -28,8 +28,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY clinic_onboarding_steps_rls ON clinic_onboarding_steps
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
 
@@ -56,8 +56,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY clinic_whatsapp_numbers_rls ON clinic_whatsapp_numbers
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
 
@@ -83,8 +83,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY clinic_payment_configs_rls ON clinic_payment_configs
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
 
@@ -118,8 +118,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY clinic_churn_scores_rls ON clinic_churn_scores
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
 
