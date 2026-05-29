@@ -67,6 +67,11 @@ export {
   aiDrugCheckOverrideSchema,
   aiManagerRequestSchema,
   aiAutoSuggestRequestSchema,
+  aiVoiceNoteRequestSchema,
+  aiVoiceNoteSaveSchema,
+  aiSmartPrescriptionRequestSchema,
+  aiPrescriptionSaveSchema,
+  aiDrugInteractionCheckRequestSchema,
 } from "./chat";
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
