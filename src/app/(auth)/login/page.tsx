@@ -559,6 +559,7 @@ export default function LoginPage() {
                     <Label htmlFor="email">{t(locale, "auth.email")}</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       placeholder={t(locale, "auth.emailPlaceholder")}
                       value={email}
@@ -583,6 +584,7 @@ export default function LoginPage() {
                     <div className="relative">
                       <Input
                         id="password"
+                        name="password"
                         type={showPassword ? "text" : "password"}
                         placeholder={t(locale, "auth.passwordPlaceholder")}
                         value={password}
@@ -592,22 +594,22 @@ export default function LoginPage() {
                             setFieldErrors((prev) => ({ ...prev, password: undefined }));
                         }}
                         required
-                        className={`h-11 pr-10 text-base ${fieldErrors.password ? "border-destructive" : ""}`}
+                        className={`h-11 pr-12 text-base ${fieldErrors.password ? "border-destructive" : ""}`}
                         aria-invalid={!!fieldErrors.password}
                         aria-describedby={fieldErrors.password ? "password-error" : undefined}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                         aria-label={
                           showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
                         }
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-5 w-5" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-5 w-5" />
                         )}
                       </button>
                     </div>
@@ -697,7 +699,7 @@ export default function LoginPage() {
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
             {t(locale, "auth.noAccount")}{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
+            <Link href="/register/" className="text-primary hover:underline font-medium">
               {t(locale, "auth.register")}
             </Link>
           </p>
