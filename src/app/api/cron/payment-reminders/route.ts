@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { untypedClient } from "@/lib/billing-db";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { sendTextMessage } from "@/lib/whatsapp";
 
@@ -11,12 +12,9 @@ type UntypedTable = { from(table: string): any };
  * Automated cron job to send payment reminders for overdue invoices and upcoming installments.
  * Iterates per-clinic as required by AGENTS.md.
  */
-export async function POST(request: Request): Promise<NextResponse> {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const authError = verifyCronSecret(request);
+  if (authError) return authError;
 
   const { createAdminClient } = await import("@/lib/supabase-server");
   const supabase = createAdminClient("cron");
