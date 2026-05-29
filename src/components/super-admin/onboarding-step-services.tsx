@@ -55,6 +55,7 @@ export function OnboardingStepServices({
                   variant="ghost"
                   size="sm"
                   className="text-destructive"
+                  aria-label="Remove service"
                   onClick={() => onRemoveService(index)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />

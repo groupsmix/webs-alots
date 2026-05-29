@@ -89,7 +89,7 @@ export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
             <RefreshCw className="h-4 w-4" />
             Rebooking Status
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={fetchStatus}>
+          <Button variant="ghost" size="sm" onClick={fetchStatus} aria-label="Refresh">
             <RefreshCw className="h-3 w-3" />
           </Button>
         </div>

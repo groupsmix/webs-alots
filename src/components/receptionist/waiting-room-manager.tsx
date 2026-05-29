@@ -295,6 +295,7 @@ export function WaitingRoomManager() {
                         className="h-5 w-5 p-0"
                         onClick={() => moveUp(patient.id)}
                         disabled={index === 0}
+                        aria-label="Move up"
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
@@ -303,6 +304,7 @@ export function WaitingRoomManager() {
                         size="sm"
                         className="h-5 w-5 p-0"
                         onClick={() => moveDown(patient.id)}
+                        aria-label="Move down"
                         disabled={index === queue.length - 1}
                       >
                         <ArrowDown className="h-3 w-3" />
