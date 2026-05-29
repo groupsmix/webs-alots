@@ -597,11 +597,18 @@ export default function OnboardingPage() {
       <Breadcrumb
         items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Onboarding" }]}
       />
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Client Onboarding</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Set up a new clinic in your Supabase database — no SQL needed
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Client Onboarding</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Set up a new clinic in your Supabase database — no SQL needed
+          </p>
+        </div>
+        <Link href="/super-admin/onboarding/provision">
+          <Button variant="outline" size="sm">
+            Auto-Provision
+          </Button>
+        </Link>
       </div>
 
       {/* Step Indicator */}

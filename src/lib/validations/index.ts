@@ -84,3 +84,9 @@ export {
   waitingQueueUpdateSchema,
   npsSurveyResponseSchema,
 } from "./patient-experience";
+
+export {
+  clinicProvisionSchema,
+  churnPredictionQuerySchema,
+  revenueForecastQuerySchema,
+} from "./super-admin";
