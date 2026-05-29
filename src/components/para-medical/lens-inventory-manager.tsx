@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { LensInventoryItem } from "@/lib/types/para-medical";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -164,10 +163,10 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-right text-muted-foreground">
-                          {item.unit_cost} MAD
+                          {formatCurrency(item.unit_cost)}
                         </td>
                         <td className="py-2.5 px-3 text-right font-medium">
-                          {item.selling_price} MAD
+                          {formatCurrency(item.selling_price)}
                         </td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.supplier}</td>
                       </tr>

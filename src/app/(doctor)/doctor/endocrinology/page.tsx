@@ -31,6 +31,7 @@ import {
   type HormoneLevelView,
   type DiabetesManagementView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 function glucoseCategory(level: number, type: string): { label: string; color: string } {
   if (type === "fasting") {
@@ -143,7 +144,7 @@ export default function EndocrinologyPage() {
         {
           id: newId,
           patientId: user.id,
-          readingDate: new Date().toISOString().split("T")[0],
+          readingDate: getLocalDateStr(),
           glucoseLevel: parseFloat(sugarForm.glucoseLevel),
           readingType: sugarForm.readingType,
           unit: sugarForm.unit,
@@ -175,7 +176,7 @@ export default function EndocrinologyPage() {
         {
           id: newId,
           patientId: user.id,
-          testDate: new Date().toISOString().split("T")[0],
+          testDate: getLocalDateStr(),
           hormoneName: hormoneForm.hormoneName,
           value: parseFloat(hormoneForm.value),
           unit: hormoneForm.unit,

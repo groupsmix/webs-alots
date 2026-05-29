@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { getCurrentUser, fetchTodayAppointments, fetchInvoices } from "@/lib/data/client";
-import { getLocalDateStr } from "@/lib/utils";
+import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 
 interface EndOfDayReportButtonProps {
   trigger?: React.ReactNode;
@@ -139,7 +139,7 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
                   <CardContent className="p-3 flex items-center gap-3">
                     <CreditCard className="h-5 w-5 text-orange-600" />
                     <div>
-                      <p className="text-lg font-bold">{report.totalRevenue} MAD</p>
+                      <p className="text-lg font-bold">{formatCurrency(report.totalRevenue)}</p>
                       <p className="text-[10px] text-muted-foreground">Revenue</p>
                     </div>
                   </CardContent>
@@ -194,7 +194,7 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
                       <p className="text-base font-bold text-green-600">
-                        {report.totalRevenue} MAD
+                        {formatCurrency(report.totalRevenue)}
                       </p>
                       <p className="text-[10px] text-muted-foreground">Collected</p>
                     </div>

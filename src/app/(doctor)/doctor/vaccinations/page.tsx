@@ -27,6 +27,7 @@ import {
   type VaccinationView,
   type PatientView,
 } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 const COMMON_VACCINES = [
   "BCG",
@@ -70,7 +71,7 @@ export default function VaccinationsPage() {
     patientId: "",
     vaccineName: "",
     doseNumber: "1",
-    scheduledDate: new Date().toISOString().split("T")[0],
+    scheduledDate: getLocalDateStr(),
     notes: "",
   });
 
@@ -82,7 +83,7 @@ export default function VaccinationsPage() {
       fetchPatients(user.clinic_id),
     ]);
     // Auto-mark overdue
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateStr();
     const vaccinations = v.map((vac) => {
       if (vac.status === "scheduled" && vac.scheduledDate < today) {
         return { ...vac, status: "overdue" as const };
@@ -139,7 +140,7 @@ export default function VaccinationsPage() {
       patientId: "",
       vaccineName: "",
       doseNumber: "1",
-      scheduledDate: new Date().toISOString().split("T")[0],
+      scheduledDate: getLocalDateStr(),
       notes: "",
     });
     reload();
@@ -148,7 +149,7 @@ export default function VaccinationsPage() {
   const handleAdminister = async (id: string) => {
     await updateVaccination(id, {
       status: "administered",
-      administered_date: new Date().toISOString().split("T")[0],
+      administered_date: getLocalDateStr(),
     });
     reload();
   };

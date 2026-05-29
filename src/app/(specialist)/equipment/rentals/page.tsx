@@ -34,6 +34,7 @@ import {
 } from "@/lib/data/client";
 import type { EquipmentRentalView, EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { getLocalDateStr } from "@/lib/utils";
 import { useEquipmentLocale } from "../layout";
 
 const STATUS_OPTIONS = ["all", "reserved", "active", "returned", "overdue", "cancelled"] as const;
@@ -246,7 +247,7 @@ export default function EquipmentRentalsPage() {
     await updateEquipmentRental(returnDialog.id, {
       status: "returned",
       condition_in: returnCondition,
-      actual_return: new Date().toISOString().split("T")[0],
+      actual_return: getLocalDateStr(),
     });
     setReturnDialog(null);
     reload();

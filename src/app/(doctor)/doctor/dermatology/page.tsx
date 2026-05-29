@@ -41,6 +41,7 @@ import {
   type SkinPhotoView,
   type SkinConditionView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const BODY_REGIONS = [
   "Face",
@@ -162,7 +163,7 @@ export default function DermatologyPage() {
           bodyRegion: photoForm.bodyRegion,
           description: photoForm.description,
           imageUrl: "",
-          photoDate: new Date().toISOString().split("T")[0],
+          photoDate: getLocalDateStr(),
           tags: photoForm.tags
             .split(",")
             .map((t) => t.trim())
@@ -182,7 +183,7 @@ export default function DermatologyPage() {
       ? [
           {
             name: conditionForm.treatmentName,
-            startDate: new Date().toISOString().split("T")[0],
+            startDate: getLocalDateStr(),
             notes: conditionForm.treatmentNotes,
           },
         ]
@@ -207,7 +208,7 @@ export default function DermatologyPage() {
           bodyRegion: conditionForm.bodyRegion,
           severity: conditionForm.severity,
           status: "active",
-          diagnosisDate: new Date().toISOString().split("T")[0],
+          diagnosisDate: getLocalDateStr(),
           notes: conditionForm.notes,
           treatments,
         },

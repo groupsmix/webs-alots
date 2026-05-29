@@ -28,6 +28,7 @@ import {
   type SpirometryRecordView,
   type RespiratoryTestView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 function spirometryInterpretation(fev1FvcRatio: number | null): string {
   if (fev1FvcRatio === null) return "Insufficient data";
@@ -128,7 +129,7 @@ export default function PulmonologyPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          testDate: new Date().toISOString().split("T")[0],
+          testDate: getLocalDateStr(),
           fvc: fvc ?? null,
           fev1: fev1 ?? null,
           fev1FvcRatio: ratio ?? null,
@@ -168,7 +169,7 @@ export default function PulmonologyPage() {
         {
           id: newId,
           patientId: user.id,
-          testDate: new Date().toISOString().split("T")[0],
+          testDate: getLocalDateStr(),
           testType: testForm.testType,
           results: testForm.results,
           interpretation: testForm.interpretation,

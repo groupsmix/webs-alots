@@ -28,6 +28,7 @@ import {
   type JointAssessmentView,
   type MobilityTestView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const JOINTS = [
   "Left Shoulder",
@@ -157,7 +158,7 @@ export default function RheumatologyPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          assessmentDate: new Date().toISOString().split("T")[0],
+          assessmentDate: getLocalDateStr(),
           jointsData: assessmentForm.jointsData,
           vasPainScore: assessmentForm.vasPainScore ? parseInt(assessmentForm.vasPainScore) : null,
           morningStiffnessMinutes: assessmentForm.morningStiffnessMinutes
@@ -207,7 +208,7 @@ export default function RheumatologyPage() {
         {
           id: newId,
           patientId: user.id,
-          testDate: new Date().toISOString().split("T")[0],
+          testDate: getLocalDateStr(),
           testType: mobilityForm.testType,
           joint: mobilityForm.joint,
           rangeOfMotion: rom,

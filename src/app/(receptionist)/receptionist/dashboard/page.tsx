@@ -32,6 +32,7 @@ import {
   type AppointmentView,
   type PatientView,
 } from "@/lib/data/client";
+import { formatCurrency } from "@/lib/utils";
 
 const statusVariant: Record<
   string,
@@ -110,7 +111,7 @@ export default function ReceptionistDashboardPage() {
     {
       icon: CreditCard,
       label: "Revenue (Month)",
-      value: `${totalRevenue} MAD`,
+      value: `${formatCurrency(totalRevenue)}`,
       color: "text-orange-600",
     },
   ];

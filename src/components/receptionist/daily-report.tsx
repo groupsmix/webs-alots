@@ -19,6 +19,7 @@ import {
   type InvoiceView,
 } from "@/lib/data/client";
 import { exportAppointments, exportInvoices } from "@/lib/export-data";
+import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 
 const statusVariant: Record<
   string,
@@ -51,7 +52,7 @@ export function DailyReport() {
         setLoading(false);
         return;
       }
-      const today = new Date().toISOString().split("T")[0];
+      const today = getLocalDateStr();
       const [appts, docs, pts, invs] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
         fetchDoctors(user.clinic_id),
@@ -257,7 +258,7 @@ export function DailyReport() {
           <Card>
             <CardContent className="pt-4 pb-4 text-center">
               <CreditCard className="h-5 w-5 mx-auto mb-1 text-orange-600" />
-              <p className="text-2xl font-bold">{totalRevenue} MAD</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
               <p className="text-xs text-muted-foreground">Revenue</p>
             </CardContent>
           </Card>
@@ -395,7 +396,7 @@ export function DailyReport() {
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-lg font-bold text-green-600">{totalRevenue} MAD</p>
+                <p className="text-lg font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
                 <p className="text-xs text-muted-foreground">Total Collected</p>
               </div>
               <div>

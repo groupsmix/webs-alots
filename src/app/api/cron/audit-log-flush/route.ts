@@ -10,7 +10,8 @@
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { apiSuccess } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
@@ -68,7 +69,7 @@ async function handler(request: NextRequest) {
         error: fetchErr.message,
       });
     }
-    return NextResponse.json({ ok: true, flushed: 0, failed: 0 });
+    return apiSuccess({ flushed: 0, failed: 0 });
   }
 
   for (const row of pending) {
@@ -141,7 +142,7 @@ async function handler(request: NextRequest) {
     total: pending.length,
   });
 
-  return NextResponse.json({ ok: true, flushed, failed });
+  return apiSuccess({ flushed, failed });
 }
 
 export const GET = withSentryCron("audit-log-flush", "*/15 * * * *", handler);

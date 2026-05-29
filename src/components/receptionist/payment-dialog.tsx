@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/utils";
 
 interface PaymentDialogProps {
   trigger?: React.ReactNode;
@@ -130,7 +131,7 @@ export function PaymentDialog({
             {amount && method && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/20">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  Collecting {parseFloat(amount).toFixed(2)} MAD via {method}
+                  Collecting {formatCurrency(parseFloat(amount))} via {method}
                 </p>
               </div>
             )}

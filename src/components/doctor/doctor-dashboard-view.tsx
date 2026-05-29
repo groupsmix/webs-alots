@@ -43,7 +43,7 @@ import type {
 import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
-import { getLocalDateStr, formatDisplayDate } from "@/lib/utils";
+import { formatCurrency, getLocalDateStr, formatDisplayDate } from "@/lib/utils";
 
 // ── Date helpers ──
 
@@ -194,7 +194,7 @@ export function DoctorDashboardView({
     {
       icon: DollarSign,
       label: t(locale, "dashboard.revenueMonth"),
-      value: `${monthRevenue.toLocaleString()} MAD`,
+      value: `${formatCurrency(monthRevenue)}`,
       color: "text-emerald-600",
     },
     {
@@ -628,7 +628,7 @@ export function DoctorDashboardView({
                     <p className="text-xs text-muted-foreground">
                       {t(locale, "dashboard.revenue")}
                     </p>
-                    <p className="text-2xl font-bold">{weekStats.revenue.toLocaleString()} MAD</p>
+                    <p className="text-2xl font-bold">{formatCurrency(weekStats.revenue)}</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />
                 </CardContent>
@@ -682,7 +682,7 @@ export function DoctorDashboardView({
                     <p className="text-xs text-muted-foreground">
                       {t(locale, "dashboard.revenue")}
                     </p>
-                    <p className="text-2xl font-bold">{monthStats.revenue.toLocaleString()} MAD</p>
+                    <p className="text-2xl font-bold">{formatCurrency(monthStats.revenue)}</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />
                 </CardContent>

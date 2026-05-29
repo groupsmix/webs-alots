@@ -28,6 +28,7 @@ import {
   type HearingTestView,
   type ENTExamView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const AUDIOGRAM_FREQUENCIES = ["250", "500", "1000", "2000", "4000", "8000"];
 
@@ -146,7 +147,7 @@ export default function ENTPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          testDate: new Date().toISOString().split("T")[0],
+          testDate: getLocalDateStr(),
           testType: testForm.testType,
           leftEarData: leftData,
           rightEarData: rightData,
@@ -188,7 +189,7 @@ export default function ENTPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          examDate: new Date().toISOString().split("T")[0],
+          examDate: getLocalDateStr(),
           templateType: examForm.templateType,
           findings: examForm.findings,
           diagnosis: examForm.diagnosis,

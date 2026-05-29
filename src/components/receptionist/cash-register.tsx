@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/utils";
 
 interface CashRegisterProps {
   onPaymentRecorded?: (payment: {
@@ -115,7 +116,7 @@ export function CashRegister({ onPaymentRecorded }: CashRegisterProps) {
           {amount && method && (
             <div className="rounded-lg border border-green-200 bg-green-50 p-2 dark:border-green-900 dark:bg-green-950/20">
               <p className="text-xs font-medium text-green-800 dark:text-green-200">
-                {parseFloat(amount).toFixed(2)} MAD via{" "}
+                {formatCurrency(parseFloat(amount))} via{" "}
                 {paymentMethods.find((p) => p.value === method)?.label ?? method}
               </p>
             </div>

@@ -27,6 +27,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { getLocalDateStr } from "@/lib/utils";
 
 function formatRx(sphere: number | null, cylinder: number | null, axis: number | null): string {
   if (sphere === null && cylinder === null) return "—";
@@ -45,7 +46,7 @@ export default function VisionTestsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setFormRaw] = useState({
     patientId: "",
-    testDate: new Date().toISOString().split("T")[0],
+    testDate: getLocalDateStr(),
     odAcuity: "",
     osAcuity: "",
     odSphere: "",
@@ -137,7 +138,7 @@ export default function VisionTestsPage() {
     clearVisionDraft();
     setFormRaw({
       patientId: "",
-      testDate: new Date().toISOString().split("T")[0],
+      testDate: getLocalDateStr(),
       odAcuity: "",
       osAcuity: "",
       odSphere: "",

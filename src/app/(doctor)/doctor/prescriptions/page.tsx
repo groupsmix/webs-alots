@@ -18,6 +18,7 @@ import {
   type PrescriptionView,
   type PatientView,
 } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 type Prescription = PrescriptionView;
 
@@ -198,7 +199,7 @@ export default function DoctorPrescriptionsPage() {
         patientId: patient.id,
         patientName: patient.name,
         doctorName: user.name ?? "Doctor",
-        date: new Date().toISOString().split("T")[0],
+        date: getLocalDateStr(),
         medications: items,
         notes: notes || undefined,
       };
@@ -237,7 +238,7 @@ export default function DoctorPrescriptionsPage() {
       patientId: patient.id,
       patientName: patient.name,
       doctorName: user.name ?? "Doctor",
-      date: new Date().toISOString().split("T")[0],
+      date: getLocalDateStr(),
       medications: items,
       notes: notes || undefined,
     };
@@ -336,7 +337,7 @@ export default function DoctorPrescriptionsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Date</Label>
-                <Input type="date" defaultValue={new Date().toISOString().split("T")[0]} />
+                <Input type="date" defaultValue={getLocalDateStr()} />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Diagnosis</Label>

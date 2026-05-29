@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { FrameCatalogItem } from "@/lib/types/para-medical";
+import { formatCurrency } from "@/lib/utils";
 
 const FRAME_TYPE_LABELS: Record<string, string> = {
   full_rim: "Full Rim",
@@ -159,7 +160,7 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
                 <span>Size: {frame.size}</span>
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                <p className="text-sm font-bold">{frame.price} MAD</p>
+                <p className="text-sm font-bold">{formatCurrency(frame.price)}</p>
                 <div className="flex items-center gap-1">
                   {frame.stock_quantity === 0 ? (
                     <Badge variant="destructive" className="text-[10px]">

@@ -40,6 +40,7 @@ import {
   type ClientSubscription,
   type SystemType,
 } from "@/lib/super-admin-actions";
+import { formatCurrency } from "@/lib/utils";
 
 type StatusFilter = "all" | ClientSubscription["status"];
 type SystemFilter = "all" | SystemType;
@@ -398,7 +399,7 @@ export default function SubscriptionsPage() {
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-xs text-muted-foreground">{inv.id}</span>
                           <span>{inv.date}</span>
-                          <span className="font-medium">{inv.amount.toLocaleString()} MAD</span>
+                          <span className="font-medium">{formatCurrency(inv.amount)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge
@@ -518,7 +519,7 @@ export default function SubscriptionsPage() {
                           <span>{inv.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{inv.amount.toLocaleString()} MAD</span>
+                          <span className="font-medium">{formatCurrency(inv.amount)}</span>
                           <Badge
                             variant={
                               inv.status === "paid"

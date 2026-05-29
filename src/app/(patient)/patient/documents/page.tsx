@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getLocalDateStr } from "@/lib/utils";
 
 type DocType = "analysis" | "radiology" | "insurance" | "other";
 
@@ -124,7 +125,7 @@ export default function PatientDocumentsPage() {
         id: `doc${Date.now()}`,
         name: fileName || "Uploaded Document",
         type: fileType,
-        date: new Date().toISOString().split("T")[0],
+        date: getLocalDateStr(),
         size: "1.0 MB",
         icon: fileType === "radiology" ? Image : fileType === "insurance" ? CreditCard : FileText,
       };

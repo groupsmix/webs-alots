@@ -6,6 +6,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function PatientSettingsPage() {
   const [exportLoading, setExportLoading] = useState(false);
@@ -28,7 +29,7 @@ export default function PatientSettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `my-data-${new Date().toISOString().split("T")[0]}.${format}`;
+      a.download = `my-data-${getLocalDateStr()}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

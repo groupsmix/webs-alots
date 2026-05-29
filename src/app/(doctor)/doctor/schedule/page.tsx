@@ -9,6 +9,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchDoctorAppointments, type AppointmentView } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -65,9 +66,7 @@ export default function DoctorSchedulePage() {
       setDoctorAppointments(appts);
       // Fetch tenant-specific working hours from the API
       try {
-        const res = await fetch(
-          `/api/booking?doctorId=${user.id}&date=${new Date().toISOString().split("T")[0]}`,
-        );
+        const res = await fetch(`/api/booking?doctorId=${user.id}&date=${getLocalDateStr()}`);
         if (res.ok) {
           const json = await res.json();
           if (json.data?.slotDuration) {

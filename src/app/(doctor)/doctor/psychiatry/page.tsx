@@ -29,6 +29,7 @@ import {
   type PsychSessionNoteView,
   type PsychMedicationView,
 } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const MOOD_LABELS = [
   "",
@@ -146,7 +147,7 @@ export default function PsychiatryPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          sessionDate: new Date().toISOString().split("T")[0],
+          sessionDate: getLocalDateStr(),
           sessionNumber: nextNum,
           sessionType: sessionForm.sessionType,
           moodRating: parseInt(sessionForm.moodRating),
@@ -193,7 +194,7 @@ export default function PsychiatryPage() {
           medicationName: medForm.medicationName,
           dosage: medForm.dosage,
           frequency: medForm.frequency,
-          startDate: new Date().toISOString().split("T")[0],
+          startDate: getLocalDateStr(),
           endDate: "",
           status: "active",
           reason: medForm.reason,
@@ -210,9 +211,7 @@ export default function PsychiatryPage() {
 
   const handleMedStatus = async (id: string, status: string) => {
     const endDate =
-      status === "discontinued" || status === "completed"
-        ? new Date().toISOString().split("T")[0]
-        : undefined;
+      status === "discontinued" || status === "completed" ? getLocalDateStr() : undefined;
     const ok = await updatePsychMedication(id, { status, end_date: endDate });
     if (ok)
       setMedications((prev) =>
