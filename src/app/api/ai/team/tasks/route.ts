@@ -22,7 +22,7 @@ export const PATCH = withAuthValidation(
     const userId = profile.id;
 
     if (!clinicId) {
-      return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+      return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
     }
 
     const { taskId, status } = data;
@@ -53,7 +53,7 @@ export const PATCH = withAuthValidation(
           clinicId,
           taskId,
         });
-        return apiError("Task not found", 404, "NOT_FOUND");
+        return apiError("Tâche introuvable", 404, "NOT_FOUND");
       }
 
       const task = updated as { id: string; status: string; agent_type: string };

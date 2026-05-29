@@ -895,33 +895,39 @@ export type Database = {
       chatbot_faqs: {
         Row: {
           answer: string
+          category: string | null
           clinic_id: string
           created_at: string | null
           id: string
           is_active: boolean | null
           keywords: string[] | null
+          language: string | null
           question: string
           sort_order: number | null
           updated_at: string | null
         }
         Insert: {
           answer: string
+          category?: string | null
           clinic_id: string
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           keywords?: string[] | null
+          language?: string | null
           question: string
           sort_order?: number | null
           updated_at?: string | null
         }
         Update: {
           answer?: string
+          category?: string | null
           clinic_id?: string
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           keywords?: string[] | null
+          language?: string | null
           question?: string
           sort_order?: number | null
           updated_at?: string | null
@@ -8753,6 +8759,229 @@ export type Database = {
             columns: ["table_id"]
             isOneToOne: false
             referencedRelation: "restaurant_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          id: string
+          clinic_id: string
+          patient_phone: string | null
+          patient_name: string | null
+          channel: string
+          status: string
+          priority: string
+          subject: string
+          language: string | null
+          assigned_to: string | null
+          resolved_at: string | null
+          satisfaction_rating: number | null
+          satisfaction_comment: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          patient_phone?: string | null
+          patient_name?: string | null
+          channel?: string
+          status?: string
+          priority?: string
+          subject: string
+          language?: string | null
+          assigned_to?: string | null
+          resolved_at?: string | null
+          satisfaction_rating?: number | null
+          satisfaction_comment?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          patient_phone?: string | null
+          patient_name?: string | null
+          channel?: string
+          status?: string
+          priority?: string
+          subject?: string
+          language?: string | null
+          assigned_to?: string | null
+          resolved_at?: string | null
+          satisfaction_rating?: number | null
+          satisfaction_comment?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_messages: {
+        Row: {
+          id: string
+          clinic_id: string
+          ticket_id: string
+          sender_type: string
+          sender_id: string | null
+          content: string
+          language: string | null
+          is_auto_reply: boolean | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          ticket_id: string
+          sender_type: string
+          sender_id?: string | null
+          content: string
+          language?: string | null
+          is_auto_reply?: boolean | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          ticket_id?: string
+          sender_type?: string
+          sender_id?: string | null
+          content?: string
+          language?: string | null
+          is_auto_reply?: boolean | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_support_sessions: {
+        Row: {
+          id: string
+          clinic_id: string
+          ticket_id: string | null
+          phone_number: string
+          wa_message_id: string | null
+          session_status: string
+          last_activity_at: string
+          auto_responses_count: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          ticket_id?: string | null
+          phone_number: string
+          wa_message_id?: string | null
+          session_status?: string
+          last_activity_at?: string
+          auto_responses_count?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          ticket_id?: string | null
+          phone_number?: string
+          wa_message_id?: string | null
+          session_status?: string
+          last_activity_at?: string
+          auto_responses_count?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_support_sessions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_support_sessions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_metrics: {
+        Row: {
+          id: string
+          clinic_id: string
+          date: string
+          total_tickets: number | null
+          open_tickets: number | null
+          resolved_tickets: number | null
+          avg_response_time_minutes: number | null
+          avg_resolution_time_minutes: number | null
+          avg_satisfaction: number | null
+          tickets_by_channel: Json | null
+          tickets_by_language: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          date: string
+          total_tickets?: number | null
+          open_tickets?: number | null
+          resolved_tickets?: number | null
+          avg_response_time_minutes?: number | null
+          avg_resolution_time_minutes?: number | null
+          avg_satisfaction?: number | null
+          tickets_by_channel?: Json | null
+          tickets_by_language?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          date?: string
+          total_tickets?: number | null
+          open_tickets?: number | null
+          resolved_tickets?: number | null
+          avg_response_time_minutes?: number | null
+          avg_resolution_time_minutes?: number | null
+          avg_satisfaction?: number | null
+          tickets_by_channel?: Json | null
+          tickets_by_language?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_metrics_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
         ]
