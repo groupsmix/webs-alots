@@ -9385,7 +9385,7 @@ export type Database = {
             foreignKeyName: "telemedicine_sessions_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
-            referencedRelation: "patients"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -9530,7 +9530,7 @@ export type Database = {
             foreignKeyName: "insurance_claims_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
-            referencedRelation: "patients"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
