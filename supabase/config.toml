@@ -38,11 +38,13 @@ sms_sent = 10
 # Require email confirmation before signing in
 enable_confirmations = true
 
-# A54-1: Session timeout recommended for PHI app (OWASP ASVS V3).
-# Requires Supabase **Pro Plan** — uncomment after upgrading:
-#   [auth.sessions]
-#   timebox = "24h"
-#   inactivity_timeout = "30m"
+# A54-1: Session timeout for PHI app (OWASP ASVS V3).
+# Absolute session lifetime: 24 hours.
+# Inactivity timeout: 30 minutes — disconnects idle sessions to limit
+# exposure if a device is left unattended in a clinic.
+[auth.sessions]
+timebox = "24h"
+inactivity_timeout = "30m"
 
 [db]
 # The database major version to use

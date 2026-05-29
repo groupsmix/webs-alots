@@ -16,11 +16,12 @@ import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
+import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
-import { aiManagerLimiter } from "@/lib/rate-limit";
+import { aiClinicCeilingLimiter, aiManagerLimiter } from "@/lib/rate-limit";
 import { aiManagerRequestSchema } from "@/lib/validations";
 import type { AuthContext } from "@/lib/with-auth";
 
@@ -419,6 +420,14 @@ export const POST = withAuthValidation(
       );
     }
 
+    // A80-01: Per-clinic AI cost ceiling (500 calls/day across all AI features)
+    const clinicAllowed = await aiClinicCeilingLimiter.check(`ai:clinic:${clinicId}`);
+    if (!clinicAllowed) {
+      return apiRateLimited(
+        "Limite quotidienne de la clinique atteinte pour les fonctionnalités IA. Réessayez demain.",
+      );
+    }
+
     // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
     const aiResult = await resolveAIConfig();
     if (!aiResult.ok) {
@@ -530,9 +539,11 @@ export const POST = withAuthValidation(
         metadata: { question: safeQuestion },
       });
 
+      // A109-01: Include AI disclaimer in every AI response payload.
       return apiSuccess({
         insight,
         question: data.question,
+        disclaimer: getAIDisclaimer(),
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

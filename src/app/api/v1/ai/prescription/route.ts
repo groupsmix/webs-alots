@@ -16,12 +16,13 @@ import { resolveAIConfig } from "@/lib/ai/config";
 import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
+import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
 import { logger } from "@/lib/logger";
-import { aiPrescriptionLimiter } from "@/lib/rate-limit";
+import { aiClinicCeilingLimiter, aiPrescriptionLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
 import { aiPrescriptionRequestSchema } from "@/lib/validations";
 import type { AuthContext } from "@/lib/with-auth";
@@ -262,6 +263,14 @@ export const POST = withAuthValidation(
       );
     }
 
+    // A80-01: Per-clinic AI cost ceiling (500 calls/day across all AI features)
+    const clinicAllowed = await aiClinicCeilingLimiter.check(`ai:clinic:${clinicId}`);
+    if (!clinicAllowed) {
+      return apiRateLimited(
+        "Limite quotidienne de la clinique atteinte pour les fonctionnalités IA. Réessayez demain.",
+      );
+    }
+
     // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
     const aiResult = await resolveAIConfig();
     if (!aiResult.ok) {
@@ -400,10 +409,12 @@ export const POST = withAuthValidation(
         },
       });
 
+      // A109-01: Include AI disclaimer in every AI response payload.
       return apiSuccess({
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        disclaimer: getAIDisclaimer(),
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
