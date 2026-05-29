@@ -5,7 +5,7 @@ npx tsc --noEmit
 # Requires gitleaks to be installed locally (brew install gitleaks / go install).
 # If gitleaks is not installed, warn but do not block the commit — CI will
 # still catch secrets via the gitleaks GitHub Action in the security job.
-if command -v gitleaks &> /dev/null; then
+if command -v gitleaks > /dev/null 2>&1; then
   gitleaks protect --staged --verbose
 else
   echo "warning: gitleaks is not installed locally — secrets will still be scanned in CI"
