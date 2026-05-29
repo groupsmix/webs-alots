@@ -278,10 +278,9 @@ export async function getWhatsAppTemplate(
   try {
     const supabase = await createTenantClient(clinicId);
     // Table added in migration 00101 — not yet in generated DB types
-    // nosemgrep: semgrep.tenant-scoping — clinic_id filter is chained below
     const { data, error } = await (supabase as unknown as SupabaseUntyped)
-      .from("whatsapp_templates")
-      .select("body_template")
+      .from("whatsapp_templates") // nosemgrep: semgrep.tenant-scoping
+      .select("body_template") // nosemgrep: semgrep.tenant-scoping
       .eq("clinic_id", clinicId)
       .eq("template_name", templateName)
       .eq("language", language)
@@ -310,10 +309,9 @@ export async function getClinicWhatsAppTemplates(clinicId: string): Promise<What
   try {
     const supabase = await createTenantClient(clinicId);
     // Table added in migration 00101 — not yet in generated DB types
-    // nosemgrep: semgrep.tenant-scoping — clinic_id filter is chained below
     const { data, error } = await (supabase as unknown as SupabaseUntyped)
-      .from("whatsapp_templates")
-      .select("*")
+      .from("whatsapp_templates") // nosemgrep: semgrep.tenant-scoping
+      .select("*") // nosemgrep: semgrep.tenant-scoping
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
 
