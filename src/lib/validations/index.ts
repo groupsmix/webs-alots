@@ -140,6 +140,26 @@ export {
 } from "./super-admin";
 
 export {
+  oneClickCheckinSchema,
+  phoneHandlerLookupSchema,
+  attestationCreateSchema,
+  attestationSignSchema,
+  attestationListSchema,
+  familyLinkCreateSchema,
+  familyLinkDeleteSchema,
+  familyMembersListSchema,
+  prescriptionRenewalRequestSchema,
+  prescriptionRenewalReviewSchema,
+  prescriptionRenewalDispenseSchema,
+  waitTimeEstimateSchema,
+  doctorDelayUpdateSchema,
+  inventoryItemCreateSchema,
+  inventoryItemUpdateSchema,
+  inventoryTransactionSchema,
+  inventoryAlertsSchema,
+} from "./batch4c";
+
+export {
   invoiceCreateSchema,
   invoiceUpdateSchema,
   paymentPlanCreateSchema,
