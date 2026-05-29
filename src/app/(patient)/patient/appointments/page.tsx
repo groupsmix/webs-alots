@@ -172,6 +172,7 @@ export default function PatientAppointmentsPage() {
             variant="ghost"
             size="sm"
             className="ml-auto"
+            aria-label="Dismiss"
             onClick={() => setCancelError(null)}
           >
             <X className="h-3 w-3" />
@@ -186,6 +187,7 @@ export default function PatientAppointmentsPage() {
             variant="ghost"
             size="sm"
             className="ml-auto"
+            aria-label="Dismiss"
             onClick={() => setCancelSuccess(null)}
           >
             <X className="h-3 w-3" />
