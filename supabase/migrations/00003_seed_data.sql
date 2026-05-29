@@ -1,0 +1,8 @@
+-- Stub migration: retained for Supabase version-history compatibility.
+--
+-- The original seed-data migration was removed in commit 4b23d082
+-- (audit AUD-005, 2026-05-28) because seed data was consolidated into
+-- migration 00040_repopulate_test_clinic_data.sql.
+--
+-- The remote Supabase project still records this version as applied,
+-- so this placeholder keeps local and remote migration lists in sync.
