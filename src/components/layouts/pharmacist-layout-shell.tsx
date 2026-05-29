@@ -13,6 +13,14 @@ import {
   ClinicDashboardLayout,
   type ClinicDashboardConfig,
 } from "@/components/layouts/clinic-dashboard-layout";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+
+const pharmacistMobileTabs: MobileTabItem[] = [
+  { href: "/pharmacist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/pharmacist/prescriptions", label: "Prescriptions", icon: ClipboardList },
+  { href: "/pharmacist/stock", label: "Stock", icon: Package },
+  { href: "/pharmacist/sales", label: "Sales", icon: Receipt },
+];
 
 const config: ClinicDashboardConfig = {
   title: "Pharmacist",
@@ -29,6 +37,7 @@ const config: ClinicDashboardConfig = {
     { href: "/pharmacist/suppliers", label: "Suppliers", icon: Truck },
     { href: "/pharmacist/loyalty", label: "Loyalty Program", icon: Gift },
   ],
+  mobileTabs: pharmacistMobileTabs,
 };
 
 export function PharmacistLayoutShell({ children }: { children: React.ReactNode }) {
