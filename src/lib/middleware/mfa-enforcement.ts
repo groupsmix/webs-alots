@@ -10,7 +10,10 @@ import { secureRedirect } from "@/lib/middleware/security-headers";
  * Enforce MFA requirements based on role.
  *
  * - `super_admin`: MUST have MFA enrolled AND verified (AAL2).
- * - `doctor` / `clinic_admin`: redirect to verify if factors enrolled but session is AAL1.
+ * - `doctor` / `clinic_admin`: MUST have MFA enrolled AND verified (AAL2).
+ *   Redirects to /setup-2fa if no factors are enrolled, or to /login if
+ *   factors exist but the session is still AAL1.
+ * - `patient` / `receptionist`: MFA is never enforced.
  *
  * Returns a redirect Response if MFA is required, or `null` if the user passes.
  */
@@ -33,18 +36,17 @@ export async function enforceMfa(
     return null;
   }
 
-  if (role === "doctor") {
+  if (role === "doctor" || role === "clinic_admin") {
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-      return secureRedirect(new URL("/login?mfa=required", requestUrl));
+    if (aalData?.currentLevel !== "aal2") {
+      if (aalData?.nextLevel === "aal2") {
+        return secureRedirect(new URL("/login?mfa=required", requestUrl));
+      }
+      if (!pathname.startsWith("/setup-2fa")) {
+        return secureRedirect(new URL(`/setup-2fa?required=${role}`, requestUrl));
+      }
     }
-  }
-
-  if (role === "clinic_admin" && pathname.startsWith("/admin")) {
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-      return secureRedirect(new URL("/login?mfa=required", requestUrl));
-    }
+    return null;
   }
 
   return null;

@@ -68,8 +68,8 @@ describe("enforceMfa — super_admin", () => {
   });
 });
 
-describe("enforceMfa — doctor / clinic_admin step-up", () => {
-  it("redirects a doctor with an enrolled-but-unverified factor", async () => {
+describe("enforceMfa — doctor / clinic_admin mandatory 2FA", () => {
+  it("redirects a doctor with an enrolled-but-unverified factor to login", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
       "doctor",
@@ -80,9 +80,30 @@ describe("enforceMfa — doctor / clinic_admin step-up", () => {
     expect(result?.headers.get("location")).toContain("/login?mfa=required");
   });
 
-  it("lets a doctor without enrolled factors through", async () => {
+  it("redirects a doctor without enrolled factors to /setup-2fa", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      "doctor",
+      "/dashboard",
+      `${URL_BASE}/dashboard`,
+    );
+    expect(result?.status).toBe(307);
+    expect(result?.headers.get("location")).toContain("/setup-2fa?required=doctor");
+  });
+
+  it("does not loop-redirect a doctor already on /setup-2fa", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      "doctor",
+      "/setup-2fa",
+      `${URL_BASE}/setup-2fa`,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("passes a doctor with AAL2", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal2", nextLevel: "aal2" }),
       "doctor",
       "/dashboard",
       `${URL_BASE}/dashboard`,
@@ -90,7 +111,7 @@ describe("enforceMfa — doctor / clinic_admin step-up", () => {
     expect(result).toBeNull();
   });
 
-  it("redirects a clinic_admin on an /admin path with an unverified factor", async () => {
+  it("redirects a clinic_admin with an unverified factor to login", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
       "clinic_admin",
@@ -101,16 +122,25 @@ describe("enforceMfa — doctor / clinic_admin step-up", () => {
     expect(result?.headers.get("location")).toContain("/login?mfa=required");
   });
 
-  it("does not enforce MFA for a clinic_admin outside /admin", async () => {
-    const supabase = mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" });
+  it("redirects a clinic_admin without enrolled factors to /setup-2fa", async () => {
     const result = await enforceMfa(
-      supabase,
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
       "clinic_admin",
       "/dashboard",
       `${URL_BASE}/dashboard`,
     );
+    expect(result?.status).toBe(307);
+    expect(result?.headers.get("location")).toContain("/setup-2fa?required=clinic_admin");
+  });
+
+  it("does not loop-redirect a clinic_admin already on /setup-2fa", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      "clinic_admin",
+      "/setup-2fa",
+      `${URL_BASE}/setup-2fa`,
+    );
     expect(result).toBeNull();
-    expect(supabase.auth.mfa.getAuthenticatorAssuranceLevel).not.toHaveBeenCalled();
   });
 });
 
@@ -118,6 +148,13 @@ describe("enforceMfa — non-privileged roles", () => {
   it("never enforces MFA for a patient", async () => {
     const supabase = mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" });
     const result = await enforceMfa(supabase, "patient", "/admin", `${URL_BASE}/admin`);
+    expect(result).toBeNull();
+    expect(supabase.auth.mfa.getAuthenticatorAssuranceLevel).not.toHaveBeenCalled();
+  });
+
+  it("never enforces MFA for a receptionist", async () => {
+    const supabase = mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" });
+    const result = await enforceMfa(supabase, "receptionist", "/admin", `${URL_BASE}/admin`);
     expect(result).toBeNull();
     expect(supabase.auth.mfa.getAuthenticatorAssuranceLevel).not.toHaveBeenCalled();
   });
