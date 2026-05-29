@@ -39,12 +39,13 @@ sms_sent = 10
 enable_confirmations = true
 
 # A54-1: Session timeout for PHI app (OWASP ASVS V3).
-# Absolute session lifetime: 24 hours.
-# Inactivity timeout: 30 minutes — disconnects idle sessions to limit
-# exposure if a device is left unattended in a clinic.
-[auth.sessions]
-timebox = "24h"
-inactivity_timeout = "30m"
+# Absolute session lifetime: 24 hours; inactivity timeout: 30 minutes.
+# NOTE: Session timeouts require Supabase Pro plan — configure via
+# Dashboard > Authentication > Policies on the production project.
+# Uncomment below when CI preview branches use Pro:
+# [auth.sessions]
+# timebox = "24h"
+# inactivity_timeout = "30m"
 
 [db]
 # The database major version to use
