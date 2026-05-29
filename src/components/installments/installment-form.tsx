@@ -54,7 +54,7 @@ export function InstallmentForm({
       date.setMonth(date.getMonth() + i + 1);
       schedule.push({
         month: i + 1,
-        date: date.toISOString().split("T")[0],
+        date: getLocalDateStr(date),
         amount:
           i < data.numberOfInstallments - 1
             ? monthlyAmount

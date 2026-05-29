@@ -1,3 +1,4 @@
+import { getLocalDateStr } from "@/lib/utils";
 /**
  * Find Alternative Slots
  *
@@ -87,7 +88,7 @@ export function findAlternativeSlots(
     const candidateDate = new Date(searchStart);
     candidateDate.setDate(searchStart.getDate() + dayOffset);
 
-    const dateStr = candidateDate.toISOString().split("T")[0];
+    const dateStr = getLocalDateStr(candidateDate);
     const dayOfWeek = candidateDate.getDay();
 
     // Skip if this date falls in the unavailable range
