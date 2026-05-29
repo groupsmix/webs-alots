@@ -21,13 +21,17 @@ type ExtendedClient = SupabaseClient<Database>;
 
 export const POST = withAuth(
   async (_request, { supabase, profile }) => {
+    if (!profile.clinic_id) {
+      return apiForbidden("Missing clinic context");
+    }
+    const clinicId = profile.clinic_id;
     const typed = supabase as ExtendedClient;
 
     const { data: userRow } = await typed
       .from("users")
       .select("id, role, deletion_requested_at")
       .eq("id", profile.id)
-      .eq("clinic_id", profile.clinic_id)
+      .eq("clinic_id", clinicId)
       .maybeSingle();
 
     if (!userRow) {
@@ -55,7 +59,7 @@ export const POST = withAuth(
       .from("users")
       .update({ deletion_requested_at: now })
       .eq("id", profile.id)
-      .eq("clinic_id", profile.clinic_id);
+      .eq("clinic_id", clinicId);
 
     if (error) {
       return apiInternalError("Failed to request deletion");
@@ -90,13 +94,17 @@ export const POST = withAuth(
 
 export const DELETE = withAuth(
   async (_request, { supabase, profile }) => {
+    if (!profile.clinic_id) {
+      return apiForbidden("Missing clinic context");
+    }
+    const clinicId = profile.clinic_id;
     const typed = supabase as ExtendedClient;
 
     const { data: userRow } = await typed
       .from("users")
       .select("id, deletion_requested_at")
       .eq("id", profile.id)
-      .eq("clinic_id", profile.clinic_id)
+      .eq("clinic_id", clinicId)
       .maybeSingle();
 
     if (!userRow) {
@@ -111,7 +119,7 @@ export const DELETE = withAuth(
       .from("users")
       .update({ deletion_requested_at: null })
       .eq("id", profile.id)
-      .eq("clinic_id", profile.clinic_id);
+      .eq("clinic_id", clinicId);
 
     if (error) {
       return apiInternalError("Failed to cancel deletion");
