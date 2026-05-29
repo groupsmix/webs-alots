@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { sanitizeIlike } from "@/lib/sanitize-ilike";
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import type { SupportedLanguage } from "@/lib/validations/support";
@@ -47,7 +48,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   // Use ilike for basic text matching since PostgREST doesn't expose
   // tsvector search directly. The search_vector GIN index is available
   // for future direct SQL/RPC queries.
-  dbQuery = dbQuery.or(`question.ilike.%${query}%,answer.ilike.%${query}%`);
+  const safeQuery = sanitizeIlike(query);
+  if (safeQuery.length > 0) {
+    dbQuery = dbQuery.or(`question.ilike.%${safeQuery}%,answer.ilike.%${safeQuery}%`);
+  }
 
   const { data, error } = await dbQuery;
 

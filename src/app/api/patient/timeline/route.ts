@@ -14,6 +14,7 @@ import { type NextRequest } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
+import { sanitizeIlike } from "@/lib/sanitize-ilike";
 import { requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database-extended";
@@ -373,7 +374,10 @@ async function fetchLabResults(
     .eq("patient_id", patientId);
 
   if (search) {
-    query = query.or(`title.ilike.%${search}%,notes.ilike.%${search}%`);
+    const safe = sanitizeIlike(search);
+    if (safe.length > 0) {
+      query = query.or(`title.ilike.%${safe}%,notes.ilike.%${safe}%`);
+    }
   }
   if (from) {
     query = query.gte("created_at", `${from}T00:00:00Z`);
@@ -427,7 +431,10 @@ async function fetchImaging(
     .eq("patient_id", patientId);
 
   if (search) {
-    query = query.or(`body_part.ilike.%${search}%,report_text.ilike.%${search}%`);
+    const safe = sanitizeIlike(search);
+    if (safe.length > 0) {
+      query = query.or(`body_part.ilike.%${safe}%,report_text.ilike.%${safe}%`);
+    }
   }
   if (from) {
     query = query.gte("created_at", `${from}T00:00:00Z`);
@@ -533,7 +540,10 @@ async function fetchNotes(
     .eq("patient_id", patientId);
 
   if (search) {
-    query = query.or(`notes.ilike.%${search}%,diagnosis.ilike.%${search}%`);
+    const safe = sanitizeIlike(search);
+    if (safe.length > 0) {
+      query = query.or(`notes.ilike.%${safe}%,diagnosis.ilike.%${safe}%`);
+    }
   }
   if (from) {
     query = query.gte("created_at", `${from}T00:00:00Z`);
@@ -584,7 +594,10 @@ async function fetchCommunications(
     .eq("channel", "whatsapp");
 
   if (search) {
-    query = query.or(`body.ilike.%${search}%,recipient_name.ilike.%${search}%`);
+    const safe = sanitizeIlike(search);
+    if (safe.length > 0) {
+      query = query.or(`body.ilike.%${safe}%,recipient_name.ilike.%${safe}%`);
+    }
   }
   if (from) {
     query = query.gte("created_at", `${from}T00:00:00Z`);
