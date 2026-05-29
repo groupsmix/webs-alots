@@ -790,6 +790,21 @@ export const aiAutoSuggestLimiter = createRateLimiter({
 });
 
 /**
+ * A80-01 / A114-01: Per-clinic AI cost ceiling.
+ * Caps total AI API invocations per clinic per 24h to prevent any single
+ * tenant from running up unbounded OpenAI/inference costs.
+ * Key format: `ai:clinic:{clinicId}`
+ *
+ * 500 calls/day covers ~10 doctors × 50 prescriptions or equivalent.
+ * Adjust per tier if plan differentiation is needed.
+ */
+export const aiClinicCeilingLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 500,
+  failClosed: true,
+});
+
+/**
  * A36.4: Dedicated global rate limiter for non-API paths (HTML pages, assets).
  * This limiter is independent of the `/api/` catch-all rule, so it never
  * silently disappears if rateLimitRules is refactored or filtered.

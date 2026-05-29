@@ -130,10 +130,12 @@ export async function resolveAIConfig(): Promise<
 }
 
 /**
- * F-A199: Standard disclaimer to include in all AI response payloads.
- * Consumers should spread this into their response objects.
+ * F-A199 / A109-01: Standard disclaimer is now served via `getAIDisclaimer()`
+ * from `@/lib/ai-disclaimer`. All AI routes include it in their responses.
+ * This const is retained for backwards compatibility with any consumer that
+ * may import it via the config module.
  */
-const _AI_RESPONSE_DISCLAIMER = {
+export const AI_RESPONSE_DISCLAIMER = {
   disclaimer: AI_DISCLAIMER_FR,
   aiGenerated: true,
 } as const;

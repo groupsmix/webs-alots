@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { validateAIOutput } from "@/lib/ai/validate-output";
+import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
@@ -161,6 +162,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     const reply = getBasicResponse(lastMessage.content, ctx);
     return apiSuccess({
       message: { role: "assistant" as const, content: reply },
+      disclaimer: getAIDisclaimer(),
     });
   }
 
@@ -175,6 +177,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     const reply = getBasicResponse(lastMessage.content, ctx);
     return apiSuccess({
       message: { role: "assistant" as const, content: reply },
+      disclaimer: getAIDisclaimer(),
     });
   }
 
@@ -207,6 +210,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       const reply = getBasicResponse(lastMessage.content, ctx);
       return apiSuccess({
         message: { role: "assistant" as const, content: reply },
+        disclaimer: getAIDisclaimer(),
       });
     }
 
@@ -243,6 +247,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
           const reply = getBasicResponse(lastMessage.content, ctx);
           return apiSuccess({
             message: { role: "assistant" as const, content: reply },
+            disclaimer: getAIDisclaimer(),
           });
         }
         // F-AI-08: Audit log AI invocation
@@ -280,6 +285,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     const reply = getBasicResponse(lastMessage.content, ctx);
     return apiSuccess({
       message: { role: "assistant" as const, content: reply },
+      disclaimer: getAIDisclaimer(),
     });
   }
 
@@ -291,6 +297,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     const reply = getBasicResponse(lastMessage.content, ctx);
     return apiSuccess({
       message: { role: "assistant" as const, content: reply },
+      disclaimer: getAIDisclaimer(),
     });
   }
   const { apiKey, baseUrl, model } = aiResult.config;
@@ -318,6 +325,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     const reply = getBasicResponse(lastMessage.content, ctx);
     return apiSuccess({
       message: { role: "assistant" as const, content: reply },
+      disclaimer: getAIDisclaimer(),
     });
   }
 
@@ -388,11 +396,13 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     },
   });
 
+  // A109-01: Include AI disclaimer in streaming response header.
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+      "X-AI-Disclaimer": getAIDisclaimer(),
     },
   });
 });

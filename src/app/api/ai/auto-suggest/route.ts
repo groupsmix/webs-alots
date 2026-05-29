@@ -20,12 +20,13 @@ import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
+import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
 import { logger } from "@/lib/logger";
-import { aiAutoSuggestLimiter } from "@/lib/rate-limit";
+import { aiAutoSuggestLimiter, aiClinicCeilingLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
 import { aiAutoSuggestRequestSchema } from "@/lib/validations";
 import type { AuthContext } from "@/lib/with-auth";
@@ -298,6 +299,14 @@ export const POST = withAuthValidation(
       );
     }
 
+    // A80-01: Per-clinic AI cost ceiling (500 calls/day across all AI features)
+    const clinicAllowed = await aiClinicCeilingLimiter.check(`ai:clinic:${clinicId}`);
+    if (!clinicAllowed) {
+      return apiRateLimited(
+        "Limite quotidienne de la clinique atteinte pour les fonctionnalités IA. Réessayez demain.",
+      );
+    }
+
     // AI config already validated by resolveAIConfig() above
     const { apiKey, baseUrl, model } = aiResult.config;
 
@@ -419,10 +428,12 @@ export const POST = withAuthValidation(
         metadata: { diagnosis: data.diagnosis.slice(0, 200) },
       });
 
+      // A109-01: Include AI disclaimer in every AI response payload.
       return apiSuccess({
         suggestions,
         diagnosis: data.diagnosis,
         patientId: data.patientId ?? null,
+        disclaimer: getAIDisclaimer(),
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
