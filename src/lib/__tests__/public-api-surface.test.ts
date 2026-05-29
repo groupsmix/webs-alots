@@ -83,6 +83,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/cron/reminders",
   "/api/cron/retry-webhooks",
   "/api/cron/stripe-reconcile",
+  "/api/cron/uptime-monitor",
   "/api/csp-report",
   "/api/docs",
   "/api/health",

@@ -128,6 +128,7 @@ routes = [
 # W8-A31-01: Cron triggers (was missing — scheduled jobs would not run)
 [env.production.triggers]
 crons = [
+  "*/5 * * * *",
   "*/15 * * * *",
   "*/30 * * * *",
   "0 * * * *",
@@ -178,6 +179,7 @@ routes = [
 # W8-A31-01: Cron triggers for staging
 [env.staging.triggers]
 crons = [
+  "*/5 * * * *",
   "*/15 * * * *",
   "*/30 * * * *",
   "0 * * * *",
@@ -220,6 +222,7 @@ enabled = true
 # See also: scripts/check-cron-mapping.ts (CI guard).
 [triggers]
 crons = [
+  "*/5 * * * *",  # every 5 min — uptime monitor + WhatsApp alerts
   "*/15 * * * *", # every 15 min — notification queue flush
   "*/30 * * * *", # every 30 min — appointment reminders
   "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders

@@ -767,7 +767,11 @@ export default function DoctorLayoutShell({ children }: { children: React.ReactN
       {/* Mobile bottom tab bar */}
       <MobileTabBar tabs={doctorMobileTabs} onMoreClick={() => setMobileMenuOpen(true)} />
 
-      <SessionTimeoutWarning onLogout={() => signOut()} />
+      <SessionTimeoutWarning
+        warningAfterMinutes={13}
+        logoutAfterMinutes={2}
+        onLogout={() => signOut()}
+      />
       <PatientSearchPalette basePath="/doctor/patients" />
     </div>
   );
