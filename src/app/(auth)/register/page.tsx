@@ -1,9 +1,8 @@
 "use client";
 
-import { UserPlus, ShieldCheck, ArrowLeft } from "lucide-react";
+import { UserPlus, ShieldCheck, ArrowLeft, Eye, EyeOff, HeartPulse } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { OltigoWordmark } from "@/components/brand/oltigo-mark";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +31,11 @@ import { passwordPolicySchema } from "@/lib/validations/password-policy";
 
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
+const STEPS = [
+  { key: "info", label: "Informations" },
+  { key: "otp", label: "Vérification" },
+] as const;
+
 export default function RegisterPage() {
   const [locale] = useLocale();
   const [step, setStep] = useState<"info" | "otp">("info");
@@ -43,6 +47,7 @@ export default function RegisterPage() {
   const [gender, setGender] = useState("");
   const [insurance, setInsurance] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [guardianConsent, setGuardianConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,15 +126,17 @@ export default function RegisterPage() {
   if (!PHONE_AUTH_ENABLED) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="mb-8 text-center">
-          <OltigoWordmark size="lg" className="justify-center" />
-          <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
-            {t(locale, "auth.portalTitle")}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">{t(locale, "register.subtitle")}</p>
+        {/* eslint-disable i18next/no-literal-string -- brand name and tagline */}
+        <div className="mb-6 text-center lg:hidden">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <HeartPulse className="h-6 w-6 text-primary" />
+            <span className="text-xl font-bold tracking-tight">Oltigo Health</span>
+          </div>
+          <p className="text-sm text-muted-foreground">Votre plateforme santé de confiance</p>
         </div>
+        {/* eslint-enable i18next/no-literal-string */}
 
-        <Card>
+        <Card className="shadow-lg border-0 sm:border">
           <CardHeader className="text-center pb-4">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <UserPlus className="h-6 w-6 text-muted-foreground" />
@@ -158,18 +165,68 @@ export default function RegisterPage() {
     );
   }
 
+  const currentStepIndex = STEPS.findIndex((s) => s.key === step);
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="mb-8 text-center">
-        <OltigoWordmark size="lg" className="justify-center" />
-        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
-          {t(locale, "auth.portalTitle")}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">{t(locale, "register.subtitle")}</p>
+      {/* Mobile-only branding header */}
+      {/* eslint-disable i18next/no-literal-string -- brand name and tagline */}
+      <div className="mb-6 text-center lg:hidden">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <HeartPulse className="h-6 w-6 text-primary" />
+          <span className="text-xl font-bold tracking-tight">Oltigo Health</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Votre plateforme santé de confiance</p>
       </div>
+      {/* eslint-enable i18next/no-literal-string */}
 
-      <Card>
+      <Card className="shadow-lg border-0 sm:border">
         <CardHeader className="text-center pb-4">
+          {/* Progress steps indicator */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            {STEPS.map((s, idx) => (
+              <div key={s.key} className="flex items-center gap-2">
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                    idx <= currentStepIndex
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {idx < currentStepIndex ? (
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    idx + 1
+                  )}
+                </div>
+                <span
+                  className={`hidden sm:inline text-xs font-medium ${
+                    idx <= currentStepIndex ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {idx < STEPS.length - 1 && (
+                  <div
+                    className={`h-0.5 w-8 sm:w-12 rounded-full transition-colors ${
+                      idx < currentStepIndex ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             {step === "info" ? (
               <UserPlus className="h-6 w-6 text-primary" />
@@ -177,17 +234,30 @@ export default function RegisterPage() {
               <ShieldCheck className="h-6 w-6 text-primary" />
             )}
           </div>
-          <CardTitle className="text-xl">
+          <CardTitle className="text-2xl font-bold">
             {step === "info" ? t(locale, "register.createAccount") : t(locale, "auth.verifyNumber")}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             {step === "info" ? t(locale, "register.desc") : `${t(locale, "auth.otpSent")} ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <svg
+                className="mt-0.5 h-4 w-4 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
@@ -202,6 +272,7 @@ export default function RegisterPage() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -212,6 +283,7 @@ export default function RegisterPage() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
+                    className="h-11"
                   />
                 </div>
               </div>
@@ -224,6 +296,7 @@ export default function RegisterPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -234,6 +307,7 @@ export default function RegisterPage() {
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -241,13 +315,26 @@ export default function RegisterPage() {
                   {t(locale, "auth.password" as TranslationKey)} (
                   {t(locale, "register.emailOptional" as TranslationKey)})
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={
+                      showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
+                    }
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 <PasswordStrengthIndicator password={password} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -259,6 +346,7 @@ export default function RegisterPage() {
                     placeholder="30"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -309,7 +397,7 @@ export default function RegisterPage() {
               )}
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-11 text-sm font-semibold"
                 disabled={loading || (patientIsMinor && !guardianConsent)}
               >
                 {loading ? t(locale, "register.creating") : t(locale, "register.createAccount")}
@@ -333,7 +421,11 @@ export default function RegisterPage() {
                   {t(locale, "register.otpHint")}
                 </p>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full h-11 text-sm font-semibold"
+                disabled={loading}
+              >
                 {loading ? t(locale, "auth.verifying") : t(locale, "register.verifyAndFinish")}
               </Button>
               <Button
