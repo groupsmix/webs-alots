@@ -45,9 +45,12 @@ if errors:
 python3 -c "
 import re, sys
 lines = open('wrangler.toml').read()
-# Find all kv_namespaces blocks and check id vs preview_id
-ids = re.findall(r'id\s*=\s*\"([^\"]+)\"', lines)
-preview_ids = re.findall(r'preview_id\s*=\s*\"([^\"]+)\"', lines)
+# Find all kv_namespaces blocks and check id vs preview_id.
+# Anchor to line start so 'preview_id = ...' is NOT also captured by the
+# 'id = ...' pattern (otherwise a valid preview_id is mis-parsed as a
+# production id and falsely flagged as a collision).
+ids = re.findall(r'(?m)^\s*id\s*=\s*\"([^\"]+)\"', lines)
+preview_ids = re.findall(r'(?m)^\s*preview_id\s*=\s*\"([^\"]+)\"', lines)
 for i, (kid, pid) in enumerate(zip(ids, preview_ids)):
     if kid == pid and 'PLACEHOLDER' not in pid:
         print(f'::error::KV namespace #{i+1}: preview_id matches production id ({kid}). Create a separate preview namespace.')
