@@ -16,6 +16,7 @@ const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * | /api/webhooks                 | Meta HMAC-SHA256 via X-Hub-Signature-256    |
  * | /api/payments/webhook         | Stripe HMAC-SHA256 via stripe-signature     |
  * | /api/payments/cmi/callback    | CMI HMAC hash verification via verifyCmi    |
+ * | /api/billing/webhook          | Stripe HMAC-SHA256 via stripe-signature     |
  * | /api/cron/                    | CRON_SECRET Bearer token                    |
  * | /api/csp-report               | No-auth (validated JSON schema, no mutation)|
  *
@@ -38,6 +39,7 @@ const CSRF_EXEMPT_EXACT = new Set([
   "/api/webhooks", // WhatsApp: X-Hub-Signature-256 HMAC
   "/api/payments/webhook", // Stripe: stripe-signature HMAC
   "/api/payments/cmi/callback", // CMI: HMAC hash field verification
+  "/api/billing/webhook", // Stripe billing: stripe-signature HMAC
   // CSP-RPT: Browsers send Content-Security-Policy violation reports as POST
   // requests with a `report-uri` or `report-to` directive. The Origin header
   // may not match the site URL (some browsers use `null` or omit it entirely),

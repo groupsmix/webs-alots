@@ -36,7 +36,8 @@ export const POST = withAuthValidation(
     const { error: updateError } = await supabase
       .from("payments")
       .update({ status: "completed" })
-      .eq("id", body.paymentId);
+      .eq("id", body.paymentId)
+      .eq("clinic_id", clinicId);
 
     if (updateError) {
       void updateError;
@@ -49,6 +50,7 @@ export const POST = withAuthValidation(
         .from("appointments")
         .update({ status: APPOINTMENT_STATUS.CONFIRMED })
         .eq("id", payment.appointment_id)
+        .eq("clinic_id", clinicId)
         .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
     }
 

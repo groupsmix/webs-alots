@@ -131,6 +131,13 @@ const PUBLIC_API_ROUTES = [
   "/api/checkin/status",
   // Public clinic registration
   "/api/v1/register-clinic",
+  // Public REST API — authenticated via Bearer API key, not session cookies
+  "/api/v1/patients",
+  "/api/v1/appointments",
+  // Stripe billing webhook — authenticated via stripe-signature HMAC
+  "/api/billing/webhook",
+  // Public chatbot — basic (keyword) tier serves anonymous clinic visitors
+  "/api/chat",
   // Demo login (dev/staging only, guarded in handler)
   "/api/auth/demo-login",
   // CSP report endpoint

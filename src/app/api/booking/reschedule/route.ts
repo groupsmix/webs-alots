@@ -127,7 +127,8 @@ export const POST = withAuthValidation(
         slot_end: slotEnd,
         status: APPOINTMENT_STATUS.CONFIRMED,
       })
-      .eq("id", body.appointmentId);
+      .eq("id", body.appointmentId)
+      .eq("clinic_id", clinicId);
 
     if (updateError) {
       return apiInternalError("Failed to update appointment");
@@ -163,7 +164,8 @@ export const POST = withAuthValidation(
           slot_end: existing.slot_end,
           status: existing.status,
         })
-        .eq("id", body.appointmentId);
+        .eq("id", body.appointmentId)
+        .eq("clinic_id", clinicId);
 
       return apiError("This slot has just been fully booked. Please choose another time.", 409);
     }
