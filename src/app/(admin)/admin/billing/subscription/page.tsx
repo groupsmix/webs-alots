@@ -191,7 +191,7 @@ export default function SubscriptionBillingPage() {
               <p className="text-lg font-bold">
                 {currentPlanConfig.price === 0
                   ? "Gratuit"
-                  : `${formatCurrency(currentPlanConfig.price)}`}
+                  : formatCurrency(currentPlanConfig.price)}
               </p>
               {currentPlanConfig.price > 0 && (
                 <p className="text-xs text-muted-foreground">/ mois</p>

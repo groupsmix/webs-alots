@@ -12,6 +12,7 @@ import { withSentryCron } from "@/lib/sentry-cron";
 // (service-role) which bypasses RLS, then iterate per-clinic.
 import { createAdminClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { getLocalDateStr } from "@/lib/utils";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
 
 /**
@@ -254,7 +255,7 @@ async function handler(request: NextRequest) {
       if (!patient) continue;
 
       // Derive display date/time from the resolved datetime
-      const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
+      const displayDate = appt.appointment_date ?? getLocalDateStr(apptDatetime);
       const displayTime =
         appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 

@@ -84,6 +84,15 @@ export {
   noShowAnalyticsQuerySchema,
 } from "./receptionist-ai";
 
+export {
+  aiTeamChatSchema,
+  aiTeamTaskUpdateSchema,
+  aiTeamAlertReadSchema,
+  aiTeamGenerateSchema,
+  AI_AGENT_TYPES,
+} from "./ai-team";
+export type { AIAgentType } from "./ai-team";
+
 export { safeParse } from "./helpers";
 
 export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
@@ -95,3 +104,6 @@ export {
   waitingQueueUpdateSchema,
   npsSurveyResponseSchema,
 } from "./patient-experience";
+
+export { timelineQuerySchema, TIMELINE_EVENT_TYPES } from "./patient-timeline";
+export type { TimelineEventType, TimelineQuery } from "./patient-timeline";
