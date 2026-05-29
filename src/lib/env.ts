@@ -281,6 +281,22 @@ const ENV_RULES: EnvRule[] = [
   // line ~91 under "security" group and again here under "encryption").
   // The first entry (C-08, group: "security") is the canonical one.
 
+  // ── Geo-restriction ──────────────────────────────────────────────────
+  {
+    name: "ADMIN_GEO_RESTRICTION_ENABLED",
+    required: false,
+    description:
+      "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
+    group: "security",
+  },
+  {
+    name: "GEO_RESTRICT_ADMIN",
+    required: false,
+    description:
+      "Comma-separated ISO 3166-1 alpha-2 country codes allowed to access admin routes (defaults to 'MA')",
+    group: "security",
+  },
+
   // ── Custom Domains ─────────────────────────────────────────────────
   // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
   // "true" they become required, so the app refuses to boot with a half-wired
@@ -345,6 +361,26 @@ export function isCustomDomainsEnabled(): boolean {
  */
 function customDomainsEnabledFromEnv(): boolean {
   return process.env.NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS === "true";
+}
+
+/**
+ * Whether admin-route geo-restriction is enabled.
+ *
+ * Defaults to `true`. Set `ADMIN_GEO_RESTRICTION_ENABLED=false` (or `0`)
+ * to disable. Read through this helper rather than `process.env` directly.
+ */
+export function isAdminGeoRestrictionEnabled(): boolean {
+  const raw = process.env.ADMIN_GEO_RESTRICTION_ENABLED;
+  if (raw === undefined || raw === "") return true;
+  return raw.trim().toLowerCase() !== "false" && raw.trim() !== "0";
+}
+
+/**
+ * Comma-separated list of allowed country codes for admin routes, or
+ * `undefined` when the env var is unset (caller should default to `"MA"`).
+ */
+export function getGeoRestrictAdminCountries(): string | undefined {
+  return process.env.GEO_RESTRICT_ADMIN;
 }
 
 export interface EnvValidationResult {

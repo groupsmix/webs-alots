@@ -20,6 +20,7 @@
  * access controls.
  */
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminGeoRestrictionEnabled, getGeoRestrictAdminCountries } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /** Admin route prefixes that should be geo-restricted. */
@@ -27,21 +28,15 @@ const ADMIN_PREFIXES = ["/admin", "/dashboard", "/api/admin"] as const;
 
 let _allowedCountries: Set<string> | null | undefined;
 
-function isGeoRestrictionEnabled(): boolean {
-  const raw = process.env.ADMIN_GEO_RESTRICTION_ENABLED;
-  if (raw === undefined || raw === "") return true;
-  return raw.trim().toLowerCase() !== "false" && raw.trim() !== "0";
-}
-
 function getAllowedCountries(): Set<string> | null {
   if (_allowedCountries !== undefined) return _allowedCountries;
 
-  if (!isGeoRestrictionEnabled()) {
+  if (!isAdminGeoRestrictionEnabled()) {
     _allowedCountries = null;
     return null;
   }
 
-  const raw = process.env.GEO_RESTRICT_ADMIN;
+  const raw = getGeoRestrictAdminCountries();
   if (!raw || raw.trim() === "") {
     _allowedCountries = new Set(["MA"]);
     return _allowedCountries;
