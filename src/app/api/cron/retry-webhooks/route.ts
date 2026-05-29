@@ -32,6 +32,7 @@ async function handler(request: NextRequest) {
     const supabase = createUntypedAdminClient("cron");
 
     // Fetch pending items ready for retry
+    // nosemgrep: semgrep.tenant-scoping — cron job uses service-role admin client to process retry items across all clinics; each item already has clinic_id stored at enqueue time
     const { data: pendingItems, error: fetchError } = await supabase
       .from("webhook_retry_queue")
       .select("*")
@@ -79,7 +80,7 @@ async function handler(request: NextRequest) {
         });
 
         if (response.ok) {
-          // Mark as completed
+          // nosemgrep: semgrep.tenant-scoping — cron job updates individual item by PK; clinic_id scoping is implicit from the initial fetch
           await supabase
             .from("webhook_retry_queue")
             .update({
@@ -109,6 +110,7 @@ async function handler(request: NextRequest) {
           updatePayload.next_retry_at = nextRetryAt;
         }
 
+        // nosemgrep: semgrep.tenant-scoping — cron job updates individual item by PK; clinic_id scoping is implicit from the initial fetch
         await supabase.from("webhook_retry_queue").update(updatePayload).eq("id", typedItem.id);
 
         if (isMaxed) {
