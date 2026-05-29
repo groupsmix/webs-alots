@@ -151,8 +151,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY no_show_records_clinic_isolation ON no_show_records
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -165,8 +165,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY no_show_stats_clinic_isolation ON no_show_stats
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -179,8 +179,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY doctor_no_show_stats_clinic_isolation ON doctor_no_show_stats
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -193,8 +193,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY appointment_reminders_clinic_isolation ON appointment_reminders
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -207,8 +207,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY doctor_availability_clinic_isolation ON doctor_availability
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -221,7 +221,7 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY service_durations_clinic_isolation ON service_durations
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
