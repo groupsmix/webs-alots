@@ -446,7 +446,7 @@ export default function ExpensesPage() {
             </div>
           </div>
           <DialogFooter>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {/* eslint-disable i18next/no-literal-string */}
             <Button
               variant="outline"
               onClick={() => {
@@ -456,6 +456,7 @@ export default function ExpensesPage() {
             >
               Annuler
             </Button>
+            {/* eslint-enable i18next/no-literal-string */}
             <Button onClick={handleSave}>{editExpense ? "Mettre à jour" : "Ajouter"}</Button>
           </DialogFooter>
         </DialogContent>
