@@ -84,3 +84,13 @@ export {
   waitingQueueUpdateSchema,
   npsSurveyResponseSchema,
 } from "./patient-experience";
+
+export {
+  invoiceCreateSchema,
+  invoiceUpdateSchema,
+  paymentPlanCreateSchema,
+  installmentUpdateSchema,
+  reminderSendSchema,
+  financialSummaryQuerySchema,
+  revenueInsightsQuerySchema,
+} from "./billing";
