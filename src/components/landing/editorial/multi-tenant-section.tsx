@@ -11,7 +11,7 @@ export function MultiTenantSection() {
     <section className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
-        <div className="max-w-[720px]">
+        <div className="max-w-full md:max-w-[720px]">
           <h2 className="font-[var(--font-sans-landing)] text-[length:var(--text-h2)] leading-[var(--lh-h2)] tracking-[var(--ls-h2)] font-medium text-[var(--ink)]">
             Un sous-domaine par cabinet. Aucune donnée n&apos;est partagée entre cabinets.
           </h2>

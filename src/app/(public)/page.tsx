@@ -47,15 +47,34 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (!tenant) {
     const metaTitle = `Oltigo \u2014 ${t(locale, "public.meta.title")}`;
+    const metaDescription = t(locale, "public.meta.description");
     return {
       title: metaTitle,
-      description: t(locale, "public.meta.description"),
+      description: metaDescription,
+      keywords: [
+        "gestion cabinet médical Maroc",
+        "rendez-vous en ligne",
+        "logiciel médical",
+        "WhatsApp rappels patients",
+        "dossier patient chiffré",
+        "SaaS santé Maroc",
+        "Oltigo",
+      ],
+      alternates: {
+        canonical: "https://oltigo.com",
+      },
       openGraph: {
         title: metaTitle,
         description: t(locale, "public.meta.ogDescription"),
         type: "website",
         locale: locale === "ar" ? "ar_MA" : "fr_MA",
         siteName: "Oltigo",
+        url: "https://oltigo.com",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: metaTitle,
+        description: metaDescription,
       },
     };
   }
@@ -108,7 +127,49 @@ export default async function HomePage() {
 
   // Root domain (no subdomain) → show SaaS landing page
   if (!tenant) {
-    return <LandingPage />;
+    const saasJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Oltigo",
+      url: "https://oltigo.com",
+      description:
+        "Plateforme SaaS de gestion de cabinets médicaux au Maroc. Rendez-vous en ligne, dossier patient chiffré, rappels WhatsApp.",
+      foundingDate: "2024",
+      areaServed: {
+        "@type": "Country",
+        name: "Morocco",
+      },
+    };
+    const softwareJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "Oltigo Health",
+      applicationCategory: "HealthApplication",
+      operatingSystem: "Web",
+      url: "https://oltigo.com",
+      description:
+        "Plateforme complète pour gérer votre cabinet médical : rendez-vous, dossiers patients chiffrés, rappels WhatsApp en darija.",
+      offers: {
+        "@type": "AggregateOffer",
+        lowPrice: "0",
+        highPrice: "999",
+        priceCurrency: "MAD",
+        offerCount: 4,
+      },
+    };
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
+        />
+        <LandingPage />
+      </>
+    );
   }
 
   const { headers } = await import("next/headers");

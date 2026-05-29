@@ -28,7 +28,7 @@ export function EditorialHero() {
         <div className="h-[var(--space-5)]" />
 
         {/* Display headline — 75% width */}
-        <h1 className="font-[var(--font-sans-landing)] text-[length:clamp(2.5rem,5vw,var(--text-display))] leading-[var(--lh-display)] tracking-[var(--ls-display)] font-medium text-[var(--ink)] max-w-[75%]">
+        <h1 className="font-[var(--font-sans-landing)] text-[length:clamp(2.5rem,5vw,var(--text-display))] leading-[var(--lh-display)] tracking-[var(--ls-display)] font-medium text-[var(--ink)] max-w-full md:max-w-[75%]">
           La plateforme complète pour gérer votre cabinet médical.
         </h1>
 
@@ -36,7 +36,7 @@ export function EditorialHero() {
         <div className="h-[var(--space-5)]" />
 
         {/* Subhead — 58% width */}
-        <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink-70)] max-w-[58%]">
+        <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink-70)] max-w-full md:max-w-[58%]">
           Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité
           facilement.
         </p>
@@ -72,7 +72,9 @@ export function EditorialHero() {
 
         {/* Trust strip: 4 stat blocks */}
         <div className="py-[var(--space-5)]">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
+            <StatBlock value="50+" label="Cabinets" />
+            <StatBlock value="10 000+" label="RDV gérés" />
             <StatBlock value="99,95%" label="Disponibilité" />
             <StatBlock value="AES-256-GCM" label="Chiffrement" />
             <StatBlock value="Loi 09-08" label="Conforme" />
