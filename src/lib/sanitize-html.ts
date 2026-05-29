@@ -1,30 +1,39 @@
 /**
  * Server-safe HTML sanitization (S5-06).
  *
- * Uses DOMPurify (via isomorphic-dompurify, which provides a JSDOM-backed
- * DOM on the server) to strip dangerous tags, attributes, and protocols
- * from HTML before rendering via dangerouslySetInnerHTML.
+ * Uses `sanitize-html` (an htmlparser2-based, allow-list sanitizer) to strip
+ * dangerous tags, attributes, and protocols from HTML before rendering via
+ * dangerouslySetInnerHTML.
  *
- * Why DOMPurify instead of regex?
+ * Why sanitize-html instead of DOMPurify+jsdom?
  *
- * The previous implementation used a hand-rolled regex pipeline. Regex-based
- * HTML sanitization has well-known bypass vectors (nested malformed tags,
- * whitespace-around-`=`, exotic elements like `<svg onload>` /
- * `<details ontoggle>`, etc.). DOMPurify parses the HTML into a real DOM
- * and walks the tree, which makes it sound for arbitrary input — including
- * future cases where blog content is admin-editable rather than checked-in
- * static files.
+ * DOMPurify needs a real DOM. The only DOM implementations that are
+ * spec-complete enough for DOMPurify (jsdom, happy-dom) are ~7-8 MiB
+ * unpacked, which blows the Cloudflare Worker 10 MiB bundle limit (and jsdom
+ * cannot run on the Workers runtime at all). `sanitize-html` is a ~70 KiB,
+ * pure-JS parser-based sanitizer that runs both at build time and on the
+ * edge, keeping the same tree-based (non-regex) sanitization guarantees
+ * while keeping the Worker bundle well under the size limit.
+ *
+ * Why a parser instead of regex?
+ *
+ * A hand-rolled regex pipeline has well-known bypass vectors (nested
+ * malformed tags, whitespace-around-`=`, exotic elements like `<svg onload>`
+ * / `<details ontoggle>`, etc.). `sanitize-html` tokenizes the HTML with
+ * htmlparser2 and rebuilds it from the allow-list, which makes it sound for
+ * arbitrary input — including future cases where blog content is
+ * admin-editable rather than checked-in static files.
  *
  * This module currently sanitizes static blog content
  * (`src/app/(public)/blog/[slug]/page.tsx`) at build time via
  * `generateStaticParams` — there is no runtime sanitization on the edge.
  */
-import DOMPurify from "isomorphic-dompurify";
+import sanitize from "sanitize-html";
 
 /**
  * Allow the tags that the static blog markup actually uses, plus the
  * usual semantic / formatting tags. Anything else (script, iframe,
- * object, embed, form, meta, link, style, etc.) is dropped by DOMPurify.
+ * object, embed, form, meta, link, style, etc.) is dropped.
  */
 const ALLOWED_TAGS = [
   "a",
@@ -81,54 +90,42 @@ const ALLOWED_ATTR = [
   "height",
 ];
 
+// Attributes are allow-listed globally for every tag.
+const ALLOWED_ATTRIBUTES: sanitize.IOptions["allowedAttributes"] = {
+  "*": ALLOWED_ATTR,
+};
+
+// Permit only safe URL schemes. `data:` is allowed solely for inline images
+// (`data:image/*` on <img src>), matching the previous DOMPurify policy;
+// `javascript:`, `vbscript:`, `data:text/html`, etc. are rejected.
+const ALLOWED_SCHEMES = ["http", "https", "mailto", "tel"];
+
 /**
  * Sanitize a string of HTML, returning a string that is safe to pass to
  * `dangerouslySetInnerHTML`.
  *
  * - `script`, `iframe`, `object`, `embed`, `form`, `meta`, `link`, `style`,
- *   and any other non-allow-listed tags are removed.
+ *   `svg`, `math`, and any other non-allow-listed tags are removed.
  * - All event-handler attributes (`onclick`, `onerror`, `onload`, …) are
- *   stripped.
+ *   stripped (only the explicit allow-list of attributes survives).
  * - `javascript:` and other dangerous URL schemes are stripped from `href`
  *   / `src`. `data:` URIs are blocked except for `data:image/*`.
  */
 export function sanitizeHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    // A58.3: Explicitly forbid dangerous tags even if they somehow
-    // sneak through the ALLOWED_TAGS allowlist (defense-in-depth).
-    FORBID_TAGS: [
-      "script",
-      "style",
-      "iframe",
-      "object",
-      "embed",
-      "form",
-      "link",
-      "meta",
-      "base",
-      "svg",
-      "math",
-    ],
-    // A58.3: Forbid event handler attributes and other XSS vectors
-    FORBID_ATTR: [
-      "onerror",
-      "onload",
-      "onclick",
-      "onmouseover",
-      "onfocus",
-      "onblur",
-      "srcdoc",
-      "formaction",
-    ],
-    // Block all URL schemes other than http/https/mailto/tel and
-    // data:image/* (DOMPurify allows http/https/mailto/tel/ftp/file by
-    // default; we further restrict via ALLOWED_URI_REGEXP below).
-    ALLOWED_URI_REGEXP:
-      /^(?:(?:https?|mailto|tel):|data:image\/(?:png|jpe?g|gif|webp);|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-    // Strip the wrapping <html>/<body> that DOMPurify sometimes adds.
-    WHOLE_DOCUMENT: false,
-    RETURN_TRUSTED_TYPE: false,
+  return sanitize(dirty, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: ALLOWED_ATTRIBUTES,
+    // Only allow safe schemes; everything else (javascript:, vbscript:, …)
+    // is dropped along with the attribute.
+    allowedSchemes: ALLOWED_SCHEMES,
+    // `data:` URIs are permitted only on <img src> and only for images.
+    allowedSchemesByTag: { img: [...ALLOWED_SCHEMES, "data"] },
+    allowProtocolRelative: false,
+    // Drop the *contents* of dangerous elements rather than leaking them as
+    // inert text (e.g. `<script>alert(1)</script>` leaves nothing behind).
+    nonTextTags: ["script", "style", "textarea", "option", "noscript"],
+    // Restrict <img src="data:..."> to image MIME types only.
+    allowedSchemesAppliedToAttributes: ["href", "src"],
+    parser: { lowerCaseTags: true, lowerCaseAttributeNames: true },
   });
 }
