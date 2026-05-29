@@ -1,0 +1,55 @@
+rules:
+  # AGENTS.md rule #7: Never spread a request body into a DB write.
+  #
+  # Mass-assignment guard. Passing an untrusted request body straight into
+  # a Supabase `.insert()` / `.update()` / `.upsert()` — either as the whole
+  # argument (`.insert(body)`) or via an object spread (`.insert({ ...body })`)
+  # — lets a caller over-post columns they should never control (e.g. `role`,
+  # `clinic_id`, `is_seed`, `status`). Always destructure and pick the
+  # specific allowed fields: `.insert({ name: body.name, phone: body.phone })`.
+  #
+  # If a write genuinely needs to forward a fully server-constructed object
+  # (not derived from the request body), rename it away from these reserved
+  # names or add a `// nosemgrep: mass-assignment-guard` line with a reason.
+  - id: mass-assignment-guard
+    patterns:
+      - pattern-either:
+          # Whole request body passed directly as the write payload.
+          - pattern: $CLIENT.from($TABLE).$METHOD($BODY)
+          # Request body spread into the write payload object.
+          - pattern: $CLIENT.from($TABLE).$METHOD({ ..., ...$BODY, ... })
+          - pattern: $CLIENT.from($TABLE).$METHOD({ ...$BODY })
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(insert|update|upsert)$
+      - metavariable-regex:
+          metavariable: $BODY
+          # High-signal names for a raw/parsed HTTP request body. Deliberately
+          # narrow: generic names like `data`/`payload`/`input` are excluded
+          # because the typed data-access layer legitimately forwards
+          # already-validated objects under those names.
+          regex: ^(body|reqBody|requestBody|rawBody|req\.body|request\.body|parsedBody)$
+    message: >
+      Possible mass-assignment: `$METHOD` is being passed `$BODY` directly or
+      via spread. Never spread a request body into a DB write — destructure and
+      pick only the allowed columns (e.g. `.insert({ name: body.name })`) to
+      prevent over-posting `role`/`clinic_id`/etc. See AGENTS.md rule #7.
+      If `$BODY` is a server-built object (not request-derived), rename it or
+      add `// nosemgrep: mass-assignment-guard` with justification.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      exclude:
+        - "src/**/__tests__/**"
+        - "**/*.test.ts"
+        - "**/*.test.tsx"
+    metadata:
+      category: security
+      cwe:
+        - "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp:
+        - "A08:2021 - Software and Data Integrity Failures"
+      technology:
+        - supabase
+      references:
+        - https://github.com/groupsmix/webs-alots/blob/main/AGENTS.md
