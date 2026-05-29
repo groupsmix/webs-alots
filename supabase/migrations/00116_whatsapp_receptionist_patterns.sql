@@ -43,7 +43,7 @@ BEGIN
     WHERE tablename = 'whatsapp_consent' AND policyname = 'whatsapp_consent_clinic_isolation'
   ) THEN
     CREATE POLICY whatsapp_consent_clinic_isolation ON whatsapp_consent
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id());
   END IF;
 END
 $$;
@@ -82,7 +82,7 @@ BEGIN
       AND policyname = 'voice_transcriptions_clinic_isolation'
   ) THEN
     CREATE POLICY voice_transcriptions_clinic_isolation ON whatsapp_voice_transcriptions
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id());
   END IF;
 END
 $$;
