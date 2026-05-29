@@ -76,6 +76,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/checkin/status",
   "/api/cron/audit-log-flush",
   "/api/cron/billing",
+  "/api/cron/data-retention",
   "/api/cron/dedup-purge",
   "/api/cron/feedback",
   "/api/cron/gdpr-purge",
