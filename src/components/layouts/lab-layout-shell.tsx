@@ -10,6 +10,14 @@ import {
   ClinicDashboardLayout,
   type ClinicDashboardConfig,
 } from "@/components/layouts/clinic-dashboard-layout";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+
+const labMobileTabs: MobileTabItem[] = [
+  { href: "/lab-panel/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/lab-panel/test-orders", label: "Orders", icon: ClipboardList },
+  { href: "/lab-panel/results", label: "Results", icon: FlaskConical },
+  { href: "/lab-panel/reports", label: "Reports", icon: FileText },
+];
 
 const config: ClinicDashboardConfig = {
   title: "Analysis Lab",
@@ -24,6 +32,7 @@ const config: ClinicDashboardConfig = {
     { href: "/lab-panel/reports", label: "Reports", icon: FileText },
     { href: "/lab-panel/patient-history", label: "Patient History", icon: History },
   ],
+  mobileTabs: labMobileTabs,
 };
 
 export function LabLayoutShell({ children }: { children: React.ReactNode }) {

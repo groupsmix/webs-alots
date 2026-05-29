@@ -24,6 +24,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { CommandPalette, type CommandPaletteItem } from "@/components/command-palette";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -94,6 +96,13 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdItems, setCmdItems] = useState<CommandPaletteItem[]>([]);
+
+  const superAdminMobileTabs: MobileTabItem[] = [
+    { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/super-admin/clinics", label: "Clinics", icon: Building2 },
+    { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
+    { href: "/super-admin/subscriptions", label: "Subs", icon: Receipt },
+  ];
   const mountedRef = useRef(true);
 
   // Build command palette items
@@ -357,10 +366,13 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
             </DropdownMenu>
           </header>
 
-          <main id="main-content" className="flex-1 p-4 md:p-6">
+          <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
             {children}
           </main>
         </div>
+
+        {/* Mobile bottom tab bar */}
+        <MobileTabBar tabs={superAdminMobileTabs} onMoreClick={() => setMobileOpen(true)} />
 
         {/* Mobile Sidebar Sheet */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
