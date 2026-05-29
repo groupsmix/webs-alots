@@ -54,12 +54,19 @@ export default function SectionsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch("/api/branding", {
+      const res = await fetch("/api/branding", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section_visibility: visibility }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.error ?? "Failed to save section settings");
+        return;
+      }
       setSavedState(visibility);
+    } catch {
+      alert("Failed to save section settings");
     } finally {
       setSaving(false);
     }
