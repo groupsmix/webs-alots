@@ -178,6 +178,7 @@ export function ChatbotWidget() {
               size="sm"
               className="h-8 w-8 p-0 shrink-0"
               disabled={!input.trim() || isLoading}
+              aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </Button>

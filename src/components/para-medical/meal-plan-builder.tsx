@@ -167,6 +167,8 @@ export function MealPlanBuilder({
                                   <span className="w-14 text-right">{item.calories} kcal</span>
                                   {editable && (
                                     <button
+                                      type="button"
+                                      aria-label="Remove item"
                                       onClick={() =>
                                         onRemoveMealItem?.(plan.id, expandedDay, slot, idx)
                                       }

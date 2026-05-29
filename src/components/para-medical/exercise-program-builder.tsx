@@ -112,6 +112,7 @@ export function ExerciseProgramBuilder({
                         e.stopPropagation();
                         onUpdateStatus?.(program.id, "paused");
                       }}
+                      aria-label="Pause program"
                     >
                       <Pause className="h-3.5 w-3.5" />
                     </Button>
@@ -124,6 +125,7 @@ export function ExerciseProgramBuilder({
                         e.stopPropagation();
                         onUpdateStatus?.(program.id, "active");
                       }}
+                      aria-label="Resume program"
                     >
                       <Play className="h-3.5 w-3.5" />
                     </Button>
@@ -136,6 +138,7 @@ export function ExerciseProgramBuilder({
                         e.stopPropagation();
                         onUpdateStatus?.(program.id, "completed");
                       }}
+                      aria-label="Mark program completed"
                     >
                       <CheckCircle className="h-3.5 w-3.5 text-green-600" />
                     </Button>
@@ -188,6 +191,7 @@ export function ExerciseProgramBuilder({
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label="Remove exercise"
                           onClick={() => onRemoveExercise?.(program.id, idx)}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-red-500" />

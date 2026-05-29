@@ -266,6 +266,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               size="sm"
               className="md:hidden"
               onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </Button>
