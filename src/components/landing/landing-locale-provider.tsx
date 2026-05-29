@@ -7,7 +7,7 @@ import { t, type Locale, type TranslationKey } from "@/lib/i18n";
 interface LandingLocaleContextValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 const LandingLocaleContext = createContext<LandingLocaleContextValue | null>(null);
@@ -23,7 +23,8 @@ export function useLandingLocale(): LandingLocaleContextValue {
 export function LandingLocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useLocale();
 
-  const translate = (key: TranslationKey) => t(locale, key);
+  const translate = (key: TranslationKey, params?: Record<string, string | number>) =>
+    t(locale, key, params);
 
   return (
     <LandingLocaleContext.Provider value={{ locale, setLocale, t: translate }}>

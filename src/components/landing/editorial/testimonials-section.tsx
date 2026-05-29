@@ -1,5 +1,6 @@
 "use client";
 
+import { useLandingLocale } from "../landing-locale-provider";
 import { HairlineRule } from "./hairline-rule";
 
 /**
@@ -8,30 +9,29 @@ import { HairlineRule } from "./hairline-rule";
  * Mono attribution: — DR NAME · CABINET · CITY
  */
 export function TestimonialsSection() {
+  const { t } = useLandingLocale();
+
   return (
     <section id="clients" className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
-        {/* eslint-disable i18next/no-literal-string */}
         <HairlineRule />
         <div className="py-[var(--space-7)] max-w-[760px]">
           <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink)] not-italic">
-            Depuis qu&apos;on utilise Oltigo, le taux de no-show est passé de 32% à 8%. Les rappels
-            WhatsApp en darija font la différence — nos patients confirment en une minute.
+            {t("landing.editorial.testimonials-section.depuisQuaposonUtiliseOltigo")}
           </p>
           <p className="mt-[var(--space-5)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] uppercase text-[var(--ink-60)]">
-            — Dr Fatima B. · Cabinet Al Amal · Casablanca
+            {t("landing.editorial.testimonials-section.attribution")}
           </p>
           <p className="mt-[var(--space-2)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
-            EN PRODUCTION DEPUIS 2024-09 · PLAN PROFESSIONAL
+            {t("landing.editorial.testimonials-section.productionInfo")}
           </p>
         </div>
 
         <HairlineRule />
 
         <p className="mt-[var(--space-5)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
-          3 autres études en préparation
+          {t("landing.editorial.testimonials-section.3AutresEtudesEn")}
         </p>
-        {/* eslint-enable i18next/no-literal-string */}
       </div>
     </section>
   );

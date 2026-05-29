@@ -1,24 +1,7 @@
 "use client";
 
+import { useLandingLocale } from "../landing-locale-provider";
 import { HairlineRule } from "./hairline-rule";
-
-const PRODUCTS = [
-  {
-    label: "Rendez-vous",
-    description:
-      "Prise de rendez-vous en ligne pour vos patients. Confirmation automatique, rappels WhatsApp, vue agenda unifiée.",
-  },
-  {
-    label: "Dossier patient",
-    description:
-      "Dossiers chiffrés AES-256-GCM. Historique complet, ordonnances, résultats — accessibles uniquement par votre équipe.",
-  },
-  {
-    label: "Rappels & WhatsApp",
-    description:
-      "10 templates Darija pré-approuvés Meta. Rappels automatiques, confirmations, suivi post-consultation.",
-  },
-];
 
 /**
  * §3.1.4 Product Anatomy — 3 rows × 2 columns.
@@ -26,12 +9,28 @@ const PRODUCTS = [
  * Separated by --rule. No device frames, no rotation, no shadows.
  */
 export function ProductSection() {
+  const { t } = useLandingLocale();
+
+  const products = [
+    {
+      label: t("landing.editorial.product-section.appointmentsLabel"),
+      description: t("landing.editorial.product-section.appointmentsDesc"),
+    },
+    {
+      label: t("landing.editorial.product-section.patientRecordLabel"),
+      description: t("landing.editorial.product-section.patientRecordDesc"),
+    },
+    {
+      label: t("landing.editorial.product-section.whatsappLabel"),
+      description: t("landing.editorial.product-section.whatsappDesc"),
+    },
+  ];
+
   return (
     <section id="product" className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
-        {/* eslint-disable i18next/no-literal-string */}
-        {PRODUCTS.map((product, i) => (
-          <div key={product.label}>
+        {products.map((product, i) => (
+          <div key={i}>
             {i > 0 && <HairlineRule />}
             <div className="grid gap-8 md:grid-cols-2 md:items-center py-[var(--space-7)]">
               <div>
@@ -46,13 +45,12 @@ export function ProductSection() {
               {/* Screenshot placeholder — replace with real product PNGs */}
               <div className="aspect-[16/10] rounded-[var(--radius-landing)] border border-[var(--rule)] bg-[var(--bone)] flex items-center justify-center">
                 <span className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] text-[var(--ink-60)] uppercase tracking-[var(--ls-mono)]">
-                  Capture {product.label}
+                  {t("landing.editorial.product-section.capturePrefix")} {product.label}
                 </span>
               </div>
             </div>
           </div>
         ))}
-        {/* eslint-enable i18next/no-literal-string */}
       </div>
     </section>
   );
