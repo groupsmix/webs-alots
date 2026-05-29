@@ -1,5 +1,6 @@
+"use client";
+
 import { getLocalDateStr } from "@/lib/utils";
-("use client");
 
 /**
  * Data export utilities — CSV generation and download for clinic data.
