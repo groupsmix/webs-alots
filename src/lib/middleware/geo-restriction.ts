@@ -7,13 +7,14 @@
  * country code of the client.
  *
  * Behaviour:
- *   - When `GEO_RESTRICT_ADMIN` env var is set to a comma-separated list
- *     of country codes (e.g. "MA,FR,ES"), requests to admin dashboard
- *     routes from outside those countries receive a 403.
- *   - When `GEO_RESTRICT_ADMIN` is unset or empty, geo-restriction is
- *     disabled (fail-open for backward compatibility).
+ *   - Geo-restriction is **enabled by default**. Set
+ *     `ADMIN_GEO_RESTRICTION_ENABLED=false` to disable.
+ *   - When enabled, admin routes are restricted to Morocco (`MA`) unless
+ *     `GEO_RESTRICT_ADMIN` overrides the allowed country list with a
+ *     comma-separated set of codes (e.g. "MA,FR,ES").
  *   - The `CF-IPCountry` header is only present on Cloudflare-proxied
  *     requests. In dev/staging without Cloudflare, the check is skipped.
+ *   - Patient-facing routes are never restricted.
  *
  * This is defense-in-depth: authentication and RBAC remain the primary
  * access controls.
@@ -26,12 +27,24 @@ const ADMIN_PREFIXES = ["/admin", "/dashboard", "/api/admin"] as const;
 
 let _allowedCountries: Set<string> | null | undefined;
 
+function isGeoRestrictionEnabled(): boolean {
+  const raw = process.env.ADMIN_GEO_RESTRICTION_ENABLED;
+  if (raw === undefined || raw === "") return true;
+  return raw.trim().toLowerCase() !== "false" && raw.trim() !== "0";
+}
+
 function getAllowedCountries(): Set<string> | null {
   if (_allowedCountries !== undefined) return _allowedCountries;
-  const raw = process.env.GEO_RESTRICT_ADMIN;
-  if (!raw || raw.trim() === "") {
+
+  if (!isGeoRestrictionEnabled()) {
     _allowedCountries = null;
     return null;
+  }
+
+  const raw = process.env.GEO_RESTRICT_ADMIN;
+  if (!raw || raw.trim() === "") {
+    _allowedCountries = new Set(["MA"]);
+    return _allowedCountries;
   }
   _allowedCountries = new Set(
     raw
