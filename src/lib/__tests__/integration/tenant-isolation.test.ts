@@ -292,7 +292,6 @@ describe("Tenant Isolation — Public API Route Allowlist", () => {
     expect(isPublicRoute("/api/doctor/patients")).toBe(false);
     expect(isPublicRoute("/api/patient/records")).toBe(false);
     expect(isPublicRoute("/api/files/upload")).toBe(false);
-    expect(isPublicRoute("/api/v1/patients")).toBe(false);
   });
 
   it("explicitly allowlisted API routes are public", async () => {
@@ -303,5 +302,12 @@ describe("Tenant Isolation — Public API Route Allowlist", () => {
     expect(isPublicRoute("/api/booking")).toBe(true);
     expect(isPublicRoute("/api/branding")).toBe(true);
     expect(isPublicRoute("/api/docs")).toBe(true);
+    // v1 REST API routes use Bearer API key auth (not session cookies)
+    expect(isPublicRoute("/api/v1/patients")).toBe(true);
+    expect(isPublicRoute("/api/v1/appointments")).toBe(true);
+    // Stripe billing webhook — authenticated via stripe-signature HMAC
+    expect(isPublicRoute("/api/billing/webhook")).toBe(true);
+    // Public chatbot — basic tier serves anonymous visitors
+    expect(isPublicRoute("/api/chat")).toBe(true);
   });
 });

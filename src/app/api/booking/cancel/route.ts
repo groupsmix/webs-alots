@@ -82,7 +82,8 @@ export const POST = withAuthValidation(
         cancelled_at: new Date().toISOString(),
         cancellation_reason: body.reason ?? "Cancelled by patient",
       })
-      .eq("id", body.appointmentId);
+      .eq("id", body.appointmentId)
+      .eq("clinic_id", clinicId);
 
     if (updateError) {
       return apiInternalError("Failed to cancel appointment");

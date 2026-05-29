@@ -216,6 +216,7 @@ export const POST = withAuthValidation(
         await supabase
           .from("appointments")
           .update({ status: APPOINTMENT_STATUS.CANCELLED })
+          .eq("clinic_id", clinicId)
           .in("id", cancelIds);
       }
 
