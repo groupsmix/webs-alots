@@ -285,8 +285,7 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "ADMIN_GEO_RESTRICTION_ENABLED",
     required: false,
-    description:
-      "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
+    description: "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
     group: "security",
   },
   {
