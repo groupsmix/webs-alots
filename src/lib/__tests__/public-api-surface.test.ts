@@ -68,6 +68,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/booking/waiting-list",
   "/api/branding",
   "/api/branding/apply-preset",
+  "/api/branding/custom-domain",
   "/api/chat",
   "/api/checkin/confirm",
   "/api/checkin/lookup",
