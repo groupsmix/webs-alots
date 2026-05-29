@@ -5,6 +5,9 @@
  * Integrates with the notification engine for template-based messaging.
  */
 
+import { logger } from "@/lib/logger";
+import { createTenantClient } from "@/lib/supabase-server";
+
 // ---- Types ----
 
 type WhatsAppProvider = "meta" | "twilio";
@@ -234,4 +237,100 @@ export async function sendTextMessage(to: string, body: string): Promise<WhatsAp
   }
 
   return sendViaMeta(config, to, body);
+}
+
+// ---- DB-backed Template Loading ----
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseUntyped = { from(table: string): any };
+
+export interface WhatsAppTemplate {
+  id: string;
+  clinic_id: string;
+  template_name: string;
+  language: string;
+  body_template: string;
+  variables: Record<string, string>[];
+  status: string;
+  meta_template_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const DEFAULT_TEMPLATES: Record<string, string> = {
+  booking_confirmation:
+    "مرحبا {{patient_name}}، تم تأكيد موعدك مع {{doctor_name}} يوم {{date}} على الساعة {{time}}. {{clinic_name}}",
+  appointment_reminder:
+    "تذكير: عندك موعد غدا مع {{doctor_name}} على الساعة {{time}}. {{clinic_name}}",
+  rescheduled: "تم تغيير موعدك مع {{doctor_name}} ل {{date}} على الساعة {{time}}. {{clinic_name}}",
+  cancellation: "تم إلغاء موعدك مع {{doctor_name}} يوم {{date}}. {{clinic_name}}",
+};
+
+/**
+ * Load a WhatsApp template for a specific clinic, falling back to
+ * hardcoded defaults if no custom template exists in the database.
+ */
+export async function getWhatsAppTemplate(
+  clinicId: string,
+  templateName: string,
+  language = "ar",
+): Promise<string | null> {
+  try {
+    const supabase = await createTenantClient(clinicId);
+    // Table added in migration 00101 — not yet in generated DB types
+    const { data, error } = await (supabase as unknown as SupabaseUntyped)
+      .from("whatsapp_templates") // nosemgrep: semgrep.tenant-scoping
+      .select("body_template") // nosemgrep: semgrep.tenant-scoping
+      .eq("clinic_id", clinicId)
+      .eq("template_name", templateName)
+      .eq("language", language)
+      .eq("status", "approved")
+      .single();
+
+    if (!error && data) {
+      return (data as { body_template: string }).body_template;
+    }
+  } catch (err) {
+    logger.warn("Failed to load WhatsApp template from DB, using default", {
+      context: "whatsapp/templates",
+      clinicId,
+      templateName,
+      error: err,
+    });
+  }
+
+  return DEFAULT_TEMPLATES[templateName] ?? null;
+}
+
+/**
+ * Load all WhatsApp templates for a clinic.
+ */
+export async function getClinicWhatsAppTemplates(clinicId: string): Promise<WhatsAppTemplate[]> {
+  try {
+    const supabase = await createTenantClient(clinicId);
+    // Table added in migration 00101 — not yet in generated DB types
+    const { data, error } = await (supabase as unknown as SupabaseUntyped)
+      .from("whatsapp_templates") // nosemgrep: semgrep.tenant-scoping
+      .select("*") // nosemgrep: semgrep.tenant-scoping
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      logger.warn("Failed to load clinic WhatsApp templates", {
+        context: "whatsapp/templates",
+        clinicId,
+        error,
+      });
+      return [];
+    }
+
+    return (data ?? []) as WhatsAppTemplate[];
+  } catch (err) {
+    logger.warn("Error fetching clinic WhatsApp templates", {
+      context: "whatsapp/templates",
+      clinicId,
+      error: err,
+    });
+    return [];
+  }
 }

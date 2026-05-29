@@ -116,6 +116,37 @@ export const POST = withAuthValidation(
     const slotStart = `${body.newDate}T${body.newTime}:00`;
     const slotEnd = `${body.newDate}T${endTime}:00`;
 
+    // Check for overlapping appointments with the same doctor on the new date
+    const { count: conflictCount, error: conflictError } = await supabase
+      .from("appointments") // nosemgrep: semgrep.tenant-scoping
+      .select("id", { count: "exact", head: true }) // nosemgrep: semgrep.tenant-scoping
+      .eq("clinic_id", clinicId)
+      .eq("doctor_id", existing.doctor_id)
+      .eq("appointment_date", body.newDate)
+      .neq("id", body.appointmentId)
+      .in("status", [
+        APPOINTMENT_STATUS.CONFIRMED,
+        APPOINTMENT_STATUS.PENDING,
+        APPOINTMENT_STATUS.SCHEDULED,
+      ])
+      .lt("slot_start", slotEnd)
+      .gt("slot_end", slotStart);
+
+    if (conflictError) {
+      logger.warn("Failed to check reschedule appointment conflicts", {
+        context: "booking/reschedule",
+        error: conflictError,
+      });
+    }
+
+    if (conflictCount !== null && conflictCount > 0) {
+      return apiError(
+        "This time slot is already booked for this doctor",
+        409,
+        "APPOINTMENT_CONFLICT",
+      );
+    }
+
     // Update the existing appointment with new date/time and computed fields
     const { error: updateError } = await supabase
       .from("appointments")
