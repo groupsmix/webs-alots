@@ -13,7 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
-import { resolveAIConfig } from "@/lib/ai/config";
+import { resolveAIConfig, logMinorAIProcessing } from "@/lib/ai/config";
 import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
@@ -21,6 +21,7 @@ import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/ap
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
+import { isMinorByDob } from "@/lib/minors";
 import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
 import type { Json } from "@/lib/types/database";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -334,6 +335,12 @@ export const POST = withAuthValidation(
     }
 
     const patientData = patientContext.patient;
+
+    // A200: Log minor-patient AI processing for GDPR-K / Law 09-08 audit trail
+    const patientMeta = (patientData.metadata ?? {}) as PatientMetadata;
+    if (patientMeta.date_of_birth && isMinorByDob(patientMeta.date_of_birth)) {
+      logMinorAIProcessing(data.patientId, clinicId, "patient_summary");
+    }
 
     // Build prompts
     const systemPrompt = buildSummarySystemPrompt();

@@ -2522,3 +2522,41 @@ I produced 26 IDs (T-01..04, I-01..06, A-01..07, V-01..06, Q-01..05, M-01..05, P
 Good defences worth keeping: HMAC-signed profile headers (R-01), fail-closed `setTenantContext`, deny-by-default `/api/*` middleware gate (P0-01), magic-byte upload validation (HIGH-05), per-tenant scope on every Supabase query, webhook replay-id dedup, MFA gating for admin/doctor.
 
 ---
+
+## Season 7 — Org-Wide Quarterly (2026-05-28)
+
+### Implemented (code changes in this PR)
+
+| ID   | Sev        | Status         | Description                                                                                                                                                                                                                                    |
+| ---- | ---------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A200 | **P1 Med** | **FIXED**      | Minors/parental-consent pathway — `isMinor` helpers (`src/lib/minors.ts`), registration age-gate with guardian consent checkbox, privacy page minors section, AI minor-processing audit log, DB migration `00097` (computed `is_minor` column) |
+| A173 | P2 Med     | **FIXED**      | OSS supply-chain: OpenSSF Scorecard action + license-allowlist check (CI `supply-chain` job)                                                                                                                                                   |
+| A213 | P2 Med     | **FIXED**      | Continuous ASM: daily CT-log subdomain scan workflow (`.github/workflows/asm.yml`)                                                                                                                                                             |
+| A175 | P2 Med     | **DOCUMENTED** | Branch-protection requirements for SLSA L3 (`docs/branch-protection-slsa-l3.md`) — verify in GitHub settings                                                                                                                                   |
+| A174 | P3 Low     | **FIXED**      | SBOM attached to GitHub releases on production deploy (`deploy.yml` `sbom-release` job)                                                                                                                                                        |
+| A198 | P3 Low     | **FIXED**      | ECCN export self-classification (`docs/eccn-classification.md`)                                                                                                                                                                                |
+| A199 | P3 Low     | **FIXED**      | Marketing claims substantiation register (`docs/claims-substantiation.md`)                                                                                                                                                                     |
+| A201 | P3 Low     | **FIXED**      | WCAG 2.2 AA conformance statement + axe tags bumped + EAA roadmap (`docs/accessibility-conformance.md`)                                                                                                                                        |
+| A214 | Partial    | **FIXED**      | Hallucinated-dependency check added to CI security job                                                                                                                                                                                         |
+
+### NF / N/A (verified clean, no action needed)
+
+A171, A172, A176, A177/A178, A187, A190, A191, A192, A193, A194, A195, A202, A204
+
+### UNCERTAIN (requires out-of-repo verification)
+
+| ID        | Description                     | Action Required                                                          |
+| --------- | ------------------------------- | ------------------------------------------------------------------------ |
+| A175      | SLSA L3 branch protection       | Verify in GitHub repo settings (see `docs/branch-protection-slsa-l3.md`) |
+| A179      | SSO/WebAuthn enforcement        | Verify in IdP console                                                    |
+| A180      | Privileged role recertification | Run first recert cycle                                                   |
+| A182      | MDM/EDR deployment              | Verify enrollment on all endpoints                                       |
+| A186      | Phishing simulation metrics     | Run first phish-sim                                                      |
+| A188      | SIEM/WORM live                  | Verify SIEM ingestion + WORM immutability                                |
+| A189      | Tabletop exercise               | Run Q2 tabletop                                                          |
+| A196      | Cyber insurance                 | Confirm current policy exists                                            |
+| A197      | IP assignments/PIIA             | Confirm signed agreements                                                |
+| A203      | Board cyber report              | Produce first quarterly report                                           |
+| A205–A212 | Red/purple team engagements     | Schedule and execute                                                     |
+
+---

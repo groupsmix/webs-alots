@@ -246,6 +246,8 @@ export async function registerPatient(data: {
   age?: number;
   gender?: string;
   insurance?: string;
+  /** A200: Guardian acknowledged consent for a minor patient. */
+  guardianConsent?: boolean;
 }): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "auth.phoneDisabled" };
@@ -273,6 +275,9 @@ export async function registerPatient(data: {
         age: data.age,
         gender: data.gender,
         insurance: data.insurance,
+        // A200: Pass guardian consent flag for minor patients so the DB
+        // trigger / downstream logic can record it in consent_logs.
+        guardian_consent: data.guardianConsent ?? undefined,
       },
     },
   });

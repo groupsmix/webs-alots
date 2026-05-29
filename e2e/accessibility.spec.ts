@@ -2,11 +2,15 @@ import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 
 /**
- * F-053: Automated WCAG 2.1 AA accessibility audit via axe-core.
+ * F-053 / A201: Automated WCAG 2.2 AA accessibility audit via axe-core.
  *
  * Scans the public landing page, booking flow, and login page for
  * accessibility violations. Failures block the PR so regressions are
  * caught before reaching production.
+ *
+ * A201: Bumped from WCAG 2.1 AA to WCAG 2.2 AA to align with EAA 2025
+ * requirements. See docs/accessibility-conformance.md for the full
+ * conformance statement and roadmap.
  *
  * Known exclusions:
  * - color-contrast: Some brand colours are intentionally low-contrast
@@ -17,7 +21,7 @@ import { test, expect } from "@playwright/test";
  *   tracked; excluded here to avoid false positives.
  */
 
-const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /**
  * Navigate and wait for any client-side redirects to finish before
@@ -26,14 +30,11 @@ const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
  */
 async function stableGoto(page: import("@playwright/test").Page, path: string) {
   await page.goto(path, { waitUntil: "load" });
-  // Give client-side redirects (auth, tenant, middleware) a chance to fire.
-  // If a navigation happens, wait for it to settle; otherwise continue.
   await page.waitForLoadState("load");
-  // Extra guard: wait for the frame to be stable (no pending navigations).
   await page.waitForTimeout(500);
 }
 
-test.describe("Accessibility — WCAG 2.1 AA", () => {
+test.describe("Accessibility — WCAG 2.2 AA", () => {
   test("public landing page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/");
 

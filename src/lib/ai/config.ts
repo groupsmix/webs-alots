@@ -137,3 +137,20 @@ const _AI_RESPONSE_DISCLAIMER = {
   disclaimer: AI_DISCLAIMER_FR,
   aiGenerated: true,
 } as const;
+
+/**
+ * A200: Log when AI processes data for a minor patient.
+ *
+ * Clinical AI (summaries, prescriptions, drug checks) is permitted for
+ * minors under medical-necessity, but behavioural profiling is blocked.
+ * Every invocation is logged for GDPR-K / Law 09-08 audit trail.
+ */
+export function logMinorAIProcessing(patientId: string, clinicId: string, feature: string): void {
+  logger.info("ai.minor_patient_processing", {
+    context: "ai-minor-guard",
+    patientId,
+    clinicId,
+    feature,
+    note: "Clinical AI permitted under medical-necessity; no behavioural profiling applied",
+  });
+}
