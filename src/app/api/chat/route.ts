@@ -9,6 +9,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
+import { detectLanguage } from "@/lib/support/language-detect";
 import { requireTenant } from "@/lib/tenant";
 import { chatRequestSchema } from "@/lib/validations";
 /**
@@ -160,9 +161,11 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   // interact with the chatbot quick-reply buttons.
   if (intelligence === "basic") {
     const reply = getBasicResponse(lastMessage.content, ctx);
+    const detectedLang = detectLanguage(lastMessage.content);
     return apiSuccess({
       message: { role: "assistant" as const, content: reply },
       disclaimer: getAIDisclaimer(),
+      language: detectedLang,
     });
   }
 

@@ -20,7 +20,7 @@ export const PATCH = withAuthValidation(
     const clinicId = profile.clinic_id;
 
     if (!clinicId) {
-      return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+      return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
     }
 
     const { alertId } = data;
@@ -36,7 +36,7 @@ export const PATCH = withAuthValidation(
         .single();
 
       if (error || !updated) {
-        return apiError("Alert not found", 404, "NOT_FOUND");
+        return apiError("Alerte introuvable", 404, "NOT_FOUND");
       }
 
       return apiSuccess({ alert: updated as { id: string; is_read: boolean } });
