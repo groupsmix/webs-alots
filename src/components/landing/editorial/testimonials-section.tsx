@@ -1,5 +1,6 @@
 "use client";
 
+import { useLandingLocale } from "../landing-locale-provider";
 import { HairlineRule } from "./hairline-rule";
 
 const TESTIMONIALS = [
@@ -38,14 +39,16 @@ const TESTIMONIALS = [
  * Mono attribution: — DR NAME · CABINET · CITY
  */
 export function TestimonialsSection() {
+  const { t } = useLandingLocale();
+
   return (
     <section id="clients" className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
-        {TESTIMONIALS.map((testimonial, i) => (
+        {TESTIMONIALS.map((testimonial) => (
           <div key={testimonial.name}>
             <HairlineRule />
-            <div className={`py-[var(--space-7)] max-w-full md:max-w-[760px] ${i > 0 ? "" : ""}`}>
+            <div className="py-[var(--space-7)] max-w-full md:max-w-[760px]">
               <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink)] not-italic">
                 {testimonial.quote}
               </p>
@@ -59,13 +62,13 @@ export function TestimonialsSection() {
             </div>
           </div>
         ))}
+        {/* eslint-enable i18next/no-literal-string */}
 
         <HairlineRule />
 
         <p className="mt-[var(--space-5)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
-          3 autres études en préparation
+          {t("landing.editorial.testimonials-section.3AutresEtudesEn")}
         </p>
-        {/* eslint-enable i18next/no-literal-string */}
       </div>
     </section>
   );

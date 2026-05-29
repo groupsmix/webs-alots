@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LandingLocaleProvider, useLandingLocale } from "../landing-locale-provider";
 import { ClosingCtaSection } from "./closing-cta-section";
 import { ContactSection } from "./contact-section";
 import { EditorialFooter } from "./editorial-footer";
@@ -25,7 +26,15 @@ import { TestimonialsSection } from "./testimonials-section";
  * → Clients → Pricing → Closing CTA → Footer.
  */
 export function EditorialLandingPage() {
-  const [lang, setLang] = useState<"fr" | "ar" | "en">("fr");
+  return (
+    <LandingLocaleProvider>
+      <EditorialLandingPageInner />
+    </LandingLocaleProvider>
+  );
+}
+
+function EditorialLandingPageInner() {
+  const { locale, setLocale, t } = useLandingLocale();
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("oltigo-theme") as "light" | "dark" | null;
@@ -52,11 +61,11 @@ export function EditorialLandingPage() {
 
   const cycleLang = () => {
     const order: Array<"fr" | "ar" | "en"> = ["fr", "ar", "en"];
-    const next = order[(order.indexOf(lang) + 1) % order.length];
-    setLang(next);
+    const next = order[(order.indexOf(locale) + 1) % order.length];
+    setLocale(next);
   };
 
-  const rtl = lang === "ar";
+  const rtl = locale === "ar";
 
   return (
     <div
@@ -69,11 +78,11 @@ export function EditorialLandingPage() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium bg-[var(--oltigo-green)] text-[var(--bone)]"
       >
-        {rtl ? "الانتقال إلى المحتوى الرئيسي" : "Aller au contenu principal"}
+        {t("landing.editorial.skipToContent")}
       </a>
 
       <EditorialHeader
-        lang={lang}
+        lang={locale}
         theme={theme}
         onToggleLang={cycleLang}
         onToggleTheme={toggleTheme}

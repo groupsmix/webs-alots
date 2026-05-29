@@ -1,6 +1,7 @@
 /* eslint-disable i18next/no-literal-string */
 "use client";
 
+import { useLandingLocale } from "../landing-locale-provider";
 import { HairlineRule } from "./hairline-rule";
 
 function AppointmentCalendarMock() {
@@ -161,28 +162,10 @@ function WhatsAppPreviewMock() {
 }
 
 const MOCK_COMPONENTS: Record<string, () => React.JSX.Element> = {
-  "Rendez-vous": AppointmentCalendarMock,
-  "Dossier patient": PatientRecordMock,
-  "Rappels & WhatsApp": WhatsAppPreviewMock,
+  appointments: AppointmentCalendarMock,
+  patientRecord: PatientRecordMock,
+  whatsapp: WhatsAppPreviewMock,
 };
-
-const PRODUCTS = [
-  {
-    label: "Rendez-vous",
-    description:
-      "Prise de rendez-vous en ligne pour vos patients. Confirmation automatique, rappels WhatsApp, vue agenda unifi\u00e9e.",
-  },
-  {
-    label: "Dossier patient",
-    description:
-      "Dossiers chiffr\u00e9s AES-256-GCM. Historique complet, ordonnances, r\u00e9sultats \u2014 accessibles uniquement par votre \u00e9quipe.",
-  },
-  {
-    label: "Rappels & WhatsApp",
-    description:
-      "10 templates Darija pr\u00e9-approuv\u00e9s Meta. Rappels automatiques, confirmations, suivi post-consultation.",
-  },
-];
 
 /**
  * §3.1.4 Product Anatomy — 3 rows × 2 columns.
@@ -190,13 +173,33 @@ const PRODUCTS = [
  * Separated by --rule. No device frames, no rotation, no shadows.
  */
 export function ProductSection() {
+  const { t } = useLandingLocale();
+
+  const products = [
+    {
+      key: "appointments",
+      label: t("landing.editorial.product-section.appointmentsLabel"),
+      description: t("landing.editorial.product-section.appointmentsDesc"),
+    },
+    {
+      key: "patientRecord",
+      label: t("landing.editorial.product-section.patientRecordLabel"),
+      description: t("landing.editorial.product-section.patientRecordDesc"),
+    },
+    {
+      key: "whatsapp",
+      label: t("landing.editorial.product-section.whatsappLabel"),
+      description: t("landing.editorial.product-section.whatsappDesc"),
+    },
+  ];
+
   return (
     <section id="product" className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
-        {PRODUCTS.map((product, i) => {
-          const MockComponent = MOCK_COMPONENTS[product.label];
+        {products.map((product, i) => {
+          const MockComponent = MOCK_COMPONENTS[product.key];
           return (
-            <div key={product.label}>
+            <div key={product.key}>
               {i > 0 && <HairlineRule />}
               <div className="grid gap-8 md:grid-cols-2 md:items-center py-[var(--space-7)]">
                 <div>
