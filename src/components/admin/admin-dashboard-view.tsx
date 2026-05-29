@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import type { DashboardStats, RecentActivityItem } from "@/lib/data/server";
 import { t } from "@/lib/i18n";
-import { formatDisplayDate } from "@/lib/utils";
+import { formatCurrency, formatDisplayDate } from "@/lib/utils";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -56,7 +56,7 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
     {
       icon: CreditCard,
       label: t(locale, "admin.monthlyRevenue"),
-      value: `${totalRevenue} MAD`,
+      value: `${formatCurrency(totalRevenue)}`,
       color: "text-purple-600",
     },
     {

@@ -29,7 +29,7 @@ export function EditorialHero() {
         <div className="h-[var(--space-5)]" />
 
         {/* Display headline — responsive width */}
-        <h1 className="font-[var(--font-sans-landing)] text-[length:clamp(2.5rem,5vw,var(--text-display))] leading-[var(--lh-display)] tracking-[var(--ls-display)] font-medium text-[var(--ink)] max-w-full sm:max-w-[75%]">
+        <h1 className="font-[var(--font-sans-landing)] text-[length:clamp(2.5rem,5vw,var(--text-display))] leading-[var(--lh-display)] tracking-[var(--ls-display)] font-medium text-[var(--ink)] max-w-full md:max-w-[75%]">
           {t("landing.editorial.hero-section.laPlateformeCompletePour")}
         </h1>
 
@@ -37,7 +37,7 @@ export function EditorialHero() {
         <div className="h-[var(--space-5)]" />
 
         {/* Subhead — responsive width */}
-        <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink-70)] max-w-full sm:max-w-[58%]">
+        <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink-70)] max-w-full md:max-w-[58%]">
           {t("landing.editorial.hero-section.creezLeSiteDe")}
         </p>
 
@@ -70,9 +70,17 @@ export function EditorialHero() {
         {/* Trust hairline (top) */}
         <HairlineRule />
 
-        {/* Trust strip: 4 stat blocks */}
+        {/* Trust strip: 6 stat blocks */}
         <div className="py-[var(--space-5)]">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
+            <StatBlock
+              value={t("landing.trustCabinets")}
+              label={t("landing.editorial.hero-section.statCabinetsLabel")}
+            />
+            <StatBlock
+              value={t("landing.trustAppointments")}
+              label={t("landing.editorial.hero-section.statAppointmentsLabel")}
+            />
             <StatBlock
               value={t("landing.trustUptime")}
               label={t("landing.editorial.hero-section.statUptimeLabel")}

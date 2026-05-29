@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface Receptionist {
   id: string;
@@ -104,7 +105,7 @@ export default function ManageReceptionistsPage() {
           email: formEmail,
           phone: formPhone,
           active: formActive,
-          createdAt: new Date().toISOString().split("T")[0],
+          createdAt: getLocalDateStr(),
         },
       ]);
     }

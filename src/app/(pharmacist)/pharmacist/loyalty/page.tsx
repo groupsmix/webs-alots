@@ -27,7 +27,6 @@ import { Input } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
 import type { LoyaltyMemberView, LoyaltyTransactionView } from "@/lib/data/client";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
@@ -299,7 +298,7 @@ export default function LoyaltyPage() {
                       <span className="text-sm font-normal">pts</span>
                     </p>
                     <p className="text-xs opacity-80">
-                      = {getPointsValue(member.availablePoints)} MAD discount
+                      = {formatCurrency(getPointsValue(member.availablePoints))} discount
                     </p>
                     <div className="flex items-center justify-between mt-3">
                       <span className="text-xs">{member.patientName}</span>

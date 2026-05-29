@@ -50,7 +50,7 @@ export function PricingSection() {
               <span className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--ink)]">
                 {t(plan.nameKey)}
               </span>
-              <span className="block mt-[var(--space-1)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
+              <span className="block mt-[var(--space-1)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)] break-words">
                 {t(plan.priceKey)}
               </span>
             </div>

@@ -1,6 +1,7 @@
 import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
+import { requireTenant } from "@/lib/tenant";
 import type { Json } from "@/lib/types/database";
 import { customFieldCreateSchema, customFieldUpdateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
@@ -13,6 +14,8 @@ import { withAuth } from "@/lib/with-auth";
 export const GET = withAuth(
   async (request, { supabase }) => {
     try {
+      const tenant = await requireTenant();
+      const clinicId = tenant.clinicId;
       const clinicTypeKey = request.nextUrl.searchParams.get("clinic_type_key");
       const entityType = request.nextUrl.searchParams.get("entity_type");
 
@@ -25,6 +28,8 @@ export const GET = withAuth(
         .select(
           "id, clinic_type_key, entity_type, field_key, field_type, label_fr, label_ar, description, placeholder, is_required, sort_order, options, validation, default_value, is_system, is_active",
         )
+        // @ts-expect-error -- clinic_id exists in DB but not yet in generated Supabase types
+        .eq("clinic_id", clinicId)
         .eq("clinic_type_key", clinicTypeKey)
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
@@ -57,6 +62,8 @@ export const GET = withAuth(
 export const POST = withAuthValidation(
   customFieldCreateSchema,
   async (body, request, { supabase }) => {
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
     const {
       clinic_type_key,
       entity_type,
@@ -76,6 +83,8 @@ export const POST = withAuthValidation(
     const { data, error } = await supabase
       .from("custom_field_definitions")
       .insert({
+        // @ts-expect-error -- clinic_id exists in DB but not yet in generated Supabase types
+        clinic_id: clinicId,
         clinic_type_key,
         entity_type,
         field_key,
@@ -113,6 +122,8 @@ export const POST = withAuthValidation(
 export const PATCH = withAuthValidation(
   customFieldUpdateSchema,
   async (body, request, { supabase }) => {
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
     const { id, ...updates } = body;
 
     // Prevent modifying system field keys
@@ -141,6 +152,8 @@ export const PATCH = withAuthValidation(
       // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .update(allowedUpdates)
       .eq("id", id)
+      // @ts-expect-error -- clinic_id exists in DB but not yet in generated Supabase types
+      .eq("clinic_id", clinicId)
       .select()
       .single();
 
@@ -162,6 +175,8 @@ export const PATCH = withAuthValidation(
  */
 export const DELETE = withAuth(
   async (request, { supabase }) => {
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
     const id = request.nextUrl.searchParams.get("id");
 
     if (!id) {
@@ -173,6 +188,8 @@ export const DELETE = withAuth(
       .from("custom_field_definitions")
       .select("is_system")
       .eq("id", id)
+      // @ts-expect-error -- clinic_id exists in DB but not yet in generated Supabase types
+      .eq("clinic_id", clinicId)
       .single();
 
     if (existing?.is_system) {
@@ -182,7 +199,9 @@ export const DELETE = withAuth(
     const { error } = await supabase
       .from("custom_field_definitions")
       .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      // @ts-expect-error -- clinic_id exists in DB but not yet in generated Supabase types
+      .eq("clinic_id", clinicId);
 
     if (error) {
       logger.warn("Failed to delete custom field", { context: "custom-fields", error });

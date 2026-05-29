@@ -203,7 +203,7 @@ export default function OrdersPage() {
                         >
                           <span>{item.productName}</span>
                           <span className="text-right">{item.quantity}</span>
-                          <span className="text-right">{item.unitPrice} MAD</span>
+                          <span className="text-right">{formatCurrency(item.unitPrice)}</span>
                           <span className="text-right font-medium">
                             {formatCurrency(
                               item.quantity * item.unitPrice,

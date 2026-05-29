@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
 import { fetchAnnouncements, type Announcement } from "@/lib/super-admin-actions";
+import { getLocalDateStr } from "@/lib/utils";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
 
@@ -143,7 +144,7 @@ export default function AnnouncementsPage() {
         type: formType,
         target: formTarget,
         targetLabel: targetLabels[formTarget] || formTarget,
-        publishedAt: new Date().toISOString().split("T")[0],
+        publishedAt: getLocalDateStr(),
         expiresAt: formExpires || undefined,
         active: true,
         createdBy: "Super Admin",

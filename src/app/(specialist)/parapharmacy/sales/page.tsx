@@ -41,7 +41,7 @@ import {
 } from "@/lib/data/client";
 import type { DailySaleView, ProductView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 interface CartItem {
   productId: string;
@@ -190,7 +190,7 @@ export default function ParapharmacySalesPage() {
     );
   });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
   const todaySales = filtered.filter((s) => s.date === today);
   const todayRevenue = todaySales.reduce((sum, s) => sum + s.total, 0);
 
@@ -245,7 +245,7 @@ export default function ParapharmacySalesPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">{sale.total} MAD</p>
+                  <p className="font-semibold">{formatCurrency(sale.total)}</p>
                   <Badge variant="outline" className="text-xs capitalize">
                     {sale.paymentMethod}
                   </Badge>
@@ -324,7 +324,7 @@ export default function ParapharmacySalesPage() {
                       }}
                     >
                       <span>{p.name}</span>
-                      <span className="text-muted-foreground">{p.price} MAD</span>
+                      <span className="text-muted-foreground">{formatCurrency(p.price)}</span>
                     </button>
                   ))}
                   {filteredProducts.length === 0 && (
@@ -347,7 +347,9 @@ export default function ParapharmacySalesPage() {
                   >
                     <div className="flex-1">
                       <p className="font-medium">{item.productName}</p>
-                      <p className="text-xs text-muted-foreground">{item.unitPrice} MAD each</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(item.unitPrice)} each
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -386,7 +388,7 @@ export default function ParapharmacySalesPage() {
                 ))}
                 <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/50 font-semibold">
                   <span>Total</span>
-                  <span>{cartTotal.toFixed(2)} MAD</span>
+                  <span>{formatCurrency(cartTotal)}</span>
                 </div>
               </div>
             )}
@@ -400,7 +402,7 @@ export default function ParapharmacySalesPage() {
               disabled={saving || cart.length === 0 || !customerName}
             >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Complete Sale ({cartTotal.toFixed(2)} MAD)
+              Complete Sale ({formatCurrency(cartTotal)})
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -16,6 +16,7 @@ import { withSentryCron } from "@/lib/sentry-cron";
 import { processRenewal } from "@/lib/subscription-billing";
 // B-02: Cron jobs have no user session — use service-role client.
 import { createAdminClient } from "@/lib/supabase-server";
+import { getLocalDateStr } from "@/lib/utils";
 
 async function handler(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
@@ -25,7 +26,7 @@ async function handler(request: NextRequest) {
   const supabase = createAdminClient("cron");
 
   // Fetch all active subscriptions that may need renewal
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
   const { data: subscriptions, error } = await supabase
     .from("clinic_subscriptions")
     .select("clinic_id, current_period_end, status")

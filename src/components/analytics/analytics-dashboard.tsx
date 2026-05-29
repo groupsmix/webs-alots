@@ -50,6 +50,7 @@ import {
   type AnalyticsPeriod,
 } from "@/lib/data/client";
 import { exportToCSV } from "@/lib/export-data";
+import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 
 const COLORS = [
   "#2563eb",
@@ -238,7 +239,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   { key: "onlineBookings", label: "Online Bookings" },
                   { key: "walkIns", label: "Walk-Ins" },
                 ],
-                `analytics-${new Date().toISOString().split("T")[0]}.csv`,
+                `analytics-${getLocalDateStr()}.csv`,
               );
             }}
           >
@@ -273,12 +274,10 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <TrendingUp className="h-5 w-5 text-green-600" />
               <ChangeIndicator value={periodComparison.revenueChange} />
             </div>
-            <p className="text-2xl font-bold">
-              {periodComparison.currentRevenue.toLocaleString()} MAD
-            </p>
+            <p className="text-2xl font-bold">{formatCurrency(periodComparison.currentRevenue)}</p>
             <p className="text-xs text-muted-foreground">Revenue ({PERIOD_LABELS[timePeriod]})</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              vs prev: {periodComparison.previousRevenue.toLocaleString()} MAD
+              vs prev: {formatCurrency(periodComparison.previousRevenue)}
             </p>
           </CardContent>
         </Card>
@@ -342,7 +341,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString()} MAD`, "Revenue"]}
+                formatter={(value) => [`${formatCurrency(Number(value))}`, "Revenue"]}
                 contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
               />
               <Area
@@ -624,7 +623,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   <div key={service.serviceName}>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span>{service.serviceName}</span>
-                      <span className="font-medium">{service.revenue.toLocaleString()} MAD</span>
+                      <span className="font-medium">{formatCurrency(service.revenue)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -673,7 +672,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(value) => [`${Number(value).toLocaleString()} MAD`]}
+                    formatter={(value) => [`${formatCurrency(Number(value))}`]}
                     contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
                   />
                   <Legend />

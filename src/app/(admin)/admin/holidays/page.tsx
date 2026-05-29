@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface Holiday {
   id: string;
@@ -69,11 +70,11 @@ export default function AdminHolidaysPage() {
   };
 
   const upcoming = [...holidays]
-    .filter((h) => h.date >= new Date().toISOString().split("T")[0])
+    .filter((h) => h.date >= getLocalDateStr())
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const past = [...holidays]
-    .filter((h) => h.date < new Date().toISOString().split("T")[0])
+    .filter((h) => h.date < getLocalDateStr())
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return (

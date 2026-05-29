@@ -3,6 +3,7 @@ import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
+import { getLocalDateStr } from "@/lib/utils";
 import { checkinConfirmSchema } from "@/lib/validations";
 
 /**
@@ -49,7 +50,7 @@ export const POST = withValidation(checkinConfirmSchema, async (body) => {
 
   // Calculate queue position: count how many people checked in today
   // before this patient (same clinic, status = checked_in, today)
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
 
   const { data: checkedInToday } = await supabase
     .from("appointments")

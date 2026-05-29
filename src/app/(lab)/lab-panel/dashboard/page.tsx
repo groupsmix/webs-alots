@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function LabDashboardPage() {
   const tenant = useTenant();
@@ -64,7 +65,7 @@ export default function LabDashboardPage() {
   );
   const completedToday = orders.filter((o) => {
     if (o.status !== "completed" && o.status !== "validated") return false;
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateStr();
     return o.completedAt?.startsWith(today);
   });
   const urgent = orders.filter((o) => o.priority === "urgent" || o.priority === "stat");

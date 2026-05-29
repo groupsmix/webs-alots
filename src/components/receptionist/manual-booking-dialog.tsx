@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { maskPhone } from "@/lib/mask";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface ManualBookingDialogProps {
   trigger?: React.ReactNode;
@@ -77,7 +78,7 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
     };
   }, []);
 
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(getLocalDateStr());
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
   const [source, setSource] = useState<"phone" | "walk_in">("phone");
@@ -109,7 +110,7 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
     setPatientId("");
     setDoctorId("");
     setServiceId("");
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(getLocalDateStr());
     setTime("");
     setNotes("");
     setSource("phone");

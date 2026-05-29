@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface MaterialView {
@@ -281,7 +280,9 @@ export function MaterialsInventory({
                           {m.quantity} {m.unit}
                         </td>
                         <td className="p-2 text-right text-muted-foreground">{m.minThreshold}</td>
-                        <td className="p-2 text-right">{m.unitCost ? `${m.unitCost} MAD` : "—"}</td>
+                        <td className="p-2 text-right">
+                          {m.unitCost ? `${formatCurrency(m.unitCost)}` : "—"}
+                        </td>
                         <td className="p-2 text-muted-foreground">{m.supplier || "—"}</td>
                         <td className="p-2">
                           {m.expiryDate ? (

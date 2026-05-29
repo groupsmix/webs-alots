@@ -104,6 +104,18 @@ Sentry.init({
   },
 
   beforeSend(event) {
+    // Enrich with tenant context for per-clinic filtering in Sentry dashboard
+    if (event.request?.headers) {
+      const clinicId = event.request.headers["x-tenant-clinic-id"];
+      const userRole = event.request.headers["x-user-role"];
+      if (clinicId) {
+        event.tags = { ...event.tags, clinic_id: clinicId };
+      }
+      if (userRole) {
+        event.tags = { ...event.tags, user_role: userRole };
+      }
+    }
+
     // API-006: Scrub security-sensitive headers to prevent secret leakage
     // (e.g., cron secret, booking tokens) via Sentry breadcrumbs.
     if (event.request?.headers) {

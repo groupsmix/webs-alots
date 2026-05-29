@@ -20,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
 import { fetchUrologyExams, createUrologyExam, type UrologyExamView } from "@/lib/data/specialists";
+import { getLocalDateStr } from "@/lib/utils";
 
 const UROLOGY_TEMPLATES = [
   { value: "general", label: "General Urology Exam" },
@@ -112,7 +113,7 @@ export default function UrologyPage() {
           id: newId,
           patientId: user.id,
           patientName: "",
-          examDate: new Date().toISOString().split("T")[0],
+          examDate: getLocalDateStr(),
           templateType: form.templateType,
           findings: form.findings,
           labResults: form.labResults,

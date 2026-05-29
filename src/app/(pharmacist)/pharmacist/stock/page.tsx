@@ -16,7 +16,6 @@ import {
   getExpiryStatus,
 } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const categories = [
@@ -247,7 +246,7 @@ export default function StockPage() {
                           {product.category.replace("-", " ")}
                         </Badge>
                       </td>
-                      <td className="py-3 px-2 font-medium">{product.price} MAD</td>
+                      <td className="py-3 px-2 font-medium">{formatCurrency(product.price)}</td>
                       <td className="py-3 px-2">
                         <span
                           className={`font-bold ${stock === "out" ? "text-red-500" : stock === "low" ? "text-orange-500" : "text-emerald-600"}`}

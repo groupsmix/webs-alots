@@ -9,7 +9,7 @@ import {
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { dispatchNotification, type TemplateVariables } from "@/lib/notifications";
-import { createClient, createAdminClient } from "@/lib/supabase-server";
+import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { readWebhookBody } from "@/lib/webhook-body";
 
@@ -652,6 +652,52 @@ export async function POST(request: NextRequest) {
     return apiSuccess({ status: "ok" });
   } catch (err) {
     logger.warn("Failed to process WhatsApp webhook", { context: "webhooks", error: err });
+
+    // Insert failed webhook into retry queue instead of silently dropping
+    try {
+      const adminForRetry = createUntypedAdminClient("webhook-retry");
+      const rawBodyForRetry = await readWebhookBody(request.clone(), MAX_WEBHOOK_BYTES);
+      let parsedPayload: unknown = {};
+      try {
+        if (rawBodyForRetry) parsedPayload = JSON.parse(rawBodyForRetry);
+      } catch {
+        // payload not parseable, store empty
+      }
+
+      // Attempt to extract clinic_id from the payload for scoping
+      const payloadObj = parsedPayload as WaWebhookBody;
+      const firstEntry = payloadObj?.entry?.[0];
+      const phoneNumberId = firstEntry?.changes?.[0]?.value?.metadata?.phone_number_id;
+
+      let retryClinicId: string | null = null;
+      if (phoneNumberId) {
+        const { data: clinic } = await adminForRetry
+          .from("clinics")
+          .select("id")
+          .eq("whatsapp_phone_number_id", phoneNumberId)
+          .single();
+        retryClinicId = (clinic as { id: string } | null)?.id ?? null;
+      }
+
+      if (retryClinicId) {
+        await adminForRetry.from("webhook_retry_queue").insert({
+          clinic_id: retryClinicId,
+          provider: "whatsapp",
+          event_type: "message",
+          payload: parsedPayload,
+          status: "pending",
+          attempts: 0,
+          max_attempts: 5,
+          next_retry_at: new Date().toISOString(),
+        });
+      }
+    } catch (retryErr) {
+      logger.warn("Failed to enqueue webhook for retry", {
+        context: "webhooks/retry-queue",
+        error: retryErr,
+      });
+    }
+
     return apiInternalError("Failed to process webhook");
   }
 }

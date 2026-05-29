@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError, apiRateLimited } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 
@@ -66,11 +67,11 @@ export async function POST(request: NextRequest) {
   try {
     raw = await request.text();
   } catch {
-    return new NextResponse(null, { status: 400 });
+    return apiError("Bad request", 400);
   }
 
   if (raw.length > MAX_CSP_REPORT_BYTES) {
-    return new NextResponse(null, { status: 413 });
+    return apiError("Payload too large", 413);
   }
 
   // Per-IP rate limit. Applied after the size check so a flood of large
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
   const ip = extractClientIp(request);
   const allowed = await cspReportLimiter.check(`csp-report:${ip}`);
   if (!allowed) {
-    return new NextResponse(null, { status: 429 });
+    return apiRateLimited();
   }
 
   let parsed: CspViolationReport;

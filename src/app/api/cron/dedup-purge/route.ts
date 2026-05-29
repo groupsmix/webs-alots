@@ -14,7 +14,8 @@
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { apiSuccess } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
@@ -92,8 +93,7 @@ async function handler(request: NextRequest) {
     waRetention: WA_RETENTION_DAYS,
   });
 
-  return NextResponse.json({
-    ok: true,
+  return apiSuccess({
     purged: results,
     retention: {
       stripe: STRIPE_RETENTION_DAYS,

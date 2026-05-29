@@ -85,6 +85,28 @@ Sentry.init({
   },
   // S-35 + Audit P1 #13: Strip PHI from events and disable Replay on PHI routes
   beforeSend(event) {
+    // Enrich with tenant context from cookies for per-clinic filtering
+    try {
+      const cookies = document.cookie.split(";").reduce(
+        (acc, cookie) => {
+          const [key, value] = cookie.trim().split("=");
+          if (key) acc[key] = value ?? "";
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      const clinicId = cookies["x-clinic-id"] || cookies["clinic_id"];
+      const userRole = cookies["user_role"] || cookies["x-user-role"];
+      if (clinicId) {
+        event.tags = { ...event.tags, clinic_id: clinicId };
+      }
+      if (userRole) {
+        event.tags = { ...event.tags, user_role: userRole };
+      }
+    } catch {
+      // Cookie access may fail in some environments
+    }
+
     // Strip request bodies from all events
     if (event.request) {
       delete event.request.data;

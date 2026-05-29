@@ -71,6 +71,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
       },
       { href: "/nutritionist/bmi", label: "BMI Calculator", icon: Calculator },
     ],
+    mobileTabs: [
+      { href: "/nutritionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/nutritionist/meal-plans", label: "Meals", icon: Apple },
+      { href: "/nutritionist/measurements", label: "Measures", icon: Scale },
+      { href: "/nutritionist/bmi", label: "BMI", icon: Calculator },
+    ],
   },
   optician: {
     title: "Opticien",
@@ -99,6 +105,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
         requiredFeature: "optical_prescriptions",
       },
     ],
+    mobileTabs: [
+      { href: "/optician/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/optician/lens-inventory", label: "Lenses", icon: Package },
+      { href: "/optician/frame-catalog", label: "Frames", icon: Glasses },
+      { href: "/optician/prescriptions", label: "Rx", icon: FileText },
+    ],
   },
   parapharmacy: {
     title: "Parapharmacy",
@@ -109,6 +121,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
     navItems: [
       { href: "/parapharmacy/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/parapharmacy/catalog", label: "Product Catalog", icon: ShoppingBag },
+      { href: "/parapharmacy/sales", label: "Sales", icon: Receipt },
+      { href: "/parapharmacy/inventory", label: "Inventory", icon: Package },
+    ],
+    mobileTabs: [
+      { href: "/parapharmacy/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/parapharmacy/catalog", label: "Catalog", icon: ShoppingBag },
       { href: "/parapharmacy/sales", label: "Sales", icon: Receipt },
       { href: "/parapharmacy/inventory", label: "Inventory", icon: Package },
     ],
@@ -140,6 +158,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
         requiredFeature: "progress_photos",
       },
     ],
+    mobileTabs: [
+      { href: "/physiotherapist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/physiotherapist/exercise-programs", label: "Exercises", icon: Dumbbell },
+      { href: "/physiotherapist/sessions", label: "Sessions", icon: ClipboardList },
+      { href: "/physiotherapist/progress-photos", label: "Photos", icon: Camera },
+    ],
   },
   psychologist: {
     title: "Psychologue",
@@ -162,6 +186,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
         requiredFeature: "therapy_plans",
       },
       { href: "/psychologist/progress", label: "Progress Tracking", icon: TrendingUp },
+    ],
+    mobileTabs: [
+      { href: "/psychologist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/psychologist/session-notes", label: "Notes", icon: Brain },
+      { href: "/psychologist/therapy-plans", label: "Plans", icon: Target },
+      { href: "/psychologist/progress", label: "Progress", icon: TrendingUp },
     ],
   },
   "speech-therapist": {
@@ -191,6 +221,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
         requiredFeature: "speech_reports",
       },
     ],
+    mobileTabs: [
+      { href: "/speech-therapist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/speech-therapist/sessions", label: "Sessions", icon: ClipboardList },
+      { href: "/speech-therapist/exercise-library", label: "Exercises", icon: BookOpen },
+      { href: "/speech-therapist/reports", label: "Reports", icon: FileText },
+    ],
   },
   radiology: {
     title: "Radiology",
@@ -206,6 +242,12 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
       { href: "/radiology/viewer", label: "DICOM Viewer", icon: Eye },
       { href: "/radiology/reports", label: "Reports", icon: FileText },
       { href: "/radiology/templates", label: "Report Templates", icon: FileStack },
+    ],
+    mobileTabs: [
+      { href: "/radiology/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/radiology/orders", label: "Orders", icon: ClipboardList },
+      { href: "/radiology/images", label: "Images", icon: Image },
+      { href: "/radiology/reports", label: "Reports", icon: FileText },
     ],
   },
 };

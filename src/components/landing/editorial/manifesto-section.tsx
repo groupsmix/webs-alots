@@ -12,7 +12,7 @@ export function ManifestoSection() {
   return (
     <section className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
-        <div className="max-w-[720px]">
+        <div className="max-w-full md:max-w-[720px]">
           <h2 className="font-[var(--font-sans-landing)] text-[length:var(--text-h1)] leading-[var(--lh-h1)] tracking-[var(--ls-h1)] font-medium text-[var(--ink)]">
             {t("landing.featuresTitle")}
           </h2>

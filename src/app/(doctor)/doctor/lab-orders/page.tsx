@@ -6,6 +6,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchLabOrders, createLabOrder } from "@/lib/data/client";
 import type { LabOrder } from "@/lib/types/dental";
+import { getLocalDateStr } from "@/lib/utils";
 
 export default function DoctorLabOrdersPage() {
   const [orders, setOrders] = useState<LabOrder[]>([]);
@@ -54,9 +55,7 @@ export default function DoctorLabOrdersPage() {
 
   const handleUpdateStatus = (orderId: string, status: LabOrder["status"]) => {
     setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId ? { ...o, status, updatedAt: new Date().toISOString().split("T")[0] } : o,
-      ),
+      prev.map((o) => (o.id === orderId ? { ...o, status, updatedAt: getLocalDateStr() } : o)),
     );
   };
 
@@ -74,7 +73,7 @@ export default function DoctorLabOrdersPage() {
       due_date: order.dueDate || undefined,
     });
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateStr();
     setOrders((prev) => [
       {
         ...order,

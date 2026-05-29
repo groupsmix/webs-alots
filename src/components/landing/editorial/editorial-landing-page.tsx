@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { LandingLocaleProvider, useLandingLocale } from "../landing-locale-provider";
 import { ClosingCtaSection } from "./closing-cta-section";
+import { ContactSection } from "./contact-section";
 import { EditorialFooter } from "./editorial-footer";
 import { EditorialHeader } from "./editorial-header";
+import { FaqSection } from "./faq-section";
 import { EditorialHero } from "./hero-section";
 import { HowItWorksSection } from "./how-it-works-section";
 import { ManifestoSection } from "./manifesto-section";
@@ -94,7 +96,9 @@ function EditorialLandingPageInner() {
         <MultiTenantSection />
         <TestimonialsSection />
         <PricingSection />
+        <FaqSection />
         <ClosingCtaSection />
+        <ContactSection />
       </main>
 
       <EditorialFooter />

@@ -151,7 +151,7 @@ export function ClinicDashboardLayout({
 
       <main
         id="main-content"
-        className={`flex-1 p-6 pt-16 md:pt-6${config.mobileTabs ? " pb-20 md:pb-6" : ""}`}
+        className={`flex-1 ${config.mobileTabs ? "p-4 pt-16 pb-20 md:p-6 md:pb-6" : "p-6 pt-16 md:pt-6"}`}
       >
         {content}
       </main>
