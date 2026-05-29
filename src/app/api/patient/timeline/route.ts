@@ -53,7 +53,7 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
     if (!parsed.success) {
       const count = parsed.error.issues.length;
       return apiError(
-        `Validation error: ${count} field${count !== 1 ? "s" : ""} invalid`,
+        `Erreur de validation : ${count} champ${count !== 1 ? "s" : ""} invalide${count !== 1 ? "s" : ""}`,
         422,
         "VALIDATION_ERROR",
       );
@@ -69,7 +69,7 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
       .single();
 
     if (!patientCheck.data) {
-      return apiError("Patient not found in this clinic", 404, "PATIENT_NOT_FOUND");
+      return apiError("Patient introuvable dans cette clinique", 404, "PATIENT_NOT_FOUND");
     }
 
     const offset = (page - 1) * limit;

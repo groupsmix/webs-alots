@@ -22,7 +22,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
   const clinicId = profile.clinic_id;
 
   if (!clinicId) {
-    return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+    return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
   }
 
   try {
