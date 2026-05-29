@@ -100,38 +100,46 @@ export async function createTenantClient(clinicId: string) {
     },
   );
 
-  // R-14: Set the session variable for same-transaction queries.
-  // This is redundant with the header approach but provides defense-in-depth
-  // for any SECURITY DEFINER functions that read app.current_clinic_id.
+  // R-14: Best-effort GUC isolation via set_tenant_context RPC.
   //
-  // Fail-closed: if the RPC fails, do NOT return a client that silently
-  // degrades to header-only isolation — the caller would get a client whose
-  // GUC-based RLS policies evaluate against NULL. Capture to Sentry so
-  // transient failures during Supabase blips are immediately visible.
+  // This sets `app.current_clinic_id` as a PostgreSQL session variable.
+  // It provides defense-in-depth for SECURITY DEFINER functions that read
+  // the GUC directly. Note: each PostgREST request is a separate
+  // transaction, so SET LOCAL only applies within the RPC call itself.
+  // The primary isolation mechanism is the `x-clinic-id` header above.
+  //
+  // Migration 00057 (RLS-02) restricted set_tenant_context() to
+  // service_role only. When using anon/authenticated keys, the RPC
+  // returns "permission denied" — this is expected and handled gracefully.
   try {
     await setTenantContext(client, clinicId);
   } catch (err) {
-    logger.error("setTenantContext RPC failed — refusing to return degraded client", {
-      context: "supabase-server",
-      clinicId,
-      error: err,
-    });
-    try {
-      const Sentry = await import("@sentry/nextjs");
-      Sentry.captureException(
-        err instanceof Error ? err : new Error("setTenantContext RPC failed"),
-        { tags: { clinicId, component: "createTenantClient" }, level: "error" },
-      );
-    } catch {
-      // Sentry unavailable
-    }
-    // R-14: Fail-closed in production — unless the error is a known permission
-    // denial (e.g. anon/authenticated role cannot call set_tenant_context).
-    // Permission errors mean the GUC layer is unavailable but header-based
-    // isolation (x-clinic-id) is still active. Throwing here would break E2E
-    // tests and any code path that uses a non-service-role client.
     const isPermissionDenied = err instanceof Error && err.message.includes("permission denied");
-    if (!isPermissionDenied) {
+    if (isPermissionDenied) {
+      // Expected when using anon/authenticated key (migration 00057).
+      // Header-based isolation (x-clinic-id) is still active.
+      logger.debug(
+        "setTenantContext RPC unavailable (restricted to service_role) — using header-only isolation",
+        {
+          context: "supabase-server",
+          clinicId,
+        },
+      );
+    } else {
+      logger.error("setTenantContext RPC failed", {
+        context: "supabase-server",
+        clinicId,
+        error: err,
+      });
+      try {
+        const Sentry = await import("@sentry/nextjs");
+        Sentry.captureException(
+          err instanceof Error ? err : new Error("setTenantContext RPC failed"),
+          { tags: { clinicId, component: "createTenantClient" }, level: "error" },
+        );
+      } catch {
+        // Sentry unavailable
+      }
       throw new Error(`Tenant context could not be established for clinic ${clinicId}`);
     }
   }

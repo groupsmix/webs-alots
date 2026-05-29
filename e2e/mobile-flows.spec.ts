@@ -84,18 +84,21 @@ test.describe("Mobile — form interactions", () => {
   test("login form can be filled and submitted on mobile", async ({ page }) => {
     // Use trailing slash to avoid 308 redirect mid-test
     await page.goto("/login/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     const passwordInput = page.locator('input[type="password"], input[name="password"]');
+
+    // Wait for form inputs to be stable after React hydration
+    await expect(emailInput).toBeVisible();
+    await expect(passwordInput).toBeVisible();
 
     // Fill email
     await emailInput.click();
     await emailInput.fill("test@example.com");
     await expect(emailInput).toHaveValue("test@example.com");
 
-    // Fill password (wait for field to be ready after any re-render)
-    await expect(passwordInput).toBeVisible();
+    // Fill password
     await passwordInput.click();
     await passwordInput.fill("password123");
     await expect(passwordInput).toHaveValue("password123");

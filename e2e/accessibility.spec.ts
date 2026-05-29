@@ -19,10 +19,23 @@ import { test, expect } from "@playwright/test";
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
+/**
+ * Navigate and wait for any client-side redirects to finish before
+ * running axe-core. The middleware may redirect (e.g., no-tenant → root,
+ * auth → dashboard) which destroys the execution context mid-analysis.
+ */
+async function stableGoto(page: import("@playwright/test").Page, path: string) {
+  await page.goto(path, { waitUntil: "load" });
+  // Give client-side redirects (auth, tenant, middleware) a chance to fire.
+  // If a navigation happens, wait for it to settle; otherwise continue.
+  await page.waitForLoadState("load");
+  // Extra guard: wait for the frame to be stable (no pending navigations).
+  await page.waitForTimeout(500);
+}
+
 test.describe("Accessibility — WCAG 2.1 AA", () => {
   test("public landing page has no critical a11y violations", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await stableGoto(page, "/");
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
@@ -33,8 +46,7 @@ test.describe("Accessibility — WCAG 2.1 AA", () => {
   });
 
   test("booking page has no critical a11y violations", async ({ page }) => {
-    await page.goto("/booking");
-    await page.waitForLoadState("networkidle");
+    await stableGoto(page, "/booking");
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
@@ -45,8 +57,7 @@ test.describe("Accessibility — WCAG 2.1 AA", () => {
   });
 
   test("login page has no critical a11y violations", async ({ page }) => {
-    await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    await stableGoto(page, "/login");
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
