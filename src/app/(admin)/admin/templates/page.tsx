@@ -112,6 +112,8 @@ export default function TemplatesPage() {
       setSelected(preset.templateId);
       setSaved(preset.templateId);
       setTimeout(() => setAppliedPreset(null), 3000);
+    } catch {
+      alert("Failed to apply preset");
     } finally {
       setApplyingPreset(null);
     }
