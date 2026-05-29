@@ -31,11 +31,11 @@ CREATE INDEX IF NOT EXISTS idx_ivf_cycles_partner_id
 CREATE INDEX IF NOT EXISTS idx_ivf_timeline_events_clinic_id
   ON ivf_timeline_events (clinic_id);
 
-CREATE INDEX IF NOT EXISTS idx_lab_test_orders_doctor_id
-  ON lab_test_orders (doctor_id);
-
 CREATE INDEX IF NOT EXISTS idx_lab_test_orders_validated_by
   ON lab_test_orders (validated_by);
+
+CREATE INDEX IF NOT EXISTS idx_family_members_member_user_id
+  ON family_members (member_user_id);
 
 CREATE INDEX IF NOT EXISTS idx_patient_feedback_doctor_id
   ON patient_feedback (doctor_id);
