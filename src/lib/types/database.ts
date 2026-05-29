@@ -8577,6 +8577,326 @@ export type Database = {
           },
         ]
       }
+      no_show_records: {
+        Row: {
+          id: string
+          clinic_id: string
+          patient_id: string
+          doctor_id: string
+          appointment_id: string
+          appointment_date: string
+          marked_at: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          patient_id: string
+          doctor_id: string
+          appointment_id: string
+          appointment_date: string
+          marked_at?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          patient_id?: string
+          doctor_id?: string
+          appointment_id?: string
+          appointment_date?: string
+          marked_at?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_show_records_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_show_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_show_records_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_show_records_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      no_show_stats: {
+        Row: {
+          id: string
+          clinic_id: string
+          patient_id: string
+          total_no_shows: number
+          total_appointments: number
+          no_show_rate: number
+          is_flagged: boolean
+          last_no_show_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          patient_id: string
+          total_no_shows?: number
+          total_appointments?: number
+          no_show_rate?: number
+          is_flagged?: boolean
+          last_no_show_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          patient_id?: string
+          total_no_shows?: number
+          total_appointments?: number
+          no_show_rate?: number
+          is_flagged?: boolean
+          last_no_show_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_show_stats_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_show_stats_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_no_show_stats: {
+        Row: {
+          id: string
+          clinic_id: string
+          doctor_id: string
+          total_no_shows: number
+          total_appointments: number
+          no_show_rate: number
+          suggested_overbooking_pct: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          doctor_id: string
+          total_no_shows?: number
+          total_appointments?: number
+          no_show_rate?: number
+          suggested_overbooking_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          doctor_id?: string
+          total_no_shows?: number
+          total_appointments?: number
+          no_show_rate?: number
+          suggested_overbooking_pct?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_no_show_stats_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_no_show_stats_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_reminders: {
+        Row: {
+          id: string
+          clinic_id: string
+          appointment_id: string
+          reminder_type: string
+          channel: string
+          status: string
+          scheduled_at: string
+          sent_at: string | null
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          appointment_id: string
+          reminder_type: string
+          channel?: string
+          status?: string
+          scheduled_at: string
+          sent_at?: string | null
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          appointment_id?: string
+          reminder_type?: string
+          channel?: string
+          status?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reminders_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_availability: {
+        Row: {
+          id: string
+          clinic_id: string
+          doctor_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          slot_duration: number
+          buffer_time: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          doctor_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          slot_duration?: number
+          buffer_time?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          doctor_id?: string
+          day_of_week?: number
+          start_time?: string
+          end_time?: string
+          slot_duration?: number
+          buffer_time?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_availability_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_availability_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_durations: {
+        Row: {
+          id: string
+          clinic_id: string
+          service_id: string
+          doctor_id: string | null
+          duration_minutes: number
+          buffer_minutes: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          service_id: string
+          doctor_id?: string | null
+          duration_minutes?: number
+          buffer_minutes?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          service_id?: string
+          doctor_id?: string | null
+          duration_minutes?: number
+          buffer_minutes?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_durations_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_durations_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waiting_list: {
         Row: {
           clinic_id: string
@@ -8589,6 +8909,9 @@ export type Database = {
           preferred_time: string | null
           service_id: string | null
           status: string | null
+          urgency: string | null
+          notes: string | null
+          priority_score: number | null
         }
         Insert: {
           clinic_id: string
@@ -8601,6 +8924,9 @@ export type Database = {
           preferred_time?: string | null
           service_id?: string | null
           status?: string | null
+          urgency?: string | null
+          notes?: string | null
+          priority_score?: number | null
         }
         Update: {
           clinic_id?: string
@@ -8613,6 +8939,9 @@ export type Database = {
           preferred_time?: string | null
           service_id?: string | null
           status?: string | null
+          urgency?: string | null
+          notes?: string | null
+          priority_score?: number | null
         }
         Relationships: [
           {

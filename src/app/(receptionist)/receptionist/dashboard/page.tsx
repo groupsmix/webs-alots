@@ -18,6 +18,7 @@ import { ManualBookingDialog } from "@/components/receptionist/manual-booking-di
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
 import { QuickPatientRegistration } from "@/components/receptionist/quick-patient-registration";
 import { RealtimeWaitingRoom } from "@/components/receptionist/realtime-waiting-room";
+import { ReceptionistAIWidget } from "@/components/receptionist/receptionist-ai-widget";
 import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -328,6 +329,13 @@ export default function ReceptionistDashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Receptionist AI Widget */}
+      {clinicId && (
+        <div className="mt-6">
+          <ReceptionistAIWidget clinicId={clinicId} />
+        </div>
+      )}
     </div>
   );
 }
