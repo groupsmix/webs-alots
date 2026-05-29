@@ -22,7 +22,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { aiClinicCeilingLimiter, aiManagerLimiter } from "@/lib/rate-limit";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 import { aiManagerRequestSchema } from "@/lib/validations";
 import type { AuthContext } from "@/lib/with-auth";
 
@@ -70,24 +70,24 @@ async function fetchClinicMetrics(supabase: AuthContext["supabase"], clinicId: s
       .from("appointments")
       .select("id, status, appointment_date, start_time, doctor_id", { count: "exact" })
       .eq("clinic_id", clinicId)
-      .gte("appointment_date", startOfWeek.toISOString().split("T")[0])
-      .lte("appointment_date", now.toISOString().split("T")[0]),
+      .gte("appointment_date", getLocalDateStr(startOfWeek))
+      .lte("appointment_date", getLocalDateStr(now)),
 
     // Appointments this month
     supabase
       .from("appointments")
       .select("id, status, appointment_date", { count: "exact" })
       .eq("clinic_id", clinicId)
-      .gte("appointment_date", startOfMonth.toISOString().split("T")[0])
-      .lte("appointment_date", now.toISOString().split("T")[0]),
+      .gte("appointment_date", getLocalDateStr(startOfMonth))
+      .lte("appointment_date", getLocalDateStr(now)),
 
     // Appointments last month
     supabase
       .from("appointments")
       .select("id, status", { count: "exact" })
       .eq("clinic_id", clinicId)
-      .gte("appointment_date", startOfLastMonth.toISOString().split("T")[0])
-      .lte("appointment_date", endOfLastMonth.toISOString().split("T")[0]),
+      .gte("appointment_date", getLocalDateStr(startOfLastMonth))
+      .lte("appointment_date", getLocalDateStr(endOfLastMonth)),
 
     // Total patients
     supabase
@@ -126,16 +126,16 @@ async function fetchClinicMetrics(supabase: AuthContext["supabase"], clinicId: s
       .from("appointments")
       .select("doctor_id, status")
       .eq("clinic_id", clinicId)
-      .gte("appointment_date", startOfMonth.toISOString().split("T")[0])
-      .lte("appointment_date", now.toISOString().split("T")[0]),
+      .gte("appointment_date", getLocalDateStr(startOfMonth))
+      .lte("appointment_date", getLocalDateStr(now)),
 
     // Service popularity (appointments by service this month)
     supabase
       .from("appointments")
       .select("service_id, status")
       .eq("clinic_id", clinicId)
-      .gte("appointment_date", startOfMonth.toISOString().split("T")[0])
-      .lte("appointment_date", now.toISOString().split("T")[0]),
+      .gte("appointment_date", getLocalDateStr(startOfMonth))
+      .lte("appointment_date", getLocalDateStr(now)),
 
     // No-shows this month
     supabase
@@ -143,7 +143,7 @@ async function fetchClinicMetrics(supabase: AuthContext["supabase"], clinicId: s
       .select("id", { count: "exact" })
       .eq("clinic_id", clinicId)
       .eq("status", "no_show")
-      .gte("appointment_date", startOfMonth.toISOString().split("T")[0]),
+      .gte("appointment_date", getLocalDateStr(startOfMonth)),
 
     // Inactive patients (haven't visited in 3+ months)
     supabase

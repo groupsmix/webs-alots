@@ -23,7 +23,7 @@ export default function SalesPage() {
   const yesterday = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split("T")[0] ?? "";
+    return getLocalDateStr(d) ?? "";
   })();
   const [dateFilter, setDateFilter] = useState(today);
 

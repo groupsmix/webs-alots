@@ -21,6 +21,7 @@ import { logger } from "@/lib/logger";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
+import { getLocalDateStr } from "@/lib/utils";
 
 /**
  * Server-side Supabase client scoped to super_admin operations.
@@ -966,8 +967,8 @@ export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> 
             : "cancelled";
 
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+    const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+    const monthEnd = getLocalDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
     const latestPayment = clinicPayments[0];
     const amount = latestPayment?.amount ?? 0;

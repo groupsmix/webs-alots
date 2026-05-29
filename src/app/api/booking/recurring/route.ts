@@ -7,6 +7,7 @@ import { requireTenantWithConfig } from "@/lib/tenant";
 import { computeEndTime } from "@/lib/timezone";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
+import { getLocalDateStr } from "@/lib/utils";
 import { recurringSchema } from "@/lib/validations";
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
@@ -85,7 +86,7 @@ export const POST = withAuthValidation(
 
       for (let i = 0; i < body.occurrences; i++) {
         // Use noon-based date to safely extract day-of-week regardless of timezone
-        const dateStr = currentDate.toISOString().split("T")[0];
+        const dateStr = getLocalDateStr(currentDate);
         const dayOfWeek = currentDate.getDay();
         const hours = tenantConfig.workingHours[dayOfWeek];
 

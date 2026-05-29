@@ -221,8 +221,8 @@ export function calculateNextPeriod(
     end.setUTCDate(Math.min(dayOfMonth, lastDayOfTargetMonth));
   }
   return {
-    start: start.toISOString().split("T")[0],
-    end: end.toISOString().split("T")[0],
+    start: getLocalDateStr(start),
+    end: getLocalDateStr(end),
   };
 }
 
@@ -240,7 +240,7 @@ async function _checkPlanLimits(
 
   // Run all three independent count queries in parallel
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const [doctorResult, patientResult, appointmentResult] = await Promise.all([
     supabase

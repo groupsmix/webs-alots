@@ -133,7 +133,7 @@ export function ReceptionistBookingCalendar() {
       : localAppointments.filter((a) => a.doctorId === selectedDoctor);
 
   const getAppointmentForSlot = (date: Date, time: string) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = getLocalDateStr(date);
     return filteredAppointments.find((a) => a.date === dateStr && a.time === time);
   };
 
@@ -170,7 +170,7 @@ export function ReceptionistBookingCalendar() {
 
       if (!draggedAppointment) return;
 
-      const newDate = date.toISOString().split("T")[0];
+      const newDate = getLocalDateStr(date);
       const existingAppt = localAppointments.find(
         (a) => a.date === newDate && a.time === time && a.id !== draggedAppointment.id,
       );
@@ -313,7 +313,7 @@ export function ReceptionistBookingCalendar() {
                   <Clock className="h-3 w-3" />
                 </th>
                 {weekDates.map((date, i) => {
-                  const dateStr = date.toISOString().split("T")[0];
+                  const dateStr = getLocalDateStr(date);
                   const dayIdx = date.getDay();
                   const wh = DEFAULT_WORKING_HOURS[dayIdx];
                   const isToday = dateStr === today;
@@ -346,7 +346,7 @@ export function ReceptionistBookingCalendar() {
                     const dayIdx = date.getDay();
                     const wh = DEFAULT_WORKING_HOURS[dayIdx];
                     const appt = wh.enabled ? getAppointmentForSlot(date, time) : null;
-                    const dateStr = date.toISOString().split("T")[0];
+                    const dateStr = getLocalDateStr(date);
                     const isToday = dateStr === today;
                     const cellId = `${dateStr}-${time}`;
                     const isDragOver = dragOverCell === cellId;
