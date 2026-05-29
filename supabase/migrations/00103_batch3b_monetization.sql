@@ -27,8 +27,8 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'custom_domains_tenant_isolation') THEN
     CREATE POLICY custom_domains_tenant_isolation ON custom_domains
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
 
@@ -59,8 +59,8 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'referrals_tenant_isolation') THEN
     CREATE POLICY referrals_tenant_isolation ON referrals
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
 
@@ -95,7 +95,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'lab_results_tenant_isolation') THEN
     CREATE POLICY lab_results_tenant_isolation ON lab_results
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id() AND is_clinic_staff())
+      WITH CHECK (clinic_id = get_user_clinic_id() AND is_clinic_staff());
   END IF;
 END $$;
