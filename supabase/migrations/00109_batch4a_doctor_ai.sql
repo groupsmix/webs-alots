@@ -47,8 +47,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY voice_notes_clinic_isolation ON voice_notes
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -98,8 +98,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY prescription_drafts_clinic_isolation ON prescription_drafts
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
@@ -144,8 +144,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY drug_interaction_alerts_clinic_isolation ON drug_interaction_alerts
       FOR ALL
-      USING (clinic_id = current_setting('app.clinic_id', true)::uuid)
-      WITH CHECK (clinic_id = current_setting('app.clinic_id', true)::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END $$;
 
