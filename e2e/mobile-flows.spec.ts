@@ -84,7 +84,7 @@ test.describe("Mobile — form interactions", () => {
   test("login form can be filled and submitted on mobile", async ({ page }) => {
     // Use trailing slash to avoid 308 redirect mid-test
     await page.goto("/login/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     const passwordInput = page.locator('input[type="password"], input[name="password"]');

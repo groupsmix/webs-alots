@@ -22,7 +22,7 @@ const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 test.describe("Accessibility — WCAG 2.1 AA", () => {
   test("public landing page has no critical a11y violations", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
@@ -34,7 +34,7 @@ test.describe("Accessibility — WCAG 2.1 AA", () => {
 
   test("booking page has no critical a11y violations", async ({ page }) => {
     await page.goto("/booking");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
@@ -46,7 +46,7 @@ test.describe("Accessibility — WCAG 2.1 AA", () => {
 
   test("login page has no critical a11y violations", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
