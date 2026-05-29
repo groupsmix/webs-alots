@@ -43,8 +43,8 @@ BEGIN
   ) THEN
     CREATE POLICY patient_vitals_clinic_isolation ON patient_vitals
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END$$;
 
@@ -84,8 +84,8 @@ BEGIN
   ) THEN
     CREATE POLICY immutable_audit_clinic_isolation ON immutable_audit_log
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END$$;
 
@@ -210,8 +210,8 @@ BEGIN
   ) THEN
     CREATE POLICY fhir_log_clinic_isolation ON fhir_integration_log
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END$$;
 
@@ -246,7 +246,7 @@ BEGIN
   ) THEN
     CREATE POLICY drug_interactions_clinic_isolation ON drug_interactions
       FOR ALL
-      USING (clinic_id = (current_setting('app.clinic_id', true))::uuid)
-      WITH CHECK (clinic_id = (current_setting('app.clinic_id', true))::uuid);
+      USING (clinic_id = get_user_clinic_id())
+      WITH CHECK (clinic_id = get_user_clinic_id());
   END IF;
 END$$;
