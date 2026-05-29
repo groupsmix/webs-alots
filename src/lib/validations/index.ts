@@ -77,3 +77,10 @@ export { safeParse } from "./helpers";
 
 export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
 export type { PasswordStrength } from "./password-policy";
+
+export {
+  qrCheckinGenerateSchema,
+  qrCheckinScanSchema,
+  waitingQueueUpdateSchema,
+  npsSurveyResponseSchema,
+} from "./patient-experience";
