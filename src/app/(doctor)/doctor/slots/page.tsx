@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchTimeSlots, type TimeSlotView } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = [
@@ -32,7 +33,7 @@ function computeAvailableSlots(slots: TimeSlotView[], daysAhead: number) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     const dayOfWeek = d.getDay();
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = getLocalDateStr(d);
     const daySlots = slots
       .filter((s) => s.dayOfWeek === dayOfWeek && s.isAvailable)
       .map((s) => s.startTime.slice(0, 5));

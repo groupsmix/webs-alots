@@ -39,7 +39,7 @@ import type {
   PurchaseOrderView,
   LoyaltyMemberView,
 } from "@/lib/data/client";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 // ── Date helpers ──
 
@@ -57,7 +57,7 @@ function startOfMonth(d: Date): Date {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return getLocalDateStr(d);
 }
 
 export default function PharmacistDashboardPage() {
