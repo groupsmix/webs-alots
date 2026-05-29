@@ -17,6 +17,7 @@
 import { type NextRequest } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { sanitizeIlike } from "@/lib/sanitize-ilike";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const MAX_PAGE_SIZE = 100;
@@ -81,7 +82,10 @@ async function handler(request: NextRequest, auth: AuthContext) {
       query = query.lte("timestamp", to);
     }
     if (search) {
-      query = query.or(`action.ilike.%${search}%,description.ilike.%${search}%`);
+      const safe = sanitizeIlike(search);
+      if (safe.length > 0) {
+        query = query.or(`action.ilike.%${safe}%,description.ilike.%${safe}%`);
+      }
     }
 
     const { data, count, error } = await query;

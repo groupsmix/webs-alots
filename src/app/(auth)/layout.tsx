@@ -1,35 +1,142 @@
-import { ArrowLeft } from "lucide-react";
+import {
+  CalendarCheck,
+  FileText,
+  CreditCard,
+  ShieldCheck,
+  Activity,
+  HeartPulse,
+} from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { t, type Locale } from "@/lib/i18n";
 
+/* eslint-disable i18next/no-literal-string -- static French marketing copy for hero panel */
+
+const HERO_FEATURES = [
+  {
+    icon: CalendarCheck,
+    title: "Gestion des rendez-vous",
+    desc: "Planifiez et suivez tous vos rendez-vous en un seul endroit.",
+  },
+  {
+    icon: FileText,
+    title: "Dossiers patients",
+    desc: "Accédez aux dossiers médicaux de manière sécurisée et conforme.",
+  },
+  {
+    icon: CreditCard,
+    title: "Facturation simplifiée",
+    desc: "Gérez les paiements, assurances et factures facilement.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Sécurité & conformité",
+    desc: "Conforme à la Loi 09-08 et au RGPD pour la protection des données.",
+  },
+];
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  // I18N-01: Server component — read locale from cookie or default to "fr".
-  // The auth layout is a server component so we cannot use the useLocale hook.
   const locale: Locale = "fr";
 
   return (
-    <div className="min-h-screen bg-muted/50">
+    <div className="flex min-h-screen bg-muted/50">
       <a
         href="#auth-form"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
       >
         {t(locale, "nav.skipToForm")}
       </a>
-      <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t(locale, "nav.backToHome")}
-          </Link>
-          <ThemeToggle />
+
+      {/* ── Left hero panel (hidden on mobile) ── */}
+      <div className="relative hidden lg:flex lg:w-[480px] xl:w-[520px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#005a3b] via-[#00795a] to-[#009e74] text-white">
+        {/* Decorative background shapes */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/[0.04]" />
+          <div className="absolute top-1/2 right-10 h-48 w-48 rounded-full bg-white/[0.05]" />
         </div>
-      </header>
-      <div id="auth-form" className="flex items-center justify-center p-4 pt-12">
-        <div className="w-full max-w-md">{children}</div>
+
+        <div className="relative z-10 flex flex-col justify-center flex-1 px-10 xl:px-12 py-12">
+          {/* Brand lockup */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+                <HeartPulse className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Oltigo Health</h1>
+                <p className="text-xs font-medium text-white/70 tracking-wide uppercase">
+                  Plateforme santé
+                </p>
+              </div>
+            </div>
+            <p className="text-lg leading-relaxed text-white/85 max-w-sm">
+              La plateforme tout-en-un pour la gestion de votre cabinet médical au Maroc.
+            </p>
+          </div>
+
+          {/* Feature bullets */}
+          <div className="space-y-5">
+            {HERO_FEATURES.map((feat) => (
+              <div key={feat.title} className="flex items-start gap-3.5">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+                  <feat.icon className="h-4.5 w-4.5 text-white/90" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white/95">{feat.title}</p>
+                  <p className="text-xs leading-relaxed text-white/65">{feat.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Decorative bottom */}
+        <div className="relative z-10 border-t border-white/10 px-10 xl:px-12 py-5">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-white/50" />
+            <p className="text-xs text-white/50">
+              Utilisé par des professionnels de santé à travers le Maroc
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right form panel ── */}
+      <div className="flex flex-1 flex-col">
+        <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
+          <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {/* Mobile-only brand mark */}
+              <span className="lg:hidden flex items-center gap-2">
+                <HeartPulse className="h-5 w-5 text-primary" />
+                <span className="font-bold text-foreground">Oltigo Health</span>
+              </span>
+              <span className="hidden lg:inline-flex items-center gap-2">
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+                {t(locale, "nav.backToHome")}
+              </span>
+            </Link>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <div id="auth-form" className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8">
+          <div className="w-full max-w-md">{children}</div>
+        </div>
       </div>
     </div>
   );

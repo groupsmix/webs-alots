@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { sanitizeIlike } from "@/lib/sanitize-ilike";
 import { createClient } from "@/lib/supabase-server";
 import { detectLanguage } from "@/lib/support/language-detect";
 import { requireTenant } from "@/lib/tenant";
@@ -91,7 +92,7 @@ export const POST = withValidation(whatsappInboundSchema, async (data, _request:
     .eq("clinic_id", clinicId)
     .eq("is_active", true)
     .or(
-      `question.ilike.%${data.message.split(" ").slice(0, 3).join("%")}%,answer.ilike.%${data.message.split(" ").slice(0, 3).join("%")}%`,
+      `question.ilike.%${sanitizeIlike(data.message.split(" ").slice(0, 3).join(" "))}%,answer.ilike.%${sanitizeIlike(data.message.split(" ").slice(0, 3).join(" "))}%`,
     )
     .limit(3);
 

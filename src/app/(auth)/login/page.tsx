@@ -1,9 +1,8 @@
 "use client";
 
-import { Phone, ArrowLeft, Lock, Key, Mail } from "lucide-react";
+import { Phone, ArrowLeft, Lock, Key, Mail, Eye, EyeOff, HeartPulse } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { OltigoWordmark } from "@/components/brand/oltigo-mark";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +37,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [backupCode, setBackupCode] = useState("");
@@ -268,19 +268,28 @@ export default function LoginPage() {
     }
   }
 
+  const methodTabs = [
+    { key: "email" as const, label: "E-mail", icon: Mail },
+    { key: "email-otp" as const, label: "Code e-mail", icon: Lock },
+    ...(PHONE_AUTH_ENABLED ? [{ key: "phone" as const, label: "Téléphone", icon: Phone }] : []),
+  ];
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="mb-8 text-center">
-        <OltigoWordmark size="lg" className="justify-center" />
-        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
-          {t(locale, "auth.portalTitle")}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">{t(locale, "auth.loginSubtitle")}</p>
+      {/* Mobile-only branding header */}
+      {/* eslint-disable i18next/no-literal-string -- brand name and tagline */}
+      <div className="mb-6 text-center lg:hidden">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <HeartPulse className="h-6 w-6 text-primary" />
+          <span className="text-xl font-bold tracking-tight">Oltigo Health</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Votre plateforme santé de confiance</p>
       </div>
+      {/* eslint-enable i18next/no-literal-string */}
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl">
+      <Card className="shadow-lg border-0 sm:border">
+        <CardHeader className="pb-4 text-center">
+          <CardTitle className="text-2xl font-bold">
             {step === "otp"
               ? t(locale, "auth.verifyNumber")
               : step === "email-otp-verify"
@@ -291,7 +300,7 @@ export default function LoginPage() {
                     ? t(locale, "auth.mfaBackupTitle" as TranslationKey)
                     : t(locale, "auth.login")}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             {step === "otp"
               ? `${t(locale, "auth.otpSent")} ${phone}`
               : step === "email-otp-verify"
@@ -309,8 +318,21 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <svg
+                className="mt-0.5 h-4 w-4 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
@@ -330,7 +352,11 @@ export default function LoginPage() {
                   autoFocus
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || mfaCode.length !== 6}>
+              <Button
+                type="submit"
+                className="w-full h-11"
+                disabled={loading || mfaCode.length !== 6}
+              >
                 {loading
                   ? t(locale, "auth.verifying")
                   : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
@@ -382,7 +408,11 @@ export default function LoginPage() {
                   autoFocus
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || backupCode.length < 8}>
+              <Button
+                type="submit"
+                className="w-full h-11"
+                disabled={loading || backupCode.length < 8}
+              >
                 {loading
                   ? t(locale, "auth.verifying")
                   : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
@@ -429,7 +459,7 @@ export default function LoginPage() {
                   </button>
                 </p>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full h-11" disabled={loading}>
                 {loading ? t(locale, "auth.verifying") : t(locale, "auth.verifyAndLogin")}
               </Button>
               <Button
@@ -476,7 +506,7 @@ export default function LoginPage() {
               </div>
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-11"
                 disabled={loading || emailOtpCode.length < 6}
               >
                 {loading ? t(locale, "auth.verifying") : t(locale, "auth.verifyAndLogin")}
@@ -495,195 +525,181 @@ export default function LoginPage() {
                 {t(locale, "auth.useAnotherEmail" as TranslationKey)}
               </Button>
             </form>
-          ) : method === "email-otp" ? (
-            <form className="space-y-4" onSubmit={handleSendEmailOTP}>
-              <div className="space-y-2">
-                <Label htmlFor="email-otp">{t(locale, "auth.email")}</Label>
-                <Input
-                  id="email-otp"
-                  type="email"
-                  placeholder={t(locale, "auth.emailPlaceholder")}
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (fieldErrors.email)
-                      setFieldErrors((prev) => ({ ...prev, email: undefined }));
-                  }}
-                  required
-                  className={`text-base ${fieldErrors.email ? "border-destructive" : ""}`}
-                  aria-invalid={!!fieldErrors.email}
-                  aria-describedby={fieldErrors.email ? "email-otp-error" : undefined}
-                />
-                {fieldErrors.email && (
-                  <p id="email-otp-error" className="text-xs text-destructive">
-                    {fieldErrors.email}
-                  </p>
-                )}
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading
-                  ? t(locale, "auth.sendingEmailCode" as TranslationKey)
-                  : t(locale, "auth.sendEmailCode" as TranslationKey)}
-              </Button>
-              <div className="relative my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+          ) : (
+            <>
+              {/* ── Pill tabs for auth method selection ── */}
+              {step === "credentials" && (
+                <div className="mb-5 flex rounded-lg bg-muted p-1 gap-1">
+                  {methodTabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => {
+                        setMethod(tab.key);
+                        setError(null);
+                        setFieldErrors({});
+                      }}
+                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all ${
+                        method === tab.key
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <tab.icon className="h-3.5 w-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setMethod("email");
-                  setError(null);
-                  setFieldErrors({});
-                }}
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                {t(locale, "auth.signInWithEmail")}
-              </Button>
-            </form>
-          ) : method === "email" ? (
-            <form className="space-y-4" onSubmit={handleEmailLogin}>
-              <div className="space-y-2">
-                <Label htmlFor="email">{t(locale, "auth.email")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={t(locale, "auth.emailPlaceholder")}
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (fieldErrors.email)
-                      setFieldErrors((prev) => ({ ...prev, email: undefined }));
-                  }}
-                  required
-                  className={`text-base ${fieldErrors.email ? "border-destructive" : ""}`}
-                  aria-invalid={!!fieldErrors.email}
-                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
-                />
-                {fieldErrors.email && (
-                  <p id="email-error" className="text-xs text-destructive">
-                    {fieldErrors.email}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{t(locale, "auth.password")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder={t(locale, "auth.passwordPlaceholder")}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (fieldErrors.password)
-                      setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                  }}
-                  required
-                  className={`text-base ${fieldErrors.password ? "border-destructive" : ""}`}
-                  aria-invalid={!!fieldErrors.password}
-                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
-                />
-                {fieldErrors.password && (
-                  <p id="password-error" className="text-xs text-destructive">
-                    {fieldErrors.password}
-                  </p>
-                )}
-              </div>
-              <div className="flex justify-end">
-                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-                  {t(locale, "auth.forgotPassword")}
-                </Link>
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t(locale, "auth.signingIn") : t(locale, "auth.signIn")}
-              </Button>
-              <div className="relative my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setMethod("email-otp");
-                  setError(null);
-                  setFieldErrors({});
-                }}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                {t(locale, "auth.signInWithEmailCode" as TranslationKey)}
-              </Button>
-              {PHONE_AUTH_ENABLED && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setMethod("phone");
-                    setError(null);
-                  }}
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  {t(locale, "auth.signInWithPhone")}
-                </Button>
               )}
-            </form>
-          ) : PHONE_AUTH_ENABLED ? (
-            <form className="space-y-4" onSubmit={handleSendOTP}>
-              <div className="space-y-2">
-                <Label htmlFor="phone">{t(locale, "auth.phoneLabel")}</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder={t(locale, "auth.phonePlaceholder")}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="text-base"
-                />
-                <p className="text-xs text-muted-foreground">{t(locale, "auth.phoneHint")}</p>
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t(locale, "auth.sendingCode") : t(locale, "auth.sendCode")}
-              </Button>
-              <div className="relative my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setMethod("email");
-                  setError(null);
-                }}
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                {t(locale, "auth.signInWithEmail")}
-              </Button>
-            </form>
-          ) : null}
+
+              {/* ── Email + password form ── */}
+              {method === "email" ? (
+                <form className="space-y-4" onSubmit={handleEmailLogin}>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">{t(locale, "auth.email")}</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder={t(locale, "auth.emailPlaceholder")}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (fieldErrors.email)
+                          setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                      }}
+                      required
+                      className={`h-11 text-base ${fieldErrors.email ? "border-destructive" : ""}`}
+                      aria-invalid={!!fieldErrors.email}
+                      aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                    />
+                    {fieldErrors.email && (
+                      <p id="email-error" className="text-xs text-destructive">
+                        {fieldErrors.email}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">{t(locale, "auth.password")}</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t(locale, "auth.passwordPlaceholder")}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (fieldErrors.password)
+                            setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                        }}
+                        required
+                        className={`h-11 pr-12 text-base ${fieldErrors.password ? "border-destructive" : ""}`}
+                        aria-invalid={!!fieldErrors.password}
+                        aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        aria-label={
+                          showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                    {fieldErrors.password && (
+                      <p id="password-error" className="text-xs text-destructive">
+                        {fieldErrors.password}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex justify-end">
+                    <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                      {t(locale, "auth.forgotPassword")}
+                    </Link>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-11 text-sm font-semibold"
+                    disabled={loading}
+                  >
+                    {loading ? t(locale, "auth.signingIn") : t(locale, "auth.signIn")}
+                  </Button>
+                </form>
+              ) : method === "email-otp" ? (
+                /* ── Email OTP form ── */
+                <form className="space-y-4" onSubmit={handleSendEmailOTP}>
+                  <div className="space-y-2">
+                    <Label htmlFor="email-otp">{t(locale, "auth.email")}</Label>
+                    <Input
+                      id="email-otp"
+                      type="email"
+                      placeholder={t(locale, "auth.emailPlaceholder")}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (fieldErrors.email)
+                          setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                      }}
+                      required
+                      className={`h-11 text-base ${fieldErrors.email ? "border-destructive" : ""}`}
+                      aria-invalid={!!fieldErrors.email}
+                      aria-describedby={fieldErrors.email ? "email-otp-error" : undefined}
+                    />
+                    {fieldErrors.email && (
+                      <p id="email-otp-error" className="text-xs text-destructive">
+                        {fieldErrors.email}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-11 text-sm font-semibold"
+                    disabled={loading}
+                  >
+                    {loading
+                      ? t(locale, "auth.sendingEmailCode" as TranslationKey)
+                      : t(locale, "auth.sendEmailCode" as TranslationKey)}
+                  </Button>
+                </form>
+              ) : PHONE_AUTH_ENABLED ? (
+                /* ── Phone OTP form ── */
+                <form className="space-y-4" onSubmit={handleSendOTP}>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">{t(locale, "auth.phoneLabel")}</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder={t(locale, "auth.phonePlaceholder")}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="h-11 text-base"
+                    />
+                    <p className="text-xs text-muted-foreground">{t(locale, "auth.phoneHint")}</p>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-11 text-sm font-semibold"
+                    disabled={loading}
+                  >
+                    {loading ? t(locale, "auth.sendingCode") : t(locale, "auth.sendCode")}
+                  </Button>
+                </form>
+              ) : null}
+            </>
+          )}
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
             {t(locale, "auth.noAccount")}{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
+            <Link href="/register/" className="text-primary hover:underline font-medium">
               {t(locale, "auth.register")}
             </Link>
           </p>
