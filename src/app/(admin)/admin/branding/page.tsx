@@ -135,7 +135,7 @@ export default function BrandingPage() {
 
     setSaving(true);
     try {
-      await fetch("/api/branding", {
+      const res = await fetch("/api/branding", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,8 +149,15 @@ export default function BrandingPage() {
           body_font: branding.body_font,
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.error ?? "Failed to save branding settings");
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch {
+      alert("Failed to save branding settings");
     } finally {
       setSaving(false);
     }

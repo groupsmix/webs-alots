@@ -75,12 +75,19 @@ export default function TemplatesPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch("/api/branding", {
+      const res = await fetch("/api/branding", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template_id: selected }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.error ?? "Failed to save template");
+        return;
+      }
       setSaved(selected);
+    } catch {
+      alert("Failed to save template");
     } finally {
       setSaving(false);
     }
