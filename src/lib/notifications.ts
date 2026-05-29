@@ -4,7 +4,6 @@
  * Core notification system with template-based messaging,
  * variable substitution, and multi-channel delivery (WhatsApp + In-App).
  *
- * WhatsApp templates (Darija) are defined in {@link ./whatsapp-templates-darija.ts}.
  * For the Meta Business API template approval workflow, variable mappings,
  * and submission guide, see {@link ../../../docs/whatsapp-template-approval.md}.
  */
@@ -31,7 +30,7 @@ export type NotificationTrigger =
 
 export type NotificationChannel = "whatsapp" | "in_app" | "email" | "sms";
 
-export type NotificationPriority = "low" | "normal" | "high" | "urgent";
+type NotificationPriority = "low" | "normal" | "high" | "urgent";
 
 type NotificationStatus = "pending" | "sent" | "delivered" | "failed" | "read";
 
