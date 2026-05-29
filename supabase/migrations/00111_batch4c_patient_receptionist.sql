@@ -18,11 +18,15 @@ ALTER TABLE waiting_queue ADD COLUMN IF NOT EXISTS checkin_method text
 -- 2. Smart Phone Handler: phone_index for fast caller-ID lookup
 -- ══════════════════════════════════════════════════════════════════════════
 
-CREATE INDEX IF NOT EXISTS idx_patients_phone_clinic
-  ON patients(phone, clinic_id);
-
-CREATE INDEX IF NOT EXISTS idx_patients_phone_normalized
-  ON patients(clinic_id, phone);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'patients') THEN
+    CREATE INDEX IF NOT EXISTS idx_patients_phone_clinic
+      ON patients(phone, clinic_id);
+    CREATE INDEX IF NOT EXISTS idx_patients_phone_normalized
+      ON patients(clinic_id, phone);
+  END IF;
+END $$;
 
 -- ══════════════════════════════════════════════════════════════════════════
 -- 3. Automated Attestations
