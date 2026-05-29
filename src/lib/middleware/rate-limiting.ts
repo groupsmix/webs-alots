@@ -23,7 +23,9 @@ export interface RateLimitInfo {
 /**
  * Apply rate limiting for API requests.
  * Returns a 429 NextResponse if rate limit exceeded, or null if OK.
- * Also returns rate limit info that can be added to response headers.
+ * Always returns rateLimitInfo for API routes so standard headers
+ * (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset) can
+ * be set on every response.
  */
 export async function applyRateLimit(
   request: NextRequest,
@@ -55,15 +57,20 @@ export async function applyRateLimit(
   // methods so polling endpoints like /api/health don't trip the 30 req/min cap.
   const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+  // Track rate limit info from the per-rule check so we can attach
+  // X-RateLimit-* headers even on allowed (non-429) responses.
+  let rateLimitInfo: RateLimitInfo | undefined;
+
   // Find a specific API rule if applicable
   const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
   const isCatchAll = rule?.prefix === "/api/";
 
   if (rule && !(isCatchAll && !MUTATION_METHODS.has(request.method))) {
     const allowed = await rule.limiter.check(rateLimitKey);
+    const retryAfterSec = Math.ceil(rule.windowMs / 1000);
+    const reset = Math.ceil(Date.now() / 1000) + retryAfterSec;
+
     if (!allowed) {
-      const retryAfterSec = Math.ceil(rule.windowMs / 1000);
-      const reset = Math.ceil(Date.now() / 1000) + retryAfterSec;
       const response = withSecurityHeaders(
         NextResponse.json(
           { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
@@ -77,6 +84,8 @@ export async function applyRateLimit(
         rateLimitInfo: { limit: rule.max, remaining: 0, reset },
       };
     }
+
+    rateLimitInfo = { limit: rule.max, remaining: Math.max(0, rule.max - 1), reset };
   } else if (
     !pathname.startsWith("/_next/") &&
     !pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?|ttf|eot)$/i)
@@ -129,5 +138,5 @@ export async function applyRateLimit(
     }
   }
 
-  return { response: null };
+  return { response: null, rateLimitInfo };
 }

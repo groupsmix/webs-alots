@@ -108,6 +108,13 @@ jobs:
             if (failed) process.exit(1);
           '
 
+      # SEC-009: Full dependency audit (prod + dev) at high severity.
+      # Catches high/critical CVEs in devDependencies that the --omit=dev
+      # step above skips. A compromised devdep can hijack the CI runner
+      # or inject malicious code into the build output.
+      - name: Audit all dependencies (prod + dev)
+        run: npm audit --audit-level=high
+
       # R-08: Ban direct process.env.CRON_SECRET access outside cron-auth.ts
       - name: Guard CRON_SECRET access
         run: |

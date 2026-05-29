@@ -25,12 +25,25 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Cache static assets for 1 year
-        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot)",
+        // CDN-01: Cache static assets (images, fonts) for 1 year.
+        // These are content-hashed by Next.js, so immutable is safe.
+        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot|css)",
         headers: [
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        // CDN-02: Next.js hashed JS/CSS bundles under _next/static are
+        // safe to cache indefinitely. Cloudflare edge caches these via
+        // s-maxage and serves them without hitting the Worker.
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, s-maxage=31536000, immutable",
           },
         ],
       },
@@ -93,6 +106,37 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // API Versioning: Sunset header on unversioned routes that are now
+      // also available under /api/v1/. Signals to API consumers that the
+      // unversioned paths will be removed in a future release.
+      ...[
+        "booking",
+        "upload",
+        "checkin",
+        "chat",
+        "notifications",
+        "webhooks",
+        "payments",
+        "consent",
+        "files",
+      ].flatMap((route) => [
+        {
+          source: `/api/${route}`,
+          headers: [
+            { key: "Sunset", value: "Sat, 31 Dec 2026 23:59:59 GMT" },
+            { key: "Deprecation", value: "true" },
+            { key: "Link", value: `</api/v1/${route}>; rel="successor-version"` },
+          ],
+        },
+        {
+          source: `/api/${route}/:path*`,
+          headers: [
+            { key: "Sunset", value: "Sat, 31 Dec 2026 23:59:59 GMT" },
+            { key: "Deprecation", value: "true" },
+            { key: "Link", value: `</api/v1/${route}>; rel="successor-version"` },
+          ],
+        },
+      ]),
     ];
   },
 
@@ -127,6 +171,36 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     // Icon/thumbnail sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
+  },
+
+  async rewrites() {
+    // API Versioning: map /api/v1/<route> to the existing unversioned
+    // handlers so routes are accessible under both /api/<route> and
+    // /api/v1/<route>. Old unversioned paths remain functional (backward
+    // compat) but receive a Sunset header (see headers() above).
+    const versionedRoutes = [
+      "booking",
+      "upload",
+      "checkin",
+      "chat",
+      "notifications",
+      "webhooks",
+      "payments",
+      "consent",
+      "files",
+    ];
+    return {
+      beforeFiles: versionedRoutes.flatMap((route) => [
+        {
+          source: `/api/v1/${route}`,
+          destination: `/api/${route}`,
+        },
+        {
+          source: `/api/v1/${route}/:path*`,
+          destination: `/api/${route}/:path*`,
+        },
+      ]),
+    };
   },
 
   async redirects() {

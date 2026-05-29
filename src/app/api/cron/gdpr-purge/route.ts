@@ -116,7 +116,11 @@ async function handler(request: NextRequest) {
         ];
 
         for (const { table, column } of dependentTables) {
-          const { error: delError } = await supabase.from(table).delete().eq(column, user.id);
+          const { error: delError } = await supabase
+            .from(table)
+            .delete()
+            .eq("clinic_id", user.clinic_id)
+            .eq(column, user.id);
 
           if (delError) {
             // Log but continue — some tables may not exist

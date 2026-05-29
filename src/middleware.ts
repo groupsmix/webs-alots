@@ -261,8 +261,13 @@ export async function middleware(request: NextRequest) {
   });
   applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
 
-  // Note: Real rate-limit state is enforced by the rate limiter above.
-  // These placeholder headers are omitted to avoid misleading API consumers.
+  // Set rate limit headers on every API response (not just 429) so
+  // consumers can monitor their remaining quota proactively.
+  if (rateLimitInfo && pathname.startsWith("/api/")) {
+    supabaseResponse.headers.set("X-RateLimit-Limit", rateLimitInfo.limit.toString());
+    supabaseResponse.headers.set("X-RateLimit-Remaining", rateLimitInfo.remaining.toString());
+    supabaseResponse.headers.set("X-RateLimit-Reset", rateLimitInfo.reset.toString());
+  }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {

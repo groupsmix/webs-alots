@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState, createContext, useContext, useCallback } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { FeatureGate } from "@/components/feature-gate";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export type EquipmentLocale = "fr" | "ar";
@@ -173,11 +174,21 @@ export default function EquipmentLayoutShell({ children }: { children: React.Rea
           <SidebarContent pathname={pathname} locale={locale} />
         </aside>
 
-        <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
+        <main id="main-content" className="flex-1 p-4 pt-16 pb-20 md:p-6 md:pb-6">
           <FeatureGate featureKey="equipment_rentals" moduleName="Medical Equipment">
             {children}
           </FeatureGate>
         </main>
+
+        {/* Mobile bottom tab bar */}
+        <MobileTabBar
+          tabs={navItems.map((item) => ({
+            href: item.href,
+            label: navLabels[item.href]?.[locale] ?? item.href,
+            icon: item.icon,
+          }))}
+          onMoreClick={() => setMobileOpen(true)}
+        />
       </div>
     </EquipmentI18nContext.Provider>
   );

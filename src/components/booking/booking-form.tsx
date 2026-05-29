@@ -25,7 +25,7 @@ import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation"
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { formatCurrency, formatDisplayDate } from "@/lib/utils";
-import { phoneNumber } from "@/lib/validations/primitives";
+import { isValidMoroccanPhone } from "@/lib/validations/primitives";
 import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
 
@@ -45,10 +45,6 @@ const STEP_KEYS = [
   "booking.steps.dateTime",
   "booking.steps.confirmation",
 ] as const;
-
-function isValidMoroccanPhone(phone: string): boolean {
-  return phoneNumber.safeParse(phone).success;
-}
 
 interface Doctor {
   id: string;

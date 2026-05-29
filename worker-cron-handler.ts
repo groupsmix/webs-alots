@@ -6,6 +6,7 @@
  * the Next.js cron API routes with the correct CRON_SECRET auth.
  *
  * Cron schedule (must match wrangler.toml [triggers].crons exactly):
+ *   - every 5 min    →  /api/cron/uptime-monitor (health check + WhatsApp alert)
  *   - every 15 min   →  /api/cron/notifications (queued notifications)
  *                        /api/cron/audit-log-flush (MEDIUM-6 durable retry)
  *   - every 30 min   →  /api/cron/reminders     (appointment reminders)
@@ -33,6 +34,7 @@ import { default as handler } from "./.open-next/worker.js";
  * Exported for testing (H-07 cross-check with wrangler.toml).
  */
 export const CRON_ROUTES: Record<string, string[]> = {
+  "*/5 * * * *": ["/api/cron/uptime-monitor"],
   "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
   "*/30 * * * *": ["/api/cron/reminders"],
   "0 * * * *": ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],

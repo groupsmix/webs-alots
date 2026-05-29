@@ -157,6 +157,7 @@ export type AdminPurpose =
   | "audit_log"
   | "notification"
   | "webhook"
+  | "webhook-retry"
   | "super_admin"
   | "register_clinic"
   | "impersonate"

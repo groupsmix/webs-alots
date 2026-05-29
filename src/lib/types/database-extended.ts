@@ -272,6 +272,144 @@ type ExtendedDatabase = GenDatabase & {
         };
         Relationships: [];
       };
+      // Batch 3B: Custom Domains table
+      custom_domains: {
+        Row: {
+          id: string;
+          clinic_id: string;
+          domain: string;
+          status: string;
+          cloudflare_custom_hostname_id: string | null;
+          ssl_status: string | null;
+          verification_txt: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          clinic_id: string;
+          domain: string;
+          status?: string;
+          cloudflare_custom_hostname_id?: string | null;
+          ssl_status?: string | null;
+          verification_txt?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string;
+          domain?: string;
+          status?: string;
+          cloudflare_custom_hostname_id?: string | null;
+          ssl_status?: string | null;
+          verification_txt?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      // Batch 3B: Referrals table
+      referrals: {
+        Row: {
+          id: string;
+          clinic_id: string;
+          referring_doctor_id: string;
+          referred_to_doctor_id: string;
+          patient_id: string;
+          reason: string | null;
+          notes: string | null;
+          status: string;
+          whatsapp_notified: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          clinic_id: string;
+          referring_doctor_id: string;
+          referred_to_doctor_id: string;
+          patient_id: string;
+          reason?: string | null;
+          notes?: string | null;
+          status?: string;
+          whatsapp_notified?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string;
+          referring_doctor_id?: string;
+          referred_to_doctor_id?: string;
+          patient_id?: string;
+          reason?: string | null;
+          notes?: string | null;
+          status?: string;
+          whatsapp_notified?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      // Batch 3B: Lab Results table
+      lab_results: {
+        Row: {
+          id: string;
+          clinic_id: string;
+          patient_id: string;
+          doctor_id: string | null;
+          order_id: string | null;
+          title: string;
+          file_key: string | null;
+          file_name: string | null;
+          file_size: number | null;
+          mime_type: string | null;
+          notes: string | null;
+          status: string;
+          whatsapp_notified: boolean;
+          shared_at: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          clinic_id: string;
+          patient_id: string;
+          doctor_id?: string | null;
+          order_id?: string | null;
+          title: string;
+          file_key?: string | null;
+          file_name?: string | null;
+          file_size?: number | null;
+          mime_type?: string | null;
+          notes?: string | null;
+          status?: string;
+          whatsapp_notified?: boolean;
+          shared_at?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string;
+          patient_id?: string;
+          doctor_id?: string | null;
+          order_id?: string | null;
+          title?: string;
+          file_key?: string | null;
+          file_name?: string | null;
+          file_size?: number | null;
+          mime_type?: string | null;
+          notes?: string | null;
+          status?: string;
+          whatsapp_notified?: boolean;
+          shared_at?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
   };
 };

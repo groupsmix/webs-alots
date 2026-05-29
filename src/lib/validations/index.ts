@@ -74,3 +74,13 @@ export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
 
 export { safeParse } from "./helpers";
+
+export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
+export type { PasswordStrength } from "./password-policy";
+
+export {
+  qrCheckinGenerateSchema,
+  qrCheckinScanSchema,
+  waitingQueueUpdateSchema,
+  npsSurveyResponseSchema,
+} from "./patient-experience";

@@ -25,12 +25,16 @@ import {
   Boxes,
   FileText,
   Brain,
+  ScrollText,
+  DatabaseZap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { useLocale } from "@/components/locale-switcher";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboarding-provider";
@@ -116,6 +120,9 @@ const navItems: NavItem[] = [
   },
   // AI-powered features (Professional+ plan)
   { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
+  // Security & Compliance
+  { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
+  { href: "/admin/data-retention", label: "Data Retention", icon: DatabaseZap },
 ];
 
 function OnboardingChecklistSidebar() {
@@ -192,6 +199,13 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
   const [mobileOpen, setMobileOpen] = useState(false);
   const [locale] = useLocale();
 
+  const adminMobileTabs: MobileTabItem[] = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/patients", label: "Patients", icon: Users },
+    { href: "/admin/reports", label: "Analytics", icon: BarChart3 },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
+  ];
+
   return (
     <OnboardingProvider>
       <div className="flex min-h-screen">
@@ -244,12 +258,15 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
           <SidebarContent pathname={pathname} />
         </aside>
 
-        <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
+        <main id="main-content" className="flex-1 p-4 pt-16 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
           {children}
         </main>
         <OnboardingTourOverlay />
         <SessionTimeoutWarning onLogout={() => signOut()} />
+
+        {/* Mobile bottom tab bar */}
+        <MobileTabBar tabs={adminMobileTabs} onMoreClick={() => setMobileOpen(true)} />
       </div>
     </OnboardingProvider>
   );

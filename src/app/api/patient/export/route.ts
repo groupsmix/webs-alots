@@ -59,6 +59,7 @@ export const GET = withAuth(
     // long-history patients. 5 000 rows per category is generous but prevents
     // memory exhaustion on pathological accounts.
     const EXPORT_ROW_LIMIT = 5_000;
+    const clinicId = profile.clinic_id!;
 
     // Fetch patient-related data
     const [
@@ -73,6 +74,7 @@ export const GET = withAuth(
           "id, slot_start, slot_end, status, notes, source, is_first_visit, insurance_flag, created_at",
         )
         .eq("patient_id", profile.id)
+        .eq("clinic_id", clinicId)
         .order("slot_start", { ascending: false })
         .limit(EXPORT_ROW_LIMIT),
       // NOTE: medication/dosage/duration/instructions are not in generated Supabase types
@@ -81,6 +83,7 @@ export const GET = withAuth(
         .from("prescriptions")
         .select("id, medication, dosage, duration, instructions, created_at")
         .eq("patient_id", profile.id)
+        .eq("clinic_id", clinicId)
         .order("created_at", { ascending: false })
         .limit(EXPORT_ROW_LIMIT) as unknown as Promise<{
         data:
@@ -98,6 +101,7 @@ export const GET = withAuth(
         .from("payments")
         .select("id, amount, method, status, ref, created_at")
         .eq("patient_id", profile.id)
+        .eq("clinic_id", clinicId)
         .order("created_at", { ascending: false })
         .limit(EXPORT_ROW_LIMIT),
       supabase
@@ -105,6 +109,7 @@ export const GET = withAuth(
         .select("id, name, category, created_at")
         // @ts-expect-error -- Supabase generated types lag behind actual DB schema
         .eq("patient_id", profile.id)
+        .eq("clinic_id", clinicId)
         .order("created_at", { ascending: false })
         .limit(EXPORT_ROW_LIMIT),
     ]);

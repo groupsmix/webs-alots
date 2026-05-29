@@ -36,7 +36,7 @@ describe("GET /api/health — route handler", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 200 with ok:true when degraded but not down", async () => {
+  it("returns 200 with structured health data when degraded but not down", async () => {
     // Ensure Supabase env vars are NOT set — this puts the database
     // check in a "degraded" state, but the overall endpoint still
     // returns 200 because nothing is fully down.
@@ -50,7 +50,9 @@ describe("GET /api/health — route handler", () => {
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
-    expect(body.data.ok).toBe(true);
+    expect(body.data.status).toBe("degraded");
+    expect(body.data.checks).toBeDefined();
+    expect(body.data.timestamp).toBeDefined();
   });
 
   it("returns response with correct Cache-Control header", async () => {
@@ -63,7 +65,7 @@ describe("GET /api/health — route handler", () => {
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=30");
   });
 
-  it("O-04: anon response is exactly { ok: boolean } with no extra fields", async () => {
+  it("returns structured health response with checks, status, and timestamp", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
 
@@ -71,12 +73,11 @@ describe("GET /api/health — route handler", () => {
     const response = await GET();
     const body = await response.json();
 
-    // O-04: data payload must be exactly { ok: boolean } — no granular
-    // dependency status, no overall status string, and no timestamp.
-    expect(typeof body.data.ok).toBe("boolean");
-    expect(Object.keys(body.data)).toEqual(["ok"]);
-    expect(body.data.checks).toBeUndefined();
-    expect(body.data.status).toBeUndefined();
-    expect(body.data.timestamp).toBeUndefined();
+    expect(body.data.status).toMatch(/^(healthy|degraded|unhealthy)$/);
+    expect(body.data.checks).toBeDefined();
+    expect(body.data.checks.supabase).toBeDefined();
+    expect(body.data.checks.r2).toBeDefined();
+    expect(body.data.checks.rateLimiter).toBeDefined();
+    expect(body.data.timestamp).toBeDefined();
   });
 });

@@ -45,7 +45,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 /** Lightweight API routes that skip heavy middleware processing */
-export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health"]);
+export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health", "/api/v1/health"]);
 
 /**
  * Role to allowed route prefix mapping.
@@ -136,12 +136,33 @@ const PUBLIC_API_ROUTES = [
   "/api/v1/appointments",
   // Stripe billing webhook — authenticated via stripe-signature HMAC
   "/api/billing/webhook",
+  // QR scan check-in — patients scan QR at clinic entrance without session
+  "/api/checkin/qr-scan",
+  // NPS survey response — patients submit via WhatsApp link without session
+  "/api/nps/respond",
+  // Waiting queue — public display on waiting room screens
+  "/api/waiting-queue",
   // Public chatbot — basic (keyword) tier serves anonymous clinic visitors
   "/api/chat",
   // Demo login (dev/staging only, guarded in handler)
   "/api/auth/demo-login",
   // CSP report endpoint
   "/api/csp-report",
+  // Versioned (v1) equivalents of public routes — rewrites in next.config.ts
+  // map these to the underlying unversioned handlers, but middleware auth
+  // runs before rewrites so each must be allowlisted explicitly.
+  "/api/v1/booking",
+  "/api/v1/booking/verify",
+  "/api/v1/booking/cancel",
+  "/api/v1/webhooks",
+  "/api/v1/payments/webhook",
+  "/api/v1/payments/cmi/callback",
+  "/api/v1/checkin/lookup",
+  "/api/v1/checkin/confirm",
+  "/api/v1/checkin/status",
+  "/api/v1/chat",
+  "/api/v1/consent",
+  "/api/v1/notifications",
 ];
 
 /**

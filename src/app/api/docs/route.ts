@@ -1479,11 +1479,40 @@ Production: https://oltigo.com/api
 }
 
 /**
- * GET handler - returns OpenAPI JSON spec
+ * GET handler — returns a merged OpenAPI spec.
+ *
+ * The manually-curated endpoints (above) are augmented with paths
+ * auto-generated from Zod validation schemas via `generateOpenApiFromZod()`.
+ * Auto-generated paths only appear if they are NOT already defined in the
+ * manual spec, so hand-written docs take precedence.
  */
 export async function GET(_request: NextRequest) {
-  const spec = generateOpenApiSpec();
-  return new Response(JSON.stringify(spec, null, 2), {
+  const manualSpec = generateOpenApiSpec() as {
+    paths: Record<string, Record<string, unknown>>;
+    [k: string]: unknown;
+  };
+
+  const { generateOpenApiFromZod } = await import("@/lib/openapi-schema");
+  const zodSpec = generateOpenApiFromZod() as {
+    paths: Record<string, Record<string, unknown>>;
+  };
+
+  const mergedPaths = { ...manualSpec.paths };
+  for (const [path, methods] of Object.entries(zodSpec.paths)) {
+    if (!mergedPaths[path]) {
+      mergedPaths[path] = methods;
+    } else {
+      for (const [method, operation] of Object.entries(methods)) {
+        if (!mergedPaths[path][method]) {
+          mergedPaths[path][method] = operation;
+        }
+      }
+    }
+  }
+
+  const finalSpec = { ...manualSpec, paths: mergedPaths };
+
+  return new Response(JSON.stringify(finalSpec, null, 2), {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "public, max-age=3600",
