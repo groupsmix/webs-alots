@@ -81,6 +81,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/cron/r2-cleanup",
   "/api/cron/rebooking-reminders",
   "/api/cron/reminders",
+  "/api/cron/retry-webhooks",
   "/api/cron/stripe-reconcile",
   "/api/csp-report",
   "/api/docs",
