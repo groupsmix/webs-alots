@@ -385,9 +385,8 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
   const newSlotStart = `${body.date}T${body.time}:00`;
   const newSlotEnd = `${body.date}T${endTime}:00`;
   const { count: conflictCount, error: conflictError } = await supabase
-    .from("appointments")
-    // nosemgrep: semgrep.tenant-scoping — clinic_id filter is chained below
-    .select("id", { count: "exact", head: true })
+    .from("appointments") // nosemgrep: semgrep.tenant-scoping
+    .select("id", { count: "exact", head: true }) // nosemgrep: semgrep.tenant-scoping
     .eq("clinic_id", clinicId)
     .eq("doctor_id", body.doctorId)
     .eq("appointment_date", body.date)
