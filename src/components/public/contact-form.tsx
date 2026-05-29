@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react";
 import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 
 export function ContactForm() {
+  const [locale] = useLocale();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -54,10 +56,10 @@ export function ContactForm() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">{t("fr", "contact.successTitle")}</h3>
-          <p className="text-sm text-muted-foreground">{t("fr", "contact.successMessage")}</p>
+          <h3 className="text-lg font-semibold mb-2">{t(locale, "contact.successTitle")}</h3>
+          <p className="text-sm text-muted-foreground">{t(locale, "contact.successMessage")}</p>
           <Button variant="outline" className="mt-6" onClick={() => setSubmitted(false)}>
-            {t("fr", "contact.sendAnother")}
+            {t(locale, "contact.sendAnother")}
           </Button>
         </CardContent>
       </Card>
@@ -67,49 +69,49 @@ export function ContactForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("fr", "contact.title")}</CardTitle>
+        <CardTitle>{t(locale, "contact.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">{t("fr", "contact.name")}</Label>
+              <Label htmlFor="name">{t(locale, "contact.name")}</Label>
               <Input
                 id="name"
                 name="name"
-                placeholder={t("fr", "contact.namePlaceholder")}
+                placeholder={t(locale, "contact.namePlaceholder")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">{t("fr", "contact.phone")}</Label>
+              <Label htmlFor="phone">{t(locale, "contact.phone")}</Label>
               <Input id="phone" name="phone" placeholder="+212 6XX XX XX XX" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">{t("fr", "contact.email")}</Label>
+            <Label htmlFor="email">{t(locale, "contact.email")}</Label>
             <Input id="email" name="email" type="email" placeholder="votre@email.com" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="subject">{t("fr", "contact.subject")}</Label>
+            <Label htmlFor="subject">{t(locale, "contact.subject")}</Label>
             <Input
               id="subject"
               name="subject"
-              placeholder={t("fr", "contact.subjectPlaceholder")}
+              placeholder={t(locale, "contact.subjectPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="message">{t("fr", "contact.message")}</Label>
+            <Label htmlFor="message">{t(locale, "contact.message")}</Label>
             <Textarea
               id="message"
               name="message"
-              placeholder={t("fr", "contact.messagePlaceholder")}
+              placeholder={t(locale, "contact.messagePlaceholder")}
               rows={4}
               required
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t("fr", "contact.submitting") : t("fr", "contact.submit")}
+            {loading ? t(locale, "contact.submitting") : t(locale, "contact.submit")}
           </Button>
         </form>
       </CardContent>
