@@ -118,9 +118,8 @@ export const POST = withAuthValidation(
 
     // Check for overlapping appointments with the same doctor on the new date
     const { count: conflictCount, error: conflictError } = await supabase
-      .from("appointments")
-      // nosemgrep: semgrep.tenant-scoping — clinic_id filter is chained below
-      .select("id", { count: "exact", head: true })
+      .from("appointments") // nosemgrep: semgrep.tenant-scoping
+      .select("id", { count: "exact", head: true }) // nosemgrep: semgrep.tenant-scoping
       .eq("clinic_id", clinicId)
       .eq("doctor_id", existing.doctor_id)
       .eq("appointment_date", body.newDate)
