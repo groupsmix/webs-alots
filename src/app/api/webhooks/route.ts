@@ -12,6 +12,7 @@ import { dispatchNotification, type TemplateVariables } from "@/lib/notification
 import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { readWebhookBody } from "@/lib/webhook-body";
+import { handleWhatsAppConversation } from "@/lib/whatsapp/conversation-handler";
 
 // ── WhatsApp Webhook payload types ──
 
@@ -646,7 +647,35 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Other messages are logged for receptionist review
+      // ── WhatsApp-first conversation handler ──────────────────────
+      // Route unhandled messages through the conversational AI handler
+      // for booking, cancellation, lab results, payments, FAQ, and
+      // prescription renewal via natural language.
+      if (
+        upperText !== "CONFIRM" &&
+        upperText !== "CANCEL" &&
+        upperText !== "RESCHEDULE" &&
+        !rawText.startsWith("REBOOK_") &&
+        !rawText.startsWith("RATING_")
+      ) {
+        try {
+          await handleWhatsAppConversation({
+            supabase: supabase as never,
+            clinicId,
+            clinicName,
+            senderPhone: msgInfo.senderPhone,
+            patientId,
+            patientName,
+            messageText: rawText,
+          });
+        } catch (convErr) {
+          logger.warn("WhatsApp conversation handler failed", {
+            context: "webhooks/whatsapp-conversation",
+            clinicId,
+            error: convErr,
+          });
+        }
+      }
     }
 
     return apiSuccess({ status: "ok" });
