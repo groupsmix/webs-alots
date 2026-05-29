@@ -183,6 +183,15 @@ export {
 } from "./billing";
 
 export {
+  whatsappConsentGrantSchema,
+  whatsappConsentRevokeSchema,
+  whatsappConsentExportSchema,
+  whatsappConsentDeleteSchema,
+  whatsappVoiceWebhookSchema,
+  wabaPhoneNumberIdSchema,
+} from "./whatsapp";
+
+export {
   cdssCheckRequestSchema,
   doseValidationRequestSchema,
   news2RequestSchema,

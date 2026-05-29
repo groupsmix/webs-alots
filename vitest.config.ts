@@ -22,7 +22,7 @@ export default defineConfig({
     setupFiles: ["./src/components/__tests__/setup.tsx"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov"],
+      reporter: ["text", "lcov", "json-summary"],
       include: [
         "src/lib/**/*.ts",
         "src/components/**/*.tsx",
