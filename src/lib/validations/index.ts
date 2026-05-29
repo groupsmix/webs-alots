@@ -121,3 +121,9 @@ export {
 
 export { timelineQuerySchema, TIMELINE_EVENT_TYPES } from "./patient-timeline";
 export type { TimelineEventType, TimelineQuery } from "./patient-timeline";
+
+export {
+  clinicProvisionSchema,
+  churnPredictionQuerySchema,
+  revenueForecastQuerySchema,
+} from "./super-admin";
