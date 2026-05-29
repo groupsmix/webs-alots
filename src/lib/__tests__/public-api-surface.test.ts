@@ -74,6 +74,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/branding/apply-preset",
   "/api/branding/custom-domain",
   "/api/chat",
+  "/api/chat/stream",
   "/api/checkin/confirm",
   "/api/checkin/lookup",
   "/api/checkin/qr-scan",

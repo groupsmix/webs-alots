@@ -15,7 +15,7 @@
 CREATE TABLE IF NOT EXISTS patient_vitals (
   id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   clinic_id     UUID NOT NULL REFERENCES clinics(id),
-  patient_id    UUID NOT NULL REFERENCES patients(id),
+  patient_id    UUID NOT NULL REFERENCES users(id),
   systolic      SMALLINT,
   diastolic     SMALLINT,
   heart_rate    SMALLINT,
@@ -164,6 +164,13 @@ BEGIN
     WHERE table_name = 'prescriptions' AND column_name = 'pharmacist_notes'
   ) THEN
     ALTER TABLE prescriptions ADD COLUMN pharmacist_notes TEXT;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'prescriptions' AND column_name = 'status'
+  ) THEN
+    ALTER TABLE prescriptions ADD COLUMN status TEXT DEFAULT 'draft';
   END IF;
 END$$;
 
