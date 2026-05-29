@@ -18,11 +18,11 @@ import { cn } from "@/lib/utils";
 import { TIMELINE_EVENT_TYPES, type TimelineEventType } from "@/lib/validations/patient-timeline";
 
 const EVENT_FILTER_CONFIG: Record<TimelineEventType, { icon: typeof Calendar; label: string }> = {
-  visit: { icon: Calendar, label: "Visits" },
-  prescription: { icon: Pill, label: "Prescriptions" },
-  lab_result: { icon: FlaskConical, label: "Lab Results" },
-  imaging: { icon: ScanLine, label: "Imaging" },
-  payment: { icon: CreditCard, label: "Payments" },
+  visit: { icon: Calendar, label: "Consultations" },
+  prescription: { icon: Pill, label: "Ordonnances" },
+  lab_result: { icon: FlaskConical, label: "Résultats labo" },
+  imaging: { icon: ScanLine, label: "Imagerie" },
+  payment: { icon: CreditCard, label: "Paiements" },
   note: { icon: FileText, label: "Notes" },
   communication: { icon: MessageSquare, label: "WhatsApp" },
 };
@@ -60,7 +60,7 @@ export function TimelineFilters({
               : "bg-transparent text-muted-foreground border-input hover:bg-muted",
           )}
         >
-          All
+          Tout
         </button>
         {TIMELINE_EVENT_TYPES.map((type) => {
           const config = EVENT_FILTER_CONFIG[type];
@@ -87,7 +87,7 @@ export function TimelineFilters({
       {/* Date range filters */}
       <div className="flex items-center gap-2 flex-wrap">
         <label className="text-xs text-muted-foreground" htmlFor="timeline-from">
-          From:
+          Du :
         </label>
         <input
           id="timeline-from"
@@ -97,7 +97,7 @@ export function TimelineFilters({
           className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
         />
         <label className="text-xs text-muted-foreground" htmlFor="timeline-to">
-          To:
+          Au :
         </label>
         <input
           id="timeline-to"
@@ -117,7 +117,7 @@ export function TimelineFilters({
             className="h-8 px-2"
           >
             <X className="h-3 w-3" />
-            Clear dates
+            Effacer les dates
           </Button>
         )}
       </div>
@@ -126,11 +126,11 @@ export function TimelineFilters({
       {activeFilter && (
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="gap-1">
-            Showing: {EVENT_FILTER_CONFIG[activeFilter].label}
+            Filtre : {EVENT_FILTER_CONFIG[activeFilter].label}
             <button
               onClick={() => onFilterChange(undefined)}
               className="ml-1 hover:text-destructive"
-              aria-label="Clear filter"
+              aria-label="Effacer le filtre"
             >
               <X className="h-3 w-3" />
             </button>

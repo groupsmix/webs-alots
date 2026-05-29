@@ -138,7 +138,7 @@ export const POST = withAuthValidation(
     const userId = profile.id;
 
     if (!clinicId) {
-      return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+      return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
     }
 
     const allowed = await aiManagerLimiter.check(`ai-team-gen:${userId}`);
@@ -282,7 +282,7 @@ export const POST = withAuthValidation(
         type: "admin",
         clinicId,
         actor: userId,
-        description: `AI Team ${agentType} generated ${savedTasks.length} tasks and ${savedAlerts.length} alerts`,
+        description: `Équipe IA ${agentType} : ${savedTasks.length} tâche(s) et ${savedAlerts.length} alerte(s) générée(s)`,
         metadata: {
           agentType,
           tasksCount: String(savedTasks.length),
