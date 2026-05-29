@@ -218,14 +218,14 @@ async function handler(request: NextRequest) {
       .in("status", ["active"]);
 
     if (!clinics || clinics.length === 0) {
-      return apiSuccess({ message: "No active clinics", sent: 0 });
+      return apiSuccess({ message: "Aucune clinique active", sent: 0 });
     }
 
     let totalSent = 0;
 
     for (const clinic of clinics) {
       const clinicId = clinic.id as string;
-      const clinicName = (clinic.name as string) || "Clinic";
+      const clinicName = (clinic.name as string) || "Clinique";
 
       try {
         const { data: configData } = await supabase
@@ -327,7 +327,7 @@ async function handler(request: NextRequest) {
           type: "admin",
           clinicId,
           clinicName,
-          description: `Daily briefing sent to ${recipients.length} recipients`,
+          description: `Rapport quotidien envoyé à ${recipients.length} destinataire(s)`,
           metadata: {
             totalAppointments: summary.totalAppointments,
             cancellations: summary.cancellations,
@@ -345,13 +345,13 @@ async function handler(request: NextRequest) {
       }
     }
 
-    return apiSuccess({ message: "Daily briefings sent", sent: totalSent });
+    return apiSuccess({ message: "Rapports quotidiens envoyés", sent: totalSent });
   } catch (err) {
     logger.error("Daily briefing cron failed", {
       context: "cron/daily-briefing",
       error: err,
     });
-    return apiInternalError("Failed to send daily briefings");
+    return apiInternalError("Échec de l'envoi des rapports quotidiens");
   }
 }
 

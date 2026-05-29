@@ -67,11 +67,27 @@ export {
   aiDrugCheckOverrideSchema,
   aiManagerRequestSchema,
   aiAutoSuggestRequestSchema,
+  aiVoiceNoteRequestSchema,
+  aiVoiceNoteSaveSchema,
+  aiSmartPrescriptionRequestSchema,
+  aiPrescriptionSaveSchema,
+  aiDrugInteractionCheckRequestSchema,
 } from "./chat";
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
 export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
+
+export {
+  smartScheduleSchema,
+  smartScheduleConfirmSchema,
+  sendRemindersSchema,
+  waitlistAddSchema,
+  waitlistNotifySchema,
+  waitlistPromoteSchema,
+  noShowMarkSchema,
+  noShowAnalyticsQuerySchema,
+} from "./receptionist-ai";
 
 export {
   aiTeamChatSchema,
@@ -129,3 +145,19 @@ export {
   insuranceClaimUpdateSchema,
   revenueQuerySchema,
 } from "./clinic-owner";
+
+export {
+  clinicProvisionSchema,
+  churnPredictionQuerySchema,
+  revenueForecastQuerySchema,
+} from "./super-admin";
+
+export {
+  invoiceCreateSchema,
+  invoiceUpdateSchema,
+  paymentPlanCreateSchema,
+  installmentUpdateSchema,
+  reminderSendSchema,
+  financialSummaryQuerySchema,
+  revenueInsightsQuerySchema,
+} from "./billing";

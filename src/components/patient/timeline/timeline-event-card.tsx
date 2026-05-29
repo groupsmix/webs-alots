@@ -24,31 +24,31 @@ const EVENT_CONFIG: Record<
 > = {
   visit: {
     icon: Calendar,
-    label: "Visit",
+    label: "Consultation",
     color: "text-blue-600 dark:text-blue-400",
     dotColor: "bg-blue-500",
   },
   prescription: {
     icon: Pill,
-    label: "Prescription",
+    label: "Ordonnance",
     color: "text-purple-600 dark:text-purple-400",
     dotColor: "bg-purple-500",
   },
   lab_result: {
     icon: FlaskConical,
-    label: "Lab Result",
+    label: "Résultat labo",
     color: "text-green-600 dark:text-green-400",
     dotColor: "bg-green-500",
   },
   imaging: {
     icon: ScanLine,
-    label: "Imaging",
+    label: "Imagerie",
     color: "text-orange-600 dark:text-orange-400",
     dotColor: "bg-orange-500",
   },
   payment: {
     icon: CreditCard,
-    label: "Payment",
+    label: "Paiement",
     color: "text-emerald-600 dark:text-emerald-400",
     dotColor: "bg-emerald-500",
   },
@@ -147,7 +147,7 @@ export function TimelineEventCard({ event, className }: TimelineEventCardProps) 
             <button
               onClick={() => setExpanded(!expanded)}
               className="shrink-0 p-1 rounded-md hover:bg-muted transition-colors"
-              aria-label={expanded ? "Collapse" : "Expand"}
+              aria-label={expanded ? "Réduire" : "Développer"}
             >
               {expanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -173,25 +173,25 @@ function renderSummary(event: TimelineEvent) {
       return (
         <p className="text-sm text-foreground mt-1 truncate">
           {meta.source === "walk_in"
-            ? "Walk-in"
+            ? "Sans rendez-vous"
             : meta.source === "whatsapp"
-              ? "WhatsApp booking"
-              : "Appointment"}
-          {meta.is_first_visit ? " (First visit)" : ""}
+              ? "Réservation WhatsApp"
+              : "Rendez-vous"}
+          {meta.is_first_visit ? " (Première visite)" : ""}
         </p>
       );
     case "prescription":
       return (
         <p className="text-sm text-foreground mt-1 truncate">
           {Array.isArray(meta.items)
-            ? `${(meta.items as unknown[]).length} medication(s)`
-            : "Prescription issued"}
+            ? `${(meta.items as unknown[]).length} médicament(s)`
+            : "Ordonnance émise"}
         </p>
       );
     case "lab_result":
       return (
         <p className="text-sm text-foreground mt-1 truncate">
-          {(meta.title as string) ?? "Lab result"}
+          {(meta.title as string) ?? "Résultat d'analyse"}
         </p>
       );
     case "imaging":
@@ -203,7 +203,7 @@ function renderSummary(event: TimelineEvent) {
     case "payment":
       return (
         <p className="text-sm text-foreground mt-1 truncate">
-          {meta.amount ? `${meta.amount} MAD` : ""} via {(meta.method as string) ?? "N/A"}
+          {meta.amount ? `${meta.amount} MAD` : ""} par {(meta.method as string) ?? "N/A"}
         </p>
       );
     case "note":
@@ -211,13 +211,13 @@ function renderSummary(event: TimelineEvent) {
         <p className="text-sm text-foreground mt-1 truncate">
           {(meta.diagnosis as string) ??
             (meta.notes as string)?.slice(0, 80) ??
-            "Consultation note"}
+            "Note de consultation"}
         </p>
       );
     case "communication":
       return (
         <p className="text-sm text-foreground mt-1 truncate">
-          {(meta.trigger as string) ?? "WhatsApp message"} — {(meta.recipient_name as string) ?? ""}
+          {(meta.trigger as string) ?? "Message WhatsApp"} — {(meta.recipient_name as string) ?? ""}
         </p>
       );
     default:
