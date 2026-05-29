@@ -179,25 +179,30 @@ export default function ChatbotSettingsPage() {
     if (configError) {
       void configError;
       setSaving(false);
+      alert("Échec de l'enregistrement de la configuration");
       return;
     }
 
     // Save FAQs: delete removed ones, upsert existing and new
     const existingIds = faqs.filter((f) => !f.isNew).map((f) => f.id);
 
+    let faqSaveFailed = false;
+
     // Delete FAQs that were removed
     if (existingIds.length > 0) {
-      await supabase
+      const { error } = await supabase
         .from("chatbot_faqs")
         .delete()
         .eq("clinic_id", clinicId)
         .not("id", "in", `(${existingIds.join(",")})`);
+      if (error) faqSaveFailed = true;
     } else {
-      await supabase.from("chatbot_faqs").delete().eq("clinic_id", clinicId);
+      const { error } = await supabase.from("chatbot_faqs").delete().eq("clinic_id", clinicId);
+      if (error) faqSaveFailed = true;
     }
 
     // Upsert FAQs
-    for (let i = 0; i < faqs.length; i++) {
+    for (let i = 0; i < faqs.length && !faqSaveFailed; i++) {
       const faq = faqs[i];
       const faqPayload = {
         clinic_id: clinicId,
@@ -210,10 +215,18 @@ export default function ChatbotSettingsPage() {
       };
 
       if (faq.isNew) {
-        await supabase.from("chatbot_faqs").insert(faqPayload);
+        const { error } = await supabase.from("chatbot_faqs").insert(faqPayload);
+        if (error) faqSaveFailed = true;
       } else {
-        await supabase.from("chatbot_faqs").update(faqPayload).eq("id", faq.id);
+        const { error } = await supabase.from("chatbot_faqs").update(faqPayload).eq("id", faq.id);
+        if (error) faqSaveFailed = true;
       }
+    }
+
+    if (faqSaveFailed) {
+      setSaving(false);
+      alert("Échec de l'enregistrement des questions fréquentes");
+      return;
     }
 
     setSaving(false);

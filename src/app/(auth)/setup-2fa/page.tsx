@@ -72,18 +72,26 @@ export default function Setup2FAPage() {
     setLoading(false);
   }
 
-  function handleCopySecret() {
+  async function handleCopySecret() {
     if (!enrollment) return;
-    navigator.clipboard.writeText(enrollment.secret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(enrollment.secret);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard write can reject (permissions / insecure context).
+    }
   }
 
-  function handleCopyBackupCodes() {
+  async function handleCopyBackupCodes() {
     const codesText = backupCodes.join("\n");
-    navigator.clipboard.writeText(codesText);
-    setBackupCopied(true);
-    setTimeout(() => setBackupCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(codesText);
+      setBackupCopied(true);
+      setTimeout(() => setBackupCopied(false), 2000);
+    } catch {
+      // Clipboard write can reject (permissions / insecure context).
+    }
   }
 
   function handleDownloadBackupCodes() {

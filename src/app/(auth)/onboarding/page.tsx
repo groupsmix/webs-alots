@@ -356,46 +356,54 @@ export default function OnboardingPage() {
         throw new Error(data?.error ?? "Registration failed");
       }
 
+      // API responses are wrapped by apiSuccess as { ok, data }. Read the
+      // payload from `data`, falling back to the top level for resilience.
       const createResult: {
+        data?: { clinic_id?: string; subdomain?: string | null };
         clinic_id?: string;
         subdomain?: string | null;
       } | null = await createRes.json().catch(() => null);
-      const newClinicId = createResult?.clinic_id;
-      const newSubdomain = createResult?.subdomain;
+      const createPayload = createResult?.data ?? createResult;
+      const newClinicId = createPayload?.clinic_id;
+      const newSubdomain = createPayload?.subdomain;
 
       setCreatedSubdomain(newSubdomain ?? null);
 
+      // The clinic was created but no ID came back — fail loudly instead of
+      // showing a success screen for a setup that never seeded or went live.
+      if (!newClinicId) {
+        throw new Error("Registration failed");
+      }
+
       // 2. Save wizard data + auto-seed + go live
-      if (newClinicId) {
-        // Upload logo if provided
-        if (logoFile) {
-          const formData = new FormData();
-          formData.append("file", logoFile);
-          formData.append("category", "logos");
-          formData.append("clinicId", newClinicId);
-          await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          }).catch(() => {
-            // Logo upload failure is non-fatal
-          });
-        }
-
-        const wizardRes = await fetch("/api/onboarding/wizard", {
+      // Upload logo if provided
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        formData.append("category", "logos");
+        formData.append("clinicId", newClinicId);
+        await fetch("/api/upload", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            clinic_id: newClinicId,
-            preset_id: selectedPreset?.id ?? null,
-            auto_seed: true,
-            go_live: true,
-          }),
+          body: formData,
+        }).catch(() => {
+          // Logo upload failure is non-fatal
         });
+      }
 
-        if (!wizardRes.ok) {
-          const data: { error?: string } | null = await wizardRes.json().catch(() => null);
-          throw new Error(data?.error ?? "Failed to complete setup");
-        }
+      const wizardRes = await fetch("/api/onboarding/wizard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinic_id: newClinicId,
+          preset_id: selectedPreset?.id ?? null,
+          auto_seed: true,
+          go_live: true,
+        }),
+      });
+
+      if (!wizardRes.ok) {
+        const data: { error?: string } | null = await wizardRes.json().catch(() => null);
+        throw new Error(data?.error ?? "Failed to complete setup");
       }
 
       setCompleted(true);
