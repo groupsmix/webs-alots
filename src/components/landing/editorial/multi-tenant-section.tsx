@@ -25,6 +25,7 @@ export function MultiTenantSection() {
 
         <div className="mt-[var(--space-7)]">
           <HairlineRule />
+          {/* eslint-disable i18next/no-literal-string */}
           <div className="flex flex-wrap items-center gap-4 py-[var(--space-4)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
             <span>cabinet-a.oltigo.com</span>
             <span className="text-[var(--rule)]">│</span>
@@ -32,6 +33,7 @@ export function MultiTenantSection() {
             <span className="text-[var(--rule)]">│</span>
             <span>cabinet-c.oltigo.com</span>
           </div>
+          {/* eslint-enable i18next/no-literal-string */}
           <HairlineRule />
         </div>
       </div>

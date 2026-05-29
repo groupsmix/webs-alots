@@ -40,12 +40,14 @@ export function EditorialHeader({
       <header className="sticky top-0 z-50 bg-[var(--bone)] border-b border-b-[var(--rule)]">
         <div className="mx-auto flex w-full items-center justify-between max-w-[var(--container-max)] px-[var(--gutter-desktop)] h-16">
           {/* Logo */}
+          {/* eslint-disable i18next/no-literal-string */}
           <Link
             href="/"
             className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-bold tracking-[-0.02em] text-[var(--ink)] no-underline"
           >
             oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
           </Link>
+          {/* eslint-enable i18next/no-literal-string */}
 
           {/* Desktop nav links */}
           <nav className="hidden items-center gap-6 md:flex" aria-label="Main">

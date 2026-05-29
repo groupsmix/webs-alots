@@ -61,12 +61,14 @@ export function EditorialFooter() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 py-[var(--space-8)]">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
+            {/* eslint-disable i18next/no-literal-string */}
             <Link
               href="/"
               className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-bold tracking-[-0.02em] text-[var(--ink)] no-underline"
             >
               oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
             </Link>
+            {/* eslint-enable i18next/no-literal-string */}
             <p className="mt-[var(--space-3)] font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)] max-w-[240px]">
               {t("landing.editorial.editorial-footer.laPlateformeCompletePour")}
             </p>
