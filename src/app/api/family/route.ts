@@ -35,7 +35,7 @@ export const POST = withAuthValidation(
     } = data;
 
     if (primaryPatientId === linkedPatientId) {
-      return apiError("Cannot link a patient to themselves", 400, "SELF_LINK");
+      return apiError("Impossible de lier un patient à lui-même", 400, "SELF_LINK");
     }
 
     try {
@@ -51,7 +51,7 @@ export const POST = withAuthValidation(
         .single();
 
       if (!primary) {
-        return apiError("Primary patient not found", 404, "PRIMARY_NOT_FOUND");
+        return apiError("Patient principal introuvable", 404, "PRIMARY_NOT_FOUND");
       }
 
       const { data: linked } = await untypedSupabase
@@ -62,7 +62,7 @@ export const POST = withAuthValidation(
         .single();
 
       if (!linked) {
-        return apiError("Linked patient not found", 404, "LINKED_NOT_FOUND");
+        return apiError("Patient lié introuvable", 404, "LINKED_NOT_FOUND");
       }
 
       const { data: familyLink, error: insertError } = await untypedSupabase
@@ -81,13 +81,13 @@ export const POST = withAuthValidation(
 
       if (insertError) {
         if (insertError.code === "23505") {
-          return apiError("Family link already exists", 409, "DUPLICATE_LINK");
+          return apiError("Lien familial déjà existant", 409, "DUPLICATE_LINK");
         }
         logger.error("Failed to create family link", {
           context: "api/family",
           error: insertError,
         });
-        return apiInternalError("Failed to create family link");
+        return apiInternalError("Échec de la création du lien familial");
       }
 
       await logAuditEvent({
@@ -110,7 +110,7 @@ export const POST = withAuthValidation(
         context: "api/family",
         error: err,
       });
-      return apiInternalError("Failed to create family link");
+      return apiInternalError("Échec de la création du lien familial");
     }
   },
   ["clinic_admin", "receptionist", "patient"],
@@ -131,7 +131,7 @@ export const GET = withAuth(
 
     const patientId = request.nextUrl.searchParams.get("patientId");
     if (!patientId) {
-      return apiError("patientId query parameter required", 400, "MISSING_PARAM");
+      return apiError("Paramètre patientId requis", 400, "MISSING_PARAM");
     }
 
     try {
@@ -192,7 +192,7 @@ export const GET = withAuth(
         context: "api/family",
         error: err,
       });
-      return apiInternalError("Failed to list family members");
+      return apiInternalError("Échec de la récupération des membres de la famille");
     }
   },
   ["clinic_admin", "receptionist", "doctor", "patient"],
@@ -213,7 +213,7 @@ export const DELETE = withAuth(
 
     const linkId = request.nextUrl.searchParams.get("linkId");
     if (!linkId) {
-      return apiError("linkId query parameter required", 400, "MISSING_PARAM");
+      return apiError("Paramètre linkId requis", 400, "MISSING_PARAM");
     }
 
     try {
@@ -231,7 +231,7 @@ export const DELETE = withAuth(
           context: "api/family",
           error: deleteError,
         });
-        return apiInternalError("Failed to delete family link");
+        return apiInternalError("Échec de la suppression du lien familial");
       }
 
       await logAuditEvent({
@@ -250,7 +250,7 @@ export const DELETE = withAuth(
         context: "api/family",
         error: err,
       });
-      return apiInternalError("Failed to delete family link");
+      return apiInternalError("Échec de la suppression du lien familial");
     }
   },
   ["clinic_admin", "receptionist"],

@@ -48,7 +48,7 @@ export const GET = withAuth(
           context: "api/inventory/alerts",
           error,
         });
-        return apiInternalError("Failed to fetch inventory alerts");
+        return apiInternalError("Échec de la récupération des alertes d'inventaire");
       }
 
       type ItemRow = {
@@ -153,7 +153,7 @@ export const GET = withAuth(
         context: "api/inventory/alerts",
         error: err,
       });
-      return apiInternalError("Failed to fetch alerts");
+      return apiInternalError("Échec de la récupération des alertes");
     }
   },
   ["clinic_admin", "receptionist", "doctor"],

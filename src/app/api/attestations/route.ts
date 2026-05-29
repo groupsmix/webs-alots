@@ -51,7 +51,7 @@ export const POST = withAuthValidation(
         .single();
 
       if (!patient) {
-        return apiError("Patient not found", 404, "PATIENT_NOT_FOUND");
+        return apiError("Patient introuvable", 404, "PATIENT_NOT_FOUND");
       }
 
       type PatientRow = {
@@ -97,7 +97,7 @@ export const POST = withAuthValidation(
           context: "api/attestations",
           error: insertError,
         });
-        return apiInternalError("Failed to create attestation");
+        return apiInternalError("Échec de la création de l'attestation");
       }
 
       type AttestationRow = {
@@ -130,7 +130,7 @@ export const POST = withAuthValidation(
         context: "api/attestations",
         error: err,
       });
-      return apiInternalError("Attestation creation failed");
+      return apiInternalError("Échec de la création de l'attestation");
     }
   },
   ["clinic_admin", "doctor"],
@@ -178,7 +178,7 @@ export const GET = withAuth(
           context: "api/attestations",
           error,
         });
-        return apiInternalError("Failed to list attestations");
+        return apiInternalError("Échec de la récupération des attestations");
       }
 
       return apiSuccess({ attestations: attestations ?? [] });
@@ -187,7 +187,7 @@ export const GET = withAuth(
         context: "api/attestations",
         error: err,
       });
-      return apiInternalError("Failed to list attestations");
+      return apiInternalError("Échec de la récupération des attestations");
     }
   },
   ["clinic_admin", "doctor", "receptionist"],

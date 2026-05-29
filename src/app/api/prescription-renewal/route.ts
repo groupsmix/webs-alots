@@ -65,7 +65,7 @@ export const POST = withAuthValidation(
           context: "api/prescription-renewal",
           error: insertError,
         });
-        return apiInternalError("Failed to create renewal request");
+        return apiInternalError("Échec de la création de la demande de renouvellement");
       }
 
       type RenewalRow = {
@@ -99,7 +99,7 @@ export const POST = withAuthValidation(
         context: "api/prescription-renewal",
         error: err,
       });
-      return apiInternalError("Failed to create renewal request");
+      return apiInternalError("Échec de la création de la demande de renouvellement");
     }
   },
   ["clinic_admin", "receptionist", "doctor", "patient"],
@@ -145,7 +145,7 @@ export const GET = withAuth(
           context: "api/prescription-renewal",
           error,
         });
-        return apiInternalError("Failed to list renewals");
+        return apiInternalError("Échec de la récupération des renouvellements");
       }
 
       return apiSuccess({ renewals: renewals ?? [] });
@@ -154,7 +154,7 @@ export const GET = withAuth(
         context: "api/prescription-renewal",
         error: err,
       });
-      return apiInternalError("Failed to list renewals");
+      return apiInternalError("Échec de la récupération des renouvellements");
     }
   },
   ["clinic_admin", "receptionist", "doctor", "patient"],

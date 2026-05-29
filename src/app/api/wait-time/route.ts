@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const doctorId = request.nextUrl.searchParams.get("doctorId");
 
   if (!doctorId) {
-    return apiError("doctorId query parameter required", 400, "MISSING_PARAM");
+    return apiError("Paramètre doctorId requis", 400, "MISSING_PARAM");
   }
 
   try {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         context: "api/wait-time",
         error: queueError,
       });
-      return apiInternalError("Failed to calculate wait time");
+      return apiInternalError("Échec du calcul du temps d'attente");
     }
 
     type QueueRow = {
@@ -93,6 +93,6 @@ export async function GET(request: NextRequest) {
       context: "api/wait-time",
       error: err,
     });
-    return apiInternalError("Failed to calculate wait time");
+    return apiInternalError("Échec du calcul du temps d'attente");
   }
 }

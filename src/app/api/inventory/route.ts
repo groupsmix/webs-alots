@@ -79,7 +79,7 @@ export const POST = withAuthValidation(
           context: "api/inventory",
           error: insertError,
         });
-        return apiInternalError("Failed to create inventory item");
+        return apiInternalError("Échec de la création de l'article d'inventaire");
       }
 
       await logAuditEvent({
@@ -98,7 +98,7 @@ export const POST = withAuthValidation(
         context: "api/inventory",
         error: err,
       });
-      return apiInternalError("Failed to create inventory item");
+      return apiInternalError("Échec de la création de l'article d'inventaire");
     }
   },
   ["clinic_admin", "receptionist"],
@@ -144,7 +144,7 @@ export const GET = withAuth(
           context: "api/inventory",
           error,
         });
-        return apiInternalError("Failed to list inventory");
+        return apiInternalError("Échec de la récupération de l'inventaire");
       }
 
       type ItemRow = {
@@ -183,7 +183,7 @@ export const GET = withAuth(
         context: "api/inventory",
         error: err,
       });
-      return apiInternalError("Failed to list inventory");
+      return apiInternalError("Échec de la récupération de l'inventaire");
     }
   },
   ["clinic_admin", "receptionist", "doctor"],
@@ -244,7 +244,7 @@ export const PATCH = withAuthValidation(
           context: "api/inventory",
           error: updateError,
         });
-        return apiError("Item not found or update failed", 404, "NOT_FOUND");
+        return apiError("Article introuvable ou mise à jour échouée", 404, "NOT_FOUND");
       }
 
       await logAuditEvent({
@@ -263,7 +263,7 @@ export const PATCH = withAuthValidation(
         context: "api/inventory",
         error: err,
       });
-      return apiInternalError("Failed to update inventory item");
+      return apiInternalError("Échec de la mise à jour de l'article d'inventaire");
     }
   },
   ["clinic_admin", "receptionist"],

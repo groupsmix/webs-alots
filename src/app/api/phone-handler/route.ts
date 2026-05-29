@@ -45,7 +45,7 @@ export const POST = withAuthValidation(
           context: "api/phone-handler",
           error,
         });
-        return apiInternalError("Lookup failed");
+        return apiInternalError("Échec de la recherche");
       }
 
       type PatientRow = {
@@ -136,7 +136,7 @@ export const POST = withAuthValidation(
         context: "api/phone-handler",
         error: err,
       });
-      return apiInternalError("Phone lookup failed");
+      return apiInternalError("Échec de la recherche téléphonique");
     }
   },
   ["clinic_admin", "receptionist"],

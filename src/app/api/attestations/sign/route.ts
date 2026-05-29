@@ -38,14 +38,18 @@ export const POST = withAuthValidation(
         .single();
 
       if (fetchError || !existing) {
-        return apiError("Attestation not found", 404, "NOT_FOUND");
+        return apiError("Attestation introuvable", 404, "NOT_FOUND");
       }
 
       type ExistingRow = { id: string; doctor_id: string; status: string };
       const row = existing as ExistingRow;
 
       if (row.status !== "draft") {
-        return apiError("Only draft attestations can be signed", 400, "INVALID_STATUS");
+        return apiError(
+          "Seules les attestations en brouillon peuvent être signées",
+          400,
+          "INVALID_STATUS",
+        );
       }
 
       // Update to signed
@@ -65,7 +69,7 @@ export const POST = withAuthValidation(
           context: "api/attestations/sign",
           error: updateError,
         });
-        return apiInternalError("Failed to sign attestation");
+        return apiInternalError("Échec de la signature de l'attestation");
       }
 
       await logAuditEvent({
@@ -84,7 +88,7 @@ export const POST = withAuthValidation(
         context: "api/attestations/sign",
         error: err,
       });
-      return apiInternalError("Failed to sign attestation");
+      return apiInternalError("Échec de la signature de l'attestation");
     }
   },
   ["clinic_admin", "doctor"],

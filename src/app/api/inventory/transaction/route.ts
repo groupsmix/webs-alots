@@ -38,7 +38,7 @@ export const POST = withAuthValidation(
         .single();
 
       if (fetchError || !item) {
-        return apiError("Inventory item not found", 404, "NOT_FOUND");
+        return apiError("Article d'inventaire introuvable", 404, "NOT_FOUND");
       }
 
       type ItemRow = { id: string; current_stock: number; name: string };
@@ -60,7 +60,7 @@ export const POST = withAuthValidation(
           newStock = quantity; // Absolute value for adjustments
           break;
         default:
-          return apiError("Invalid transaction type", 400, "INVALID_TYPE");
+          return apiError("Type de transaction invalide", 400, "INVALID_TYPE");
       }
 
       // Record the transaction
@@ -85,7 +85,7 @@ export const POST = withAuthValidation(
           context: "api/inventory/transaction",
           error: insertError,
         });
-        return apiInternalError("Failed to record transaction");
+        return apiInternalError("Échec de l'enregistrement de la transaction");
       }
 
       // Update item's current stock
@@ -108,7 +108,7 @@ export const POST = withAuthValidation(
           context: "api/inventory/transaction",
           error: updateError,
         });
-        return apiInternalError("Transaction recorded but stock update failed");
+        return apiInternalError("Transaction enregistrée mais mise à jour du stock échouée");
       }
 
       await logAuditEvent({
@@ -133,7 +133,7 @@ export const POST = withAuthValidation(
         context: "api/inventory/transaction",
         error: err,
       });
-      return apiInternalError("Failed to process transaction");
+      return apiInternalError("Échec du traitement de la transaction");
     }
   },
   ["clinic_admin", "receptionist", "doctor"],

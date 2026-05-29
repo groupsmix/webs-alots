@@ -36,14 +36,18 @@ export const POST = withAuthValidation(
         .single();
 
       if (fetchError || !existing) {
-        return apiError("Renewal request not found", 404, "NOT_FOUND");
+        return apiError("Demande de renouvellement introuvable", 404, "NOT_FOUND");
       }
 
       type RenewalRow = { id: string; status: string };
       const renewal = existing as RenewalRow;
 
       if (renewal.status !== "approved") {
-        return apiError("Only approved renewals can be marked as dispensed", 400, "INVALID_STATUS");
+        return apiError(
+          "Seuls les renouvellements approuvés peuvent être marqués comme dispensés",
+          400,
+          "INVALID_STATUS",
+        );
       }
 
       const { error: updateError } = await untypedSupabase
@@ -61,7 +65,7 @@ export const POST = withAuthValidation(
           context: "api/prescription-renewal/dispense",
           error: updateError,
         });
-        return apiInternalError("Failed to update dispensing status");
+        return apiInternalError("Échec de la mise à jour du statut de dispensation");
       }
 
       await logAuditEvent({
@@ -80,7 +84,7 @@ export const POST = withAuthValidation(
         context: "api/prescription-renewal/dispense",
         error: err,
       });
-      return apiInternalError("Failed to mark as dispensed");
+      return apiInternalError("Échec du marquage comme dispensé");
     }
   },
   ["clinic_admin", "receptionist", "doctor"],

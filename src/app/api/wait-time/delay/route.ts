@@ -51,7 +51,7 @@ export const POST = withAuthValidation(
           context: "api/wait-time/delay",
           error: upsertError,
         });
-        return apiInternalError("Failed to update delay status");
+        return apiInternalError("Échec de la mise à jour du statut de retard");
       }
 
       await logAuditEvent({
@@ -74,7 +74,7 @@ export const POST = withAuthValidation(
         context: "api/wait-time/delay",
         error: err,
       });
-      return apiInternalError("Failed to update delay");
+      return apiInternalError("Échec de la mise à jour du retard");
     }
   },
   ["clinic_admin", "receptionist", "doctor"],

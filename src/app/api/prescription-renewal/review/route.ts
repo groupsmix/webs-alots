@@ -39,7 +39,7 @@ export const POST = withAuthValidation(
         .single();
 
       if (fetchError || !existing) {
-        return apiError("Renewal request not found", 404, "NOT_FOUND");
+        return apiError("Demande de renouvellement introuvable", 404, "NOT_FOUND");
       }
 
       type RenewalRow = {
@@ -52,7 +52,11 @@ export const POST = withAuthValidation(
       const renewal = existing as RenewalRow;
 
       if (renewal.status !== "pending") {
-        return apiError("Only pending renewals can be reviewed", 400, "INVALID_STATUS");
+        return apiError(
+          "Seuls les renouvellements en attente peuvent être examinés",
+          400,
+          "INVALID_STATUS",
+        );
       }
 
       const newStatus = action === "approve" ? "approved" : "rejected";
@@ -84,7 +88,7 @@ export const POST = withAuthValidation(
           context: "api/prescription-renewal/review",
           error: updateError,
         });
-        return apiInternalError("Failed to review renewal");
+        return apiInternalError("Échec de l'examen du renouvellement");
       }
 
       // If approved and pharmacy phone provided, notify pharmacy via WhatsApp
@@ -128,7 +132,7 @@ export const POST = withAuthValidation(
         context: "api/prescription-renewal/review",
         error: err,
       });
-      return apiInternalError("Failed to review renewal");
+      return apiInternalError("Échec de l'examen du renouvellement");
     }
   },
   ["clinic_admin", "doctor"],

@@ -50,7 +50,7 @@ export const POST = withAuthValidation(
           .single();
 
         if (!todayAppt) {
-          return apiError("No appointment found for today", 404, "NO_APPOINTMENT");
+          return apiError("Aucun rendez-vous trouvé pour aujourd'hui", 404, "NO_APPOINTMENT");
         }
         resolvedAppointmentId = todayAppt.id;
       }
@@ -67,7 +67,7 @@ export const POST = withAuthValidation(
           context: "api/checkin/one-click",
           error: updateError,
         });
-        return apiInternalError("Failed to check in");
+        return apiInternalError("Échec de l'enregistrement");
       }
 
       // Calculate queue position
@@ -108,7 +108,7 @@ export const POST = withAuthValidation(
           context: "api/checkin/one-click",
           error: insertError,
         });
-        return apiInternalError("Failed to add to queue");
+        return apiInternalError("Échec de l'ajout à la file d'attente");
       }
 
       await logAuditEvent({
@@ -138,7 +138,7 @@ export const POST = withAuthValidation(
         context: "api/checkin/one-click",
         error: err,
       });
-      return apiInternalError("Check-in failed");
+      return apiInternalError("Échec de l'enregistrement");
     }
   },
   ["clinic_admin", "receptionist", "doctor", "patient"],
