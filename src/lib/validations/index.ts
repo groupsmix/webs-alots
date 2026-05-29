@@ -73,6 +73,17 @@ export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
 export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
 
+export {
+  smartScheduleSchema,
+  smartScheduleConfirmSchema,
+  sendRemindersSchema,
+  waitlistAddSchema,
+  waitlistNotifySchema,
+  waitlistPromoteSchema,
+  noShowMarkSchema,
+  noShowAnalyticsQuerySchema,
+} from "./receptionist-ai";
+
 export { safeParse } from "./helpers";
 
 export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
