@@ -381,6 +381,38 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     );
   }
 
+  // Check for overlapping appointments with the same doctor on the same date
+  const newSlotStart = `${body.date}T${body.time}:00`;
+  const newSlotEnd = `${body.date}T${endTime}:00`;
+  const { count: conflictCount, error: conflictError } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId)
+    .eq("doctor_id", body.doctorId)
+    .eq("appointment_date", body.date)
+    .in("status", [
+      APPOINTMENT_STATUS.CONFIRMED,
+      APPOINTMENT_STATUS.PENDING,
+      APPOINTMENT_STATUS.SCHEDULED,
+    ])
+    .lt("slot_start", newSlotEnd)
+    .gt("slot_end", newSlotStart);
+
+  if (conflictError) {
+    logger.warn("Failed to check appointment conflicts", {
+      context: "booking/route",
+      error: conflictError,
+    });
+  }
+
+  if (conflictCount !== null && conflictCount > 0) {
+    return apiError(
+      "This time slot is already booked for this doctor",
+      409,
+      "APPOINTMENT_CONFLICT",
+    );
+  }
+
   // Determine initial status based on clinic payment requirements
   const requiresDeposit =
     (tenantConfig.booking.depositAmount ?? 0) > 0 ||

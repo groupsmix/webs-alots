@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator";
 import {
   Select,
   SelectTrigger,
@@ -27,6 +28,7 @@ import { registerPatient, verifyOTP } from "@/lib/auth";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { isMinorByAge, MINOR_AGE_THRESHOLD } from "@/lib/minors";
+import { passwordPolicySchema } from "@/lib/validations/password-policy";
 
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
@@ -40,6 +42,7 @@ export default function RegisterPage() {
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [insurance, setInsurance] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [guardianConsent, setGuardianConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +62,14 @@ export default function RegisterPage() {
     if (patientIsMinor && !guardianConsent) {
       setError(t(locale, "register.guardianConsentRequired" as TranslationKey));
       return;
+    }
+
+    if (password) {
+      const passwordResult = passwordPolicySchema.safeParse(password);
+      if (!passwordResult.success) {
+        setError(passwordResult.error.issues[0].message);
+        return;
+      }
     }
 
     setLoading(true);
@@ -224,6 +235,20 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">
+                  {t(locale, "auth.password" as TranslationKey)} (
+                  {t(locale, "register.emailOptional" as TranslationKey)})
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <PasswordStrengthIndicator password={password} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
