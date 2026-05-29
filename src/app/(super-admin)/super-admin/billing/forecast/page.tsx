@@ -107,18 +107,18 @@ export default function RevenueForecastPage() {
   function formatMonth(monthStr: string): string {
     const [year, month] = monthStr.split("-");
     const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
+      "Janv",
+      "Févr",
+      "Mars",
+      "Avr",
+      "Mai",
+      "Juin",
+      "Juil",
+      "Août",
+      "Sept",
       "Oct",
       "Nov",
-      "Dec",
+      "Déc",
     ];
     return `${months[parseInt(month) - 1]} ${year}`;
   }
@@ -137,16 +137,16 @@ export default function RevenueForecastPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Billing", href: "/super-admin/billing" },
-          { label: "Revenue Forecast" },
+          { label: "Facturation", href: "/super-admin/billing" },
+          { label: "Prévision de revenus" },
         ]}
       />
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Revenue Forecast</h1>
+          <h1 className="text-2xl font-bold">Prévision de revenus</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Predict future SaaS revenue from MRR trends and pipeline data
+            Prédire les revenus SaaS à partir des tendances MRR et des données pipeline
           </p>
         </div>
         <Button onClick={handleGenerate} disabled={generating} variant="outline">
@@ -155,7 +155,7 @@ export default function RevenueForecastPage() {
           ) : (
             <RefreshCw className="h-4 w-4 mr-1" />
           )}
-          Generate Forecast
+          Générer la prévision
         </Button>
       </div>
 
@@ -175,7 +175,7 @@ export default function RevenueForecastPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-xs text-muted-foreground">Current MRR</span>
+                  <span className="text-xs text-muted-foreground">MRR actuel</span>
                 </div>
                 <p className="text-2xl font-bold">{formatCurrency(current.mrr)}</p>
                 {mrrGrowth !== 0 && (
@@ -189,7 +189,7 @@ export default function RevenueForecastPage() {
                       className={`text-xs ${mrrGrowth > 0 ? "text-green-600" : "text-red-600"}`}
                     >
                       {mrrGrowth > 0 ? "+" : ""}
-                      {mrrGrowth.toFixed(1)}% vs last month
+                      {mrrGrowth.toFixed(1)}% vs mois précédent
                     </span>
                   </div>
                 )}
@@ -199,7 +199,7 @@ export default function RevenueForecastPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="h-4 w-4 text-blue-600" />
-                  <span className="text-xs text-muted-foreground">Current ARR</span>
+                  <span className="text-xs text-muted-foreground">ARR actuel</span>
                 </div>
                 <p className="text-2xl font-bold">{formatCurrency(current.arr)}</p>
                 <p className="text-xs text-muted-foreground">MAD / an</p>
@@ -209,21 +209,21 @@ export default function RevenueForecastPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs text-muted-foreground">Paid Clinics</span>
+                  <span className="text-xs text-muted-foreground">Cliniques payantes</span>
                 </div>
                 <p className="text-2xl font-bold">{current.paidClinics}</p>
-                <p className="text-xs text-muted-foreground">of {current.totalClinics} total</p>
+                <p className="text-xs text-muted-foreground">sur {current.totalClinics} au total</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-4 w-4 text-orange-600" />
-                  <span className="text-xs text-muted-foreground">Current Period</span>
+                  <span className="text-xs text-muted-foreground">Période actuelle</span>
                 </div>
                 <p className="text-2xl font-bold">{formatMonth(current.month)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {historical.length} months of history
+                  {historical.length} mois d&apos;historique
                 </p>
               </CardContent>
             </Card>
@@ -235,7 +235,7 @@ export default function RevenueForecastPage() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
-                  Revenue Forecast
+                  Prévision de revenus
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -243,12 +243,12 @@ export default function RevenueForecastPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 pr-4 font-medium">Month</th>
-                        <th className="text-right py-3 px-4 font-medium">Predicted MRR</th>
-                        <th className="text-right py-3 px-4 font-medium">Predicted ARR</th>
-                        <th className="text-right py-3 px-4 font-medium">Low Estimate</th>
-                        <th className="text-right py-3 px-4 font-medium">High Estimate</th>
-                        <th className="text-right py-3 pl-4 font-medium">Growth Rate</th>
+                        <th className="text-left py-3 pr-4 font-medium">Mois</th>
+                        <th className="text-right py-3 px-4 font-medium">MRR prévu</th>
+                        <th className="text-right py-3 px-4 font-medium">ARR prévu</th>
+                        <th className="text-right py-3 px-4 font-medium">Estimation basse</th>
+                        <th className="text-right py-3 px-4 font-medium">Estimation haute</th>
+                        <th className="text-right py-3 pl-4 font-medium">Taux de croissance</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -287,7 +287,7 @@ export default function RevenueForecastPage() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
-                  Historical MRR Trend
+                  Tendance historique du MRR
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -348,7 +348,7 @@ export default function RevenueForecastPage() {
                   })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  * Forecast months shown with dashed borders
+                  * Mois prévisionnels affichés avec des bordures pointillées
                 </p>
               </CardContent>
             </Card>
@@ -358,7 +358,7 @@ export default function RevenueForecastPage() {
           {current.planBreakdown && Object.keys(current.planBreakdown).length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Current Plan Distribution</CardTitle>
+                <CardTitle className="text-base">Répartition actuelle des forfaits</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

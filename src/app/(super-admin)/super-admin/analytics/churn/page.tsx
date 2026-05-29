@@ -130,16 +130,16 @@ export default function ChurnPredictionPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Analytics", href: "/super-admin/analytics" },
-          { label: "Churn Prediction" },
+          { label: "Analytique", href: "/super-admin/analytics" },
+          { label: "Prédiction de désabonnement" },
         ]}
       />
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Churn Prediction</h1>
+          <h1 className="text-2xl font-bold">Prédiction de désabonnement</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            AI-powered risk assessment for clinic retention
+            Évaluation des risques par IA pour la rétention des cliniques
           </p>
         </div>
         <Button onClick={handleRecalculate} disabled={recalculating} variant="outline">
@@ -148,7 +148,7 @@ export default function ChurnPredictionPage() {
           ) : (
             <RefreshCw className="h-4 w-4 mr-1" />
           )}
-          Recalculate
+          Recalculer
         </Button>
       </div>
 
@@ -168,7 +168,7 @@ export default function ChurnPredictionPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Total Scored</span>
+                  <span className="text-xs text-muted-foreground">Total évalué</span>
                 </div>
                 <p className="text-2xl font-bold">{summary.total}</p>
               </CardContent>
@@ -177,7 +177,7 @@ export default function ChurnPredictionPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="text-xs text-red-600">Critical</span>
+                  <span className="text-xs text-red-600">Critique</span>
                 </div>
                 <p className="text-2xl font-bold text-red-600">{summary.critical}</p>
               </CardContent>
@@ -186,7 +186,7 @@ export default function ChurnPredictionPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingDown className="h-4 w-4 text-orange-600" />
-                  <span className="text-xs text-orange-600">High Risk</span>
+                  <span className="text-xs text-orange-600">Risque élevé</span>
                 </div>
                 <p className="text-2xl font-bold text-orange-600">{summary.high}</p>
               </CardContent>
@@ -195,7 +195,7 @@ export default function ChurnPredictionPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Activity className="h-4 w-4 text-yellow-600" />
-                  <span className="text-xs text-yellow-600">Medium</span>
+                  <span className="text-xs text-yellow-600">Moyen</span>
                 </div>
                 <p className="text-2xl font-bold text-yellow-600">{summary.medium}</p>
               </CardContent>
@@ -204,7 +204,7 @@ export default function ChurnPredictionPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Activity className="h-4 w-4 text-green-600" />
-                  <span className="text-xs text-green-600">Low Risk</span>
+                  <span className="text-xs text-green-600">Risque faible</span>
                 </div>
                 <p className="text-2xl font-bold text-green-600">{summary.low}</p>
               </CardContent>
@@ -213,17 +213,17 @@ export default function ChurnPredictionPage() {
 
           {/* Filter */}
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">Filter by risk:</span>
+            <span className="text-sm font-medium">Filtrer par risque :</span>
             <Select value={filterRisk} onValueChange={setFilterRisk}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="all">Tous les niveaux</SelectItem>
+                <SelectItem value="critical">Critique</SelectItem>
+                <SelectItem value="high">Élevé</SelectItem>
+                <SelectItem value="medium">Moyen</SelectItem>
+                <SelectItem value="low">Faible</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -231,12 +231,12 @@ export default function ChurnPredictionPage() {
           {/* Scores Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Clinic Risk Scores</CardTitle>
+              <CardTitle className="text-base">Scores de risque des cliniques</CardTitle>
             </CardHeader>
             <CardContent>
               {scores.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No churn scores calculated yet. Click &quot;Recalculate&quot; to generate scores.
+                  Aucun score calculé. Cliquez sur &quot;Recalculer&quot; pour générer les scores.
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -263,7 +263,7 @@ export default function ChurnPredictionPage() {
                             {score.clinic_subdomain && (
                               <span>{score.clinic_subdomain}.oltigo.com</span>
                             )}
-                            <span>Tier: {score.clinic_tier}</span>
+                            <span>Forfait : {score.clinic_tier}</span>
                           </div>
                         </div>
                         <div className="text-right">
@@ -284,19 +284,19 @@ export default function ChurnPredictionPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{score.appointment_volume_30d} appts (30d)</span>
+                          <span>{score.appointment_volume_30d} rdv (30j)</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Activity className="h-3 w-3" />
-                          <span>{score.login_frequency_30d} logins (30d)</span>
+                          <span>{score.login_frequency_30d} connexions (30j)</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <MessageSquare className="h-3 w-3" />
-                          <span>{score.support_tickets_30d} tickets (30d)</span>
+                          <span>{score.support_tickets_30d} tickets (30j)</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
-                          <span>{Number(score.revenue_30d).toLocaleString()} MAD (30d)</span>
+                          <span>{Number(score.revenue_30d).toLocaleString()} MAD (30j)</span>
                         </div>
                       </div>
 

@@ -50,27 +50,27 @@ const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 };
 
 const CLINIC_TYPES = [
-  { value: "doctor", label: "Doctor" },
-  { value: "dentist", label: "Dentist" },
-  { value: "pharmacy", label: "Pharmacy" },
-  { value: "clinic", label: "Clinic" },
-  { value: "hospital", label: "Hospital" },
-  { value: "laboratory", label: "Laboratory" },
-  { value: "veterinary", label: "Veterinary" },
+  { value: "doctor", label: "Médecin" },
+  { value: "dentist", label: "Dentiste" },
+  { value: "pharmacy", label: "Pharmacie" },
+  { value: "clinic", label: "Clinique" },
+  { value: "hospital", label: "Hôpital" },
+  { value: "laboratory", label: "Laboratoire" },
+  { value: "veterinary", label: "Vétérinaire" },
   { value: "restaurant", label: "Restaurant" },
 ];
 
 const TIERS = [
-  { value: "vitrine", label: "Vitrine (Free)" },
+  { value: "vitrine", label: "Vitrine (Gratuit)" },
   { value: "cabinet", label: "Cabinet" },
   { value: "pro", label: "Pro" },
   { value: "premium", label: "Premium" },
 ];
 
 const GATEWAYS = [
-  { value: "cmi", label: "CMI (Moroccan Interbank)" },
+  { value: "cmi", label: "CMI (Interbancaire Marocain)" },
   { value: "stripe", label: "Stripe" },
-  { value: "cash", label: "Cash Only" },
+  { value: "cash", label: "Espèces uniquement" },
 ];
 
 export default function ProvisioningWizardPage() {
@@ -116,7 +116,7 @@ export default function ProvisioningWizardPage() {
 
   async function handleProvision() {
     if (!clinicName.trim() || !subdomain.trim() || !ownerName.trim() || !ownerEmail.trim()) {
-      addToast("Please fill in all required fields", "error");
+      addToast("Veuillez remplir tous les champs obligatoires", "error");
       return;
     }
 
@@ -143,7 +143,7 @@ export default function ProvisioningWizardPage() {
       const json = await res.json();
 
       if (!json.ok) {
-        addToast(json.error ?? "Provisioning failed", "error");
+        addToast(json.error ?? "Échec du provisionnement", "error");
         return;
       }
 
@@ -151,13 +151,13 @@ export default function ProvisioningWizardPage() {
       setCreatedSubdomain(json.data.subdomain);
       setProvisioningSteps(json.data.steps);
       setWizardStep(3);
-      addToast("Clinic provisioned successfully!", "success");
+      addToast("Clinique provisionnée avec succès !", "success");
     } catch (err) {
       logger.error("Provisioning request failed", {
         context: "provision-wizard",
         error: err,
       });
-      addToast("Failed to provision clinic", "error");
+      addToast("Échec du provisionnement de la clinique", "error");
     } finally {
       setLoading(false);
     }
@@ -183,24 +183,25 @@ export default function ProvisioningWizardPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Onboarding", href: "/super-admin/onboarding" },
-          { label: "Auto-Provision" },
+          { label: "Intégration", href: "/super-admin/onboarding" },
+          { label: "Provisionnement auto" },
         ]}
       />
 
       <div className="mb-6 mt-4">
-        <h1 className="text-2xl font-bold">Auto-Provision Clinic</h1>
+        <h1 className="text-2xl font-bold">Provisionnement automatique</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Automatically provision a new clinic with all required infrastructure
+          Provisionner automatiquement une nouvelle clinique avec toute l&apos;infrastructure
+          requise
         </p>
       </div>
 
       {/* Progress Steps */}
       <div className="flex items-center gap-2 mb-8">
         {[
-          { step: 1, label: "Clinic Details" },
+          { step: 1, label: "Détails clinique" },
           { step: 2, label: "Infrastructure" },
-          { step: 3, label: "Results" },
+          { step: 3, label: "Résultats" },
         ].map(({ step, label }) => (
           <div key={step} className="flex items-center gap-2 flex-1">
             <div
@@ -224,22 +225,22 @@ export default function ProvisioningWizardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Clinic Information
+              Informations de la clinique
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="clinicName">Clinic Name *</Label>
+                <Label htmlFor="clinicName">Nom de la clinique *</Label>
                 <Input
                   id="clinicName"
                   value={clinicName}
                   onChange={(e) => handleClinicNameChange(e.target.value)}
-                  placeholder="Dr. Smith Clinic"
+                  placeholder="Clinique Dr. Ahmed"
                 />
               </div>
               <div>
-                <Label htmlFor="subdomain">Subdomain *</Label>
+                <Label htmlFor="subdomain">Sous-domaine *</Label>
                 <div className="flex items-center gap-1">
                   <Input
                     id="subdomain"
@@ -256,7 +257,7 @@ export default function ProvisioningWizardPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="clinicType">Clinic Type</Label>
+                <Label htmlFor="clinicType">Type de clinique</Label>
                 <Select value={clinicType} onValueChange={setClinicType}>
                   <SelectTrigger id="clinicType">
                     <SelectValue />
@@ -271,7 +272,7 @@ export default function ProvisioningWizardPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="tier">Subscription Tier</Label>
+                <Label htmlFor="tier">Forfait d&apos;abonnement</Label>
                 <Select value={tier} onValueChange={setTier}>
                   <SelectTrigger id="tier">
                     <SelectValue />
@@ -291,16 +292,16 @@ export default function ProvisioningWizardPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="ownerName">Owner Name *</Label>
+                <Label htmlFor="ownerName">Nom du propriétaire *</Label>
                 <Input
                   id="ownerName"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  placeholder="Dr. Ahmed Smith"
+                  placeholder="Dr. Ahmed Benali"
                 />
               </div>
               <div>
-                <Label htmlFor="ownerEmail">Owner Email *</Label>
+                <Label htmlFor="ownerEmail">Email du propriétaire *</Label>
                 <Input
                   id="ownerEmail"
                   type="email"
@@ -313,7 +314,7 @@ export default function ProvisioningWizardPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="ownerPhone">Owner Phone</Label>
+                <Label htmlFor="ownerPhone">Téléphone du propriétaire</Label>
                 <Input
                   id="ownerPhone"
                   value={ownerPhone}
@@ -322,7 +323,7 @@ export default function ProvisioningWizardPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="city">Ville</Label>
                 <Input
                   id="city"
                   value={city}
@@ -333,18 +334,18 @@ export default function ProvisioningWizardPage() {
             </div>
 
             <div>
-              <Label htmlFor="specialty">Specialty</Label>
+              <Label htmlFor="specialty">Spécialité</Label>
               <Input
                 id="specialty"
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
-                placeholder="General Medicine"
+                placeholder="Médecine générale"
               />
             </div>
 
             <div className="flex justify-end">
               <Button onClick={() => setWizardStep(2)}>
-                Next: Infrastructure <ArrowRight className="h-4 w-4 ml-1" />
+                Suivant : Infrastructure <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </CardContent>
@@ -357,28 +358,28 @@ export default function ProvisioningWizardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Infrastructure Setup
+              Configuration de l&apos;infrastructure
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="whatsappNumber">WhatsApp Business Number</Label>
+              <Label htmlFor="whatsappNumber">Numéro WhatsApp Business</Label>
               <Input
                 id="whatsappNumber"
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
-                placeholder="+212 6XX XXX XXX (optional)"
+                placeholder="+212 6XX XXX XXX (optionnel)"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Leave empty to skip WhatsApp number assignment
+                Laisser vide pour ignorer l&apos;attribution du numéro WhatsApp
               </p>
             </div>
 
             <div>
-              <Label htmlFor="paymentGateway">Payment Gateway</Label>
+              <Label htmlFor="paymentGateway">Passerelle de paiement</Label>
               <Select value={paymentGateway} onValueChange={setPaymentGateway}>
                 <SelectTrigger id="paymentGateway">
-                  <SelectValue placeholder="Select gateway (optional)" />
+                  <SelectValue placeholder="Sélectionner la passerelle (optionnel)" />
                 </SelectTrigger>
                 <SelectContent>
                   {GATEWAYS.map((g) => (
@@ -389,33 +390,34 @@ export default function ProvisioningWizardPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                Leave empty to skip payment gateway setup
+                Laisser vide pour ignorer la configuration du paiement
               </p>
             </div>
 
             <Separator />
 
             <div className="bg-muted/50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-2">Provisioning will:</h3>
+              <h3 className="text-sm font-semibold mb-2">Le provisionnement va :</h3>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" /> Create clinic record with config
+                  <Building2 className="h-4 w-4" /> Créer l&apos;enregistrement clinique
                 </li>
                 <li className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" /> Configure subdomain: {subdomain || "..."}.oltigo.com
+                  <Globe className="h-4 w-4" /> Configurer le sous-domaine : {subdomain || "..."}
+                  .oltigo.com
                 </li>
                 <li className="flex items-center gap-2">
-                  <Database className="h-4 w-4" /> Setup database tables with RLS
+                  <Database className="h-4 w-4" /> Configurer les tables avec RLS
                 </li>
                 {whatsappNumber && (
                   <li className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" /> Assign WhatsApp number
+                    <MessageSquare className="h-4 w-4" /> Attribuer le numéro WhatsApp
                   </li>
                 )}
                 {paymentGateway && (
                   <li className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" /> Setup {paymentGateway.toUpperCase()} payment
-                    gateway
+                    <CreditCard className="h-4 w-4" /> Configurer la passerelle{" "}
+                    {paymentGateway.toUpperCase()}
                   </li>
                 )}
               </ul>
@@ -423,15 +425,15 @@ export default function ProvisioningWizardPage() {
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setWizardStep(1)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                <ArrowLeft className="h-4 w-4 mr-1" /> Retour
               </Button>
               <Button onClick={handleProvision} disabled={loading}>
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Provisioning...
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Provisionnement...
                   </>
                 ) : (
-                  "Provision Clinic"
+                  "Provisionner la clinique"
                 )}
               </Button>
             </div>
@@ -445,13 +447,13 @@ export default function ProvisioningWizardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Provisioning Complete
+              Provisionnement terminé
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-sm font-medium text-green-800">
-                Clinic &quot;{clinicName}&quot; has been provisioned
+                La clinique &quot;{clinicName}&quot; a été provisionnée
               </p>
               <p className="text-xs text-green-600 mt-1">
                 Clinic ID: <code className="bg-green-100 px-1 rounded">{createdClinicId}</code>
@@ -473,7 +475,7 @@ export default function ProvisioningWizardPage() {
 
             {/* Provisioning Steps */}
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold">Provisioning Steps</h3>
+              <h3 className="text-sm font-semibold">Étapes du provisionnement</h3>
               {provisioningSteps.map((step) => {
                 const Icon = STEP_ICONS[step.step_key] ?? Building2;
                 return (
@@ -511,10 +513,10 @@ export default function ProvisioningWizardPage() {
 
             <div className="flex gap-3 justify-end">
               <Link href="/super-admin/onboarding">
-                <Button variant="outline">Continue to Full Onboarding</Button>
+                <Button variant="outline">Continuer l&apos;intégration complète</Button>
               </Link>
               <Link href="/super-admin/clinics">
-                <Button>View All Clinics</Button>
+                <Button>Voir toutes les cliniques</Button>
               </Link>
             </div>
           </CardContent>

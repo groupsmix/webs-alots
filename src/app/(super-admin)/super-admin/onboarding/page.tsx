@@ -607,7 +607,7 @@ export default function OnboardingPage() {
         </div>
         <Link href="/super-admin/onboarding/provision">
           <Button variant="outline" size="sm">
-            Auto-Provision
+            Provisionnement auto
           </Button>
         </Link>
       </div>
