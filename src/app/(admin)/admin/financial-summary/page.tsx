@@ -50,6 +50,16 @@ const METHOD_LABELS: Record<string, string> = {
   other: "Autre",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Brouillon",
+  sent: "Envoyée",
+  paid: "Payée",
+  partially_paid: "Partiellement payée",
+  overdue: "En retard",
+  cancelled: "Annulée",
+  refunded: "Remboursée",
+};
+
 const METHOD_ICONS: Record<string, typeof CreditCard> = {
   cash: Banknote,
   card: CreditCard,
@@ -296,7 +306,7 @@ export default function FinancialSummaryPage() {
                             : "outline"
                       }
                     >
-                      {status}
+                      {STATUS_LABELS[status] ?? status}
                     </Badge>
                     <span className="text-sm font-medium">{count}</span>
                   </div>
