@@ -324,8 +324,7 @@ async function tryProviderWithFallback(
 export async function loadProviderConfigs(supabase: any): Promise<Map<AIProvider, ProviderConfig>> {
   const configs = new Map<AIProvider, ProviderConfig>();
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data, error } = await supabase
+  const { data, error } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .select(
       "provider, display_name, api_key_encrypted, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, last_error",
