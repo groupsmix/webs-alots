@@ -3,7 +3,8 @@
 import { Stethoscope, Loader2, CheckCircle2, Mail, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,12 +150,13 @@ export function RegisterForm() {
             Pour créer votre clinique, écrivez-nous : nous vous accompagnons dans la mise en service
             en moins de 24h.
           </div>
-          <Button asChild className="w-full">
-            <a href={`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`}>
-              <Mail className="mr-2 h-4 w-4" />
-              Nous contacter — {CONTACT_EMAIL}
-            </a>
-          </Button>
+          <a
+            href={`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`}
+            className={cn(buttonVariants({ variant: "default", size: "default" }), "w-full")}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            Nous contacter — {CONTACT_EMAIL}
+          </a>
           <p className="text-center text-xs text-muted-foreground">
             Vous avez déjà un compte ?{" "}
             <a href="/login" className="text-primary underline">
