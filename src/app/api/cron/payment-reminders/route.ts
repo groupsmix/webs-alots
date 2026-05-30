@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { untypedClient } from "@/lib/billing-db";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { withSentryCron } from "@/lib/sentry-cron";
 import { sendTextMessage } from "@/lib/whatsapp";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,8 +12,17 @@ type UntypedTable = { from(table: string): any };
  * POST /api/cron/payment-reminders
  * Automated cron job to send payment reminders for overdue invoices and upcoming installments.
  * Iterates per-clinic as required by AGENTS.md.
+ *
+ * Technical audit (2026-05-30) PERF-01 — wrapped with withSentryCron so silent
+ * failures surface in the Sentry Crons dashboard. Placeholder schedule
+ * "0 9 * * *" (09:00 Africa/Casablanca daily) matches the team's convention
+ * for the other unwired cron routes (data-retention, daily-briefing, etc.)
+ * and reflects the route's "today vs N-day-overdue" daily logic. The route
+ * is not yet wired in worker-cron-handler.ts CRON_ROUTES; until it is, Sentry
+ * may emit `missed` check-ins for this monitor — that is the expected signal
+ * to either wire the schedule or remove the monitor.
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handler(request: NextRequest): Promise<NextResponse> {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
@@ -357,3 +367,10 @@ async function sendAndRecordReminder(
     results.failed++;
   }
 }
+
+// Technical audit (2026-05-30) PERF-01 — wrap the handler with Sentry Cron
+// Monitoring so the route's invocations (and any silent failures) are visible
+// in the Sentry Crons dashboard alongside the other 15 cron routes that
+// already use this pattern. See the JSDoc on `handler` above for the
+// schedule rationale and the wiring caveat.
+export const POST = withSentryCron("payment-reminders", "0 9 * * *", handler);
