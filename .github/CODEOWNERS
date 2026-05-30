@@ -35,6 +35,22 @@ sentry.client.config.ts         @groupsmix
 src/middleware.ts                @groupsmix
 src/lib/middleware/*             @groupsmix
 
+# Technical audit (2026-05-30) ARCH-02: API route handlers form the public
+# attack surface. Auth bypasses, RLS leaks, IDOR, and missing tenant scoping
+# almost always land in src/app/api/* PRs. Require senior review on every
+# API route change, including new route files.
+src/app/api/**                   @groupsmix
+
+# Technical audit (2026-05-30) ARCH-02 (companion): env.ts owns startup
+# health checks for PHI encryption, rate-limit backend, masking policy,
+# security-flag acknowledgments, HMAC key independence. A regression here
+# can ship a misconfigured production deploy that boots and looks healthy.
+src/lib/env.ts                   @groupsmix
+
+# Supabase server clients — service-role usage and tenant-scoping live here
+src/lib/supabase-server.ts       @groupsmix
+src/lib/supabase-*.ts            @groupsmix
+
 # A2-05: Build-time / postinstall patcher scripts.
 # package.json runs these via `postinstall` and `build:cf`, so any change
 # to them ships to every developer machine and to the production build.
