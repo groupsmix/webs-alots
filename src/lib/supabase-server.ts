@@ -168,6 +168,7 @@ export type AdminPurpose =
   | "instrumentation"
   | "ai-config-list"
   | "ai-config-update"
+  | "ai-config-test"
   | "ai-feature-toggle"
   | "ai-route";
 

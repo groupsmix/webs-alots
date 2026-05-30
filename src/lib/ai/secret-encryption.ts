@@ -16,8 +16,8 @@
  * Production: PHI_ENCRYPTION_KEY is required (see src/lib/env.ts).
  */
 
-import { encryptField, decryptField, isFieldEncrypted } from "@/lib/phi-field-encryption";
 import { logger } from "@/lib/logger";
+import { encryptField, decryptField, isFieldEncrypted } from "@/lib/phi-field-encryption";
 
 const ENCRYPTED_PREFIX = "enc:v1:";
 const PLAIN_PREFIX = "plain:v1:";
