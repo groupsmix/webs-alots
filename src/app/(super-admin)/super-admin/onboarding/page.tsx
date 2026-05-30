@@ -10,9 +10,14 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
+  Save,
+  Trash2,
+  RotateCcw,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   OnboardingStepClinic,
   type ClinicFormData,
@@ -30,6 +35,7 @@ import {
   type DoctorTimeSlots,
   type TimeSlotFormData,
 } from "@/components/super-admin/onboarding-step-timeslots";
+import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,6 +60,9 @@ const STEPS = [
   { id: 4, label: "Time Slots", icon: Clock },
 ];
 
+const TOTAL_STEPS = STEPS.length;
+const STORAGE_KEY = "oltigo_onboarding_draft";
+
 const DEFAULT_SLOT: TimeSlotFormData = {
   day_of_week: 1,
   start_time: "09:00",
@@ -62,6 +71,114 @@ const DEFAULT_SLOT: TimeSlotFormData = {
   buffer_minutes: "10",
 };
 
+const DEFAULT_CLINIC_FORM: ClinicFormData = {
+  name: "",
+  type: "doctor",
+  tier: "pro",
+  city: "",
+  phone: "",
+  email: "",
+  address: "",
+  specialty: "",
+  subdomain: "",
+  domain: "",
+};
+
+const DEFAULT_USER: UserFormData = { role: "clinic_admin", name: "", phone: "", email: "" };
+const DEFAULT_SERVICE: ServiceFormData = {
+  name: "",
+  price: "",
+  duration_minutes: "30",
+  category: "consultation",
+};
+
+// ---------- Draft Types ----------
+
+interface OnboardingDraft {
+  step: number;
+  clinicForm: ClinicFormData;
+  users: UserFormData[];
+  services: ServiceFormData[];
+  savedAt: string;
+}
+
+interface RecentClinic {
+  id: string;
+  name: string;
+  type: string;
+  tier: string;
+  created_at: string;
+  status: string;
+}
+
+// ---------- Helper: step completion % ----------
+
+function getStepCompletion(
+  stepId: number,
+  data: { clinicForm: ClinicFormData; users: UserFormData[]; services: ServiceFormData[] },
+): number {
+  switch (stepId) {
+    case 1: {
+      const required = ["name", "subdomain"] as const;
+      const optional = [
+        "type",
+        "tier",
+        "city",
+        "phone",
+        "email",
+        "address",
+        "specialty",
+        "domain",
+      ] as const;
+      const reqFilled = required.filter((k) => data.clinicForm[k].trim()).length;
+      const optFilled = optional.filter((k) => data.clinicForm[k].trim()).length;
+      return Math.round((reqFilled / required.length) * 70 + (optFilled / optional.length) * 30);
+    }
+    case 2: {
+      if (data.users.length === 0) return 0;
+      const perUser = data.users.map((u) => {
+        let score = 0;
+        if (u.name.trim()) score += 40;
+        if (u.role) score += 20;
+        if (u.phone?.trim()) score += 20;
+        if (u.email?.trim()) score += 20;
+        return score;
+      });
+      return Math.round(perUser.reduce((a, b) => a + b, 0) / perUser.length);
+    }
+    case 3: {
+      if (data.services.length === 0) return 0;
+      const perSvc = data.services.map((s) => {
+        let score = 0;
+        if (s.name.trim()) score += 50;
+        if (s.price?.trim()) score += 25;
+        if (s.duration_minutes) score += 25;
+        return score;
+      });
+      return Math.round(perSvc.reduce((a, b) => a + b, 0) / perSvc.length);
+    }
+    case 4:
+      return 0;
+    default:
+      return 0;
+  }
+}
+
+function getOverallProgress(
+  currentStep: number,
+  data: { clinicForm: ClinicFormData; users: UserFormData[]; services: ServiceFormData[] },
+): number {
+  let total = 0;
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    if (i < currentStep) {
+      total += 100;
+    } else if (i === currentStep) {
+      total += getStepCompletion(i, data);
+    }
+  }
+  return Math.round(total / TOTAL_STEPS);
+}
+
 // ---------- Component ----------
 
 export default function OnboardingPage() {
@@ -69,35 +186,23 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResumeDraft, setShowResumeDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Step 1: Clinic
-  const [clinicForm, setClinicForm] = useState<ClinicFormData>({
-    name: "",
-    type: "doctor",
-    tier: "pro",
-    city: "",
-    phone: "",
-    email: "",
-    address: "",
-    specialty: "",
-    subdomain: "",
-    domain: "",
-  });
+  const [clinicForm, setClinicForm] = useState<ClinicFormData>({ ...DEFAULT_CLINIC_FORM });
   const [createdClinicId, setCreatedClinicId] = useState<string | null>(null);
   const [subdomainManuallyEdited, setSubdomainManuallyEdited] = useState(false);
 
   // Step 2: Users
-  const [users, setUsers] = useState<UserFormData[]>([
-    { role: "clinic_admin", name: "", phone: "", email: "" },
-  ]);
+  const [users, setUsers] = useState<UserFormData[]>([{ ...DEFAULT_USER }]);
   const [createdUsers, setCreatedUsers] = useState<
     { id: string; name: string; role: string; email?: string }[]
   >([]);
 
   // Step 3: Services
-  const [services, setServices] = useState<ServiceFormData[]>([
-    { name: "", price: "", duration_minutes: "30", category: "consultation" },
-  ]);
+  const [services, setServices] = useState<ServiceFormData[]>([{ ...DEFAULT_SERVICE }]);
 
   // Step 4: Time Slots
   const [doctorSlots, setDoctorSlots] = useState<DoctorTimeSlots[]>([]);
@@ -105,12 +210,111 @@ export default function OnboardingPage() {
   // Completion
   const [completed, setCompleted] = useState(false);
 
+  // Recently onboarded clinics
+  const [recentClinics, setRecentClinics] = useState<RecentClinic[]>([]);
+
+  // Summary / review
+  const [showReview, setShowReview] = useState(false);
+
+  // ---------- Draft Persistence ----------
+
+  const saveDraft = useCallback(() => {
+    const draft: OnboardingDraft = {
+      step,
+      clinicForm,
+      users,
+      services,
+      savedAt: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      setDraftSavedAt(draft.savedAt);
+    } catch {
+      // localStorage quota exceeded or unavailable — ignore
+    }
+  }, [step, clinicForm, users, services]);
+
+  const loadDraft = useCallback((): OnboardingDraft | null => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as OnboardingDraft;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setDraftSavedAt(null);
+    addToast("Draft cleared", "info");
+  }, [addToast]);
+
+  const restoreDraft = useCallback((draft: OnboardingDraft) => {
+    setStep(draft.step);
+    setClinicForm(draft.clinicForm);
+    setUsers(draft.users);
+    setServices(draft.services);
+    setDraftSavedAt(draft.savedAt);
+    setShowResumeDraft(false);
+  }, []);
+
+  // Check for existing draft on mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setShowResumeDraft(true);
+    }
+    // Load recently onboarded clinics from localStorage
+    try {
+      const stored = localStorage.getItem("oltigo_recent_onboarded");
+      if (stored) {
+        setRecentClinics(JSON.parse(stored) as RecentClinic[]);
+      }
+    } catch {
+      // ignore
+    }
+  }, [loadDraft]);
+
+  // Auto-save on form changes (debounced)
+  useEffect(() => {
+    if (completed || createdClinicId) return;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveDraft();
+    }, 1000);
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [clinicForm, users, services, step, completed, createdClinicId, saveDraft]);
+
+  // ---------- Recently Onboarded ----------
+
+  function addRecentClinic(clinic: RecentClinic) {
+    setRecentClinics((prev) => {
+      const updated = [clinic, ...prev.filter((c) => c.id !== clinic.id)].slice(0, 5);
+      try {
+        localStorage.setItem("oltigo_recent_onboarded", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  }
+
   // ---------- Handlers ----------
 
   function updateClinicField(field: keyof ClinicFormData, value: string) {
     setClinicForm((prev) => {
       const next = { ...prev, [field]: value };
-      // Auto-generate subdomain from clinic name if subdomain hasn't been manually edited
       if (field === "name" && !subdomainManuallyEdited) {
         next.subdomain = value
           .toLowerCase()
@@ -187,6 +391,15 @@ export default function OnboardingPage() {
     );
   }
 
+  // ---------- Navigation ----------
+
+  function navigateToStep(targetStep: number) {
+    if (targetStep < step && targetStep >= 1) {
+      setStep(targetStep);
+      setError(null);
+    }
+  }
+
   // ---------- Step Submission ----------
 
   async function handleStep1() {
@@ -198,14 +411,12 @@ export default function OnboardingPage() {
       setError("Subdomain is required — the clinic needs a URL to be accessible");
       return;
     }
-    // Validate subdomain format
     if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(clinicForm.subdomain)) {
       setError(
         "Subdomain must contain only lowercase letters, numbers, and hyphens (cannot start or end with a hyphen)",
       );
       return;
     }
-    // Validate email format if provided
     if (clinicForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clinicForm.email)) {
       setError("Please enter a valid email address");
       return;
@@ -232,6 +443,8 @@ export default function OnboardingPage() {
       });
       setCreatedClinicId(clinic.id);
       addToast(`Clinic "${clinicForm.name}" created successfully`, "success");
+      // Clear draft since real data is now in DB
+      clearDraft();
       setStep(2);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create clinic";
@@ -253,7 +466,6 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Validate email format for users who provided an email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     for (const u of validUsers) {
       if (u.email && !emailRegex.test(u.email)) {
@@ -264,13 +476,11 @@ export default function OnboardingPage() {
       }
     }
 
-    // Require at least one clinic_admin
     if (!validUsers.some((u) => u.role === "clinic_admin")) {
       setError("At least one staff member must have the Clinic Admin (Owner) role");
       return;
     }
 
-    // Require email for all clinic_admin users — they need login credentials
     const adminsWithoutEmail = validUsers.filter(
       (u) => u.role === "clinic_admin" && !u.email?.trim(),
     );
@@ -304,7 +514,6 @@ export default function OnboardingPage() {
       setCreatedUsers(created);
       addToast(`${created.length} staff member(s) created`, "success");
 
-      // Pre-populate doctor time slots for step 4
       const doctors = created.filter((u) => u.role === "doctor" || u.role === "clinic_admin");
       setDoctorSlots(
         doctors.map((d) => ({
@@ -455,6 +664,17 @@ export default function OnboardingPage() {
         );
       }
       addToast("Time slots configured successfully", "success");
+
+      // Save to recently onboarded
+      addRecentClinic({
+        id: createdClinicId,
+        name: clinicForm.name,
+        type: clinicForm.type,
+        tier: clinicForm.tier,
+        created_at: new Date().toISOString(),
+        status: "active",
+      });
+
       setCompleted(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create time slots";
@@ -466,10 +686,265 @@ export default function OnboardingPage() {
   }
 
   function handleSkipTimeSlots() {
+    if (createdClinicId) {
+      addRecentClinic({
+        id: createdClinicId,
+        name: clinicForm.name,
+        type: clinicForm.type,
+        tier: clinicForm.tier,
+        created_at: new Date().toISOString(),
+        status: "active",
+      });
+    }
     setCompleted(true);
   }
 
+  // ---------- Computed ----------
+
+  const overallProgress = getOverallProgress(step, { clinicForm, users, services });
+
   // ---------- Render ----------
+
+  // Resume draft prompt
+  if (showResumeDraft) {
+    const draft = loadDraft();
+    return (
+      <div className="max-w-2xl mx-auto py-12">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 mx-auto mb-4">
+              <RotateCcw className="h-8 w-8 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Resume draft?</h2>
+            <p className="text-muted-foreground mb-1">
+              You have an unsaved onboarding draft
+              {draft?.clinicForm.name ? (
+                <>
+                  {" "}
+                  for <strong>{draft.clinicForm.name}</strong>
+                </>
+              ) : null}
+              .
+            </p>
+            {draft?.savedAt && (
+              <p className="text-xs text-muted-foreground mb-6">
+                Last saved: {new Date(draft.savedAt).toLocaleString()}
+              </p>
+            )}
+            <div className="flex gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  clearDraft();
+                  setShowResumeDraft(false);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Start Fresh
+              </Button>
+              {draft && (
+                <Button onClick={() => restoreDraft(draft)}>
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                  Resume Draft
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Review / summary before step 4 submission
+  if (showReview) {
+    return (
+      <div className="max-w-3xl mx-auto py-8">
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Onboarding" },
+            { label: "Review" },
+          ]}
+        />
+        <h1 className="text-2xl font-bold mb-2">Review Before Submission</h1>
+        <p className="text-sm text-muted-foreground mb-6">
+          Please review all information before completing the onboarding.
+        </p>
+
+        <div className="space-y-4">
+          {/* Clinic Info */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Clinic Details
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowReview(false);
+                    setStep(1);
+                  }}
+                >
+                  Edit
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Name:</span> {clinicForm.name}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Type:</span> {clinicForm.type}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Tier:</span> {clinicForm.tier}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Subdomain:</span> {clinicForm.subdomain}
+                  .oltigo.com
+                </div>
+                {clinicForm.city && (
+                  <div>
+                    <span className="text-muted-foreground">City:</span> {clinicForm.city}
+                  </div>
+                )}
+                {clinicForm.phone && (
+                  <div>
+                    <span className="text-muted-foreground">Phone:</span> {clinicForm.phone}
+                  </div>
+                )}
+                {clinicForm.email && (
+                  <div>
+                    <span className="text-muted-foreground">Email:</span> {clinicForm.email}
+                  </div>
+                )}
+                {clinicForm.specialty && (
+                  <div>
+                    <span className="text-muted-foreground">Specialty:</span> {clinicForm.specialty}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Staff */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Staff ({createdUsers.length})
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowReview(false);
+                    setStep(2);
+                  }}
+                >
+                  Edit
+                </Button>
+              </div>
+              <div className="space-y-2 text-sm">
+                {createdUsers.map((u) => (
+                  <div key={u.id} className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs capitalize">
+                      {u.role.replace("_", " ")}
+                    </Badge>
+                    <span>{u.name}</span>
+                    {u.email && <span className="text-muted-foreground text-xs">({u.email})</span>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Services */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4" />
+                  Services ({services.filter((s) => s.name.trim()).length})
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowReview(false);
+                    setStep(3);
+                  }}
+                >
+                  Edit
+                </Button>
+              </div>
+              <div className="space-y-1 text-sm">
+                {services
+                  .filter((s) => s.name.trim())
+                  .map((s, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span>{s.name}</span>
+                      {s.price && <span className="text-muted-foreground">{s.price} MAD</span>}
+                      <span className="text-muted-foreground text-xs">
+                        ({s.duration_minutes} min)
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Time Slots */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Time Slots ({doctorSlots.reduce((a, d) => a + d.slots.length, 0)})
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowReview(false);
+                    setStep(4);
+                  }}
+                >
+                  Edit
+                </Button>
+              </div>
+              <div className="space-y-2 text-sm">
+                {doctorSlots.map((d) => (
+                  <div key={d.doctorId}>
+                    <span className="font-medium">{d.doctorName}</span>
+                    <span className="text-muted-foreground ml-2">({d.slots.length} slot(s))</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex gap-3 justify-end mt-6">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowReview(false);
+              setStep(4);
+            }}
+          >
+            Back to Editing
+          </Button>
+          <Button onClick={handleStep4} disabled={loading}>
+            {loading ? "Submitting..." : "Complete Onboarding"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (completed) {
     return (
@@ -605,35 +1080,83 @@ export default function OnboardingPage() {
             Set up a new clinic in your Supabase database — no SQL needed
           </p>
         </div>
-        <Link href="/super-admin/onboarding/provision">
-          <Button variant="outline" size="sm">
-            Provisionnement auto
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {draftSavedAt && !createdClinicId && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Save className="h-3 w-3" />
+              Draft saved
+            </span>
+          )}
+          {!createdClinicId && (
+            <>
+              <Button variant="outline" size="sm" onClick={saveDraft}>
+                <Save className="h-4 w-4 mr-1" />
+                Save as Draft
+              </Button>
+              <Button variant="ghost" size="sm" onClick={clearDraft}>
+                <Trash2 className="h-4 w-4 mr-1" />
+                Clear Draft
+              </Button>
+            </>
+          )}
+          <Link href="/super-admin/onboarding/provision">
+            <Button variant="outline" size="sm">
+              Provisionnement auto
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Step Indicator */}
+      {/* Overall Progress Bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">Overall Progress</span>
+          <span className="text-xs font-medium">{overallProgress}%</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-300"
+            style={{ width: `${overallProgress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Step Indicator with completion % */}
       <div className="flex items-center gap-2 mb-8">
-        {STEPS.map((s, i) => (
-          <div key={s.id} className="flex items-center">
-            {i > 0 && (
-              <div className={`h-px w-8 mx-2 ${step > s.id - 1 ? "bg-primary" : "bg-border"}`} />
-            )}
-            <div
-              className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
-                step === s.id
-                  ? "bg-primary text-primary-foreground"
-                  : step > s.id
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {step > s.id ? <Check className="h-3.5 w-3.5" /> : <s.icon className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{s.label}</span>
-              <span className="sm:hidden">{s.id}</span>
+        {STEPS.map((s, i) => {
+          const stepCompletion = getStepCompletion(s.id, { clinicForm, users, services });
+          const isClickable = s.id < step;
+          return (
+            <div key={s.id} className="flex items-center">
+              {i > 0 && (
+                <div className={`h-px w-8 mx-2 ${step > s.id - 1 ? "bg-primary" : "bg-border"}`} />
+              )}
+              <button
+                type="button"
+                onClick={() => isClickable && navigateToStep(s.id)}
+                disabled={!isClickable}
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                  step === s.id
+                    ? "bg-primary text-primary-foreground"
+                    : step > s.id
+                      ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
+                      : "bg-muted text-muted-foreground cursor-default"
+                }`}
+              >
+                {step > s.id ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <s.icon className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">{s.label}</span>
+                <span className="sm:hidden">{s.id}</span>
+                {step === s.id && stepCompletion > 0 && stepCompletion < 100 && (
+                  <span className="text-[10px] opacity-80">{stepCompletion}%</span>
+                )}
+              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Error Banner */}
@@ -695,8 +1218,71 @@ export default function OnboardingPage() {
           onUpdateSlot={updateSlot}
           onBack={() => setStep(3)}
           onSkip={handleSkipTimeSlots}
-          onSubmit={handleStep4}
+          onSubmit={() => setShowReview(true)}
         />
+      )}
+
+      {/* Recently Onboarded Clinics */}
+      {recentClinics.length > 0 && (
+        <>
+          <Separator className="my-8" />
+          <div>
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Recently Onboarded Clinics
+            </h2>
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left py-3 px-4 font-medium">Name</th>
+                        <th className="text-left py-3 px-4 font-medium">Type</th>
+                        <th className="text-left py-3 px-4 font-medium">Tier</th>
+                        <th className="text-left py-3 px-4 font-medium">Created</th>
+                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                        <th className="text-left py-3 px-4 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentClinics.map((c) => (
+                        <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
+                          <td className="py-3 px-4 font-medium">{c.name}</td>
+                          <td className="py-3 px-4 capitalize">{c.type}</td>
+                          <td className="py-3 px-4">
+                            <Badge variant="secondary" className="text-xs capitalize">
+                              {c.tier}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {new Date(c.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge
+                              variant={c.status === "active" ? "default" : "secondary"}
+                              className="text-xs capitalize"
+                            >
+                              {c.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Link href="/super-admin/clinics">
+                              <Button variant="ghost" size="sm">
+                                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                                View
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
     </div>
   );
