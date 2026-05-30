@@ -165,17 +165,17 @@ export default function ClinicDetailPage() {
     try {
       if (currentlyOverridden) {
         await deleteClinicFeatureOverride(clinic.id, feature.id);
-        setOverrides((prev) => prev.filter((o) => o.feature_id !== feature.id));
+        setOverrides((prev) => prev.filter((o) => o.feature_key !== feature.id));
         addToast(`Override removed for ${feature.name}`, "success");
       } else {
         const newEnabled = !currentEnabled;
         await upsertClinicFeatureOverride(clinic.id, feature.id, newEnabled);
         setOverrides((prev) => [
-          ...prev.filter((o) => o.feature_id !== feature.id),
+          ...prev.filter((o) => o.feature_key !== feature.id),
           {
             id: crypto.randomUUID(),
             clinic_id: clinic.id,
-            feature_id: feature.id,
+            feature_key: feature.id,
             enabled: newEnabled,
             created_at: new Date().toISOString(),
           },
@@ -217,7 +217,7 @@ export default function ClinicDetailPage() {
   const tierIncludesFeature = (feature: FeatureDefinition) =>
     feature.availableTiers.includes(clinic.tier);
 
-  const getOverride = (featureId: string) => overrides.find((o) => o.feature_id === featureId);
+  const getOverride = (featureId: string) => overrides.find((o) => o.feature_key === featureId);
 
   const isFeatureEnabled = (feature: FeatureDefinition) => {
     const override = getOverride(feature.id);

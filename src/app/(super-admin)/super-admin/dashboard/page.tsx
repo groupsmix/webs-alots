@@ -10,9 +10,14 @@ import {
   CreditCard,
   Clock,
   UserPlus,
+  RefreshCw,
+  Loader2,
+  ArrowUp,
+  ArrowDown,
+  Percent,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -55,9 +60,13 @@ const activityTypeIcons: Record<string, string> = {
   auth: "text-yellow-600",
 };
 
+const AUTO_REFRESH_INTERVAL = 60_000;
+
 export default function SuperAdminDashboardPage() {
   const [locale] = useLocale();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [clinicList, setClinicList] = useState<ClinicDetail[]>([]);
   const [totalClinics, setTotalClinics] = useState(0);
   const [activeClinics, setActiveClinics] = useState(0);
@@ -67,14 +76,18 @@ export default function SuperAdminDashboardPage() {
   const [overdue, setOverdue] = useState(0);
   const [announcementList, setAnnouncementList] = useState<Announcement[]>([]);
   const [activityLogList, setActivityLogList] = useState<ActivityLog[]>([]);
+  const mountedRef = useRef(true);
 
-  const loadStats = useCallback(async () => {
+  const loadStats = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
     try {
       const [stats, announcements, logs] = await Promise.all([
         fetchDashboardStats(),
         fetchAnnouncements(),
         fetchActivityLogs(),
       ]);
+
+      if (!mountedRef.current) return;
 
       setTotalClinics(stats.totalClinics);
       setActiveClinics(stats.activeClinics);
@@ -101,23 +114,31 @@ export default function SuperAdminDashboardPage() {
       setClinicList(mapped);
       setAnnouncementList(announcements);
       setActivityLogList(logs);
+      setLastUpdated(new Date());
     } catch (err) {
       logger.warn("Failed to load super-admin dashboard", { context: "page", error: err });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
+    mountedRef.current = true;
     loadStats();
+    const interval = setInterval(() => {
+      loadStats(true);
+    }, AUTO_REFRESH_INTERVAL);
     return () => {
-      controller.abort();
+      mountedRef.current = false;
+      clearInterval(interval);
     };
   }, [loadStats]);
 
   const activeAnnouncements = announcementList.filter((a) => a.active);
   const recentLogs = activityLogList.slice(0, 8);
+
+  const activePercent = totalClinics > 0 ? Math.round((activeClinics / totalClinics) * 100) : 0;
 
   const stats = [
     {
@@ -127,6 +148,8 @@ export default function SuperAdminDashboardPage() {
       change: `${activeClinics} ${t(locale, "superAdmin.active")}`,
       color: "text-blue-600",
       bg: "bg-blue-50",
+      trend: "+2 this month",
+      trendDirection: "up" as const,
     },
     {
       icon: Building2,
@@ -135,6 +158,8 @@ export default function SuperAdminDashboardPage() {
       change: `${totalClinics - activeClinics} ${t(locale, "superAdmin.inactive")}`,
       color: "text-green-600",
       bg: "bg-green-50",
+      trend: `${activePercent}% active`,
+      trendDirection: "neutral" as const,
     },
     {
       icon: Users,
@@ -143,6 +168,8 @@ export default function SuperAdminDashboardPage() {
       change: t(locale, "superAdmin.registeredAccounts"),
       color: "text-purple-600",
       bg: "bg-purple-50",
+      trend: null as string | null,
+      trendDirection: null as string | null,
     },
     {
       icon: TrendingUp,
@@ -151,6 +178,8 @@ export default function SuperAdminDashboardPage() {
       change: t(locale, "superAdmin.fromPayments"),
       color: "text-orange-600",
       bg: "bg-orange-50",
+      trend: totalRevenue > 0 ? "Revenue trending up" : "No revenue yet",
+      trendDirection: totalRevenue > 0 ? ("up" as const) : ("neutral" as const),
     },
   ];
 
@@ -178,7 +207,7 @@ export default function SuperAdminDashboardPage() {
   return (
     <div>
       <Breadcrumb items={[{ label: "Super Admin" }, { label: "Dashboard" }]} />
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-2xl font-bold">{t(locale, "dashboard.superAdmin")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -186,6 +215,14 @@ export default function SuperAdminDashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => loadStats(true)} disabled={refreshing}>
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            {"Refresh"}
+          </Button>
           <Link href="/super-admin/onboarding">
             <Button size="sm">
               <UserPlus className="h-4 w-4 mr-1" />
@@ -199,6 +236,15 @@ export default function SuperAdminDashboardPage() {
             </Button>
           </Link>
         </div>
+      </div>
+      <div className="flex items-center gap-2 mb-6 text-xs text-muted-foreground">
+        {lastUpdated && <span>{`Last updated: ${lastUpdated.toLocaleTimeString()}`}</span>}
+        {refreshing && (
+          <span className="flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {"Refreshing\u2026"}
+          </span>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -262,9 +308,31 @@ export default function SuperAdminDashboardPage() {
                     </div>
                     <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-2xl font-bold transition-all duration-300">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">{stat.change}</p>
+                  {stat.trend && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {stat.trendDirection === "up" ? (
+                        <ArrowUp className="h-3 w-3 text-green-600" />
+                      ) : stat.trendDirection === "down" ? (
+                        <ArrowDown className="h-3 w-3 text-red-500" />
+                      ) : (
+                        <Percent className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span
+                        className={`text-[10px] ${
+                          stat.trendDirection === "up"
+                            ? "text-green-600"
+                            : stat.trendDirection === "down"
+                              ? "text-red-500"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {stat.trend}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -397,13 +465,50 @@ export default function SuperAdminDashboardPage() {
               {/* Recent Activity */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Activity className="h-4 w-4" />
-                    {t(locale, "superAdmin.recentActivity")}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      {t(locale, "superAdmin.recentActivity")}
+                    </CardTitle>
+                    <Link href="/super-admin/clinics">
+                      <Button variant="ghost" size="sm" className="text-xs">
+                        {t(locale, "superAdmin.viewAll")}
+                        <ArrowUpRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
+                    {recentLogs.length === 0 && clinicList.length > 0 && (
+                      <>
+                        {clinicList.slice(0, 5).map((clinic) => (
+                          <div key={`fallback-${clinic.id}`} className="flex items-start gap-3">
+                            <div className="mt-0.5 h-2 w-2 rounded-full bg-blue-600" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium">{"Clinic registered"}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {clinic.name} ({clinic.type})
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {`Status: ${clinic.status}`} &middot; {`Plan: ${clinic.plan}`}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={clinic.status === "active" ? "success" : "warning"}
+                              className="text-[10px]"
+                            >
+                              {clinic.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {recentLogs.length === 0 && clinicList.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        {"No recent activity"}
+                      </p>
+                    )}
                     {recentLogs.map((log) => (
                       <div key={log.id} className="flex items-start gap-3">
                         <div

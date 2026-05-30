@@ -183,7 +183,7 @@ export async function fetchClinicById(clinicId: string): Promise<ClinicRow | nul
 export interface ClinicFeatureOverride {
   id: string;
   clinic_id: string;
-  feature_id: string;
+  feature_key: string;
   enabled: boolean;
   created_at: string | null;
 }
@@ -194,7 +194,7 @@ export async function fetchClinicFeatureOverrides(
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin reads overrides for specific clinic
-    .select("id, clinic_id, feature_id, enabled, created_at")
+    .select("id, clinic_id, feature_key, enabled, created_at")
     .eq("clinic_id", clinicId);
 
   if (error || !data) return [];
@@ -210,8 +210,8 @@ export async function upsertClinicFeatureOverride(
   const { error } = await supabase
     .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin upserts override for specific clinic
     .upsert(
-      { clinic_id: clinicId, feature_id: featureId, enabled },
-      { onConflict: "clinic_id,feature_id" },
+      { clinic_id: clinicId, feature_key: featureId, enabled },
+      { onConflict: "clinic_id,feature_key" },
     );
 
   if (error) throw new Error(`Failed to upsert feature override: ${error.message}`);
@@ -226,7 +226,7 @@ export async function deleteClinicFeatureOverride(
     .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin deletes override for specific clinic
     .delete()
     .eq("clinic_id", clinicId)
-    .eq("feature_id", featureId);
+    .eq("feature_key", featureId);
 
   if (error) throw new Error(`Failed to delete feature override: ${error.message}`);
 }
