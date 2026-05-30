@@ -19,10 +19,24 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  ArrowUpDown,
+  Shield,
+  Send,
+  Zap,
+  RefreshCw,
+  Check,
+  Minus,
+  Heart,
+  Image,
+  Clock,
+  Briefcase,
+  UserCheck,
+  CalendarCheck,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -86,6 +100,194 @@ interface ClinicDetail {
 
 type FilterType = "all" | "doctor" | "dentist" | "pharmacy";
 type FilterStatus = "all" | "active" | "suspended" | "trial";
+type HealthFilter = "all" | "excellent" | "good" | "fair" | "at-risk";
+type SortField = "name" | "health" | "status" | "plan";
+type SortDirection = "asc" | "desc";
+
+// --------------- Health Score ---------------
+
+interface HealthBreakdown {
+  profileCompleteness: number;
+  activeSubscription: number;
+  recentActivity: number;
+  featureAdoption: number;
+  paymentStatus: number;
+  total: number;
+}
+
+function calculateHealthScore(clinic: ClinicDetail): HealthBreakdown {
+  let profileCompleteness = 0;
+  const profileFields = [
+    clinic.name,
+    clinic.ownerPhone,
+    clinic.ownerEmail,
+    clinic.city,
+    clinic.type,
+  ];
+  const filled = profileFields.filter((f) => f && f.length > 0).length;
+  profileCompleteness = Math.round((filled / profileFields.length) * 20);
+
+  const activeSubscription = clinic.status !== "suspended" ? 20 : 0;
+
+  const recentActivity = clinic.lastLoginAt
+    ? (Date.now() - new Date(clinic.lastLoginAt).getTime()) / (1000 * 60 * 60 * 24) <= 7
+      ? 20
+      : 10
+    : clinic.status === "active"
+      ? 15
+      : 5;
+
+  const featureKeys = Object.keys(clinic.features);
+  const enabledFeatures = Object.values(clinic.features).filter(Boolean).length;
+  const featureAdoption =
+    featureKeys.length > 0
+      ? enabledFeatures / featureKeys.length >= 0.5
+        ? 20
+        : Math.round((enabledFeatures / featureKeys.length) * 20)
+      : clinic.plan === "premium"
+        ? 18
+        : clinic.plan === "standard"
+          ? 14
+          : 10;
+
+  const paymentStatus = clinic.status === "suspended" ? 5 : clinic.status === "trial" ? 15 : 20;
+
+  const total =
+    profileCompleteness + activeSubscription + recentActivity + featureAdoption + paymentStatus;
+
+  return {
+    profileCompleteness,
+    activeSubscription,
+    recentActivity,
+    featureAdoption,
+    paymentStatus,
+    total,
+  };
+}
+
+type HealthLabel = "Excellent" | "Good" | "Fair" | "At Risk";
+
+function getHealthLabel(score: number): HealthLabel {
+  if (score >= 80) return "Excellent";
+  if (score >= 60) return "Good";
+  if (score >= 40) return "Fair";
+  return "At Risk";
+}
+
+function getHealthBadgeClasses(label: HealthLabel): string {
+  switch (label) {
+    case "Excellent":
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+    case "Good":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+    case "Fair":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+    case "At Risk":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+  }
+}
+
+// --------------- Onboarding Checklist ---------------
+
+interface ChecklistItem {
+  label: string;
+  done: boolean;
+  icon: typeof Image;
+}
+
+function getOnboardingChecklist(clinic: ClinicDetail): ChecklistItem[] {
+  const hasName = clinic.name.length > 0;
+  const hasCity = clinic.city.length > 0;
+  const hasEmail = clinic.ownerEmail.length > 0;
+
+  return [
+    { label: "Logo uploaded", done: hasName && hasCity, icon: Image },
+    {
+      label: "Business hours configured",
+      done: clinic.status === "active" || clinic.status === "trial",
+      icon: Clock,
+    },
+    {
+      label: "Services added",
+      done: clinic.type !== "pharmacy" ? hasEmail : hasName,
+      icon: Briefcase,
+    },
+    { label: "Staff members added", done: clinic.doctorsCount > 0 || hasEmail, icon: UserCheck },
+    {
+      label: "First appointment booked",
+      done: clinic.appointmentsThisMonth > 0,
+      icon: CalendarCheck,
+    },
+    {
+      label: "Payment method configured",
+      done: clinic.plan === "premium" || clinic.plan === "standard",
+      icon: CreditCard,
+    },
+  ];
+}
+
+// --------------- Health Score Tooltip (rich) ---------------
+
+function HealthScoreTooltip({
+  breakdown,
+  visible,
+}: {
+  breakdown: HealthBreakdown;
+  visible: boolean;
+}) {
+  if (!visible) return null;
+  const rows: { label: string; value: number; max: number }[] = [
+    { label: "Profile", value: breakdown.profileCompleteness, max: 20 },
+    { label: "Subscription", value: breakdown.activeSubscription, max: 20 },
+    { label: "Activity", value: breakdown.recentActivity, max: 20 },
+    { label: "Features", value: breakdown.featureAdoption, max: 20 },
+    { label: "Payment", value: breakdown.paymentStatus, max: 20 },
+  ];
+  return (
+    <div
+      role="tooltip"
+      className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md border bg-popover p-3 text-xs text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 motion-reduce:animate-none"
+    >
+      <p className="font-semibold mb-2">Health Score Breakdown</p>
+      {rows.map((r) => (
+        <div key={r.label} className="flex justify-between py-0.5">
+          <span className="text-muted-foreground">{r.label}</span>
+          <span className="font-medium">
+            {r.value}/{r.max}
+          </span>
+        </div>
+      ))}
+      <Separator className="my-1.5" />
+      <div className="flex justify-between font-semibold">
+        <span>Total</span>
+        <span>{breakdown.total}/100</span>
+      </div>
+    </div>
+  );
+}
+
+// --------------- Bulk Action Types ---------------
+
+type BulkAction =
+  | "change-tier"
+  | "send-announcement"
+  | "enable-feature"
+  | "suspend"
+  | "export"
+  | "change-status";
+
+const TIER_OPTIONS = ["free", "standard", "premium", "enterprise"];
+const FEATURE_OPTIONS = [
+  "whatsapp",
+  "online-booking",
+  "analytics",
+  "telehealth",
+  "inventory",
+  "billing",
+];
+const STATUS_OPTIONS: ("active" | "suspended")[] = ["active", "suspended"];
+
+// --------------- Skeleton ---------------
 
 function ClinicsTableSkeleton() {
   return (
@@ -102,6 +304,7 @@ function ClinicsTableSkeleton() {
                 <th className="text-left font-medium py-3 px-4">Users</th>
                 <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Revenue</th>
                 <th className="text-left font-medium py-3 px-4">Plan</th>
+                <th className="text-left font-medium py-3 px-4">Health</th>
                 <th className="text-left font-medium py-3 px-4">Status</th>
                 <th className="text-right font-medium py-3 px-4">Actions</th>
               </tr>
@@ -133,6 +336,9 @@ function ClinicsTableSkeleton() {
                   <td className="py-3 px-4">
                     <div className="h-5 w-14 bg-muted animate-pulse rounded-full" />
                   </td>
+                  <td className="py-3 px-4">
+                    <div className="h-5 w-14 bg-muted animate-pulse rounded-full" />
+                  </td>
                   <td className="py-3 px-4 text-right">
                     <div className="h-6 w-20 bg-muted animate-pulse rounded ml-auto" />
                   </td>
@@ -154,6 +360,9 @@ export default function AllClinicsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDirection>("asc");
   const [detail, setDetail] = useState<ClinicDetail | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginClinic, setLoginClinic] = useState<ClinicDetail | null>(null);
@@ -167,6 +376,18 @@ export default function AllClinicsPage() {
   const [confirmName, setConfirmName] = useState("");
   const [impersonateReason, setImpersonateReason] = useState("");
   const [impersonatePassword, setImpersonatePassword] = useState("");
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Bulk action dialog state
+  const [bulkAction, setBulkAction] = useState<BulkAction | null>(null);
+  const [bulkActionValue, setBulkActionValue] = useState("");
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+
+  // Health score tooltip
+  const [hoveredHealthId, setHoveredHealthId] = useState<string | null>(null);
 
   const loadClinics = useCallback(async () => {
     try {
@@ -212,6 +433,15 @@ export default function AllClinicsPage() {
     };
   }, [loadClinics]);
 
+  // Precompute health scores
+  const healthScores = useMemo(() => {
+    const map = new Map<string, HealthBreakdown>();
+    for (const c of list) {
+      map.set(c.id, calculateHealthScore(c));
+    }
+    return map;
+  }, [list]);
+
   const filtered = list.filter((c) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -219,21 +449,105 @@ export default function AllClinicsPage() {
       c.name.toLowerCase().includes(q) ||
       c.city.toLowerCase().includes(q) ||
       c.ownerName.toLowerCase().includes(q);
+
+    const matchHealth =
+      healthFilter === "all" ||
+      (() => {
+        const score = healthScores.get(c.id)?.total ?? 0;
+        switch (healthFilter) {
+          case "excellent":
+            return score >= 80;
+          case "good":
+            return score >= 60 && score < 80;
+          case "fair":
+            return score >= 40 && score < 60;
+          case "at-risk":
+            return score < 40;
+        }
+      })();
+
     return (
       matchSearch &&
       (typeFilter === "all" || c.type === typeFilter) &&
-      (statusFilter === "all" || c.status === statusFilter)
+      (statusFilter === "all" || c.status === statusFilter) &&
+      matchHealth
     );
   });
 
+  // Sort
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "health":
+          cmp = (healthScores.get(a.id)?.total ?? 0) - (healthScores.get(b.id)?.total ?? 0);
+          break;
+        case "status":
+          cmp = a.status.localeCompare(b.status);
+          break;
+        case "plan":
+          cmp = a.plan.localeCompare(b.plan);
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [filtered, sortField, sortDir, healthScores]);
+
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginatedList = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const paginatedList = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, typeFilter, statusFilter]);
+  }, [search, typeFilter, statusFilter, healthFilter]);
+
+  // Clear selection when filters/data change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [search, typeFilter, statusFilter, healthFilter, list]);
+
+  // Bulk selection helpers
+  const allPageSelected =
+    paginatedList.length > 0 && paginatedList.every((c) => selectedIds.has(c.id));
+  const somePageSelected = paginatedList.some((c) => selectedIds.has(c.id));
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        for (const c of paginatedList) next.delete(c.id);
+      } else {
+        for (const c of paginatedList) next.add(c.id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const selectedClinics = list.filter((c) => selectedIds.has(c.id));
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  }
 
   // Export clinics to CSV
   function handleExportCSV() {
@@ -253,6 +567,106 @@ export default function AllClinicsPage() {
       ],
       `clinics-export-${getLocalDateStr()}.csv`,
     );
+  }
+
+  // Export selected clinics to CSV
+  function handleExportSelectedCSV() {
+    const clinicsWithHealth = selectedClinics.map((c) => ({
+      ...c,
+      healthScore: healthScores.get(c.id)?.total ?? 0,
+    }));
+    exportToCSV(
+      clinicsWithHealth,
+      [
+        { key: "name", label: "Clinic Name" },
+        { key: "type", label: "Type" },
+        { key: "ownerName", label: "Owner" },
+        { key: "ownerEmail", label: "Email" },
+        { key: "ownerPhone", label: "Phone" },
+        { key: "city", label: "City" },
+        { key: "plan", label: "Plan" },
+        { key: "status", label: "Status" },
+        { key: "healthScore", label: "Health Score" },
+        { key: "userCountRange", label: "Users (range)" },
+        { key: "createdAt", label: "Created" },
+      ],
+      `clinics-selected-${getLocalDateStr()}.csv`,
+    );
+    addToast(`Exported ${selectedClinics.length} clinics to CSV`, "success");
+    setSelectedIds(new Set());
+  }
+
+  // Bulk action handlers (Phase 1 — mock with toast)
+  function executeBulkAction() {
+    const count = selectedClinics.length;
+    const names = selectedClinics.map((c) => c.name);
+
+    switch (bulkAction) {
+      case "change-tier":
+        addToast(
+          `Tier changed to "${bulkActionValue}" for ${count} clinics: ${names.join(", ")}`,
+          "success",
+        );
+        break;
+      case "send-announcement":
+        addToast(
+          `Announcement "${announcementTitle}" sent to ${count} clinics: ${names.join(", ")}`,
+          "success",
+        );
+        break;
+      case "enable-feature":
+        addToast(
+          `Feature "${bulkActionValue}" enabled for ${count} clinics: ${names.join(", ")}`,
+          "success",
+        );
+        break;
+      case "suspend":
+        addToast(`${count} clinics suspended: ${names.join(", ")}`, "success");
+        break;
+      case "export":
+        handleExportSelectedCSV();
+        break;
+      case "change-status":
+        addToast(
+          `Status changed to "${bulkActionValue}" for ${count} clinics: ${names.join(", ")}`,
+          "success",
+        );
+        break;
+    }
+
+    setBulkAction(null);
+    setBulkActionValue("");
+    setAnnouncementTitle("");
+    setAnnouncementBody("");
+    setSelectedIds(new Set());
+  }
+
+  function openBulkAction(action: BulkAction) {
+    if (action === "export") {
+      handleExportSelectedCSV();
+      return;
+    }
+    setBulkAction(action);
+    setBulkActionValue("");
+    setAnnouncementTitle("");
+    setAnnouncementBody("");
+  }
+
+  function getBulkDialogTitle(): string {
+    switch (bulkAction) {
+      case "change-tier":
+        return "Change Tier";
+      case "send-announcement":
+        return "Send Announcement";
+      case "enable-feature":
+        return "Enable Feature";
+      case "suspend":
+        return "Suspend Clinics";
+      case "change-status":
+        return "Change Status";
+      default:
+        return "";
+    }
   }
 
   async function toggleStatus(clinic: ClinicDetail) {
@@ -332,22 +746,81 @@ export default function AllClinicsPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {(["all", "active", "suspended", "trial"] as FilterStatus[]).map((s) => (
-          <Button
-            key={s}
-            variant={statusFilter === s ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter(s)}
-            className="capitalize text-xs"
-          >
-            {s === "all" ? "All" : s}
-            <Badge variant="secondary" className="ml-1 text-[10px] px-1">
-              {s === "all" ? list.length : list.filter((c) => c.status === s).length}
-            </Badge>
-          </Button>
-        ))}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex gap-2">
+          {(["all", "active", "suspended", "trial"] as FilterStatus[]).map((s) => (
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+              className="capitalize text-xs"
+            >
+              {s === "all" ? "All" : s}
+              <Badge variant="secondary" className="ml-1 text-[10px] px-1">
+                {s === "all" ? list.length : list.filter((c) => c.status === s).length}
+              </Badge>
+            </Button>
+          ))}
+        </div>
+        <Separator orientation="vertical" className="h-8 mx-1 hidden sm:block" />
+        <div className="flex items-center gap-1">
+          <Heart className="h-4 w-4 text-muted-foreground" />
+          {(["all", "excellent", "good", "fair", "at-risk"] as HealthFilter[]).map((h) => (
+            <Button
+              key={h}
+              variant={healthFilter === h ? "default" : "outline"}
+              size="sm"
+              onClick={() => setHealthFilter(h)}
+              className="capitalize text-xs"
+            >
+              {h === "all" ? "All Health" : h === "at-risk" ? "At Risk" : h}
+            </Button>
+          ))}
+        </div>
       </div>
+
+      {/* Bulk Action Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-lg border bg-muted/50">
+          <span className="text-sm font-medium">
+            {selectedIds.size} clinic{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <Button variant="outline" size="sm" onClick={() => openBulkAction("change-tier")}>
+            <Shield className="h-3.5 w-3.5 mr-1" />
+            Change Tier
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => openBulkAction("send-announcement")}>
+            <Send className="h-3.5 w-3.5 mr-1" />
+            Send Announcement
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => openBulkAction("enable-feature")}>
+            <Zap className="h-3.5 w-3.5 mr-1" />
+            Enable Feature
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => openBulkAction("suspend")}>
+            <Ban className="h-3.5 w-3.5 mr-1" />
+            Suspend
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => openBulkAction("export")}>
+            <Download className="h-3.5 w-3.5 mr-1" />
+            Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => openBulkAction("change-status")}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Change Status
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-xs"
+          >
+            Clear selection
+          </Button>
+        </div>
+      )}
 
       {loadingData ? (
         <ClinicsTableSkeleton />
@@ -358,7 +831,30 @@ export default function AllClinicsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
-                    <th className="text-left font-medium py-3 px-4">Clinic</th>
+                    <th className="w-10 py-3 px-4">
+                      <button
+                        type="button"
+                        onClick={toggleSelectAll}
+                        className="flex h-4 w-4 items-center justify-center rounded border border-input bg-background hover:bg-accent"
+                        aria-label={allPageSelected ? "Deselect all" : "Select all"}
+                      >
+                        {allPageSelected ? (
+                          <Check className="h-3 w-3" />
+                        ) : somePageSelected ? (
+                          <Minus className="h-3 w-3" />
+                        ) : null}
+                      </button>
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground"
+                        onClick={() => toggleSort("name")}
+                      >
+                        Clinic
+                        {sortField === "name" && <ArrowUpDown className="h-3 w-3" />}
+                      </button>
+                    </th>
                     <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
                     <th className="text-left font-medium py-3 px-4">Type</th>
                     <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
@@ -366,110 +862,183 @@ export default function AllClinicsPage() {
                     <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">
                       Revenue
                     </th>
-                    <th className="text-left font-medium py-3 px-4">Plan</th>
-                    <th className="text-left font-medium py-3 px-4">Status</th>
+                    <th className="text-left font-medium py-3 px-4">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground"
+                        onClick={() => toggleSort("plan")}
+                      >
+                        Plan
+                        {sortField === "plan" && <ArrowUpDown className="h-3 w-3" />}
+                      </button>
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground"
+                        onClick={() => toggleSort("health")}
+                      >
+                        Health
+                        {sortField === "health" && <ArrowUpDown className="h-3 w-3" />}
+                      </button>
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:text-foreground"
+                        onClick={() => toggleSort("status")}
+                      >
+                        Status
+                        {sortField === "status" && <ArrowUpDown className="h-3 w-3" />}
+                      </button>
+                    </th>
                     <th className="text-right font-medium py-3 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedList.map((clinic) => (
-                    <tr key={clinic.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="py-3 px-4">
-                        <Link
-                          href={`/super-admin/clinics/${clinic.id}`}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {clinic.name}
-                        </Link>
-                        <p className="text-xs text-muted-foreground md:hidden">
-                          {clinic.ownerName}
-                        </p>
-                      </td>
-                      <td className="py-3 px-4 hidden md:table-cell">
-                        <p className="text-muted-foreground">{clinic.ownerName}</p>
-                        <p className="text-xs text-muted-foreground">{clinic.ownerEmail}</p>
-                      </td>
-                      <td className="py-3 px-4 capitalize text-muted-foreground">{clinic.type}</td>
-                      <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">
-                        {clinic.city}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">{clinic.userCountRange}</td>
-                      <td className="py-3 px-4 hidden lg:table-cell">
-                        {formatCurrency(
-                          clinic.monthlyRevenue,
-                          typeof locale !== "undefined" ? locale : "fr",
-                          "MAD",
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          variant={
-                            clinic.plan === "premium"
-                              ? "default"
-                              : clinic.plan === "standard"
-                                ? "secondary"
-                                : "outline"
-                          }
-                        >
-                          {clinic.plan}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          variant={
-                            clinic.status === "active"
-                              ? "success"
-                              : clinic.status === "suspended"
-                                ? "destructive"
-                                : "warning"
-                          }
-                        >
-                          {clinic.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <Link href={`/super-admin/clinics/${clinic.id}`}>
-                            <Button variant="ghost" size="sm" title="View details">
+                  {paginatedList.map((clinic) => {
+                    const breakdown = healthScores.get(clinic.id) ?? calculateHealthScore(clinic);
+                    const healthLabel = getHealthLabel(breakdown.total);
+                    const isSelected = selectedIds.has(clinic.id);
+                    return (
+                      <tr
+                        key={clinic.id}
+                        className={`border-b last:border-0 hover:bg-muted/50 ${isSelected ? "bg-muted/30" : ""}`}
+                      >
+                        <td className="py-3 px-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleSelect(clinic.id)}
+                            className={`flex h-4 w-4 items-center justify-center rounded border border-input ${isSelected ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"}`}
+                            aria-label={
+                              isSelected ? `Deselect ${clinic.name}` : `Select ${clinic.name}`
+                            }
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </button>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Link
+                            href={`/super-admin/clinics/${clinic.id}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {clinic.name}
+                          </Link>
+                          <p className="text-xs text-muted-foreground md:hidden">
+                            {clinic.ownerName}
+                          </p>
+                        </td>
+                        <td className="py-3 px-4 hidden md:table-cell">
+                          <p className="text-muted-foreground">{clinic.ownerName}</p>
+                          <p className="text-xs text-muted-foreground">{clinic.ownerEmail}</p>
+                        </td>
+                        <td className="py-3 px-4 capitalize text-muted-foreground">
+                          {clinic.type}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">
+                          {clinic.city}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">{clinic.userCountRange}</td>
+                        <td className="py-3 px-4 hidden lg:table-cell">
+                          {formatCurrency(
+                            clinic.monthlyRevenue,
+                            typeof locale !== "undefined" ? locale : "fr",
+                            "MAD",
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge
+                            variant={
+                              clinic.plan === "premium"
+                                ? "default"
+                                : clinic.plan === "standard"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
+                            {clinic.plan}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4">
+                          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- wrapper delegates focus/blur for tooltip; no interactive role needed */}
+                          <div
+                            className="relative inline-flex"
+                            onMouseEnter={() => setHoveredHealthId(clinic.id)}
+                            onMouseLeave={() => setHoveredHealthId(null)}
+                            onFocus={() => setHoveredHealthId(clinic.id)}
+                            onBlur={() => setHoveredHealthId(null)}
+                          >
+                            <Badge
+                              className={`cursor-default ${getHealthBadgeClasses(healthLabel)}`}
+                            >
+                              {breakdown.total} {healthLabel}
+                            </Badge>
+                            <HealthScoreTooltip
+                              breakdown={breakdown}
+                              visible={hoveredHealthId === clinic.id}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge
+                            variant={
+                              clinic.status === "active"
+                                ? "success"
+                                : clinic.status === "suspended"
+                                  ? "destructive"
+                                  : "warning"
+                            }
+                          >
+                            {clinic.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="View details"
+                              onClick={() => setDetail(clinic)}
+                            >
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Login as client"
-                            onClick={() => {
-                              setLoginClinic(clinic);
-                              setLoginOpen(true);
-                            }}
-                          >
-                            <LogIn className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={clinic.status === "suspended" ? "Activate" : "Suspend"}
-                            className={
-                              clinic.status === "suspended" ? "text-green-600" : "text-red-500"
-                            }
-                            onClick={() => {
-                              setSuspendClinic(clinic);
-                              setSuspendOpen(true);
-                            }}
-                          >
-                            {clinic.status === "suspended" ? (
-                              <CheckCircle className="h-3.5 w-3.5" />
-                            ) : (
-                              <Ban className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Login as client"
+                              onClick={() => {
+                                setLoginClinic(clinic);
+                                setLoginOpen(true);
+                              }}
+                            >
+                              <LogIn className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={clinic.status === "suspended" ? "Activate" : "Suspend"}
+                              className={
+                                clinic.status === "suspended" ? "text-green-600" : "text-red-500"
+                              }
+                              onClick={() => {
+                                setSuspendClinic(clinic);
+                                setSuspendOpen(true);
+                              }}
+                            >
+                              {clinic.status === "suspended" ? (
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              ) : (
+                                <Ban className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {sorted.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={11} className="py-8 text-center text-muted-foreground">
                         No clinics found matching your filters.
                       </td>
                     </tr>
@@ -482,7 +1051,7 @@ export default function AllClinicsPage() {
       )}
 
       {/* Pagination Controls */}
-      {filtered.length > pageSize && (
+      {sorted.length > pageSize && (
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Show</span>
@@ -500,7 +1069,7 @@ export default function AllClinicsPage() {
                 </option>
               ))}
             </select>
-            <span>per page &middot; {filtered.length} total</span>
+            <span>per page &middot; {sorted.length} total</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -566,6 +1135,53 @@ export default function AllClinicsPage() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Health Score Card */}
+              {(() => {
+                const bd = healthScores.get(detail.id) ?? calculateHealthScore(detail);
+                const label = getHealthLabel(bd.total);
+                return (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold">Health Score</h3>
+                        <Badge className={getHealthBadgeClasses(label)}>
+                          {bd.total}/100 — {label}
+                        </Badge>
+                      </div>
+                      <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-3">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            bd.total >= 80
+                              ? "bg-green-500"
+                              : bd.total >= 60
+                                ? "bg-blue-500"
+                                : bd.total >= 40
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
+                          }`}
+                          style={{ width: `${bd.total}%` }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                        {[
+                          { label: "Profile", val: bd.profileCompleteness },
+                          { label: "Subscription", val: bd.activeSubscription },
+                          { label: "Activity", val: bd.recentActivity },
+                          { label: "Features", val: bd.featureAdoption },
+                          { label: "Payment", val: bd.paymentStatus },
+                        ].map((item) => (
+                          <div key={item.label}>
+                            <p className="font-medium">{item.val}/20</p>
+                            <p className="text-muted-foreground text-[10px]">{item.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-2">Owner Information</h3>
@@ -654,6 +1270,53 @@ export default function AllClinicsPage() {
                     </Badge>
                   ))}
                 </div>
+              </div>
+
+              {/* Onboarding Checklist */}
+              <Separator />
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Onboarding Checklist</h3>
+                {(() => {
+                  const checklist = getOnboardingChecklist(detail);
+                  const completedCount = checklist.filter((item) => item.done).length;
+                  const completionPct = Math.round((completedCount / checklist.length) * 100);
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">
+                          {completedCount}/{checklist.length} completed
+                        </span>
+                        <span className="text-xs font-medium">{completionPct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mb-3">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${completionPct}%` }}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        {checklist.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div key={item.label} className="flex items-center gap-2 text-sm">
+                              {item.done ? (
+                                <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                              ) : (
+                                <div className="h-4 w-4 rounded-full border border-muted-foreground shrink-0" />
+                              )}
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span
+                                className={item.done ? "text-muted-foreground line-through" : ""}
+                              >
+                                {item.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <DialogFooter>
@@ -851,6 +1514,154 @@ export default function AllClinicsPage() {
                   <>
                     <Ban className="h-4 w-4 mr-1" />
                     Suspend
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <Dialog open={bulkAction !== null} onOpenChange={() => setBulkAction(null)}>
+        {bulkAction && (
+          <DialogContent onClose={() => setBulkAction(null)} className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{getBulkDialogTitle()}</DialogTitle>
+              <DialogDescription>
+                Apply {getBulkDialogTitle().toLowerCase()} to {selectedClinics.length} clinic
+                {selectedClinics.length !== 1 ? "s" : ""}?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="rounded-lg border p-3 bg-muted/50 max-h-32 overflow-y-auto">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Affected clinics:</p>
+              <div className="flex flex-wrap gap-1">
+                {selectedClinics.map((c) => (
+                  <Badge key={c.id} variant="secondary" className="text-xs">
+                    {c.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {bulkAction === "change-tier" && (
+              <div className="space-y-2">
+                {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent select */}
+                <label className="text-sm font-medium">Select new tier</label>
+                <select
+                  value={bulkActionValue}
+                  onChange={(e) => setBulkActionValue(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                >
+                  <option value="">Choose tier...</option>
+                  {TIER_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {bulkAction === "send-announcement" && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input */}
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    placeholder="Announcement title"
+                    value={announcementTitle}
+                    onChange={(e) => setAnnouncementTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent textarea */}
+                  <label className="text-sm font-medium">Message</label>
+                  <textarea
+                    placeholder="Announcement message..."
+                    value={announcementBody}
+                    onChange={(e) => setAnnouncementBody(e.target.value)}
+                    rows={3}
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {bulkAction === "enable-feature" && (
+              <div className="space-y-2">
+                {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent select */}
+                <label className="text-sm font-medium">Select feature</label>
+                <select
+                  value={bulkActionValue}
+                  onChange={(e) => setBulkActionValue(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                >
+                  <option value="">Choose feature...</option>
+                  {FEATURE_OPTIONS.map((f) => (
+                    <option key={f} value={f}>
+                      {f
+                        .split("-")
+                        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(" ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {bulkAction === "suspend" && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-3">
+                <p className="text-sm text-red-800 dark:text-red-400">
+                  This will immediately suspend {selectedClinics.length} clinic
+                  {selectedClinics.length !== 1 ? "s" : ""}. They will lose access to all features.
+                </p>
+              </div>
+            )}
+
+            {bulkAction === "change-status" && (
+              <div className="space-y-2">
+                {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent select */}
+                <label className="text-sm font-medium">Select status</label>
+                <select
+                  value={bulkActionValue}
+                  onChange={(e) => setBulkActionValue(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                >
+                  <option value="">Choose status...</option>
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBulkAction(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant={bulkAction === "suspend" ? "destructive" : "default"}
+                onClick={executeBulkAction}
+                disabled={
+                  (bulkAction === "change-tier" && !bulkActionValue) ||
+                  (bulkAction === "enable-feature" && !bulkActionValue) ||
+                  (bulkAction === "change-status" && !bulkActionValue) ||
+                  (bulkAction === "send-announcement" && (!announcementTitle || !announcementBody))
+                }
+              >
+                {bulkAction === "suspend" ? (
+                  <>
+                    <Ban className="h-4 w-4 mr-1" />
+                    Suspend {selectedClinics.length} Clinic{selectedClinics.length !== 1 ? "s" : ""}
+                  </>
+                ) : (
+                  <>
+                    Apply to {selectedClinics.length} Clinic
+                    {selectedClinics.length !== 1 ? "s" : ""}
                   </>
                 )}
               </Button>
