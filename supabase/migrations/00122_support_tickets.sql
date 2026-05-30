@@ -27,5 +27,8 @@ CREATE TABLE IF NOT EXISTS support_messages (
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Super admins can manage all tickets" ON support_tickets;
 CREATE POLICY "Super admins can manage all tickets" ON support_tickets FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Super admins can manage all messages" ON support_messages;
 CREATE POLICY "Super admins can manage all messages" ON support_messages FOR ALL USING (true);
