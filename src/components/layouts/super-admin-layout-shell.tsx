@@ -18,6 +18,7 @@ import {
   Search,
   Plus,
   BarChart3,
+  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -48,6 +49,7 @@ import { fetchClinics } from "@/lib/super-admin-actions";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
   { href: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
