@@ -206,9 +206,13 @@ export default {
     // A secret with CRLF (\r\n) would split the Authorization header and inject
     // arbitrary headers into every internal cron request.
     if (!/^[\x21-\x7E]+$/.test(cronSecret)) {
-      void reportCronError(env, "CRON_SECRET contains illegal characters — refusing all cron jobs", {
-        cron: controller.cron,
-      });
+      void reportCronError(
+        env,
+        "CRON_SECRET contains illegal characters — refusing all cron jobs",
+        {
+          cron: controller.cron,
+        },
+      );
       return;
     }
 
