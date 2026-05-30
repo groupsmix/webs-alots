@@ -116,7 +116,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           context: "onboarding-provision",
           error: clinicError,
         });
-        return apiError(`Failed to create clinic: ${clinicError.message}`, 500);
+        return apiError("Clinic creation failed — subdomain may already be in use", 500);
       }
 
       clinicId = clinic.id;
