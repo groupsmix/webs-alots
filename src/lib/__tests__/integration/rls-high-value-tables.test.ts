@@ -118,19 +118,17 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
     );
 
     // Seed a service and appointment in Clinic A for FK references
-    await admin
-      .from("services")
-      .upsert(
-        [
-          {
-            id: "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1",
-            clinic_id: CLINIC_A_ID,
-            name: "PHI Consult",
-            duration_minutes: 30,
-          },
-        ],
-        { onConflict: "id" },
-      );
+    await admin.from("services").upsert(
+      [
+        {
+          id: "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1",
+          clinic_id: CLINIC_A_ID,
+          name: "PHI Consult",
+          duration_minutes: 30,
+        },
+      ],
+      { onConflict: "id" },
+    );
 
     await admin.from("appointments").upsert(
       [
