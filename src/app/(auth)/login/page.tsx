@@ -22,9 +22,11 @@ import {
   signInWithPassword,
   signInWithEmailOTP,
   verifyEmailOTP,
+  getUserProfile,
 } from "@/lib/auth";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 import { createClient } from "@/lib/supabase-client";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
@@ -173,8 +175,10 @@ export default function LoginPage() {
         return;
       }
 
-      // MFA verified — redirect will happen via auth state change
-      window.location.href = "/doctor/dashboard";
+      // MFA verified — redirect based on user role
+      const mfaProfile = await getUserProfile();
+      window.location.href =
+        (mfaProfile && ROLE_DASHBOARD_MAP[mfaProfile.role]) || "/doctor/dashboard";
     } catch (err) {
       logger.warn("MFA verification failed", { context: "login", error: err });
       setError(t(locale, "error.unexpected"));
@@ -196,8 +200,10 @@ export default function LoginPage() {
         return;
       }
 
-      // Backup code verified — redirect
-      window.location.href = "/doctor/dashboard";
+      // Backup code verified — redirect based on user role
+      const backupProfile = await getUserProfile();
+      window.location.href =
+        (backupProfile && ROLE_DASHBOARD_MAP[backupProfile.role]) || "/doctor/dashboard";
     } catch (err) {
       logger.warn("Backup code verification failed", { context: "login", error: err });
       setError(t(locale, "error.unexpected"));
