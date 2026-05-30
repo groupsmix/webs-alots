@@ -1,5 +1,7 @@
 import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 import { onboardingSchema } from "@/lib/validations";
 import { withAuth as _withAuth } from "@/lib/with-auth";
 /**
@@ -174,6 +176,34 @@ export const POST = withAuthValidation(
       }
 
       return apiInternalError("Failed to create admin user. Please try again.");
+    }
+
+    // AUDIT: Log successful clinic creation. Clinic has no prior audit trail
+    // so we write to pending_audit_logs with a sentinel system actor.
+    // The logAuditEvent helper falls back to pending_audit_logs automatically
+    // when the admin client is unavailable (see audit-log.ts F-09).
+    try {
+      await logAuditEvent({
+        supabase,
+        action: "clinic_created",
+        type: "admin",
+        actor: user.id,
+        clinicId,
+        description: `Clinic "${body.clinic_name}" created via onboarding (subdomain: ${subdomain ?? "none"})`,
+        metadata: {
+          clinic_name: body.clinic_name,
+          clinic_type_key: body.clinic_type_key,
+          subdomain: subdomain ?? null,
+          owner_email: body.email ?? user.email ?? null,
+        },
+      });
+    } catch (auditErr) {
+      // Non-fatal — clinic was already created successfully. Log and continue.
+      logger.warn("Failed to write onboarding audit event", {
+        context: "onboarding",
+        clinicId,
+        error: auditErr,
+      });
     }
 
     return apiSuccess({
