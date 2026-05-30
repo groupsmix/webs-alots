@@ -140,7 +140,7 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
           slot_start: new Date(Date.now() + 86400000).toISOString(),
           slot_end: new Date(Date.now() + 90000000).toISOString(),
           status: "pending",
-        },
+        } as never,
       ],
       { onConflict: "id" },
     );
@@ -154,9 +154,9 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
       async (table) => {
         const ca = clientFor(CLINIC_A_ID);
         const { data, error } = await ca
-          .from(table as string)
+          .from(table as never)
           .select("id")
-          .eq("clinic_id", CLINIC_B_ID)
+          .eq("clinic_id" as never, CLINIC_B_ID)
           .limit(1);
 
         if (!error) {
@@ -176,7 +176,7 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
       async (table) => {
         const anon = anonClient();
         const { data, error } = await anon
-          .from(table as string)
+          .from(table as never)
           .select("id")
           .limit(1);
 
@@ -213,7 +213,7 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
         .from("prescriptions")
         .select("id")
         .eq("clinic_id", CLINIC_B_ID)
-        .eq("medication", "RLS Test Drug")
+        .eq("notes" as never, "RLS injection test — must be blocked")
         .limit(1);
       expect(data ?? []).toHaveLength(0);
     });
