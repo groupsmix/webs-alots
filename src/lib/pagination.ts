@@ -58,10 +58,13 @@ export function decodeCursor(value: string): AppointmentCursor | null {
       typeof (parsed as Record<string, unknown>).id === "string"
     ) {
       const c = parsed as AppointmentCursor;
-      // Defensive validation — these values are interpolated into a
-      // PostgREST `or()` filter, so reject anything that contains the
-      // delimiters PostgREST uses to separate filters.
-      if (/[,()]/.test(c.appointment_date) || /[,()]/.test(c.start_time) || /[,()]/.test(c.id)) {
+      // INJ-02: Strict format validation — these values are interpolated
+      // into a PostgREST `.or()` filter string. Reject anything that
+      // doesn't match the expected format to prevent filter injection.
+      const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+      const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!DATE_RE.test(c.appointment_date) || !TIME_RE.test(c.start_time) || !UUID_RE.test(c.id)) {
         return null;
       }
       return c;
