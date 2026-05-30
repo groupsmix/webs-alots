@@ -45,6 +45,8 @@ This file replaces the previously promised "Audit Remediation Roadmap & Wave Tra
 | #880   | `security/booking-token-secret-min-length` | audit-4 F-15: enforce `BOOKING_TOKEN_SECRET` ≥ 32 chars at boot                                              | `src/lib/env.ts`, `src/lib/__tests__/env-booking-token-secret.test.ts`                                                   |
 | #881   | `infra/staging-cron-destructive-guard`     | audit-4 F-13: refuse destructive crons in staging without `ALLOW_STAGING_DESTRUCTIVE_CRONS=true`             | `wrangler.toml`, `src/lib/cron-env-guard.ts`, 4 cron route handlers, `.env.example`                                      |
 | (this) | `docs/audit-roadmap-audit-4`               | audit-4 cross-references + SEASONS audit (2026-05-27) finding tracker; stacked on top of #879                | `docs/AUDIT-ROADMAP.md`                                                                                                  |
+| #883   | `fix/semgrep-tenant-scoping-chain-depth`   | Wave 6: fix `semgrep.tenant-scoping` false positives via `pattern-not-regex` (6 findings on merged routes)   | `.semgrep/tenant-scoping.yml`                                                                                            |
+| #884   | `fix/env-access-semgrep-followups`         | Wave 6: route `SUPABASE_POOLER_URL` + `WORKER_ENV` + `ALLOW_STAGING_DESTRUCTIVE_CRONS` through `env.ts`      | `src/lib/env.ts`, `src/lib/supabase-server.ts`, `src/lib/cron-env-guard.ts`                                              |
 
 Recommended merge order: #872 → #870 → #871 → #863 → #874 → #865 → #876 → #879 → (this) → #877 → #878 → #880 → #881 → #873 → #875 (last, needs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` first).
 
