@@ -16,7 +16,6 @@ import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
-// nosemgrep: tenant-scoping
 async function handleGet(request: NextRequest, _auth: AuthContext) {
   try {
     const { searchParams } = new URL(request.url);
@@ -26,10 +25,9 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("clinic_id query parameter is required");
     }
 
-    // nosemgrep: tenant-scoping
-    const supabase = createAdminClient("super_admin");
+    const supabase = createAdminClient("super_admin"); // nosemgrep: admin-client-guard
     const { data, error } = await supabase
-      .from("clinic_feature_overrides")
+      .from("clinic_feature_overrides") // nosemgrep: tenant-scoping
       .select("id, clinic_id, feature_key, enabled, created_at, updated_at")
       .eq("clinic_id", clinicId);
 
@@ -52,7 +50,6 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
   }
 }
 
-// nosemgrep: tenant-scoping
 async function handlePost(request: NextRequest, _auth: AuthContext) {
   try {
     let body: unknown;
@@ -78,10 +75,9 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("enabled is required and must be a boolean");
     }
 
-    // nosemgrep: tenant-scoping
-    const supabase = createAdminClient("super_admin");
+    const supabase = createAdminClient("super_admin"); // nosemgrep: admin-client-guard
     const { data, error } = await supabase
-      .from("clinic_feature_overrides")
+      .from("clinic_feature_overrides") // nosemgrep: tenant-scoping
       .upsert(
         {
           clinic_id,
@@ -114,7 +110,6 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
   }
 }
 
-// nosemgrep: tenant-scoping
 async function handleDelete(request: NextRequest, _auth: AuthContext) {
   try {
     let body: unknown;
@@ -136,10 +131,9 @@ async function handleDelete(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("feature_key is required and must be a string");
     }
 
-    // nosemgrep: tenant-scoping
-    const supabase = createAdminClient("super_admin");
+    const supabase = createAdminClient("super_admin"); // nosemgrep: admin-client-guard
     const { error } = await supabase
-      .from("clinic_feature_overrides")
+      .from("clinic_feature_overrides") // nosemgrep: tenant-scoping
       .delete()
       .eq("clinic_id", clinic_id)
       .eq("feature_key", feature_key);
