@@ -15,6 +15,7 @@ import {
   ArrowUp,
   ArrowDown,
   Percent,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -25,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { exportToPDF } from "@/lib/export-utils";
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import {
@@ -64,6 +67,7 @@ const AUTO_REFRESH_INTERVAL = 60_000;
 
 export default function SuperAdminDashboardPage() {
   const [locale] = useLocale();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -139,6 +143,29 @@ export default function SuperAdminDashboardPage() {
   const recentLogs = activityLogList.slice(0, 8);
 
   const activePercent = totalClinics > 0 ? Math.round((activeClinics / totalClinics) * 100) : 0;
+
+  function handleDownloadReport() {
+    const rows = clinicList.map((c) => ({
+      Clinic: c.name,
+      Type: c.type,
+      Plan: c.plan,
+      City: c.city,
+      Status: c.status,
+    }));
+    const kpiRow = {
+      Clinic: `--- KPIs: Total Clinics: ${totalClinics}, Active: ${activeClinics}, Users: ${totalPatients}, Revenue: ${formatCurrency(totalRevenue)} ---`,
+      Type: "",
+      Plan: "",
+      City: "",
+      Status: "",
+    };
+    exportToPDF(
+      "Dashboard Report \u2014 Oltigo Health",
+      [kpiRow, ...rows],
+      ["Clinic", "Type", "Plan", "City", "Status"],
+    );
+    addToast("Report PDF generated \u2014 use Save as PDF in the print dialog", "success");
+  }
 
   const stats = [
     {
@@ -223,6 +250,12 @@ export default function SuperAdminDashboardPage() {
             )}
             {"Refresh"}
           </Button>
+          {/* eslint-disable i18next/no-literal-string */}
+          <Button variant="outline" size="sm" disabled={loading} onClick={handleDownloadReport}>
+            <Download className="h-4 w-4 mr-1" />
+            Download Report
+          </Button>
+          {/* eslint-enable i18next/no-literal-string */}
           <Link href="/super-admin/onboarding">
             <Button size="sm">
               <UserPlus className="h-4 w-4 mr-1" />

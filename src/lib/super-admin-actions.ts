@@ -186,6 +186,7 @@ export interface ClinicFeatureOverride {
   feature_key: string;
   enabled: boolean;
   created_at: string | null;
+  updated_at: string | null;
 }
 
 export async function fetchClinicFeatureOverrides(
