@@ -71,49 +71,49 @@ const PROVIDER_INFO: Record<
 > = {
   workers_ai: {
     icon: "⚡",
-    color: "text-orange-500",
+    color: "text-orange-500 dark:text-orange-400",
     docsUrl: "https://developers.cloudflare.com/workers-ai/",
     keyPlaceholder: "Uses your Cloudflare account (no key needed)",
   },
   anthropic: {
     icon: "🧠",
-    color: "text-purple-500",
+    color: "text-purple-500 dark:text-purple-400",
     docsUrl: "https://console.anthropic.com/settings/keys",
     keyPlaceholder: "sk-ant-...",
   },
   openai: {
     icon: "🤖",
-    color: "text-green-500",
+    color: "text-green-500 dark:text-green-400",
     docsUrl: "https://platform.openai.com/api-keys",
     keyPlaceholder: "sk-...",
   },
   google: {
     icon: "🔮",
-    color: "text-blue-500",
+    color: "text-blue-500 dark:text-blue-400",
     docsUrl: "https://aistudio.google.com/apikey",
     keyPlaceholder: "AIza...",
   },
   xai: {
     icon: "✖",
-    color: "text-gray-400",
+    color: "text-gray-400 dark:text-gray-300",
     docsUrl: "https://console.x.ai/",
     keyPlaceholder: "xai-...",
   },
   mistral: {
     icon: "🌊",
-    color: "text-cyan-500",
+    color: "text-cyan-500 dark:text-cyan-400",
     docsUrl: "https://console.mistral.ai/api-keys/",
     keyPlaceholder: "...",
   },
   deepseek: {
     icon: "🔬",
-    color: "text-indigo-500",
+    color: "text-indigo-500 dark:text-indigo-400",
     docsUrl: "https://platform.deepseek.com/api_keys",
     keyPlaceholder: "sk-...",
   },
   groq: {
     icon: "⚡",
-    color: "text-yellow-500",
+    color: "text-yellow-500 dark:text-yellow-400",
     docsUrl: "https://console.groq.com/keys",
     keyPlaceholder: "gsk_...",
   },
@@ -373,7 +373,7 @@ export default function AISettingsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-blue-500/10 p-2">
-                <Activity className="h-5 w-5 text-blue-500" />
+                <Activity className="h-5 w-5 text-blue-500 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Requests (This Month)</p>
@@ -386,7 +386,7 @@ export default function AISettingsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-green-500/10 p-2">
-                <DollarSign className="h-5 w-5 text-green-500" />
+                <DollarSign className="h-5 w-5 text-green-500 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Cost (This Month)</p>
@@ -399,7 +399,7 @@ export default function AISettingsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-orange-500/10 p-2">
-                <Shield className="h-5 w-5 text-orange-500" />
+                <Shield className="h-5 w-5 text-orange-500 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Routing</p>
@@ -414,7 +414,7 @@ export default function AISettingsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Zap className="mt-0.5 h-5 w-5 text-yellow-500" />
+            <Zap className="mt-0.5 h-5 w-5 text-yellow-500 dark:text-yellow-400" />
             <div className="text-sm">
               <p className="font-medium">Smart Routing &amp; Fallback</p>
               <p className="text-muted-foreground">
@@ -484,9 +484,11 @@ export default function AISettingsPage() {
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                           {prov.has_api_key || isWorkersAI ? (
-                            <span className="text-green-600">Key configured</span>
+                            <span className="text-green-600 dark:text-green-400">
+                              Key configured
+                            </span>
                           ) : (
-                            <span className="text-yellow-600">No API key</span>
+                            <span className="text-yellow-600 dark:text-yellow-400">No API key</span>
                           )}
                           {provUsage && (
                             <>
@@ -499,7 +501,7 @@ export default function AISettingsPage() {
                           {prov.last_error && (
                             <>
                               <span>•</span>
-                              <span className="text-red-500 truncate max-w-[200px]">
+                              <span className="text-red-500 dark:text-red-400 truncate max-w-[200px]">
                                 {prov.last_error}
                               </span>
                             </>
@@ -576,7 +578,7 @@ export default function AISettingsPage() {
                             disabled={isSaving}
                           />
                           {prov.is_active ? (
-                            <Power className="h-4 w-4 text-green-500" />
+                            <Power className="h-4 w-4 text-green-500 dark:text-green-400" />
                           ) : (
                             <PowerOff className="h-4 w-4 text-muted-foreground" />
                           )}
@@ -718,7 +720,7 @@ export default function AISettingsPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             {data.errors > 0 ? (
-                              <span className="text-red-500">{data.errors}</span>
+                              <span className="text-red-500 dark:text-red-400">{data.errors}</span>
                             ) : (
                               <span className="text-muted-foreground">0</span>
                             )}
