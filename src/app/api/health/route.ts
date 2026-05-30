@@ -1,3 +1,6 @@
+// health endpoint is edge-compatible — no Node-only modules used.
+export const runtime = "edge";
+
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";

@@ -1,3 +1,6 @@
+// Node.js runtime required — uses crypto/file processing.
+export const runtime = "nodejs";
+
 /**
  * GDPR Data Export API — Right to Portability
  *

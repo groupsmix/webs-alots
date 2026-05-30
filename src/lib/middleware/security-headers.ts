@@ -181,17 +181,6 @@ function isCspReportOnly(): boolean {
 }
 
 /**
- * @deprecated The legacy broad CSP has been removed (Task 2.2).
- * Use `buildCsp` directly — it is now the enforced policy.
- *
- * This stub remains temporarily for backward compatibility with any
- * call-sites that haven't been updated yet. It delegates to buildCsp.
- */
-function _buildLegacyCsp(nonce: string): string {
-  return buildCsp(nonce, { reportOnly: false });
-}
-
-/**
  * CSP values used by the response-header helpers.
  *
  * Task 2.2: The strict policy is now the enforced policy.
@@ -202,8 +191,9 @@ export interface CspHeaderValues {
   /** Value for the enforcing `Content-Security-Policy` header. */
   enforce: string;
   /**
-   * @deprecated No longer used. The Report-Only header has been removed.
-   * Kept for interface compatibility; always empty string.
+   * Value for the `Content-Security-Policy-Report-Only` header.
+   * Empty string when CSP is in enforcing mode (the default).
+   * Non-empty only when `CSP_REPORT_ONLY=true` in production.
    */
   reportOnly: string;
 }
