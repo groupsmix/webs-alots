@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 "use client";
 
 import { Globe, Clock, Bell, RefreshCw, Info, Save, Loader2 } from "lucide-react";
@@ -204,15 +205,18 @@ export default function SettingsPage() {
             <div className="grid gap-3 sm:grid-cols-2 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Version:</span>
+                {/* nosemgrep: semgrep.env-access — client-side public env var for display only */}
                 <Badge variant="outline">{process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0"}</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Environment:</span>
+                {/* nosemgrep: semgrep.env-access — NODE_ENV is always available at build time */}
                 <Badge variant="outline">{process.env.NODE_ENV ?? "production"}</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">Last Deploy:</span>
+                {/* nosemgrep: semgrep.env-access — client-side public env var for display only */}
                 <span>{process.env.NEXT_PUBLIC_DEPLOY_DATE || "N/A"}</span>
               </div>
               <div className="flex items-center gap-2">

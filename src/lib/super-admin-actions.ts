@@ -170,9 +170,8 @@ export async function fetchClinics(): Promise<ClinicRow[]> {
 
 export async function fetchClinicById(clinicId: string): Promise<ClinicRow | null> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { data, error } = await supabase
-    .from("clinics")
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin fetches specific clinic by id
     .select("id, name, type, config, tier, status, subdomain, created_at")
     .eq("id", clinicId)
     .single();
@@ -193,9 +192,8 @@ export async function fetchClinicFeatureOverrides(
   clinicId: string,
 ): Promise<ClinicFeatureOverride[]> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { data, error } = await supabase
-    .from("clinic_feature_overrides")
+    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin reads overrides for specific clinic
     .select("id, clinic_id, feature_id, enabled, created_at")
     .eq("clinic_id", clinicId);
 
@@ -209,9 +207,8 @@ export async function upsertClinicFeatureOverride(
   enabled: boolean,
 ): Promise<void> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { error } = await supabase
-    .from("clinic_feature_overrides")
+    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin upserts override for specific clinic
     .upsert(
       { clinic_id: clinicId, feature_id: featureId, enabled },
       { onConflict: "clinic_id,feature_id" },
@@ -225,9 +222,8 @@ export async function deleteClinicFeatureOverride(
   featureId: string,
 ): Promise<void> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { error } = await supabase
-    .from("clinic_feature_overrides")
+    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin deletes override for specific clinic
     .delete()
     .eq("clinic_id", clinicId)
     .eq("feature_id", featureId);
@@ -237,9 +233,8 @@ export async function deleteClinicFeatureOverride(
 
 export async function fetchClinicStaffCount(clinicId: string): Promise<number> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { count, error } = await supabase
-    .from("users")
+    .from("users") // nosemgrep: tenant-scoping — super-admin counts staff for specific clinic
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
     .in("role", ["clinic_admin", "receptionist", "doctor"]);
@@ -250,9 +245,8 @@ export async function fetchClinicStaffCount(clinicId: string): Promise<number> {
 
 export async function fetchClinicPatientCount(clinicId: string): Promise<number> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { count, error } = await supabase
-    .from("users")
+    .from("users") // nosemgrep: tenant-scoping — super-admin counts patients for specific clinic
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
     .eq("role", "patient");
@@ -263,9 +257,8 @@ export async function fetchClinicPatientCount(clinicId: string): Promise<number>
 
 export async function fetchClinicActivityLogs(clinicId: string): Promise<ActivityLog[]> {
   const supabase = await rawClient();
-  // nosemgrep: tenant-scoping
   const { data, error } = await supabase
-    .from("activity_logs")
+    .from("activity_logs") // nosemgrep: tenant-scoping — super-admin reads activity for specific clinic
     .select("id, action, description, clinic_id, clinic_name, created_at, actor, type")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false })
