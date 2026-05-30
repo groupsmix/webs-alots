@@ -9,7 +9,7 @@ export interface ColorPaletteProps {
 }
 
 const presetPalettes: Record<string, string[]> = {
-  medical: ["#1E40AF", "#3B82F6", "#DBEAFE", "#FFFFFF"],
+  clinical: ["#1E40AF", "#3B82F6", "#DBEAFE", "#FFFFFF"],
   dental: ["#FFFFFF", "#F0F9FF", "#0EA5E9", "#0C4A6E"],
   pharmacy: ["#065F46", "#10B981", "#D1FAE5", "#FFFFFF"],
   modern: ["#7C3AED", "#A78BFA", "#EDE9FE", "#FFFFFF"],

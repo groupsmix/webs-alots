@@ -33,7 +33,7 @@ function inferSpecialtyColors(specialty: string): string[] {
   if (lower.includes("dent")) return presetPalettes.dental;
   if (lower.includes("pharma")) return presetPalettes.pharmacy;
   if (lower.includes("cardio") || lower.includes("heart")) return presetPalettes.warm;
-  return presetPalettes.medical;
+  return presetPalettes.clinical;
 }
 
 function inferServices(specialty: string): string[] {
@@ -229,7 +229,7 @@ const LOCAL_STORAGE_KEY = "agent-builder-draft";
 
 function loadDraft(): { config: ClinicConfig; messages: ChatMessageData[] } | null {
   if (typeof window === "undefined") return null;
-  const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const saved = sessionStorage.getItem(LOCAL_STORAGE_KEY);
   if (!saved) return null;
   try {
     const parsed = JSON.parse(saved) as {
@@ -298,7 +298,7 @@ export default function AgentBuilderPage() {
   );
 
   const handleSaveDraft = () => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ config, messages }));
+    sessionStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ config, messages }));
   };
 
   const handleExportConfig = () => {
@@ -321,7 +321,7 @@ export default function AgentBuilderPage() {
       },
     ]);
     setConfig(createEmptyConfig());
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    sessionStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   return (
