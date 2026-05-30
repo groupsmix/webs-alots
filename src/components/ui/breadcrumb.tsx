@@ -10,15 +10,16 @@ export interface BreadcrumbItem {
 interface BreadcrumbProps {
   items: BreadcrumbItem[];
   className?: string;
+  homeHref?: string;
 }
 
-export function Breadcrumb({ items, className }: BreadcrumbProps) {
+export function Breadcrumb({ items, className, homeHref = "/" }: BreadcrumbProps) {
   return (
     <nav aria-label="Fil d'Ariane" className={cn("mb-4", className)}>
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
         <li className="flex items-center gap-1.5">
           <Link
-            href="/"
+            href={homeHref}
             className="flex items-center gap-1 hover:text-foreground transition-colors"
             aria-label="Accueil"
           >

@@ -114,5 +114,7 @@ export function AutoBreadcrumb({ className }: { className?: string }) {
     return { label: labelFor(seg), href };
   });
 
-  return <Breadcrumb items={items} className={className} />;
+  const homeHref = segments.length >= 1 ? `/${segments[0]}/dashboard` : "/";
+
+  return <Breadcrumb items={items} className={className} homeHref={homeHref} />;
 }

@@ -102,36 +102,36 @@
 
 .dark {
   /* Ink<->bone swap; green accent held constant. */
-  --background: var(--ink); /* #0b0f0e */
+  --background: #141a18;
   --foreground: var(--bone); /* #f4f1ea */
-  --card: #121615; /* one tier above ink */
+  --card: #1c2320;
   --card-foreground: var(--bone);
-  --popover: #121615;
+  --popover: #1c2320;
   --popover-foreground: var(--bone);
   --primary: #2f8f63; /* lifted green for legibility on ink */
   --primary-foreground: #06110c;
-  --secondary: #1b211f;
+  --secondary: #232b28;
   --secondary-foreground: var(--bone);
-  --muted: #1b211f;
-  --muted-foreground: rgba(244, 241, 234, 0.64);
-  --accent: #1b211f;
+  --muted: #232b28;
+  --muted-foreground: rgba(244, 241, 234, 0.72);
+  --accent: #232b28;
   --accent-foreground: var(--bone);
   --destructive: #e5615a;
-  --border: rgba(244, 241, 234, 0.14);
-  --input: rgba(244, 241, 234, 0.16);
+  --border: rgba(244, 241, 234, 0.22);
+  --input: rgba(244, 241, 234, 0.24);
   --ring: #2f8f63;
   --chart-1: #2f8f63;
   --chart-2: rgba(244, 241, 234, 0.7);
   --chart-3: var(--signal-amber);
   --chart-4: rgba(244, 241, 234, 0.4);
   --chart-5: #5fae8a;
-  --sidebar: #0e1312;
+  --sidebar: #161d1a;
   --sidebar-foreground: var(--bone);
   --sidebar-primary: #2f8f63;
   --sidebar-primary-foreground: #06110c;
-  --sidebar-accent: #1b211f;
+  --sidebar-accent: #232b28;
   --sidebar-accent-foreground: var(--bone);
-  --sidebar-border: rgba(244, 241, 234, 0.14);
+  --sidebar-border: rgba(244, 241, 234, 0.22);
   --sidebar-ring: #2f8f63;
 }
 
