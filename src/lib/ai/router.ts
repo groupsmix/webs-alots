@@ -2,37 +2,49 @@
  * AI Router — Smart model selection with auto-fallback.
  *
  * Rules:
- * 1. Best model first (Claude → OpenAI → Gemini → ... → Workers AI)
- * 2. No API key = auto-disabled (skipped in routing)
- * 3. Deactivated by admin = skipped
- * 4. Rate limited / over budget = skipped, try next
- * 5. Workers AI is ALWAYS the last resort (free, never disabled)
- * 6. Runtime errors trigger immediate fallback to next provider
+ *   1. Best model first — order driven by the `routing_tier` column the
+ *      admin sets in the settings UI (no longer hardcoded).
+ *   2. No API key = auto-disabled (skipped in routing).
+ *   3. Deactivated by admin = skipped.
+ *   4. Rate-limited (persisted in DB) or over budget = skipped, try next.
+ *   5. Workers AI is ALWAYS the last resort — free, but still requires
+ *      `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_AI_API_TOKEN` to be set.
+ *   6. Runtime errors trigger immediate fallback to next provider.
+ *
+ * Config loading is cached for 30s to keep /api/ai latency low.
+ * Per-provider monthly cost uses the actual `cost_this_month_cents`
+ * column (not a quadratic estimate of token counts).
  */
 
 import { logger } from "@/lib/logger";
+import {
+  getCachedConfigs,
+  invalidateConfigCache,
+  setCachedConfigs,
+} from "./config-cache";
 import { PROVIDER_MODELS, PROVIDER_PRIORITY, RATE_LIMIT_WINDOW_MS } from "./models";
-import { callProvider, RateLimitError, ProviderError } from "./providers";
-import type { AIProvider, AIRequest, AIResponse, ProviderConfig, RateLimitState } from "./types";
+import { callProvider, ProviderError, RateLimitError } from "./providers";
+import { decryptProviderKey } from "./secret-encryption";
+import type {
+  AIProvider,
+  AIRequest,
+  AIResponse,
+  ProviderConfig,
+  RateLimitState,
+} from "./types";
 
-// ── In-memory rate limit tracking ──
+// ── In-memory rate-limit window (request counting) ──
+// The DB column `rate_limited_until` handles persistent cooldown across
+// invocations (set when a provider returns 429). The in-memory counter
+// here only enforces our own RPM caps within a single instance, as a
+// defensive guard against accidental DoS of a provider; the source of
+// truth for "is this provider currently 429'd" is the DB.
 
 const rateLimitStates = new Map<AIProvider, RateLimitState>();
 
 function getRateLimitState(provider: AIProvider): RateLimitState {
   const existing = rateLimitStates.get(provider);
-  if (existing) {
-    if (Date.now() > existing.windowResetAt) {
-      const reset: RateLimitState = {
-        provider,
-        requestsInWindow: 0,
-        windowResetAt: Date.now() + RATE_LIMIT_WINDOW_MS,
-        isRateLimited: false,
-        retryAfterMs: 0,
-      };
-      rateLimitStates.set(provider, reset);
-      return reset;
-    }
+  if (existing && Date.now() <= existing.windowResetAt) {
     return existing;
   }
   const fresh: RateLimitState = {
@@ -46,14 +58,6 @@ function getRateLimitState(provider: AIProvider): RateLimitState {
   return fresh;
 }
 
-function markRateLimited(provider: AIProvider, retryAfterMs: number): void {
-  const state = getRateLimitState(provider);
-  state.isRateLimited = true;
-  state.retryAfterMs = retryAfterMs;
-  state.windowResetAt = Date.now() + retryAfterMs;
-  rateLimitStates.set(provider, state);
-}
-
 function incrementRequests(provider: AIProvider): void {
   const state = getRateLimitState(provider);
   state.requestsInWindow++;
@@ -63,6 +67,50 @@ function incrementRequests(provider: AIProvider): void {
     state.windowResetAt = Date.now() + RATE_LIMIT_WINDOW_MS;
   }
   rateLimitStates.set(provider, state);
+}
+
+function markRateLimitedInMemory(provider: AIProvider, retryAfterMs: number): void {
+  const state = getRateLimitState(provider);
+  state.isRateLimited = true;
+  state.retryAfterMs = retryAfterMs;
+  state.windowResetAt = Date.now() + retryAfterMs;
+  rateLimitStates.set(provider, state);
+}
+
+/** Persist a rate-limit cooldown across serverless invocations. */
+async function persistRateLimit(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  provider: AIProvider,
+  retryAfterMs: number,
+): Promise<void> {
+  const until = new Date(Date.now() + retryAfterMs).toISOString();
+  try {
+    await supabase.rpc("mark_provider_rate_limited", {
+      p_provider: provider,
+      p_until: until,
+    });
+    invalidateConfigCache();
+  } catch (err) {
+    logger.warn("Failed to persist rate-limit state", {
+      context: "ai-router",
+      provider,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+// ── Workers AI environment check ──
+// The "always available" fallback isn't actually available if the Cloudflare
+// credentials aren't configured. Check at availability-check time, not just
+// when the call is attempted, so the router can skip it cleanly.
+
+function isWorkersAIConfigured(): boolean {
+  // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
+  const apiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN;
+  return !!accountId && !!apiToken;
 }
 
 // ── Provider availability check ──
@@ -76,37 +124,30 @@ function checkProviderAvailable(
   provider: AIProvider,
   configs: Map<AIProvider, ProviderConfig>,
 ): ProviderAvailability {
-  // Workers AI is always available
   if (provider === "workers_ai") {
+    if (!isWorkersAIConfigured()) {
+      return { available: false, reason: "cloudflare_not_configured" };
+    }
     return { available: true };
   }
 
   const config = configs.get(provider);
 
-  // No config in DB
-  if (!config) {
-    return { available: false, reason: "not_configured" };
+  if (!config) return { available: false, reason: "not_configured" };
+  if (!config.isActive) return { available: false, reason: "deactivated" };
+  if (!config.apiKey) return { available: false, reason: "no_api_key" };
+
+  // Budget check uses the real cost_this_month_cents, not an estimate.
+  if (config.monthlyBudgetCents > 0 && config.costThisMonthCents >= config.monthlyBudgetCents) {
+    return { available: false, reason: "budget_exceeded" };
   }
 
-  // Admin deactivated
-  if (!config.isActive) {
-    return { available: false, reason: "deactivated" };
+  // Persistent rate limit (set by a previous 429)
+  if (config.rateLimitedUntil && config.rateLimitedUntil > Date.now()) {
+    return { available: false, reason: "rate_limited_persisted" };
   }
 
-  // No API key = auto-disabled
-  if (!config.apiKey) {
-    return { available: false, reason: "no_api_key" };
-  }
-
-  // Over monthly budget
-  if (config.monthlyBudgetCents > 0) {
-    const estimatedSpent = estimateMonthlySpend(config);
-    if (estimatedSpent >= config.monthlyBudgetCents) {
-      return { available: false, reason: "budget_exceeded" };
-    }
-  }
-
-  // Rate limited
+  // In-memory rate limit (this instance's window counter)
   const rlState = getRateLimitState(provider);
   if (rlState.isRateLimited && Date.now() < rlState.windowResetAt) {
     return { available: false, reason: "rate_limited" };
@@ -115,40 +156,41 @@ function checkProviderAvailable(
   return { available: true };
 }
 
-function estimateMonthlySpend(config: ProviderConfig): number {
-  const model = PROVIDER_MODELS[config.provider];
-  if (!model) return 0;
-  const avgTokensPerReq = 500;
-  const inputCost = (config.tokensThisMonth * model.costPerInputToken) / 1_000_000;
-  const outputCost =
-    (config.tokensThisMonth * avgTokensPerReq * model.costPerOutputToken) / 1_000_000;
-  return Math.round(inputCost + outputCost);
+// ── Dynamic priority by routing_tier ──
+// Higher routing_tier = better model. Within the same tier, fall back to
+// the hardcoded PROVIDER_PRIORITY (which roughly matches model quality).
+
+function buildPriorityList(configs: Map<AIProvider, ProviderConfig>): AIProvider[] {
+  const sorted = [...PROVIDER_PRIORITY].sort((a, b) => {
+    const tierA = configs.get(a)?.routingTier ?? -1;
+    const tierB = configs.get(b)?.routingTier ?? -1;
+    if (tierA !== tierB) return tierB - tierA; // higher tier first
+    return PROVIDER_PRIORITY.indexOf(a) - PROVIDER_PRIORITY.indexOf(b);
+  });
+
+  // Workers AI always last regardless of tier — it's the free safety net
+  return [...sorted.filter((p) => p !== "workers_ai"), "workers_ai"];
 }
 
 // ── Router ──
 
-/**
- * Route an AI request to the best available provider.
- *
- * Walks the priority list (best → worst), skipping providers that are
- * unavailable (no key, deactivated, rate-limited, over budget).
- * Always falls back to Workers AI as the last resort.
- */
 export async function routeAIRequest(
   request: AIRequest,
   configs: Map<AIProvider, ProviderConfig>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase?: any,
 ): Promise<AIResponse> {
-  // If user forced a specific provider, try only that one + Workers AI fallback
   if (request.forceProvider) {
-    return tryProviderWithFallback(request, request.forceProvider, configs);
+    return tryProviderWithFallback(request, request.forceProvider, configs, supabase);
   }
 
   const startTime = Date.now();
   const errors: string[] = [];
   let fromFallback = false;
 
-  // Walk priority list: best model first
-  for (const provider of PROVIDER_PRIORITY) {
+  const priority = buildPriorityList(configs);
+
+  for (const provider of priority) {
     const availability = checkProviderAvailable(provider, configs);
 
     if (!availability.available) {
@@ -160,12 +202,10 @@ export async function routeAIRequest(
       continue;
     }
 
-    // Try this provider
     try {
       const config = configs.get(provider);
       const apiKey = provider === "workers_ai" ? null : (config?.apiKey ?? null);
       const providerStart = Date.now();
-
       const result = await callProvider(provider, request, apiKey);
 
       incrementRequests(provider);
@@ -204,7 +244,8 @@ export async function routeAIRequest(
       fromFallback = true;
 
       if (err instanceof RateLimitError) {
-        markRateLimited(provider, err.retryAfterMs);
+        markRateLimitedInMemory(provider, err.retryAfterMs);
+        if (supabase) await persistRateLimit(supabase, provider, err.retryAfterMs);
         errors.push(`${provider}: rate limited (${err.retryAfterMs}ms)`);
         logger.warn("AI provider rate limited, falling back", {
           context: "ai-router",
@@ -225,7 +266,6 @@ export async function routeAIRequest(
         continue;
       }
 
-      // Unknown error — still fall back
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`${provider}: ${msg}`);
       logger.error("AI provider unexpected error", {
@@ -237,7 +277,6 @@ export async function routeAIRequest(
     }
   }
 
-  // All providers failed
   const totalMs = Date.now() - startTime;
   logger.error("All AI providers failed", {
     context: "ai-router",
@@ -249,13 +288,12 @@ export async function routeAIRequest(
   throw new AllProvidersFailedError(errors);
 }
 
-/**
- * Try a specific provider, falling back to Workers AI if it fails.
- */
 async function tryProviderWithFallback(
   request: AIRequest,
   provider: AIProvider,
   configs: Map<AIProvider, ProviderConfig>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase?: any,
 ): Promise<AIResponse> {
   const availability = checkProviderAvailable(provider, configs);
 
@@ -287,7 +325,8 @@ async function tryProviderWithFallback(
       };
     } catch (err) {
       if (err instanceof RateLimitError) {
-        markRateLimited(provider, err.retryAfterMs);
+        markRateLimitedInMemory(provider, err.retryAfterMs);
+        if (supabase) await persistRateLimit(supabase, provider, err.retryAfterMs);
       }
       logger.warn("Forced provider failed, falling back to workers_ai", {
         context: "ai-router",
@@ -297,8 +336,8 @@ async function tryProviderWithFallback(
     }
   }
 
-  // Fallback to Workers AI
-  if (provider !== "workers_ai") {
+  // Fallback to Workers AI — only if configured
+  if (provider !== "workers_ai" && isWorkersAIConfigured()) {
     const providerStart = Date.now();
     const result = await callProvider("workers_ai", request, null);
     const latencyMs = Date.now() - providerStart;
@@ -315,21 +354,31 @@ async function tryProviderWithFallback(
     };
   }
 
-  throw new AllProvidersFailedError(["Forced provider and Workers AI both failed"]);
+  throw new AllProvidersFailedError([
+    `Forced provider '${provider}' failed and Workers AI is not configured`,
+  ]);
 }
 
-// ── Load provider configs from DB ──
+// ── Load provider configs from DB (cached) ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function loadProviderConfigs(supabase: any): Promise<Map<AIProvider, ProviderConfig>> {
+export async function loadProviderConfigs(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  options: { forceRefresh?: boolean } = {},
+): Promise<Map<AIProvider, ProviderConfig>> {
+  if (!options.forceRefresh) {
+    const cached = getCachedConfigs();
+    if (cached) return cached;
+  }
+
   const configs = new Map<AIProvider, ProviderConfig>();
 
   const { data, error } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .select(
-      "provider, display_name, api_key_encrypted, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, last_error",
+      "provider, display_name, api_key_encrypted, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, input_tokens_this_month, output_tokens_this_month, cost_this_month_cents, rate_limited_until, last_error",
     )
-    .order("routing_tier");
+    .order("routing_tier", { ascending: false });
 
   if (error || !data) {
     logger.error("Failed to load AI provider configs", {
@@ -341,10 +390,9 @@ export async function loadProviderConfigs(supabase: any): Promise<Map<AIProvider
 
   for (const row of data) {
     const provider = row.provider as AIProvider;
-    const apiKey = row.api_key_encrypted as string | null;
+    const apiKey = await decryptProviderKey(row.api_key_encrypted as string | null);
     const isActive = row.is_active as boolean;
 
-    // Rule: No API key = auto-disabled (except Workers AI)
     const effectiveActive = provider === "workers_ai" ? true : isActive && !!apiKey;
 
     configs.set(provider, {
@@ -355,29 +403,34 @@ export async function loadProviderConfigs(supabase: any): Promise<Map<AIProvider
       routingTier: row.routing_tier as 0 | 1 | 2 | 3,
       fallbackProvider: row.fallback_provider as AIProvider | null,
       monthlyBudgetCents: row.monthly_budget_cents as number,
-      requestsThisMonth: row.requests_this_month as number,
-      tokensThisMonth: row.tokens_this_month as number,
+      requestsThisMonth: (row.requests_this_month as number) ?? 0,
+      tokensThisMonth: (row.tokens_this_month as number) ?? 0,
+      inputTokensThisMonth: (row.input_tokens_this_month as number) ?? 0,
+      outputTokensThisMonth: (row.output_tokens_this_month as number) ?? 0,
+      costThisMonthCents: Number(row.cost_this_month_cents ?? 0),
+      rateLimitedUntil: row.rate_limited_until
+        ? new Date(row.rate_limited_until as string).getTime()
+        : null,
       lastError: row.last_error as string | null,
     });
   }
 
+  setCachedConfigs(configs);
   return configs;
 }
 
-// ── Error types ──
+// ── Errors ──
 
 export class AllProvidersFailedError extends Error {
-  errors: string[];
-  constructor(errors: string[]) {
+  constructor(public readonly errors: string[]) {
     super(`All AI providers failed: ${errors.join("; ")}`);
     this.name = "AllProvidersFailedError";
-    this.errors = errors;
   }
 }
 
-// ── Status helpers (for settings page) ──
+// ── Health report (for admin dashboard) ──
 
-export function getProviderStatuses(configs: Map<AIProvider, ProviderConfig>): {
+export function getProviderHealth(configs: Map<AIProvider, ProviderConfig>): Array<{
   provider: AIProvider;
   displayName: string;
   isActive: boolean;
@@ -385,11 +438,13 @@ export function getProviderStatuses(configs: Map<AIProvider, ProviderConfig>): {
   isRateLimited: boolean;
   budgetUsedPercent: number;
   requestsThisMonth: number;
-}[] {
+}> {
   return PROVIDER_PRIORITY.map((provider) => {
     const config = configs.get(provider);
-    const rlState = getRateLimitState(provider);
-    const isLimited = rlState.isRateLimited && Date.now() < rlState.windowResetAt;
+    const rlState = rateLimitStates.get(provider);
+    const isLimited =
+      (rlState?.isRateLimited && Date.now() < (rlState?.windowResetAt ?? 0)) ||
+      (config?.rateLimitedUntil != null && config.rateLimitedUntil > Date.now());
 
     if (!config) {
       return {
@@ -397,22 +452,23 @@ export function getProviderStatuses(configs: Map<AIProvider, ProviderConfig>): {
         displayName: provider,
         isActive: provider === "workers_ai",
         hasApiKey: provider === "workers_ai",
-        isRateLimited: isLimited,
+        isRateLimited: !!isLimited,
         budgetUsedPercent: 0,
         requestsThisMonth: 0,
       };
     }
 
-    const spent = estimateMonthlySpend(config);
     const budgetPct =
-      config.monthlyBudgetCents > 0 ? Math.round((spent / config.monthlyBudgetCents) * 100) : 0;
+      config.monthlyBudgetCents > 0
+        ? Math.round((config.costThisMonthCents / config.monthlyBudgetCents) * 100)
+        : 0;
 
     return {
       provider,
       displayName: config.displayName,
       isActive: config.isActive,
       hasApiKey: provider === "workers_ai" || !!config.apiKey,
-      isRateLimited: isLimited,
+      isRateLimited: !!isLimited,
       budgetUsedPercent: budgetPct,
       requestsThisMonth: config.requestsThisMonth,
     };
