@@ -320,6 +320,36 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
 
+      # INF-Q1: Provision Cloudflare Queues before `wrangler deploy`.
+      # `wrangler deploy` fails if a queue binding references a queue
+      # that does not exist. This step idempotently creates the required
+      # queues so the first deploy after adding a new queue binding
+      # succeeds without manual intervention.
+      - name: Provision Cloudflare Queues
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "$DEPLOY_BRANCH" = "staging" ]; then
+            QUEUES="notification-queue-staging notification-queue-staging-dlq"
+          else
+            QUEUES="notification-queue notification-queue-dlq"
+          fi
+          for q in $QUEUES; do
+            echo "Ensuring queue '$q' exists..."
+            npx wrangler queues create "$q" 2>&1 || {
+              # Exit code 0 = created; non-zero = already exists or error.
+              # "already exists" is fine — any other error is surfaced.
+              if npx wrangler queues list 2>/dev/null | grep -q "\"$q\""; then
+                echo "Queue '$q' already exists — OK"
+              else
+                echo "::error::Failed to create queue '$q' and it does not exist"
+                exit 1
+              fi
+            }
+          done
+
       - name: Deploy to Cloudflare Workers (Production)
         id: deploy_production
         if: github.ref_name == 'main'
