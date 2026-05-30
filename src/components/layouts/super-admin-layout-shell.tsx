@@ -27,6 +27,7 @@ import {
   CheckCircle,
   Users,
   Activity,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -71,6 +72,7 @@ const navItems = [
   { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
   { href: "/super-admin/team", label: "Team", icon: Users },
   { href: "/super-admin/system", label: "System Status", icon: Activity },
+  { href: "/super-admin/agent-builder", label: "Agent Builder", icon: Wand2 },
 ];
 
 type NotificationType = "info" | "warning" | "success";
