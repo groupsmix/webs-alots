@@ -14,10 +14,7 @@
  */
 
 import { NextRequest } from "next/server";
-import {
-  invalidateConfigCache,
-  invalidateFeatureToggleCache,
-} from "@/lib/ai/config-cache";
+import { invalidateConfigCache, invalidateFeatureToggleCache } from "@/lib/ai/config-cache";
 import { encryptProviderKey, isProviderKeyEncrypted } from "@/lib/ai/secret-encryption";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";

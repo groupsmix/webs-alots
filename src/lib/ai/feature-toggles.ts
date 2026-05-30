@@ -11,10 +11,7 @@
  */
 
 import { logger } from "@/lib/logger";
-import {
-  getCachedFeatureToggles,
-  setCachedFeatureToggles,
-} from "./config-cache";
+import { getCachedFeatureToggles, setCachedFeatureToggles } from "./config-cache";
 
 interface FeatureToggleRow {
   feature_key: string;

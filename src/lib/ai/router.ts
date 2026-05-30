@@ -17,21 +17,11 @@
  */
 
 import { logger } from "@/lib/logger";
-import {
-  getCachedConfigs,
-  invalidateConfigCache,
-  setCachedConfigs,
-} from "./config-cache";
+import { getCachedConfigs, invalidateConfigCache, setCachedConfigs } from "./config-cache";
 import { PROVIDER_MODELS, PROVIDER_PRIORITY, RATE_LIMIT_WINDOW_MS } from "./models";
 import { callProvider, ProviderError, RateLimitError } from "./providers";
 import { decryptProviderKey } from "./secret-encryption";
-import type {
-  AIProvider,
-  AIRequest,
-  AIResponse,
-  ProviderConfig,
-  RateLimitState,
-} from "./types";
+import type { AIProvider, AIRequest, AIResponse, ProviderConfig, RateLimitState } from "./types";
 
 // ── In-memory rate-limit window (request counting) ──
 // The DB column `rate_limited_until` handles persistent cooldown across
