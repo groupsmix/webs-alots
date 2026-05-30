@@ -11,6 +11,10 @@ import {
   MessageSquare,
   ArrowRight,
   Activity,
+  Heart,
+  CheckCircle2,
+  UserCircle,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/locale-switcher";
@@ -21,6 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import type { PatientDashboardData } from "@/lib/data/server";
 import { t } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 import { formatDisplayDate } from "@/lib/utils";
 
 const quickLinkDefs = [
@@ -101,31 +106,63 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
       icon: Calendar,
       label: t(locale, "patient.upcomingAppointments"),
       value: upcoming.length.toString(),
-      color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50",
+      color: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50",
       href: "/patient/appointments",
     },
     {
       icon: Pill,
       label: t(locale, "patient.activePrescriptions"),
       value: patientPrescriptions.length.toString(),
-      color: "text-green-600 bg-green-100 dark:bg-green-900/50",
+      color: "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50",
       href: "/patient/prescriptions",
     },
     {
       icon: Clock,
       label: t(locale, "patient.totalVisits"),
       value: completedVisits.length.toString(),
-      color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50",
+      color: "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/50",
       href: "/patient/medical-history",
     },
     {
       icon: Bell,
       label: t(locale, "patient.unreadNotifications"),
       value: unreadNotifications.length.toString(),
-      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/50",
+      color: "text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50",
       href: "/patient/notifications",
     },
   ];
+
+  const isNewPatient = appointmentsList.length === 0 && prescriptionsList.length === 0;
+
+  const onboardingSteps = [
+    {
+      icon: UserCircle,
+      label: t(locale, "patient.completeProfile" as TranslationKey),
+      href: "/patient/settings",
+      done: !!userName,
+    },
+    {
+      icon: Calendar,
+      label: t(locale, "patient.bookFirst" as TranslationKey),
+      href: "/patient/appointments",
+      done: appointmentsList.length > 0,
+    },
+    {
+      icon: Users,
+      label: t(locale, "patient.addFamily" as TranslationKey),
+      href: "/patient/family",
+      done: false,
+    },
+    {
+      icon: Shield,
+      label: t(locale, "patient.addInsurance" as TranslationKey),
+      href: "/patient/settings",
+      done: false,
+    },
+  ];
+
+  const completedSteps = onboardingSteps.filter((s) => s.done).length;
+  const progressPct = Math.round((completedSteps / onboardingSteps.length) * 100);
 
   return (
     <div>
@@ -136,6 +173,61 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
         </h1>
         <p className="text-muted-foreground text-sm mt-1">{t(locale, "patient.portalOverview")}</p>
       </div>
+
+      {/* Welcome banner for new patients */}
+      {isNewPatient && (
+        <Card className="mb-8 border-primary/20 bg-primary/5 dark:bg-primary/10">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 shrink-0">
+                <Heart className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold mb-1">
+                  {t(locale, "patient.welcomeBannerTitle" as TranslationKey)}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t(locale, "patient.welcomeBannerDesc" as TranslationKey)}
+                </p>
+
+                {/* Progress bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>{t(locale, "patient.profileProgress" as TranslationKey)}</span>
+                    <span>{progressPct}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className="h-2 rounded-full bg-primary transition-all"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Onboarding steps */}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {onboardingSteps.map((step) => (
+                    <Link key={step.href + step.label} href={step.href}>
+                      <div className="flex items-center gap-2 rounded-lg border p-2.5 hover:bg-muted/50 transition-colors cursor-pointer">
+                        {step.done ? (
+                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        ) : (
+                          <step.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                        <span
+                          className={`text-sm ${step.done ? "line-through text-muted-foreground" : "font-medium"}`}
+                        >
+                          {step.label}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
         {statCards.map((stat) => (
@@ -191,7 +283,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
-                          <Calendar className="h-5 w-5 text-blue-600" />
+                          <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                           <p className="text-sm font-medium">{apt.serviceName}</p>
@@ -261,7 +353,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
         <Card className="mb-8 border-orange-200 dark:border-orange-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-orange-600" />
+              <CreditCard className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               {t(locale, "patient.pendingPayments")}
             </CardTitle>
           </CardHeader>
