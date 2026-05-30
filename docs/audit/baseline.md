@@ -4,11 +4,11 @@
 
 ## Baseline Commit
 
-| Field | Value |
-|-------|-------|
-| Branch | `main` |
-| SHA | `ac45f75831d05c4f808eab243d7aa36f7c7905be` |
-| Date frozen | 2026-05-30 |
+| Field       | Value                                      |
+| ----------- | ------------------------------------------ |
+| Branch      | `main`                                     |
+| SHA         | `ac45f75831d05c4f808eab243d7aa36f7c7905be` |
+| Date frozen | 2026-05-30                                 |
 
 ## ESLint Warnings
 
@@ -19,12 +19,12 @@
 
 From `.vitest-coverage-floor.json`:
 
-| Metric | Current Floor | Target |
-|--------|--------------|--------|
-| Statements | 15% | 80% |
-| Branches | 11% | 70% |
-| Lines | 15% | 70% |
-| Functions | 10% | 60% |
+| Metric     | Current Floor | Target |
+| ---------- | ------------- | ------ |
+| Statements | 15%           | 80%    |
+| Branches   | 11%           | 70%    |
+| Lines      | 15%           | 70%    |
+| Functions  | 10%           | 60%    |
 
 ## i18n Empty Keys
 
@@ -36,8 +36,8 @@ From `.vitest-coverage-floor.json`:
 
 ## Finding References
 
-| Finding ID | Description |
-|------------|-------------|
-| FR-001 | ESLint warning baseline |
-| FR-002 | Coverage floor baseline |
-| FR-005 | i18n empty key count |
+| Finding ID | Description             |
+| ---------- | ----------------------- |
+| FR-001     | ESLint warning baseline |
+| FR-002     | Coverage floor baseline |
+| FR-005     | i18n empty key count    |
