@@ -170,7 +170,7 @@ async function logUsage(
   request: AIRequest,
   auth: AuthContext,
 ): Promise<void> {
-  await supabase.from("ai_usage_logs").insert({ // nosemgrep: semgrep.tenant-scoping
+  await supabase.from("ai_usage_logs").insert({
     provider: response.provider,
     model: response.model,
     task_type: request.task,
@@ -181,7 +181,7 @@ async function logUsage(
     cost_cents: response.costCents,
     success: true,
     user_id: auth.user.id,
-  });
+  }); // nosemgrep: semgrep.tenant-scoping — ai_usage_logs is a global admin table (no clinic_id column); super-admin-only API, full RLS defined in migration
 
   // Atomic counter increment. Auto-resets at month boundary.
   const { error } = await supabase.rpc("increment_ai_usage", {

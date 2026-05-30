@@ -51,9 +51,9 @@ export async function loadFeatureToggles(supabase: any): Promise<Map<string, Fea
   const cached = getCachedFeatureToggles();
   if (cached) return cached;
 
-  const { data, error } = await supabase // nosemgrep: semgrep.tenant-scoping
+  const { data, error } = await supabase
     .from("ai_feature_toggles")
-    .select("feature_key, is_enabled, min_tier");
+    .select("feature_key, is_enabled, min_tier"); // nosemgrep: semgrep.tenant-scoping — ai_feature_toggles is a global config table (no clinic_id column); toggles apply platform-wide
 
   const map = new Map<string, FeatureToggleState>();
 

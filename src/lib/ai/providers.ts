@@ -359,9 +359,9 @@ async function callWorkersAI(req: AIRequest, opts: CallOptions): Promise<Provide
   // Workers AI uses runtime credentials — these are not available at build
   // time and aren't user-configurable per-clinic, so they live in env rather
   // than the ai_provider_configs table.
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime Workers AI credential
-  const apiToken = // nosemgrep: semgrep.env-access — runtime Workers AI credential
-    process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — Workers AI runtime cred, not user-configurable per-clinic
+  const apiToken =
+    process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey; // nosemgrep: semgrep.env-access — Workers AI runtime cred, not user-configurable per-clinic
 
   if (!accountId || !apiToken) {
     throw new ProviderError(

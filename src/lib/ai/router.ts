@@ -106,10 +106,8 @@ async function persistRateLimit(
 // when the call is attempted, so the router can skip it cleanly.
 
 function isWorkersAIConfigured(): boolean {
-  // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
-  const apiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
+  const apiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
   return !!accountId && !!apiToken;
 }
 
