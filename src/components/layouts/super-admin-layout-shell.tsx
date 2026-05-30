@@ -68,41 +68,92 @@ interface NavItem {
   children?: { href: string; label: string; icon: typeof LayoutDashboard }[];
 }
 
-const navItems: NavItem[] = [
-  { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
-  { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
-  { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
-  { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
+interface NavGroup {
+  key: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
   {
-    href: "/super-admin/analytics",
-    label: "Analytics",
-    icon: BarChart3,
-    children: [
-      { href: "/super-admin/analytics", label: "Overview", icon: BarChart3 },
+    key: "overview",
+    label: "Overview",
+    icon: LayoutDashboard,
+    items: [
+      { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       {
-        href: "/super-admin/analytics/compare",
-        label: "Clinic Comparison",
-        icon: GitCompareArrows,
+        href: "/super-admin/analytics",
+        label: "Analytics",
+        icon: BarChart3,
+        children: [
+          { href: "/super-admin/analytics", label: "Overview", icon: BarChart3 },
+          {
+            href: "/super-admin/analytics/compare",
+            label: "Clinic Comparison",
+            icon: GitCompareArrows,
+          },
+          { href: "/super-admin/analytics/churn", label: "Churn Detection", icon: AlertTriangle },
+        ],
       },
-      { href: "/super-admin/analytics/churn", label: "Churn Detection", icon: AlertTriangle },
     ],
   },
-  { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
-  { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
-  { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
-  { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
-  { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
-  { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
-  { href: "/super-admin/team", label: "Team", icon: Users },
-  { href: "/super-admin/system", label: "System Status", icon: Activity },
-  { href: "/super-admin/agent-builder", label: "Agent Builder", icon: Wand2 },
-  { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
-  { href: "/super-admin/referrals", label: "Referrals", icon: Gift },
-  { href: "/super-admin/usage", label: "Usage Metrics", icon: Gauge },
-  { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
+  {
+    key: "clinics",
+    label: "Clinics",
+    icon: Building2,
+    items: [
+      { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
+      { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
+      { href: "/super-admin/team", label: "Team", icon: Users },
+    ],
+  },
+  {
+    key: "revenue",
+    label: "Revenue",
+    icon: CreditCard,
+    items: [
+      { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
+      { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
+      { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
+      { href: "/super-admin/referrals", label: "Referrals", icon: Gift },
+      { href: "/super-admin/usage", label: "Usage Metrics", icon: Gauge },
+    ],
+  },
+  {
+    key: "content",
+    label: "Content",
+    icon: FileText,
+    items: [
+      { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
+      { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
+    ],
+  },
+  {
+    key: "intelligence",
+    label: "Intelligence",
+    icon: Bot,
+    items: [
+      { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
+      { href: "/super-admin/agent-builder", label: "Agent Builder", icon: Wand2 },
+      { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
+    ],
+  },
+  {
+    key: "operations",
+    label: "Operations",
+    icon: Activity,
+    items: [
+      { href: "/super-admin/system", label: "System Status", icon: Activity },
+      { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
+      { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
+      { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
+    ],
+  },
 ];
+
+const navItems = navGroups.flatMap((g) => g.items);
 
 type NotificationType = "info" | "warning" | "success";
 
@@ -129,6 +180,26 @@ function getReadNotifIds(): Set<string> {
 function saveReadNotifIds(ids: Set<string>): void {
   try {
     localStorage.setItem(NOTIF_READ_KEY, JSON.stringify([...ids]));
+  } catch {
+    // localStorage may be unavailable
+  }
+}
+
+const NAV_GROUP_KEY = "oltigo-sa-nav-expanded";
+
+function getExpandedGroups(): Set<string> {
+  try {
+    const raw = localStorage.getItem(NAV_GROUP_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    // localStorage may be unavailable
+  }
+  return new Set(navGroups.map((g) => g.key));
+}
+
+function saveExpandedGroups(keys: Set<string>): void {
+  try {
+    localStorage.setItem(NAV_GROUP_KEY, JSON.stringify([...keys]));
   } catch {
     // localStorage may be unavailable
   }
@@ -174,66 +245,105 @@ const notifTypeColor: Record<NotificationType, string> = {
 };
 
 function SidebarNav({ pathname }: { pathname: string }) {
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => getExpandedGroups());
+
+  const toggleGroup = useCallback((key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      saveExpandedGroups(next);
+      return next;
+    });
+  }, []);
+
   return (
-    <nav className="space-y-1">
-      {navItems.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-
-        if (item.children) {
-          return (
-            <div key={item.href} className="space-y-0.5">
-              <Link
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-              {isActive && (
-                <div className="ml-4 border-l pl-3 space-y-0.5">
-                  {item.children.map((child) => {
-                    const childActive = pathname === child.href;
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        aria-current={childActive ? "page" : undefined}
-                        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
-                          childActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        <child.icon className="h-3.5 w-3.5" />
-                        {child.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        }
-
+    <nav className="space-y-2 overflow-y-auto flex-1">
+      {navGroups.map((group) => {
+        const isExpanded = expandedGroups.has(group.key);
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={isActive ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-              isActive
-                ? "bg-primary/10 text-primary font-medium"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </Link>
+          <div key={group.key}>
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.key)}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <group.icon className="h-3.5 w-3.5" />
+              <span className="flex-1 text-left">{group.label}</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  isExpanded ? "rotate-0" : "-rotate-90"
+                }`}
+              />
+            </button>
+            {isExpanded && (
+              <div className="mt-0.5 space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+
+                  if (item.children) {
+                    return (
+                      <div key={item.href} className="space-y-0.5">
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            isActive
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {item.label}
+                        </Link>
+                        {isActive && (
+                          <div className="ml-4 border-l pl-3 space-y-0.5">
+                            {item.children.map((child) => {
+                              const childActive = pathname === child.href;
+                              return (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  aria-current={childActive ? "page" : undefined}
+                                  className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
+                                    childActive
+                                      ? "bg-primary/10 text-primary font-medium"
+                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  }`}
+                                >
+                                  <child.icon className="h-3.5 w-3.5" />
+                                  {child.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         );
       })}
     </nav>
