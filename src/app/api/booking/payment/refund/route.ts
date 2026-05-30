@@ -70,12 +70,12 @@ export const POST = withAuthValidation(
     // ── Dual-control gate ─────────────────────────────────────────────────
     if (refundAmount > DUAL_CONTROL_THRESHOLD_MAD) {
       // Check for an existing pending request to prevent duplicates
-      const { data: existing } = await supabase
+      const { data: existing } = (await supabase
         .from("refund_requests" as never)
         .select("id, status")
         .eq("payment_id", body.paymentId)
         .eq("status", "pending")
-        .maybeSingle() as { data: { id: string; status: string } | null };
+        .maybeSingle()) as { data: { id: string; status: string } | null };
 
       if (existing) {
         return apiError(
@@ -86,7 +86,7 @@ export const POST = withAuthValidation(
       }
 
       // Create the pending approval request
-      const { data: refundRequest, error: reqError } = await supabase
+      const { data: refundRequest, error: reqError } = (await supabase
         .from("refund_requests" as never)
         .insert({
           clinic_id: clinicId,
@@ -96,10 +96,14 @@ export const POST = withAuthValidation(
           reason: body.reason ?? null,
         })
         .select("id")
-        .single() as { data: { id: string } | null; error: unknown };
+        .single()) as { data: { id: string } | null; error: unknown };
 
       if (reqError || !refundRequest) {
-        logger.error("Failed to create refund_request", { context: "refund", clinicId, error: reqError });
+        logger.error("Failed to create refund_request", {
+          context: "refund",
+          clinicId,
+          error: reqError,
+        });
         return apiInternalError("Failed to create refund approval request");
       }
 

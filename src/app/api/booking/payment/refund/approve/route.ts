@@ -41,12 +41,12 @@ export const POST = withAuthValidation(
       amount: number;
       status: string;
     };
-    const { data: refundReq, error: fetchErr } = await supabase
+    const { data: refundReq, error: fetchErr } = (await supabase
       .from("refund_requests" as never)
       .select("id, clinic_id, payment_id, initiator_id, amount, status")
       .eq("id", body.refundRequestId)
       .eq("clinic_id", clinicId)
-      .single() as { data: RefundRequestRow | null; error: unknown };
+      .single()) as { data: RefundRequestRow | null; error: unknown };
 
     if (fetchErr || !refundReq) {
       return apiNotFound("Refund request not found");
@@ -73,11 +73,15 @@ export const POST = withAuthValidation(
           approver_id: profile.id,
           rejection_reason: body.rejectionReason ?? "No reason provided",
           approved_at: new Date().toISOString(),
-        })
+        } as never)
         .eq("id", body.refundRequestId);
 
       if (rejectErr) {
-        logger.error("Failed to reject refund request", { context: "refund/approve", clinicId, error: rejectErr });
+        logger.error("Failed to reject refund request", {
+          context: "refund/approve",
+          clinicId,
+          error: rejectErr,
+        });
         return apiInternalError("Failed to reject refund request");
       }
 
@@ -144,7 +148,11 @@ export const POST = withAuthValidation(
       .maybeSingle();
 
     if (updateErr) {
-      logger.error("Approved refund execution failed", { context: "refund/approve", clinicId, error: updateErr });
+      logger.error("Approved refund execution failed", {
+        context: "refund/approve",
+        clinicId,
+        error: updateErr,
+      });
       return apiInternalError("Failed to execute approved refund");
     }
 
@@ -161,7 +169,7 @@ export const POST = withAuthValidation(
         approved_at: new Date().toISOString(),
         executed_at: new Date().toISOString(),
         executed_by: profile.id,
-      })
+      } as never)
       .eq("id", body.refundRequestId);
 
     await logAuditEvent({
