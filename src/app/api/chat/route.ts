@@ -66,11 +66,18 @@ function sanitizeUserInput(text: string): string {
       .replace(/<\|im_(start|end)\|>\s*(system|assistant)?/gi, "")
       // Strip XML-style role tags
       .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
-      // Strip "ignore all previous instructions" style attacks
-      .replace(
-        /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi,
-        "[filtered]",
-      )
+      // WP-01: Filter "ignore previous instructions" style injection
+      // attempts using substring checks instead of a regex. The original
+      // regex had nested optional quantifiers (\s+(all\s+)?) that caused
+      // catastrophic backtracking (ReDoS) on crafted input.
+      .replace(/[^\n]+/g, (line) => {
+        const lower = line.toLowerCase();
+        if (!lower.includes("ignore")) return line;
+        const hasTarget = ["previous", "prior", "above", "earlier"].some((w) => lower.includes(w));
+        if (!hasTarget) return line;
+        const hasObject = ["instruction", "prompt", "context"].some((w) => lower.includes(w));
+        return hasObject ? "[filtered]" : line;
+      })
       // Collapse excessive whitespace
       .replace(/\n{3,}/g, "\n\n")
       .trim()
@@ -133,16 +140,25 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     return apiError("Last message must be a non-empty user message");
   }
 
-  // Sanitize and truncate messages; limit conversation history length.
-  // V-01: Truncate assistant messages too — an attacker can fabricate
-  // long assistant turns in the request body to inflate token cost.
-  const sanitizedMessages = body.messages.slice(-MAX_HISTORY_LENGTH).map((m) => ({
+  // TF-03: Strip caller-supplied assistant turns — only accept user-role
+  // messages from clients. Attacker-controlled assistant turns can fabricate
+  // conversation history and manipulate the LLM.
+  const userOnlyMessages = body.messages.filter((m) => m.role === "user");
+
+  // WP-03: Truncate each message BEFORE calling sanitizeUserInput so the
+  // O(n²) regex inside sanitize operates on bounded input (≤2000 chars).
+  const sanitizedMessages = userOnlyMessages.slice(-MAX_HISTORY_LENGTH).map((m) => ({
     ...m,
-    content:
-      m.role === "user"
-        ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
-        : m.content.slice(0, MAX_MESSAGE_LENGTH),
+    content: sanitizeUserInput(m.content.slice(0, MAX_MESSAGE_LENGTH)),
   }));
+
+  // AA-02: Authenticate BEFORE fetching clinic config to avoid leaking
+  // tenant configuration to unauthenticated callers on non-basic tiers.
+  // Basic tier is resolved after the config fetch since it needs no auth.
+  const supabaseForAuth = await createClient();
+  const {
+    data: { user: chatUser },
+  } = await supabaseForAuth.auth.getUser();
 
   // Fetch clinic context from Supabase
   const ctx = await fetchChatbotContext(clinicId);
@@ -171,10 +187,6 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
   // SEC-01: Require authentication for AI-powered tiers (smart / advanced)
   // to prevent bot-driven abuse of Cloudflare Workers AI quota and OpenAI API.
-  const supabaseForAuth = await createClient();
-  const {
-    data: { user: chatUser },
-  } = await supabaseForAuth.auth.getUser();
   if (!chatUser) {
     // Fall back to basic keyword matching for unauthenticated users
     const reply = getBasicResponse(lastMessage.content, ctx);

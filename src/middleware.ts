@@ -61,8 +61,14 @@ function setTenantHeaders(
  * path, preventing open-redirect attacks via the `?redirect=` query param.
  */
 function safeRedirectPath(raw: string): string {
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
+  // TF-02: Normalize the path first to defeat Unicode look-alike slashes
+  // (e.g. U+2215 DIVISION SLASH, U+FF0F FULLWIDTH SOLIDUS) that bypass
+  // the naive startsWith("//") check above.
+  const normalized = decodeURIComponent(encodeURIComponent(raw)).normalize("NFKC");
+  // Only allow paths that start with exactly one slash followed by a
+  // non-slash character (or end of string for bare "/").
+  if (!/^\/[^/]/.test(normalized) && normalized !== "/") return "/";
+  return normalized;
 }
 
 /** Global body size cap (25 MB). Requests advertising a larger payload are
