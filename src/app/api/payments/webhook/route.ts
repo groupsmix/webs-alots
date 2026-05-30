@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
 import { createClient } from "@/lib/supabase-server";
@@ -151,6 +152,33 @@ export async function POST(request: NextRequest) {
             .eq("status", APPOINTMENT_STATUS.PENDING);
         }
 
+        // AUDIT: Record Stripe event_id so we have an immutable receipt
+        // of every processed webhook keyed to the Stripe event ID.
+        if (clinicId) {
+          try {
+            await logAuditEvent({
+              supabase,
+              action: "payment_completed",
+              type: "payment",
+              clinicId,
+              description: `Stripe checkout.session.completed (event: ${event.id}, session: ${session.id})`,
+              metadata: {
+                stripe_event_id: event.id,
+                stripe_session_id: session.id,
+                appointment_id: appointmentId ?? null,
+                patient_id: patientId ?? null,
+                amount_total: session.amount_total ?? null,
+              },
+            });
+          } catch (auditErr) {
+            logger.warn("Failed to write payment_completed audit event", {
+              context: "payments/webhook",
+              stripeEventId: event.id,
+              error: auditErr,
+            });
+          }
+        }
+
         // Payment completed — recorded in DB above
         break;
       }
@@ -214,6 +242,31 @@ export async function POST(request: NextRequest) {
             reference: intent.id,
             payment_type: "full",
           });
+        }
+
+        // AUDIT: Record the failed payment event with Stripe event_id.
+        if (failedClinicId) {
+          try {
+            await logAuditEvent({
+              supabase,
+              action: "payment_failed",
+              type: "payment",
+              clinicId: failedClinicId,
+              description: `Stripe payment_intent.payment_failed (event: ${event.id}, intent: ${intent.id})`,
+              metadata: {
+                stripe_event_id: event.id,
+                stripe_intent_id: intent.id,
+                appointment_id: failedAppointmentId ?? null,
+                patient_id: failedPatientId ?? null,
+              },
+            });
+          } catch (auditErr) {
+            logger.warn("Failed to write payment_failed audit event", {
+              context: "payments/webhook",
+              stripeEventId: event.id,
+              error: auditErr,
+            });
+          }
         }
 
         // Payment failed — recorded in DB above

@@ -30,6 +30,10 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
     .order("routing_tier", { ascending: true });
 
   if (provErr) {
+    // Table may not exist yet if migration hasn't run
+    if (provErr.code === "42P01" || provErr.message?.includes("does not exist")) {
+      return apiSuccess({ providers: [], toggles: [], usage: {} });
+    }
     logger.error("Failed to fetch AI provider configs", {
       context: "ai-config",
       error: provErr.message,
@@ -43,7 +47,7 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
     .select("id, feature_key, display_name, description, is_enabled, min_tier")
     .order("feature_key");
 
-  if (toggleErr) {
+  if (toggleErr && toggleErr.code !== "42P01" && !toggleErr.message?.includes("does not exist")) {
     logger.error("Failed to fetch AI feature toggles", {
       context: "ai-config",
       error: toggleErr.message,
