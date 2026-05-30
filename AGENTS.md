@@ -127,6 +127,11 @@ return apiError("Not found", 404, "NOT_FOUND");
 - Always add RLS policies for new tables with `clinic_id` scoping
 - Never drop columns or tables in production without a migration plan
 
+## Audit Baseline
+
+The pre-existing quality baseline is documented in [`docs/audit/baseline.md`](docs/audit/baseline.md).
+Any cleanup PR should reference this file to compare before/after metrics.
+
 ## CI Pipeline
 
 PRs run: ESLint → TypeScript → Unit tests → Bundle size check (800 kB shared JS limit, see `scripts/check-bundle-budget.mjs`) → E2E tests

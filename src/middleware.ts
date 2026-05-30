@@ -432,15 +432,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // FP-02: Enforce verifyCronSecret at the middleware level for all
-  // /api/cron/ routes. Previously each handler called verifyCronSecret
-  // individually; a new handler that forgot would be fully unauthenticated.
-  // Now middleware rejects requests without a valid CRON_SECRET bearer
-  // token before any handler runs.
+  // FP-02: Enforce cron auth at middleware level for /api/cron/ routes.
+  // These routes are in PUBLIC_API_ROUTES (no session auth) but MUST carry
+  // a valid CRON_SECRET bearer token. Previously only per-handler
+  // verifyCronSecret guarded them — a missing guard in a new handler
+  // would expose cron endpoints without auth.
   if (pathname.startsWith("/api/cron/")) {
-    const cronAuthError = verifyCronSecret(request);
-    if (cronAuthError) {
-      return withSecurityHeaders(cronAuthError, cspHeaders);
+    const cronDenied = verifyCronSecret(request);
+    if (cronDenied) {
+      return withSecurityHeaders(cronDenied, cspHeaders);
     }
     return supabaseResponse;
   }

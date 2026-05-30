@@ -153,7 +153,7 @@ async function handler(request: NextRequest) {
             const { error: flagError } = await supabase.from("archived_records").insert(flagRows);
 
             if (flagError) {
-              errors.push(`Flag ${table} for ${clinic.id}: ${flagError.message}`);
+              errors.push(`Flag ${table} for ${clinic.id}: ${flagError.code ?? "unknown"}`);
             } else {
               totalFlagged += newFlags.length;
             }
@@ -213,7 +213,7 @@ async function handler(request: NextRequest) {
                 .insert(archiveRows);
 
               if (archiveError) {
-                errors.push(`Archive ${table} for ${clinic.id}: ${archiveError.message}`);
+                errors.push(`Archive ${table} for ${clinic.id}: ${archiveError.code ?? "unknown"}`);
               } else {
                 totalArchived += toArchive.length;
               }
@@ -221,8 +221,7 @@ async function handler(request: NextRequest) {
           }
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        errors.push(`${table} for ${clinic.id}: ${msg}`);
+        errors.push(`${table} for ${clinic.id}: processing_error`);
         logger.error("Data retention processing error", {
           context: "cron/data-retention",
           clinicId: clinic.id,

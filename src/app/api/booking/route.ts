@@ -363,9 +363,10 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     },
   );
   if (patientError || !patientId) {
+    // EL-02/EL-03: Log only error code — Supabase errors may contain patient PII.
     logger.warn("Failed to find/create patient", {
       context: "booking/route",
-      error: patientError,
+      code: patientError?.code,
     });
     return apiInternalError("Failed to create patient record");
   }

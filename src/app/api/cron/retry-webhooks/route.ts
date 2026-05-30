@@ -44,7 +44,7 @@ async function handler(request: NextRequest) {
     if (fetchError) {
       logger.error("Failed to fetch retry queue items", {
         context: "cron/retry-webhooks",
-        error: fetchError.message,
+        code: fetchError.code,
       });
       return apiInternalError("Failed to fetch retry queue");
     }
