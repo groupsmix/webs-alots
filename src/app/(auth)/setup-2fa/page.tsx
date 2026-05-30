@@ -1,7 +1,7 @@
 "use client";
 
 import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,19 @@ import { formatDisplayDate } from "@/lib/utils";
 
 type Step = "loading" | "qr" | "verify" | "backup" | "done";
 
+const ROLE_DASHBOARD: Record<string, string> = {
+  super_admin: "/super-admin/dashboard",
+  clinic_admin: "/admin/dashboard",
+  receptionist: "/receptionist/dashboard",
+  doctor: "/doctor/dashboard",
+  patient: "/patient/dashboard",
+};
+
 export default function Setup2FAPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requiredRole = searchParams.get("required") ?? "doctor";
+  const dashboardPath = ROLE_DASHBOARD[requiredRole] ?? "/doctor/dashboard";
   const [locale] = useLocale();
   const [step, setStep] = useState<Step>("loading");
   const [enrollment, setEnrollment] = useState<MFAEnrollment | null>(null);
@@ -174,7 +185,7 @@ export default function Setup2FAPage() {
             </p>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={() => router.push("/doctor/dashboard")}>
+            <Button className="w-full" onClick={() => router.push(dashboardPath)}>
               {t(locale, "mfa.goToDashboard")}
             </Button>
           </CardFooter>
@@ -193,7 +204,7 @@ export default function Setup2FAPage() {
             </div>
             <h2 className="text-xl font-bold mb-2">{t(locale, "mfa.enabled")}</h2>
             <p className="text-muted-foreground mb-6">{t(locale, "mfa.setupCompleteDesc")}</p>
-            <Button onClick={() => router.push("/doctor/dashboard")}>
+            <Button onClick={() => router.push(dashboardPath)}>
               {t(locale, "mfa.goToDashboard")}
             </Button>
           </CardContent>

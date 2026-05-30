@@ -7,7 +7,7 @@
  * doctor/clinic_admin step-up redirects, and the non-privileged pass-through.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { enforceMfa } from "../mfa-enforcement";
 
 type Aal = { currentLevel: string | null; nextLevel: string | null };
@@ -24,7 +24,33 @@ function mockSupabase(aal: Aal): SupabaseClient {
 
 const URL_BASE = "https://clinic.oltigo.com";
 
-describe("enforceMfa — super_admin", () => {
+describe("enforceMfa — disabled by default", () => {
+  it("returns null for super_admin when ENFORCE_MFA is not set", async () => {
+    delete process.env.ENFORCE_MFA;
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      "super_admin",
+      "/admin",
+      `${URL_BASE}/admin`,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("returns null for doctor when ENFORCE_MFA is not set", async () => {
+    delete process.env.ENFORCE_MFA;
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      "doctor",
+      "/dashboard",
+      `${URL_BASE}/dashboard`,
+    );
+    expect(result).toBeNull();
+  });
+});
+
+describe("enforceMfa — super_admin (ENFORCE_MFA=true)", () => {
+  beforeEach(() => { process.env.ENFORCE_MFA = "true"; });
+  afterEach(() => { delete process.env.ENFORCE_MFA; });
   it("passes when the session is already AAL2", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal2", nextLevel: "aal2" }),
@@ -68,7 +94,9 @@ describe("enforceMfa — super_admin", () => {
   });
 });
 
-describe("enforceMfa — doctor / clinic_admin mandatory 2FA", () => {
+describe("enforceMfa — doctor / clinic_admin mandatory 2FA (ENFORCE_MFA=true)", () => {
+  beforeEach(() => { process.env.ENFORCE_MFA = "true"; });
+  afterEach(() => { delete process.env.ENFORCE_MFA; });
   it("redirects a doctor with an enrolled-but-unverified factor to login", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
