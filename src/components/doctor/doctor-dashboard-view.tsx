@@ -13,7 +13,12 @@ import {
   DollarSign,
   CalendarClock,
   Stethoscope,
+  Sparkles,
+  Mic,
+  FileText,
+  Pill,
 } from "lucide-react";
+import Link from "next/link";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -42,6 +47,7 @@ import type {
 } from "@/lib/data/server";
 import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
 import { t } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { formatCurrency, getLocalDateStr, formatDisplayDate } from "@/lib/utils";
 
@@ -183,25 +189,25 @@ export function DoctorDashboardView({
       icon: Calendar,
       label: t(locale, "dashboard.todayAppointments"),
       value: todayAppts.length.toString(),
-      color: "text-blue-600",
+      color: "text-blue-600 dark:text-blue-400",
     },
     {
       icon: Stethoscope,
       label: t(locale, "dashboard.consultationsWeek"),
       value: weekConsultations.length.toString(),
-      color: "text-indigo-600",
+      color: "text-indigo-600 dark:text-indigo-400",
     },
     {
       icon: DollarSign,
       label: t(locale, "dashboard.revenueMonth"),
       value: `${formatCurrency(monthRevenue)}`,
-      color: "text-emerald-600",
+      color: "text-emerald-600 dark:text-emerald-400",
     },
     {
       icon: CalendarClock,
       label: t(locale, "dashboard.upcomingFollowUps"),
       value: upcomingFollowUps.length.toString(),
-      color: "text-purple-600",
+      color: "text-purple-600 dark:text-purple-400",
     },
   ];
 
@@ -299,6 +305,15 @@ export function DoctorDashboardView({
       )
     : [];
 
+  const isNewDoctor = appointmentList.length === 0 && patients.length === 0;
+
+  const greeting = useMemo(() => {
+    const hour = now.getHours();
+    if (hour < 12) return t(locale, "dashboard.goodMorning" as TranslationKey);
+    if (hour < 18) return t(locale, "dashboard.goodAfternoon" as TranslationKey);
+    return t(locale, "dashboard.goodEvening" as TranslationKey);
+  }, [now, locale]);
+
   if (error) {
     return (
       <div className="p-8 text-center">
@@ -310,7 +325,121 @@ export function DoctorDashboardView({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{t(locale, "dashboard.doctor")}</h1>
+      {/* Personalized greeting */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">{greeting}</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          {isNewDoctor
+            ? t(locale, "dashboard.welcomeDoctor" as TranslationKey)
+            : t(locale, "dashboard.doctorOverview" as TranslationKey)}
+        </p>
+      </div>
+
+      {/* Welcome banner for new doctors */}
+      {isNewDoctor && (
+        <Card className="mb-8 border-primary/20 bg-primary/5 dark:bg-primary/10">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 shrink-0">
+                <Stethoscope className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold mb-1">
+                  {t(locale, "dashboard.welcomeBannerTitle" as TranslationKey)}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t(locale, "dashboard.welcomeBannerDesc" as TranslationKey)}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/doctor/schedule">
+                    <Button size="sm">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {t(locale, "dashboard.setupSchedule" as TranslationKey)}
+                    </Button>
+                  </Link>
+                  <Link href="/doctor/patients">
+                    <Button size="sm" variant="outline">
+                      {t(locale, "dashboard.viewPatients" as TranslationKey)}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Quick Actions */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-8">
+        <Link href="/doctor/smart-prescription">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/50 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/70 transition-colors">
+                <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {t(locale, "dashboard.aiPrescription" as TranslationKey)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t(locale, "dashboard.aiPrescriptionDesc" as TranslationKey)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/doctor/voice-notes">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/50 group-hover:bg-sky-200 dark:group-hover:bg-sky-900/70 transition-colors">
+                <Mic className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {t(locale, "dashboard.voiceNotes" as TranslationKey)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t(locale, "dashboard.voiceNotesDesc" as TranslationKey)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/doctor/consultation">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/70 transition-colors">
+                <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {t(locale, "dashboard.consultNotes" as TranslationKey)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t(locale, "dashboard.consultNotesDesc" as TranslationKey)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/doctor/prescriptions">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/70 transition-colors">
+                <Pill className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">
+                  {t(locale, "dashboard.prescriptions" as TranslationKey)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t(locale, "dashboard.prescriptionsDesc" as TranslationKey)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -378,7 +507,7 @@ export function DoctorDashboardView({
                           title={t(locale, "dashboard.startConsultation")}
                           onClick={() => handleStartConsultation(apt.id)}
                         >
-                          <ArrowRight className="h-4 w-4 text-blue-600" />
+                          <ArrowRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </Button>
                       )}
                       {apt.status === "in-progress" && (
@@ -388,7 +517,7 @@ export function DoctorDashboardView({
                           title={t(locale, "dashboard.markDone")}
                           onClick={() => handleMarkDone(apt.id, apt.patientName)}
                         >
-                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                         </Button>
                       )}
                       {apt.status !== "completed" &&
@@ -400,7 +529,7 @@ export function DoctorDashboardView({
                             title={t(locale, "dashboard.noShow")}
                             onClick={() => handleNoShow(apt.id, apt.patientName)}
                           >
-                            <XCircle className="h-4 w-4 text-red-500" />
+                            <XCircle className="h-4 w-4 text-red-500 dark:text-red-400" />
                           </Button>
                         )}
                     </div>
@@ -488,7 +617,7 @@ export function DoctorDashboardView({
                   {upcomingFollowUps.slice(0, 5).map((apt) => (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700">
+                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
                           {apt.patientName
                             .split(" ")
                             .map((n) => n[0])
@@ -597,7 +726,9 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.consultations")}
                   </p>
-                  <p className="text-2xl font-bold text-indigo-600">{weekStats.consultations}</p>
+                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {weekStats.consultations}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -613,13 +744,17 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.completedStat")}
                   </p>
-                  <p className="text-2xl font-bold text-green-600">{weekStats.completed}</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {weekStats.completed}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">{t(locale, "dashboard.noShows")}</p>
-                  <p className="text-2xl font-bold text-red-500">{weekStats.noShows}</p>
+                  <p className="text-2xl font-bold text-red-500 dark:text-red-400">
+                    {weekStats.noShows}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -630,7 +765,7 @@ export function DoctorDashboardView({
                     </p>
                     <p className="text-2xl font-bold">{formatCurrency(weekStats.revenue)}</p>
                   </div>
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  <TrendingUp className="h-5 w-5 text-green-500 dark:text-green-400" />
                 </CardContent>
               </Card>
             </div>
@@ -651,7 +786,9 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.consultations")}
                   </p>
-                  <p className="text-2xl font-bold text-indigo-600">{monthStats.consultations}</p>
+                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {monthStats.consultations}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -667,13 +804,17 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.completedStat")}
                   </p>
-                  <p className="text-2xl font-bold text-green-600">{monthStats.completed}</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {monthStats.completed}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">{t(locale, "dashboard.noShows")}</p>
-                  <p className="text-2xl font-bold text-red-500">{monthStats.noShows}</p>
+                  <p className="text-2xl font-bold text-red-500 dark:text-red-400">
+                    {monthStats.noShows}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -684,7 +825,7 @@ export function DoctorDashboardView({
                     </p>
                     <p className="text-2xl font-bold">{formatCurrency(monthStats.revenue)}</p>
                   </div>
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  <TrendingUp className="h-5 w-5 text-green-500 dark:text-green-400" />
                 </CardContent>
               </Card>
             </div>
