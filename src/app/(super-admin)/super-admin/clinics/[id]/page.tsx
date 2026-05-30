@@ -178,6 +178,7 @@ export default function ClinicDetailPage() {
             feature_key: feature.id,
             enabled: newEnabled,
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           },
         ]);
         addToast(`Override ${newEnabled ? "enabled" : "disabled"} for ${feature.name}`, "success");
