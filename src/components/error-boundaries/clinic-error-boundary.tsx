@@ -61,9 +61,7 @@ export default function ClinicErrorBoundary({
   const [locale] = useLocale();
   const router = useRouter();
 
-  const titleKey = (
-    variant === "page" ? "error.title" : "error.sectionTitle"
-  ) as TranslationKey;
+  const titleKey = (variant === "page" ? "error.title" : "error.sectionTitle") as TranslationKey;
   const descKey = (
     variant === "page" ? "error.description" : "error.sectionDescription"
   ) as TranslationKey;
