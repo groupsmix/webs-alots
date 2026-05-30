@@ -213,40 +213,13 @@ const eslintConfig = defineConfig([
       "i18next/no-literal-string": "off",
     },
   },
-  {
-    // ENV-CENTRALIZATION: Enforce that environment variables are read through
-    // src/lib/env.ts rather than accessed directly via process.env.
-    // Exceptions:
-    //   1. src/lib/env.ts itself — that's where validation lives.
-    //   2. next.config.ts / instrumentation.ts — build-time / edge bootstrap.
-    //   3. Test files — can read env vars directly for test config.
-    //   4. Scripts — standalone Node scripts run outside Next.js.
-    //   5. wrangler.toml-adjacent Worker entry points.
-    //
-    // When you genuinely need direct access (Workers AI creds, build-time
-    // constants) add a // eslint-disable-next-line no-restricted-syntax
-    // comment with a justification on the same line.
-    files: ["src/**/*.{ts,tsx}"],
-    ignores: [
-      "src/lib/env.ts",
-      "src/**/*.test.{ts,tsx}",
-      "src/**/__tests__/**",
-      "src/instrumentation.ts",
-    ],
-    rules: {
-      "no-restricted-syntax": [
-        "warn",
-        {
-          // Catch: process.env.FOO and process.env["FOO"]
-          selector:
-            "MemberExpression[object.object.name='process'][object.property.name='env']",
-          message:
-            "ENV-001: Read environment variables through src/lib/env.ts instead of process.env directly. " +
-            "If this is a build-time or Workers-only access, add // eslint-disable-next-line no-restricted-syntax with justification.",
-        },
-      ],
-    },
-  },
+  // ENV-001 rule: enforce process.env access through src/lib/env.ts
+  // Deferred: the rule is ready (see src/lib/env.ts for typed getters) but
+  // activating it now would exceed the ESLint warning baseline (~245 new
+  // warnings from ~230 remaining call sites). Enable in a dedicated cleanup
+  // PR once the first-wave getters in env.ts have been rolled out more widely.
+  // The getters added in this PR (getCronSecret, getPhiEncryptionKey, etc.)
+  // are already in place and can be adopted incrementally.
   ...storybook.configs["flat/recommended"],
 ]);
 
