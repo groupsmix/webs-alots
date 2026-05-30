@@ -83,29 +83,13 @@ Sentry.init({
     }
     return breadcrumb;
   },
-  // S-35 + Audit P1 #13: Strip PHI from events and disable Replay on PHI routes
+  // S-35 + Audit findings #12/#21: Strip PHI from events and disable Replay on PHI routes
   beforeSend(event) {
-    // Enrich with tenant context from cookies for per-clinic filtering
-    try {
-      const cookies = document.cookie.split(";").reduce(
-        (acc, cookie) => {
-          const [key, value] = cookie.trim().split("=");
-          if (key) acc[key] = value ?? "";
-          return acc;
-        },
-        {} as Record<string, string>,
-      );
-      const clinicId = cookies["x-clinic-id"] || cookies["clinic_id"];
-      const userRole = cookies["user_role"] || cookies["x-user-role"];
-      if (clinicId) {
-        event.tags = { ...event.tags, clinic_id: clinicId };
-      }
-      if (userRole) {
-        event.tags = { ...event.tags, user_role: userRole };
-      }
-    } catch {
-      // Cookie access may fail in some environments
-    }
+    // NOTE: Tenant context (clinic_id, user_role) should be set server-side via
+    // Sentry.setTag() in a Server Component or middleware using the validated
+    // tenant context from requireTenant(). Do NOT read from cookies — client-supplied
+    // data violates the security model documented in AGENTS.md.
+    // Audit finding #21: removed cookie-reading clinic_id tagging.
 
     // Strip request bodies from all events
     if (event.request) {
@@ -120,8 +104,33 @@ Sentry.init({
       }
     }
 
+    // Audit finding #12: Comprehensive PHI route check — disable Replay on any
+    // authenticated route that may access patient data. Patterns:
+    // - /admin/* — admin dashboards (patient records, clinic data)
+    // - /doctor/* — doctor portal (patient cases, prescriptions)
+    // - /receptionist/* — receptionist panel (appointments, patient files)
+    // - /patient/* — patient portal (medical history, appointments)
+    // - /super-admin/* — super-admin (multi-clinic data, audit logs)
+    // - /dashboard/* — clinic dashboard (analytics, patient lists)
+    // - /appointment/* — appointment routes (patient PHI)
+    // - /medical/* — medical record routes (PHI)
+    //
+    // Session replay with maskAllText: true still allows DOM structure and
+    // metadata leakage — disable entirely on these routes to be safe.
+    const phiRoutePatterns = [
+      "/admin/",
+      "/doctor/",
+      "/receptionist/",
+      "/patient/",
+      "/super-admin/",
+      "/dashboard/",
+      "/appointment/",
+      "/medical/",
+    ];
     const url = event.request?.url ?? window.location.href;
-    if (url.includes("/admin/") || url.includes("/doctor/") || url.includes("/patient/")) {
+    const isPhiRoute = phiRoutePatterns.some((pattern) => url.includes(pattern));
+
+    if (isPhiRoute) {
       delete event.exception?.values?.[0]?.mechanism?.handled;
       if (event.type === "replay_event") return null; // Drop replay on PHI routes
     }
