@@ -15,6 +15,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError, apiError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { assertCronAllowedInThisEnv } from "@/lib/cron-env-guard";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -36,6 +37,12 @@ interface StripeListResponse {
 async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
+
+  // audit-4 F-13: reconciliation writes drift entries to the financial
+  // journal. Running this in staging against the prod Stripe account
+  // would corrupt real records. Refuse unless explicitly opted in.
+  const envBlock = assertCronAllowedInThisEnv("stripe-reconcile");
+  if (envBlock) return envBlock;
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {

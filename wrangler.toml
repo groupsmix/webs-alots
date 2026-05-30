@@ -131,6 +131,12 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 [env.production.vars]
 NODE_ENV = "production"
+# audit-4 F-13: WORKER_ENV is the only marker that distinguishes prod
+# from staging at runtime (NODE_ENV is "production" in both blocks so the
+# Next.js runtime behaves identically). Destructive crons (billing,
+# gdpr-purge, stripe-reconcile, dedup-purge) consult this to refuse to
+# run in staging unless ALLOW_STAGING_DESTRUCTIVE_CRONS=true is set.
+WORKER_ENV = "production"
 # FIXED: KV binding now resolved correctly via getWorkerBinding().
 # Rate limiter is distributed, protected in production.
 RATE_LIMIT_BACKEND = "kv"
@@ -194,6 +200,11 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 [env.staging.vars]
 NODE_ENV = "production"
+# audit-4 F-13: WORKER_ENV marks this as the staging deployment so
+# destructive crons (billing, gdpr-purge, stripe-reconcile, dedup-purge)
+# return 503 instead of running. Override on a per-Worker basis with
+# ALLOW_STAGING_DESTRUCTIVE_CRONS=true via wrangler secret.
+WORKER_ENV = "staging"
 # FIXED: KV binding now resolved correctly via getWorkerBinding().
 RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in staging as well.

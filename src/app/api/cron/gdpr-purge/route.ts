@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { assertCronAllowedInThisEnv } from "@/lib/cron-env-guard";
 import { sendEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { deleteFromR2, isR2Configured } from "@/lib/r2";
@@ -30,6 +31,12 @@ type UntypedClient = SupabaseClient<any, any, any>;
 async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
+
+  // audit-4 F-13: GDPR right-to-erasure is the most destructive cron in
+  // the system (permanent patient-record deletion). Refuse to run in
+  // staging unless an operator explicitly opts in.
+  const envBlock = assertCronAllowedInThisEnv("gdpr-purge");
+  if (envBlock) return envBlock;
 
   try {
     const supabase = createAdminClient("cron") as UntypedClient;
