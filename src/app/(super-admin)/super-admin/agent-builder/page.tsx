@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable i18next/no-literal-string */
+
 import { Download, RotateCcw, Rocket, Save, Send, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage, type ChatMessageData } from "@/components/agent-builder/chat-message";

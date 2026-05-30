@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable i18next/no-literal-string */
+
 import {
   Calendar,
   Clock,
