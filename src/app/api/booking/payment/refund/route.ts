@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -94,7 +96,7 @@ export const POST = withAuthValidation(
           initiator_id: profile.id,
           amount: refundAmount,
           reason: body.reason ?? null,
-        })
+        } as never)
         .select("id")
         .single()) as { data: { id: string } | null; error: unknown };
 
@@ -125,15 +127,15 @@ export const POST = withAuthValidation(
         },
       });
 
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           status: "pending_approval",
           message:
             `Refund of ${refundAmount} MAD exceeds the ${DUAL_CONTROL_THRESHOLD_MAD} MAD ` +
             "dual-control threshold. A second admin must approve this request.",
           refund_request_id: refundRequest.id,
-        }),
-        { status: 202, headers: { "Content-Type": "application/json" } },
+        },
+        { status: 202 },
       );
     }
 
