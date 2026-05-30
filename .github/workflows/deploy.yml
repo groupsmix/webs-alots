@@ -491,8 +491,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="deploy-$(date +%Y%m%d)-${GITHUB_SHA::7}"
-          gh release create "$TAG" \
-            --title "Deploy ${TAG}" \
-            --notes "Production deploy — SBOM and cosign bundle attached per A174." \
-            --target "$GITHUB_SHA" \
-            bom.json bom.json.bundle
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists — uploading SBOM as additional assets"
+            gh release upload "$TAG" bom.json bom.json.bundle --clobber
+          else
+            gh release create "$TAG" \
+              --title "Deploy ${TAG}" \
+              --notes "Production deploy — SBOM and cosign bundle attached per A174." \
+              --target "$GITHUB_SHA" \
+              bom.json bom.json.bundle
+          fi
