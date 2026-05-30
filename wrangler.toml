@@ -109,12 +109,14 @@ bucket_name = "webs-alots-uploads"
 # or Cloudflare dashboard. Only non-sensitive defaults go here.
 [vars]
 NODE_ENV = "production"
-# HOTFIX (prod 429 outage): under @opennextjs/cloudflare v1.17 the KV binding
-# is exposed via getCloudflareContext().env, not globalThis. The limiter reads
-# globalThis.RATE_LIMIT_KV, so KV is never found, the circuit breaker trips and
-# fails closed after the grace window — 429'ing every non-redirecting page.
-# Use the in-memory backend until the code resolves bindings correctly.
-RATE_LIMIT_BACKEND = "memory"
+# FIXED: KV binding is now resolved correctly via getWorkerBinding() which uses
+# getCloudflareContext().env instead of globalThis. The rate limiter can now use
+# the distributed KV backend for production-grade protection.
+# See: src/lib/cf-bindings.ts, src/lib/rate-limit.ts:440-541
+RATE_LIMIT_BACKEND = "kv"
+# PHI masking policy — must match what was set in CI build time env.
+# See SECURITY.md § PHI Masking, findings #7/#13
+NEXT_PUBLIC_DATA_MASKING = "partial"
 
 # ── Production Environment ────────────────────────────────────────────
 # INF-004: Explicit production block prevents top-level debug toggles
@@ -129,9 +131,11 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 [env.production.vars]
 NODE_ENV = "production"
-# HOTFIX (prod 429 outage): see [vars] note — in-memory until bindings are
-# resolved via getCloudflareContext().env instead of globalThis.
-RATE_LIMIT_BACKEND = "memory"
+# FIXED: KV binding now resolved correctly via getWorkerBinding().
+# Rate limiter is distributed, protected in production.
+RATE_LIMIT_BACKEND = "kv"
+# PHI masking must be "partial" in production per SECURITY.md.
+NEXT_PUBLIC_DATA_MASKING = "partial"
 
 [[env.production.queues.producers]]
 binding = "NOTIFICATION_QUEUE"
@@ -190,8 +194,10 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 [env.staging.vars]
 NODE_ENV = "production"
-# HOTFIX (prod 429 outage): see [vars] note.
-RATE_LIMIT_BACKEND = "memory"
+# FIXED: KV binding now resolved correctly via getWorkerBinding().
+RATE_LIMIT_BACKEND = "kv"
+# PHI masking must be "partial" in staging as well.
+NEXT_PUBLIC_DATA_MASKING = "partial"
 
 # INF-003: Staging uses a separate R2 bucket to prevent cross-environment
 # PHI contamination. Create with: wrangler r2 bucket create webs-alots-uploads-staging
