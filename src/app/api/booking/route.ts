@@ -365,7 +365,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
   if (patientError || !patientId) {
     logger.warn("Failed to find/create patient", {
       context: "booking/route",
-      error: patientError,
+      code: patientError?.code,
     });
     return apiInternalError("Failed to create patient record");
   }

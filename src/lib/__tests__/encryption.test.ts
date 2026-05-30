@@ -61,17 +61,19 @@ describe("encryption", () => {
     expect(decrypted).toBeNull();
   });
 
-  it("returns null when encryption key is not configured", async () => {
+  it("throws when encryption key is not configured", async () => {
     delete process.env.PHI_ENCRYPTION_KEY;
     // Re-import to get fresh module
     vi.resetModules();
     const { encryptBuffer } = await import("../encryption");
 
-    const result = await encryptBuffer(Buffer.from("test"));
-    expect(result).toBeNull();
+    await expect(encryptBuffer(Buffer.from("test"))).rejects.toThrow(
+      "PHI_ENCRYPTION_KEY is required",
+    );
   });
 
   it("returns null for data too short to contain IV", async () => {
+    vi.resetModules();
     const { decryptBuffer } = await import("../encryption");
 
     const tooShort = Buffer.from([1, 2, 3]); // Less than 13 bytes

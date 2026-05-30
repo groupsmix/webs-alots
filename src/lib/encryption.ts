@@ -78,7 +78,7 @@ function getEncryptionKey(): Promise<CryptoKey | null> {
 async function importEncryptionKey(): Promise<CryptoKey | null> {
   const hexKey = process.env.PHI_ENCRYPTION_KEY;
   if (!hexKey) {
-    return null;
+    throw new Error("PHI_ENCRYPTION_KEY is required");
   }
 
   // Validate key length (64 hex chars = 32 bytes = 256 bits)
