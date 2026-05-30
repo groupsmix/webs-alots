@@ -13,6 +13,7 @@
  */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { applyCors } from "@/lib/middleware/cors";
@@ -429,6 +430,19 @@ export async function middleware(request: NextRequest) {
         }
       }
     }
+  }
+
+  // FP-02: Enforce cron auth at middleware level for /api/cron/ routes.
+  // These routes are in PUBLIC_API_ROUTES (no session auth) but MUST carry
+  // a valid CRON_SECRET bearer token. Previously only per-handler
+  // verifyCronSecret guarded them — a missing guard in a new handler
+  // would expose cron endpoints without auth.
+  if (pathname.startsWith("/api/cron/")) {
+    const cronDenied = verifyCronSecret(request);
+    if (cronDenied) {
+      return withSecurityHeaders(cronDenied, cspHeaders);
+    }
+    return supabaseResponse;
   }
 
   // If user is on a public route, allow through
