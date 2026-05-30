@@ -24,11 +24,12 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("ticket_id query parameter is required");
     }
 
+    // Super-admin views all messages for a ticket regardless of tenant
     // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("support_messages") // nosemgrep: tenant-scoping
+      .from("support_messages") // nosemgrep: tenant-scoping — cross-tenant super-admin view
       .select("*")
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
@@ -75,11 +76,12 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       return apiValidationError(`sender_type must be one of: ${VALID_SENDER_TYPES.join(", ")}`);
     }
 
+    // Super-admin replies to support threads across all tenants
     // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("support_messages") // nosemgrep: tenant-scoping
+      .from("support_messages") // nosemgrep: tenant-scoping — cross-tenant super-admin operation
       .insert({
         ticket_id: ticketId,
         sender_id: auth.user.id,
@@ -99,7 +101,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
 
     // Update the ticket's updated_at timestamp
     await supabase
-      .from("support_tickets") // nosemgrep: tenant-scoping
+      .from("support_tickets") // nosemgrep: tenant-scoping — cross-tenant super-admin operation
       .update({ updated_at: new Date().toISOString() })
       .eq("id", ticketId);
 

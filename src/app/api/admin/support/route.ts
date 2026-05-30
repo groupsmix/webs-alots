@@ -27,11 +27,12 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
     const clinicId = searchParams.get("clinic_id");
     const search = searchParams.get("search");
 
+    // Super-admin intentionally queries across all tenants to manage the support queue
     // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     let query = supabase
-      .from("support_tickets") // nosemgrep: tenant-scoping
+      .from("support_tickets") // nosemgrep: tenant-scoping — cross-tenant super-admin view
       .select("*, clinics(name)")
       .order("created_at", { ascending: false });
 
@@ -97,6 +98,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       return apiValidationError(`priority must be one of: ${VALID_PRIORITIES.join(", ")}`);
     }
 
+    // Super-admin creates tickets on behalf of clinics; clinic_id is provided explicitly
     // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
@@ -187,11 +189,12 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
 
     updates.updated_at = new Date().toISOString();
 
+    // Super-admin updates any ticket by ID regardless of tenant
     // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("support_tickets") // nosemgrep: tenant-scoping
+      .from("support_tickets") // nosemgrep: tenant-scoping — cross-tenant super-admin operation
       .update(updates)
       .eq("id", ticketId)
       .select()
