@@ -17,6 +17,7 @@ import {
   UserPlus,
   Search,
   Plus,
+  BarChart3,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ import { fetchClinics } from "@/lib/super-admin-actions";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
   { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
@@ -287,7 +290,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               className="hidden sm:flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
             >
               <Search className="h-3.5 w-3.5" />
-              <span>Search...</span>
+              <span>Rechercher...</span>
               <kbd className="ml-2 rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">
                 Ctrl+K
               </kbd>
@@ -297,6 +300,9 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
 
             {/* Language Switcher */}
             <LocaleSwitcher />
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Notifications */}
             <DropdownMenu>
