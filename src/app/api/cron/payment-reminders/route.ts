@@ -20,7 +20,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const supabase = createAdminClient("cron");
   const db = untypedClient(supabase);
 
-  const { data: clinics, error: clinicsError } = await supabase.from("clinics").select("id, name");
+  // MA-04: filter soft-deleted clinics
+  const { data: clinics, error: clinicsError } = await supabase
+    .from("clinics")
+    .select("id, name")
+    .is("deleted_at", null);
 
   if (clinicsError || !clinics) {
     logger.error("Failed to fetch clinics for payment reminders cron", {

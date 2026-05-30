@@ -264,11 +264,13 @@ export async function POST(request: NextRequest) {
       let clinicId: string | undefined;
       let clinicName = "Clinic";
       if (wabaPhoneNumberId) {
+        // MA-04: exclude soft-deleted clinics
         const { data: clinic } = await supabase
           .from("clinics")
           .select("id, name")
           // @ts-expect-error -- Supabase generated types lag behind actual DB schema
           .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
+          .is("deleted_at", null)
           .single();
         clinicId = clinic?.id;
         if (clinic?.name) clinicName = clinic.name;
@@ -700,10 +702,12 @@ export async function POST(request: NextRequest) {
 
       let retryClinicId: string | null = null;
       if (phoneNumberId) {
+        // MA-04: exclude soft-deleted clinics
         const { data: clinic } = await adminForRetry
           .from("clinics")
           .select("id")
           .eq("whatsapp_phone_number_id", phoneNumberId)
+          .is("deleted_at", null)
           .single();
         retryClinicId = (clinic as { id: string } | null)?.id ?? null;
       }

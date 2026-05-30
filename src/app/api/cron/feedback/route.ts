@@ -24,10 +24,12 @@ async function handler(request: NextRequest) {
     const supabase = createAdminClient("cron");
 
     // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
+    // MA-04: exclude soft-deleted clinics
     const { count } = await supabase
       .from("clinics")
       .select("*", { count: "exact", head: true })
-      .eq("status", "active");
+      .eq("status", "active")
+      .is("deleted_at", null);
     if (!count || count === 0) {
       return apiSuccess({ message: "No active clinics, skipping cron", sent: 0 });
     }

@@ -115,12 +115,28 @@ export const POST = withAuthValidation(
     // Notification failure must NOT affect the cancellation outcome.
     try {
       // Fetch doctor and service names for notification variables
+      // AA-01 / MA-02: scope secondary lookups by clinic_id for defense-in-depth
       const [doctorResult, serviceResult, patientResult] = await Promise.all([
-        supabase.from("users").select("name").eq("id", appt.doctor_id).single(),
+        supabase
+          .from("users")
+          .select("name")
+          .eq("id", appt.doctor_id)
+          .eq("clinic_id", clinicId)
+          .single(),
         appt.service_id
-          ? supabase.from("services").select("name").eq("id", appt.service_id).single()
+          ? supabase
+              .from("services")
+              .select("name")
+              .eq("id", appt.service_id)
+              .eq("clinic_id", clinicId)
+              .single()
           : Promise.resolve({ data: null }),
-        supabase.from("users").select("name").eq("id", appt.patient_id).single(),
+        supabase
+          .from("users")
+          .select("name")
+          .eq("id", appt.patient_id)
+          .eq("clinic_id", clinicId)
+          .single(),
       ]);
 
       const notifVars: TemplateVariables = {

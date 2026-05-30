@@ -98,11 +98,13 @@ export const POST = withAuthValidation(
 
     // Calculate end_time and slot boundaries using shared computeEndTime
     let duration = tenantConfig.booking.slotDuration;
+    // AA-01: scope services lookup by clinic_id for defense-in-depth
     if (existing.service_id) {
       const { data: svc } = await supabase
         .from("services")
         .select("duration_minutes, duration_min")
         .eq("id", existing.service_id)
+        .eq("clinic_id", clinicId)
         .single();
       if (svc) {
         duration = (svc.duration_minutes as number) ?? (svc.duration_min as number) ?? duration;
@@ -214,12 +216,28 @@ export const POST = withAuthValidation(
     // Notification failure must NOT affect the reschedule outcome.
     try {
       // Fetch names for notification variables
+      // AA-01: scope secondary lookups by clinic_id for defense-in-depth
       const [doctorResult, serviceResult, patientResult] = await Promise.all([
-        supabase.from("users").select("name").eq("id", existing.doctor_id).single(),
+        supabase
+          .from("users")
+          .select("name")
+          .eq("id", existing.doctor_id)
+          .eq("clinic_id", clinicId)
+          .single(),
         existing.service_id
-          ? supabase.from("services").select("name").eq("id", existing.service_id).single()
+          ? supabase
+              .from("services")
+              .select("name")
+              .eq("id", existing.service_id)
+              .eq("clinic_id", clinicId)
+              .single()
           : Promise.resolve({ data: null }),
-        supabase.from("users").select("name").eq("id", existing.patient_id).single(),
+        supabase
+          .from("users")
+          .select("name")
+          .eq("id", existing.patient_id)
+          .eq("clinic_id", clinicId)
+          .single(),
       ]);
 
       const notifVars: TemplateVariables = {

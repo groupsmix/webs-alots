@@ -44,10 +44,12 @@ async function handler(request: NextRequest) {
     // the library primitives that take an explicit `clinicId`.
     const supabase = createAdminClient("cron");
 
+    // MA-04: exclude soft-deleted clinics
     const { data: clinics, error: clinicsError } = await supabase
       .from("clinics")
       .select("id")
-      .eq("status", "active");
+      .eq("status", "active")
+      .is("deleted_at", null);
 
     if (clinicsError) {
       logger.error("r2-cleanup: failed to list active clinics", {

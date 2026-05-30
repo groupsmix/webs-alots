@@ -45,6 +45,7 @@ interface SingleResult {
 
 interface QueryChain {
   eq(col: string, val: unknown): QueryChain;
+  is(col: string, val: null): QueryChain & Promise<QueryResult>;
   in(col: string, val: unknown[]): QueryChain & Promise<QueryResult> & Promise<CountResult>;
   gte(col: string, val: unknown): QueryChain;
   lt(col: string, val: unknown): QueryChain & Promise<CountResult>;
@@ -211,11 +212,12 @@ async function handler(request: NextRequest) {
   try {
     const supabase = createAdminClient("cron") as unknown as UntypedClient;
 
+    // MA-04: filter soft-deleted clinics
     const { data: clinics } = await supabase
       .from("clinics")
       .select("id, name")
       .eq("status", "active")
-      .in("status", ["active"]);
+      .is("deleted_at", null);
 
     if (!clinics || clinics.length === 0) {
       return apiSuccess({ message: "Aucune clinique active", sent: 0 });

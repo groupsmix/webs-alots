@@ -58,10 +58,12 @@ export async function POST(request: NextRequest) {
   // hardcoded UUID. If the subdomain changes or the clinic is deleted,
   // demo login is automatically disabled without a code change.
   const supabaseCheck = await createClient();
+  // MA-04: exclude soft-deleted clinics
   const { data: demoClinic } = await supabaseCheck
     .from("clinics")
     .select("id")
     .eq("subdomain", DEMO_SUBDOMAIN)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (!demoClinic) {

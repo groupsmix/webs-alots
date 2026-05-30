@@ -73,10 +73,12 @@ export const POST = withAuthValidation(
     await reauthClient.auth.signOut().catch(() => {});
 
     // Verify the clinic exists
+    // MA-04: exclude soft-deleted clinics
     const { data: clinic } = await supabase
       .from("clinics")
       .select("id, name")
       .eq("id", clinicId)
+      .is("deleted_at", null)
       .single();
 
     if (!clinic) {

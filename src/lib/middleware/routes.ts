@@ -119,8 +119,8 @@ const PUBLIC_API_ROUTES = [
   "/api/webhooks",
   "/api/payments/webhook",
   "/api/payments/cmi/callback",
-  // Cron jobs — authenticated via CRON_SECRET bearer token
-  "/api/cron/",
+  // Cron jobs — FP-02: removed from public allowlist; verifyCronSecret
+  // is now enforced at the middleware level for all /api/cron/ routes.
   // Public email verification
   "/api/verify-email",
   // API docs

@@ -59,9 +59,11 @@ async function handler(request: NextRequest) {
   const errors: string[] = [];
 
   // Iterate per clinic (AGENTS.md rule #6)
+  // MA-04: filter soft-deleted clinics
   const { data: clinics, error: clinicsError } = await supabase
     .from("clinics")
     .select("id, name")
+    .is("deleted_at", null)
     .limit(1000);
 
   if (clinicsError || !clinics) {
