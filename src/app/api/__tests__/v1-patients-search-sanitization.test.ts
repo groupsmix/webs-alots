@@ -3,10 +3,10 @@
  *
  * Focus: the PostgREST filter-injection defense (audit MED-05 / A46.3).
  * The `search` query param is interpolated into a PostgREST `.or()` filter
- * string, so it MUST be sanitized — stripping `% _ , . ( ) |` — to stop a
- * caller from smuggling extra filter clauses (e.g. `role.eq.super_admin`)
- * or OR tokens. These tests invoke the real handler and assert the exact
- * filter string handed to Supabase, plus the auth gate and tenant scoping.
+ * string, so it MUST be sanitized with an allowlist (INJ-01: only
+ * `[a-zA-Z0-9\s\-'@.]`) to prevent PostgREST filter injection.
+ * Dots are kept for email search; commas, pipes, and parens are stripped
+ * so attackers cannot inject new filter clauses or OR tokens.
  */
 import { NextRequest } from "next/server";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -92,24 +92,26 @@ describe("GET /api/v1/patients — search sanitization (MED-05/A46.3)", () => {
 
   it("strips PostgREST metacharacters from the search term", async () => {
     await GET(req("a%_,.()|b"));
-    // Only the sanitized term "ab" should appear inside the ilike patterns.
-    expect(orArg()).toBe("name.ilike.%ab%,name_ar.ilike.%ab%,email.ilike.%ab%,phone.ilike.%ab%");
+    // Dots are allowed (email search); %, _, commas, parens, pipes are stripped.
+    expect(orArg()).toBe(
+      "name.ilike.%a.b%,name_ar.ilike.%a.b%,email.ilike.%a.b%,phone.ilike.%a.b%",
+    );
   });
 
   it("neutralizes an injected filter clause (role.eq.super_admin)", async () => {
     await GET(req("x,role.eq.super_admin"));
     const arg = orArg();
-    // The dots/commas that would terminate the value and start a new clause
-    // are gone, so no extra filter can be smuggled in.
+    // Commas (clause separators), underscores, and pipes are stripped.
+    // Dots remain but are harmless inside ilike values — PostgREST does
+    // not re-parse operators inside a value position.
     expect(arg).not.toContain("role.eq.super_admin");
-    expect(arg).not.toContain(".eq.");
     expect(arg).toBe(
-      "name.ilike.%xroleeqsuperadmin%,name_ar.ilike.%xroleeqsuperadmin%,email.ilike.%xroleeqsuperadmin%,phone.ilike.%xroleeqsuperadmin%",
+      "name.ilike.%xrole.eq.superadmin%,name_ar.ilike.%xrole.eq.superadmin%,email.ilike.%xrole.eq.superadmin%,phone.ilike.%xrole.eq.superadmin%",
     );
   });
 
   it("does not build an .or() filter when the term sanitizes to empty", async () => {
-    await GET(req("%_,.()|"));
+    await GET(req("%_,()|"));
     expect(query.or).not.toHaveBeenCalled();
   });
 

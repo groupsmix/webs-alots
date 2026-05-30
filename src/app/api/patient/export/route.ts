@@ -24,7 +24,7 @@ function escapeCSV(value: unknown): string {
   if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
     str = `'${str}`;
   }
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\t")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
