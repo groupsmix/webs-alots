@@ -57,9 +57,7 @@ export interface NotificationQueueMessage {
  * The CF Queue binding is accessed via `getCloudflareContext().env` as
  * required by @opennextjs/cloudflare v1.17+.
  */
-export async function pushToNotificationQueue(
-  message: NotificationQueueMessage,
-): Promise<boolean> {
+export async function pushToNotificationQueue(message: NotificationQueueMessage): Promise<boolean> {
   try {
     // @opennextjs/cloudflare exposes Worker bindings through getCloudflareContext()
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
@@ -111,49 +109,43 @@ export interface QueueBatchResult {
  * Process a batch of notification messages from the Cloudflare Queue.
  * Called from the Worker's `queue` export handler (worker-cron-handler.ts).
  *
- * Each message body is a NotificationQueueMessage. We dispatch via the
- * existing notification-queue.ts send path to keep the delivery logic DRY.
+ * The notification_queue DB table is the single source of truth. Rather than
+ * re-implementing per-message dispatch logic here, we delegate to the existing
+ * `processNotificationQueue()` which atomically claims, delivers, and marks
+ * rows as sent/failed. Idempotency is guaranteed at the DB level — a row
+ * already marked "sent" by a concurrent invocation is simply skipped.
  *
- * On failure, we call `message.retry()` so CF Queues will retry automatically.
- * After max_retries, the message is forwarded to the dead-letter queue.
+ * If the batch-level dispatch throws, we call batch.retryAll() so CF Queues
+ * will re-deliver. After max_retries the messages move to the DLQ.
  */
 export async function processQueueBatch(
   batch: MessageBatch<NotificationQueueMessage>,
 ): Promise<QueueBatchResult> {
-  const result: QueueBatchResult = { processed: 0, sent: 0, failed: 0 };
+  const result: QueueBatchResult = {
+    processed: batch.messages.length,
+    sent: 0,
+    failed: 0,
+  };
 
-  for (const msg of batch.messages) {
-    result.processed++;
-    const payload = msg.body;
+  try {
+    // Delegate to the existing queue processor — it creates its own admin
+    // client and handles all DB state transitions (pending → processing → sent/failed).
+    const { processNotificationQueue } = await import("@/lib/notification-queue");
+    const queueResult = await processNotificationQueue();
 
-    try {
-      // Mark the DB row as processing and attempt delivery
-      const { createAdminClient } = await import("@/lib/supabase-server");
-      const supabase = createAdminClient("notification");
+    result.sent = queueResult.sent;
+    result.failed = queueResult.failed;
 
-      // Delegate to the existing send logic via processNotificationQueue
-      // filtered to this specific row ID for idempotency
-      const { dispatchSingleNotification } = await import("@/lib/notification-dispatch");
-      const sent = await dispatchSingleNotification(supabase, payload.queueRowId);
-
-      if (sent) {
-        result.sent++;
-        msg.ack();
-      } else {
-        // Delivery failed but not an exception — retry up to max_retries
-        result.failed++;
-        msg.retry();
-      }
-    } catch (err) {
-      logger.error("CF Queue message processing failed", {
-        context: "cf-notification-queue:consumer",
-        queueRowId: payload.queueRowId,
-        channel: payload.channel,
-        error: err,
-      });
-      result.failed++;
-      msg.retry();
-    }
+    // Ack the entire batch — idempotency is at the DB layer
+    batch.ackAll();
+  } catch (err) {
+    logger.error("CF Queue batch processing failed — retrying", {
+      context: "cf-notification-queue:consumer",
+      batchSize: batch.messages.length,
+      error: err,
+    });
+    result.failed = batch.messages.length;
+    batch.retryAll();
   }
 
   logger.info("CF Queue batch processed", {
