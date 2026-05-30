@@ -26,6 +26,7 @@ function chainableMock(leafData: unknown = null) {
   const terminalReturn = { data: leafData, error: null };
   self.select = vi.fn(() => self);
   self.eq = vi.fn(() => self);
+  self.is = vi.fn(() => self);
   self.in = vi.fn(() => self);
   self.order = vi.fn(() => self);
   self.limit = vi.fn(() => self);

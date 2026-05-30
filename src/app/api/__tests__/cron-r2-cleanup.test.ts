@@ -65,10 +65,11 @@ interface ClinicRow {
 }
 
 function makeAdminClient(clinics: ClinicRow[], queryError: unknown = null) {
-  const eq = vi.fn().mockResolvedValue({ data: clinics, error: queryError });
+  const is = vi.fn().mockResolvedValue({ data: clinics, error: queryError });
+  const eq = vi.fn().mockReturnValue({ is });
   const select = vi.fn().mockReturnValue({ eq });
   const from = vi.fn().mockReturnValue({ select });
-  return { from, _select: select, _eq: eq };
+  return { from, _select: select, _eq: eq, _is: is };
 }
 
 function buildAuthorizedRequest(): Request {
