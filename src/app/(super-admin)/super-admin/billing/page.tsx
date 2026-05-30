@@ -12,6 +12,10 @@ import {
   Filter,
   CreditCard,
   Receipt,
+  Download,
+  ChevronDown,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +30,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { logger } from "@/lib/logger";
 import { fetchBillingRecords, type BillingRecord } from "@/lib/super-admin-actions";
 import { getLocalDateStr } from "@/lib/utils";
@@ -83,6 +94,44 @@ export default function BillingPage() {
     return matchSearch && (statusFilter === "all" || r.status === statusFilter);
   });
 
+  function handleExportBillingCSV() {
+    const rows = filtered.map((r) => ({
+      Invoice: r.id,
+      Clinic: r.clinicName,
+      Plan: r.plan,
+      "Amount Due (MAD)": r.amountDue,
+      "Amount Paid (MAD)": r.amountPaid,
+      Currency: r.currency,
+      Status: r.status,
+      "Invoice Date": r.invoiceDate,
+      "Due Date": r.dueDate,
+      "Paid Date": r.paidDate ?? "",
+      "Payment Method": r.paymentMethod ?? "",
+    }));
+    exportToCSV(rows, `billing-${getLocalDateStr()}.csv`);
+    addToast("Billing CSV exported", "success");
+  }
+
+  function handleExportBillingPDF() {
+    const rows = filtered.map((r) => ({
+      Invoice: r.id,
+      Clinic: r.clinicName,
+      Plan: r.plan,
+      "Amount Due": `${r.amountDue} ${r.currency}`,
+      Status: r.status,
+      "Due Date": r.dueDate,
+    }));
+    exportToPDF("Billing Report — Oltigo Health", rows, [
+      "Invoice",
+      "Clinic",
+      "Plan",
+      "Amount Due",
+      "Status",
+      "Due Date",
+    ]);
+    addToast("PDF generated — use Save as PDF in the print dialog", "success");
+  }
+
   function handleSendReminder() {
     addToast(`Payment reminder sent to ${reminderRecord?.clinicName}`, "success");
     setReminderOpen(false);
@@ -131,6 +180,25 @@ export default function BillingPage() {
             Monitor revenue, subscriptions, and payment status
           </p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={filtered.length === 0}>
+              <Download className="h-4 w-4 mr-1" />
+              Export
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportBillingCSV}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportBillingPDF}>
+              <FileText className="h-4 w-4 mr-2" />
+              Export PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {loading && (

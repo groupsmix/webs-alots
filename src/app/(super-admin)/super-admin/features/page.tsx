@@ -12,6 +12,10 @@ import {
   XCircle,
   Building2,
   RotateCcw,
+  Download,
+  ChevronDown,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +30,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import {
@@ -38,12 +48,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { logger } from "@/lib/logger";
 import {
   fetchFeatureDefinitions,
   fetchClinics,
   type FeatureDefinition,
 } from "@/lib/super-admin-actions";
+import { getLocalDateStr } from "@/lib/utils";
 
 type CategoryFilter = "all" | "core" | "communication" | "integration" | "advanced";
 
@@ -273,6 +285,41 @@ export default function FeatureTogglesPage() {
 
   const overrideCount = overrides.length;
 
+  function handleExportFeaturesCSV() {
+    const rows = filtered.map((f) => ({
+      Feature: f.name,
+      Key: f.key,
+      Description: f.description,
+      Category: f.category,
+      "Global Enabled": f.globalEnabled ? "Yes" : "No",
+      Basic: f.availableTiers.includes("basic") ? "Yes" : "No",
+      Standard: f.availableTiers.includes("standard") ? "Yes" : "No",
+      Premium: f.availableTiers.includes("premium") ? "Yes" : "No",
+    }));
+    exportToCSV(rows, `features-${getLocalDateStr()}.csv`);
+    addToast("Feature matrix CSV exported", "success");
+  }
+
+  function handleExportFeaturesPDF() {
+    const rows = filtered.map((f) => ({
+      Feature: f.name,
+      Category: f.category,
+      Global: f.globalEnabled ? "Yes" : "No",
+      Basic: f.availableTiers.includes("basic") ? "Yes" : "No",
+      Standard: f.availableTiers.includes("standard") ? "Yes" : "No",
+      Premium: f.availableTiers.includes("premium") ? "Yes" : "No",
+    }));
+    exportToPDF("Feature Matrix \u2014 Oltigo Health", rows, [
+      "Feature",
+      "Category",
+      "Global",
+      "Basic",
+      "Standard",
+      "Premium",
+    ]);
+    addToast("PDF generated \u2014 use Save as PDF in the print dialog", "success");
+  }
+
   const enabledCount = features.filter((f) => f.globalEnabled).length;
   const totalClinics = totalClinicsCount;
 
@@ -312,10 +359,31 @@ export default function FeatureTogglesPage() {
             Control feature availability per tier and globally
           </p>
         </div>
-        <Button variant="outline" onClick={() => setBulkOpen(true)}>
-          <ToggleLeft className="h-4 w-4 mr-1" />
-          Bulk Actions
-        </Button>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={filtered.length === 0}>
+                <Download className="h-4 w-4 mr-1" />
+                Export
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportFeaturesCSV}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportFeaturesPDF}>
+                <FileText className="h-4 w-4 mr-2" />
+                Export PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <ToggleLeft className="h-4 w-4 mr-1" />
+            Bulk Actions
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

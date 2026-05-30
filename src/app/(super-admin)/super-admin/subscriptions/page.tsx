@@ -16,6 +16,8 @@ import {
   Stethoscope,
   Crown,
   Pill,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -30,17 +32,25 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/toast";
 import { systemTypeLabels, tierColors, statusColors } from "@/lib/config/pricing";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
   type ClientSubscription,
   type SystemType,
 } from "@/lib/super-admin-actions";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 
 type StatusFilter = "all" | ClientSubscription["status"];
 type SystemFilter = "all" | SystemType;
@@ -52,6 +62,7 @@ const systemIcons: Record<SystemType, typeof Stethoscope> = {
 };
 
 export default function SubscriptionsPage() {
+  const { addToast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [systemFilter, setSystemFilter] = useState<SystemFilter>("all");
@@ -129,6 +140,42 @@ export default function SubscriptionsPage() {
     return labels[status];
   };
 
+  function handleExportSubscriptionsCSV() {
+    const rows = filtered.map((sub) => ({
+      "Nom du client": sub.clinicName,
+      Type: systemTypeLabels[sub.systemType],
+      Tier: sub.tierName,
+      Cycle: sub.billingCycle === "monthly" ? "Mensuel" : "Annuel",
+      "Montant (MAD)": sub.amount,
+      Devise: sub.currency,
+      Statut: statusLabel(sub.status),
+      "Début de période": sub.currentPeriodStart,
+      "Fin de période": sub.currentPeriodEnd,
+    }));
+    exportToCSV(rows, `abonnements-${getLocalDateStr()}.csv`);
+    addToast("Export CSV téléchargé", "success");
+  }
+
+  function handleExportSubscriptionsPDF() {
+    const rows = filtered.map((sub) => ({
+      Client: sub.clinicName,
+      Type: systemTypeLabels[sub.systemType],
+      Tier: sub.tierName,
+      "Montant (MAD)": String(sub.amount),
+      Statut: statusLabel(sub.status),
+      Période: `${sub.currentPeriodStart} — ${sub.currentPeriodEnd}`,
+    }));
+    exportToPDF("Abonnements — Oltigo Health", rows, [
+      "Client",
+      "Type",
+      "Tier",
+      "Montant (MAD)",
+      "Statut",
+      "Période",
+    ]);
+    addToast("PDF généré — utilisez Enregistrer en PDF dans la boîte d'impression", "success");
+  }
+
   if (loading) {
     return (
       <div>
@@ -165,6 +212,25 @@ export default function SubscriptionsPage() {
             Suivi des abonnements clients, facturation et paiements
           </p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={filtered.length === 0}>
+              <Download className="h-4 w-4 mr-1" />
+              Exporter
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportSubscriptionsCSV}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportSubscriptionsPDF}>
+              <FileText className="h-4 w-4 mr-2" />
+              Export PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* KPI Cards */}
