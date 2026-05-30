@@ -45,6 +45,8 @@ const ALLOWLIST = new Set([
   "src/app/api/consent/route.ts",
   // Revenue forecast — platform-wide aggregation tables (revenue_snapshots, revenue_forecasts) have no clinic_id
   "src/app/api/admin/revenue-forecast/route.ts",
+  // Admin team — super_admin cross-tenant user management (role updates, member removal)
+  "src/app/api/admin/team/route.ts",
 ]);
 
 const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;
