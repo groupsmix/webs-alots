@@ -34,11 +34,7 @@ import { logger } from "@/lib/logger";
  * Kept as a string union so adding a new destructive cron forces a code
  * review of this file (no magic strings at call sites).
  */
-export type DestructiveCronName =
-  | "billing"
-  | "gdpr-purge"
-  | "stripe-reconcile"
-  | "dedup-purge";
+export type DestructiveCronName = "billing" | "gdpr-purge" | "stripe-reconcile" | "dedup-purge";
 
 /**
  * Verify that a destructive cron is permitted to run in the current
@@ -52,9 +48,7 @@ export type DestructiveCronName =
  * `ALLOW_STAGING_DESTRUCTIVE_CRONS=true` in the staging Worker secrets.
  * This is intentionally an explicit, audited choice — never a default.
  */
-export function assertCronAllowedInThisEnv(
-  name: DestructiveCronName,
-): NextResponse | null {
+export function assertCronAllowedInThisEnv(name: DestructiveCronName): NextResponse | null {
   const workerEnv = process.env.WORKER_ENV;
   if (workerEnv !== "staging") return null;
 

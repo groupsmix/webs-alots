@@ -59,12 +59,7 @@ describe("assertCronAllowedInThisEnv (audit-4 F-13)", () => {
   it("blocks each of the four destructive cron names independently", async () => {
     vi.stubEnv("WORKER_ENV", "staging");
     vi.stubEnv("ALLOW_STAGING_DESTRUCTIVE_CRONS", "");
-    for (const name of [
-      "billing",
-      "gdpr-purge",
-      "stripe-reconcile",
-      "dedup-purge",
-    ] as const) {
+    for (const name of ["billing", "gdpr-purge", "stripe-reconcile", "dedup-purge"] as const) {
       const result = assertCronAllowedInThisEnv(name);
       expect(result?.status).toBe(503);
       const body = await result!.json();
