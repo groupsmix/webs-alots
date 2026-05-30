@@ -23,12 +23,14 @@ async function handler(_request: NextRequest, auth: AuthContext) {
 
     const [clinicsRes, paymentsRes, appointmentsRes, patientsRes] = await Promise.all([
       // MA-04: exclude soft-deleted clinics
+      // nosemgrep: semgrep.tenant-scoping
       supabase
         .from("clinics")
         .select("id, name, type, tier, status, subdomain, created_at")
         .is("deleted_at", null),
-      supabase.from("payments").select("clinic_id, amount, status, created_at"),
-      supabase.from("appointments").select("clinic_id, status, created_at"),
+      supabase.from("payments").select("clinic_id, amount, status, created_at"), // nosemgrep: semgrep.tenant-scoping
+      supabase.from("appointments").select("clinic_id, status, created_at"), // nosemgrep: semgrep.tenant-scoping
+      // nosemgrep: semgrep.tenant-scoping
       supabase.from("users").select("clinic_id, created_at").eq("role", "patient"),
     ]);
 

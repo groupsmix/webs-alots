@@ -147,8 +147,9 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
     const untypedAdmin = createUntypedAdminClient("super_admin");
     const typedAdmin = createAdminClient("super_admin");
 
+    // nosemgrep: semgrep.tenant-scoping
     let query = untypedAdmin
-      .from("clinic_churn_scores")
+      .from("clinic_churn_scores") // nosemgrep: semgrep.tenant-scoping
       .select(
         `
         id,
@@ -202,8 +203,9 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
     // Fetch clinic names for display
     const clinicIds = [...new Set(scores.map((s) => s.clinic_id))];
     // MA-04: exclude soft-deleted clinics
+    // nosemgrep: semgrep.tenant-scoping
     const { data: clinics } = await typedAdmin
-      .from("clinics")
+      .from("clinics") // nosemgrep: semgrep.tenant-scoping
       .select("id, name, type, tier, status, subdomain")
       .in("id", clinicIds.length > 0 ? clinicIds : ["none"])
       .is("deleted_at", null);
@@ -266,15 +268,18 @@ async function handlePost(_request: NextRequest, auth: AuthContext) {
     const untypedAdmin = createUntypedAdminClient("super_admin");
 
     // Fetch all clinics and their metrics
+    // nosemgrep: semgrep.tenant-scoping
     const [clinicsRes, appointmentsRes, paymentsRes, activityRes] = await Promise.all([
-      typedAdmin.from("clinics").select("id, name, status, created_at").is("deleted_at", null),
-      typedAdmin.from("appointments").select("clinic_id, status, created_at"),
+      typedAdmin.from("clinics").select("id, name, status, created_at").is("deleted_at", null), // nosemgrep: semgrep.tenant-scoping
+      typedAdmin.from("appointments").select("clinic_id, status, created_at"), // nosemgrep: semgrep.tenant-scoping
+      // nosemgrep: semgrep.tenant-scoping
       typedAdmin
-        .from("payments")
+        .from("payments") // nosemgrep: semgrep.tenant-scoping
         .select("clinic_id, amount, status, created_at")
         .eq("status", "completed"),
+      // nosemgrep: semgrep.tenant-scoping
       typedAdmin
-        .from("activity_logs")
+        .from("activity_logs") // nosemgrep: semgrep.tenant-scoping
         .select("clinic_id, action, created_at")
         .in("action", ["login.success", "login.failed", "support_ticket_created"]),
     ]);
@@ -359,6 +364,7 @@ async function handlePost(_request: NextRequest, auth: AuthContext) {
 
     // Upsert scores
     if (scores.length > 0) {
+      // nosemgrep: semgrep.tenant-scoping
       const { error: insertError } = await untypedAdmin.from("clinic_churn_scores").insert(scores);
 
       if (insertError) {

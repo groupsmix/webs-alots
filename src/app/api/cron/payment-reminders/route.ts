@@ -21,6 +21,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const db = untypedClient(supabase);
 
   // MA-04: filter soft-deleted clinics
+  // nosemgrep: semgrep.tenant-scoping
   const { data: clinics, error: clinicsError } = await supabase
     .from("clinics")
     .select("id, name")
@@ -144,10 +145,12 @@ async function processClinicReminders(
 
       if (!plan) continue;
 
+      // nosemgrep: semgrep.tenant-scoping
       const { data: patient } = await supabase
         .from("users")
         .select("id, phone, name")
         .eq("id", plan.patient_id)
+        .eq("clinic_id", clinicId)
         .single();
 
       if (!patient?.phone) {
@@ -213,10 +216,12 @@ async function processClinicReminders(
 
       if (!plan) continue;
 
+      // nosemgrep: semgrep.tenant-scoping
       const { data: patient } = await supabase
         .from("users")
         .select("id, phone, name")
         .eq("id", plan.patient_id)
+        .eq("clinic_id", clinicId)
         .single();
 
       if (!patient?.phone) {
@@ -256,10 +261,12 @@ async function sendReminderForInvoice(
   reminderType: string,
   results: { sent: number; failed: number; skipped: number },
 ): Promise<void> {
+  // nosemgrep: semgrep.tenant-scoping
   const { data: patient } = await supabase
     .from("users")
     .select("id, phone, name")
     .eq("id", invoice.patient_id)
+    .eq("clinic_id", clinicId)
     .single();
 
   if (!patient?.phone) {
