@@ -1,6 +1,3 @@
-// Node.js runtime required — uses crypto/file processing.
-export const runtime = "nodejs";
-
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";

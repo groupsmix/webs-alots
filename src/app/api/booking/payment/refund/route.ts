@@ -1,6 +1,3 @@
-// Node.js runtime required — uses crypto/file processing.
-export const runtime = "nodejs";
-
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";

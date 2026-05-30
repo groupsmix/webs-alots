@@ -1,6 +1,3 @@
-// PERF: csp-report is a lightweight logging endpoint — run at edge for lowest latency.
-export const runtime = "edge";
-
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiRateLimited } from "@/lib/api-response";
 import { logger } from "@/lib/logger";

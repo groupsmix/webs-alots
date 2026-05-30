@@ -1,6 +1,3 @@
-// Node.js runtime required — uses crypto/file processing.
-export const runtime = "nodejs";
-
 /**
  * POST /api/upload — Upload a file to Cloudflare R2
  *
