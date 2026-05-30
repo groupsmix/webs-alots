@@ -5,6 +5,7 @@
 
 - `webs-alots-audit(3).md` — original audit (FR-NN refs, addressed in PR #863 + follow-ups)
 - `webs-alots-etap1-audit.md` — End-to-End Production Audit (etap_1, 2026-05-30), 30 findings, `NOT READY — CONDITIONAL` launch verdict
+- `SEASONS-AUDIT-2026-05-27.md` — Code & Data Layer audit (SEASON 1, 11 audits A1–A11, 250+ findings with A/S notation), comprehensive static analysis, `8.5 / 10` health score
 - `oltigo-technical-audit.html` — End-to-End Technical Audit (audit-3, 2026-05-30, commit `802f27e`), 22 findings, 4 P0 / 7 P1 / 9 P2 / 2 P3, separate top-25 risks list
 
 This file replaces the previously promised "Audit Remediation Roadmap & Wave Tracker" that lived only in a chat surface. The chat surface was a hallucination; this file is the real, in-repo source of truth.
@@ -27,22 +28,25 @@ This file replaces the previously promised "Audit Remediation Roadmap & Wave Tra
 
 ## Open PRs at the time of this writing
 
-| PR     | Branch                                 | Title (short)                                                                                     | Touches                                                                                             |
-| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| #863   | `cleanup/audit-wave-0-to-2-safe-fixes` | Wave 0–2 safe fixes (FR-03/07/14/18) + triage tool                                                | shadcn devdep, secrets-template hardening, SEED_PASSWORDS_ROTATED docs, duplicate Plausible removed |
-| #865   | `fix/register-clinic-disabled-ux`      | Contact-us panel when self-service registration is disabled                                       | `NEXT_PUBLIC_SELF_SERVICE_REGISTRATION_ENABLED` flag, French 403 fallback                           |
-| #870   | `fix/color-contrast-light-only`        | Pin light color-scheme, disable broken auto-dark                                                  | `tokens.css`, `globals.css`                                                                         |
-| #871   | `fix/error-boundary-nav-recovery`      | Real recovery paths in `ClinicErrorBoundary`                                                      | Retry / Go back / Go to dashboard + dev error details + i18n keys                                   |
-| #872   | `fix/perf-missing-loading-skeletons`   | `loading.tsx` for 14 admin segments                                                               | admin/expenses, audit-logs, lab-results, insurance-claims, …                                        |
-| #873   | `fix/audit-critical-blockers`          | etap1 critical: rate-limit KV mode, PHI masking, secrets-template removed, Sentry/cron docs       | `wrangler.toml`, `.env.example`, `secrets-template.env` (deleted), `.gitignore`                     |
-| #874   | `fix/audit-remaining-blockers`         | etap1: Supabase pooler, Sentry Replay PHI guard, drop client-cookie tenant tag                    | `src/lib/supabase-server.ts`, `sentry.client.config.ts`, `.env.example`                             |
-| #875   | `infra/staging-kv-separation`          | etap1 #5: document staging-vs-prod KV bleed + action checklist                                    | `wrangler.toml`                                                                                     |
-| #876   | `docs/audit-roadmap`                   | This file (`docs/AUDIT-ROADMAP.md`) — replaces the hallucinated chat surface                      | `docs/AUDIT-ROADMAP.md`                                                                             |
-| #877   | `security/codeowners-api-routes`       | audit-3 ARCH-02: extend CODEOWNERS to `src/app/api/**`, `src/lib/env.ts`, `src/lib/supabase-*.ts` | `.github/CODEOWNERS`                                                                                |
-| #878   | `obs/payment-reminders-sentry-checkin` | audit-3 PERF-01: wrap last remaining cron route with `withSentryCron`                             | `src/app/api/cron/payment-reminders/route.ts`                                                       |
-| (this) | `docs/audit-roadmap-audit-3`           | audit-3 cross-references added to this roadmap, stacked on top of #876                            | `docs/AUDIT-ROADMAP.md`                                                                             |
+| PR     | Branch                                     | Title (short)                                                                                                | Touches                                                                                                                  |
+| ------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| #863   | `cleanup/audit-wave-0-to-2-safe-fixes`     | Wave 0–2 safe fixes (FR-03/07/14/18) + triage tool                                                           | shadcn devdep, secrets-template hardening, SEED_PASSWORDS_ROTATED docs, duplicate Plausible removed                      |
+| #865   | `fix/register-clinic-disabled-ux`          | Contact-us panel when self-service registration is disabled                                                  | `NEXT_PUBLIC_SELF_SERVICE_REGISTRATION_ENABLED` flag, French 403 fallback                                                |
+| #870   | `fix/color-contrast-light-only`            | Pin light color-scheme, disable broken auto-dark                                                             | `tokens.css`, `globals.css`                                                                                              |
+| #871   | `fix/error-boundary-nav-recovery`          | Real recovery paths in `ClinicErrorBoundary`                                                                 | Retry / Go back / Go to dashboard + dev error details + i18n keys                                                        |
+| #872   | `fix/perf-missing-loading-skeletons`       | `loading.tsx` for 14 admin segments                                                                          | admin/expenses, audit-logs, lab-results, insurance-claims, …                                                             |
+| #873   | `fix/audit-critical-blockers`              | etap1 critical: rate-limit KV mode, PHI masking, secrets-template removed, Sentry/cron docs                  | `wrangler.toml`, `.env.example`, `secrets-template.env` (deleted), `.gitignore`                                          |
+| #874   | `fix/audit-remaining-blockers`             | etap1: Supabase pooler, Sentry Replay PHI guard, drop client-cookie tenant tag                               | `src/lib/supabase-server.ts`, `sentry.client.config.ts`, `.env.example`                                                  |
+| #875   | `infra/staging-kv-separation`              | etap1 #5: document staging-vs-prod KV bleed + action checklist                                               | `wrangler.toml`                                                                                                          |
+| #876   | `docs/audit-roadmap`                       | This file (`docs/AUDIT-ROADMAP.md`) — replaces the hallucinated chat surface                                 | `docs/AUDIT-ROADMAP.md`                                                                                                  |
+| #877   | `security/codeowners-api-routes`           | audit-3 ARCH-02: extend CODEOWNERS to `src/app/api/**`, `src/lib/env.ts`, `src/lib/supabase-*.ts`            | `.github/CODEOWNERS`                                                                                                     |
+| #878   | `obs/payment-reminders-sentry-checkin`     | audit-3 PERF-01: wrap last remaining cron route with `withSentryCron`                                        | `src/app/api/cron/payment-reminders/route.ts`                                                                            |
+| #879   | `docs/audit-roadmap-audit-3`               | audit-3 cross-references added to this roadmap, stacked on top of #876                                       | `docs/AUDIT-ROADMAP.md`                                                                                                  |
+| #880   | `security/booking-token-secret-min-length` | audit-4 F-15: enforce `BOOKING_TOKEN_SECRET` ≥ 32 chars at boot                                              | `src/lib/env.ts`, `src/lib/__tests__/env-booking-token-secret.test.ts`                                                   |
+| #881   | `infra/staging-cron-destructive-guard`     | audit-4 F-13: refuse destructive crons in staging without `ALLOW_STAGING_DESTRUCTIVE_CRONS=true`             | `wrangler.toml`, `src/lib/cron-env-guard.ts`, 4 cron route handlers, `.env.example`                                      |
+| (this) | `docs/audit-roadmap-audit-4`               | audit-4 cross-references + SEASONS audit (2026-05-27) finding tracker; stacked on top of #879                | `docs/AUDIT-ROADMAP.md`                                                                                                  |
 
-Recommended merge order: #872 → #870 → #871 → #863 → #874 → #865 → #876 → (this) → #877 → #878 → #873 → #875 (last, needs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` first).
+Recommended merge order: #872 → #870 → #871 → #863 → #874 → #865 → #876 → #879 → (this) → #877 → #878 → #880 → #881 → #873 → #875 (last, needs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` first).
 
 ---
 
@@ -122,7 +126,87 @@ UX hotfixes done in the same session (not from a numbered audit finding but trac
 
 ---
 
-## Technical audit (`oltigo-technical-audit.html`, audit-3) — finding tracker
+## SEASONS audit (2026-05-27) — Wave 1 findings tracker
+
+The SEASONS audit is a comprehensive static analysis of the Code & Data Layer (SEASON 1: A1–A11, 250+ findings across 11 audits). Executive summary: **no Critical findings**, health score **8.5 / 10** (up from 7.5 in April 2026).
+
+This section tracks remediation PRs for findings that require code/config changes. The full audit report is in `docs/audit/SEASONS-AUDIT-2026-05-27.md` (findings use A/S notation: `A6-04`, `S0-02-04`, etc.).
+
+### Findings with actionable fixes (current sprint)
+
+| Audit | ID | Severity | Category | Description | Status | PR | Notes |
+|-------|-----|----------|----------|-------------|--------|-----|-------|
+| A6 | A6-04 | Info | Crypto | HMAC-SHA256 booking token (clinicId + phone + expiry). Review A6-05 length-leak hardening. | 🟢 In PR #880 | #880 | Mitigates: OTP bypass via forged booking tokens. No change needed for A6-04 itself (already correct). A6-05 (length-leak) deferred to roadmap. |
+| A6 | A6-05 | Low | Crypto | Length-leak hardening on booking token signature comparison. Currently safe due to fixed lengths, but paranoid improvement suggested. | ⏳ Deferred | — | Recommended: switch to `timingSafeEqual(expectedSig, signature)` without precheck. Low priority; safe as-is. |
+| A3-D | (DoS/Wallet) | Medium | DoS | AI whatsapp-receptionist would fan out OpenAI calls if exposed. Related to A2-01 (dead path). | 🟢 In PR #881 | #881 | Fixed by staging cron guard. Does not address the route itself; see A2-01 for deletion recommendation. |
+| A3-D | (DoS/Wallet) | Medium | DoS | Billing/GDPR/Stripe/dedup crons run on identical schedules in staging. If staging resolves to prod credentials (Worker secret injection error), real records are affected. | 🟢 In PR #881 | #881 | **New guard `assertCronAllowedInThisEnv()`** in `src/lib/cron-env-guard.ts`. Staging blocks destructive crons by default; opt-in via `ALLOW_STAGING_DESTRUCTIVE_CRONS=true`. Staging schedules should be removed from `wrangler.toml` (design decision outside this fix). |
+| — | — | — | — | **BOOKING_TOKEN_SECRET minimum length enforcement (production only)** | 🟢 In PR #880 | #880 | New `enforceBookingTokenSecretMinLength()` in `src/lib/env.ts`. Production boot fails if `BOOKING_TOKEN_SECRET` is set but `< 32` chars. Catches typos and weak values that `ENV_RULES.required` doesn't catch. Test: `src/lib/__tests__/env-booking-token-secret.test.ts`. |
+| — | — | — | — | **WORKER_ENV staging marker + destructive cron guards** | 🟢 In PR #881 | #881 | New `WORKER_ENV` var in `wrangler.toml` (`production` / `staging`). Guards on `/api/cron/billing`, `/api/cron/gdpr-purge`, `/api/cron/stripe-reconcile`, `/api/cron/dedup-purge`. Test: `src/lib/__tests__/cron-env-guard.test.ts`. |
+
+### Findings verified as "no change needed"
+
+| Audit | ID | Severity | Category | Description | Status | Notes |
+|-------|-----|----------|----------|-------------|--------|-------|
+| S0 | S0-01-01 | Info | Taint | Client-supplied tenant headers stripped at middleware. | ✅ Verified | Control working; confirmed by `SECURITY` comment block in `src/middleware.ts:159-170`. |
+| S0 | S0-01-02 | Info | Taint | Signed profile header (HMAC-SHA256). Forgery rejected via `verifyProfileHeader`. | ✅ Verified | Control working. |
+| S0 | S0-01-03 | Info | Taint | `MAX_BODY_BYTES = 64 KB` + Zod parse enforced. | ✅ Verified | Control working. |
+| S0 | S0-01-04 | Low | Taint | Booking `manageUrl` interpolates request origin. Suggested: compute from canonical host. | ⏳ Deferred | Currently interpolates `request.headers.get("origin")` → `request.nextUrl.origin` fallback. Low risk due to CSRF validation upstream; improvement noted for future sprint. |
+| S0 | S0-02-01 | Info | SQLi | All Supabase queries use parameterized JS client. | ✅ Verified | No interpolation in RPC calls. |
+| S0 | S0-02-02 | Info | Cmd injection | No `child_process` / `execSync` / `spawn` in `src/`. | ✅ Verified | Workers runtime forbids it. |
+| S0 | S0-02-03 | Info | Template | No `dangerouslySetInnerHTML` except `safeJsonLdStringify()` + `sanitizeHtml()`. | ✅ Verified | CI enforces allowlist. |
+| S0 | S0-02-04 | Low | SSRF | `SLACK_REGISTRATION_ALERTS_WEBHOOK_URL` should be validated at startup. | ⏳ Deferred | Suggested: add regex check `^https://hooks\.slack\.com/services/` in `src/lib/env.ts`. Low priority. |
+| S0 | S0-02-05 | Info | SSRF (AV) | `AV_SCAN_URL` has 15s timeout + AbortSignal. Fails closed. | ✅ Verified | Control working. |
+| S0 | S0-02-06 | Info | NoSQL | No NoSQL stores wired to user input. | ✅ Verified | KV used only by rate limiter with structured keys. |
+| S0 | S0-03-01 | Info | AuthN | API routes protected by default at middleware. | ✅ Verified | `PUBLIC_API_ROUTES` allowlist explicit. |
+| S0 | S0-03-02 | Info | AuthN | MFA enforcement via `aal` claim. | ✅ Verified | `MFA_REQUIRED` roles checked. |
+| S0 | S0-03-03 | Info | AuthZ | Tenant mismatch rejected (F-08). | ✅ Verified | `profile.clinic_id !== tenant.clinicId` → 403. |
+| S0 | S0-03-04 | High | AuthZ | `/api/ai/whatsapp-receptionist` lacks `X-Hub-Signature-256` HMAC check. Currently blocked by deny-by-default. | ❌ Not addressed | **Recommendation:** (a) delete the route if `/api/webhooks` covers it, OR (b) add `verifyWebhookSignature` + add to `PUBLIC_API_ROUTES` + `CSRF_EXEMPT_PREFIXES` after HMAC is wired. See A2-01. Outside current sprint. |
+| S0 | S0-03-05 | Info | AuthN | Demo login gated by `NEXT_PUBLIC_FEATURE_DEMO_MODE !== "false"`. | ✅ Verified | Control working. |
+| S0 | S0-04-01 | Info | Input validation | `MAX_BODY_BYTES = 65_536` enforced. | ✅ Verified | Control working. |
+| A1 | A1-01 | Info | Taint | Tenant headers stripped; rate limit per-IP. | ✅ Verified | Confirmed. |
+| A1 | A1-02 | Info | Taint | Zod parse for every mutation. | ✅ Verified | Confirmed. |
+| A1 | A1-03 | Low | Taint | Slack mrkdwn escaping. | ✅ Verified | Control working. |
+| A2 | A2-01 | High | Dead path | `/api/ai/whatsapp-receptionist` missing HMAC (same as S0-03-04). | ❌ Not addressed | Delete or add HMAC. Outside current sprint. |
+| A2 | A2-02 | Info | Kill-switch | AI feature kill-switch (`F-AI-01`). | ✅ Verified | Confirmed in `src/lib/ai/config.ts`. |
+| A2 | A2-03 | Info | Kill-switch | Self-service registration gated. | ✅ Verified | `SELF_SERVICE_REGISTRATION_ENABLED=true` required. |
+| A2 | A2-04 | Low | Backdoor | Demo login restricted. | ✅ Verified | Feature flag + role + clinic check. |
+| A3 | A3-S | Info | STRIDE | Spoofing — signed profile header HMAC. | ✅ Verified | Control working. |
+| A3 | A3-T | Info | STRIDE | Tampering — CSRF + HMAC booking token. | ✅ Verified | Control working. |
+| A3 | A3-R | Info | STRIDE | Repudiation — append-only audit logs. | ✅ Verified | `service_role` query; `pending_audit_logs` retry queue. |
+| A3 | A3-I | Info | STRIDE | Info disclosure — PHI encrypted at rest (AES-256-GCM). | ✅ Verified | Control working. |
+| A4 | A4-A01 | Info | OWASP | Broken access control — RLS + `withAuth`. | ✅ Verified | Control working. |
+| A4 | A4-A02 | Info | OWASP | Crypto failures — AES-256-GCM, HMAC-SHA256 only. | ✅ Verified | No weak primitives. |
+| A4 | A4-A06 | Info | OWASP | Vulnerable deps — `npm audit` blocks high/critical. | ✅ Verified | CI enforces. |
+| A6 | A6-01 | Info | Crypto | AES-256-GCM with random IV; IV prepended; auth tag stripped. | ✅ Verified | NIST SP 800-38D compliant. |
+| A6 | A6-02 | Info | Crypto | Fallback to `PHI_OLD_KEY` during rotation (SOP documented). | ✅ Verified | `src/lib/encryption.ts:174-227` confirmed. |
+| A6 | A6-03 | Info | Crypto | Only `hmacSha256Hex` + `timingSafeEqual`. | ✅ Verified | No weak primitives. |
+| A7 | A7-01 | Info | AuthN | Supabase session + refresh token rotation. | ✅ Verified | Control working. |
+| A7 | A7-02 | Info | AuthZ | `withAuth` roles + RLS defense-in-depth. | ✅ Verified | Control working. |
+| A7 | A7-03 | Info | Session | `__Host-` prefixed, `SameSite=Strict`, `httpOnly`, `Secure`, 30-min TTL. | ✅ Verified | Control working. |
+| A8 | A8-01 | Info | Log hygiene | No PII logging (explicit comment in code). | ✅ Verified | Only structured non-PII fields logged. |
+| A8 | A8-02 | Info | Log hygiene | Structured JSON; PII redacted at logger boundary. | ✅ Verified | DOMPurify validated. |
+
+### Findings deferred to future sprint (out of scope)
+
+| Audit | ID | Severity | Category | Description | Deferral reason |
+|-------|-----|----------|----------|-------------|-----------------|
+| S0 | S0-01-04 | Low | Taint | Booking `manageUrl` origin hardening | Low risk; improvement only |
+| S0 | S0-02-04 | Low | SSRF | Slack webhook URL validation | Low risk; nice-to-have |
+| A2 | A2-01 | High | Dead path | `/api/ai/whatsapp-receptionist` HMAC | Requires design decision (delete vs wire HMAC) |
+| A3-D | — | Medium | DoS | AI whatsapp-receptionist wallet drain | Owned by A2-01 |
+| A6 | A6-05 | Low | Crypto | Booking token length-leak hardening | Safe as-is due to fixed lengths; paranoid improvement |
+| A8 | A8-03 | Low | Log hygiene | Generic error messages (30+ locations) | Low-value multi-week refactor |
+
+### Open SEASONS audit PRs (as of this writing)
+
+| PR | Branch | Title | Findings Addressed |
+|----|--------|-------|-------------------|
+| #880 | `security/booking-token-secret-min-length` | BOOKING_TOKEN_SECRET >= 32 chars in production (F-15 alias) | A6-04 (verified), A6-13 (booking HMAC) |
+| #881 | `infra/staging-cron-destructive-guard` | Refuse destructive crons in staging without opt-in (F-13 alias) | A3-D (DoS via billing/gdpr/stripe/dedup crons) |
+
+---
+
+## Production readiness checklist (etap1 §5)
 
 22 findings. Heavy overlap with etap1; ~60% already shipped, two confirmed false positives, three new actionable items addressed in this wave (#877, #878, and this PR).
 
@@ -180,6 +264,53 @@ The audit's separate top-25 risks list adds a few items that do not map to a num
 
 ---
 
+## Claude technical audit (`webs-alots-audit-findings.md`, audit-4) — finding tracker
+
+15 findings (F-01 through F-15) scoped to `package.json`, `.env.example`, `next.config.ts`, `wrangler.toml`, `SECURITY.md`, `README.md`. Most overlap with prior audits; only F-12 / F-13 / F-14 / F-15 produced new code changes in this wave.
+
+### CRITICAL (P0)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| F-01 | Rate limiting disabled in production (`RATE_LIMIT_BACKEND="memory"`) | ✅ Shipped | #873 | Same as etap1 #1 / audit-3 INF-01. `rate-limit.ts` already resolves the binding via `getWorkerBinding<CloudflareKV>("RATE_LIMIT_KV")`; #873 flipped the var back to `"kv"`. |
+| F-02 | PHI encryption key optional in production | ✅ Shipped | — | Same as audit-3 SEC-02. `src/lib/env.ts:637` `enforcePhiEncryptionConfigured()` already hard-fails boot in production when `PHI_ENCRYPTION_KEY` is missing or not 64 hex chars. |
+
+### HIGH (P1)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| F-03 | Seed users with default password `seed-password-change-me` | 🟡 Partial — operator action | #863 | `.env.example` already declares `SEED_PASSWORDS_ROTATED=false`. Operator must `wrangler secret put SEED_PASSWORDS_ROTATED --env production` with value `true` and run the SQL audit query from the finding. |
+| F-04 | Staging and production share KV namespace IDs | 🟡 Documented | #875 | Same as etap1 #5 / audit-3 INF-02. #875 added TODO sentinels and a checklist; operator must run `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` and replace the IDs before staging deploys diverge. |
+| F-05 | WhatsApp webhook signatures unverifiable without `META_APP_SECRET` | 🟡 Operator action | — | Same as audit-3 top-25 #19. `src/app/api/webhooks/whatsapp/route.ts` already verifies when the secret is present; checklist below tracks the `wrangler secret put` step. |
+| F-06 | CMI payment callbacks unprotected without IP allowlist | 🟡 Operator action | — | Same as audit-3 quick-win. Checklist below tracks setting `CMI_ALLOWED_IPS` from official CMI documentation. |
+| F-07 | CPU limit of 50ms may silently kill AI/payment/PDF routes if not on Unbound | 🟡 Verify-only | — | Same as audit-3 ARCH-01 / etap1 #4 / #18. Operator must confirm the Cloudflare account is on Workers Paid + Unbound (dashboard → Workers & Pages → Overview → Plan). |
+| F-09 | `STAFF_DEFAULT_PASSWORD` defaults to blank → empty-password staff accounts | ❌ **False positive** | — | Same as audit-3 SEC-05. `src/lib/constants.ts:10` falls back to `` `Staff-${crypto.randomUUID()}` `` when the env var is empty, so accounts are never created with a well-known or empty password. The inline comment states this verbatim. Worth a `.env.example` clarification but no code change needed. |
+| F-15 | `BOOKING_TOKEN_SECRET` + `CRON_SECRET` blank by default with no boot-time enforcement | 🟢 Shipped (this wave) | #880 | Half was already shipped: `CRON_SECRET` has `enforceCronSecretMinLength()` (env.ts:670) + `ENV_RULES.required`. The other half was a real gap: `BOOKING_TOKEN_SECRET` only had `required` (presence) without a length floor. PR #880 adds `enforceBookingTokenSecretMinLength()` (≥ 32 chars in production) mirroring the cron-secret guard. |
+
+### MEDIUM (P2)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| F-08 | Supabase connection pooling not implemented | ✅ Shipped | #874 | Same as etap1 #8 / audit-3 DB-01. `src/lib/supabase-server.ts` now prefers `SUPABASE_POOLER_URL` via `getSupabaseUrl()`. Operator must set the pooler URL secret. |
+| F-10 | Production config (domain, KV IDs) in a public repo | 🟢 Acknowledged | — | Same as audit-3 SEC-08. KV namespace IDs are not secrets and `.gitleaks.toml` already covers the allowed exceptions. Operator may make the repo private at production launch. |
+| F-11 | `EGRESS_ALLOWLIST_ENFORCE=false` — SSRF from Worker unrestricted | ❌ **False positive (not implementable)** | — | Same as audit-3 INFRA-04. `grep -rn EGRESS --include="*.ts"` returns zero code consumers. The env var is documented but no enforcement infrastructure exists to enable. Building it is a separate workstream. |
+| F-12 | AWS SDK bundled in Workers — bundle size risk | ⏳ Deferred (M effort) | — | Three `@aws-sdk/*` packages in production dependencies (`client-s3`, `s3-presigned-post`, `s3-request-presigner`). Audit recommends replacing with the native `UPLOADS_BUCKET` R2 binding + `aws4fetch` for presigned URLs. Real M-effort because it touches every R2 call site. Action: `npm run build:cf && du -sh .open-next/worker.js` to confirm we are under the 10MB compressed limit, then schedule the swap as its own workstream. |
+| F-13 | Staging crons trigger destructive operations with identical schedules | 🟢 Shipped (this wave) | #881 | Both `[env.production.vars]` and `[env.staging.vars]` set `NODE_ENV="production"`, so the audit's suggested `NODE_ENV !== "production"` guard would never fire. PR #881 introduces a `WORKER_ENV` marker in `wrangler.toml`, an `assertCronAllowedInThisEnv()` helper, and wires it into the four destructive cron routes (`billing`, `gdpr-purge`, `stripe-reconcile`, `dedup-purge`). Staging deploys return 503 unless `ALLOW_STAGING_DESTRUCTIVE_CRONS=true` is set. |
+| F-14 | Dual Workers + Pages deployment creates unclear serving path | ⏳ Deferred (operator decision) | — | README mentions a Cloudflare Pages project also connected to the repo. Audit wants either documentation of which deployment serves which path, or disablement of the Pages project on `main`. Action: operator to confirm the Pages project's current state (disabled / preview-only / dead) and either delete it or document its role. |
+
+---
+
+## Cross-audit false positives — do not re-open
+
+These were flagged by more than one audit but are not real gaps. The next auditor should skip them.
+
+| Finding | Flagged by | Code evidence | Conclusion |
+|---------|------------|---------------|------------|
+| `STAFF_DEFAULT_PASSWORD` blank → empty-password staff accounts | audit-3 SEC-05, audit-4 F-09 | `src/lib/constants.ts:10` — `process.env.STAFF_DEFAULT_PASSWORD \|\| \`Staff-${crypto.randomUUID()}\`` | A blank env var produces a high-entropy random password, never an empty string. False positive. |
+| `EGRESS_ALLOWLIST_ENFORCE` SSRF / egress allowlist disabled | audit-3 INFRA-04, audit-4 F-11 | `grep -rn EGRESS --include="*.ts"` returns zero hits | The env var is documented but no enforcement code exists. Cannot enable a feature that hasn't been built. Real fix is to build it, not to toggle a flag. |
+
+---
+
 ## Production readiness checklist (etap1 §5)
 
 Items that **only** need an operator on a workstation with `wrangler login` + Supabase access:
@@ -204,6 +335,10 @@ Items that **only** need an operator on a workstation with `wrangler login` + Su
 - [ ] Verify Cloudflare cron triggers fire (dashboard → Workers → Cron Triggers) (audit-3 PERF-01)
 - [ ] Decide on `payment-reminders` cron wiring — either add it to `worker-cron-handler.ts` `CRON_ROUTES` with the `0 9 * * *` schedule used in #878, or remove the Sentry monitor (audit-3 PERF-01, companion to #878)
 - [ ] Check `supabase secret list` includes WhatsApp + Twilio + PHI keys
+- [ ] `wrangler secret put ALLOW_STAGING_DESTRUCTIVE_CRONS --env staging` only if intentionally exercising staging crons (audit-4 F-13 / PR #881). Default: leave unset so staging returns 503 on destructive crons.
+- [ ] Confirm `BOOKING_TOKEN_SECRET` in production is ≥ 32 chars (PR #880 will now hard-fail boot if < 32). Generate: `openssl rand -hex 32`. (audit-4 F-15)
+- [ ] Verify Cloudflare account R2 bundle size after deploy: `npm run build:cf && du -sh .open-next/worker.js`. Cloudflare limit is 10MB compressed. If we are close, schedule the AWS SDK → native R2 binding swap (audit-4 F-12).
+- [ ] Decide on Cloudflare Pages project disposition (audit-4 F-14) — confirm whether it is dead, preview-only, or actively serving any path, then either delete it or document its role in README.
 
 Items that need a real review/verification pass (no code can do this):
 
