@@ -13,6 +13,23 @@ function requireEnv(name: string): string {
 }
 
 /**
+ * Get the Supabase URL for server operations.
+ *
+ * Priority: SUPABASE_POOLER_URL (Cloudflare Workers + connection pooling)
+ *         > NEXT_PUBLIC_SUPABASE_URL (direct connection)
+ *
+ * Audit finding #8: Workers have no persistent TCP connections. Direct
+ * connections to Supabase port 5432 exhaust the database connection limit.
+ * The pooler (port 6543, transaction mode) prevents this at scale.
+ *
+ * Set SUPABASE_POOLER_URL as a Cloudflare Workers secret. Format:
+ *   postgresql://postgres.xxx@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
+ */
+function getSupabaseUrl(): string {
+  return process.env.SUPABASE_POOLER_URL || requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+}
+
+/**
  * Create a Supabase server client with cookie-based auth.
  * Use this for requests where tenant context will be set separately
  * (e.g. middleware, auth flows).
@@ -26,7 +43,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    getSupabaseUrl(),
     requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
       cookies: {
@@ -74,7 +91,7 @@ export async function createTenantClient(clinicId: string) {
   const cookieStore = await cookies();
 
   const client = createServerClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    getSupabaseUrl(),
     requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
       cookies: {
@@ -190,11 +207,9 @@ export type AdminPurpose =
  */
 export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
   logger.debug("Admin client created", { context: "supabase-server", purpose, clinicId });
-  return createSupabaseClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
+  return createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
 /**
@@ -206,11 +221,9 @@ export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
  */
 export function createUntypedAdminClient(purpose: AdminPurpose, clinicId?: string) {
   logger.debug("Untyped admin client created", { context: "supabase-server", purpose, clinicId });
-  return createSupabaseClient(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
+  return createSupabaseClient(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
 /**
@@ -233,16 +246,12 @@ export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string)
     throw new Error(`createScopedAdminClient: invalid clinicId: ${clinicId}`);
   }
   logger.debug("Scoped admin client created", { context: "supabase-server", purpose, clinicId });
-  return createSupabaseClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: {
-        headers: { "x-clinic-id": clinicId },
-      },
+  return createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: {
+      headers: { "x-clinic-id": clinicId },
     },
-  );
+  });
 }
 
 /**
@@ -260,7 +269,7 @@ export function createPublicAnonClient(clinicId: string) {
     throw new Error(`createPublicAnonClient: invalid clinicId: ${clinicId}`);
   }
   return createSupabaseClient<Database>(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    getSupabaseUrl(),
     requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
       auth: { autoRefreshToken: false, persistSession: false },
