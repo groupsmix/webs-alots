@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator";
 import { resetPassword } from "@/lib/auth";
+import { validatePasswordNotPwned } from "@/lib/hibp";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase-client";
 import { passwordPolicySchema } from "@/lib/validations/password-policy";
@@ -83,6 +84,17 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
+      // 6e / A154: HIBP k-anonymity check — only the first 5 chars of the
+      // SHA-1 hash are sent to the API; the plaintext password never leaves
+      // this device. Fail-open on network error so users can still reset
+      // during HIBP outages. See src/lib/hibp.ts.
+      const hibpError = await validatePasswordNotPwned(newPassword);
+      if (hibpError) {
+        setError(hibpError);
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
