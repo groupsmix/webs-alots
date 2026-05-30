@@ -1,6 +1,6 @@
 "use client";
 
-import { Stethoscope, Loader2, CheckCircle2 } from "lucide-react";
+import { Stethoscope, Loader2, CheckCircle2, Mail, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MOROCCAN_CITIES } from "@/lib/morocco";
+
+// Mirrors the server-side SELF_SERVICE_REGISTRATION_ENABLED gate in
+// /api/v1/register-clinic. The server flag is the source of truth; this
+// public mirror only exists so we can render the right UI at page load
+// instead of letting the operator fill out the entire form and then hit
+// a 403 "disabled" error from the API.
+//
+// Both flags must be "true" for self-service to actually work in
+// production (see SECURITY_FLAG_ACKNOWLEDGMENTS in src/lib/env.ts —
+// SELF_SERVICE_REGISTRATION_ACK is also required at server startup).
+const SELF_SERVICE_REGISTRATION_ENABLED =
+  process.env.NEXT_PUBLIC_SELF_SERVICE_REGISTRATION_ENABLED === "true";
+
+const CONTACT_EMAIL = "contact@oltigo.com";
 
 const SPECIALTIES = [
   "Médecine générale",
@@ -73,7 +87,17 @@ export function RegisterForm() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setError(data.error || "Une erreur est survenue. Veuillez réessayer.");
+        // If the server returns the "disabled" 403, show the French
+        // operator-facing message + contact path rather than echoing
+        // the raw English API string into the red error box.
+        if (res.status === 403 && typeof data.error === "string") {
+          setError(
+            "L'inscription en libre-service est actuellement indisponible. " +
+              `Pour créer votre clinique, contactez-nous à ${CONTACT_EMAIL}.`,
+          );
+        } else {
+          setError(data.error || "Une erreur est survenue. Veuillez réessayer.");
+        }
         return;
       }
 
@@ -91,6 +115,61 @@ export function RegisterForm() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // When self-service is disabled (current default per audit R-12), don't
+  // make the operator fill out 6 fields just to get a 403. Show a clear
+  // "contact us" panel up front with the same visual structure as the form.
+  if (!SELF_SERVICE_REGISTRATION_ENABLED) {
+    const subject = encodeURIComponent("Demande d'inscription clinique");
+    const body = encodeURIComponent(
+      "Bonjour Oltigo,\n\n" +
+        "Je souhaite créer un compte clinique sur la plateforme.\n\n" +
+        "- Nom de la clinique :\n" +
+        "- Nom du docteur :\n" +
+        "- Spécialité :\n" +
+        "- Ville :\n" +
+        "- Téléphone :\n\n" +
+        "Merci.",
+    );
+    return (
+      <Card className="w-full max-w-lg mx-auto">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+            <ShieldAlert className="h-6 w-6 text-amber-600" />
+          </div>
+          <CardTitle className="text-xl">Inscription par contact</CardTitle>
+          <CardDescription>
+            L&apos;inscription en libre-service est temporairement fermée — chaque clinique est
+            vérifiée manuellement par notre équipe avant activation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            Pour créer votre clinique, écrivez-nous : nous vous accompagnons dans la mise en
+            service en moins de 24h.
+          </div>
+          <Button asChild className="w-full">
+            <a href={`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`}>
+              <Mail className="mr-2 h-4 w-4" />
+              Nous contacter — {CONTACT_EMAIL}
+            </a>
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Vous avez déjà un compte ?{" "}
+            <a href="/login" className="text-primary underline">
+              Se connecter
+            </a>
+          </p>
+          <p className="text-center text-xs text-muted-foreground">
+            Vous êtes un patient ?{" "}
+            <a href="/register" className="text-primary underline">
+              Créer un compte patient
+            </a>
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (success) {
