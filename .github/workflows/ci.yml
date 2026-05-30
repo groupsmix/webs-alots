@@ -618,7 +618,18 @@ jobs:
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
 
       - name: Run RLS integration tests
-        run: npx vitest run src/lib/__tests__/integration/rls-real-postgres.test.ts --reporter=json --outputFile=rls-results.json 2>&1 || true
+        # Run all three RLS test files:
+        #   rls-real-postgres.test.ts — generic table sweep (original)
+        #   rls-assertions.test.ts   — CRUD isolation assertions
+        #   rls-high-value-tables.test.ts — PHI tables + escalation (#629)
+        # || true is intentional: the assertion step below reads the JSON
+        # output and fails CI on test failures, giving a cleaner error message.
+        run: |
+          npx vitest run \
+            src/lib/__tests__/integration/rls-real-postgres.test.ts \
+            src/lib/__tests__/integration/rls-assertions.test.ts \
+            src/lib/__tests__/integration/rls-high-value-tables.test.ts \
+            --reporter=json --outputFile=rls-results.json 2>&1 || true
         env:
           SUPABASE_LOCAL_URL: ${{ env.SUPABASE_LOCAL_URL }}
           SUPABASE_LOCAL_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY }}
