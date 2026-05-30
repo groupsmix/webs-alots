@@ -75,19 +75,25 @@ export async function GET(request: NextRequest) {
     const manualDelayMinutes = delay?.current_delay_minutes ?? 0;
     const totalEstimatedWait = queueWaitMinutes + manualDelayMinutes;
 
-    return apiSuccess({
-      doctorId,
-      queueLength: queue.length,
-      queueWaitMinutes,
-      manualDelayMinutes,
-      totalEstimatedWait,
-      delayReason: delay?.reason ?? null,
-      delayUpdatedAt: delay?.last_updated_at ?? null,
-      message:
-        totalEstimatedWait > 0
-          ? `Dr. est en retard d'environ ${totalEstimatedWait} min`
-          : "Pas d'attente estimée",
-    });
+    return apiSuccess(
+      {
+        doctorId,
+        queueLength: queue.length,
+        queueWaitMinutes,
+        manualDelayMinutes,
+        totalEstimatedWait,
+        delayReason: delay?.reason ?? null,
+        delayUpdatedAt: delay?.last_updated_at ?? null,
+        message:
+          totalEstimatedWait > 0
+            ? `Dr. est en retard d'environ ${totalEstimatedWait} min`
+            : "Pas d'attente estimée",
+      },
+      200,
+      // PERF: Wait-time estimates are public and update every ~60s.
+      // Short public cache reduces Supabase read load at peak hours.
+      { "Cache-Control": "public, max-age=30, stale-while-revalidate=60" },
+    );
   } catch (err) {
     logger.error("Wait time estimate failed", {
       context: "api/wait-time",
