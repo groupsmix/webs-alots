@@ -1000,22 +1000,25 @@ export type Database = {
           clinic_id: string
           created_at: string | null
           enabled: boolean
-          feature_id: string
+          feature_key: string
           id: string
+          updated_at: string | null
         }
         Insert: {
           clinic_id: string
           created_at?: string | null
-          enabled?: boolean
-          feature_id: string
+          enabled: boolean
+          feature_key: string
           id?: string
+          updated_at?: string | null
         }
         Update: {
           clinic_id?: string
           created_at?: string | null
           enabled?: boolean
-          feature_id?: string
+          feature_key?: string
           id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1023,13 +1026,6 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clinic_feature_overrides_feature_id_fkey"
-            columns: ["feature_id"]
-            isOneToOne: false
-            referencedRelation: "feature_definitions"
             referencedColumns: ["id"]
           },
         ]
