@@ -31,6 +31,7 @@ import {
   Store,
   Gift,
   Gauge,
+  GitCompareArrows,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -59,13 +60,33 @@ import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
 import { fetchClinics } from "@/lib/super-admin-actions";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  children?: { href: string; label: string; icon: typeof LayoutDashboard }[];
+}
+
+const navItems: NavItem[] = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
-  { href: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
   { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
+  {
+    href: "/super-admin/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    children: [
+      { href: "/super-admin/analytics", label: "Overview", icon: BarChart3 },
+      {
+        href: "/super-admin/analytics/compare",
+        label: "Clinic Comparison",
+        icon: GitCompareArrows,
+      },
+      { href: "/super-admin/analytics/churn", label: "Churn Detection", icon: AlertTriangle },
+    ],
+  },
   { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
   { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
@@ -155,6 +176,48 @@ function SidebarNav({ pathname }: { pathname: string }) {
     <nav className="space-y-1">
       {navItems.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+
+        if (item.children) {
+          return (
+            <div key={item.href} className="space-y-0.5">
+              <Link
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+              {isActive && (
+                <div className="ml-4 border-l pl-3 space-y-0.5">
+                  {item.children.map((child) => {
+                    const childActive = pathname === child.href;
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        aria-current={childActive ? "page" : undefined}
+                        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
+                          childActive
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <child.icon className="h-3.5 w-3.5" />
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
         return (
           <Link
             key={item.href}
