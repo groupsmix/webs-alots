@@ -138,6 +138,7 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
       { href: "/super-admin/agent-builder", label: "Agent Builder", icon: Wand2 },
       { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
+      { href: "/super-admin/settings/ai", label: "AI Settings", icon: Settings },
     ],
   },
   {

@@ -47,6 +47,10 @@ const ALLOWLIST = new Set([
   "src/app/api/admin/revenue-forecast/route.ts",
   // Admin team — super_admin cross-tenant user management (role updates, member removal)
   "src/app/api/admin/team/route.ts",
+  // Admin AI config — super_admin cross-tenant AI provider management
+  "src/app/api/admin/ai-config/route.ts",
+  // AI route — unified AI endpoint with cross-tenant usage logging
+  "src/app/api/ai/route.ts",
 ]);
 
 const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;

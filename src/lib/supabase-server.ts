@@ -165,7 +165,11 @@ export type AdminPurpose =
   | "payments/cmi"
   | "features"
   | "directory"
-  | "instrumentation";
+  | "instrumentation"
+  | "ai-config-list"
+  | "ai-config-update"
+  | "ai-feature-toggle"
+  | "ai-route";
 
 /**
  * Create a Supabase admin client using the service role key.
