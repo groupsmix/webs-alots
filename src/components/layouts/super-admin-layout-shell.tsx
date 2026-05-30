@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Users,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -69,6 +70,7 @@ const navItems = [
   { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
   { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
   { href: "/super-admin/team", label: "Team", icon: Users },
+  { href: "/super-admin/system", label: "System Status", icon: Activity },
 ];
 
 type NotificationType = "info" | "warning" | "success";
