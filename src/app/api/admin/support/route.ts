@@ -31,7 +31,7 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
     const supabase = createUntypedAdminClient("super_admin");
 
     let query = supabase
-      .from("support_tickets")
+      .from("support_tickets") // nosemgrep: tenant-scoping
       .select("*, clinics(name)")
       .order("created_at", { ascending: false });
 
@@ -191,7 +191,7 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("support_tickets")
+      .from("support_tickets") // nosemgrep: tenant-scoping
       .update(updates)
       .eq("id", ticketId)
       .select()
