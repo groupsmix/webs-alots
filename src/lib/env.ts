@@ -1041,3 +1041,32 @@ export function getPhiEncryptionKeyOld(): string | undefined {
 export function getBackupEncryptionKey(): string | undefined {
   return process.env.BACKUP_ENCRYPTION_KEY;
 }
+
+/**
+ * Supabase connection-pooler URL (PgBouncer/Supavisor on port 6543).
+ * Set as a Cloudflare Workers secret. Falls back to the direct URL
+ * when unset (local dev, CI without pooler).
+ * Consumed by `src/lib/supabase-server.ts`.
+ */
+export function getSupabasePoolerUrl(): string | undefined {
+  return process.env.SUPABASE_POOLER_URL;
+}
+
+/**
+ * Current Worker environment identifier (F-13 / cron-env-guard).
+ * Set to "production" or "staging" in wrangler.toml [vars].
+ * Unset in local dev, tests, and preview deployments — callers treat
+ * undefined as "not staging" (i.e. allow the operation to proceed).
+ */
+export function getWorkerEnv(): string | undefined {
+  return process.env.WORKER_ENV;
+}
+
+/**
+ * Whether staging is allowed to run destructive crons (F-13).
+ * Must be explicitly set to "true" by an operator — never a default.
+ * Consumed by `src/lib/cron-env-guard.ts`.
+ */
+export function getAllowStagingDestructiveCrons(): boolean {
+  return process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
+}
