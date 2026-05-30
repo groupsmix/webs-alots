@@ -1,9 +1,10 @@
 /**
  * Custom Cloudflare Worker entry point.
  *
- * Re-exports the OpenNext fetch handler and adds a scheduled() handler
- * so that Cloudflare Cron Triggers (defined in wrangler.toml) can invoke
- * the Next.js cron API routes with the correct CRON_SECRET auth.
+ * Re-exports the OpenNext fetch handler and adds scheduled() + queue()
+ * handlers so that Cloudflare Cron Triggers and Queues (defined in
+ * wrangler.toml) can invoke the Next.js cron API routes and process
+ * notification queue batches.
  *
  * Cron schedule (must match wrangler.toml [triggers].crons exactly):
  *   - every 5 min    →  /api/cron/uptime-monitor (health check + WhatsApp alert)
@@ -98,6 +99,67 @@ async function reportCronError(
 
 export default {
   fetch: handler.fetch,
+
+  /**
+   * INF-Q1: Cloudflare Queue consumer handler.
+   *
+   * Wired to the notification-queue declared in wrangler.toml [[queues.consumers]].
+   * When a batch arrives, delegates to the existing /api/cron/notifications route
+   * via an internal fetch (same pattern as the scheduled() handler). The cron
+   * route calls processNotificationQueue() which atomically claims pending rows,
+   * delivers them, and marks them sent/failed — idempotent by design.
+   *
+   * Individual message ack/retry is intentionally not used here. The DB-level
+   * processing in processNotificationQueue() is the source of truth for delivery
+   * state. We ackAll() after the route responds and let the cron fallback handle
+   * any edge cases.
+   */
+  async queue(
+    batch: MessageBatch,
+    env: Record<string, string>,
+    ctx: ExecutionContext,
+  ): Promise<void> {
+    console.log(
+      `[Queue] Processing batch of ${batch.messages.length} messages from ${batch.queue}`,
+    );
+
+    const cronSecret = env.CRON_SECRET;
+    if (!cronSecret) {
+      console.error("[Queue] CRON_SECRET not set — cannot authenticate internal request");
+      batch.retryAll();
+      return;
+    }
+
+    const baseUrl =
+      env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
+    if (!baseUrl) {
+      console.error("[Queue] No CRON_SELF_BASE_URL or ROOT_DOMAIN — cannot route internal request");
+      batch.retryAll();
+      return;
+    }
+
+    try {
+      const url = new URL("/api/cron/notifications", baseUrl);
+      const request = new Request(url.toString(), {
+        headers: { Authorization: `Bearer ${cronSecret}` },
+      });
+
+      const res = await handler.fetch(request, env, ctx);
+
+      if (res.ok) {
+        console.log(`[Queue] /api/cron/notifications responded ${res.status} — acking batch`);
+        batch.ackAll();
+      } else {
+        const body = await res.text();
+        const truncated = body.length > 200 ? body.slice(0, 200) + "…" : body;
+        console.error(`[Queue] /api/cron/notifications responded ${res.status}: ${truncated}`);
+        batch.retryAll();
+      }
+    } catch (err) {
+      console.error("[Queue] Batch processing failed — retrying all", err);
+      batch.retryAll();
+    }
+  },
 
   async scheduled(
     controller: ScheduledController,
