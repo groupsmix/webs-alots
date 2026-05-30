@@ -76,7 +76,11 @@ export async function GET(request: NextRequest) {
     .order("id", { ascending: false })
     .limit(limit + 1);
 
+  // IV-02: Validate date format to prevent malformed input reaching Supabase.
   if (date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return apiError("Invalid date format", 400, "INVALID_DATE", cors);
+    }
     query = query.eq("appointment_date", date);
   }
   if (status) {
@@ -84,9 +88,16 @@ export async function GET(request: NextRequest) {
   }
 
   if (cursor) {
-    // Row-tuple comparison `(appointment_date, start_time, id) < (cd, ct, ci)`
-    // expressed as the disjunction PostgREST supports via `.or()`.
+    // INJ-02: Validate cursor fields to prevent PostgREST filter injection.
     const { appointment_date: cd, start_time: ct, id: ci } = cursor;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(cd) ||
+      !/^\d{2}:\d{2}(:\d{2})?$/.test(ct) ||
+      !UUID_RE.test(ci)
+    ) {
+      return apiError("Invalid cursor", 400, "INVALID_CURSOR", cors);
+    }
     query = query.or(
       [
         `appointment_date.lt.${cd}`,

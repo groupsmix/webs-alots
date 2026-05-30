@@ -55,11 +55,9 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    // MED-05 + A46.3: Sanitize search input to prevent PostgREST filter injection.
-    // Strip %, _, comma, parens, dots (PostgREST filter separator) AND pipes
-    // (PostgREST OR operator token). Without stripping |, an attacker could
-    // inject additional filter clauses like `role.eq.super_admin`.
-    const sanitized = search.replace(/[%_,.()|]/g, "");
+    // INJ-01: Allowlist-based sanitization to prevent PostgREST filter injection.
+    // Only permit alphanumerics, spaces, hyphens, apostrophes, @, and dots.
+    const sanitized = search.replace(/[^a-zA-Z0-9\s\-'@.]/g, "");
     if (sanitized.length > 0) {
       // B-01: Use `name` (and `name_ar` for Arabic search) instead of the
       // non-existent `full_name` column which caused a 500 on every request.
