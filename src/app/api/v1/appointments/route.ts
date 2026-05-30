@@ -76,7 +76,11 @@ export async function GET(request: NextRequest) {
     .order("id", { ascending: false })
     .limit(limit + 1);
 
+  // IV-02: Validate date format before passing to PostgREST `.eq()`.
   if (date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return apiError("Invalid date format", 400, "INVALID_DATE", cors);
+    }
     query = query.eq("appointment_date", date);
   }
   if (status) {
