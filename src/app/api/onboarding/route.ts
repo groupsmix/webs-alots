@@ -186,7 +186,7 @@ export const POST = withAuthValidation(
       await logAuditEvent({
         supabase,
         action: "clinic_created",
-        type: "clinic",
+        type: "admin",
         actor: user.id,
         clinicId,
         description: `Clinic "${body.clinic_name}" created via onboarding (subdomain: ${subdomain ?? "none"})`,
