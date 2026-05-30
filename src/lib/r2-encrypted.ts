@@ -72,12 +72,15 @@ export async function encryptAndUpload(
     return uploadToR2(key, Buffer.from(plaintext), contentType);
   }
 
-  const encrypted = await encryptBuffer(plaintext);
-  if (!encrypted) {
+  let encrypted: Buffer;
+  try {
+    encrypted = await encryptBuffer(plaintext);
+  } catch (err) {
     logger.error("Failed to encrypt file — aborting upload", {
       context: "r2-encrypted",
       key,
       metadata,
+      error: err,
     });
     return null;
   }

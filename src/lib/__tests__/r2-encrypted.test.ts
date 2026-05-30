@@ -92,7 +92,7 @@ describe("encryptAndUpload", () => {
 
   it("returns null and logs error when encryption fails", async () => {
     mockIsEncryptionConfigured.mockReturnValue(true);
-    mockEncryptBuffer.mockResolvedValueOnce(null);
+    mockEncryptBuffer.mockRejectedValueOnce(new Error("encryption failed"));
 
     const { encryptAndUpload } = await import("@/lib/r2-encrypted");
     const result = await encryptAndUpload(

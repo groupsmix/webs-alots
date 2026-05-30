@@ -67,10 +67,22 @@ function sanitizeUserInput(text: string): string {
       // Strip XML-style role tags
       .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
       // Strip "ignore all previous instructions" style attacks
-      .replace(
-        /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi,
-        "[filtered]",
-      )
+      // WP-01: Replaced regex (which had nested \s+ quantifiers causing
+      // catastrophic backtracking) with sequential substring checks.
+      .replace(/.*/, (line) => {
+        const lower = line.toLowerCase();
+        if (
+          lower.includes("ignore") &&
+          (lower.includes("previous") ||
+            lower.includes("prior") ||
+            lower.includes("above") ||
+            lower.includes("earlier")) &&
+          (lower.includes("instruction") || lower.includes("prompt") || lower.includes("context"))
+        ) {
+          return "[filtered]";
+        }
+        return line;
+      })
       // Collapse excessive whitespace
       .replace(/\n{3,}/g, "\n\n")
       .trim()
@@ -136,11 +148,12 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   // Sanitize and truncate messages; limit conversation history length.
   // V-01: Truncate assistant messages too — an attacker can fabricate
   // long assistant turns in the request body to inflate token cost.
+  // WP-01: Truncate BEFORE sanitization to bound regex processing time.
   const sanitizedMessages = body.messages.slice(-MAX_HISTORY_LENGTH).map((m) => ({
     ...m,
     content:
       m.role === "user"
-        ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
+        ? sanitizeUserInput(m.content.slice(0, MAX_MESSAGE_LENGTH))
         : m.content.slice(0, MAX_MESSAGE_LENGTH),
   }));
 
