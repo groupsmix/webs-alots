@@ -1,13 +1,23 @@
 /**
  * Unified AI endpoint — all AI features call this single route.
  *
- * Accepts a task + prompt, routes to the best available model via the
- * AI router, logs usage, and returns the response.
+ * Accepts a task + prompt, optionally a feature_key for toggle-gating,
+ * routes to the best available model via the AI router, logs usage via
+ * an atomic Postgres RPC, and returns the response.
  *
  * Super admin only (for now — can be extended to clinic_admin later).
+ *
+ * Changes vs the original:
+ *   1. Feature key gating — if `feature_key` is sent, the request is
+ *      blocked when the matching toggle row is disabled.
+ *   2. Atomic counter increments via `increment_ai_usage` RPC. The old
+ *      read-modify-write pattern lost concurrent increments.
+ *   3. Provider configs are loaded through a 30s in-memory cache to save
+ *      a round-trip on every request.
  */
 
 import { NextRequest } from "next/server";
+import { isAIFeatureEnabled, loadFeatureToggles } from "@/lib/ai/feature-toggles";
 import { routeAIRequest, loadProviderConfigs, AllProvidersFailedError } from "@/lib/ai/router";
 import type { AIRequest, AITaskType, TaskComplexity, AIProvider } from "@/lib/ai/types";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
@@ -58,6 +68,8 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     return apiValidationError(`complexity must be one of: ${VALID_COMPLEXITIES.join(", ")}`);
   }
 
+  const featureKey = (body.feature_key as string) ?? undefined;
+
   const aiRequest: AIRequest = {
     task: task as AITaskType,
     complexity: complexity as TaskComplexity,
@@ -66,18 +78,36 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     maxTokens: typeof body.max_tokens === "number" ? body.max_tokens : undefined,
     temperature: typeof body.temperature === "number" ? body.temperature : undefined,
     forceProvider: (body.force_provider as AIProvider) ?? undefined,
+    featureKey,
     context: (body.context as string) ?? undefined,
   };
 
-  // Load provider configs from DB
   const supabase = createUntypedAdminClient("ai-route");
+
+  // ── Feature toggle gate ──
+  // Only enforced when the caller passes a feature_key. Unknown keys are
+  // allowed by default (opt-in gating).
+  if (featureKey) {
+    const toggles = await loadFeatureToggles(supabase);
+    const check = isAIFeatureEnabled(featureKey, toggles);
+    if (!check.allowed) {
+      logger.info("AI request blocked by feature toggle", {
+        context: "ai-route",
+        featureKey,
+        reason: check.reason,
+        userId: auth.user.id,
+      });
+      return apiError(check.reason ?? "Feature disabled", 403, "FEATURE_DISABLED");
+    }
+  }
+
   const configs = await loadProviderConfigs(supabase);
 
   try {
-    const response = await routeAIRequest(aiRequest, configs);
+    const response = await routeAIRequest(aiRequest, configs, supabase);
 
-    // Log usage asynchronously (don't block response)
-    logUsage(supabase, response, aiRequest).catch((err) =>
+    // Log usage in the background — don't block the response on it.
+    logUsage(supabase, response, aiRequest, auth).catch((err) =>
       logger.error("Failed to log AI usage", {
         context: "ai-route",
         error: err instanceof Error ? err.message : String(err),
@@ -118,6 +148,15 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
   }
 }
 
+/**
+ * Log a successful AI call.
+ *
+ * Two writes:
+ *   1. Insert into ai_usage_logs (per-request audit trail)
+ *   2. Call increment_ai_usage() RPC — atomic update of monthly counters
+ *      and last_used_at. Replaces the racy read-modify-write that the
+ *      original code had.
+ */
 async function logUsage(
   supabase: ReturnType<typeof createUntypedAdminClient>,
   response: {
@@ -129,40 +168,35 @@ async function logUsage(
     costCents: number;
   },
   request: AIRequest,
+  auth: AuthContext,
 ): Promise<void> {
-  // nosemgrep: semgrep.tenant-scoping
   await supabase.from("ai_usage_logs").insert({
     provider: response.provider,
     model: response.model,
     task_type: request.task,
+    feature_key: request.featureKey ?? null,
     input_tokens: response.inputTokens,
     output_tokens: response.outputTokens,
     latency_ms: response.latencyMs,
     cost_cents: response.costCents,
     success: true,
+    user_id: auth.user.id,
+  }); // nosemgrep: semgrep.tenant-scoping — ai_usage_logs is a global admin table (no clinic_id column); super-admin-only API, full RLS defined in migration
+
+  // Atomic counter increment. Auto-resets at month boundary.
+  const { error } = await supabase.rpc("increment_ai_usage", {
+    p_provider: response.provider,
+    p_input_tokens: response.inputTokens,
+    p_output_tokens: response.outputTokens,
+    p_cost_cents: response.costCents,
   });
 
-  // Update provider stats
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: current } = await supabase
-    .from("ai_provider_configs")
-    .select("requests_this_month, tokens_this_month")
-    .eq("provider", response.provider)
-    .single();
-
-  if (current) {
-    const newRequests = ((current.requests_this_month as number) || 0) + 1;
-    const newTokens =
-      ((current.tokens_this_month as number) || 0) + response.inputTokens + response.outputTokens;
-    // nosemgrep: semgrep.tenant-scoping
-    await supabase
-      .from("ai_provider_configs")
-      .update({
-        requests_this_month: newRequests,
-        tokens_this_month: newTokens,
-        last_used_at: new Date().toISOString(),
-      })
-      .eq("provider", response.provider);
+  if (error) {
+    logger.warn("increment_ai_usage RPC failed", {
+      context: "ai-route",
+      provider: response.provider,
+      error: error.message,
+    });
   }
 }
 

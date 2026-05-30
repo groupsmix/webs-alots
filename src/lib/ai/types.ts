@@ -40,7 +40,9 @@ export interface AIRequest {
   temperature?: number;
   /** Force a specific provider (bypass routing) */
   forceProvider?: AIProvider;
-  /** Caller context for logging */
+  /** Optional feature key for toggle-gated access (see feature-toggles.ts) */
+  featureKey?: string;
+  /** Caller context for logging (also stored in ai_usage_logs.context) */
   context?: string;
 }
 
@@ -54,24 +56,33 @@ export interface AIResponse {
   latencyMs: number;
   costCents: number;
   fromFallback: boolean;
-  queueWaitMs?: number;
 }
 
 /** Provider configuration stored in DB */
 export interface ProviderConfig {
   provider: AIProvider;
   displayName: string;
+  /** Decrypted plaintext API key. Stored encrypted at rest, decrypted on load. */
   apiKey: string | null;
   isActive: boolean;
   routingTier: RoutingTier;
   fallbackProvider: AIProvider | null;
   monthlyBudgetCents: number;
   requestsThisMonth: number;
+  /** Total (input + output) tokens this month — kept for backward-compat. */
   tokensThisMonth: number;
+  /** Input tokens this month (tracked separately for accurate cost reporting). */
+  inputTokensThisMonth: number;
+  /** Output tokens this month. */
+  outputTokensThisMonth: number;
+  /** Actual cost this month in cents (NUMERIC from DB, stored as JS number). */
+  costThisMonthCents: number;
+  /** Epoch ms when persisted rate limit expires, or null. */
+  rateLimitedUntil: number | null;
   lastError: string | null;
 }
 
-/** Provider rate limit state (in-memory) */
+/** Provider rate limit state (in-memory per instance) */
 export interface RateLimitState {
   provider: AIProvider;
   requestsInWindow: number;
@@ -87,16 +98,7 @@ export interface ModelConfig {
   maxContextTokens: number;
   costPerInputToken: number; // in cents per 1M tokens
   costPerOutputToken: number; // in cents per 1M tokens
-  supportsStreaming: boolean;
   rpmLimit: number; // requests per minute
-}
-
-/** Queue status shown to users */
-export interface QueueStatus {
-  queued: boolean;
-  position: number;
-  estimatedWaitMs: number;
-  provider: AIProvider | null;
 }
 
 /** Feature toggle state */

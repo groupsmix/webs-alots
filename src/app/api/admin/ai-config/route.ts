@@ -5,11 +5,17 @@
  * PATCH — update a provider config (API key, active state, budget)
  * POST — update feature toggles
  *
- * Super admin only. API keys are stored encrypted in the database.
- * Keys without a value auto-disable the provider.
+ * Super admin only. API keys are encrypted with AES-256-GCM (PHI_ENCRYPTION_KEY)
+ * before insert/update via `encryptProviderKey`. Keys are never returned in
+ * the GET response — only a `has_api_key` boolean.
+ *
+ * Any write invalidates the in-memory config cache so the next /api/ai call
+ * picks up the new state immediately on the same instance.
  */
 
 import { NextRequest } from "next/server";
+import { invalidateConfigCache, invalidateFeatureToggleCache } from "@/lib/ai/config-cache";
+import { encryptProviderKey, isProviderKeyEncrypted } from "@/lib/ai/secret-encryption";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
@@ -21,13 +27,12 @@ import type { AuthContext } from "@/lib/with-auth";
 async function handleGet(_req: NextRequest, _auth: AuthContext) {
   const supabase = createUntypedAdminClient("ai-config-list");
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: providers, error: provErr } = await supabase
+  const { data: providers, error: provErr } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .select(
-      "id, provider, display_name, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, last_error, last_used_at, created_at, updated_at",
+      "id, provider, display_name, api_key_encrypted, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, input_tokens_this_month, output_tokens_this_month, cost_this_month_cents, rate_limited_until, last_error, last_used_at, created_at, updated_at",
     )
-    .order("routing_tier", { ascending: true });
+    .order("routing_tier", { ascending: false });
 
   if (provErr) {
     // Table may not exist yet if migration hasn't run
@@ -41,8 +46,7 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
     return apiError("Failed to fetch AI configurations", 500);
   }
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: toggles, error: toggleErr } = await supabase
+  const { data: toggles, error: toggleErr } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_feature_toggles")
     .select("id, feature_key, display_name, description, is_enabled, min_tier")
     .order("feature_key");
@@ -55,18 +59,18 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
     return apiError("Failed to fetch feature toggles", 500);
   }
 
-  // Get usage stats for current month
+  // Aggregate per-provider usage stats for the current month from logs.
+  // Kept as a separate query so the admin UI's "this month" panel keeps
+  // working as it did before.
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: usageLogs } = await supabase
+  const { data: usageLogs } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_usage_logs")
     .select("provider, input_tokens, output_tokens, cost_cents, success")
     .gte("created_at", startOfMonth.toISOString());
 
-  // Aggregate usage per provider
   const usageByProvider: Record<
     string,
     { requests: number; tokens: number; costCents: number; errors: number }
@@ -85,12 +89,16 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
     }
   }
 
-  // Mask API keys — only show whether they exist
-  const maskedProviders = (providers ?? []).map((p: Record<string, unknown>) => ({
-    ...p,
-    has_api_key: !!(p.api_key_encrypted as string | null),
-    api_key_encrypted: undefined,
-  }));
+  // Mask API keys — only expose presence + encryption status, never the value
+  const maskedProviders = (providers ?? []).map((p: Record<string, unknown>) => {
+    const stored = p.api_key_encrypted as string | null;
+    return {
+      ...p,
+      has_api_key: !!stored,
+      api_key_is_encrypted: isProviderKeyEncrypted(stored),
+      api_key_encrypted: undefined,
+    };
+  });
 
   return apiSuccess({
     providers: maskedProviders,
@@ -121,8 +129,9 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
 
   if ("api_key" in body) {
     const apiKey = body.api_key as string | null;
-    update.api_key_encrypted = apiKey || null;
-    // Auto-disable if key removed (except workers_ai)
+    // ENCRYPT the API key before storage. encryptProviderKey returns null
+    // when the input is null/empty.
+    update.api_key_encrypted = await encryptProviderKey(apiKey);
     if (!apiKey && provider !== "workers_ai") {
       update.is_active = false;
     }
@@ -130,10 +139,8 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
 
   if ("is_active" in body) {
     const isActive = body.is_active as boolean;
-    // Can't activate without an API key (except workers_ai)
     if (isActive && provider !== "workers_ai") {
-      // nosemgrep: semgrep.tenant-scoping
-      const { data: existing } = await supabase
+      const { data: existing } = await supabase // nosemgrep: semgrep.tenant-scoping
         .from("ai_provider_configs")
         .select("api_key_encrypted")
         .eq("provider", provider)
@@ -164,8 +171,7 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     update.routing_tier = tier;
   }
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { error } = await supabase
+  const { error } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .update(update)
     .eq("provider", provider);
@@ -179,10 +185,22 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     return apiError("Failed to update configuration", 500);
   }
 
+  // Invalidate the in-memory cache so the next /api/ai call on this instance
+  // sees fresh state. Other instances will pick up the change after TTL.
+  invalidateConfigCache();
+
+  // Don't log which fields changed if the API key was rotated — keep that
+  // out of structured logs entirely.
+  const loggedFields = Object.keys(update).filter(
+    (k) => k !== "updated_at" && k !== "api_key_encrypted",
+  );
+  const rotatedKey = "api_key" in body;
+
   logger.info("AI provider config updated", {
     context: "ai-config",
     provider,
-    updatedFields: Object.keys(update).filter((k) => k !== "updated_at"),
+    updatedFields: loggedFields,
+    apiKeyRotated: rotatedKey,
     updatedBy: auth.user.id,
   });
 
@@ -208,8 +226,7 @@ async function handlePost(req: NextRequest, _auth: AuthContext) {
 
   const supabase = createUntypedAdminClient("ai-feature-toggle");
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { error } = await supabase
+  const { error } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_feature_toggles")
     .update({ is_enabled: isEnabled, updated_at: new Date().toISOString() })
     .eq("feature_key", featureKey);
@@ -222,6 +239,8 @@ async function handlePost(req: NextRequest, _auth: AuthContext) {
     });
     return apiError("Failed to update feature toggle", 500);
   }
+
+  invalidateFeatureToggleCache();
 
   return apiSuccess({ updated: true, feature_key: featureKey, is_enabled: isEnabled });
 }
