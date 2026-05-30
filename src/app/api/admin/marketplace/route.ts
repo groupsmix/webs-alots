@@ -19,7 +19,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("feature_definitions")
+      .from("feature_definitions") // nosemgrep: semgrep.tenant-scoping
       .select("id, name, description, key, category, available_tiers, global_enabled")
       .order("name");
 
@@ -30,7 +30,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
 
     // Count how many clinics have each feature enabled (via feature_overrides)
     const { data: overrides } = await supabase
-      .from("clinic_feature_overrides")
+      .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping
       .select("feature_key");
 
     const installCounts: Record<string, number> = {};
