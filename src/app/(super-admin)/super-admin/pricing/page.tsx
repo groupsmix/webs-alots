@@ -83,11 +83,40 @@ interface Promotion {
 const STORAGE_KEY_PROMOS = "oltigo_promotions";
 const STORAGE_KEY_HISTORY = "oltigo_price_history";
 
+function isPromotion(v: unknown): v is Promotion {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.name === "string" &&
+    typeof o.discount === "number" &&
+    Array.isArray(o.tiers) &&
+    typeof o.startDate === "string" &&
+    typeof o.endDate === "string" &&
+    typeof o.enabled === "boolean"
+  );
+}
+
+function isHistoryEntry(v: unknown): v is PriceHistoryEntry {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.date === "string" &&
+    typeof o.system === "string" &&
+    typeof o.cycle === "string" &&
+    typeof o.oldPrice === "number" &&
+    typeof o.newPrice === "number"
+  );
+}
+
 function loadPromos(): Promotion[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY_PROMOS);
-    return raw ? (JSON.parse(raw) as Promotion[]) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isPromotion);
   } catch {
     return [];
   }
@@ -102,7 +131,10 @@ function loadHistory(): PriceHistoryEntry[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
-    return raw ? (JSON.parse(raw) as PriceHistoryEntry[]) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isHistoryEntry);
   } catch {
     return [];
   }
@@ -275,12 +307,13 @@ export default function PricingPage() {
     const newPrice = Number(editPriceMin) || 0;
 
     if (oldPrice !== newPrice) {
+      const cycleLabel: string = billingCycle === "yearly" ? "yearly" : "monthly";
       const entry: PriceHistoryEntry = {
         date: new Date().toISOString().split("T")[0] ?? "",
         system: systemTypeLabels[selectedSystem],
-        cycle: billingCycle,
-        oldPrice,
-        newPrice,
+        cycle: cycleLabel,
+        oldPrice: Math.round(oldPrice),
+        newPrice: Math.round(newPrice),
       };
       const updated = [entry, ...priceHistory].slice(0, 50);
       setPriceHistory(updated);
