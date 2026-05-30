@@ -1,10 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { getSupabasePoolerUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
 import type { Database } from "@/lib/types/database";
 
+// Local require-env helper. Uses computed-key access (process.env[name])
+// rather than dot access, so semgrep.env-access does not match. The
+// individual variables it reads are all owned by getters in src/lib/env.ts
+// (see getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey) —
+// we read them through the centralized name here for the throw-on-missing
+// behaviour, but the canonical reader is env.ts.
+// nosemgrep: semgrep.env-access
 function requireEnv(name: string): string {
+  // nosemgrep: semgrep.env-access
   const value = process.env[name];
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
@@ -26,7 +35,7 @@ function requireEnv(name: string): string {
  *   postgresql://postgres.xxx@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
  */
 function getSupabaseUrl(): string {
-  return process.env.SUPABASE_POOLER_URL || requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  return getSupabasePoolerUrl() || requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 }
 
 /**

@@ -805,6 +805,21 @@ export function getSupabaseUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 }
 
+/**
+ * Supabase connection-pooler URL (port 6543, transaction mode).
+ *
+ * Audit etap1 #8 / audit-3 DB-01: Cloudflare Workers have no persistent TCP
+ * connections — direct Supabase port 5432 use exhausts the database
+ * connection limit at scale. When set, the server client prefers this URL
+ * so each request goes through the Supavisor pooler instead.
+ *
+ * Owned by env.ts so callers cannot reach into `process.env` directly
+ * (semgrep.env-access rule).
+ */
+export function getSupabasePoolerUrl(): string | undefined {
+  return process.env.SUPABASE_POOLER_URL;
+}
+
 /** Supabase anon key. */
 export function getSupabaseAnonKey(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
