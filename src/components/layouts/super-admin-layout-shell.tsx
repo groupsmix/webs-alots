@@ -28,6 +28,7 @@ import {
   Users,
   Activity,
   Wand2,
+  Store,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -73,6 +74,7 @@ const navItems = [
   { href: "/super-admin/team", label: "Team", icon: Users },
   { href: "/super-admin/system", label: "System Status", icon: Activity },
   { href: "/super-admin/agent-builder", label: "Agent Builder", icon: Wand2 },
+  { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
 ];
 
 type NotificationType = "info" | "warning" | "success";
