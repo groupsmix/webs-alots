@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 // production (see SECURITY_FLAG_ACKNOWLEDGMENTS in src/lib/env.ts —
 // SELF_SERVICE_REGISTRATION_ACK is also required at server startup).
 const SELF_SERVICE_REGISTRATION_ENABLED =
-  process.env.NEXT_PUBLIC_SELF_SERVICE_REGISTRATION_ENABLED === "true";
+  process.env.NEXT_PUBLIC_SELF_SERVICE_REGISTRATION_ENABLED === "true"; // nosemgrep: semgrep.env-access — NEXT_PUBLIC_* is inlined at build time by Next.js for client bundle; mirror of server flag in env.ts
 
 const CONTACT_EMAIL = "contact@oltigo.com";
 
