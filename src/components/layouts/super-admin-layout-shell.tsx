@@ -21,6 +21,10 @@ import {
   Plus,
   BarChart3,
   Bot,
+  CheckCheck,
+  Info,
+  AlertTriangle,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -65,13 +69,74 @@ const navItems = [
   { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
 ];
 
+type NotificationType = "info" | "warning" | "success";
+
 interface Notification {
   id: string;
   title: string;
   message: string;
   time: string;
   unread: boolean;
+  type: NotificationType;
 }
+
+const NOTIF_READ_KEY = "oltigo-sa-notif-read";
+
+function getReadNotifIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(NOTIF_READ_KEY);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveReadNotifIds(ids: Set<string>): void {
+  try {
+    localStorage.setItem(NOTIF_READ_KEY, JSON.stringify([...ids]));
+  } catch {
+    // localStorage may be unavailable
+  }
+}
+
+const FALLBACK_NOTIFICATIONS: Notification[] = [
+  {
+    id: "mock-1",
+    title: "New clinic registered: Devin Test Clinic",
+    message: "A new clinic has been onboarded and is awaiting configuration.",
+    time: "2m ago",
+    unread: true,
+    type: "info",
+  },
+  {
+    id: "mock-2",
+    title: "1 subscription suspended: VqfatzgAG",
+    message: "Subscription suspended due to overdue payment.",
+    time: "1h ago",
+    unread: true,
+    type: "warning",
+  },
+  {
+    id: "mock-3",
+    title: "System update deployed successfully",
+    message: "Platform v2.4.1 has been deployed to all regions.",
+    time: "3h ago",
+    unread: true,
+    type: "success",
+  },
+];
+
+const notifTypeIcon: Record<NotificationType, typeof Info> = {
+  info: Info,
+  warning: AlertTriangle,
+  success: CheckCircle,
+};
+
+const notifTypeColor: Record<NotificationType, string> = {
+  info: "text-blue-600",
+  warning: "text-amber-500",
+  success: "text-green-600",
+};
 
 function SidebarNav({ pathname }: { pathname: string }) {
   return (
@@ -189,6 +254,14 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const markAllRead = useCallback(() => {
+    setNotifications((prev) => {
+      const allIds = new Set(prev.map((n) => n.id));
+      saveReadNotifIds(allIds);
+      return prev.map((n) => ({ ...n, unread: false }));
+    });
+  }, []);
+
   useEffect(() => {
     mountedRef.current = true;
 
@@ -214,7 +287,11 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           .order("sent_at", { ascending: false })
           .limit(10);
 
-        if (data && mountedRef.current) {
+        if (!mountedRef.current) return;
+
+        const readIds = getReadNotifIds();
+
+        if (data && data.length > 0) {
           setNotifications(
             data.map((n) => {
               const sentAt = new Date(n.sent_at ?? Date.now());
@@ -232,13 +309,28 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
                 title: n.title ?? "Notification",
                 message: n.body ?? "",
                 time,
-                unread: !n.is_read,
+                unread: readIds.has(n.id) ? false : !n.is_read,
+                type: "info" as NotificationType,
               };
             }),
+          );
+        } else {
+          setNotifications(
+            FALLBACK_NOTIFICATIONS.map((n) => ({
+              ...n,
+              unread: !readIds.has(n.id),
+            })),
           );
         }
       } catch (err) {
         logger.warn("Failed to load notifications", { context: "super-admin-layout", error: err });
+        const readIds = getReadNotifIds();
+        setNotifications(
+          FALLBACK_NOTIFICATIONS.map((n) => ({
+            ...n,
+            unread: !readIds.has(n.id),
+          })),
+        );
       }
     }
 
@@ -326,22 +418,56 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80">
-                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <div className="flex items-center justify-between px-2 py-1.5">
+                  <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={markAllRead}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <CheckCheck className="h-3 w-3" />
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
                 <DropdownMenuSeparator />
-                {notifications.map((notif) => (
-                  <DropdownMenuItem key={notif.id} className="flex flex-col items-start gap-1 py-2">
-                    <div className="flex items-center gap-2 w-full">
-                      <p className="text-sm font-medium">{notif.title}</p>
-                      {notif.unread && (
-                        <Badge variant="default" className="text-[9px] px-1 py-0 ml-auto">
-                          New
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{notif.message}</p>
-                    <p className="text-[10px] text-muted-foreground">{notif.time}</p>
-                  </DropdownMenuItem>
-                ))}
+                {notifications.length === 0 && (
+                  <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                    No notifications
+                  </div>
+                )}
+                {notifications.map((notif) => {
+                  const NotifIcon = notifTypeIcon[notif.type] ?? Info;
+                  return (
+                    <DropdownMenuItem key={notif.id} className="flex items-start gap-2 py-2">
+                      <NotifIcon
+                        className={`h-4 w-4 mt-0.5 shrink-0 ${notifTypeColor[notif.type] ?? "text-muted-foreground"}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{notif.title}</p>
+                          {notif.unread && (
+                            <Badge variant="default" className="text-[9px] px-1 py-0 shrink-0">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{notif.message}</p>
+                        <p className="text-[10px] text-muted-foreground">{notif.time}</p>
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })}
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-center">
+                  <Link
+                    href="/super-admin/clinics"
+                    className="text-xs text-primary hover:underline"
+                  >
+                    View all notifications
+                  </Link>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
 
