@@ -35,6 +35,7 @@ const stripeWebhookEventObjectSchema = z.object({
 });
 
 export const stripeWebhookEventSchema = z.object({
+  id: z.string().optional(), // Stripe event ID (evt_xxx) — present on all real events
   type: z.string().min(1),
   data: z.object({
     object: stripeWebhookEventObjectSchema,

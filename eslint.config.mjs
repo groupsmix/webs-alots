@@ -213,6 +213,13 @@ const eslintConfig = defineConfig([
       "i18next/no-literal-string": "off",
     },
   },
+  // ENV-001 rule: enforce process.env access through src/lib/env.ts
+  // Deferred: the rule is ready (see src/lib/env.ts for typed getters) but
+  // activating it now would exceed the ESLint warning baseline (~245 new
+  // warnings from ~230 remaining call sites). Enable in a dedicated cleanup
+  // PR once the first-wave getters in env.ts have been rolled out more widely.
+  // The getters added in this PR (getCronSecret, getPhiEncryptionKey, etc.)
+  // are already in place and can be adopted incrementally.
   ...storybook.configs["flat/recommended"],
 ]);
 
