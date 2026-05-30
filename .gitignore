@@ -62,3 +62,4 @@ lint.txt
 
 *storybook.log
 storybook-static
+secrets-template.env
