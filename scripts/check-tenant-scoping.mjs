@@ -49,8 +49,13 @@ const ALLOWLIST = new Set([
   "src/app/api/admin/team/route.ts",
   // Admin AI config — super_admin cross-tenant AI provider management
   "src/app/api/admin/ai-config/route.ts",
+  // Admin AI connection test — super_admin only, no tenant-scoped tables touched
+  "src/app/api/admin/ai-config/test/route.ts",
   // AI route — unified AI endpoint with cross-tenant usage logging
   "src/app/api/ai/route.ts",
+  // AI router/feature-toggles helpers — cross-tenant reads of ai_* tables
+  "src/lib/ai/router.ts",
+  "src/lib/ai/feature-toggles.ts",
 ]);
 
 const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;
