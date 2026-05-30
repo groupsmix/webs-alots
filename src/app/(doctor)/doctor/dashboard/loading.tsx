@@ -4,7 +4,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DoctorDashboardLoading() {
   return (
     <div>
-      <Skeleton className="h-8 w-48 mb-6" />
+      {/* Greeting */}
+      <div className="mb-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-64 mt-1" />
+      </div>
+
+      {/* AI Quick Actions */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-8">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border p-4 flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Stats Cards */}
       <CardSkeleton count={4} className="mb-8" />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-xl border p-4 space-y-3">
