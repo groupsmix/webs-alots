@@ -76,10 +76,12 @@ export default function ClinicErrorBoundary({
       digest: error.digest,
       message: error.message,
       // Stack only in dev to avoid leaking server paths.
+      // nosemgrep: semgrep.env-access — NODE_ENV is inlined at build time by Next.js/webpack
       stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }, [error, context]);
 
+  // nosemgrep: semgrep.env-access — NODE_ENV is inlined at build time by Next.js/webpack
   const isDev = process.env.NODE_ENV === "development";
 
   return (
