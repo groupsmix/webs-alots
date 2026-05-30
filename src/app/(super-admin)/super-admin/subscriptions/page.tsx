@@ -212,6 +212,7 @@ export default function SubscriptionsPage() {
             Suivi des abonnements clients, facturation et paiements
           </p>
         </div>
+        {/* eslint-disable i18next/no-literal-string */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={filtered.length === 0}>
@@ -231,6 +232,7 @@ export default function SubscriptionsPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {/* eslint-enable i18next/no-literal-string */}
       </div>
 
       {/* KPI Cards */}

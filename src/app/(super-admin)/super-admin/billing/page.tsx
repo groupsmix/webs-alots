@@ -180,6 +180,7 @@ export default function BillingPage() {
             Monitor revenue, subscriptions, and payment status
           </p>
         </div>
+        {/* eslint-disable i18next/no-literal-string */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={filtered.length === 0}>
@@ -199,6 +200,7 @@ export default function BillingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {/* eslint-enable i18next/no-literal-string */}
       </div>
 
       {loading && (

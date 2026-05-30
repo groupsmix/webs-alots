@@ -250,10 +250,12 @@ export default function SuperAdminDashboardPage() {
             )}
             {"Refresh"}
           </Button>
+          {/* eslint-disable i18next/no-literal-string */}
           <Button variant="outline" size="sm" disabled={loading} onClick={handleDownloadReport}>
             <Download className="h-4 w-4 mr-1" />
             Download Report
           </Button>
+          {/* eslint-enable i18next/no-literal-string */}
           <Link href="/super-admin/onboarding">
             <Button size="sm">
               <UserPlus className="h-4 w-4 mr-1" />

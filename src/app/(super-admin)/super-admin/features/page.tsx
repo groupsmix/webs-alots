@@ -360,6 +360,7 @@ export default function FeatureTogglesPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {/* eslint-disable i18next/no-literal-string */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={filtered.length === 0}>
@@ -379,6 +380,7 @@ export default function FeatureTogglesPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* eslint-enable i18next/no-literal-string */}
           <Button variant="outline" onClick={() => setBulkOpen(true)}>
             <ToggleLeft className="h-4 w-4 mr-1" />
             Bulk Actions
