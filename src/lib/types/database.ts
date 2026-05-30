@@ -10448,7 +10448,7 @@ export type FeatureDefinition = {
 export type ClinicFeatureOverride = {
   id: string;
   clinic_id: string;
-  feature_id: string;
+  feature_key: string;
   enabled: boolean;
   created_at: string;
 }
