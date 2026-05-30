@@ -91,7 +91,10 @@ async function callAnthropic(req: AIRequest, opts: CallOptions): Promise<Provide
 
 async function callGoogle(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
   const model = opts.model ?? PROVIDER_MODELS.google.model;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${opts.apiKey}`;
+  // SECURITY: Send the API key as a header (x-goog-api-key), not in the URL
+  // query string. URL params end up in access logs, proxies, and error
+  // reports — headers do not. Google's REST API supports both.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const contents = [];
   if (req.systemPrompt) {
     contents.push({ role: "user", parts: [{ text: req.systemPrompt }] });
@@ -101,7 +104,10 @@ async function callGoogle(req: AIRequest, opts: CallOptions): Promise<ProviderRe
 
   const res = await fetchWithTimeout(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": opts.apiKey ?? "",
+    },
     body: JSON.stringify({
       contents,
       generationConfig: {
@@ -350,14 +356,18 @@ async function callXAI(req: AIRequest, opts: CallOptions): Promise<ProviderRespo
 
 async function callWorkersAI(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
   const model = opts.model ?? PROVIDER_MODELS.workers_ai.model;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime Workers AI credential, not available at build time
-  const apiToken = process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey; // nosemgrep: semgrep.env-access — runtime Workers AI credential, fallback to per-request key
+  // Workers AI uses runtime credentials — these are not available at build
+  // time and aren't user-configurable per-clinic, so they live in env rather
+  // than the ai_provider_configs table.
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime Workers AI credential
+  const apiToken = // nosemgrep: semgrep.env-access — runtime Workers AI credential
+    process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey;
 
   if (!accountId || !apiToken) {
     throw new ProviderError(
       "workers_ai",
       0,
-      "Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_AI_TOKEN",
+      "Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_AI_API_TOKEN",
     );
   }
 
