@@ -1,4 +1,4 @@
--- Migration: 00124_dual_control_refunds.sql
+-- Migration: 00125_dual_control_refunds.sql
 --
 -- Issue #673 (Audit A169-02): Add two-person approval workflow for
 -- refunds exceeding 5 000 MAD. A single admin initiates a refund request;
