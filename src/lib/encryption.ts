@@ -53,6 +53,7 @@
  */
 
 import { hexToBytes } from "@/lib/crypto-utils";
+import { getPhiEncryptionKey, getPhiEncryptionKeyOld } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 // ── Key Management ──
@@ -104,7 +105,7 @@ function assertValidHexKey(
  * @throws {Error} if key is missing, wrong length, or not valid hex.
  */
 export function validateEncryptionKey(): void {
-  assertValidHexKey(process.env.PHI_ENCRYPTION_KEY, "PHI_ENCRYPTION_KEY");
+  assertValidHexKey(getPhiEncryptionKey(), "PHI_ENCRYPTION_KEY");
 }
 
 /**
@@ -122,7 +123,7 @@ function getEncryptionKey(): Promise<CryptoKey> {
 }
 
 async function importEncryptionKey(): Promise<CryptoKey> {
-  const hexKey = process.env.PHI_ENCRYPTION_KEY;
+  const hexKey = getPhiEncryptionKey();
   assertValidHexKey(hexKey, "PHI_ENCRYPTION_KEY");
 
   const keyBytes = hexToBytes(hexKey);
@@ -145,7 +146,7 @@ function getOldEncryptionKey(): Promise<CryptoKey | null> {
 }
 
 async function importOldEncryptionKey(): Promise<CryptoKey | null> {
-  const hexKey = process.env.PHI_ENCRYPTION_KEY_OLD;
+  const hexKey = getPhiEncryptionKeyOld();
   if (!hexKey) return null;
   try {
     assertValidHexKey(hexKey, "PHI_ENCRYPTION_KEY_OLD");
@@ -167,7 +168,7 @@ async function importOldEncryptionKey(): Promise<CryptoKey | null> {
  */
 export function isEncryptionConfigured(): boolean {
   // nosemgrep: semgrep.env-access — encryption key presence check; not in env.ts to avoid eager import of crypto
-  const hexKey = process.env.PHI_ENCRYPTION_KEY;
+  const hexKey = getPhiEncryptionKey();
   if (!hexKey) return false;
   if (hexKey.length !== 64) return false;
   if (!/^[0-9a-fA-F]+$/.test(hexKey)) return false;

@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "@/lib/crypto-utils";
+import { getCronSecret } from "@/lib/env";
 
 /**
  * Minimum acceptable length for CRON_SECRET.
@@ -46,7 +47,7 @@ function hasMinimalEntropy(secret: string): boolean {
  */
 export function verifyCronSecret(request: NextRequest): NextResponse | null {
   const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = getCronSecret();
 
   // A100-05: Reject if secret is missing or too short (prevents empty-string bypass)
   // FP-07: Also reject low-entropy secrets (single repeated char, trivial patterns)
