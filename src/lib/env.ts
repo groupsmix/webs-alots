@@ -217,6 +217,19 @@ const ENV_RULES: EnvRule[] = [
     group: "security",
   },
 
+  // ── Backup Encryption (A6-05, A22-01) ────────────────────────────
+  // A6-05 / A22-01: BACKUP_ENCRYPTION_KEY is required in production.
+  // Database backups contain all PHI for all tenants. An unencrypted backup
+  // in R2 is a single-point-of-compromise for the entire platform.
+  // Moroccan Law 09-08 requires encryption at rest for all health data.
+  {
+    name: "BACKUP_ENCRYPTION_KEY",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "AES-256-GCM key for database backup encryption (64 hex chars, required in production; `openssl rand -hex 32`)",
+    group: "security",
+  },
+
   // ── Observability ────────────────────────────────────────────────────
   // O-06: Sentry DSN is required in production so errors are not silently lost.
   {
@@ -503,6 +516,9 @@ export function enforceEnvValidation(): void {
   // silently disable encryption at first use.
   enforcePhiEncryptionConfigured();
 
+  // A6-05 / A22-01: Validate BACKUP_ENCRYPTION_KEY shape.
+  enforceBackupEncryptionConfigured();
+
   // Audit Finding #7 — enforce safe PHI masking defaults in production.
   // Production must default to a masked view of PHI ("partial" or "full").
   // Explicitly disabling masking ("none") is only permitted when the operator
@@ -659,6 +675,37 @@ export function enforcePhiEncryptionConfigured(): void {
       "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
       "Generate a valid key with: openssl rand -hex 32";
     logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * A6-05 / A22-01: Refuse to boot in production when BACKUP_ENCRYPTION_KEY
+ * is missing or malformed. Database backups contain all PHI for all tenants
+ * and must always be encrypted. Moroccan Law 09-08 mandates encryption at rest
+ * for all health data.
+ *
+ * Exported for unit tests.
+ */
+export function enforceBackupEncryptionConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const key = process.env.BACKUP_ENCRYPTION_KEY;
+  if (!key) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] BACKUP_ENCRYPTION_KEY is required in production.\n" +
+      "Database backups contain all PHI for all tenants (all clinic data). An unencrypted backup\n" +
+      "is a single-point-of-compromise for the entire platform and violates Moroccan Law 09-08.\n" +
+      "Generate a key with: openssl rand -hex 32";
+    logger.error(message, { context: "env-validation", check: "backup-encryption" });
+    throw new Error(message);
+  }
+
+  if (!/^[0-9a-fA-F]{64}$/.test(key)) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] BACKUP_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
+      "Generate a valid key with: openssl rand -hex 32";
+    logger.error(message, { context: "env-validation", check: "backup-encryption" });
     throw new Error(message);
   }
 }
@@ -837,21 +884,6 @@ export function getSupabaseUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 }
 
-/**
- * Supabase connection-pooler URL (port 6543, transaction mode).
- *
- * Audit etap1 #8 / audit-3 DB-01: Cloudflare Workers have no persistent TCP
- * connections — direct Supabase port 5432 use exhausts the database
- * connection limit at scale. When set, the server client prefers this URL
- * so each request goes through the Supavisor pooler instead.
- *
- * Owned by env.ts so callers cannot reach into `process.env` directly
- * (semgrep.env-access rule).
- */
-export function getSupabasePoolerUrl(): string | undefined {
-  return process.env.SUPABASE_POOLER_URL;
-}
-
 /** Supabase anon key. */
 export function getSupabaseAnonKey(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -983,29 +1015,7 @@ export function getPhiEncryptionKeyOld(): string | undefined {
   return process.env.PHI_ENCRYPTION_KEY_OLD;
 }
 
-/**
- * Worker environment marker — "production" / "staging" / undefined.
- *
- * Audit-4 F-13: Both `[env.production.vars]` and `[env.staging.vars]` in
- * wrangler.toml set NODE_ENV="production", so NODE_ENV cannot distinguish
- * the two. WORKER_ENV is the per-env discriminator used by
- * `assertCronAllowedInThisEnv()` to gate destructive crons in staging.
- *
- * Returns undefined locally (no marker set) and in tests, which the guard
- * treats as "not staging" — i.e. it never blocks execution.
- */
-export function getWorkerEnv(): string | undefined {
-  return process.env.WORKER_ENV;
-}
-
-/**
- * Explicit opt-in flag that allows destructive crons (GDPR purge, billing,
- * Stripe reconciliation, dedup TTL) to run in WORKER_ENV=staging.
- *
- * Audit-4 F-13. Returns true only when the secret is literally the string
- * "true"; any other value (unset, "1", "TRUE", etc.) is treated as not
- * opted in so the guard fails closed.
- */
-export function getAllowStagingDestructiveCrons(): boolean {
-  return process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
+/** Backup encryption key (AES-256-GCM). */
+export function getBackupEncryptionKey(): string | undefined {
+  return process.env.BACKUP_ENCRYPTION_KEY;
 }
