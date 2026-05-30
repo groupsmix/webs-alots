@@ -512,6 +512,12 @@ export function enforceEnvValidation(): void {
   // A100-35: Reject CRON_SECRET shorter than 32 chars in production.
   enforceCronSecretMinLength();
 
+  // F-15 (audit-4): Reject BOOKING_TOKEN_SECRET shorter than 32 chars in
+  // production. A weak or empty secret would let attackers forge booking
+  // tokens and skip OTP verification. ENV_RULES.required only catches the
+  // missing case; this guard catches typos and short values.
+  enforceBookingTokenSecretMinLength();
+
   // S-05: Assert PROFILE_HEADER_HMAC_KEY !== CRON_SECRET to prevent a
   // leaked cron token from also forging session headers.
   enforceHmacKeyIndependence();
@@ -676,6 +682,32 @@ export function enforceCronSecretMinLength(): void {
       "[STARTUP HEALTH CHECK FAILED] CRON_SECRET must be at least 32 characters.\n" +
       "A short secret is vulnerable to brute-force. Generate one: `openssl rand -hex 32`.";
     logger.error(message, { context: "env-validation", check: "cron-secret-length" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * F-15 (audit-4): Reject BOOKING_TOKEN_SECRET shorter than 32 characters
+ * in production. BOOKING_TOKEN_SECRET signs the HMAC payload that proves
+ * a booking flow has cleared OTP verification — an empty or short value
+ * lets attackers forge tokens and bypass OTP entirely.
+ *
+ * Mirrors {@link enforceCronSecretMinLength}. ENV_RULES.required already
+ * hard-fails when the variable is missing; this guard catches the case
+ * where it is set but trivially short.
+ *
+ * Exported for unit tests.
+ */
+export function enforceBookingTokenSecretMinLength(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const secret = process.env.BOOKING_TOKEN_SECRET;
+  if (secret && secret.length < 32) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] BOOKING_TOKEN_SECRET must be at least 32 characters.\n" +
+      "A short secret lets attackers forge booking tokens and skip OTP verification. " +
+      "Generate one: `openssl rand -hex 32`.";
+    logger.error(message, { context: "env-validation", check: "booking-token-secret-length" });
     throw new Error(message);
   }
 }
