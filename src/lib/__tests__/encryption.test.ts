@@ -7,6 +7,7 @@ describe("encryption", () => {
   const TEST_KEY_HEX = "a".repeat(64); // 256-bit key (all 0xAA bytes)
 
   beforeEach(() => {
+    vi.resetModules();
     process.env.PHI_ENCRYPTION_KEY = TEST_KEY_HEX;
   });
 
@@ -53,27 +54,24 @@ describe("encryption", () => {
     const encrypted = await encryptBuffer(original);
     expect(encrypted).not.toBeNull();
 
-    // Corrupt the ciphertext (flip a byte after the IV)
+    // Corrupt the ciphertext (flip a byte after the version byte + IV)
     const corrupted = Buffer.from(encrypted!);
-    corrupted[15] = corrupted[15] ^ 0xff;
+    corrupted[16] = corrupted[16] ^ 0xff;
 
     const decrypted = await decryptBuffer(corrupted);
     expect(decrypted).toBeNull();
   });
 
-  it("throws when encryption key is not configured", async () => {
+  it("throws when encryption key is not configured (BD-01)", async () => {
     delete process.env.PHI_ENCRYPTION_KEY;
-    // Re-import to get fresh module
-    vi.resetModules();
     const { encryptBuffer } = await import("../encryption");
 
     await expect(encryptBuffer(Buffer.from("test"))).rejects.toThrow(
-      "PHI_ENCRYPTION_KEY is required",
+      "PHI_ENCRYPTION_KEY environment variable is required",
     );
   });
 
   it("returns null for data too short to contain IV", async () => {
-    vi.resetModules();
     const { decryptBuffer } = await import("../encryption");
 
     const tooShort = Buffer.from([1, 2, 3]); // Less than 13 bytes
@@ -81,13 +79,63 @@ describe("encryption", () => {
     expect(result).toBeNull();
   });
 
-  it("rejects invalid key length", async () => {
+  it("throws on invalid key length (CR-02)", async () => {
     process.env.PHI_ENCRYPTION_KEY = "short";
-    vi.resetModules();
     const { encryptBuffer } = await import("../encryption");
 
-    const result = await encryptBuffer(Buffer.from("test"));
-    expect(result).toBeNull();
+    await expect(encryptBuffer(Buffer.from("test"))).rejects.toThrow(
+      "PHI_ENCRYPTION_KEY must be exactly 64 hex characters",
+    );
+  });
+
+  it("throws on non-hex key characters (CR-02)", async () => {
+    process.env.PHI_ENCRYPTION_KEY = "g".repeat(64);
+    const { encryptBuffer } = await import("../encryption");
+
+    await expect(encryptBuffer(Buffer.from("test"))).rejects.toThrow(
+      "PHI_ENCRYPTION_KEY must contain only hex characters",
+    );
+  });
+});
+
+describe("encryption - validateEncryptionKey (BD-01 / CR-01)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.PHI_ENCRYPTION_KEY;
+    vi.restoreAllMocks();
+  });
+
+  it("throws when PHI_ENCRYPTION_KEY is missing", async () => {
+    delete process.env.PHI_ENCRYPTION_KEY;
+    const { validateEncryptionKey } = await import("../encryption");
+
+    expect(() => validateEncryptionKey()).toThrow(
+      "PHI_ENCRYPTION_KEY environment variable is required",
+    );
+  });
+
+  it("throws when PHI_ENCRYPTION_KEY is wrong length", async () => {
+    process.env.PHI_ENCRYPTION_KEY = "aabb";
+    const { validateEncryptionKey } = await import("../encryption");
+
+    expect(() => validateEncryptionKey()).toThrow("must be exactly 64 hex characters");
+  });
+
+  it("throws when PHI_ENCRYPTION_KEY contains non-hex characters", async () => {
+    process.env.PHI_ENCRYPTION_KEY = "z".repeat(64);
+    const { validateEncryptionKey } = await import("../encryption");
+
+    expect(() => validateEncryptionKey()).toThrow("must contain only hex characters");
+  });
+
+  it("does not throw for a valid key", async () => {
+    process.env.PHI_ENCRYPTION_KEY = "a".repeat(64);
+    const { validateEncryptionKey } = await import("../encryption");
+
+    expect(() => validateEncryptionKey()).not.toThrow();
   });
 });
 
@@ -211,5 +259,90 @@ describe("encryption - PHI key rotation (SEC-013)", () => {
     const mod2 = await import("../encryption");
     const decrypted = await mod2.decryptBuffer(encrypted!);
     expect(decrypted).toBeNull();
+  });
+});
+
+// CR-07: Version byte tests — new format prepends version byte,
+// legacy format (no version byte) is still decryptable.
+describe("encryption - version byte (CR-07)", () => {
+  const TEST_KEY_HEX = "a".repeat(64);
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.PHI_ENCRYPTION_KEY = TEST_KEY_HEX;
+  });
+
+  afterEach(() => {
+    delete process.env.PHI_ENCRYPTION_KEY;
+    vi.restoreAllMocks();
+  });
+
+  it("new encryption prepends version byte 0x01", async () => {
+    const { encryptBuffer } = await import("../encryption");
+
+    const encrypted = await encryptBuffer(Buffer.from("test data"));
+    // First byte should be version 1
+    expect(encrypted[0]).toBe(1);
+    // Total size: 1 (version) + 12 (IV) + plaintext + 16 (auth tag)
+    expect(encrypted.length).toBe(1 + 12 + 9 + 16);
+  });
+
+  it("decrypts legacy format (no version byte) for backward compatibility", async () => {
+    const { decryptBuffer } = await import("../encryption");
+    const { hexToBytes } = await import("../crypto-utils");
+
+    // Manually construct a legacy-format encrypted buffer:
+    // [12-byte IV][ciphertext + GCM auth tag]
+    const keyBytes = hexToBytes(TEST_KEY_HEX);
+    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, [
+      "encrypt",
+      "decrypt",
+    ]);
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = new TextEncoder().encode("legacy PHI data");
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
+
+    // Legacy format: no version byte prefix
+    const legacy = Buffer.concat([Buffer.from(iv), Buffer.from(ciphertext)]);
+
+    const decrypted = await decryptBuffer(legacy);
+    expect(decrypted).not.toBeNull();
+    expect(decrypted!.toString()).toBe("legacy PHI data");
+  });
+});
+
+// EL-04 / FP-06: Decryption failure must trigger logger.error (which
+// forwards to Sentry) so key misconfiguration generates alerts.
+describe("encryption - decryption failure alerts (EL-04 / FP-06)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.PHI_ENCRYPTION_KEY;
+    vi.restoreAllMocks();
+  });
+
+  it("calls logger.error with Sentry context when decryption fails", async () => {
+    process.env.PHI_ENCRYPTION_KEY = "a".repeat(64);
+
+    const loggerModule = await import("../logger");
+    const errorSpy = vi.spyOn(loggerModule.logger, "error");
+
+    const { decryptBuffer } = await import("../encryption");
+
+    // Garbage data that won't decrypt
+    const garbage = Buffer.alloc(30, 0x42);
+    const result = await decryptBuffer(garbage);
+
+    expect(result).toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("AES-GCM decryption failed"),
+      expect.objectContaining({
+        context: "encryption",
+        dataLength: 30,
+      }),
+    );
   });
 });

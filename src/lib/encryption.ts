@@ -57,37 +57,73 @@ import { logger } from "@/lib/logger";
 
 // ── Key Management ──
 
+/**
+ * Current encryption format version prepended to ciphertext (CR-07).
+ * Version 0 = legacy (no version byte, IV starts at byte 0).
+ * Version 1 = current (1-byte version prefix, IV starts at byte 1).
+ */
+const ENCRYPTION_FORMAT_VERSION = 1;
+
 /** Cached CryptoKey promise — the key doesn't change at runtime. */
-let _cachedKey: Promise<CryptoKey | null> | undefined;
+let _cachedKey: Promise<CryptoKey> | undefined;
 
 /** Cached old CryptoKey promise for key rotation fallback (F-A99-10). */
 let _cachedOldKey: Promise<CryptoKey | null> | undefined;
 
 /**
+ * Assert that a hex-encoded encryption key is present and well-formed.
+ * Throws a descriptive error if validation fails (BD-01, CR-01, CR-02).
+ */
+function assertValidHexKey(
+  hexKey: string | undefined,
+  envVarName: string,
+): asserts hexKey is string {
+  if (!hexKey) {
+    throw new Error(
+      `${envVarName} environment variable is required. ` +
+        "Generate one with: openssl rand -hex 32",
+    );
+  }
+  if (hexKey.length !== 64) {
+    throw new Error(
+      `${envVarName} must be exactly 64 hex characters (256 bits). ` +
+        `Got ${hexKey.length} characters.`,
+    );
+  }
+  if (!/^[0-9a-fA-F]+$/.test(hexKey)) {
+    throw new Error(`${envVarName} must contain only hex characters (0-9, a-f, A-F).`);
+  }
+}
+
+/**
+ * Validate that PHI_ENCRYPTION_KEY is present and well-formed.
+ *
+ * BD-01 / CR-01: Call this at application startup to fail fast on
+ * misconfiguration instead of silently falling back to no encryption.
+ *
+ * @throws {Error} if key is missing, wrong length, or not valid hex.
+ */
+export function validateEncryptionKey(): void {
+  assertValidHexKey(process.env.PHI_ENCRYPTION_KEY, "PHI_ENCRYPTION_KEY");
+}
+
+/**
  * Derive a CryptoKey from the hex-encoded master key in environment.
  * The result is cached so that repeated encrypt/decrypt calls avoid
  * re-importing the same raw key via crypto.subtle.importKey().
- * Returns null if PHI_ENCRYPTION_KEY is not configured.
+ *
+ * BD-01 / CR-01 / CR-02: Throws if PHI_ENCRYPTION_KEY is missing,
+ * wrong length, or not valid hex — never falls back silently.
  */
-function getEncryptionKey(): Promise<CryptoKey | null> {
+function getEncryptionKey(): Promise<CryptoKey> {
   if (_cachedKey !== undefined) return _cachedKey;
   _cachedKey = importEncryptionKey();
   return _cachedKey;
 }
 
-async function importEncryptionKey(): Promise<CryptoKey | null> {
+async function importEncryptionKey(): Promise<CryptoKey> {
   const hexKey = process.env.PHI_ENCRYPTION_KEY;
-  if (!hexKey) {
-    throw new Error("PHI_ENCRYPTION_KEY is required");
-  }
-
-  // Validate key length (64 hex chars = 32 bytes = 256 bits)
-  if (hexKey.length !== 64) {
-    logger.error("PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits)", {
-      context: "encryption",
-    });
-    return null;
-  }
+  assertValidHexKey(hexKey, "PHI_ENCRYPTION_KEY");
 
   const keyBytes = hexToBytes(hexKey);
 
@@ -111,10 +147,10 @@ function getOldEncryptionKey(): Promise<CryptoKey | null> {
 async function importOldEncryptionKey(): Promise<CryptoKey | null> {
   const hexKey = process.env.PHI_ENCRYPTION_KEY_OLD;
   if (!hexKey) return null;
-  if (hexKey.length !== 64) {
-    logger.error("PHI_ENCRYPTION_KEY_OLD must be exactly 64 hex characters (256 bits)", {
-      context: "encryption",
-    });
+  try {
+    assertValidHexKey(hexKey, "PHI_ENCRYPTION_KEY_OLD");
+  } catch (err) {
+    logger.error((err as Error).message, { context: "encryption" });
     return null;
   }
   const keyBytes = hexToBytes(hexKey);
@@ -143,14 +179,16 @@ export function isEncryptionConfigured(): boolean {
 /**
  * Encrypt a buffer using AES-256-GCM.
  *
- * Returns the encrypted data with the IV prepended:
- *   [12-byte IV][ciphertext + 16-byte GCM auth tag]
+ * Returns the encrypted data with a version byte and IV prepended:
+ *   v1 format: [1-byte version][12-byte IV][ciphertext + 16-byte GCM auth tag]
  *
- * Returns null if encryption is not configured.
+ * CR-07: The version byte enables key identification after multiple
+ * rotations without exhaustive key search.
+ *
+ * @throws {Error} if PHI_ENCRYPTION_KEY is not configured or invalid.
  */
-export async function encryptBuffer(plaintext: Buffer | Uint8Array): Promise<Buffer | null> {
+export async function encryptBuffer(plaintext: Buffer | Uint8Array): Promise<Buffer> {
   const key = await getEncryptionKey();
-  if (!key) return null;
 
   // Generate a random 96-bit IV for each encryption operation
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -161,64 +199,94 @@ export async function encryptBuffer(plaintext: Buffer | Uint8Array): Promise<Buf
     new Uint8Array(plaintext),
   );
 
-  // Prepend IV to ciphertext for self-contained decryption
-  const result = new Uint8Array(iv.length + ciphertext.byteLength);
-  result.set(iv, 0);
-  result.set(new Uint8Array(ciphertext), iv.length);
+  // Prepend version byte + IV to ciphertext for self-contained decryption
+  const result = new Uint8Array(1 + iv.length + ciphertext.byteLength);
+  result[0] = ENCRYPTION_FORMAT_VERSION;
+  result.set(iv, 1);
+  result.set(new Uint8Array(ciphertext), 1 + iv.length);
 
   return Buffer.from(result);
 }
 
 /**
+ * Attempt AES-GCM decryption with a specific IV offset and key.
+ * Returns the plaintext Buffer on success, or null on failure.
+ */
+async function tryDecrypt(
+  encrypted: Uint8Array,
+  ivOffset: number,
+  key: CryptoKey,
+): Promise<Buffer | null> {
+  const iv = encrypted.slice(ivOffset, ivOffset + 12);
+  const ciphertext = encrypted.slice(ivOffset + 12);
+  try {
+    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+    return Buffer.from(plaintext);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Decrypt a buffer that was encrypted with `encryptBuffer`.
  *
- * Expects the format: [12-byte IV][ciphertext + GCM auth tag]
+ * Supports both formats for backward compatibility:
+ *   v1:     [1-byte version][12-byte IV][ciphertext + GCM auth tag]
+ *   legacy: [12-byte IV][ciphertext + GCM auth tag]
  *
- * Returns null if decryption fails or encryption is not configured.
+ * EL-04 / FP-06: Logs `logger.error` (which forwards to Sentry) when
+ * all decryption attempts fail, ensuring alerts fire on key
+ * misconfiguration or data corruption.
+ *
+ * Returns null if decryption fails.
+ * @throws {Error} if PHI_ENCRYPTION_KEY is not configured or invalid.
  */
 export async function decryptBuffer(encrypted: Buffer | Uint8Array): Promise<Buffer | null> {
   const key = await getEncryptionKey();
-  if (!key) return null;
 
   if (encrypted.length < 13) {
     logger.error("Encrypted data too short — missing IV or ciphertext", {
       context: "encryption",
+      dataLength: encrypted.length,
     });
     return null;
   }
 
-  // Extract IV (first 12 bytes) and ciphertext (remainder)
-  const iv = encrypted.slice(0, 12);
-  const ciphertext = encrypted.slice(12);
+  const oldKey = await getOldEncryptionKey();
+  const isVersioned = encrypted[0] === ENCRYPTION_FORMAT_VERSION && encrypted.length >= 14;
 
-  try {
-    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  // CR-07: Try versioned format first if version byte is detected,
+  // then fall back to legacy format for backward compatibility.
+  const offsets = isVersioned ? [1, 0] : [0];
+  const keys: CryptoKey[] = oldKey ? [key, oldKey] : [key];
 
-    return Buffer.from(plaintext);
-  } catch (err) {
-    // F-A99-10 / A100-01: During key rotation, files encrypted with the
-    // old key will fail to decrypt with the new key. Try the old key
-    // before giving up, so patients can still view their prescriptions
-    // mid-rotation.
-    const oldKey = await getOldEncryptionKey();
-    if (oldKey) {
-      try {
-        const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, oldKey, ciphertext);
-        logger.warn("Decrypted with PHI_ENCRYPTION_KEY_OLD — file needs re-encryption", {
-          context: "encryption",
-        });
-        return Buffer.from(plaintext);
-      } catch {
-        // Old key also failed — fall through to error below
+  for (const offset of offsets) {
+    for (const k of keys) {
+      const result = await tryDecrypt(encrypted, offset, k);
+      if (result) {
+        if (k === oldKey) {
+          logger.warn("Decrypted with PHI_ENCRYPTION_KEY_OLD — file needs re-encryption", {
+            context: "encryption",
+          });
+        }
+        return result;
       }
     }
-
-    logger.error("AES-GCM decryption failed — wrong key or corrupted data", {
-      context: "encryption",
-      error: err,
-    });
-    return null;
   }
+
+  // EL-04 / FP-06: All key + format combinations failed.
+  // logger.error forwards to Sentry via captureSentryError for alerting.
+  logger.error(
+    "AES-GCM decryption failed — wrong key or corrupted data. " +
+      "Verify PHI_ENCRYPTION_KEY is correct and the file is not corrupted.",
+    {
+      context: "encryption",
+      dataLength: encrypted.length,
+      formatDetected: isVersioned ? "v1" : "legacy",
+      hadOldKey: !!oldKey,
+    },
+  );
+  return null;
 }
 
 // ── Patient File Categories Requiring Encryption ──
