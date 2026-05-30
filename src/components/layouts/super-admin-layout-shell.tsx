@@ -6,6 +6,7 @@ import {
   CreditCard,
   ToggleRight,
   FileText,
+  LifeBuoy,
   Menu,
   Shield,
   Scale,
@@ -100,6 +101,7 @@ const navItems: NavItem[] = [
   { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
   { href: "/super-admin/referrals", label: "Referrals", icon: Gift },
   { href: "/super-admin/usage", label: "Usage Metrics", icon: Gauge },
+  { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
 ];
 
 type NotificationType = "info" | "warning" | "success";
