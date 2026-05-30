@@ -43,19 +43,19 @@ const icons: Record<ToastType, typeof CheckCircle> = {
 
 const styles: Record<ToastType, string> = {
   success:
-    "border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100",
+    "border-[var(--signal-green)]/20 bg-[var(--signal-green)]/5 text-[var(--oltigo-green)] dark:border-[var(--signal-green)]/30 dark:bg-[var(--signal-green)]/10 dark:text-[#4ade80]",
   error:
-    "border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100",
+    "border-[var(--signal-red)]/20 bg-[var(--signal-red)]/5 text-[var(--signal-red)] dark:border-[var(--signal-red)]/30 dark:bg-[var(--signal-red)]/10 dark:text-[#f87171]",
   warning:
-    "border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-100",
-  info: "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100",
+    "border-[var(--signal-amber)]/20 bg-[var(--signal-amber)]/5 text-[var(--signal-amber)] dark:border-[var(--signal-amber)]/30 dark:bg-[var(--signal-amber)]/10 dark:text-[#fbbf24]",
+  info: "border-[var(--oltigo-green)]/20 bg-[var(--oltigo-green)]/5 text-[var(--oltigo-green)] dark:border-[var(--oltigo-green)]/30 dark:bg-[var(--oltigo-green)]/10 dark:text-[#2f8f63]",
 };
 
 const iconStyles: Record<ToastType, string> = {
-  success: "text-green-600 dark:text-green-400",
-  error: "text-red-600 dark:text-red-400",
-  warning: "text-yellow-600 dark:text-yellow-400",
-  info: "text-blue-600 dark:text-blue-400",
+  success: "text-[var(--signal-green)] dark:text-[#4ade80]",
+  error: "text-[var(--signal-red)] dark:text-[#f87171]",
+  warning: "text-[var(--signal-amber)] dark:text-[#fbbf24]",
+  info: "text-[var(--oltigo-green)] dark:text-[#2f8f63]",
 };
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {

@@ -162,10 +162,10 @@ export function ClinicCenterDashboardKPIsComponent() {
                 <div
                   className={`h-full rounded-full transition-all ${
                     occupancyRate > 85
-                      ? "bg-red-500"
+                      ? "bg-[var(--signal-red)]"
                       : occupancyRate > 70
-                        ? "bg-amber-500"
-                        : "bg-green-500"
+                        ? "bg-[var(--signal-amber)]"
+                        : "bg-[var(--signal-green)]"
                   }`}
                   style={{ width: `${occupancyRate}%` }}
                 />
@@ -175,11 +175,13 @@ export function ClinicCenterDashboardKPIsComponent() {
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-3 border rounded-lg">
-              <p className="text-lg font-bold text-green-600">{totalBeds - occupiedBeds}</p>
+              <p className="text-lg font-bold text-[var(--signal-green)]">
+                {totalBeds - occupiedBeds}
+              </p>
               <p className="text-xs text-muted-foreground">Available</p>
             </div>
             <div className="p-3 border rounded-lg">
-              <p className="text-lg font-bold text-blue-600">{occupiedBeds}</p>
+              <p className="text-lg font-bold text-[var(--oltigo-green)]">{occupiedBeds}</p>
               <p className="text-xs text-muted-foreground">Occupied</p>
             </div>
             <div className="p-3 border rounded-lg">
@@ -221,10 +223,10 @@ export function ClinicCenterDashboardKPIsComponent() {
                       <div
                         className={`h-full rounded-full transition-all ${
                           dept.occupancyRate > 85
-                            ? "bg-red-500"
+                            ? "bg-[var(--signal-red)]"
                             : dept.occupancyRate > 70
-                              ? "bg-amber-500"
-                              : "bg-green-500"
+                              ? "bg-[var(--signal-amber)]"
+                              : "bg-[var(--signal-green)]"
                         }`}
                         style={{ width: `${dept.occupancyRate}%` }}
                       />
@@ -310,14 +312,14 @@ export function ClinicCenterDashboardKPIsComponent() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <UserPlus className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-600">{admissionsToday}</p>
+            <div className="text-center p-4 border rounded-lg bg-[var(--oltigo-green)]/5 dark:bg-[var(--oltigo-green)]/10">
+              <UserPlus className="h-6 w-6 text-[var(--oltigo-green)] mx-auto mb-2" />
+              <p className="text-2xl font-bold text-[var(--oltigo-green)]">{admissionsToday}</p>
               <p className="text-xs text-muted-foreground">Admissions Today</p>
             </div>
-            <div className="text-center p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-              <UserMinus className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-600">{dischargesToday}</p>
+            <div className="text-center p-4 border rounded-lg bg-[var(--signal-green)]/5 dark:bg-[var(--signal-green)]/10">
+              <UserMinus className="h-6 w-6 text-[var(--signal-green)] mx-auto mb-2" />
+              <p className="text-2xl font-bold text-[var(--signal-green)]">{dischargesToday}</p>
               <p className="text-xs text-muted-foreground">Discharges Today</p>
             </div>
           </div>

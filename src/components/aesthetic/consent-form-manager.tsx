@@ -145,7 +145,7 @@ export function ConsentFormManager({
                 <CardContent className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <ShieldCheck
-                      className={`h-4 w-4 ${consent.isActive && !isExpired ? "text-green-600" : "text-muted-foreground"}`}
+                      className={`h-4 w-4 ${consent.isActive && !isExpired ? "text-[var(--signal-green)]" : "text-muted-foreground"}`}
                     />
                     <div>
                       <p className="text-sm font-medium">{consent.patientName}</p>

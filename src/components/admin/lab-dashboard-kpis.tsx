@@ -103,18 +103,25 @@ export function LabDashboardKPIsComponent() {
   ];
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-    in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-    completed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    awaiting_validation: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-    validated: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    pending:
+      "bg-[var(--signal-amber)]/10 text-[var(--signal-amber)] dark:bg-[var(--signal-amber)]/20 dark:text-[#fbbf24]",
+    in_progress:
+      "bg-[var(--oltigo-green)]/10 text-[var(--oltigo-green)] dark:bg-[var(--oltigo-green)]/20 dark:text-[#2f8f63]",
+    completed:
+      "bg-[var(--signal-green)]/10 text-[var(--signal-green)] dark:bg-[var(--signal-green)]/20 dark:text-[#4ade80]",
+    awaiting_validation:
+      "bg-[var(--signal-amber)]/10 text-[var(--signal-amber)] dark:bg-[var(--signal-amber)]/20 dark:text-[#fbbf24]",
+    validated:
+      "bg-[var(--signal-green)]/10 text-[var(--signal-green)] dark:bg-[var(--signal-green)]/20 dark:text-[#4ade80]",
+    cancelled:
+      "bg-[var(--signal-red)]/10 text-[var(--signal-red)] dark:bg-[var(--signal-red)]/20 dark:text-[#f87171]",
   };
 
   const priorityColors: Record<string, string> = {
-    normal: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    urgent: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-    stat: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    normal: "bg-muted text-muted-foreground",
+    urgent:
+      "bg-[var(--signal-amber)]/10 text-[var(--signal-amber)] dark:bg-[var(--signal-amber)]/20 dark:text-[#fbbf24]",
+    stat: "bg-[var(--signal-red)]/10 text-[var(--signal-red)] dark:bg-[var(--signal-red)]/20 dark:text-[#f87171]",
   };
 
   return (
@@ -164,7 +171,7 @@ export function LabDashboardKPIsComponent() {
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-500 rounded-full transition-all"
+                  className="h-full bg-[var(--signal-green)] rounded-full transition-all"
                   style={{
                     width: `${Math.min((completedToday / Math.max(completedWeek, 1)) * 100, 100)}%`,
                   }}
@@ -198,9 +205,17 @@ export function LabDashboardKPIsComponent() {
           <CardContent>
             <div className="space-y-2">
               {[
-                { label: "Pending", count: pending, color: "bg-yellow-500" },
-                { label: "Awaiting Validation", count: awaiting, color: "bg-orange-500" },
-                { label: "Completed Today", count: completedToday, color: "bg-green-500" },
+                { label: "Pending", count: pending, color: "bg-[var(--signal-amber)]" },
+                {
+                  label: "Awaiting Validation",
+                  count: awaiting,
+                  color: "bg-[var(--signal-amber)]",
+                },
+                {
+                  label: "Completed Today",
+                  count: completedToday,
+                  color: "bg-[var(--signal-green)]",
+                },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-sm mb-1">

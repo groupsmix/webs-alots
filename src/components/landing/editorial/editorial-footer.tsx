@@ -84,7 +84,7 @@ export function EditorialFooter() {
                   <li key={link.labelKey}>
                     <Link
                       href={link.href}
-                      className="font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)] no-underline"
+                      className="font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)] no-underline transition-colors duration-[var(--duration)] ease-[var(--easing)] hover:text-[var(--ink)]"
                     >
                       {t(link.labelKey)}
                     </Link>

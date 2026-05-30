@@ -38,6 +38,12 @@ export interface ClinicDashboardConfig {
   moduleName?: string;
 }
 
+function isNavActive(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  if (href !== "/" && pathname.startsWith(href + "/")) return true;
+  return false;
+}
+
 function SidebarContent({
   config,
   pathname,
@@ -51,12 +57,13 @@ function SidebarContent({
     <>
       <nav className="space-y-1 flex-1">
         {config.navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isNavActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavClick}
+              aria-current={isActive ? "page" : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 isActive
                   ? "bg-primary/10 text-primary font-medium"

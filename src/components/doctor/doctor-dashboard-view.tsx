@@ -189,25 +189,25 @@ export function DoctorDashboardView({
       icon: Calendar,
       label: t(locale, "dashboard.todayAppointments"),
       value: todayAppts.length.toString(),
-      color: "text-blue-600 dark:text-blue-400",
+      color: "text-[var(--oltigo-green)] dark:text-[#2f8f63]",
     },
     {
       icon: Stethoscope,
       label: t(locale, "dashboard.consultationsWeek"),
       value: weekConsultations.length.toString(),
-      color: "text-indigo-600 dark:text-indigo-400",
+      color: "text-[var(--ink-70)] dark:text-[var(--ink-70)]",
     },
     {
       icon: DollarSign,
       label: t(locale, "dashboard.revenueMonth"),
       value: `${formatCurrency(monthRevenue)}`,
-      color: "text-emerald-600 dark:text-emerald-400",
+      color: "text-[var(--signal-green)] dark:text-[#4ade80]",
     },
     {
       icon: CalendarClock,
       label: t(locale, "dashboard.upcomingFollowUps"),
       value: upcomingFollowUps.length.toString(),
-      color: "text-purple-600 dark:text-purple-400",
+      color: "text-[var(--signal-amber)] dark:text-[#fbbf24]",
     },
   ];
 
@@ -317,7 +317,7 @@ export function DoctorDashboardView({
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">{t(locale, "error.loadFailed")}</p>
+        <p className="text-[var(--signal-red)] font-medium">{t(locale, "error.loadFailed")}</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -507,7 +507,7 @@ export function DoctorDashboardView({
                           title={t(locale, "dashboard.startConsultation")}
                           onClick={() => handleStartConsultation(apt.id)}
                         >
-                          <ArrowRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <ArrowRight className="h-4 w-4 text-[var(--oltigo-green)] dark:text-[#2f8f63]" />
                         </Button>
                       )}
                       {apt.status === "in-progress" && (
@@ -517,7 +517,7 @@ export function DoctorDashboardView({
                           title={t(locale, "dashboard.markDone")}
                           onClick={() => handleMarkDone(apt.id, apt.patientName)}
                         >
-                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <CheckCircle className="h-4 w-4 text-[var(--signal-green)] dark:text-[#4ade80]" />
                         </Button>
                       )}
                       {apt.status !== "completed" &&
@@ -529,7 +529,7 @@ export function DoctorDashboardView({
                             title={t(locale, "dashboard.noShow")}
                             onClick={() => handleNoShow(apt.id, apt.patientName)}
                           >
-                            <XCircle className="h-4 w-4 text-red-500 dark:text-red-400" />
+                            <XCircle className="h-4 w-4 text-[var(--signal-red)] dark:text-[#f87171]" />
                           </Button>
                         )}
                     </div>
@@ -726,7 +726,7 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.consultations")}
                   </p>
-                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  <p className="text-2xl font-bold text-[var(--ink-70)] dark:text-[var(--ink-70)]">
                     {weekStats.consultations}
                   </p>
                 </CardContent>
@@ -744,7 +744,7 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.completedStat")}
                   </p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <p className="text-2xl font-bold text-[var(--signal-green)] dark:text-[#4ade80]">
                     {weekStats.completed}
                   </p>
                 </CardContent>
@@ -752,7 +752,7 @@ export function DoctorDashboardView({
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">{t(locale, "dashboard.noShows")}</p>
-                  <p className="text-2xl font-bold text-red-500 dark:text-red-400">
+                  <p className="text-2xl font-bold text-[var(--signal-red)] dark:text-[#f87171]">
                     {weekStats.noShows}
                   </p>
                 </CardContent>
@@ -765,7 +765,7 @@ export function DoctorDashboardView({
                     </p>
                     <p className="text-2xl font-bold">{formatCurrency(weekStats.revenue)}</p>
                   </div>
-                  <TrendingUp className="h-5 w-5 text-green-500 dark:text-green-400" />
+                  <TrendingUp className="h-5 w-5 text-[var(--signal-green)] dark:text-[#4ade80]" />
                 </CardContent>
               </Card>
             </div>
@@ -786,7 +786,7 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.consultations")}
                   </p>
-                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  <p className="text-2xl font-bold text-[var(--ink-70)] dark:text-[var(--ink-70)]">
                     {monthStats.consultations}
                   </p>
                 </CardContent>
@@ -804,7 +804,7 @@ export function DoctorDashboardView({
                   <p className="text-xs text-muted-foreground">
                     {t(locale, "dashboard.completedStat")}
                   </p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <p className="text-2xl font-bold text-[var(--signal-green)] dark:text-[#4ade80]">
                     {monthStats.completed}
                   </p>
                 </CardContent>
@@ -812,7 +812,7 @@ export function DoctorDashboardView({
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">{t(locale, "dashboard.noShows")}</p>
-                  <p className="text-2xl font-bold text-red-500 dark:text-red-400">
+                  <p className="text-2xl font-bold text-[var(--signal-red)] dark:text-[#f87171]">
                     {monthStats.noShows}
                   </p>
                 </CardContent>
@@ -825,7 +825,7 @@ export function DoctorDashboardView({
                     </p>
                     <p className="text-2xl font-bold">{formatCurrency(monthStats.revenue)}</p>
                   </div>
-                  <TrendingUp className="h-5 w-5 text-green-500 dark:text-green-400" />
+                  <TrendingUp className="h-5 w-5 text-[var(--signal-green)] dark:text-[#4ade80]" />
                 </CardContent>
               </Card>
             </div>

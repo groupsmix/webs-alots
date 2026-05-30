@@ -112,12 +112,12 @@ function pctChange(current: number, previous: number): number {
 const DAY_NAMES = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
 const HEATMAP_COLORS = [
-  "bg-gray-100 dark:bg-gray-800",
-  "bg-blue-100 dark:bg-blue-900/40",
-  "bg-blue-200 dark:bg-blue-800/60",
-  "bg-blue-300 dark:bg-blue-700/70",
-  "bg-blue-400 dark:bg-blue-600/80",
-  "bg-blue-500 dark:bg-blue-500",
+  "bg-muted",
+  "bg-[var(--oltigo-green)]/10 dark:bg-[var(--oltigo-green)]/20",
+  "bg-[var(--oltigo-green)]/20 dark:bg-[var(--oltigo-green)]/30",
+  "bg-[var(--oltigo-green)]/30 dark:bg-[var(--oltigo-green)]/40",
+  "bg-[var(--oltigo-green)]/40 dark:bg-[var(--oltigo-green)]/50",
+  "bg-[var(--oltigo-green)]/60 dark:bg-[var(--oltigo-green)]/70",
 ];
 
 // ── Sub-components (declared outside render to satisfy react-hooks/static-components) ──
@@ -127,7 +127,7 @@ function ChangeIndicator({ value }: { value: number }) {
   const positive = value > 0;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-medium ${positive ? "text-green-600" : "text-red-600"}`}
+      className={`inline-flex items-center gap-0.5 text-xs font-medium ${positive ? "text-[var(--signal-green)]" : "text-[var(--signal-red)]"}`}
     >
       {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
       {positive ? "+" : ""}
@@ -885,13 +885,17 @@ export function AnalyticsDashboard({
                       <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
                       <div className="flex items-center justify-center gap-1">
                         {item.value > 0 ? (
-                          <TrendingUp className="h-5 w-5 text-green-600" />
+                          <TrendingUp className="h-5 w-5 text-[var(--signal-green)]" />
                         ) : item.value < 0 ? (
-                          <TrendingDown className="h-5 w-5 text-red-600" />
+                          <TrendingDown className="h-5 w-5 text-[var(--signal-red)]" />
                         ) : null}
                         <span
                           className={`text-2xl font-bold ${
-                            item.value > 0 ? "text-green-600" : item.value < 0 ? "text-red-600" : ""
+                            item.value > 0
+                              ? "text-[var(--signal-green)]"
+                              : item.value < 0
+                                ? "text-[var(--signal-red)]"
+                                : ""
                           }`}
                         >
                           {item.value > 0 ? "+" : ""}
@@ -933,7 +937,11 @@ function ComparisonItem({
         </div>
         <span
           className={`inline-flex items-center gap-0.5 text-sm font-medium ${
-            change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-muted-foreground"
+            change > 0
+              ? "text-[var(--signal-green)]"
+              : change < 0
+                ? "text-[var(--signal-red)]"
+                : "text-muted-foreground"
           }`}
         >
           {change > 0 ? (

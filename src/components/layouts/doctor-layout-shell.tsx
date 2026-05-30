@@ -446,7 +446,9 @@ function SidebarContent({
   const [locale] = useLocale();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
     // Default: only expand the section containing the active route (collapse all others)
-    const activeItem = visibleItems.find((item) => pathname === item.href);
+    const activeItem = visibleItems.find(
+      (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+    );
     const activeSection = activeItem?.section ?? "General";
     return new Set([activeSection]);
   });
@@ -494,7 +496,7 @@ function SidebarContent({
 
   /** Render a single nav link with optional pin button */
   const renderNavLink = (item: NavItem, compact = false) => {
-    const isActive = pathname === item.href;
+    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
     const isPinned = pinnedHrefs.includes(item.href);
     return (
       <div key={item.href} className="group flex items-center">
@@ -601,7 +603,9 @@ function SidebarContent({
             const items = grouped.get(section.key);
             if (!items || items.length === 0) return null;
             const isExpanded = expandedSections.has(section.key);
-            const hasActiveChild = items.some((item) => pathname === item.href);
+            const hasActiveChild = items.some(
+              (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+            );
             return (
               <div key={section.key}>
                 <button
