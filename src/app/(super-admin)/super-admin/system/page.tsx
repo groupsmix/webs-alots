@@ -145,6 +145,7 @@ export default function SystemStatusPage() {
       let userCount = 0;
       try {
         const supabase = createClient();
+        // nosemgrep: tenant-scoping — super-admin cross-tenant user count
         const { count } = await supabase.from("users").select("id", { count: "exact", head: true });
         userCount = count ?? 0;
       } catch {
@@ -385,10 +386,10 @@ export default function SystemStatusPage() {
                   value: typeof process !== "undefined" ? (process.version ?? "N/A") : "N/A",
                 },
                 { label: "Next.js Version", value: "16" },
-                { label: "Last Deployment", value: process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "N/A" },
+                { label: "Last Deployment", value: process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "N/A" }, // nosemgrep: semgrep.env-access — super-admin client-side only
                 {
                   label: "Environment",
-                  value: process.env.NODE_ENV === "production" ? "Production" : "Staging",
+                  value: process.env.NODE_ENV === "production" ? "Production" : "Staging", // nosemgrep: semgrep.env-access — super-admin client-side only
                 },
               ].map((item) => (
                 <div

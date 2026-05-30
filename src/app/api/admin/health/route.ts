@@ -20,6 +20,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     const { error } = await auth.supabase.rpc("version" as never);
 
     if (error) {
+      // nosemgrep: tenant-scoping — super-admin health check, no tenant context needed
       const { error: fallbackError } = await auth.supabase
         .from("users")
         .select("id", { count: "exact", head: true });
