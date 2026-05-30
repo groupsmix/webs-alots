@@ -1,6 +1,6 @@
 "use client";
 
-import { UserPlus, ShieldCheck, ArrowLeft, Eye, EyeOff, HeartPulse } from "lucide-react";
+import { UserPlus, ShieldCheck, ArrowLeft, Eye, EyeOff, HeartPulse, Mail } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -24,6 +24,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { registerPatient, verifyOTP } from "@/lib/auth";
+import { registerWithEmail, signInWithGoogle } from "@/lib/auth-providers";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { isMinorByAge, MINOR_AGE_THRESHOLD } from "@/lib/minors";
@@ -38,7 +39,7 @@ const STEPS = [
 
 export default function RegisterPage() {
   const [locale] = useLocale();
-  const [step, setStep] = useState<"info" | "otp">("info");
+  const [step, setStep] = useState<"info" | "otp" | "email-success">("info");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -52,17 +53,13 @@ export default function RegisterPage() {
   const [guardianConsent, setGuardianConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const parsedAge = age ? parseInt(age, 10) : undefined;
   const patientIsMinor = parsedAge !== undefined && !isNaN(parsedAge) && isMinorByAge(parsedAge);
-  async function handleRegister(e: React.FormEvent) {
+  async function handlePhoneRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!PHONE_AUTH_ENABLED) {
-      setError(t(locale, "auth.phoneDisabled"));
-      return;
-    }
 
     if (patientIsMinor && !guardianConsent) {
       setError(t(locale, "register.guardianConsentRequired" as TranslationKey));
@@ -105,6 +102,60 @@ export default function RegisterPage() {
     }
   }
 
+  async function handleEmailRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(t(locale, "auth.invalidEmail"));
+      return;
+    }
+
+    if (!password) {
+      setError(t(locale, "auth.passwordTooShort"));
+      return;
+    }
+
+    const passwordResult = passwordPolicySchema.safeParse(password);
+    if (!passwordResult.success) {
+      setError(passwordResult.error.issues[0].message);
+      return;
+    }
+
+    if (patientIsMinor && !guardianConsent) {
+      setError(t(locale, "register.guardianConsentRequired" as TranslationKey));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await registerWithEmail({
+        email: email.trim(),
+        password,
+        firstName,
+        lastName,
+        age: parsedAge,
+        gender: gender || undefined,
+        insurance: insurance || undefined,
+        guardianConsent: patientIsMinor ? guardianConsent : undefined,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      setStep("email-success");
+      setLoading(false);
+    } catch (err) {
+      logger.warn("Email registration failed", { context: "register", error: err });
+      setError(t(locale, "error.unexpected"));
+      setLoading(false);
+    }
+  }
+
   async function handleVerifyOTP(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -123,7 +174,8 @@ export default function RegisterPage() {
     }
   }
 
-  if (!PHONE_AUTH_ENABLED) {
+  // Email success confirmation screen
+  if (step === "email-success") {
     return (
       <div className="w-full max-w-md mx-auto">
         {/* eslint-disable i18next/no-literal-string -- brand name and tagline */}
@@ -138,28 +190,24 @@ export default function RegisterPage() {
 
         <Card className="shadow-lg border-0 sm:border">
           <CardHeader className="text-center pb-4">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <UserPlus className="h-6 w-6 text-muted-foreground" />
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="text-xl">{t(locale, "register.unavailableTitle")}</CardTitle>
-            <CardDescription>{t(locale, "register.unavailableDesc")}</CardDescription>
+            <CardTitle className="text-xl">
+              {t(locale, "auth.registerSuccess" as TranslationKey)}
+            </CardTitle>
+            <CardDescription>
+              {t(locale, "auth.registerSuccessDesc" as TranslationKey)}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Link
-              href="/contact"
+              href="/login"
               className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors w-full"
             >
-              {t(locale, "nav.contact")}
+              {t(locale, "auth.signIn")}
             </Link>
           </CardContent>
-          <CardFooter className="justify-center border-t pt-4">
-            <p className="text-sm text-muted-foreground">
-              {t(locale, "auth.hasAccount")}{" "}
-              <Link href="/login" className="text-primary hover:underline font-medium">
-                {t(locale, "auth.signIn")}
-              </Link>
-            </p>
-          </CardFooter>
         </Card>
       </div>
     );
@@ -182,50 +230,52 @@ export default function RegisterPage() {
 
       <Card className="shadow-lg border-0 sm:border">
         <CardHeader className="text-center pb-4">
-          {/* Progress steps indicator */}
-          <div className="flex items-center justify-center gap-2 mb-4">
-            {STEPS.map((s, idx) => (
-              <div key={s.key} className="flex items-center gap-2">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                    idx <= currentStepIndex
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {idx < currentStepIndex ? (
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (
-                    idx + 1
+          {/* Progress steps indicator — only show for phone auth with OTP step */}
+          {PHONE_AUTH_ENABLED && (
+            <div className="flex items-center justify-center gap-2 mb-4">
+              {STEPS.map((s, idx) => (
+                <div key={s.key} className="flex items-center gap-2">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                      idx <= currentStepIndex
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {idx < currentStepIndex ? (
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      idx + 1
+                    )}
+                  </div>
+                  <span
+                    className={`hidden sm:inline text-xs font-medium ${
+                      idx <= currentStepIndex ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                  {idx < STEPS.length - 1 && (
+                    <div
+                      className={`h-0.5 w-8 sm:w-12 rounded-full transition-colors ${
+                        idx < currentStepIndex ? "bg-primary" : "bg-muted"
+                      }`}
+                    />
                   )}
                 </div>
-                <span
-                  className={`hidden sm:inline text-xs font-medium ${
-                    idx <= currentStepIndex ? "text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  {s.label}
-                </span>
-                {idx < STEPS.length - 1 && (
-                  <div
-                    className={`h-0.5 w-8 sm:w-12 rounded-full transition-colors ${
-                      idx < currentStepIndex ? "bg-primary" : "bg-muted"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             {step === "info" ? (
@@ -238,7 +288,11 @@ export default function RegisterPage() {
             {step === "info" ? t(locale, "register.createAccount") : t(locale, "auth.verifyNumber")}
           </CardTitle>
           <CardDescription className="text-sm">
-            {step === "info" ? t(locale, "register.desc") : `${t(locale, "auth.otpSent")} ${phone}`}
+            {step === "info"
+              ? PHONE_AUTH_ENABLED
+                ? t(locale, "register.desc")
+                : t(locale, "auth.registerEmailDesc" as TranslationKey)
+              : `${t(locale, "auth.otpSent")} ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -262,7 +316,10 @@ export default function RegisterPage() {
           )}
 
           {step === "info" ? (
-            <form className="space-y-4" onSubmit={handleRegister}>
+            <form
+              className="space-y-4"
+              onSubmit={PHONE_AUTH_ENABLED ? handlePhoneRegister : handleEmailRegister}
+            >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">{t(locale, "register.firstName")}</Label>
@@ -287,33 +344,41 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
+              {PHONE_AUTH_ENABLED && (
+                <div className="space-y-2">
+                  <Label htmlFor="phone">{t(locale, "auth.phoneLabel")}</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+212 6XX XX XX XX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    className="h-11"
+                  />
+                </div>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="phone">{t(locale, "auth.phoneLabel")}</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+212 6XX XX XX XX"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">{t(locale, "register.emailOptional")}</Label>
+                <Label htmlFor="email">
+                  {PHONE_AUTH_ENABLED
+                    ? t(locale, "register.emailOptional")
+                    : t(locale, "auth.email")}
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required={!PHONE_AUTH_ENABLED}
                   className="h-11"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">
-                  {t(locale, "auth.password" as TranslationKey)} (
-                  {t(locale, "register.emailOptional" as TranslationKey)})
+                  {PHONE_AUTH_ENABLED
+                    ? `${t(locale, "auth.password" as TranslationKey)} (${t(locale, "register.emailOptional" as TranslationKey)})`
+                    : t(locale, "auth.password" as TranslationKey)}
                 </Label>
                 <div className="relative">
                   <Input
@@ -323,6 +388,7 @@ export default function RegisterPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    required={!PHONE_AUTH_ENABLED}
                     className="h-11 pr-12"
                   />
                   <button
@@ -445,6 +511,58 @@ export default function RegisterPage() {
             </form>
           )}
         </CardContent>
+        {/* Google sign-in option */}
+        {step === "info" && (
+          <div className="px-6 pb-2">
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  {t(locale, "auth.orContinueWith" as TranslationKey)}
+                </span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11"
+              disabled={googleLoading}
+              onClick={async () => {
+                setGoogleLoading(true);
+                setError(null);
+                const result = await signInWithGoogle();
+                if (result.error) {
+                  setError(result.error);
+                  setGoogleLoading(false);
+                }
+              }}
+            >
+              <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              {googleLoading
+                ? t(locale, "auth.signingIn")
+                : t(locale, "auth.signInWithGoogle" as TranslationKey)}
+            </Button>
+          </div>
+        )}
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
             {t(locale, "auth.hasAccount")}{" "}
