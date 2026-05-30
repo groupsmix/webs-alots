@@ -55,12 +55,12 @@ interface ClinicDetail {
 }
 
 const activityTypeIcons: Record<string, string> = {
-  clinic: "text-blue-600",
-  billing: "text-green-600",
-  feature: "text-purple-600",
-  announcement: "text-orange-600",
-  template: "text-pink-600",
-  auth: "text-yellow-600",
+  clinic: "text-blue-600 dark:text-blue-400",
+  billing: "text-green-600 dark:text-green-400",
+  feature: "text-purple-600 dark:text-purple-400",
+  announcement: "text-orange-600 dark:text-orange-400",
+  template: "text-pink-600 dark:text-pink-400",
+  auth: "text-yellow-600 dark:text-yellow-400",
 };
 
 const AUTO_REFRESH_INTERVAL = 60_000;
@@ -173,8 +173,8 @@ export default function SuperAdminDashboardPage() {
       label: t(locale, "superAdmin.totalClinics"),
       value: totalClinics.toString(),
       change: `${activeClinics} ${t(locale, "superAdmin.active")}`,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      color: "text-blue-600 dark:text-blue-400",
+      bg: "bg-blue-50 dark:bg-blue-900/30",
       trend: t(locale, "superAdmin.trendNewThisMonth", { count: 2 }),
       trendDirection: "up" as const,
     },
@@ -183,8 +183,8 @@ export default function SuperAdminDashboardPage() {
       label: t(locale, "superAdmin.activeClinics"),
       value: activeClinics.toString(),
       change: `${totalClinics - activeClinics} ${t(locale, "superAdmin.inactive")}`,
-      color: "text-green-600",
-      bg: "bg-green-50",
+      color: "text-green-600 dark:text-green-400",
+      bg: "bg-green-50 dark:bg-green-900/30",
       trend: t(locale, "superAdmin.percentActive", { percent: activePercent }),
       trendDirection: "neutral" as const,
     },
@@ -193,8 +193,8 @@ export default function SuperAdminDashboardPage() {
       label: t(locale, "superAdmin.platformUsers"),
       value: totalPatients > 0 ? `${totalPatients.toLocaleString()}+` : "0",
       change: t(locale, "superAdmin.registeredAccounts"),
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      color: "text-purple-600 dark:text-purple-400",
+      bg: "bg-purple-50 dark:bg-purple-900/30",
       trend: null as string | null,
       trendDirection: null as string | null,
     },
@@ -203,8 +203,8 @@ export default function SuperAdminDashboardPage() {
       label: t(locale, "superAdmin.monthlyRevenue"),
       value: `${formatCurrency(totalRevenue)}`,
       change: t(locale, "superAdmin.fromPayments"),
-      color: "text-orange-600",
-      bg: "bg-orange-50",
+      color: "text-orange-600 dark:text-orange-400",
+      bg: "bg-orange-50 dark:bg-orange-900/30",
       trend:
         totalRevenue > 0
           ? t(locale, "superAdmin.revenueTrendingUp")
@@ -218,19 +218,19 @@ export default function SuperAdminDashboardPage() {
       label: t(locale, "superAdmin.mrr"),
       value: `${formatCurrency(mrr)}`,
       icon: CreditCard,
-      color: "text-emerald-600",
+      color: "text-emerald-600 dark:text-emerald-400",
     },
     {
       label: t(locale, "superAdmin.overdue"),
       value: overdue.toString(),
       icon: Clock,
-      color: "text-red-500",
+      color: "text-red-500 dark:text-red-400",
     },
     {
       label: t(locale, "superAdmin.paidThisMonth"),
       value: `${activeClinics}`,
       icon: TrendingUp,
-      color: "text-blue-600",
+      color: "text-blue-600 dark:text-blue-400",
     },
   ];
 
@@ -352,18 +352,18 @@ export default function SuperAdminDashboardPage() {
                   {stat.trend && (
                     <div className="flex items-center gap-1 mt-1">
                       {stat.trendDirection === "up" ? (
-                        <ArrowUp className="h-3 w-3 text-green-600" />
+                        <ArrowUp className="h-3 w-3 text-green-600 dark:text-green-400" />
                       ) : stat.trendDirection === "down" ? (
-                        <ArrowDown className="h-3 w-3 text-red-500" />
+                        <ArrowDown className="h-3 w-3 text-red-500 dark:text-red-400" />
                       ) : (
                         <Percent className="h-3 w-3 text-muted-foreground" />
                       )}
                       <span
                         className={`text-[10px] ${
                           stat.trendDirection === "up"
-                            ? "text-green-600"
+                            ? "text-green-600 dark:text-green-400"
                             : stat.trendDirection === "down"
-                              ? "text-red-500"
+                              ? "text-red-500 dark:text-red-400"
                               : "text-muted-foreground"
                         }`}
                       >

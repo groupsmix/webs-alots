@@ -240,9 +240,9 @@ const notifTypeIcon: Record<NotificationType, typeof Info> = {
 };
 
 const notifTypeColor: Record<NotificationType, string> = {
-  info: "text-blue-600",
-  warning: "text-amber-500",
-  success: "text-green-600",
+  info: "text-blue-600 dark:text-blue-400",
+  warning: "text-amber-500 dark:text-amber-400",
+  success: "text-green-600 dark:text-green-400",
 };
 
 function SidebarNav({ pathname }: { pathname: string }) {

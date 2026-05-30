@@ -793,3 +793,145 @@ export function enforceEmailProviderExclusivity(): void {
     throw new Error(message);
   }
 }
+
+// ─── Typed getters — use these instead of process.env.X directly ───────────
+// Each getter is the authoritative read point for its variable. Files that
+// need a value import the getter from here rather than reading process.env.
+// This ensures validateEnv() validation runs at startup before any accessor
+// is called, and avoids spreading raw process.env reads across the codebase.
+
+/** Supabase public URL. Always set; throws if missing in production. */
+export function getSupabaseUrl(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+}
+
+/** Supabase anon key. */
+export function getSupabaseAnonKey(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+}
+
+/** Supabase service-role key — server only. */
+export function getSupabaseServiceRoleKey(): string | undefined {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
+
+/** CRON_SECRET — used by cron-auth middleware. */
+export function getCronSecret(): string {
+  return process.env.CRON_SECRET ?? "";
+}
+
+/** PHI encryption key (AES-256-GCM base64). */
+export function getPhiEncryptionKey(): string | undefined {
+  return process.env.PHI_ENCRYPTION_KEY;
+}
+
+/** Stripe secret key. */
+export function getStripeSecretKey(): string | undefined {
+  return process.env.STRIPE_SECRET_KEY;
+}
+
+/** Stripe webhook secret. */
+export function getStripeWebhookSecret(): string | undefined {
+  return process.env.STRIPE_WEBHOOK_SECRET;
+}
+
+/** Resend API key for transactional email. */
+export function getResendApiKey(): string | undefined {
+  return process.env.RESEND_API_KEY;
+}
+
+/** SMTP relay host (fallback email provider). */
+export function getSmtpHost(): string | undefined {
+  return process.env.EMAIL_RELAY_HOST ?? process.env.SMTP_HOST;
+}
+
+/** SMTP relay user. */
+export function getSmtpUser(): string | undefined {
+  return process.env.EMAIL_RELAY_USER ?? process.env.SMTP_USER;
+}
+
+/** SMTP relay password. */
+export function getSmtpPass(): string | undefined {
+  return process.env.EMAIL_RELAY_PASS ?? process.env.SMTP_PASS;
+}
+
+/** From address for transactional email. */
+export function getEmailFromAddress(): string {
+  return process.env.EMAIL_FROM ?? "noreply@oltigo.ma";
+}
+
+/** Meta / WhatsApp app secret for HMAC webhook verification. */
+export function getMetaAppSecret(): string | undefined {
+  return process.env.META_APP_SECRET;
+}
+
+/** WhatsApp verify token for the hub.challenge handshake. */
+export function getWhatsAppVerifyToken(): string | undefined {
+  return process.env.WHATSAPP_VERIFY_TOKEN;
+}
+
+/** Cloudflare R2 credentials. */
+export function getR2Config(): {
+  accountId: string | undefined;
+  accessKeyId: string | undefined;
+  secretAccessKey: string | undefined;
+  bucketName: string | undefined;
+  signedUrlSecret: string | undefined;
+} {
+  return {
+    accountId: process.env.R2_ACCOUNT_ID,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    bucketName: process.env.R2_BUCKET_NAME,
+    signedUrlSecret: process.env.R2_SIGNED_URL_SECRET,
+  };
+}
+
+/** Cloudflare API credentials for DNS / custom hostname management. */
+export function getCloudflareApiConfig(): {
+  apiToken: string | undefined;
+  apiKey: string | undefined;
+  email: string | undefined;
+  zoneId: string | undefined;
+  zoneName: string | undefined;
+  accountId: string | undefined;
+} {
+  return {
+    apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    apiKey: process.env.CLOUDFLARE_API_KEY,
+    email: process.env.CLOUDFLARE_EMAIL,
+    zoneId: process.env.CLOUDFLARE_ZONE_ID,
+    zoneName: process.env.CLOUDFLARE_ZONE_NAME,
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+  };
+}
+
+/** Booking token HMAC secret. */
+export function getBookingTokenSecret(): string | undefined {
+  return process.env.BOOKING_TOKEN_SECRET;
+}
+
+/** Root domain (e.g. oltigo.ma). */
+export function getRootDomain(): string {
+  return process.env.ROOT_DOMAIN ?? "";
+}
+
+/** Public site URL (e.g. https://oltigo.ma). */
+export function getSiteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "";
+}
+
+/** Rate-limit backend selection. */
+export function getRateLimitBackend(): string {
+  return process.env.RATE_LIMIT_BACKEND ?? "kv";
+}
+
+/** Profile-header HMAC key. */
+export function getProfileHeaderHmacKey(): string | undefined {
+  return process.env.PROFILE_HEADER_HMAC_KEY;
+}
+
+/** PHI encryption key rotation — old key for decrypt-and-re-encrypt migration. */
+export function getPhiEncryptionKeyOld(): string | undefined {
+  return process.env.PHI_ENCRYPTION_KEY_OLD;
+}
