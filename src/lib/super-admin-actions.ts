@@ -168,6 +168,116 @@ export async function fetchClinics(): Promise<ClinicRow[]> {
   return (data ?? []) as ClinicRow[];
 }
 
+export async function fetchClinicById(clinicId: string): Promise<ClinicRow | null> {
+  const supabase = await rawClient();
+  const { data, error } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin fetches specific clinic by id
+    .select("id, name, type, config, tier, status, subdomain, created_at")
+    .eq("id", clinicId)
+    .single();
+
+  if (error) return null;
+  return data as ClinicRow;
+}
+
+export interface ClinicFeatureOverride {
+  id: string;
+  clinic_id: string;
+  feature_id: string;
+  enabled: boolean;
+  created_at: string | null;
+}
+
+export async function fetchClinicFeatureOverrides(
+  clinicId: string,
+): Promise<ClinicFeatureOverride[]> {
+  const supabase = await rawClient();
+  const { data, error } = await supabase
+    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin reads overrides for specific clinic
+    .select("id, clinic_id, feature_id, enabled, created_at")
+    .eq("clinic_id", clinicId);
+
+  if (error || !data) return [];
+  return data as ClinicFeatureOverride[];
+}
+
+export async function upsertClinicFeatureOverride(
+  clinicId: string,
+  featureId: string,
+  enabled: boolean,
+): Promise<void> {
+  const supabase = await rawClient();
+  const { error } = await supabase
+    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin upserts override for specific clinic
+    .upsert(
+      { clinic_id: clinicId, feature_id: featureId, enabled },
+      { onConflict: "clinic_id,feature_id" },
+    );
+
+  if (error) throw new Error(`Failed to upsert feature override: ${error.message}`);
+}
+
+export async function deleteClinicFeatureOverride(
+  clinicId: string,
+  featureId: string,
+): Promise<void> {
+  const supabase = await rawClient();
+  const { error } = await supabase
+    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin deletes override for specific clinic
+    .delete()
+    .eq("clinic_id", clinicId)
+    .eq("feature_id", featureId);
+
+  if (error) throw new Error(`Failed to delete feature override: ${error.message}`);
+}
+
+export async function fetchClinicStaffCount(clinicId: string): Promise<number> {
+  const supabase = await rawClient();
+  const { count, error } = await supabase
+    .from("users") // nosemgrep: tenant-scoping — super-admin counts staff for specific clinic
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId)
+    .in("role", ["clinic_admin", "receptionist", "doctor"]);
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function fetchClinicPatientCount(clinicId: string): Promise<number> {
+  const supabase = await rawClient();
+  const { count, error } = await supabase
+    .from("users") // nosemgrep: tenant-scoping — super-admin counts patients for specific clinic
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId)
+    .eq("role", "patient");
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function fetchClinicActivityLogs(clinicId: string): Promise<ActivityLog[]> {
+  const supabase = await rawClient();
+  const { data, error } = await supabase
+    .from("activity_logs") // nosemgrep: tenant-scoping — super-admin reads activity for specific clinic
+    .select("id, action, description, clinic_id, clinic_name, created_at, actor, type")
+    .eq("clinic_id", clinicId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    id: row.id,
+    action: row.action ?? "",
+    description: row.description ?? "",
+    clinicId: row.clinic_id ?? undefined,
+    clinicName: row.clinic_name ?? undefined,
+    timestamp: row.created_at ?? "",
+    actor: row.actor ?? "System",
+    type: (row.type ?? "clinic") as ActivityLog["type"],
+  }));
+}
+
 export async function updateClinicStatus(
   clinicId: string,
   status: "active" | "inactive" | "suspended",

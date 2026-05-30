@@ -158,7 +158,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           description: `${c.type} clinic`,
           icon: <Building2 className="h-4 w-4" />,
           badge: "Clinic",
-          onSelect: () => router.push(`/super-admin/clinics`),
+          onSelect: () => router.push(`/super-admin/clinics/${c.id}`),
         });
       });
     } catch (err) {
@@ -362,11 +362,11 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               <DropdownMenuContent>
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/super-admin/profile")}>
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/super-admin/settings")}>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
