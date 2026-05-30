@@ -16,6 +16,8 @@ export const paymentInitiateSchema = z.object({
 export const paymentRefundSchema = z.object({
   paymentId: z.string().min(1),
   amount: z.number().positive().finite().optional(),
+  /** Optional reason — required for audit trail on large refunds */
+  reason: z.string().max(500).optional(),
 });
 
 /**
