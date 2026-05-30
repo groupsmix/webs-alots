@@ -18,6 +18,13 @@ import { readWebhookBody } from "@/lib/webhook-body";
  */
 const STRIPE_API_TIMEOUT_MS = 10_000;
 
+/**
+ * TF-01: Validate that a Stripe subscription ID matches the expected
+ * format before interpolating it into REST API URLs.  Defence-in-depth
+ * against potential SSRF or path-traversal via a crafted subscriptionId.
+ */
+const STRIPE_SUBSCRIPTION_ID_RE = /^sub_[a-zA-Z0-9]+$/;
+
 type ClinicConfig = { [key: string]: Json | undefined };
 
 /**
@@ -236,6 +243,15 @@ export async function POST(request: NextRequest) {
 
         if (!subscriptionId) break;
 
+        // TF-01: Validate subscriptionId format before URL interpolation
+        if (!STRIPE_SUBSCRIPTION_ID_RE.test(subscriptionId)) {
+          logger.warn("Invalid subscription ID format in invoice.paid", {
+            context: "billing/webhook",
+            subscriptionId,
+          });
+          break;
+        }
+
         // Retrieve subscription to get clinic_id from metadata.
         // P-04: bound the outbound fetch — Stripe latency must not block the
         // webhook handler past Cloudflare's request budget.
@@ -298,6 +314,15 @@ export async function POST(request: NextRequest) {
         const subscriptionId = invoice.subscription;
 
         if (!subscriptionId) break;
+
+        // TF-01: Validate subscriptionId format before URL interpolation
+        if (!STRIPE_SUBSCRIPTION_ID_RE.test(subscriptionId)) {
+          logger.warn("Invalid subscription ID format in invoice.payment_failed", {
+            context: "billing/webhook",
+            subscriptionId,
+          });
+          break;
+        }
 
         // Retrieve subscription to get clinic_id.
         // P-04: bound the outbound fetch (see comment above).

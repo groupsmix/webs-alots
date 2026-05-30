@@ -33,6 +33,9 @@ function requestId(): string {
 function withRequestId(init?: HeadersInit): Headers {
   const h = new Headers(init);
   if (!h.has("X-Request-Id")) h.set("X-Request-Id", requestId());
+  // FP-09: Prevent browsers from MIME-sniffing the response away from
+  // the declared application/json content-type.
+  h.set("X-Content-Type-Options", "nosniff");
   return h;
 }
 

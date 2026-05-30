@@ -20,6 +20,27 @@ import { timingSafeEqual } from "@/lib/crypto-utils";
 const MIN_CRON_SECRET_LENGTH = 32;
 
 /**
+ * FP-07: Reject secrets that consist of a single repeated character or
+ * other trivially weak patterns (e.g. "aaaa…", "abcabc…").
+ * Returns true if the secret has sufficient entropy to be acceptable.
+ */
+function hasMinimalEntropy(secret: string): boolean {
+  // Reject single-character repetition (e.g. "aaaaaaa…")
+  const uniqueChars = new Set(secret);
+  if (uniqueChars.size < 2) return false;
+
+  // Reject short repeating patterns up to length 4 (e.g. "abababab…", "abcabc…")
+  for (let patLen = 2; patLen <= 4; patLen++) {
+    const pattern = secret.slice(0, patLen);
+    if (pattern.repeat(Math.ceil(secret.length / patLen)).slice(0, secret.length) === secret) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Verify that a cron request carries a valid CRON_SECRET bearer token.
  * Returns `null` if the request is authorized, or a 401 NextResponse to return immediately.
  */
@@ -28,7 +49,8 @@ export function verifyCronSecret(request: NextRequest): NextResponse | null {
   const cronSecret = process.env.CRON_SECRET;
 
   // A100-05: Reject if secret is missing or too short (prevents empty-string bypass)
-  if (!cronSecret || cronSecret.length < MIN_CRON_SECRET_LENGTH) {
+  // FP-07: Also reject low-entropy secrets (single repeated char, trivial patterns)
+  if (!cronSecret || cronSecret.length < MIN_CRON_SECRET_LENGTH || !hasMinimalEntropy(cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
