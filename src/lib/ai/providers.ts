@@ -350,8 +350,8 @@ async function callXAI(req: AIRequest, opts: CallOptions): Promise<ProviderRespo
 
 async function callWorkersAI(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
   const model = opts.model ?? PROVIDER_MODELS.workers_ai.model;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime Workers AI credential, not available at build time
+  const apiToken = process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey; // nosemgrep: semgrep.env-access — runtime Workers AI credential, fallback to per-request key
 
   if (!accountId || !apiToken) {
     throw new ProviderError(
