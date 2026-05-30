@@ -47,6 +47,10 @@ export async function GET(request: NextRequest) {
   const supabase = await createTenantClient(auth.clinicId);
   const url = new URL(request.url);
   const date = url.searchParams.get("date");
+  // IV-02: Validate date format to return 400 instead of leaking DB errors.
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return apiError("Invalid date format — expected YYYY-MM-DD", 400, "INVALID_DATE", cors);
+  }
   const status = url.searchParams.get("status");
   const limit = Math.min(Math.max(1, Number(url.searchParams.get("limit") || 50)), 100);
 

@@ -236,6 +236,16 @@ export async function POST(request: NextRequest) {
 
         if (!subscriptionId) break;
 
+        // TF-01: Validate subscriptionId format to prevent SSRF via crafted
+        // subscription identifiers. Stripe subscription IDs always match
+        // the pattern `sub_<alphanumeric>`.
+        if (!/^sub_[a-zA-Z0-9]+$/.test(subscriptionId)) {
+          logger.warn("Invalid subscription ID format in invoice.paid", {
+            context: "billing/webhook",
+          });
+          break;
+        }
+
         // Retrieve subscription to get clinic_id from metadata.
         // P-04: bound the outbound fetch — Stripe latency must not block the
         // webhook handler past Cloudflare's request budget.

@@ -120,6 +120,17 @@ export function sanitizeHtml(dirty: string): string {
     allowedSchemes: ALLOWED_SCHEMES,
     // `data:` URIs are permitted only on <img src> and only for images.
     allowedSchemesByTag: { img: [...ALLOWED_SCHEMES, "data"] },
+    // FP-14: Block SVG data URIs on <img>. `data:image/svg+xml` can execute
+    // JS via `<svg onload>` and is a well-known sanitizer bypass vector.
+    // Only allow safe raster MIME types in data URIs.
+    transformTags: {
+      img: (tagName: string, attribs: Record<string, string>) => {
+        if (attribs.src && /^data:image\/svg/i.test(attribs.src)) {
+          delete attribs.src;
+        }
+        return { tagName, attribs };
+      },
+    },
     allowProtocolRelative: false,
     // Drop the *contents* of dangerous elements rather than leaking them as
     // inert text (e.g. `<script>alert(1)</script>` leaves nothing behind).

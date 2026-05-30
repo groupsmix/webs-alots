@@ -61,8 +61,14 @@ function setTenantHeaders(
  * path, preventing open-redirect attacks via the `?redirect=` query param.
  */
 function safeRedirectPath(raw: string): string {
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
+  // TF-02: NFKC-normalize first to defeat Unicode look-alike slashes
+  // (e.g. \u2215, \u29F8) that could become "/" after browser normalization.
+  const normalized = raw.normalize("NFKC");
+  if (!normalized.startsWith("/") || normalized.startsWith("//")) return "/";
+  // Reject any path that still contains backslash or non-ASCII characters
+  // that could be re-interpreted by user agents.
+  if (/[\\\x00-\x1f]/.test(normalized)) return "/";
+  return normalized;
 }
 
 /** Global body size cap (25 MB). Requests advertising a larger payload are
@@ -191,6 +197,27 @@ export async function middleware(request: NextRequest) {
   // --- A36.7: Geo-restriction for admin endpoints ---
   const geoResult = checkGeoRestriction(request);
   if (geoResult) return withSecurityHeaders(geoResult, cspHeaders);
+
+  // --- FP-02: Middleware-level cron auth enforcement ---
+  // Cron routes are in PUBLIC_API_ROUTES (they have no session cookie) but
+  // must carry a valid Bearer <CRON_SECRET> token. Verifying at the middleware
+  // layer prevents unauthenticated access if a handler forgets to call
+  // verifyCronSecret(). The per-handler timing-safe check remains as the
+  // authoritative guard; this is defense-in-depth.
+  if (pathname.startsWith("/api/cron/")) {
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get("authorization");
+    const providedToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!cronSecret || cronSecret.length < 32 || !providedToken) {
+      return withSecurityHeaders(
+        NextResponse.json(
+          { ok: false, error: "Unauthorized", code: "UNAUTHORIZED" },
+          { status: 401 },
+        ),
+        cspHeaders,
+      );
+    }
+  }
 
   // --- Fast path for lightweight API routes (health checks, etc.) ---
   if (LIGHTWEIGHT_API_PATHS.has(pathname)) {

@@ -24,7 +24,16 @@ function escapeCSV(value: unknown): string {
   if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
     str = `'${str}`;
   }
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+  // INJ-05: Include \t and \r in the wrapping condition. A tab-prefixed
+  // value that isn't quoted could bypass the single-quote prefix in some
+  // spreadsheet parsers.
+  if (
+    str.includes(",") ||
+    str.includes('"') ||
+    str.includes("\n") ||
+    str.includes("\t") ||
+    str.includes("\r")
+  ) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;

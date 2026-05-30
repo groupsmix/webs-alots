@@ -33,6 +33,10 @@ function requestId(): string {
 function withRequestId(init?: HeadersInit): Headers {
   const h = new Headers(init);
   if (!h.has("X-Request-Id")) h.set("X-Request-Id", requestId());
+  // FP-09: Prevent MIME-sniffing on all API responses. Without this,
+  // a browser could interpret a JSON response as HTML if Content-Type
+  // is misconfigured by a downstream proxy.
+  if (!h.has("X-Content-Type-Options")) h.set("X-Content-Type-Options", "nosniff");
   return h;
 }
 

@@ -32,6 +32,13 @@ export function verifyCronSecret(request: NextRequest): NextResponse | null {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // FP-07: Reject low-entropy secrets (e.g. "aaaa...a" repeated chars).
+  // A 32-char secret of a single repeated character has ~4.7 bits of
+  // entropy — trivially brute-forceable.
+  if (new Set(cronSecret).size < 4) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const providedToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (!providedToken || !timingSafeEqual(providedToken, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

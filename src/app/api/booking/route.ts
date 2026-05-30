@@ -363,9 +363,11 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     },
   );
   if (patientError || !patientId) {
+    // FP-03: Log only the error code, not the full error object which may
+    // contain PHI (patient name, phone, email) in RPC parameters.
     logger.warn("Failed to find/create patient", {
       context: "booking/route",
-      error: patientError,
+      code: patientError?.code,
     });
     return apiInternalError("Failed to create patient record");
   }

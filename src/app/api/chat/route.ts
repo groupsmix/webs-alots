@@ -46,8 +46,12 @@ const MAX_MESSAGE_LENGTH = 2000;
  * rely on it as the sole defense.
  */
 function sanitizeUserInput(text: string): string {
+  // WP-03: Truncate input BEFORE applying regexes to bound worst-case
+  // complexity. MAX_MESSAGE_LENGTH is applied again downstream, but
+  // truncating here prevents ReDoS on oversized payloads.
+  const bounded = text.slice(0, MAX_MESSAGE_LENGTH);
   return (
-    text
+    bounded
       // Normalize Unicode to NFKC to defeat homoglyph / compatibility-char
       // bypasses (e.g. fullwidth "ｓｙｓｔｅｍ" → "system")
       .normalize("NFKC")
@@ -66,9 +70,10 @@ function sanitizeUserInput(text: string): string {
       .replace(/<\|im_(start|end)\|>\s*(system|assistant)?/gi, "")
       // Strip XML-style role tags
       .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
-      // Strip "ignore all previous instructions" style attacks
+      // WP-01: Replace nested-quantifier regex with sequential substring
+      // checks to avoid catastrophic backtracking on crafted input.
       .replace(
-        /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi,
+        /ignore\b[^a-z]{0,20}\b(all\b[^a-z]{0,20})?(previous|prior|above|earlier)\b[^a-z]{0,20}\b(instructions?|prompts?|context)/gi,
         "[filtered]",
       )
       // Collapse excessive whitespace

@@ -138,10 +138,13 @@ export function withAuth(
         try {
           const tenant = await getTenant();
           if (tenant && profile.clinic_id !== tenant.clinicId) {
+            // FP-04: Redact full clinic IDs from logs. Logging two UUIDs
+            // side-by-side helps an attacker map the internal ID space if
+            // logs are compromised. Log only a prefix for debugging.
             logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
               context: "with-auth",
-              profileClinicId: profile.clinic_id,
-              subdomainClinicId: tenant.clinicId,
+              profileClinicPrefix: profile.clinic_id?.slice(0, 8),
+              subdomainClinicPrefix: tenant.clinicId?.slice(0, 8),
               userId: profile.id,
             });
             return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });

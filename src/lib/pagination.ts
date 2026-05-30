@@ -58,10 +58,13 @@ export function decodeCursor(value: string): AppointmentCursor | null {
       typeof (parsed as Record<string, unknown>).id === "string"
     ) {
       const c = parsed as AppointmentCursor;
-      // Defensive validation — these values are interpolated into a
-      // PostgREST `or()` filter, so reject anything that contains the
-      // delimiters PostgREST uses to separate filters.
-      if (/[,()]/.test(c.appointment_date) || /[,()]/.test(c.start_time) || /[,()]/.test(c.id)) {
+      // INJ-02: Validate each cursor field against its expected format
+      // before interpolation into PostgREST `.or()` filters. This
+      // prevents injection of additional filter clauses via crafted
+      // cursor values (e.g. a comma in the date field).
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(c.appointment_date)) return null;
+      if (!/^\d{2}:\d{2}(:\d{2})?$/.test(c.start_time)) return null;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c.id)) {
         return null;
       }
       return c;

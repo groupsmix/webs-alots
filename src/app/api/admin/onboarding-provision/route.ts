@@ -10,7 +10,7 @@
  */
 
 import { type NextRequest } from "next/server";
-import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
+import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
@@ -114,9 +114,9 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       if (clinicError) {
         logger.error("Failed to create clinic during provisioning", {
           context: "onboarding-provision",
-          error: clinicError,
+          code: clinicError.code,
         });
-        return apiError(`Failed to create clinic: ${clinicError.message}`, 500);
+        return apiInternalError("Clinic creation failed — subdomain may already be in use");
       }
 
       clinicId = clinic.id;
