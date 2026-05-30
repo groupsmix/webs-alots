@@ -19,7 +19,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("referrals")
+      .from("referrals") // nosemgrep: semgrep.tenant-scoping
       .select(
         "id, clinic_id, referring_doctor_id, referred_to_doctor_id, patient_id, reason, status, created_at, clinics(name)",
       )

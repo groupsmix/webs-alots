@@ -24,7 +24,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("users")
+      .from("users") // nosemgrep: semgrep.tenant-scoping
       .select("id, auth_id, name, email, role, clinic_id, created_at")
       .in("role", ADMIN_ROLES)
       .order("created_at", { ascending: false });
@@ -94,6 +94,7 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
         return apiValidationError(`role must be one of: ${ADMIN_ROLES.join(", ")}`);
       }
 
+      // nosemgrep: semgrep.tenant-scoping
       const { error } = await supabase.from("users").update({ role: newRole }).eq("id", userId);
 
       if (error) {
@@ -116,7 +117,7 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
 
     if (action === "remove") {
       const { error } = await supabase
-        .from("users")
+        .from("users") // nosemgrep: semgrep.tenant-scoping
         .delete()
         .eq("id", userId)
         .in("role", ADMIN_ROLES);
