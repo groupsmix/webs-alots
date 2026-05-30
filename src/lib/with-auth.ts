@@ -140,8 +140,8 @@ export function withAuth(
           if (tenant && profile.clinic_id !== tenant.clinicId) {
             logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
               context: "with-auth",
-              profileClinicId: profile.clinic_id,
-              subdomainClinicId: tenant.clinicId,
+              profileClinicId: profile.clinic_id.slice(0, 8) + "…",
+              subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
               userId: profile.id,
             });
             return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });
@@ -317,8 +317,8 @@ export function withAuthAnyRole(handler: AuthenticatedHandler, options: WithAuth
           if (tenant && profile.clinic_id !== tenant.clinicId) {
             logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
               context: "with-auth-any-role",
-              profileClinicId: profile.clinic_id,
-              subdomainClinicId: tenant.clinicId,
+              profileClinicId: profile.clinic_id.slice(0, 8) + "…",
+              subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
               userId: profile.id,
             });
             return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });

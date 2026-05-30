@@ -10,7 +10,7 @@
  */
 
 import { type NextRequest } from "next/server";
-import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
+import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
@@ -116,7 +116,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           context: "onboarding-provision",
           error: clinicError,
         });
-        return apiError("Clinic creation failed — subdomain may already be in use", 500);
+        return apiInternalError("Clinic creation failed — subdomain may already be in use");
       }
 
       clinicId = clinic.id;
