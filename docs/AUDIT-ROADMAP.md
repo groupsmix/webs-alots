@@ -4,6 +4,7 @@
 **Source audits tracked:**
 - `webs-alots-audit(3).md` — original audit (FR-NN refs, addressed in PR #863 + follow-ups)
 - `webs-alots-etap1-audit.md` — End-to-End Production Audit (etap_1, 2026-05-30), 30 findings, `NOT READY — CONDITIONAL` launch verdict
+- `oltigo-technical-audit.html` — End-to-End Technical Audit (audit-3, 2026-05-30, commit `802f27e`), 22 findings, 4 P0 / 7 P1 / 9 P2 / 2 P3, separate top-25 risks list
 
 This file replaces the previously promised "Audit Remediation Roadmap & Wave Tracker" that lived only in a chat surface. The chat surface was a hallucination; this file is the real, in-repo source of truth.
 
@@ -34,9 +35,13 @@ This file replaces the previously promised "Audit Remediation Roadmap & Wave Tra
 | #872 | `fix/perf-missing-loading-skeletons` | `loading.tsx` for 14 admin segments | admin/expenses, audit-logs, lab-results, insurance-claims, …  |
 | #873 | `fix/audit-critical-blockers` | etap1 critical: rate-limit KV mode, PHI masking, secrets-template removed, Sentry/cron docs | `wrangler.toml`, `.env.example`, `secrets-template.env` (deleted), `.gitignore` |
 | #874 | `fix/audit-remaining-blockers` | etap1: Supabase pooler, Sentry Replay PHI guard, drop client-cookie tenant tag | `src/lib/supabase-server.ts`, `sentry.client.config.ts`, `.env.example` |
-| #G  | `infra/staging-kv-separation` | etap1 #5: document staging-vs-prod KV bleed + action checklist | `wrangler.toml` |
+| #875 | `infra/staging-kv-separation` | etap1 #5: document staging-vs-prod KV bleed + action checklist | `wrangler.toml` |
+| #876 | `docs/audit-roadmap` | This file (`docs/AUDIT-ROADMAP.md`) — replaces the hallucinated chat surface | `docs/AUDIT-ROADMAP.md` |
+| #877 | `security/codeowners-api-routes` | audit-3 ARCH-02: extend CODEOWNERS to `src/app/api/**`, `src/lib/env.ts`, `src/lib/supabase-*.ts` | `.github/CODEOWNERS` |
+| #878 | `obs/payment-reminders-sentry-checkin` | audit-3 PERF-01: wrap last remaining cron route with `withSentryCron` | `src/app/api/cron/payment-reminders/route.ts` |
+| (this) | `docs/audit-roadmap-audit-3` | audit-3 cross-references added to this roadmap, stacked on top of #876 | `docs/AUDIT-ROADMAP.md` |
 
-Recommended merge order: #872 → #870 → #871 → #863 → #874 → #865 → #873 → #G (after running the wrangler command).
+Recommended merge order: #872 → #870 → #871 → #863 → #874 → #865 → #876 → (this) → #877 → #878 → #873 → #875 (last, needs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` first).
 
 ---
 
@@ -115,24 +120,87 @@ UX hotfixes done in the same session (not from a numbered audit finding but trac
 
 ---
 
+## Technical audit (`oltigo-technical-audit.html`, audit-3) — finding tracker
+
+22 findings. Heavy overlap with etap1; ~60% already shipped, two confirmed false positives, three new actionable items addressed in this wave (#877, #878, and this PR).
+
+### CRITICAL (P0)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| SEC-01 | Seed users with known default password active in production | 🟡 Partial — operator action | #863 + etap1 #2 | Same finding as etap1 #2. Code-side guards landed in #863 (`SEED_PASSWORDS_ROTATED` startup check). Operator must rotate or delete the seed accounts, then `wrangler secret put SEED_PASSWORDS_ROTATED --env production` with value `true`. |
+| INF-01 | Rate limiting per-isolate memory only | ✅ Shipped | #873 + etap1 #1 + #6 | Same finding as etap1 #1/#6. `RATE_LIMIT_BACKEND="kv"` shipped in #873; `cf-bindings.ts` already resolves bindings via `getCloudflareContext().env`. |
+| DB-01 | No Supabase connection pooling | ✅ Shipped | #874 + etap1 #8 | Same finding as etap1 #8. `getSupabaseUrl()` helper added in #874 prefers `SUPABASE_POOLER_URL`. Operator must set the pooler URL secret. |
+| QA-01 | Test coverage 15% against 80% target | ⏳ Deferred — multi-week workstream | — | Ratchet at `.vitest-coverage-floor.json: statements=15, branches=11, lines=15, functions=10`. Audit-recommended priority targets: PHI encryption, withAuth HMAC, booking token, RLS smoke tests, webhook signatures, GDPR purge, rate limiter, tenant isolation. Tracked outside the audit-fix waves as its own workstream. |
+
+### HIGH (P1)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| SEC-02 | PHI encryption key optional in production | ✅ Shipped (already in `src/lib/env.ts`) | — | `enforcePhiEncryptionConfigured()` in `src/lib/env.ts:637` already hard-fails startup in production when `PHI_ENCRYPTION_KEY` is missing or not 64 hex chars. **Operator must still set** `wrangler secret put PHI_ENCRYPTION_KEY --env production` with `openssl rand -hex 32`. |
+| INF-02 | Staging + production share the same KV namespace ID | 🛠️ Operator action — PR #875 adds the checklist | #875 + etap1 #5 | Same finding as etap1 #5. Docs-only diff in #875 with TODO sentinels; the real ID swap needs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING`. |
+| ARCH-01 | 50ms CPU limit on production Workers | 🔍 Verify only | — + etap1 #4/#18 | Same finding as etap1 #4/#18. Plan check on Cloudflare (Bundled vs Unbound). |
+| ARCH-02 | AI-first velocity with no human review gate on security-critical paths | ✅ Shipped via #877 | #877 | Extended `.github/CODEOWNERS` with `src/app/api/**`, `src/lib/env.ts`, `src/lib/supabase-*.ts`. Existing patterns already covered `src/lib/auth.ts`, `src/lib/tenant*.ts`, `src/middleware.ts`, `src/lib/rate-limit.ts`, `supabase/migrations/*`, `wrangler.toml`, scripts, Sentry config. |
+| SEC-03 | Single Supabase project — one missing RLS policy exposes all tenants | ⏳ Deferred — architectural | — | Multi-month workstream. Short-term mitigations the audit suggests (CI check on migrations, cross-clinic integration test, Semgrep rule on service-role usage) are tracked but not in this wave. |
+| INF-03 | OpenNext post-build patch scripts fragile | 🟡 Partial — see etap1 #10 | — | Tracked in etap1 #10 with proposed automated check that `.open-next/server-functions/default/handler.mjs` exports `scheduled` after each build. |
+| SEC-04 | Super Admin panel has no confirmed geo-restriction in repo | 🛠️ Operator action | — | Middleware code already exists at `src/lib/middleware/geo-restriction.ts`, tested in `src/lib/__tests__/geo-restriction.test.ts`. The env var `GEO_RESTRICT_ADMIN=` ships empty by default — operator must set `GEO_RESTRICT_ADMIN=MA` in production (audit's quick-win recommendation). |
+
+### MEDIUM (P2)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| SEC-05 | Staff default password empty/unset → new accounts may have no password | ❌ **False positive** | — | `src/lib/constants.ts:10` already falls back to `Staff-${crypto.randomUUID()}` when `STAFF_DEFAULT_PASSWORD` is unset. The inline comment explicitly says "ensuring accounts are never created with a well-known password." The empty env var is the safe default. No code change needed; the audit's claim is inaccurate. |
+| AI-01 | AI clinical features (drug interaction, lab pre-read) lack guardrails | ⏳ Deferred — clinical AI workstream | — | Disclaimer UI, confidence thresholds, eval pipeline, and human-confirmation gate are multi-PR work that needs medical-side input (Moroccan CNDP + clinical advisory). Outside the audit-fix waves. |
+| SEC-06 | PHI data masking defaults to `none` | ✅ Shipped via #873 | #873 + etap1 #7/#13 | Same finding as etap1 #7. `NEXT_PUBLIC_DATA_MASKING="partial"` set in all three vars blocks of `wrangler.toml` and as the default in `.env.example`. The audit's separate concern about UI-only masking (data still in API JSON) is a real but architectural follow-up — tracked under SEC-03 long-term work. |
+| INFRA-04 | `EGRESS_ALLOWLIST_ENFORCE=false` — supply-chain exfiltration risk | ❌ **Not implementable** | — | `grep -rn EGRESS --include="*.ts"` returns zero code consumers. The env var is declared in `.env.example` as documented intent but no enforcement infrastructure has been built. Setting it to `true` would do nothing. Real fix is to build the egress allowlist machinery (or remove the empty env var). Out of scope for this wave. |
+| PERF-01 | 8 cron schedules, no per-cron alerting | ✅ Shipped via #878 | #878 | Was already ~94% done before this wave: 15 of 16 routes under `src/app/api/cron/*` already wrap their handler with `withSentryCron` from `src/lib/sentry-cron.ts`. #878 closes the gap by wrapping `payment-reminders/route.ts`. Audit's specific concern about silent GDPR purge failures is addressed because `gdpr-purge/route.ts` was already wrapped. |
+| SEC-07 | `SELF_SERVICE_REGISTRATION` disabled but endpoint exists with weak verification | ✅ Shipped via #865 + env.ts ack pattern | #865 | UX side: #865 shows a translated contact-us panel instead of a 403 when the flag is off. Server side: `src/lib/env.ts:540-590` defines `SECURITY_FLAG_ACKNOWLEDGMENTS` requiring `SELF_SERVICE_REGISTRATION_ACK=true` to be set alongside the feature flag — so flipping the flag in production is always a deliberate decision. |
+| OBS-01 | Sentry DSN optional — production errors silently vanish | ✅ Shipped (already in `src/lib/env.ts`) | — + etap1 #27 | Same finding as etap1 #27. `NEXT_PUBLIC_SENTRY_DSN` declared as `required: NODE_ENV==='production'` in `src/lib/env.ts:223-227`; `enforceEnvValidation()` runs at startup. Operator must still `wrangler secret put NEXT_PUBLIC_SENTRY_DSN --env production`. |
+| SEC-08 | KV namespace IDs in public repo | 🔍 Acknowledged | — | Audit itself notes "These are resource identifiers, not secrets." Low severity; no action. |
+| STACK-01 | TypeScript 6 / React 19 / Next.js 16 pre-release versions | ⏳ Deferred — dependency pinning decision | — | Pinning to TypeScript `~5.x.y`, React `~19.0.x`, Next.js `~16.x.x` is a separate workstream that needs build + Storybook validation. Audit's recommendation is sound but the risk of pinning wrong is non-zero. Out of scope for this wave. |
+
+### LOW (P3)
+
+| ID | Finding | Status | PR | Notes |
+|----|---------|--------|----|-------|
+| CI-01 | No Terraform/IaC for Cloudflare WAF/DNS/Access policies | ⏳ Deferred — multi-month IaC workstream | — | Audit acknowledges `wrangler.toml` is partial IaC. Full Cloudflare TF coverage (WAF, page rules, DNS, Access, Turnstile) is its own project. |
+| PERF-02 | API versioning dual-path with Sunset headers but no enforcement | 🟡 Partial — see etap1 #30 | — | Tracked in etap1 #30. Either remove Sunset headers in `next.config.ts:99-138` or build real `/api/v1/*` handlers before Dec 31 2026. |
+
+### Top-25 risks not yet covered above
+
+The audit's separate top-25 risks list adds a few items that do not map to a numbered finding. Each is tracked here:
+
+- **#19 WhatsApp webhook signature not verified** — Operator action. Set `META_APP_SECRET` in production via `wrangler secret put META_APP_SECRET --env production`. Code at `src/app/api/webhooks/whatsapp/route.ts` already verifies when the secret is present.
+- **#20 No distributed tracing** — Deferred. Out-of-scope feature.
+- **#22 AI kill switch (`AI_DISABLED=false` default)** — Verify only. Confirm AI cost-cap and runaway-detection alerts exist on Cloudflare/OpenAI side; no in-repo code change.
+- **#23 No WAF rules in repo** — Same workstream as CI-01 (Cloudflare TF).
+- **#24 Notification queue DLQ has no alerting on depth** — Operator action. Cloudflare Queues dashboard alert + Slack webhook (the platform already has Slack alerts wired via `src/lib/notifications/slack.ts` for security events).
+
+---
+
 ## Production readiness checklist (etap1 §5)
 
 Items that **only** need an operator on a workstation with `wrangler login` + Supabase access:
 
 - [ ] Set Cloudflare secrets in production:
-  - [ ] `wrangler secret put NEXT_PUBLIC_SENTRY_DSN --env production`
+  - [ ] `wrangler secret put NEXT_PUBLIC_SENTRY_DSN --env production` (etap1 #27 / audit-3 OBS-01)
   - [ ] `wrangler secret put SENTRY_AUTH_TOKEN --env production`
-  - [ ] `wrangler secret put CRON_SELF_BASE_URL --env production` (or set `ROOT_DOMAIN`)
-  - [ ] `wrangler secret put SUPABASE_POOLER_URL --env production`
-  - [ ] `wrangler secret put SEED_PASSWORDS_ROTATED --env production` with value `true`
-- [ ] Rotate or delete the seed users from migration `00019`
-- [ ] Create the staging KV namespace and replace the IDs in PR #G:
+  - [ ] `wrangler secret put CRON_SELF_BASE_URL --env production` (or set `ROOT_DOMAIN`) (etap1 #17)
+  - [ ] `wrangler secret put SUPABASE_POOLER_URL --env production` (etap1 #8 / audit-3 DB-01)
+  - [ ] `wrangler secret put SEED_PASSWORDS_ROTATED --env production` with value `true` (etap1 #2 / audit-3 SEC-01)
+  - [ ] `wrangler secret put PHI_ENCRYPTION_KEY --env production` with `openssl rand -hex 32` (audit-3 SEC-02)
+  - [ ] `wrangler secret put META_APP_SECRET --env production` (audit-3 top-25 #19, WhatsApp webhook signature)
+  - [ ] Set `GEO_RESTRICT_ADMIN=MA` in `[env.production.vars]` or as a secret (audit-3 SEC-04)
+  - [ ] Set `CMI_ALLOWED_IPS` to documented CMI callback IPs (audit-3 quick-win)
+- [ ] Rotate or delete the seed users from migration `00019` (etap1 #2 / audit-3 SEC-01)
+- [ ] Create the staging KV namespace and replace the IDs in PR #875 (etap1 #5 / audit-3 INF-02):
   - [ ] `wrangler kv:namespace create RATE_LIMIT_KV_STAGING`
   - [ ] `wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview`
-- [ ] Verify Cloudflare Workers plan (Paid + Unbound vs Bundled — etap1 #4/#18)
-- [ ] Confirm `.github/workflows/deploy.yml` exports `NEXT_PUBLIC_DATA_MASKING=partial` to the build step
-- [ ] Confirm `wrangler tail --env production` shows KV ops on rate-limited endpoints after first deploy
-- [ ] Verify Cloudflare cron triggers fire (dashboard → Workers → Cron Triggers)
+- [ ] Verify Cloudflare Workers plan (Paid + Unbound vs Bundled — etap1 #4/#18 / audit-3 ARCH-01)
+- [ ] Confirm `.github/workflows/deploy.yml` exports `NEXT_PUBLIC_DATA_MASKING=partial` to the build step (etap1 #13 / audit-3 SEC-06)
+- [ ] Confirm `wrangler tail --env production` shows KV ops on rate-limited endpoints after first deploy (etap1 #1 / audit-3 INF-01)
+- [ ] Verify Cloudflare cron triggers fire (dashboard → Workers → Cron Triggers) (audit-3 PERF-01)
+- [ ] Decide on `payment-reminders` cron wiring — either add it to `worker-cron-handler.ts` `CRON_ROUTES` with the `0 9 * * *` schedule used in #878, or remove the Sentry monitor (audit-3 PERF-01, companion to #878)
 - [ ] Check `supabase secret list` includes WhatsApp + Twilio + PHI keys
 
 Items that need a real review/verification pass (no code can do this):
@@ -141,12 +209,16 @@ Items that need a real review/verification pass (no code can do this):
 - [ ] R2 upload magic-byte validation walkthrough (etap1 #22)
 - [ ] WhatsApp Queues vs cron polling decision (etap1 #20)
 - [ ] Trailing-slash consistency check (etap1 #29)
-- [ ] Storybook not deployed publicly (etap1 #28)
+- [ ] Storybook not deployed publicly (etap1 #28 / audit-3 top-25 #22 — AI cost-cap check at the same time)
+- [ ] Cloudflare Queues DLQ depth alert wired to Slack (audit-3 top-25 #24)
+- [ ] Decide whether to pin TypeScript / React / Next to stable patch ranges (audit-3 STACK-01)
 
 ---
 
 ## Notes for future audits
 
-- The "audit-wave" branch naming convention (`cleanup/audit-wave-0-to-2-safe-fixes`, `fix/audit-critical-blockers`, `fix/audit-remaining-blockers`, `infra/staging-kv-separation`) is intentional. Keep it.
+- The "audit-wave" branch naming convention (`cleanup/audit-wave-0-to-2-safe-fixes`, `fix/audit-critical-blockers`, `fix/audit-remaining-blockers`, `infra/staging-kv-separation`, `security/codeowners-api-routes`, `obs/payment-reminders-sentry-checkin`) is intentional. Keep it.
 - Every PR body should reference the finding number(s) it closes here in this file. Update the table on merge.
 - This file is the single source of truth — do not maintain a parallel tracker in chat, in a Library document, or in any other surface.
+- When a new audit overlaps with finding IDs from a prior audit, cross-reference both (e.g. audit-3 INF-01 ↔ etap1 #1) rather than re-shipping the same change under a new finding number.
+- **False positives are first-class entries.** Document them under the audit's own ID with explicit code evidence (e.g. SEC-05 → `constants.ts:10`) so the next audit reader does not re-open them.
