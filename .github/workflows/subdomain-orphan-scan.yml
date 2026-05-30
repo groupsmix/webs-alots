@@ -1,0 +1,71 @@
+# MED-04: Weekly subdomain takeover prevention scan.
+#
+# Compares active clinic subdomains in Supabase against Cloudflare DNS to find
+# records that still resolve but have no matching active clinic — the classic
+# "dangling CNAME" scenario that enables subdomain takeover.
+#
+# Runs every Monday at 07:00 UTC and on manual trigger.
+# Alerts via Slack webhook and creates a GitHub issue on findings.
+
+name: Security — Subdomain Orphan Scan
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # Every Monday at 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  orphan-scan:
+    name: Detect orphaned subdomains
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run orphan subdomain check
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          SLACK_SECURITY_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_SECURITY_ALERTS_WEBHOOK_URL }}
+        run: node scripts/check-orphan-subdomains.mjs
+
+      - name: Create GitHub issue on findings
+        if: failure()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[SECURITY] Orphaned subdomains detected — ${new Date().toISOString().slice(0,10)}`,
+              body: [
+                '## Orphaned Subdomain Alert',
+                '',
+                'The weekly subdomain orphan scan found DNS records without a matching active clinic.',
+                'An attacker could claim these subdomains for phishing or session hijacking.',
+                '',
+                '**Action required:**',
+                '1. Review the scan output in the workflow run logs.',
+                '2. Delete any orphaned Cloudflare DNS record via the API or dashboard.',
+                '3. Verify no pending clinic offboarding missed the DNS teardown step.',
+                '',
+                `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n'),
+              labels: ['security', 'high-priority'],
+            });
