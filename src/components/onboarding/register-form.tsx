@@ -4,11 +4,11 @@ import { Stethoscope, Loader2, CheckCircle2, Mail, ShieldAlert } from "lucide-re
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MOROCCAN_CITIES } from "@/lib/morocco";
+import { cn } from "@/lib/utils";
 
 // Mirrors the server-side SELF_SERVICE_REGISTRATION_ENABLED gate in
 // /api/v1/register-clinic. The server flag is the source of truth; this
