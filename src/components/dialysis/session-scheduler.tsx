@@ -32,11 +32,11 @@ const STATUS_CONFIG: Record<
     variant: "default" | "secondary" | "success" | "destructive" | "outline" | "warning";
   }
 > = {
-  scheduled: { color: "text-blue-600", variant: "default" },
-  in_progress: { color: "text-orange-600", variant: "warning" },
-  completed: { color: "text-green-600", variant: "success" },
-  cancelled: { color: "text-gray-500", variant: "secondary" },
-  no_show: { color: "text-red-600", variant: "destructive" },
+  scheduled: { color: "text-[var(--oltigo-green)]", variant: "default" },
+  in_progress: { color: "text-[var(--signal-amber)]", variant: "warning" },
+  completed: { color: "text-[var(--signal-green)]", variant: "success" },
+  cancelled: { color: "text-muted-foreground", variant: "secondary" },
+  no_show: { color: "text-[var(--signal-red)]", variant: "destructive" },
 };
 
 const RECURRENCE_LABELS: Record<DialysisRecurrencePattern, string> = {

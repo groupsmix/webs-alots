@@ -71,7 +71,7 @@ export function MobileTabBar({
               href={tab.href}
               onClick={() => triggerHaptic()}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] transition-colors ${
                 active ? `${activeColor} font-medium` : "text-muted-foreground"
               }`}
             >
@@ -88,7 +88,7 @@ export function MobileTabBar({
               triggerHaptic();
               onMoreClick();
             }}
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] text-muted-foreground transition-colors"
+            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] text-muted-foreground transition-colors"
             aria-label="More options"
           >
             <MoreHorizontal className="h-5 w-5" />

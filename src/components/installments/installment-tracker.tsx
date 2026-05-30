@@ -23,9 +23,9 @@ const STATUS_CONFIG: Record<
   InstallmentPayment["status"],
   { icon: typeof Clock; color: string; variant: "default" | "success" | "destructive" | "outline" }
 > = {
-  pending: { icon: Clock, color: "text-gray-500", variant: "outline" },
-  paid: { icon: CheckCircle, color: "text-green-600", variant: "success" },
-  overdue: { icon: AlertCircle, color: "text-red-500", variant: "destructive" },
+  pending: { icon: Clock, color: "text-muted-foreground", variant: "outline" },
+  paid: { icon: CheckCircle, color: "text-[var(--signal-green)]", variant: "success" },
+  overdue: { icon: AlertCircle, color: "text-[var(--signal-red)]", variant: "destructive" },
 };
 
 interface InstallmentTrackerProps {
@@ -91,11 +91,11 @@ export function InstallmentTracker({
                   <p className="text-[10px] text-muted-foreground">Total ({plan.currency})</p>
                 </div>
                 <div className="text-center p-2 border rounded-lg">
-                  <p className="text-sm font-bold text-green-600">{totalPaid.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-[var(--signal-green)]">{totalPaid.toLocaleString()}</p>
                   <p className="text-[10px] text-muted-foreground">Paid</p>
                 </div>
                 <div className="text-center p-2 border rounded-lg">
-                  <p className="text-sm font-bold text-orange-600">
+                  <p className="text-sm font-bold text-[var(--signal-amber)]">
                     {remainingBalance.toLocaleString()}
                   </p>
                   <p className="text-[10px] text-muted-foreground">Remaining</p>

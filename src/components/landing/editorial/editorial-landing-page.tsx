@@ -57,7 +57,22 @@ function EditorialLandingPageInner() {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     localStorage.setItem("oltigo-theme", next);
+    // Sync with shadcn UI dark mode system (affects CookieConsent, etc.)
+    if (next === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
+
+  // Sync dark class on mount / theme change
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   const cycleLang = () => {
     const order: Array<"fr" | "ar" | "en"> = ["fr", "ar", "en"];

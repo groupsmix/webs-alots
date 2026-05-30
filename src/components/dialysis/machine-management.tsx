@@ -32,21 +32,26 @@ const STATUS_CONFIG: Record<
 > = {
   available: {
     icon: CheckCircle,
-    color: "text-green-600",
-    bgColor: "bg-green-100",
+    color: "text-[var(--signal-green)]",
+    bgColor: "bg-[var(--signal-green)]/10",
     variant: "success",
   },
-  in_use: { icon: Monitor, color: "text-blue-600", bgColor: "bg-blue-100", variant: "default" },
+  in_use: {
+    icon: Monitor,
+    color: "text-[var(--oltigo-green)]",
+    bgColor: "bg-[var(--oltigo-green)]/10",
+    variant: "default",
+  },
   maintenance: {
     icon: Wrench,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-100",
+    color: "text-[var(--signal-amber)]",
+    bgColor: "bg-[var(--signal-amber)]/10",
     variant: "warning",
   },
   out_of_service: {
     icon: XCircle,
-    color: "text-red-600",
-    bgColor: "bg-red-100",
+    color: "text-[var(--signal-red)]",
+    bgColor: "bg-[var(--signal-red)]/10",
     variant: "destructive",
   },
 };
@@ -107,19 +112,19 @@ export function MachineManagement({
       <div className="grid gap-3 grid-cols-3">
         <Card>
           <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold text-green-600">{available}</p>
+            <p className="text-xl font-bold text-[var(--signal-green)]">{available}</p>
             <p className="text-xs text-muted-foreground">Available</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold text-blue-600">{inUse}</p>
+            <p className="text-xl font-bold text-[var(--oltigo-green)]">{inUse}</p>
             <p className="text-xs text-muted-foreground">In Use</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold text-yellow-600">{maintenance}</p>
+            <p className="text-xl font-bold text-[var(--signal-amber)]">{maintenance}</p>
             <p className="text-xs text-muted-foreground">Maintenance</p>
           </CardContent>
         </Card>
@@ -215,7 +220,7 @@ export function MachineManagement({
                   {maintenanceSoon && (
                     <div className="flex items-center justify-center gap-1 mt-1">
                       <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                      <span className="text-[10px] text-yellow-600">Maintenance soon</span>
+                      <span className="text-[10px] text-[var(--signal-amber)]">Maintenance soon</span>
                     </div>
                   )}
                   {editable && (

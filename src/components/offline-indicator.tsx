@@ -36,7 +36,7 @@ export function OfflineIndicator() {
         "animate-in slide-in-from-bottom-4 fade-in-0 motion-reduce:animate-none",
       )}
     >
-      <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+      <WifiOff className="h-4 w-4 text-[var(--signal-amber)] dark:text-[#fbbf24]" />
       <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
         {t(locale, "offline.message")}
       </span>

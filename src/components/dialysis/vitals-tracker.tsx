@@ -364,7 +364,7 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                           <p className="font-medium">
                             {session.preWeight ?? "—"} → {session.postWeight ?? "—"} kg
                             {weightChange && (
-                              <span className="text-green-600 ml-1">(-{weightChange})</span>
+                              <span className="text-[var(--signal-green)] ml-1">(-{weightChange})</span>
                             )}
                           </p>
                         </div>

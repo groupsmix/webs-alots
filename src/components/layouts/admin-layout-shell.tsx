@@ -156,6 +156,13 @@ function OnboardingTourOverlay() {
   );
 }
 
+function isNavActive(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  // Match sub-routes (e.g. /admin/settings/chatbot matches /admin/settings)
+  if (href !== "/" && pathname.startsWith(href + "/")) return true;
+  return false;
+}
+
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
   const { hasFeature } = useClinicFeatures();
 
@@ -168,7 +175,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
       <OnboardingChecklistSidebar />
       <nav className="space-y-1 flex-1">
         {visibleItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isNavActive(pathname, item.href);
           return (
             <Link
               key={item.href}

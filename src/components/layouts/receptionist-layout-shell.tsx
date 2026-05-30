@@ -36,7 +36,7 @@ function NavLinks({ pathname, onNavClick }: { pathname: string; onNavClick?: () 
   return (
     <nav className="space-y-1">
       {navItems.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
         return (
           <Link
             key={item.href}

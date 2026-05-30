@@ -116,7 +116,7 @@ export function DataRetentionDashboard() {
     <div className="space-y-6">
       {/* Legal notice */}
       <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/30 p-4 flex items-start gap-3">
-        <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+        <Shield className="h-5 w-5 text-[var(--oltigo-green)] dark:text-[#2f8f63] mt-0.5 shrink-0" />
         <div className="text-sm">
           <p className="font-medium text-blue-900 dark:text-blue-300">
             {data.legalBasis} — Période de conservation : {data.retentionPeriodYears} ans
@@ -210,7 +210,7 @@ export function DataRetentionDashboard() {
         <div className="rounded-lg border">
           <div className="border-b bg-yellow-50 dark:bg-yellow-950/30 px-4 py-3">
             <h2 className="text-sm font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-[var(--signal-amber)]" />
               Enregistrements approchant l&apos;expiration
             </h2>
           </div>
