@@ -31,9 +31,7 @@ import type { Database } from "@/lib/types/database";
 const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_LOCAL_ANON_KEY ?? "";
 const SUPABASE_SERVICE_KEY =
-  process.env.SUPABASE_LOCAL_SERVICE_KEY ??
-  process.env.SUPABASE_LOCAL_SERVICE_ROLE_KEY ??
-  "";
+  process.env.SUPABASE_LOCAL_SERVICE_KEY ?? process.env.SUPABASE_LOCAL_SERVICE_ROLE_KEY ?? "";
 
 const SKIP =
   process.env.SKIP_RLS === "true" || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_KEY;
@@ -80,8 +78,20 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
     // Seed two clinics
     await admin.from("clinics").upsert(
       [
-        { id: CLINIC_A_ID, name: "PHI Test Clinic A", type: "doctor", status: "active", tier: "pro" },
-        { id: CLINIC_B_ID, name: "PHI Test Clinic B", type: "doctor", status: "active", tier: "pro" },
+        {
+          id: CLINIC_A_ID,
+          name: "PHI Test Clinic A",
+          type: "doctor",
+          status: "active",
+          tier: "pro",
+        },
+        {
+          id: CLINIC_B_ID,
+          name: "PHI Test Clinic B",
+          type: "doctor",
+          status: "active",
+          tier: "pro",
+        },
       ],
       { onConflict: "id" },
     );
@@ -108,10 +118,19 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
     );
 
     // Seed a service and appointment in Clinic A for FK references
-    await admin.from("services").upsert(
-      [{ id: "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1", clinic_id: CLINIC_A_ID, name: "PHI Consult", duration_minutes: 30 }],
-      { onConflict: "id" },
-    );
+    await admin
+      .from("services")
+      .upsert(
+        [
+          {
+            id: "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1",
+            clinic_id: CLINIC_A_ID,
+            name: "PHI Consult",
+            duration_minutes: 30,
+          },
+        ],
+        { onConflict: "id" },
+      );
 
     await admin.from("appointments").upsert(
       [
@@ -181,10 +200,9 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
       const { error } = await ca.from("prescriptions").insert({
         clinic_id: CLINIC_B_ID,
         patient_id: PATIENT_B_ID,
-        medication: "RLS Test Drug",
-        dosage: "1x daily",
-        duration: "7 days",
-        instructions: "RLS injection test — must be blocked",
+        doctor_id: PATIENT_A_ID, // valid user FK; RLS blocks before constraint check
+        content: {},
+        notes: "RLS injection test — must be blocked",
       } as never);
 
       if (error) {
@@ -209,8 +227,9 @@ describe.skipIf(SKIP)("RLS — High-Value PHI Tables (#629)", () => {
         clinic_id: CLINIC_B_ID,
         user_id: PATIENT_B_ID,
         type: "appointment_reminder",
-        message: "RLS injection test",
-        read: false,
+        channel: "in_app", // required NOT NULL field
+        message: "RLS injection test — must be blocked",
+        is_read: false, // correct column name (not 'read')
       } as never);
 
       if (error) {
