@@ -101,7 +101,12 @@
 }
 
 .dark {
-  /* Ink<->bone swap; green accent held constant. */
+  /* Ink<->bone swap; green accent held constant.
+     Note: --primary-foreground intentionally uses a LIGHT literal here, not
+     var(--bone). In some dark-mode trigger paths --bone resolves to a dark
+     value, which would make button text dark-on-green and unreadable. This
+     literal guarantees green surfaces always have light text regardless of
+     which dark-mode trigger fires first. */
   --background: #141a18;
   --foreground: var(--bone); /* #f4f1ea */
   --card: #1c2320;
@@ -109,7 +114,7 @@
   --popover: #1c2320;
   --popover-foreground: var(--bone);
   --primary: #2f8f63; /* lifted green for legibility on ink */
-  --primary-foreground: #06110c;
+  --primary-foreground: #f4f1ea; /* hard-coded light: see comment above */
   --secondary: #232b28;
   --secondary-foreground: var(--bone);
   --muted: #232b28;

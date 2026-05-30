@@ -13,6 +13,15 @@
  */
 
 :root {
+  /* ── Color scheme — pin to light ──
+     Tells the browser the page is light-mode only. Without this, the browser
+     paints native form controls (date pickers, scrollbars, autofill) using the
+     OS dark theme — which clashes with the editorial palette and produces the
+     "black text on green" effect users with system dark mode were seeing.
+     Re-enable per-mode handling once dark mode is fully QA'd (see notes at
+     the bottom of this file). */
+  color-scheme: light;
+
   /* ── Foundation ── */
   --ink: #0b0f0e;
   --bone: #f4f1ea;
@@ -105,7 +114,25 @@
   --ring-focus: 0 0 0 2px var(--oltigo-green);
 }
 
-/* ── Dark mode: swap ink ↔ bone ── */
+/* ── Dark mode (explicit opt-in only) ──
+   Two important constraints:
+     1. The shadcn color tokens in globals.css (--primary, --primary-foreground,
+        --background, --foreground, …) use a separate `.dark` class selector,
+        NOT [data-theme="dark"] and NOT prefers-color-scheme. If only HALF the
+        tokens flip, you get broken contrast — e.g. --primary-foreground still
+        resolves to var(--bone), which has flipped to dark, producing black
+        text on green buttons. That was a real, shipping bug for any user with
+        system dark mode set.
+     2. Until both stylesheets are unified behind one toggle, we ship light
+        only. The opt-in selector below stays so a future PR can re-enable
+        dark mode in lockstep with a globals.css `.dark` class toggle, but
+        the system-preference auto-trigger is disabled.
+
+   To re-enable system dark mode in the future:
+     • Restore the @media (prefers-color-scheme: dark) block.
+     • Update globals.css to either drop the .dark class in favor of
+       [data-theme="dark"], or have JS sync the class to the media query.
+     • Re-run a full WCAG audit on green-on-* surfaces. */
 [data-theme="dark"] {
   --ink: #f4f1ea;
   --bone: #0b0f0e;
@@ -118,6 +145,9 @@
   --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(11, 15, 14, 0.98) 100%);
 }
 
+/* DISABLED: see comment above. System dark mode auto-trigger removed to
+   prevent black-text-on-green contrast bug. Restore in a future PR after
+   globals.css `.dark` tokens are wired to the same trigger.
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --ink: #f4f1ea;
@@ -131,3 +161,4 @@
     --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(11, 15, 14, 0.98) 100%);
   }
 }
+*/
