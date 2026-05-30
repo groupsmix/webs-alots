@@ -211,10 +211,36 @@ binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
 # W8-A31-01: KV namespace binding for staging
+#
+# etap1 audit finding #5 — DO NOT MERGE THIS FILE'S STAGING BLOCK
+# until the steps below are completed.
+#
+# CURRENT STATE (launch blocker): the IDs below are the SAME ones used by
+# [[env.production.kv_namespaces]] above. That means rate-limit counters
+# are shared between staging and production:
+#
+#   • Load tests on staging exhaust prod counters → real users get 429s.
+#   • A prod rate-limit event blocks staging testing.
+#   • Staging auth attempts count against prod IP / user buckets.
+#
+# Action required before launch (run once on a workstation with `wrangler login`):
+#
+#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING
+#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview
+#
+# Then replace the two `id` / `preview_id` values below with the new
+# staging-specific IDs returned by the wrangler commands, and verify
+# isolation by tailing logs on both envs during a staging load test:
+#
+#   wrangler tail --env staging   # should see KV ops; prod tail should not.
+#
+# Until the IDs are replaced, treat staging and production as a single
+# rate-limit surface. R2 buckets are already correctly separated
+# (webs-alots-uploads-staging vs webs-alots-uploads).
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "7ac37dff0a794542b0c766f38e73f105"
-preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
+id = "7ac37dff0a794542b0c766f38e73f105"          # TODO(audit-#5): replace with staging KV ID
+preview_id = "854c78ea8c9442ed8706d3ec31fe292e"  # TODO(audit-#5): replace with staging KV preview ID
 
 # W8-A31-01: Routes for staging (uses staging subdomain)
 [env.staging.routes]
