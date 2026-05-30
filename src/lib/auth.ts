@@ -228,7 +228,10 @@ export async function signInWithOTP(phone: string): Promise<{ error: string | nu
  *
  * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`.
  */
-export async function verifyOTP(phone: string, token: string): Promise<{ error: string | null; redirectTo?: string }> {
+export async function verifyOTP(
+  phone: string,
+  token: string,
+): Promise<{ error: string | null; redirectTo?: string }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "auth.phoneDisabled" };
   }
