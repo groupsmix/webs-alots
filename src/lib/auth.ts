@@ -72,7 +72,7 @@ async function getClientIp(): Promise<string> {
 export async function signInWithPassword(
   email: string,
   password: string,
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; redirectTo?: string }> {
   const clientIp = await getClientIp();
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -185,11 +185,10 @@ export async function signInWithPassword(
   });
 
   if (profile) {
-    redirect(ROLE_DASHBOARD_MAP[profile.role]);
+    return { error: null, redirectTo: ROLE_DASHBOARD_MAP[profile.role] };
   }
 
-  // Fallback: redirect to patient dashboard
-  redirect("/patient/dashboard");
+  return { error: null, redirectTo: "/patient/dashboard" };
 }
 
 /**
@@ -229,7 +228,7 @@ export async function signInWithOTP(phone: string): Promise<{ error: string | nu
  *
  * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`.
  */
-export async function verifyOTP(phone: string, token: string): Promise<{ error: string | null }> {
+export async function verifyOTP(phone: string, token: string): Promise<{ error: string | null; redirectTo?: string }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "auth.phoneDisabled" };
   }
@@ -249,11 +248,10 @@ export async function verifyOTP(phone: string, token: string): Promise<{ error: 
   // Fetch user profile to determine redirect
   const profile = await getUserProfile();
   if (profile) {
-    redirect(ROLE_DASHBOARD_MAP[profile.role]);
+    return { error: null, redirectTo: ROLE_DASHBOARD_MAP[profile.role] };
   }
 
-  // Fallback: redirect to patient dashboard (new users default to patient role)
-  redirect("/patient/dashboard");
+  return { error: null, redirectTo: "/patient/dashboard" };
 }
 
 // ============================================================
@@ -314,7 +312,7 @@ export async function signInWithEmailOTP(email: string): Promise<{ error: string
 export async function verifyEmailOTP(
   email: string,
   token: string,
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; redirectTo?: string }> {
   const normalizedEmail = email.trim().toLowerCase();
 
   if (!normalizedEmail || !token || token.length < 6 || token.length > 8) {
@@ -349,11 +347,10 @@ export async function verifyEmailOTP(
   });
 
   if (profile) {
-    redirect(ROLE_DASHBOARD_MAP[profile.role]);
+    return { error: null, redirectTo: ROLE_DASHBOARD_MAP[profile.role] };
   }
 
-  // Fallback: redirect to patient dashboard
-  redirect("/patient/dashboard");
+  return { error: null, redirectTo: "/patient/dashboard" };
 }
 
 /**
