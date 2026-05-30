@@ -7,6 +7,8 @@ import {
   ToggleRight,
   FileText,
   Menu,
+  Shield,
+  Scale,
   Bell,
   ChevronDown,
   Settings,
@@ -54,6 +56,8 @@ const navItems = [
   { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
   { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
   { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
+  { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
+  { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
 ];
 
 interface Notification {
