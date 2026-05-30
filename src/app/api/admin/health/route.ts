@@ -20,9 +20,11 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     const { error } = await auth.supabase.rpc("version" as never);
 
     if (error) {
-      // nosemgrep: tenant-scoping — super-admin health check, no tenant context needed
+      // Super-admin health-check: intentionally queries across all tenants to verify
+      // database connectivity. No patient data is returned (head:true, count only).
+      // Access is restricted to super_admin role via withAuth.
       const { error: fallbackError } = await auth.supabase
-        .from("users")
+        .from("users") // nosemgrep: tenant-scoping
         .select("id", { count: "exact", head: true });
       databaseStatus = fallbackError ? "disconnected" : "connected";
     } else {

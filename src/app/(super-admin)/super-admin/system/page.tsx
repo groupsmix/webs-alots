@@ -145,8 +145,12 @@ export default function SystemStatusPage() {
       let userCount = 0;
       try {
         const supabase = createClient();
-        // nosemgrep: tenant-scoping — super-admin cross-tenant user count
-        const { count } = await supabase.from("users").select("id", { count: "exact", head: true });
+        // Super-admin cross-tenant user count: intentionally queries all tenants
+        // to display total platform user count. No PII is returned (head:true, count only).
+        // Page is restricted to super_admin role via layout auth guard.
+        const { count } = await supabase
+          .from("users") // nosemgrep: tenant-scoping
+          .select("id", { count: "exact", head: true });
         userCount = count ?? 0;
       } catch {
         logger.warn("Failed to fetch active user count", { context: "system-status" });
@@ -386,10 +390,12 @@ export default function SystemStatusPage() {
                   value: typeof process !== "undefined" ? (process.version ?? "N/A") : "N/A",
                 },
                 { label: "Next.js Version", value: "16" },
-                { label: "Last Deployment", value: process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "N/A" }, // nosemgrep: semgrep.env-access — super-admin client-side only
+                // nosemgrep: semgrep.env-access — NEXT_PUBLIC_* is a client-side public env var for display only
+                { label: "Last Deployment", value: process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "N/A" },
                 {
                   label: "Environment",
-                  value: process.env.NODE_ENV === "production" ? "Production" : "Staging", // nosemgrep: semgrep.env-access — super-admin client-side only
+                  // nosemgrep: semgrep.env-access — NODE_ENV is always available at build time
+                  value: process.env.NODE_ENV === "production" ? "Production" : "Staging",
                 },
               ].map((item) => (
                 <div
