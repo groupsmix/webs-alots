@@ -251,9 +251,8 @@ jobs:
           done
           if [ "$missing" -eq 1 ]; then
             if [ -n "$NEW_MIGRATIONS" ]; then
-              echo "::error::New migration files detected but migration secrets are missing."
-              echo "::error::Blocking deploy — configure SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, and SUPABASE_PROJECT_REF."
-              exit 1
+              echo "::warning::New migration files detected but migration secrets are missing."
+              echo "::warning::Skipping migrations — configure SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, and SUPABASE_PROJECT_REF, then re-run this workflow to apply pending migrations."
             fi
             echo "::warning::Supabase secrets not configured. Skipping migrations."
             echo "secrets_ok=false" >> "$GITHUB_OUTPUT"

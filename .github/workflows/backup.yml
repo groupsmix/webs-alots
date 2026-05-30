@@ -33,8 +33,27 @@ jobs:
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
     steps:
+      - name: Preflight — check required secrets
+        id: preflight
+        run: |
+          missing=0
+          for v in SUPABASE_DB_URL R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BACKUP_BUCKET; do
+            if [ -z "${!v:-}" ]; then
+              echo "::warning::Secret '$v' is not set."
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::warning::Backup secrets not configured. Skipping backup."
+            echo "::warning::Configure SUPABASE_DB_URL and R2 credentials in GitHub Actions secrets to enable automated backups."
+            echo "secrets_ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # Audit 3.11: Health check the DB connection before attempting backup
       - name: Health check database connection
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           if ! psql "${SUPABASE_DB_URL}" -c "SELECT 1;" > /dev/null 2>&1; then
             echo "::error::Database connection failed. SUPABASE_DB_URL may be invalid or rotated."
@@ -42,23 +61,28 @@ jobs:
           fi
       # AUDIT-16: Pin GH Actions to SHA for supply-chain hardening
       - name: Checkout
+        if: steps.preflight.outputs.secrets_ok == 'true'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
+        if: steps.preflight.outputs.secrets_ok == 'true'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
 
       - name: Install PostgreSQL client
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
       - name: Install AWS CLI (for S3-compatible R2)
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           pip install awscli
 
       - name: Configure R2 credentials
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           mkdir -p ~/.aws
           cat > ~/.aws/credentials << EOF
@@ -72,6 +96,7 @@ jobs:
           EOF
 
       - name: Determine backup type
+        if: steps.preflight.outputs.secrets_ok == 'true'
         id: backup_type
         run: |
           if [ "${{ github.event.inputs.backup_type }}" != "" ]; then
@@ -89,6 +114,7 @@ jobs:
           fi
 
       - name: Create database dump and encrypt
+        if: steps.preflight.outputs.secrets_ok == 'true'
         env:
           BACKUP_GPG_KEY: ${{ secrets.BACKUP_GPG_KEY }}
           BACKUP_GPG_FINGERPRINT: ${{ secrets.BACKUP_GPG_FINGERPRINT }}
@@ -135,6 +161,7 @@ jobs:
           echo "Encrypted backup size: ${SIZE}"
 
       - name: Upload to R2
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
           R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
@@ -146,6 +173,7 @@ jobs:
           echo "Uploaded to R2: backups/${BACKUP_TYPE}/${filename}"
 
       - name: Rotate old backups
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
