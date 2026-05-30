@@ -17,6 +17,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { assertCronAllowedInThisEnv } from "@/lib/cron-env-guard";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -30,6 +31,12 @@ const WA_RETENTION_DAYS = 30;
 async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
+
+  // audit-4 F-13: dedup TTL purge mutates the processed_stripe_events,
+  // cmi_callbacks_seen, and processed_whatsapp_messages tables — deleting
+  // these in staging against the prod DB would break replay protection.
+  const envBlock = assertCronAllowedInThisEnv("dedup-purge");
+  if (envBlock) return envBlock;
 
   const admin = createAdminClient("cron");
   const stripeCutoff = new Date(

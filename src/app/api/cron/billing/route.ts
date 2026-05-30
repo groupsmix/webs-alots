@@ -11,6 +11,7 @@ import { NextRequest } from "next/server";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { assertCronAllowedInThisEnv } from "@/lib/cron-env-guard";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { processRenewal } from "@/lib/subscription-billing";
@@ -22,6 +23,11 @@ async function handler(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
   const authError = verifyCronSecret(request);
   if (authError) return authError;
+
+  // audit-4 F-13: refuse to charge customers from staging unless explicitly
+  // opted in (WORKER_ENV=staging + ALLOW_STAGING_DESTRUCTIVE_CRONS=true).
+  const envBlock = assertCronAllowedInThisEnv("billing");
+  if (envBlock) return envBlock;
 
   const supabase = createAdminClient("cron");
 
