@@ -637,11 +637,33 @@ export function enforcePhiMaskingPolicy(): void {
   }
 
   if (masking === "none" && allowUnmasked) {
-    logger.warn(
+    const reason = process.env.ALLOW_UNMASKED_PHI_REASON || "(no reason provided)";
+    const message =
       "PHI masking is DISABLED in production (ALLOW_UNMASKED_PHI=true). " +
-        "This must be approved by the Security Officer / DPO and documented.",
-      { context: "env-validation", check: "phi-masking" },
-    );
+      "This must be approved by the Security Officer / DPO and documented. " +
+      `Reason on record: ${reason}`;
+
+    logger.warn(message, { context: "env-validation", check: "phi-masking" });
+
+    // HIGH-03: Emit a Sentry alert immediately so the DPO is notified within
+    // Sentry's alert window (configure a Sentry alert rule to page on this tag).
+    // The captureMessage is best-effort — if Sentry is not configured the
+    // dynamic import rejects and the error is swallowed, which is intentional:
+    // we must not block startup when SENTRY_DSN is absent in dev.
+    import("@sentry/nextjs")
+      .then((Sentry) => {
+        Sentry.captureMessage(message, {
+          level: "fatal",
+          tags: {
+            check: "phi-masking",
+            "allow_unmasked_phi": "true",
+          },
+          extra: { reason },
+        });
+      })
+      .catch(() => {
+        // Sentry unavailable — warning already emitted via logger.
+      });
   }
 }
 
@@ -1018,4 +1040,33 @@ export function getPhiEncryptionKeyOld(): string | undefined {
 /** Backup encryption key (AES-256-GCM). */
 export function getBackupEncryptionKey(): string | undefined {
   return process.env.BACKUP_ENCRYPTION_KEY;
+}
+
+/**
+ * Supabase connection-pooler URL (PgBouncer/Supavisor on port 6543).
+ * Set as a Cloudflare Workers secret. Falls back to the direct URL
+ * when unset (local dev, CI without pooler).
+ * Consumed by `src/lib/supabase-server.ts`.
+ */
+export function getSupabasePoolerUrl(): string | undefined {
+  return process.env.SUPABASE_POOLER_URL;
+}
+
+/**
+ * Current Worker environment identifier (F-13 / cron-env-guard).
+ * Set to "production" or "staging" in wrangler.toml [vars].
+ * Unset in local dev, tests, and preview deployments — callers treat
+ * undefined as "not staging" (i.e. allow the operation to proceed).
+ */
+export function getWorkerEnv(): string | undefined {
+  return process.env.WORKER_ENV;
+}
+
+/**
+ * Whether staging is allowed to run destructive crons (F-13).
+ * Must be explicitly set to "true" by an operator — never a default.
+ * Consumed by `src/lib/cron-env-guard.ts`.
+ */
+export function getAllowStagingDestructiveCrons(): boolean {
+  return process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
 }
