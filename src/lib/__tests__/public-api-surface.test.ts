@@ -63,6 +63,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/booking/payment/confirm",
   "/api/booking/payment/initiate",
   "/api/booking/payment/refund",
+  "/api/booking/payment/refund/approve",
   "/api/booking/recurring",
   "/api/booking/reminders",
   "/api/booking/reschedule",
