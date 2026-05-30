@@ -12,9 +12,16 @@ import {
   Users,
   Search,
   Eye,
+  Archive,
+  Clock,
+  Send,
+  Sparkles,
+  Wrench,
+  Bell,
+  ServerCrash,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -27,14 +34,57 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
 import { fetchAnnouncements, type Announcement } from "@/lib/super-admin-actions";
 import { getLocalDateStr } from "@/lib/utils";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
+type StatusFilter = "all" | "active" | "expired" | "scheduled";
+type ScheduleMode = "now" | "later";
+
+const EXAMPLE_TYPES = [
+  {
+    icon: ServerCrash,
+    label: "System Update",
+    description: "Notify clinics about platform changes",
+  },
+  { icon: Wrench, label: "Maintenance Window", description: "Schedule downtime alerts" },
+  { icon: Sparkles, label: "New Feature", description: "Announce new capabilities" },
+  { icon: Bell, label: "General Notice", description: "Share important information" },
+];
+
+const PRIORITY_CONFIG = {
+  info: {
+    label: "Info",
+    color: "text-blue-600",
+    bg: "bg-blue-50 border-blue-200",
+    badge: "secondary" as const,
+  },
+  warning: {
+    label: "Warning",
+    color: "text-amber-600",
+    bg: "bg-amber-50 border-amber-200",
+    badge: "warning" as const,
+  },
+  critical: {
+    label: "Critical",
+    color: "text-red-600",
+    bg: "bg-red-50 border-red-200",
+    badge: "destructive" as const,
+  },
+};
 
 export default function AnnouncementsPage() {
   const { addToast } = useToast();
@@ -59,8 +109,10 @@ export default function AnnouncementsPage() {
       controller.abort();
     };
   }, [loadAnnouncements]);
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<Announcement | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -72,20 +124,37 @@ export default function AnnouncementsPage() {
   const [formType, setFormType] = useState<"info" | "warning" | "critical">("info");
   const [formTarget, setFormTarget] = useState("all");
   const [formExpires, setFormExpires] = useState("");
+  const [formScheduleMode, setFormScheduleMode] = useState<ScheduleMode>("now");
+  const [formScheduleDate, setFormScheduleDate] = useState("");
+  const [showFormPreview, setShowFormPreview] = useState(false);
 
-  const filtered = list.filter((a) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q || a.title.toLowerCase().includes(q) || a.message.toLowerCase().includes(q);
-    return matchSearch && (typeFilter === "all" || a.type === typeFilter);
-  });
+  const getAnnouncementStatus = useCallback(
+    (item: Announcement): "active" | "expired" | "scheduled" => {
+      const now = new Date();
+      if (item.expiresAt && new Date(item.expiresAt) < now) return "expired";
+      if (!item.active) return "expired";
+      return "active";
+    },
+    [],
+  );
+
+  const filtered = useMemo(() => {
+    return list.filter((a) => {
+      const q = search.toLowerCase();
+      const matchSearch =
+        !q || a.title.toLowerCase().includes(q) || a.message.toLowerCase().includes(q);
+      const matchType = typeFilter === "all" || a.type === typeFilter;
+      const matchStatus = statusFilter === "all" || getAnnouncementStatus(a) === statusFilter;
+      return matchSearch && matchType && matchStatus;
+    });
+  }, [list, search, typeFilter, statusFilter, getAnnouncementStatus]);
 
   const typeIcon = (type: string) => {
     switch (type) {
       case "info":
         return <Info className="h-4 w-4 text-blue-600" />;
       case "warning":
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+        return <AlertTriangle className="h-4 w-4 text-amber-600" />;
       case "critical":
         return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
@@ -100,6 +169,9 @@ export default function AnnouncementsPage() {
     setFormType("info");
     setFormTarget("all");
     setFormExpires("");
+    setFormScheduleMode("now");
+    setFormScheduleDate("");
+    setShowFormPreview(false);
     setEditOpen(true);
   }
 
@@ -110,6 +182,9 @@ export default function AnnouncementsPage() {
     setFormType(item.type);
     setFormTarget(item.target);
     setFormExpires(item.expiresAt || "");
+    setFormScheduleMode("now");
+    setFormScheduleDate("");
+    setShowFormPreview(false);
     setEditOpen(true);
   }
 
@@ -144,7 +219,8 @@ export default function AnnouncementsPage() {
         type: formType,
         target: formTarget,
         targetLabel: targetLabels[formTarget] || formTarget,
-        publishedAt: getLocalDateStr(),
+        publishedAt:
+          formScheduleMode === "later" && formScheduleDate ? formScheduleDate : getLocalDateStr(),
         expiresAt: formExpires || undefined,
         active: true,
         createdBy: "Super Admin",
@@ -152,7 +228,14 @@ export default function AnnouncementsPage() {
       setList((prev) => [newItem, ...prev]);
     }
     setEditOpen(false);
-    addToast(editItem ? "Announcement updated" : "Announcement published", "success");
+    addToast(
+      editItem
+        ? "Announcement updated"
+        : formScheduleMode === "later"
+          ? "Announcement scheduled"
+          : "Announcement published",
+      "success",
+    );
   }
 
   function handleDelete() {
@@ -166,7 +249,7 @@ export default function AnnouncementsPage() {
 
   function toggleActive(item: Announcement) {
     setList((prev) => prev.map((a) => (a.id === item.id ? { ...a, active: !a.active } : a)));
-    addToast(item.active ? "Announcement deactivated" : "Announcement activated", "success");
+    addToast(item.active ? "Announcement archived" : "Announcement activated", "success");
   }
 
   if (loading) {
@@ -258,96 +341,148 @@ export default function AnnouncementsPage() {
         </div>
       </div>
 
+      {/* Status Filter */}
+      <div className="flex items-center gap-1 mb-4">
+        {(["all", "active", "expired", "scheduled"] as StatusFilter[]).map((s) => (
+          <Button
+            key={s}
+            variant={statusFilter === s ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter(s)}
+            className="capitalize text-xs"
+          >
+            {s === "all" ? "All Status" : s}
+          </Button>
+        ))}
+      </div>
+
       {/* Announcements List */}
       <div className="space-y-3">
-        {filtered.map((item) => (
-          <Card key={item.id} className={!item.active ? "opacity-60" : ""}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {typeIcon(item.type)}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-sm truncate">{item.title}</h3>
-                      <Badge
-                        variant={
-                          item.type === "critical"
-                            ? "destructive"
-                            : item.type === "warning"
-                              ? "warning"
-                              : "secondary"
-                        }
-                        className="text-[10px]"
-                      >
-                        {item.type}
-                      </Badge>
-                      {!item.active && (
-                        <Badge variant="outline" className="text-[10px]">
-                          Inactive
+        {filtered.map((item) => {
+          const status = getAnnouncementStatus(item);
+          return (
+            <Card key={item.id} className={status === "expired" ? "opacity-60" : ""}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    {typeIcon(item.type)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-semibold text-sm truncate">{item.title}</h3>
+                        <Badge variant={PRIORITY_CONFIG[item.type].badge} className="text-[10px]">
+                          {item.type}
                         </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{item.message}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {item.targetLabel}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {item.publishedAt}
-                      </span>
-                      {item.expiresAt && <span>Expires: {item.expiresAt}</span>}
+                        {status === "expired" && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Expired
+                          </Badge>
+                        )}
+                        {!item.active && status !== "expired" && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{item.message}</p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {item.targetLabel}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {item.publishedAt}
+                        </span>
+                        {item.expiresAt && <span>Expires: {item.expiresAt}</span>}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Preview"
+                      onClick={() => {
+                        setPreviewItem(item);
+                        setPreviewOpen(true);
+                      }}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" title="Edit" onClick={() => openEdit(item)}>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={item.active ? "Archive" : "Activate"}
+                      onClick={() => toggleActive(item)}
+                    >
+                      {item.active ? (
+                        <Archive className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : (
+                        <Megaphone className="h-3.5 w-3.5 text-green-600" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Delete"
+                      className="text-red-500"
+                      onClick={() => {
+                        setDeleteItem(item);
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Preview"
-                    onClick={() => {
-                      setPreviewItem(item);
-                      setPreviewOpen(true);
-                    }}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="sm" title="Edit" onClick={() => openEdit(item)}>
-                    <Edit className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    title={item.active ? "Deactivate" : "Activate"}
-                    onClick={() => toggleActive(item)}
-                  >
-                    <Megaphone
-                      className={`h-3.5 w-3.5 ${item.active ? "text-green-600" : "text-gray-400"}`}
-                    />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Delete"
-                    className="text-red-500"
-                    onClick={() => {
-                      setDeleteItem(item);
-                      setDeleteOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No announcements found.</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {/* Enhanced Empty State */}
+        {filtered.length === 0 && list.length === 0 && (
+          <div className="py-8">
+            <EmptyState
+              icon={Megaphone}
+              title="No announcements yet"
+              description="Create announcements to notify clinic owners about system updates, maintenance windows, new features, and important notices."
+              action={
+                <Button onClick={openCreate}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Create your first announcement
+                </Button>
+              }
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 max-w-3xl mx-auto">
+              {EXAMPLE_TYPES.map((example) => (
+                <Card
+                  key={example.label}
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={openCreate}
+                >
+                  <CardContent className="p-4 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted mx-auto mb-2">
+                      <example.icon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium">{example.label}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{example.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
+        )}
+
+        {filtered.length === 0 && list.length > 0 && (
+          <EmptyState
+            icon={Search}
+            title="No matching announcements"
+            description="Try adjusting your search or filters to find what you're looking for."
+          />
         )}
       </div>
 
@@ -362,67 +497,178 @@ export default function AnnouncementsPage() {
                 : "Create a new system announcement for clinic owners."}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input
-                placeholder="Announcement title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Message</Label>
-              <textarea
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="Write the announcement message..."
-                value={formMessage}
-                onChange={(e) => setFormMessage(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+          {!showFormPreview ? (
+            <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label>Type</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={formType}
-                  onChange={(e) => setFormType(e.target.value as "info" | "warning" | "critical")}
-                >
-                  <option value="info">Info</option>
-                  <option value="warning">Warning</option>
-                  <option value="critical">Critical</option>
-                </select>
+                <Label>Title</Label>
+                <Input
+                  placeholder="Announcement title"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
-                <Label>Target Audience</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={formTarget}
-                  onChange={(e) => setFormTarget(e.target.value)}
-                >
-                  <option value="all">All Clinics</option>
-                  <option value="basic">Basic Plan</option>
-                  <option value="standard">Standard Plan</option>
-                  <option value="premium">Premium Plan</option>
-                </select>
+                <Label>Message</Label>
+                <Textarea
+                  placeholder="Write the announcement message..."
+                  className="min-h-[100px]"
+                  value={formMessage}
+                  onChange={(e) => setFormMessage(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Priority</Label>
+                  <Select
+                    value={formType}
+                    onValueChange={(v) => setFormType(v as "info" | "warning" | "critical")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder="Select priority"
+                        value={PRIORITY_CONFIG[formType].label}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-blue-500" />
+                          Info
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="warning">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-amber-500" />
+                          Warning
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="critical">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-red-500" />
+                          Critical
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Target Audience</Label>
+                  <Select value={formTarget} onValueChange={setFormTarget}>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder="Select audience"
+                        value={
+                          formTarget === "all"
+                            ? "All Clinics"
+                            : formTarget === "basic"
+                              ? "Basic Plan"
+                              : formTarget === "standard"
+                                ? "Standard Plan"
+                                : "Premium Plan"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Clinics</SelectItem>
+                      <SelectItem value="basic">Basic Plan</SelectItem>
+                      <SelectItem value="standard">Standard Plan</SelectItem>
+                      <SelectItem value="premium">Premium Plan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Schedule</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={formScheduleMode === "now" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormScheduleMode("now")}
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1" />
+                    Send Now
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formScheduleMode === "later" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormScheduleMode("later")}
+                  >
+                    <Clock className="h-3.5 w-3.5 mr-1" />
+                    Schedule
+                  </Button>
+                </div>
+                {formScheduleMode === "later" && (
+                  <Input
+                    type="datetime-local"
+                    value={formScheduleDate}
+                    onChange={(e) => setFormScheduleDate(e.target.value)}
+                    className="mt-2"
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Expiry Date (optional)</Label>
+                <Input
+                  type="date"
+                  value={formExpires}
+                  onChange={(e) => setFormExpires(e.target.value)}
+                />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Expiry Date (optional)</Label>
-              <Input
-                type="date"
-                value={formExpires}
-                onChange={(e) => setFormExpires(e.target.value)}
-              />
+          ) : (
+            <div className="py-4">
+              <p className="text-xs text-muted-foreground mb-3">
+                This is how clinics will see the announcement:
+              </p>
+              <div className={`rounded-lg p-4 border ${PRIORITY_CONFIG[formType].bg}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {typeIcon(formType)}
+                  <h3 className="font-semibold text-sm">{formTitle || "Untitled"}</h3>
+                  <Badge variant={PRIORITY_CONFIG[formType].badge} className="text-[10px]">
+                    {formType}
+                  </Badge>
+                </div>
+                <p className="text-sm">{formMessage || "No message provided."}</p>
+                <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {formTarget === "all" ? "All Clinics" : `${formTarget} Plan`}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {formScheduleMode === "later" && formScheduleDate
+                      ? `Scheduled: ${formScheduleDate}`
+                      : "Immediate"}
+                  </span>
+                  {formExpires && <span>Expires: {formExpires}</span>}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!formTitle || !formMessage}>
-              {editItem ? "Update" : "Publish"}
-            </Button>
+            <div className="flex w-full items-center justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFormPreview(!showFormPreview)}
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" />
+                {showFormPreview ? "Back to Edit" : "Preview"}
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={!formTitle || !formMessage}>
+                  {editItem ? "Update" : formScheduleMode === "later" ? "Schedule" : "Publish"}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -437,9 +683,7 @@ export default function AnnouncementsPage() {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-4">
-              <div
-                className={`rounded-lg p-4 ${previewItem.type === "critical" ? "bg-red-50 border border-red-200" : previewItem.type === "warning" ? "bg-yellow-50 border border-yellow-200" : "bg-blue-50 border border-blue-200"}`}
-              >
+              <div className={`rounded-lg p-4 border ${PRIORITY_CONFIG[previewItem.type].bg}`}>
                 <p className="text-sm">{previewItem.message}</p>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
