@@ -2,6 +2,7 @@
 
 import { Phone, ArrowLeft, Lock, Key, Mail, Eye, EyeOff, HeartPulse } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import { createClient } from "@/lib/supabase-client";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [locale] = useLocale();
   const [method, setMethod] = useState<"email" | "phone" | "email-otp">("email");
   const [step, setStep] = useState<"credentials" | "otp" | "email-otp-verify" | "mfa" | "backup">(
@@ -106,6 +108,8 @@ export default function LoginPage() {
             : t(locale, "auth.invalidCredentials"),
         );
         setLoading(false);
+      } else if (result.redirectTo) {
+        router.push(result.redirectTo);
       }
     } catch (err) {
       logger.warn("Email login failed", { context: "login", error: err });
@@ -211,6 +215,8 @@ export default function LoginPage() {
       if (result.error) {
         setError(t(locale, result.error as TranslationKey));
         setLoading(false);
+      } else if (result.redirectTo) {
+        router.push(result.redirectTo);
       }
     } catch (err) {
       logger.warn("OTP verification failed", { context: "login", error: err });
@@ -260,6 +266,8 @@ export default function LoginPage() {
       if (result.error) {
         setError(t(locale, result.error as TranslationKey));
         setLoading(false);
+      } else if (result.redirectTo) {
+        router.push(result.redirectTo);
       }
     } catch (err) {
       logger.warn("Email OTP verification failed", { context: "login", error: err });

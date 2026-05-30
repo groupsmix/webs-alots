@@ -238,9 +238,9 @@ describe("signInWithPassword", () => {
     });
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-    await expect(signInWithPassword("admin@test.com", "pass")).rejects.toThrow(
-      "REDIRECT:/admin/dashboard",
-    );
+    const result = await signInWithPassword("admin@test.com", "pass");
+    expect(result.error).toBeNull();
+    expect(result.redirectTo).toBe("/admin/dashboard");
   });
 
   it("redirects to patient dashboard when no profile found", async () => {
@@ -257,9 +257,9 @@ describe("signInWithPassword", () => {
     });
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-    await expect(signInWithPassword("new@test.com", "pass")).rejects.toThrow(
-      "REDIRECT:/patient/dashboard",
-    );
+    const result = await signInWithPassword("new@test.com", "pass");
+    expect(result.error).toBeNull();
+    expect(result.redirectTo).toBe("/patient/dashboard");
   });
 
   it("uses cf-connecting-ip for rate limiting, not x-forwarded-for", async () => {
@@ -393,9 +393,9 @@ describe("verifyOTP", () => {
     });
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-    await expect(verifyOTP("+212600000000", "123456")).rejects.toThrow(
-      "REDIRECT:/doctor/dashboard",
-    );
+    const result = await verifyOTP("+212600000000", "123456");
+    expect(result.error).toBeNull();
+    expect(result.redirectTo).toBe("/doctor/dashboard");
     process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
   });
 });
