@@ -1,43 +1,29 @@
+/* eslint-disable i18next/no-literal-string */
 "use client";
 
-import {
-  Bot,
-  MessageSquare,
-  Stethoscope,
-  Receipt,
-  BarChart3,
-  Heart,
-  Search,
-  Activity,
-  CheckCircle,
-  Zap,
-} from "lucide-react";
-import { useState } from "react";
+import { Bot, MessageSquare, Stethoscope, Receipt, BarChart3, Heart, Search } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 
-type AgentStatus = "active" | "paused" | "coming_soon";
+type AgentStatus = "active" | "coming_soon";
 type AgentCategory = "Communication" | "Clinical" | "Finance" | "Analytics";
 type CategoryFilter = "All" | AgentCategory;
 
-interface Agent {
+interface AgentDef {
   id: string;
   name: string;
   description: string;
   icon: typeof Bot;
   status: AgentStatus;
   category: AgentCategory;
-  clinicsUsing: number;
-  messagesToday: number;
-  enabled: boolean;
 }
 
-const initialAgents: Agent[] = [
+const platformAgents: AgentDef[] = [
   {
     id: "appointment-booking",
     name: "Appointment Booking Bot",
@@ -45,9 +31,6 @@ const initialAgents: Agent[] = [
     icon: Bot,
     status: "active",
     category: "Communication",
-    clinicsUsing: 27,
-    messagesToday: 48,
-    enabled: true,
   },
   {
     id: "whatsapp-responder",
@@ -56,9 +39,6 @@ const initialAgents: Agent[] = [
     icon: MessageSquare,
     status: "active",
     category: "Communication",
-    clinicsUsing: 34,
-    messagesToday: 62,
-    enabled: true,
   },
   {
     id: "triage-assistant",
@@ -67,9 +47,6 @@ const initialAgents: Agent[] = [
     icon: Stethoscope,
     status: "coming_soon",
     category: "Clinical",
-    clinicsUsing: 0,
-    messagesToday: 0,
-    enabled: false,
   },
   {
     id: "billing-assistant",
@@ -78,9 +55,6 @@ const initialAgents: Agent[] = [
     icon: Receipt,
     status: "active",
     category: "Finance",
-    clinicsUsing: 19,
-    messagesToday: 18,
-    enabled: true,
   },
   {
     id: "report-generator",
@@ -89,9 +63,6 @@ const initialAgents: Agent[] = [
     icon: BarChart3,
     status: "active",
     category: "Analytics",
-    clinicsUsing: 22,
-    messagesToday: 14,
-    enabled: true,
   },
   {
     id: "patient-followup",
@@ -100,9 +71,6 @@ const initialAgents: Agent[] = [
     icon: Heart,
     status: "coming_soon",
     category: "Communication",
-    clinicsUsing: 0,
-    messagesToday: 0,
-    enabled: false,
   },
 ];
 
@@ -110,12 +78,8 @@ const categories: CategoryFilter[] = ["All", "Communication", "Clinical", "Finan
 
 const statusConfig: Record<AgentStatus, { label: string; className: string }> = {
   active: {
-    label: "Active",
+    label: "Available",
     className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  paused: {
-    label: "Paused",
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   },
   coming_soon: {
     label: "Coming Soon",
@@ -131,66 +95,36 @@ const categoryColors: Record<AgentCategory, string> = {
 };
 
 export default function AIAgentsPage() {
-  const { addToast } = useToast();
-  const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<CategoryFilter>("All");
+  const [clinicCount, setClinicCount] = useState(0);
 
-  const filtered = agents.filter((agent) => {
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/usage")
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json.ok) {
+          setClinicCount(json.data.clinics?.length ?? 0);
+        }
+      })
+      .catch((err) => {
+        logger.warn("Failed to load agent stats", { context: "agents-page", error: err });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = platformAgents.filter((agent) => {
     const q = search.toLowerCase();
     const matchSearch =
       !q || agent.name.toLowerCase().includes(q) || agent.description.toLowerCase().includes(q);
     return matchSearch && (catFilter === "All" || agent.category === catFilter);
   });
 
-  const totalAgents = agents.length;
-  const activeAgents = agents.filter((a) => a.status === "active").length;
-  const messagesToday = agents.reduce((sum, a) => sum + a.messagesToday, 0);
-  const tasksCompleted = 89;
-
-  function handleToggle(agentId: string) {
-    const agent = agents.find((a) => a.id === agentId);
-    if (!agent) return;
-
-    if (agent.status === "coming_soon") {
-      addToast("This agent is coming soon and cannot be enabled yet", "info");
-      return;
-    }
-
-    setAgents((prev) => prev.map((a) => (a.id === agentId ? { ...a, enabled: !a.enabled } : a)));
-    addToast(`${agent.name} ${agent.enabled ? "disabled" : "enabled"}`, "success");
-  }
-
-  const kpis = [
-    {
-      icon: Bot,
-      label: "Total Agents",
-      value: totalAgents.toString(),
-      color: "text-blue-600",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-    },
-    {
-      icon: Activity,
-      label: "Active",
-      value: activeAgents.toString(),
-      color: "text-green-600",
-      bg: "bg-green-50 dark:bg-green-900/20",
-    },
-    {
-      icon: MessageSquare,
-      label: "Messages Today",
-      value: messagesToday.toString(),
-      color: "text-purple-600",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-    },
-    {
-      icon: CheckCircle,
-      label: "Tasks Completed",
-      value: tasksCompleted.toString(),
-      color: "text-orange-600",
-      bg: "bg-orange-50 dark:bg-orange-900/20",
-    },
-  ];
+  const totalAgents = platformAgents.length;
+  const activeAgents = platformAgents.filter((a) => a.status === "active").length;
 
   return (
     <div>
@@ -199,31 +133,33 @@ export default function AIAgentsPage() {
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
           <h1 className="text-2xl font-bold">AI Agents</h1>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
           <p className="text-sm text-muted-foreground mt-1">
-            Manage and monitor your platform AI agents
+            Platform AI capabilities available to {clinicCount > 0 ? clinicCount : "all"} clinics
           </p>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${kpi.bg}`}>
-                  <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
-                </div>
-                <Zap className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="text-2xl font-bold">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Summary */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold">{totalAgents}</p>
+            <p className="text-xs text-muted-foreground">Total Agents</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-green-700">{activeAgents}</p>
+            <p className="text-xs text-muted-foreground">Available</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-muted-foreground">{totalAgents - activeAgents}</p>
+            <p className="text-xs text-muted-foreground">Coming Soon</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -252,77 +188,42 @@ export default function AIAgentsPage() {
         </div>
       </div>
 
-      {/* Agent Cards Grid */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      {/* Agent Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((agent) => {
-          const statusCfg = statusConfig[agent.status];
+          const Icon = agent.icon;
           return (
-            <Card
-              key={agent.id}
-              className={agent.status === "coming_soon" ? "opacity-75" : undefined}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
+            <Card key={agent.id} className="relative overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <agent.icon className="h-5 w-5 text-primary" />
+                      <Icon className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-sm leading-tight">{agent.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{agent.description}</p>
+                    <div>
+                      <CardTitle className="text-sm font-semibold">{agent.name}</CardTitle>
+                      <Badge className={`text-[10px] mt-1 ${categoryColors[agent.category]}`}>
+                        {agent.category}
+                      </Badge>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="outline" className={statusCfg.className}>
-                    {statusCfg.label}
-                  </Badge>
-                  <Badge variant="outline" className={categoryColors[agent.category]}>
-                    {agent.category}
+                  <Badge className={`text-[10px] ${statusConfig[agent.status].className}`}>
+                    {statusConfig[agent.status].label}
                   </Badge>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="rounded-lg bg-muted/50 p-2.5">
-                    <p className="text-lg font-bold">{agent.clinicsUsing}</p>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    <p className="text-[10px] text-muted-foreground">clinics</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-2.5">
-                    <p className="text-lg font-bold">{agent.messagesToday}</p>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
-                    <p className="text-[10px] text-muted-foreground">msgs today</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between border-t pt-3">
-                  <span className="text-xs text-muted-foreground">
-                    {agent.enabled ? "Enabled" : "Disabled"}
-                  </span>
-                  <Switch
-                    checked={agent.enabled}
-                    onCheckedChange={() => handleToggle(agent.id)}
-                    disabled={agent.status === "coming_soon"}
-                  />
-                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{agent.description}</p>
               </CardContent>
             </Card>
           );
         })}
+        {filtered.length === 0 && (
+          <div className="col-span-full py-8 text-center text-muted-foreground">
+            No agents match your search.
+          </div>
+        )}
       </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <h3 className="text-lg font-medium">No agents found</h3>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <p className="text-sm text-muted-foreground mt-1">
-            Try adjusting your search or filter criteria
-          </p>
-        </div>
-      )}
     </div>
   );
 }

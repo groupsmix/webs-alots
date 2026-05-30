@@ -9,15 +9,12 @@ import {
   Search,
   MoreHorizontal,
   Eye,
-  Ban,
-  CheckCircle2,
   Trash2,
-  Clock,
-  Activity,
   Send,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -47,87 +44,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 
 // ---------- Types ----------
 
-type AdminRole = "super_admin" | "support_staff" | "viewer";
-type AdminStatus = "active" | "disabled";
+type AdminRole = "super_admin" | "clinic_admin";
 
 interface AdminMember {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   role: AdminRole;
-  status: AdminStatus;
+  clinic_id: string | null;
   last_login: string | null;
-  created_at: string;
-  recent_actions: AdminAction[];
+  created_at: string | null;
 }
-
-interface AdminAction {
-  id: string;
-  action: string;
-  target: string;
-  timestamp: string;
-}
-
-interface PendingInvitation {
-  id: string;
-  email: string;
-  name: string;
-  role: AdminRole;
-  invited_at: string;
-  invited_by: string;
-}
-
-// ---------- Mock Data ----------
-
-const MOCK_ADMINS: AdminMember[] = [
-  {
-    id: "admin-1",
-    name: "Youssef El Amrani",
-    email: "youssef@oltigo.com",
-    role: "super_admin",
-    status: "active",
-    last_login: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    created_at: "2024-01-15T10:00:00Z",
-    recent_actions: [
-      {
-        id: "a1",
-        action: "Created clinic",
-        target: "Clinique Atlas",
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "a2",
-        action: "Updated pricing tier",
-        target: "Pro → Enterprise",
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "a3",
-        action: "Disabled user",
-        target: "receptionist@demo.com",
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-];
-
-const MOCK_INVITATIONS: PendingInvitation[] = [];
 
 // ---------- Helpers ----------
 
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: "Super Admin",
-  support_staff: "Support Staff",
-  viewer: "Viewer",
+  clinic_admin: "Clinic Admin",
 };
 
 const ROLE_COLORS: Record<AdminRole, "default" | "secondary" | "destructive"> = {
   super_admin: "default",
-  support_staff: "secondary",
-  viewer: "secondary",
+  clinic_admin: "secondary",
 };
 
 function formatRelativeTime(dateStr: string | null): string {
@@ -147,8 +89,8 @@ function formatRelativeTime(dateStr: string | null): string {
 export default function TeamPage() {
   const { addToast } = useToast();
 
-  const [admins, setAdmins] = useState<AdminMember[]>(MOCK_ADMINS);
-  const [invitations, setInvitations] = useState<PendingInvitation[]>(MOCK_INVITATIONS);
+  const [admins, setAdmins] = useState<AdminMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -156,23 +98,44 @@ export default function TeamPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<AdminRole>("support_staff");
+  const [inviteRole, setInviteRole] = useState<AdminRole>("clinic_admin");
+  const [inviteSending, setInviteSending] = useState(false);
 
   // Edit role dialog
   const [editRoleOpen, setEditRoleOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AdminMember | null>(null);
-  const [editNewRole, setEditNewRole] = useState<AdminRole>("support_staff");
+  const [editNewRole, setEditNewRole] = useState<AdminRole>("clinic_admin");
 
   // Remove confirmation dialog
   const [removeOpen, setRemoveOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<AdminMember | null>(null);
+
+  const loadMembers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/team");
+      const json = await res.json();
+      if (json.ok) {
+        setAdmins(json.data.members);
+      } else {
+        logger.warn("Failed to load team members", { context: "team-page", error: json.error });
+      }
+    } catch (err) {
+      logger.warn("Failed to load team members", { context: "team-page", error: err });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
 
   const filtered = admins.filter((a) => {
     const q = search.toLowerCase();
     if (!q) return true;
     return (
       a.name.toLowerCase().includes(q) ||
-      a.email.toLowerCase().includes(q) ||
+      (a.email ?? "").toLowerCase().includes(q) ||
       a.role.toLowerCase().includes(q)
     );
   });
@@ -188,7 +151,7 @@ export default function TeamPage() {
 
   // ---------- Invite ----------
 
-  function handleInvite() {
+  async function handleInvite() {
     if (!inviteEmail.trim() || !inviteName.trim()) {
       addToast("Name and email are required", "error");
       return;
@@ -198,38 +161,34 @@ export default function TeamPage() {
       return;
     }
 
-    const newInvite: PendingInvitation = {
-      id: `inv-${Date.now()}`,
-      email: inviteEmail,
-      name: inviteName,
-      role: inviteRole,
-      invited_at: new Date().toISOString(),
-      invited_by: "Current Admin",
-    };
-    setInvitations((prev) => [newInvite, ...prev]);
-    addToast(`Invitation sent to ${inviteEmail}`, "success");
-    setInviteOpen(false);
-    setInviteName("");
-    setInviteEmail("");
-    setInviteRole("support_staff");
-  }
-
-  // ---------- Toggle Status ----------
-
-  function toggleStatus(admin: AdminMember) {
-    setAdmins((prev) =>
-      prev.map((a) =>
-        a.id === admin.id
-          ? {
-              ...a,
-              status:
-                a.status === "active" ? ("disabled" as AdminStatus) : ("active" as AdminStatus),
-            }
-          : a,
-      ),
-    );
-    const newStatus = admin.status === "active" ? "disabled" : "enabled";
-    addToast(`${admin.name} has been ${newStatus}`, "success");
+    setInviteSending(true);
+    try {
+      const res = await fetch("/api/admin/team", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "invite",
+          name: inviteName,
+          email: inviteEmail,
+          role: inviteRole,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        addToast(`Invitation sent to ${inviteEmail}`, "success");
+        setInviteOpen(false);
+        setInviteName("");
+        setInviteEmail("");
+        setInviteRole("clinic_admin");
+        loadMembers();
+      } else {
+        addToast(json.error ?? "Failed to send invitation", "error");
+      }
+    } catch {
+      addToast("Failed to send invitation", "error");
+    } finally {
+      setInviteSending(false);
+    }
   }
 
   // ---------- Edit Role ----------
@@ -240,14 +199,30 @@ export default function TeamPage() {
     setEditRoleOpen(true);
   }
 
-  function handleEditRole() {
+  async function handleEditRole() {
     if (!editTarget) return;
-    setAdmins((prev) =>
-      prev.map((a) => (a.id === editTarget.id ? { ...a, role: editNewRole } : a)),
-    );
-    addToast(`${editTarget.name}'s role updated to ${ROLE_LABELS[editNewRole]}`, "success");
-    setEditRoleOpen(false);
-    setEditTarget(null);
+    try {
+      const res = await fetch("/api/admin/team", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: editTarget.id,
+          action: "update_role",
+          role: editNewRole,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        addToast(`${editTarget.name}'s role updated to ${ROLE_LABELS[editNewRole]}`, "success");
+        setEditRoleOpen(false);
+        setEditTarget(null);
+        loadMembers();
+      } else {
+        addToast(json.error ?? "Failed to update role", "error");
+      }
+    } catch {
+      addToast("Failed to update role", "error");
+    }
   }
 
   // ---------- Remove ----------
@@ -257,19 +232,29 @@ export default function TeamPage() {
     setRemoveOpen(true);
   }
 
-  function handleRemove() {
+  async function handleRemove() {
     if (!removeTarget) return;
-    setAdmins((prev) => prev.filter((a) => a.id !== removeTarget.id));
-    addToast(`${removeTarget.name} has been removed`, "success");
-    setRemoveOpen(false);
-    setRemoveTarget(null);
-  }
-
-  // ---------- Remove Invitation ----------
-
-  function removeInvitation(invId: string) {
-    setInvitations((prev) => prev.filter((i) => i.id !== invId));
-    addToast("Invitation revoked", "info");
+    try {
+      const res = await fetch("/api/admin/team", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: removeTarget.id,
+          action: "remove",
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        addToast(`${removeTarget.name} has been removed`, "success");
+        setRemoveOpen(false);
+        setRemoveTarget(null);
+        loadMembers();
+      } else {
+        addToast(json.error ?? "Failed to remove member", "error");
+      }
+    } catch {
+      addToast("Failed to remove member", "error");
+    }
   }
 
   return (
@@ -314,14 +299,21 @@ export default function TeamPage() {
                   <th className="text-left py-3 px-4 font-medium">Email</th>
                   <th className="text-left py-3 px-4 font-medium">Role</th>
                   <th className="text-left py-3 px-4 font-medium">Last Login</th>
-                  <th className="text-left py-3 px-4 font-medium">Status</th>
                   <th className="text-left py-3 px-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && (
+                {loading && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                      Loading team members...
+                    </td>
+                  </tr>
+                )}
+                {!loading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
                       {search ? "No team members match your search." : "No team members found."}
                     </td>
                   </tr>
@@ -336,7 +328,7 @@ export default function TeamPage() {
                             type="button"
                             onClick={() => toggleExpand(admin.id)}
                             className="p-0.5 rounded hover:bg-muted"
-                            aria-label={isExpanded ? "Collapse actions" : "Expand actions"}
+                            aria-label={isExpanded ? "Collapse details" : "Expand details"}
                           >
                             {isExpanded ? (
                               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -358,28 +350,18 @@ export default function TeamPage() {
                             <span className="font-medium">{admin.name}</span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-muted-foreground">{admin.email}</td>
+                        <td className="py-3 px-4 text-muted-foreground">{admin.email ?? "—"}</td>
                         <td className="py-3 px-4">
-                          <Badge variant={ROLE_COLORS[admin.role]} className="text-xs">
+                          <Badge
+                            variant={ROLE_COLORS[admin.role] ?? "secondary"}
+                            className="text-xs"
+                          >
                             <Shield className="h-3 w-3 mr-1" />
-                            {ROLE_LABELS[admin.role]}
+                            {ROLE_LABELS[admin.role] ?? admin.role}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-muted-foreground">
                           {formatRelativeTime(admin.last_login)}
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge
-                            variant={admin.status === "active" ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {admin.status === "active" ? (
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                            ) : (
-                              <Ban className="h-3 w-3 mr-1" />
-                            )}
-                            {admin.status}
-                          </Badge>
                         </td>
                         <td className="py-3 px-4">
                           <DropdownMenu>
@@ -393,19 +375,6 @@ export default function TeamPage() {
                                 <Shield className="h-4 w-4 mr-2" />
                                 Edit Role
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toggleStatus(admin)}>
-                                {admin.status === "active" ? (
-                                  <>
-                                    <Ban className="h-4 w-4 mr-2" />
-                                    Disable
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                                    Enable
-                                  </>
-                                )}
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
@@ -418,43 +387,31 @@ export default function TeamPage() {
                           </DropdownMenu>
                         </td>
                       </tr>
-                      {/* Expanded: Recent Actions */}
+                      {/* Expanded: Member Details */}
                       {isExpanded && (
                         <tr className="bg-muted/20">
-                          <td colSpan={7} className="px-4 py-3">
-                            <div className="ml-12">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                                  <Activity className="h-3.5 w-3.5" />
-                                  Recent Actions
-                                </h4>
-                                <Link href={`/super-admin/analytics?admin=${admin.id}`}>
-                                  <Button variant="ghost" size="sm" className="text-xs">
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    View Full Audit Log
-                                  </Button>
-                                </Link>
-                              </div>
-                              {admin.recent_actions.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">No recent actions.</p>
-                              ) : (
-                                <div className="space-y-1.5">
-                                  {admin.recent_actions.map((action) => (
-                                    <div
-                                      key={action.id}
-                                      className="flex items-center gap-3 text-xs"
-                                    >
-                                      <span className="text-muted-foreground w-20 shrink-0">
-                                        {formatRelativeTime(action.timestamp)}
-                                      </span>
-                                      <span>{action.action}</span>
-                                      <span className="text-muted-foreground">
-                                        → {action.target}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
+                          <td colSpan={6} className="px-4 py-3">
+                            <div className="ml-12 space-y-1 text-xs text-muted-foreground">
+                              <p>
+                                <strong>ID:</strong> {admin.id}
+                              </p>
+                              <p>
+                                <strong>Joined:</strong>{" "}
+                                {admin.created_at
+                                  ? new Date(admin.created_at).toLocaleDateString()
+                                  : "Unknown"}
+                              </p>
+                              {admin.clinic_id && (
+                                <p>
+                                  <strong>Clinic:</strong> {admin.clinic_id}
+                                </p>
                               )}
+                              <Link href="/super-admin/analytics">
+                                <Button variant="ghost" size="sm" className="text-xs mt-1">
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View Full Audit Log
+                                </Button>
+                              </Link>
                             </div>
                           </td>
                         </tr>
@@ -468,62 +425,6 @@ export default function TeamPage() {
         </CardContent>
       </Card>
 
-      {/* Pending Invitations */}
-      {invitations.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Pending Invitations
-          </h2>
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="text-left py-3 px-4 font-medium">Name</th>
-                      <th className="text-left py-3 px-4 font-medium">Email</th>
-                      <th className="text-left py-3 px-4 font-medium">Role</th>
-                      <th className="text-left py-3 px-4 font-medium">Invited</th>
-                      <th className="text-left py-3 px-4 font-medium">Invited By</th>
-                      <th className="text-left py-3 px-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invitations.map((inv) => (
-                      <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="py-3 px-4 font-medium">{inv.name}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{inv.email}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant={ROLE_COLORS[inv.role]} className="text-xs">
-                            {ROLE_LABELS[inv.role]}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground">
-                          {formatRelativeTime(inv.invited_at)}
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground">{inv.invited_by}</td>
-                        <td className="py-3 px-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => removeInvitation(inv.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                            Revoke
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Invite Dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
@@ -533,7 +434,7 @@ export default function TeamPage() {
               Invite Team Member
             </DialogTitle>
             <DialogDescription>
-              Send an invitation to join the super admin team. They will receive an email with
+              Send an invitation to join the admin team. They will receive an email with
               instructions to set up their account.
             </DialogDescription>
           </DialogHeader>
@@ -565,16 +466,13 @@ export default function TeamPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="super_admin">Super Admin</SelectItem>
-                  <SelectItem value="support_staff">Support Staff</SelectItem>
-                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="clinic_admin">Clinic Admin</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {inviteRole === "super_admin" &&
                   "Full access to all platform features and settings."}
-                {inviteRole === "support_staff" &&
-                  "Can manage clinics and users, but cannot change platform settings."}
-                {inviteRole === "viewer" && "Read-only access to dashboards and reports."}
+                {inviteRole === "clinic_admin" && "Can manage their assigned clinic."}
               </p>
             </div>
           </div>
@@ -582,8 +480,12 @@ export default function TeamPage() {
             <Button variant="outline" onClick={() => setInviteOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleInvite}>
-              <Send className="h-4 w-4 mr-2" />
+            <Button onClick={handleInvite} disabled={inviteSending}>
+              {inviteSending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
               Send Invitation
             </Button>
           </DialogFooter>
@@ -608,8 +510,7 @@ export default function TeamPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="support_staff">Support Staff</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="clinic_admin">Clinic Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -647,7 +548,6 @@ export default function TeamPage() {
   );
 }
 
-// Fragment helper for expandable rows
 function Fragment({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
