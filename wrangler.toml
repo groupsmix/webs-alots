@@ -92,7 +92,10 @@ queue = "notification-queue"
 [[queues.consumers]]
 queue = "notification-queue"
 max_batch_size = 25
-max_batch_timeout = 5          # seconds — flush batch after 5s even if not full
+# P-05: Increased from 5s to 30s (Queues max). WhatsApp Meta API calls can take
+# >5s under load; with a 5s timeout all batches would fail, exhaust max_retries=3,
+# and land in the DLQ silently. 30s gives each batch enough headroom.
+max_batch_timeout = 30         # seconds — flush batch after 30s even if not full
 max_retries = 3
 dead_letter_queue = "notification-queue-dlq"
 
@@ -150,7 +153,7 @@ queue = "notification-queue"
 [[env.production.queues.consumers]]
 queue = "notification-queue"
 max_batch_size = 25
-max_batch_timeout = 5
+max_batch_timeout = 30         # P-05: was 5 — see top-level comment
 max_retries = 3
 dead_letter_queue = "notification-queue-dlq"
 
@@ -188,9 +191,12 @@ crons = [
 [env.production.observability]
 enabled = true
 
-# W8-A31-01: Limits (was missing — default CPU limit instead of 50ms)
+# P-02: Removed cpu_ms = 50 per-env override. The top-level [limits] block is
+# intentionally commented out to use Workers Unbound (no CPU ceiling). Keeping
+# cpu_ms = 50 here would re-impose the cap for the production env, killing the
+# billing cron (0 2 * * *) which routinely exceeds 50ms per tenant at scale.
+# Pre-requisite: account must be on Workers Paid + Unbound pricing.
 [env.production.limits]
-cpu_ms = 50
 
 # ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
@@ -219,7 +225,7 @@ queue = "notification-queue-staging"
 [[env.staging.queues.consumers]]
 queue = "notification-queue-staging"
 max_batch_size = 25
-max_batch_timeout = 5
+max_batch_timeout = 30         # P-05: was 5 — see top-level comment
 max_retries = 3
 dead_letter_queue = "notification-queue-staging-dlq"
 
@@ -254,10 +260,19 @@ bucket_name = "webs-alots-uploads-staging"
 # Until the IDs are replaced, treat staging and production as a single
 # rate-limit surface. R2 buckets are already correctly separated
 # (webs-alots-uploads-staging vs webs-alots-uploads).
+# A-09 LAUNCH BLOCKER: The IDs below are currently identical to the production
+# KV namespace. This MUST be fixed before any staging load test or launch:
+#
+#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING
+#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview
+#
+# Replace BOTH ids below with the staging-specific values returned above.
+# Until fixed, a staging k6 load test exhausts prod rate-limit token buckets,
+# giving real users 429 errors during launch-day traffic.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "7ac37dff0a794542b0c766f38e73f105"          # TODO(audit-#5): replace with staging KV ID
-preview_id = "854c78ea8c9442ed8706d3ec31fe292e"  # TODO(audit-#5): replace with staging KV preview ID
+id = "7ac37dff0a794542b0c766f38e73f105"          # FIXME(A-09): replace with staging-only KV ID
+preview_id = "854c78ea8c9442ed8706d3ec31fe292e"  # FIXME(A-09): replace with staging-only preview ID
 
 # W8-A31-01: Routes for staging (uses staging subdomain)
 [env.staging.routes]
@@ -283,9 +298,8 @@ crons = [
 [env.staging.observability]
 enabled = true
 
-# W8-A31-01: Limits for staging
+# P-02: Removed cpu_ms = 50 (matches production — see [env.production.limits] comment).
 [env.staging.limits]
-cpu_ms = 50
 
 # ── Limits ────────────────────────────────────────────────────────────
 # H-04: Workers Unbound removes the 50ms CPU ceiling. Routes that need
