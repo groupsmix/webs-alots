@@ -31,6 +31,37 @@ import { safeName, safeText } from "@/lib/validations/primitives";
 // For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
 // (SECURITY DEFINER function that bypasses users-table RLS).
 
+/**
+ * FP-08: In-memory store of used booking token signatures to prevent
+ * replay within a token's TTL.  Keys are the HMAC signature portion of
+ * the token; values are the token's expiry timestamp (ms) so stale
+ * entries can be evicted lazily.
+ *
+ * This is adequate for a single-process deployment (Cloudflare Workers
+ * isolate scope).  For multi-instance deployments, replace with a
+ * shared store (e.g. Redis or a DB table with TTL).
+ */
+const usedTokenSignatures = new Map<string, number>();
+
+/** Evict expired entries to bound memory growth. */
+function evictExpiredTokens(): void {
+  const now = Date.now();
+  for (const [sig, expiry] of usedTokenSignatures) {
+    if (now > expiry) usedTokenSignatures.delete(sig);
+  }
+}
+
+/**
+ * Mark a token signature as used.  Returns `false` if already used
+ * (replay detected), `true` if this is the first use.
+ */
+function consumeTokenSignature(signature: string, expiry: number): boolean {
+  evictExpiredTokens();
+  if (usedTokenSignatures.has(signature)) return false;
+  usedTokenSignatures.set(signature, expiry);
+  return true;
+}
+
 const bookingRequestSchema = z.object({
   specialtyId: z.string().min(1),
   doctorId: z.string().min(1),
@@ -72,6 +103,10 @@ interface BookingTokenResult {
   phone?: string;
   /** The clinic id embedded in the token (only set when valid=true). */
   clinicId?: string;
+  /** FP-08: The HMAC signature portion of the token (for replay detection). */
+  signature?: string;
+  /** FP-08: The token's expiry timestamp in ms (for replay store TTL). */
+  expiry?: number;
 }
 
 /**
@@ -149,7 +184,7 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
 
   // Try the current secret first.
   if (await verifyHmac(secret, payload, signature)) {
-    return { valid: true, phone, clinicId };
+    return { valid: true, phone, clinicId, signature, expiry };
   }
 
   // R-15: During key rotation, try the old secret. Set
@@ -160,7 +195,7 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
     logger.info("Booking token verified with OLD secret — rotation in progress", {
       context: "booking",
     });
-    return { valid: true, phone, clinicId };
+    return { valid: true, phone, clinicId, signature, expiry };
   }
 
   return { valid: false };
@@ -280,6 +315,11 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
   const tokenResult = await verifyBookingToken(bookingToken);
   if (!tokenResult.valid) {
     return apiForbidden("Invalid or expired booking token");
+  }
+
+  // FP-08: Reject replayed tokens — each token may only be used once.
+  if (!consumeTokenSignature(tokenResult.signature!, tokenResult.expiry!)) {
+    return apiForbidden("Booking token has already been used");
   }
 
   // AUDIT-04: Bind the verified phone from the token to the submitted

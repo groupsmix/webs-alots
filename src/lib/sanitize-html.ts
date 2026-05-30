@@ -100,6 +100,11 @@ const ALLOWED_ATTRIBUTES: sanitize.IOptions["allowedAttributes"] = {
 // `javascript:`, `vbscript:`, `data:text/html`, etc. are rejected.
 const ALLOWED_SCHEMES = ["http", "https", "mailto", "tel"];
 
+// FP-14: Only allow safe raster image data: URIs — SVG data URIs are
+// blocked because they can contain embedded JavaScript (<script>,
+// onload handlers, etc.).
+const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpeg|gif|webp)[;,]/i;
+
 /**
  * Sanitize a string of HTML, returning a string that is safe to pass to
  * `dangerouslySetInnerHTML`.
@@ -126,6 +131,21 @@ export function sanitizeHtml(dirty: string): string {
     nonTextTags: ["script", "style", "textarea", "option", "noscript"],
     // Restrict <img src="data:..."> to image MIME types only.
     allowedSchemesAppliedToAttributes: ["href", "src"],
+    // FP-14: Strip data: URIs that are not safe raster image types
+    // (blocks data:image/svg+xml which can execute JavaScript).
+    transformTags: {
+      img: (_tagName: string, attribs: sanitize.Attributes): sanitize.Tag => {
+        if (
+          attribs.src &&
+          attribs.src.startsWith("data:") &&
+          !SAFE_DATA_IMAGE_RE.test(attribs.src)
+        ) {
+          const { src: _src, ...safe } = attribs;
+          return { tagName: "img", attribs: safe };
+        }
+        return { tagName: "img", attribs };
+      },
+    },
     parser: { lowerCaseTags: true, lowerCaseAttributeNames: true },
   });
 }
