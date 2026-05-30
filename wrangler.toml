@@ -72,6 +72,30 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # migration are removed until the DO is properly wired through OpenNext
 # (e.g. a custom worker entry that re-exports RateLimiterDO).
 
+# ── Cloudflare Queues ─────────────────────────────────────────────────
+# PERF: Replace the 15-minute cron-poll notification pattern with a
+# push-based queue. Notifications are enqueued at the point of the
+# triggering event and delivered within seconds instead of up to 15 min.
+#
+# Provision BEFORE deploying:
+#   wrangler queues create notification-queue
+#   wrangler queues create notification-queue-dlq      # dead-letter queue
+#
+# The consumer is the Worker itself (defined in [[queues.consumers]] below).
+# The producer binding (NOTIFICATION_QUEUE) is used by enqueueNotification().
+#
+# Ref: https://developers.cloudflare.com/queues/
+[[queues.producers]]
+binding = "NOTIFICATION_QUEUE"
+queue = "notification-queue"
+
+[[queues.consumers]]
+queue = "notification-queue"
+max_batch_size = 25
+max_batch_timeout = 5          # seconds — flush batch after 5s even if not full
+max_retries = 3
+dead_letter_queue = "notification-queue-dlq"
+
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
 # INF-003: Production bucket is declared at the top level. Staging overrides
@@ -108,6 +132,17 @@ NODE_ENV = "production"
 # HOTFIX (prod 429 outage): see [vars] note — in-memory until bindings are
 # resolved via getCloudflareContext().env instead of globalThis.
 RATE_LIMIT_BACKEND = "memory"
+
+[[env.production.queues.producers]]
+binding = "NOTIFICATION_QUEUE"
+queue = "notification-queue"
+
+[[env.production.queues.consumers]]
+queue = "notification-queue"
+max_batch_size = 25
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "notification-queue-dlq"
 
 [[env.production.r2_buckets]]
 binding = "UPLOADS_BUCKET"
@@ -160,6 +195,17 @@ RATE_LIMIT_BACKEND = "memory"
 
 # INF-003: Staging uses a separate R2 bucket to prevent cross-environment
 # PHI contamination. Create with: wrangler r2 bucket create webs-alots-uploads-staging
+[[env.staging.queues.producers]]
+binding = "NOTIFICATION_QUEUE"
+queue = "notification-queue-staging"
+
+[[env.staging.queues.consumers]]
+queue = "notification-queue-staging"
+max_batch_size = 25
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "notification-queue-staging-dlq"
+
 [[env.staging.r2_buckets]]
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
@@ -237,3 +283,31 @@ crons = [
 # The build command is handled by CI (npm run build:cf), not by wrangler.
 # [build]
 # command = "npm run build:cf"
+
+# ── Supabase Connection Pooling ───────────────────────────────────────
+# Cloudflare Workers have no persistent TCP connections (each invocation
+# is a fresh isolate). At 1 000+ concurrent tenants, direct connections
+# to Supabase's port 5432 will exhaust the DB connection limit.
+#
+# Fix: use Supabase's built-in PgBouncer (transaction pooler) on port 6543.
+#
+# Set these two secrets in CI / Cloudflare dashboard:
+#
+#   NEXT_PUBLIC_SUPABASE_URL — already set (project URL)
+#   SUPABASE_SERVICE_ROLE_KEY — already set
+#
+# Add these additional secrets for pooled connections:
+#
+#   SUPABASE_POOLER_URL — the transaction-pooler URL from Supabase dashboard
+#     Format: postgresql://postgres.[project-ref]@aws-0-eu-west-3.pooler.supabase.com:6543/postgres
+#     Used by: server-side Supabase client for all DB operations in Workers
+#
+#   DIRECT_URL — direct Postgres URL (port 5432), used ONLY for migrations
+#     Format: postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+#     Used by: `supabase db push` / Prisma migrations (never in Worker code)
+#
+# Reference: https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler
+#
+# TODO: Update src/lib/supabase-server.ts to read from SUPABASE_POOLER_URL
+# when available, falling back to NEXT_PUBLIC_SUPABASE_URL for backward
+# compatibility. This is a one-line change per client factory function.
