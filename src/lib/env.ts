@@ -935,3 +935,30 @@ export function getProfileHeaderHmacKey(): string | undefined {
 export function getPhiEncryptionKeyOld(): string | undefined {
   return process.env.PHI_ENCRYPTION_KEY_OLD;
 }
+
+/**
+ * Worker environment marker — "production" / "staging" / undefined.
+ *
+ * Audit-4 F-13: Both `[env.production.vars]` and `[env.staging.vars]` in
+ * wrangler.toml set NODE_ENV="production", so NODE_ENV cannot distinguish
+ * the two. WORKER_ENV is the per-env discriminator used by
+ * `assertCronAllowedInThisEnv()` to gate destructive crons in staging.
+ *
+ * Returns undefined locally (no marker set) and in tests, which the guard
+ * treats as "not staging" — i.e. it never blocks execution.
+ */
+export function getWorkerEnv(): string | undefined {
+  return process.env.WORKER_ENV;
+}
+
+/**
+ * Explicit opt-in flag that allows destructive crons (GDPR purge, billing,
+ * Stripe reconciliation, dedup TTL) to run in WORKER_ENV=staging.
+ *
+ * Audit-4 F-13. Returns true only when the secret is literally the string
+ * "true"; any other value (unset, "1", "TRUE", etc.) is treated as not
+ * opted in so the guard fails closed.
+ */
+export function getAllowStagingDestructiveCrons(): boolean {
+  return process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
+}
