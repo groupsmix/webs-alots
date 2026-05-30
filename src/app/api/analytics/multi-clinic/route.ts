@@ -22,7 +22,11 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     const { supabase } = auth;
 
     const [clinicsRes, paymentsRes, appointmentsRes, patientsRes] = await Promise.all([
-      supabase.from("clinics").select("id, name, type, tier, status, subdomain, created_at"),
+      // MA-04: exclude soft-deleted clinics
+      supabase
+        .from("clinics")
+        .select("id, name, type, tier, status, subdomain, created_at")
+        .is("deleted_at", null),
       supabase.from("payments").select("clinic_id, amount, status, created_at"),
       supabase.from("appointments").select("clinic_id, status, created_at"),
       supabase.from("users").select("clinic_id, created_at").eq("role", "patient"),

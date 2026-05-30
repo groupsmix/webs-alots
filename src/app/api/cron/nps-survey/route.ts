@@ -25,10 +25,12 @@ async function handler(request: NextRequest) {
     const supabase = createAdminClient("cron");
     const untypedSupabase = supabase as unknown as SupabaseUntyped;
 
+    // MA-04: exclude soft-deleted clinics
     const { data: clinics, error: clinicsError } = await supabase
       .from("clinics")
       .select("id, name")
-      .eq("status", "active");
+      .eq("status", "active")
+      .is("deleted_at", null);
 
     if (clinicsError || !clinics?.length) {
       return apiSuccess({ message: "No active clinics", sent: 0 });

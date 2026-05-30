@@ -70,9 +70,11 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
     }
 
     // Calculate current MRR
+    // MA-04: exclude soft-deleted clinics
     const { data: clinics } = await auth.supabase
       .from("clinics")
-      .select("id, config, status, tier, created_at");
+      .select("id, config, status, tier, created_at")
+      .is("deleted_at", null);
 
     let currentMrr = 0;
     const planBreakdown: Record<string, number> = {};
@@ -126,9 +128,11 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
     const untypedAdmin = createUntypedAdminClient("super_admin");
 
     // Get current clinic data
+    // MA-04: exclude soft-deleted clinics
     const { data: clinics } = await typedAdmin
       .from("clinics")
-      .select("id, config, status, tier, created_at");
+      .select("id, config, status, tier, created_at")
+      .is("deleted_at", null);
 
     // Calculate current MRR
     let currentMrr = 0;

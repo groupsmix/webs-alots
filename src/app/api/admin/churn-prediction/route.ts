@@ -201,10 +201,12 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
 
     // Fetch clinic names for display
     const clinicIds = [...new Set(scores.map((s) => s.clinic_id))];
+    // MA-04: exclude soft-deleted clinics
     const { data: clinics } = await typedAdmin
       .from("clinics")
       .select("id, name, type, tier, status, subdomain")
-      .in("id", clinicIds.length > 0 ? clinicIds : ["none"]);
+      .in("id", clinicIds.length > 0 ? clinicIds : ["none"])
+      .is("deleted_at", null);
 
     const clinicMap = new Map((clinics ?? []).map((c) => [c.id, c]));
 
@@ -265,7 +267,7 @@ async function handlePost(_request: NextRequest, auth: AuthContext) {
 
     // Fetch all clinics and their metrics
     const [clinicsRes, appointmentsRes, paymentsRes, activityRes] = await Promise.all([
-      typedAdmin.from("clinics").select("id, name, status, created_at"),
+      typedAdmin.from("clinics").select("id, name, status, created_at").is("deleted_at", null),
       typedAdmin.from("appointments").select("clinic_id, status, created_at"),
       typedAdmin
         .from("payments")
