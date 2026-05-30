@@ -419,6 +419,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80">
                 <div className="flex items-center justify-between px-2 py-1.5">
+                  {/* eslint-disable-next-line i18next/no-literal-string -- internal super-admin UI */}
                   <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
                   {unreadCount > 0 && (
                     <button
@@ -427,14 +428,14 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
                       className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <CheckCheck className="h-3 w-3" />
-                      Mark all as read
+                      {"Mark all as read"}
                     </button>
                   )}
                 </div>
                 <DropdownMenuSeparator />
                 {notifications.length === 0 && (
                   <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                    No notifications
+                    {"No notifications"}
                   </div>
                 )}
                 {notifications.map((notif) => {
@@ -449,7 +450,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
                           <p className="text-sm font-medium truncate">{notif.title}</p>
                           {notif.unread && (
                             <Badge variant="default" className="text-[9px] px-1 py-0 shrink-0">
-                              New
+                              {"New"}
                             </Badge>
                           )}
                         </div>
@@ -465,7 +466,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
                     href="/super-admin/clinics"
                     className="text-xs text-primary hover:underline"
                   >
-                    View all notifications
+                    {"View all notifications"}
                   </Link>
                 </div>
               </DropdownMenuContent>

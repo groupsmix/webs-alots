@@ -221,7 +221,7 @@ export default function SuperAdminDashboardPage() {
             ) : (
               <RefreshCw className="h-4 w-4 mr-1" />
             )}
-            Refresh
+            {"Refresh"}
           </Button>
           <Link href="/super-admin/onboarding">
             <Button size="sm">
@@ -238,11 +238,11 @@ export default function SuperAdminDashboardPage() {
         </div>
       </div>
       <div className="flex items-center gap-2 mb-6 text-xs text-muted-foreground">
-        {lastUpdated && <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>}
+        {lastUpdated && <span>{`Last updated: ${lastUpdated.toLocaleTimeString()}`}</span>}
         {refreshing && (
           <span className="flex items-center gap-1">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Refreshing…
+            {"Refreshing\u2026"}
           </span>
         )}
       </div>
@@ -486,12 +486,12 @@ export default function SuperAdminDashboardPage() {
                           <div key={`fallback-${clinic.id}`} className="flex items-start gap-3">
                             <div className="mt-0.5 h-2 w-2 rounded-full bg-blue-600" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium">Clinic registered</p>
+                              <p className="text-sm font-medium">{"Clinic registered"}</p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {clinic.name} ({clinic.type})
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                Status: {clinic.status} &middot; Plan: {clinic.plan}
+                                {`Status: ${clinic.status}`} &middot; {`Plan: ${clinic.plan}`}
                               </p>
                             </div>
                             <Badge
@@ -506,7 +506,7 @@ export default function SuperAdminDashboardPage() {
                     )}
                     {recentLogs.length === 0 && clinicList.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        No recent activity
+                        {"No recent activity"}
                       </p>
                     )}
                     {recentLogs.map((log) => (
