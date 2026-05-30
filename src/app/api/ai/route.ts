@@ -130,8 +130,7 @@ async function logUsage(
   },
   request: AIRequest,
 ): Promise<void> {
-  // nosemgrep: semgrep.tenant-scoping
-  await supabase.from("ai_usage_logs").insert({
+  await supabase.from("ai_usage_logs").insert({ // nosemgrep: semgrep.tenant-scoping
     provider: response.provider,
     model: response.model,
     task_type: request.task,
@@ -143,8 +142,7 @@ async function logUsage(
   });
 
   // Update provider stats
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: current } = await supabase
+  const { data: current } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .select("requests_this_month, tokens_this_month")
     .eq("provider", response.provider)
@@ -154,8 +152,7 @@ async function logUsage(
     const newRequests = ((current.requests_this_month as number) || 0) + 1;
     const newTokens =
       ((current.tokens_this_month as number) || 0) + response.inputTokens + response.outputTokens;
-    // nosemgrep: semgrep.tenant-scoping
-    await supabase
+    await supabase // nosemgrep: semgrep.tenant-scoping
       .from("ai_provider_configs")
       .update({
         requests_this_month: newRequests,

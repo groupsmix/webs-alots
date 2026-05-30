@@ -21,8 +21,7 @@ import type { AuthContext } from "@/lib/with-auth";
 async function handleGet(_req: NextRequest, _auth: AuthContext) {
   const supabase = createUntypedAdminClient("ai-config-list");
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: providers, error: provErr } = await supabase
+  const { data: providers, error: provErr } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .select(
       "id, provider, display_name, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, last_error, last_used_at, created_at, updated_at",
@@ -41,8 +40,7 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
     return apiError("Failed to fetch AI configurations", 500);
   }
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: toggles, error: toggleErr } = await supabase
+  const { data: toggles, error: toggleErr } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_feature_toggles")
     .select("id, feature_key, display_name, description, is_enabled, min_tier")
     .order("feature_key");
@@ -60,8 +58,7 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { data: usageLogs } = await supabase
+  const { data: usageLogs } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_usage_logs")
     .select("provider, input_tokens, output_tokens, cost_cents, success")
     .gte("created_at", startOfMonth.toISOString());
@@ -132,8 +129,7 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     const isActive = body.is_active as boolean;
     // Can't activate without an API key (except workers_ai)
     if (isActive && provider !== "workers_ai") {
-      // nosemgrep: semgrep.tenant-scoping
-      const { data: existing } = await supabase
+      const { data: existing } = await supabase // nosemgrep: semgrep.tenant-scoping
         .from("ai_provider_configs")
         .select("api_key_encrypted")
         .eq("provider", provider)
@@ -164,8 +160,7 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     update.routing_tier = tier;
   }
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { error } = await supabase
+  const { error } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_provider_configs")
     .update(update)
     .eq("provider", provider);
@@ -208,8 +203,7 @@ async function handlePost(req: NextRequest, _auth: AuthContext) {
 
   const supabase = createUntypedAdminClient("ai-feature-toggle");
 
-  // nosemgrep: semgrep.tenant-scoping
-  const { error } = await supabase
+  const { error } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_feature_toggles")
     .update({ is_enabled: isEnabled, updated_at: new Date().toISOString() })
     .eq("feature_key", featureKey);
