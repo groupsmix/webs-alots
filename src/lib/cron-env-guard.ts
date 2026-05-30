@@ -27,6 +27,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { getAllowStagingDestructiveCrons, getWorkerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
@@ -49,10 +50,10 @@ export type DestructiveCronName = "billing" | "gdpr-purge" | "stripe-reconcile" 
  * This is intentionally an explicit, audited choice — never a default.
  */
 export function assertCronAllowedInThisEnv(name: DestructiveCronName): NextResponse | null {
-  const workerEnv = process.env.WORKER_ENV;
+  const workerEnv = getWorkerEnv();
   if (workerEnv !== "staging") return null;
 
-  const explicitOptIn = process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
+  const explicitOptIn = getAllowStagingDestructiveCrons();
   if (explicitOptIn) {
     logger.warn(
       `[cron-env-guard] Destructive cron "${name}" executed in staging with explicit opt-in.`,
