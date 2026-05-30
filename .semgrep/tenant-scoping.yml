@@ -9,29 +9,57 @@ rules:
   #   - Queries in cron jobs that intentionally iterate over all clinics
   #   - Admin client queries (createAdminClient) used for cross-tenant ops
   #   - Auth/registration flows before a clinic_id exists
-  #   - Chained queries where .eq("clinic_id", ...) appears after other .eq() calls
-  #   - Insert/upsert with clinic_id in the data object
   #
-  # These should use a `// nosemgrep: semgrep.tenant-scoping` comment.
+  # The previously documented false positive "chained queries where
+  # .eq('clinic_id', ...) appears after other .eq() calls" was fixed in
+  # this rule via pattern-not-regex below — clinic_id filters at any
+  # position in the chain are now recognised as tenant-scoping.
+  #
+  # Remaining false positives should use a `// nosemgrep: semgrep.tenant-scoping`
+  # comment with a justification.
   - id: tenant-scoping
     patterns:
       - pattern: |
           $CLIENT.from($TABLE).$METHOD(...)
+      # Primary catch-all: any chain expression that contains
+      # .eq("clinic_id", ...) or .eq('clinic_id', ...) anywhere in its
+      # matched text is considered tenant-scoped.
+      #
+      # The original rule only had AST-level pattern-not clauses requiring
+      # .eq("clinic_id") to be at a specific position. They were depth-
+      # limited (3 chain hops max) and required .eq("clinic_id") to be
+      # the *last* method in the chain. Real queries continue with
+      # .eq("doctor_id"), .gte(), .lte(), .in(), .order(), .limit(),
+      # .single() etc. after the tenant filter — so the AST exclusions
+      # missed them. See wellbeing-check, insurance-profile, inventory
+      # routes that GHAS flagged as false positives.
+      #
+      # pattern-not-regex runs against the matched chain expression text,
+      # which semgrep extends across method-chain ancestors, so it
+      # correctly handles arbitrary chain depths and arbitrary trailing
+      # methods after the clinic_id filter.
+      - pattern-not-regex: |
+          \.eq\(\s*["']clinic_id["']
+      # Belt-and-suspenders AST patterns for shallow chains where
+      # .eq("clinic_id") is the terminal call. These already worked under
+      # the original rule and are kept so the rule does not regress if
+      # semgrep ever changes regex-vs-AST range semantics.
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).eq('clinic_id', ...)
-      # Handle deeper chains: .select().eq().eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).$CHAIN1(...).eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).$CHAIN1(...).eq('clinic_id', ...)
-      # Handle 3-deep chains: .select().eq().eq().eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq('clinic_id', ...)
-      # Handle insert/upsert with clinic_id in data object
+      # Handle insert/upsert with clinic_id in data object. AST patterns
+      # are precise about WHERE the `clinic_id:` property literal appears
+      # — only inside the insert's data object, not anywhere in surrounding
+      # code that happened to mention the column name.
       - pattern-not: |
           $CLIENT.from($TABLE).insert({clinic_id: ..., ...})
       - pattern-not: |
