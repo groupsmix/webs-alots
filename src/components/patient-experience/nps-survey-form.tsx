@@ -89,7 +89,7 @@ export function NpsSurveyForm({ surveyId }: NpsSurveyFormProps) {
           maxLength={2000}
         />
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--signal-red)]">{error}</p>}
 
         <Button onClick={handleSubmit} disabled={score === null || submitting} className="w-full">
           {submitting ? "Submitting..." : "Submit"}

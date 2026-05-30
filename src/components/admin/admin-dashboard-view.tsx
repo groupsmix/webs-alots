@@ -45,25 +45,25 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
       icon: Users,
       label: t(locale, "admin.totalPatients"),
       value: totalPatients.toString(),
-      color: "text-blue-600",
+      color: "text-[var(--oltigo-green)]",
     },
     {
       icon: Calendar,
       label: t(locale, "admin.totalAppointments"),
       value: totalAppts.toString(),
-      color: "text-green-600",
+      color: "text-[var(--ink-70)]",
     },
     {
       icon: CreditCard,
       label: t(locale, "admin.monthlyRevenue"),
       value: `${formatCurrency(totalRevenue)}`,
-      color: "text-purple-600",
+      color: "text-[var(--signal-green)]",
     },
     {
       icon: Star,
       label: t(locale, "admin.averageRating"),
       value: avgRating.toFixed(1),
-      color: "text-yellow-600",
+      color: "text-[var(--signal-amber)]",
     },
   ];
 

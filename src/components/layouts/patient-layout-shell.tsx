@@ -87,7 +87,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
         </div>
         <nav className="space-y-1 flex-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
@@ -146,7 +146,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
             </div>
             <nav className="space-y-1">
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
                   <Link
                     key={item.href}

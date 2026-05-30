@@ -111,7 +111,7 @@ export function SessionTimeoutWarning({
       <div className="mx-4 w-full max-w-sm rounded-lg border bg-background p-6 shadow-xl">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">
-            <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            <Clock className="h-5 w-5 text-[var(--signal-amber)] dark:text-[#fbbf24]" />
           </div>
           <div>
             <h2 id="session-timeout-title" className="font-semibold">

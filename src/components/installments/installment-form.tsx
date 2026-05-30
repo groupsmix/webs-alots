@@ -75,7 +75,7 @@ export function InstallmentForm({
     return (
       <Card>
         <CardContent className="py-8 text-center">
-          <CreditCard className="h-8 w-8 mx-auto text-green-600 mb-3" />
+          <CreditCard className="h-8 w-8 mx-auto text-[var(--signal-green)] mb-3" />
           <p className="text-sm font-medium">Installment plan created!</p>
           <p className="text-xs text-muted-foreground mt-1">
             {data.numberOfInstallments} monthly payments of ~
@@ -175,7 +175,7 @@ export function InstallmentForm({
               <p className="text-[10px] text-muted-foreground">Total (MAD)</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-lg font-bold text-[var(--oltigo-green)]">
                 {formatNumber(data.downPayment, typeof locale !== "undefined" ? locale : "fr")}
               </p>
               <p className="text-[10px] text-muted-foreground">Down Payment</p>

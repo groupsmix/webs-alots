@@ -208,12 +208,12 @@ export function ClinicStats() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex items-center gap-3 text-sm p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-              <Activity className="h-4 w-4 text-yellow-600" />
+            <div className="flex items-center gap-3 text-sm p-2 rounded-lg bg-[var(--signal-amber)]/5 dark:bg-[var(--signal-amber)]/10">
+              <Activity className="h-4 w-4 text-[var(--signal-amber)]" />
               <span>3 patients waiting for more than 30 minutes</span>
             </div>
-            <div className="flex items-center gap-3 text-sm p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-              <Calendar className="h-4 w-4 text-blue-600" />
+            <div className="flex items-center gap-3 text-sm p-2 rounded-lg bg-[var(--oltigo-green)]/5 dark:bg-[var(--oltigo-green)]/10">
+              <Calendar className="h-4 w-4 text-[var(--oltigo-green)]" />
               <span>2 appointment slots remaining today</span>
             </div>
           </div>
