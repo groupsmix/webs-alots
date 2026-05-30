@@ -160,11 +160,11 @@ export default function SuperAdminDashboardPage() {
       Status: "",
     };
     exportToPDF(
-      "Dashboard Report \u2014 Oltigo Health",
+      t(locale, "superAdmin.reportTitle"),
       [kpiRow, ...rows],
       ["Clinic", "Type", "Plan", "City", "Status"],
     );
-    addToast("Report PDF generated \u2014 use Save as PDF in the print dialog", "success");
+    addToast(t(locale, "superAdmin.reportGenerated"), "success");
   }
 
   const stats = [
@@ -175,7 +175,7 @@ export default function SuperAdminDashboardPage() {
       change: `${activeClinics} ${t(locale, "superAdmin.active")}`,
       color: "text-blue-600",
       bg: "bg-blue-50",
-      trend: "+2 this month",
+      trend: t(locale, "superAdmin.trendNewThisMonth", { count: 2 }),
       trendDirection: "up" as const,
     },
     {
@@ -185,7 +185,7 @@ export default function SuperAdminDashboardPage() {
       change: `${totalClinics - activeClinics} ${t(locale, "superAdmin.inactive")}`,
       color: "text-green-600",
       bg: "bg-green-50",
-      trend: `${activePercent}% active`,
+      trend: t(locale, "superAdmin.percentActive", { percent: activePercent }),
       trendDirection: "neutral" as const,
     },
     {
@@ -205,7 +205,10 @@ export default function SuperAdminDashboardPage() {
       change: t(locale, "superAdmin.fromPayments"),
       color: "text-orange-600",
       bg: "bg-orange-50",
-      trend: totalRevenue > 0 ? "Revenue trending up" : "No revenue yet",
+      trend:
+        totalRevenue > 0
+          ? t(locale, "superAdmin.revenueTrendingUp")
+          : t(locale, "superAdmin.noRevenueYet"),
       trendDirection: totalRevenue > 0 ? ("up" as const) : ("neutral" as const),
     },
   ];
@@ -233,7 +236,7 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Super Admin" }, { label: "Dashboard" }]} />
+      <Breadcrumb items={[{ label: "Super Admin" }, { label: t(locale, "nav.dashboard") }]} />
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-2xl font-bold">{t(locale, "dashboard.superAdmin")}</h1>
@@ -248,14 +251,12 @@ export default function SuperAdminDashboardPage() {
             ) : (
               <RefreshCw className="h-4 w-4 mr-1" />
             )}
-            {"Refresh"}
+            {t(locale, "superAdmin.refresh")}
           </Button>
-          {/* eslint-disable i18next/no-literal-string */}
           <Button variant="outline" size="sm" disabled={loading} onClick={handleDownloadReport}>
             <Download className="h-4 w-4 mr-1" />
-            Download Report
+            {t(locale, "superAdmin.downloadReport")}
           </Button>
-          {/* eslint-enable i18next/no-literal-string */}
           <Link href="/super-admin/onboarding">
             <Button size="sm">
               <UserPlus className="h-4 w-4 mr-1" />
@@ -271,11 +272,15 @@ export default function SuperAdminDashboardPage() {
         </div>
       </div>
       <div className="flex items-center gap-2 mb-6 text-xs text-muted-foreground">
-        {lastUpdated && <span>{`Last updated: ${lastUpdated.toLocaleTimeString()}`}</span>}
+        {lastUpdated && (
+          <span>
+            {t(locale, "superAdmin.lastUpdated", { time: lastUpdated.toLocaleTimeString() })}
+          </span>
+        )}
         {refreshing && (
           <span className="flex items-center gap-1">
             <Loader2 className="h-3 w-3 animate-spin" />
-            {"Refreshing\u2026"}
+            {t(locale, "superAdmin.refreshing")}
           </span>
         )}
       </div>
@@ -519,12 +524,15 @@ export default function SuperAdminDashboardPage() {
                           <div key={`fallback-${clinic.id}`} className="flex items-start gap-3">
                             <div className="mt-0.5 h-2 w-2 rounded-full bg-blue-600" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium">{"Clinic registered"}</p>
+                              <p className="text-sm font-medium">
+                                {t(locale, "superAdmin.clinicRegistered")}
+                              </p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {clinic.name} ({clinic.type})
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {`Status: ${clinic.status}`} &middot; {`Plan: ${clinic.plan}`}
+                                {t(locale, "superAdmin.statusLabel", { status: clinic.status })}{" "}
+                                &middot; {t(locale, "superAdmin.planLabel", { plan: clinic.plan })}
                               </p>
                             </div>
                             <Badge
@@ -539,7 +547,7 @@ export default function SuperAdminDashboardPage() {
                     )}
                     {recentLogs.length === 0 && clinicList.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        {"No recent activity"}
+                        {t(locale, "superAdmin.noRecentActivity")}
                       </p>
                     )}
                     {recentLogs.map((log) => (
