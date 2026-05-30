@@ -375,7 +375,12 @@ export default function AllClinicsPage() {
                   {paginatedList.map((clinic) => (
                     <tr key={clinic.id} className="border-b last:border-0 hover:bg-muted/50">
                       <td className="py-3 px-4">
-                        <p className="font-medium">{clinic.name}</p>
+                        <Link
+                          href={`/super-admin/clinics/${clinic.id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {clinic.name}
+                        </Link>
                         <p className="text-xs text-muted-foreground md:hidden">
                           {clinic.ownerName}
                         </p>
@@ -424,14 +429,11 @@ export default function AllClinicsPage() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="View details"
-                            onClick={() => setDetail(clinic)}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
+                          <Link href={`/super-admin/clinics/${clinic.id}`}>
+                            <Button variant="ghost" size="sm" title="View details">
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="ghost"
                             size="sm"
