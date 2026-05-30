@@ -146,8 +146,8 @@ export function RegisterForm() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            Pour créer votre clinique, écrivez-nous : nous vous accompagnons dans la mise en
-            service en moins de 24h.
+            Pour créer votre clinique, écrivez-nous : nous vous accompagnons dans la mise en service
+            en moins de 24h.
           </div>
           <Button asChild className="w-full">
             <a href={`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`}>
