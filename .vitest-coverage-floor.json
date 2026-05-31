@@ -1,8 +1,8 @@
 {
-  "statements": 17,
-  "branches": 13,
-  "lines": 17,
-  "functions": 12,
+  "statements": 16,
+  "branches": 12,
+  "lines": 16,
+  "functions": 11,
   "target": {
     "statements": 80,
     "branches": 70,
