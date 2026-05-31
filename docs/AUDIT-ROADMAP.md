@@ -354,6 +354,64 @@ Items that need a real review/verification pass (no code can do this):
 
 ---
 
+## Comprehensive Audit (70-item, 9 phases) — 2026-05-31
+
+**Source:** `oltigo-comprehensive-audit-70.md` (chat-initiated, commit `e0fe9deb` baseline)
+**Priority:** P0 items 1-8 (Phase 1), P0 items 9-12 (Phase 2), P1/P2 items 13-70
+
+### Phase 1: Critical Security & Data Integrity (P0)
+
+| #   | Finding                                     | Status          | PR   | Notes                                                         |
+| --- | ------------------------------------------- | --------------- | ---- | ------------------------------------------------------------- |
+| 1   | Stripe webhook JSONB overwrite (CVE-worthy) | ✅ Pre-existing | —    | `mergeClinicConfig()` select-merge-update already in place    |
+| 2   | AI kill switch coverage                     | 🟢 In PR        | #918 | All 5 AI routes gated with `isAIEnabled()` early-return       |
+| 3   | Cross-tenant notification query             | ✅ Pre-existing | —    | `.eq("clinic_id", profile.clinic_id)` filter present          |
+| 4   | TOCTOU booking race condition               | ✅ Pre-existing | —    | Uses `booking_atomic_insert` RPC with `pg_advisory_xact_lock` |
+| 5   | Stored prompt injection via DB fields       | ✅ Pre-existing | —    | `sanitizeUntrustedText()` wraps all DB fields in prompts      |
+| 6   | UNTRUSTED delimiter injection               | 🟢 In PR        | #921 | `<<UNTRUSTED*>>` stripping in `sanitize.ts`                   |
+| 7   | Egress allowlist for OPENAI_BASE_URL        | ✅ Pre-existing | —    | URL validation in `resolveAIConfig()`                         |
+| 8   | PHI read sampling                           | ✅ Pre-existing | —    | PHI endpoints log 100%; only non-PHI use 1% sampling          |
+
+### Phase 2: AI Compliance & Evaluation (P0)
+
+| #   | Finding                           | Status          | PR   | Notes                                                           |
+| --- | --------------------------------- | --------------- | ---- | --------------------------------------------------------------- |
+| 9   | AI evaluation harness             | 🟢 In PR        | #919 | Nightly evals CI + 30 drug interactions + 30 jailbreak prompts  |
+| 10  | PHI redaction before OpenAI calls | ✅ Pre-existing | —    | `pseudonymise()` already used in prescription + patient-summary |
+| 11  | AI medical advice disclaimer      | ✅ Pre-existing | —    | `getAIDisclaimer()` injected in all AI responses                |
+| 12  | Document OpenAI PHI processing    | 🟢 In PR        | #922 | Full DPIA created                                               |
+
+### Phase 3-9: Test Quality, Infrastructure, Observability, i18n, DB Perf, Code Hygiene, Compliance
+
+| #   | Finding                                 | Status          | PR   | Notes                                                       |
+| --- | --------------------------------------- | --------------- | ---- | ----------------------------------------------------------- |
+| 15  | Global mock cleanup (clearMocks)        | 🟢 In PR        | #923 | `clearMocks: true` in vitest.config.ts                      |
+| 16  | Replace wall-clock waits in E2E         | 🟢 In PR        | #923 | `waitForLoadState('networkidle')` + `waitForFunction()`     |
+| 19  | Declare cron schedules in wrangler.toml | ✅ Pre-existing | —    | `[triggers]` and `[env.*.triggers]` already present         |
+| 22  | Prevent cross-env cron calls            | ✅ Pre-existing | —    | Refuses to fire if `CRON_SELF_BASE_URL`/`ROOT_DOMAIN` unset |
+| 25  | Add timeouts to OpenAI calls            | ✅ Pre-existing | —    | `AbortSignal.timeout(30_000)` on all fetch calls            |
+| 28  | Enable Workers Logs                     | ✅ Pre-existing | —    | `[observability] enabled = true` in all environments        |
+| 30  | Preserve error cause chains             | 🟢 In PR        | #923 | `serializeErrorCause()` + `logAndReturnInternalError()`     |
+| 31  | Central error code enum                 | 🟢 In PR        | #923 | `src/lib/api-error-codes.ts` frozen registry                |
+| 32  | Log sampling for high-volume paths      | ✅ Pre-existing | —    | `shouldSample()` in `src/lib/logger.ts`                     |
+| 34  | Pin model version                       | 🟢 In PR        | #920 | Pinned to `gpt-4o-mini-2024-07-18`                          |
+| 42  | Dynamic .order() column allowlist       | 🟢 In PR        | #923 | `ALLOWED_ORDER_COLUMNS` set in `src/lib/data/server.ts`     |
+| 46  | Range/limit for reminders cron          | ✅ Pre-existing | —    | Cursor-based pagination with PAGE_SIZE=500                  |
+| 47  | Duplicate migration prefix              | ✅ Pre-existing | —    | Only one 00072 prefix migration exists                      |
+| 49  | React hooks exhaustive-deps             | 🟢 In PR        | #924 | Justification comments on all 4 suppressions                |
+| 50  | Convert @ts-ignore to @ts-expect-error  | ✅ Pre-existing | —    | No @ts-ignore found in codebase                             |
+| 51  | PR template fields                      | 🟢 In PR        | #923 | Rollback, SLO/Metrics Impact, Drive-by Refactors sections   |
+| 53  | Pre-push TypeScript check               | 🟢 In PR        | #924 | `tsc --noEmit` added to `.husky/pre-push`                   |
+| 70  | Cold-start rate limiter                 | ✅ Pre-existing | —    | KV fallback warning + `RATE_LIMIT_BACKEND=kv` enforced      |
+
+### Remaining items (not yet started)
+
+Items 13-14, 17-18, 20-21, 23-24, 26-27, 29, 33, 35-40, 41, 43-45, 48, 52, 54-69 are tracked
+but not yet started. Priorities: #13 (test coverage to 40%), #17 (circuit breaker), #20 (DLQ),
+#54 (architecture diagram), #55 (on-call playbook).
+
+---
+
 ## Notes for future audits
 
 - The "audit-wave" branch naming convention (`cleanup/audit-wave-0-to-2-safe-fixes`, `fix/audit-critical-blockers`, `fix/audit-remaining-blockers`, `infra/staging-kv-separation`, `security/codeowners-api-routes`, `obs/payment-reminders-sentry-checkin`) is intentional. Keep it.
