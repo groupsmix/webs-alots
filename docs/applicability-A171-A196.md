@@ -1,8 +1,8 @@
 # Applicability Audit: A171-A196
 
-> **Source:** Security audit April 2026
+> **Source:** Security audit April 2026; re-verified 2026-05-31 (see `docs/audit/AUDIT-A171-A196-RE-VERIFICATION-2026-05-31.md`)
 > **Project:** Oltigo Health (groupsmix/webs-alots)
-> **Last updated:** April 2026
+> **Last updated:** 2026-05-31
 
 ## Project Profile
 
@@ -25,16 +25,16 @@ Stripe/CMI, Sentry, Plausible, OpenAI, Resend, Meta APIs.
 
 ## Supply-Chain & Vendor (A171-A178)
 
-| ID   | Title                                                                | Status          | Remediation                                                                          | Document                                               |
-| ---- | -------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| A171 | Vendor inventory (criticality, evidence, sub-processors, breach SLA) | PARTIAL -> DONE | Added 4 columns to sub-processor table                                               | [data-residency.md](./data-residency.md)               |
-| A172 | Tier-1 vendor exit plan                                              | GAP -> DONE     | Created exit playbooks for Supabase, Cloudflare, Resend, Meta                        | [vendor-exit-playbooks.md](./vendor-exit-playbooks.md) |
-| A173 | OSS supply chain (typosquat, license drift)                          | PARTIAL         | Socket / OpenSSF Scorecard in CI + license allowlist -- **future PR**                | --                                                     |
-| A174 | SBOM attached to every release, vuln SLA                             | PARTIAL -> DONE | Created vuln-sla.md; SBOM-as-release-asset is a CI task -- **future PR**             | [vuln-sla.md](./vuln-sla.md)                           |
-| A175 | SLSA L3+ build provenance                                            | PARTIAL         | Branch protection rules (>= 1 reviewer, required status checks) -- **manual config** | --                                                     |
-| A176 | Code/artifact signing: compromise procedure                          | PARTIAL -> DONE | Added signing-identity compromise section to SOP                                     | [SOP-SECRET-ROTATION.md](./SOP-SECRET-ROTATION.md)     |
-| A177 | M&A / acquired code                                                  | N/A             | No acquired code in this project                                                     | --                                                     |
-| A178 | OSS outbound (CLA, SPDX headers)                                     | N/A             | Closed-source / private repo                                                         | --                                                     |
+| ID   | Title                                                                | Status                                     | Remediation                                                                              | Document                                               |
+| ---- | -------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| A171 | Vendor inventory (criticality, evidence, sub-processors, breach SLA) | PARTIAL -> DONE                            | Added 4 columns to sub-processor table                                                   | [data-residency.md](./data-residency.md)               |
+| A172 | Tier-1 vendor exit plan                                              | GAP -> DONE                                | Created exit playbooks for Supabase, Cloudflare, Resend, Meta                            | [vendor-exit-playbooks.md](./vendor-exit-playbooks.md) |
+| A173 | OSS supply chain (typosquat, license drift)                          | PARTIAL                                    | Socket / OpenSSF Scorecard in CI + license allowlist -- **future PR**                    | --                                                     |
+| A174 | SBOM attached to every release, vuln SLA                             | PARTIAL -> DONE                            | Created vuln-sla.md; SBOM-as-release-asset is a CI task -- **future PR**                 | [vuln-sla.md](./vuln-sla.md)                           |
+| A175 | SLSA L3+ build provenance                                            | PARTIAL                                    | Branch protection rules (>= 1 reviewer, required status checks) -- **manual config**     | --                                                     |
+| A176 | Code/artifact signing: compromise procedure                          | PARTIAL -> DONE                            | Added signing-identity compromise section to SOP                                         | [SOP-SECRET-ROTATION.md](./SOP-SECRET-ROTATION.md)     |
+| A177 | M&A / acquired code                                                  | N/A                                        | No acquired code in this project                                                         | --                                                     |
+| A178 | OSS outbound (CLA, DCO, SPDX headers)                                | PARTIAL -> DONE (DCO + licensing position) | DCO sign-off section + licensing position clarification; CLA bot + SPDX headers deferred | [CONTRIBUTING.md](../CONTRIBUTING.md)                  |
 
 ## Workforce / IAM / Endpoint (A179-A186)
 
