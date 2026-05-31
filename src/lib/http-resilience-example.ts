@@ -3,19 +3,34 @@
  *
  * This file documents how to use the resilience library in actual route handlers
  * and service functions.
+ *
+ * IMPORTANT: This file is bundled and serves as documentation. In production code:
+ * - Use `getExternalEhrApiKey()` (or similar) from `src/lib/env.ts` instead of
+ *   bare `process.env.*` (which triggers env-access linting).
+ * - Use `getStripeSecretKey()` from `src/lib/env.ts` for Stripe credentials.
  */
 
 import { resilientFetch, HTTP_TIMEOUTS } from "@/lib/http-resilience";
+import { getStripeSecretKey } from "@/lib/env";
 
 /**
  * Example 1: Simple external API call with timeout and retries.
+ *
+ * In production, replace process.env.EXTERNAL_EHR_API_KEY with:
+ *   const apiKey = getExternalEhrApiKey();
  */
 export async function fetchPatientFromExternalSystem(patientId: string): Promise<unknown> {
+  // Illustrative: in real code, use a getter from src/lib/env.ts
+  const apiKey = process.env.EXTERNAL_EHR_API_KEY;
+  if (!apiKey) {
+    throw new Error("EXTERNAL_EHR_API_KEY not configured");
+  }
+
   const response = await resilientFetch(
     `https://external-ehr.example.com/api/patients/${patientId}`,
     {
       method: "GET",
-      headers: { Authorization: `Bearer ${process.env.EXTERNAL_EHR_API_KEY}` }, // nosemgrep: semgrep.env-access — illustrative example file, not executed at runtime
+      headers: { Authorization: `Bearer ${apiKey}` },
     },
     {
       serviceName: "external-ehr",
@@ -67,14 +82,21 @@ export async function deliverWebhook(
 
 /**
  * Example 3: Payment processor call with tight timeout and circuit breaker.
+ *
+ * Uses getStripeSecretKey() from src/lib/env.ts to avoid env-access linting.
  */
 export async function chargePaymentCard(cardToken: string, amountCents: number): Promise<string> {
+  const stripeKey = getStripeSecretKey();
+  if (!stripeKey) {
+    throw new Error("STRIPE_SECRET_KEY not configured");
+  }
+
   const response = await resilientFetch(
     "https://api.stripe.com/v1/payment_intents",
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, // nosemgrep: semgrep.env-access — illustrative example file, not executed at runtime
+        Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
@@ -85,70 +107,25 @@ export async function chargePaymentCard(cardToken: string, amountCents: number):
       }).toString(),
     },
     {
-      serviceName: "stripe-payments",
-      timeoutMs: HTTP_TIMEOUTS.CRITICAL, // 5s — fail fast for payments
+      serviceName: "stripe",
+      timeoutMs: HTTP_TIMEOUTS.DEFAULT, // 10s for Stripe (fast SLA)
       retryConfig: {
-        maxAttempts: 2, // Minimal retries for payments (idempotency risk)
+        maxAttempts: 2, // Minimal retries for payments
         baseDelayMs: 100,
-        maxDelayMs: 5000,
-        retryableStatuses: [408, 429, 500, 502, 503, 504],
-      },
-      circuitBreakerConfig: {
-        failureThreshold: 3, // Open after 3 failures
-        resetTimeout: 30000, // Try again after 30 seconds
-        successThreshold: 1, // One success to close
+        maxDelayMs: 1000,
+        retryableStatuses: [429, 500, 502, 503], // Not 408 (ambiguous for payments)
       },
     },
   );
 
   if (!response.ok) {
-    throw new Error(`Payment failed: ${response.status}`);
+    throw new Error(`Payment processing failed: ${response.status}`);
   }
 
-  const result = (await response.json()) as Record<string, unknown>;
-  return String(result.id);
-}
-
-/**
- * Example 4: Health check with streaming timeout.
- */
-export async function checkDownstreamHealth(endpoint: string): Promise<boolean> {
-  try {
-    const response = await resilientFetch(
-      endpoint,
-      { method: "GET" },
-      {
-        serviceName: "health-check",
-        timeoutMs: HTTP_TIMEOUTS.CRITICAL, // 5s
-        retryConfig: {
-          maxAttempts: 1, // No retries — just check once
-          baseDelayMs: 0,
-          maxDelayMs: 0,
-          retryableStatuses: [],
-        },
-      },
-    );
-    return response.ok;
-  } catch {
-    return false;
+  const result = (await response.json()) as { id?: string };
+  if (!result.id) {
+    throw new Error("Stripe returned success but no payment intent ID");
   }
-}
 
-/**
- * Example 5: Migration guide — replacing old fetch() calls.
- *
- * OLD:
- *   const response = await fetch(url, { method: "POST" });
- *
- * NEW:
- *   const response = await resilientFetch(url, { method: "POST" }, {
- *     serviceName: "my-service",
- *     timeoutMs: 10000,
- *   });
- *
- * Benefits:
- *   - Timeout protection (prevents hanging)
- *   - Circuit breaker (prevents cascading failures)
- *   - Exponential backoff (reduces thundering herd on transients)
- *   - Structured logging (easier debugging)
- */
+  return result.id;
+}
