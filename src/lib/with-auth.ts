@@ -207,8 +207,7 @@ export function withAuth(
           /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(
             pathname,
           );
-        const shouldLog =
-          process.env.NODE_ENV !== "production" || isPhiEndpoint;
+        const shouldLog = process.env.NODE_ENV !== "production" || isPhiEndpoint;
         if (shouldLog) {
           // INJ-02: Sanitize pathname to prevent log injection via CRLF/tab
           const safePath = pathname.replace(/[\r\n\t]/g, "?");
