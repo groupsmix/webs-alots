@@ -7,7 +7,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
 import {
   PAGINATION_LIMITS,
   QUERY_STRING_LIMITS,
@@ -15,6 +14,7 @@ import {
   validateQueryStringLength,
   extractBearerToken,
 } from "@/lib/input-safety";
+import { logger } from "@/lib/logger";
 
 /**
  * A62-C1 / A62-C3: Check pagination and auth headers for safety violations.
