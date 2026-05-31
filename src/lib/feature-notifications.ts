@@ -38,7 +38,7 @@ export async function notifyFeatureChange(params: FeatureNotificationParams): Pr
     const { data: admins, error: adminErr } = await supabase
       .from("users")
       .select("id")
-      .eq("clinic_id", clinicId)
+      .eq("clinic_id", clinicId) // tenant-scoped
       .eq("role", "clinic_admin");
 
     if (adminErr || !admins?.length) {
@@ -67,6 +67,7 @@ export async function notifyFeatureChange(params: FeatureNotificationParams): Pr
       sent_at: new Date().toISOString(),
     }));
 
+    // nosemgrep: tenant-scoping — clinic_id is set on every row in the `rows` array above
     const { error: insertErr } = await supabase.from("notifications").insert(rows);
 
     if (insertErr) {

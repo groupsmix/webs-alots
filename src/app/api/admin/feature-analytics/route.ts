@@ -31,13 +31,11 @@ interface TierBreakdown {
 
 async function handleGet(_request: NextRequest, _auth: AuthContext) {
   try {
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
-    // 1. Chatbot adoption overview
-    // nosemgrep: semgrep.tenant-scoping
+    // 1. Chatbot adoption overview — intentional cross-tenant query for super_admin analytics
     const { data: chatbotRows, error: chatbotErr } = await supabase
-      .from("chatbot_config")
+      .from("chatbot_config") // nosemgrep: tenant-scoping — super_admin cross-tenant overview
       .select("clinic_id, enabled, intelligence");
 
     if (chatbotErr) {
@@ -62,9 +60,10 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
       }
     }
 
-    // 2. Per-tier breakdown
-    // nosemgrep: semgrep.tenant-scoping
-    const { data: clinics, error: clinicsErr } = await supabase.from("clinics").select("id, tier");
+    // 2. Per-tier breakdown — clinics table has no clinic_id (it IS the tenant table)
+    const { data: clinics, error: clinicsErr } = await supabase
+      .from("clinics") // nosemgrep: tenant-scoping — clinics is the tenant table itself
+      .select("id, tier");
 
     if (clinicsErr) {
       logger.error("Failed to fetch clinics for tier breakdown", {
