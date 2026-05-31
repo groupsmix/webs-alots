@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
+import type { CookiePreferences } from "@/components/cookie-consent";
 import { getStoredCookiePreferences, reopenCookieConsent } from "@/components/cookie-consent";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { t } from "@/lib/i18n";
  */
 export function ConsentSummaryBanner(): ReactElement | null {
   const [locale] = useLocale();
-  const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
+  const [prefs, setPrefs] = useState<CookiePreferences | null>(null);
   const [replayEnabled, setReplayEnabled] = useState(false);
   const [visible, setVisible] = useState(false);
 
