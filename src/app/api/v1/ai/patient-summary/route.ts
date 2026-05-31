@@ -23,6 +23,11 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { isMinorByDob } from "@/lib/minors";
 import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
+import {
+  getProcessingEnforcement,
+  restrictedResponse,
+  objectedResponse,
+} from "@/lib/gdpr-enforcement";
 import type { Json } from "@/lib/types/database";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
 import { aiPatientSummaryRequestSchema } from "@/lib/validations";
@@ -294,6 +299,19 @@ export const POST = withAuthValidation(
     const allowed = await aiPatientSummaryLimiter.check(`ai-summary:${doctorId}`);
     if (!allowed) {
       return apiRateLimited("Limite quotidienne atteinte (30 résumés IA/jour). Réessayez demain.");
+    }
+
+    // A62-F1 / A62-F2: GDPR Art.18 / Art.21 enforcement.
+    // Check the patient's own processing flags before generating AI content.
+    // We look up by patientId (the subject of the summary, not the doctor).
+    const enforcement = await getProcessingEnforcement(supabase, data.patientId);
+    if (enforcement.restricted) {
+      const r = restrictedResponse();
+      return apiError(r.error, r.status, r.code);
+    }
+    if (enforcement.objectsTo("ai_summaries")) {
+      const r = objectedResponse("ai_summaries");
+      return apiError(r.error, r.status, r.code);
     }
 
     // Check for cached summary (unless force refresh requested)
