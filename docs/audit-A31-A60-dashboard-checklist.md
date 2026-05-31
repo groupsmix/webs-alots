@@ -36,7 +36,7 @@ The complementary control is an account-level alert.
 
 ## 3. AV scan — set `AV_SCAN_URL` in production (HIGH, #3)
 
-The PR makes PHI categories *always* fail closed when no scanner is
+The PR makes PHI categories _always_ fail closed when no scanner is
 configured. Production must therefore configure one before merging,
 or PHI uploads (`patient_documents`, `radiology`, `lab_results`, etc.)
 will be rejected with HTTP 503.
@@ -47,7 +47,7 @@ will be rejected with HTTP 503.
       Workers-side `AbortSignal.timeout`.
 - [ ] `wrangler secret put AV_SCAN_URL --env production`.
 - [ ] (Optional, for non-PHI hardening) `wrangler secret put
-      AV_SCAN_REQUIRED --env production` set to `true`.
+AV_SCAN_REQUIRED --env production` set to `true`.
 - [ ] Add scanner uptime to the existing uptime-monitor cron.
 
 ## 4. CORS — verify no legitimate cross-tenant XHR (MED, #4)

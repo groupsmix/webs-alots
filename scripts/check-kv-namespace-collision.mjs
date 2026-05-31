@@ -116,9 +116,7 @@ if (errors.length > 0) {
 const mode = STRICT ? "strict" : "lint";
 console.log(`✅ KV namespace collision check passed (${mode} mode).`);
 if (prod && !placeholderId) {
-  console.log(
-    `   prod    id=${prod.id?.slice(0, 8)}… preview=${prod.preview_id?.slice(0, 8)}…`,
-  );
+  console.log(`   prod    id=${prod.id?.slice(0, 8)}… preview=${prod.preview_id?.slice(0, 8)}…`);
 }
 if (staging && !placeholderId) {
   console.log(
