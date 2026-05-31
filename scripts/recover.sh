@@ -6,7 +6,7 @@
 # Rebuilds the entire platform from scratch using a single command.
 #
 # Prerequisites:
-#   1. Copy secrets-template.env → .env and fill in your secrets
+#   1. Copy .env.example → .env and fill in your secrets
 #   2. Node.js 22+ installed
 #   3. Supabase CLI installed (npx supabase)
 #   4. Wrangler CLI installed (npx wrangler)
@@ -66,8 +66,8 @@ log_step "Step 1/8: Validating secrets..."
 
 if [[ ! -f ".env" ]]; then
   log_error ".env file not found!"
-  log_error "Copy secrets-template.env to .env and fill in your values:"
-  log_error "  cp secrets-template.env .env"
+  log_error "Copy .env.example to .env and fill in your values:"
+  log_error "  cp .env.example .env"
   exit 1
 fi
 
