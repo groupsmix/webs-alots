@@ -21,6 +21,7 @@ import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/ap
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiSmartPrescriptionLimiter, aiClinicCeilingLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -165,6 +166,11 @@ function parseSmartPrescriptionResponse(content: string): SmartPrescriptionResul
 export const POST = withAuthValidation(
   aiSmartPrescriptionRequestSchema,
   async (data, _request: NextRequest, auth: AuthContext) => {
+    // F-AI-01: Early kill switch — fail fast before processing
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;

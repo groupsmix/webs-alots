@@ -20,6 +20,7 @@ import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiVoiceNoteLimiter, aiClinicCeilingLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -100,6 +101,11 @@ function parseSoapResponse(content: string): SoapNote | null {
 export const POST = withAuthValidation(
   aiVoiceNoteRequestSchema,
   async (data, _request: NextRequest, auth: AuthContext) => {
+    // F-AI-01: Early kill switch — fail fast before processing
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;

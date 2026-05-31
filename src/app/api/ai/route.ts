@@ -21,6 +21,7 @@ import { isAIFeatureEnabled, loadFeatureToggles } from "@/lib/ai/feature-toggles
 import { routeAIRequest, loadProviderConfigs, AllProvidersFailedError } from "@/lib/ai/router";
 import type { AIRequest, AITaskType, TaskComplexity, AIProvider } from "@/lib/ai/types";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
@@ -40,6 +41,11 @@ const VALID_TASKS: AITaskType[] = [
 const VALID_COMPLEXITIES: TaskComplexity[] = ["simple", "medium", "complex", "critical"];
 
 async function handlePost(req: NextRequest, auth: AuthContext) {
+  // F-AI-01: Early kill switch — fail fast before processing
+  if (!(await isAIEnabled())) {
+    return apiError("AI features are disabled", 503, "AI_DISABLED");
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await req.json()) as Record<string, unknown>;
