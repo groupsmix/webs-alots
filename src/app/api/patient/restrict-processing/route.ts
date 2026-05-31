@@ -113,13 +113,15 @@ export const POST = withAuth(
     }
 
     // ── Audit log ────────────────────────────────────────────────────────
-    await logAuditEvent(supabase, {
+    await logAuditEvent({
+      supabase,
+      type: "patient",
       action:
         type === "restriction"
           ? "gdpr_art18_restriction_requested"
           : "gdpr_art21_objection_requested",
-      actorId: profile.id,
-      clinicId: profile.clinic_id ?? undefined,
+      actor: profile.id,
+      clinicId: profile.clinic_id ?? "system",
       metadata: {
         processingActivities,
         reason: reason.slice(0, 200), // truncate for audit log
@@ -202,13 +204,15 @@ export const DELETE = withAuth(
       return apiInternalError("Failed to withdraw your request.");
     }
 
-    await logAuditEvent(supabase, {
+    await logAuditEvent({
+      supabase,
+      type: "patient",
       action:
         type === "restriction"
           ? "gdpr_art18_restriction_withdrawn"
           : "gdpr_art21_objection_withdrawn",
-      actorId: profile.id,
-      clinicId: profile.clinic_id ?? undefined,
+      actor: profile.id,
+      clinicId: profile.clinic_id ?? "system",
       metadata: { reason: reason?.slice(0, 200), withdrawnAt: new Date().toISOString() },
     });
 
