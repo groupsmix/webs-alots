@@ -119,6 +119,7 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
       { href: "/super-admin/referrals", label: "Referrals", icon: Gift },
       { href: "/super-admin/usage", label: "Usage Metrics", icon: Gauge },
+      { href: "/super-admin/usage-dashboard", label: "Usage Dashboard", icon: BarChart3 },
     ],
   },
   {
