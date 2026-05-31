@@ -1,6 +1,5 @@
 import { Chatbot } from "@/components/chatbot";
 import { ConsentGatedAnalytics } from "@/components/consent-gated-analytics";
-import { CookieConsent } from "@/components/cookie-consent";
 import { DemoBanner } from "@/components/demo-banner";
 import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
@@ -52,7 +51,7 @@ export default async function PublicLayout({ children }: { children: React.React
       </main>
       <PublicFooter clinicName={branding.clinicName} />
       <Chatbot />
-      <CookieConsent />
+      {/* <CookieConsent /> is mounted globally in src/app/layout.tsx — do not re-mount here */}
     </div>
   );
 }

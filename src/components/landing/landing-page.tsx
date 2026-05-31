@@ -1,6 +1,5 @@
 "use client";
 
-import { CookieConsent } from "@/components/cookie-consent";
 import { EditorialLandingPage } from "./editorial/editorial-landing-page";
 
 /**
@@ -11,12 +10,11 @@ import { EditorialLandingPage } from "./editorial/editorial-landing-page";
  *
  * Design direction: editorial-institutional (Stripe Docs + Bloomberg Terminal
  * + Linear typographic restraint). See docs/oltigo-design-direction.md.
+ *
+ * Note: <CookieConsent /> is mounted globally in src/app/layout.tsx; do not
+ * re-mount here — duplicate `#cookie-consent-banner` IDs break E2E tests and
+ * accessibility (two `role="dialog"` with the same aria-label).
  */
 export function LandingPage() {
-  return (
-    <>
-      <EditorialLandingPage />
-      <CookieConsent />
-    </>
-  );
+  return <EditorialLandingPage />;
 }
