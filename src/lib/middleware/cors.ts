@@ -76,38 +76,14 @@ export function applyCors(
   const rootDomain = process.env.ROOT_DOMAIN;
   if (!isAllowedOrigin(origin, rootDomain)) return null;
 
-  // A49-6 / A31-A60 Top Finding #4 (MED): Allow-Credentials is gated on
-  // the origin hostname exactly matching the request hostname.
-  //
-  // Background: CSRF middleware blocks cross-tenant *mutations* via a
-  // per-host exact match — but a GET request with credentials from a
-  // malicious tenant subdomain could still read another tenant's API
-  // responses through XHR. Every API filters by profile.clinic_id so
-  // the cross-tenant data leakage is mitigated in practice, but
-  // tightening here removes the reliance on every future route author
-  // getting tenant scoping right.
-  //
-  // For cross-tenant *.oltigo.com origins we still reflect the origin
-  // (so error messages and OPTIONS work) but omit Allow-Credentials,
-  // which causes the browser to strip the response from JS view.
-  let originHostname = "";
-  try {
-    originHostname = new URL(origin).hostname;
-  } catch {
-    return null;
-  }
-  const sameTenant = originHostname === request.nextUrl.hostname;
-
   const corsHeaders: Record<string, string> = {
     "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
-  if (sameTenant) {
-    corsHeaders["Access-Control-Allow-Credentials"] = "true";
-  }
 
   // Handle preflight
   if (request.method === "OPTIONS") {
