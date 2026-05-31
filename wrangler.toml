@@ -287,8 +287,10 @@ bucket_name = "webs-alots-uploads-staging"
 # prevents this regressing once fixed.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "REPLACE_BEFORE_STAGING_DEPLOY_RUN_CREATE_STAGING_KV"          # FIXME(A-09)
-preview_id = "REPLACE_BEFORE_STAGING_DEPLOY_RUN_CREATE_STAGING_KV"  # FIXME(A-09)
+# A-09 resolved 2026-05-31: dedicated staging KV namespace.
+# Created via Cloudflare API (account 0dadac33…1ba4).
+id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING
+preview_id = "4965f9300c924de3afc0407679ff775b"  # RATE_LIMIT_KV_STAGING_preview
 
 # W8-A31-01: Routes for staging (uses staging subdomain)
 [env.staging.routes]
