@@ -21,6 +21,7 @@ import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/ap
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiClinicCeilingLimiter, aiPrescriptionLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -247,6 +248,11 @@ async function logAiUsage(
 export const POST = withAuthValidation(
   aiPrescriptionRequestSchema,
   async (data, _request: NextRequest, auth) => {
+    // F-AI-01: Early kill switch — fail fast before rate limiting or DB queries
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;

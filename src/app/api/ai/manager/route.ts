@@ -20,6 +20,7 @@ import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiClinicCeilingLimiter, aiManagerLimiter } from "@/lib/rate-limit";
 import { formatCurrency, getLocalDateStr } from "@/lib/utils";
@@ -405,6 +406,11 @@ async function logAiUsage(
 export const POST = withAuthValidation(
   aiManagerRequestSchema,
   async (data, _request: NextRequest, auth) => {
+    // F-AI-01: Early kill switch — fail fast before rate limiting or DB queries
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const userId = profile.id;

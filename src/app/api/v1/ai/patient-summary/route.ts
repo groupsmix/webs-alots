@@ -20,6 +20,7 @@ import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { isAIEnabled } from "@/lib/features";
 import {
   getProcessingEnforcement,
   restrictedResponse,
@@ -287,6 +288,11 @@ async function logAiUsage(
 export const POST = withAuthValidation(
   aiPatientSummaryRequestSchema,
   async (data, _request: NextRequest, auth) => {
+    // F-AI-01: Early kill switch — fail fast before rate limiting or DB queries
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;
