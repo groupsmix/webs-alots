@@ -193,16 +193,28 @@ export const USER_RECTIFICATION_ALLOWED_COLUMNS: readonly string[] = [
  * Aligns with retention.md (e.g. payments = 10y for tax, prescriptions = 10y).
  */
 export const ERASURE_ANONYMISE_INSTEAD: readonly string[] = [
+  // Billing. Loi 09-08 art. 26(2) / Moroccan Code de Commerce art. 22
+  // require 10-year retention. Anonymise the patient FK + free-text fields;
+  // keep totals, tax IDs, and bookkeeping references.
   "payments",
   "invoices",
-  "invoice_items",
-  "invoice_line_items",
+  "lab_invoices",
+  // Prescriptions. Loi 17-04 (pharmacy code) requires the prescriber to
+  // retain a copy for at least 10 years. Anonymise patient identifiers,
+  // keep clinical content tied to the doctor's record.
   "prescriptions",
+  // Medical certificates. Conseil National de l'Ordre des Medecins requires
+  // 20-year retention of issued certificates for liability defence.
   "medical_certificates",
-  "consent_logs", // GDPR Art. 7(1) proof of consent — keep
-  "audit_logs",
-  "immutable_audit_log",
-  "activity_logs",
+  // GDPR Art. 7(1). Proof of consent must be kept for the lifetime of the
+  // processing relationship + statute of limitations. Anonymise the subject
+  // FK, keep the consent record + timestamp + version.
+  "consent_logs",
+  // TODO(A62-followup): once the dedicated audit-log schema migration lands
+  // (planned: immutable_audit_log, activity_logs, audit_logs), add them here.
+  // They are anonymise-instead targets for the same GDPR Art. 17(3)(b/e)
+  // reasons. The current catalog only references tables that exist in the
+  // inventory at docs/compliance/_generated/pii-columns.json.
 ] as const;
 
 /**
