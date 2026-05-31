@@ -223,13 +223,33 @@ jobs:
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
       BACKUP_GPG_PRIVATE_KEY: ${{ secrets.BACKUP_GPG_PRIVATE_KEY }}
     steps:
+      - name: Preflight — check required secrets
+        id: preflight
+        run: |
+          missing=0
+          for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BACKUP_BUCKET BACKUP_GPG_PRIVATE_KEY; do
+            if [ -z "${!v:-}" ]; then
+              echo "::warning::Secret '$v' is not set."
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::warning::Verify-secrets not configured. Skipping verification."
+            echo "::warning::Configure R2 credentials and BACKUP_GPG_PRIVATE_KEY in GitHub Actions secrets to enable nightly verification."
+            echo "secrets_ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install tools
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
           pip install awscli
 
       - name: Configure R2 credentials
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           mkdir -p ~/.aws
           cat > ~/.aws/credentials << EOF
@@ -243,14 +263,12 @@ jobs:
           EOF
 
       - name: Import GPG private key for decryption
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
-          if [ -z "${BACKUP_GPG_PRIVATE_KEY}" ]; then
-            echo "::error::BACKUP_GPG_PRIVATE_KEY is not set. Cannot verify encrypted backups."
-            exit 1
-          fi
           echo "${BACKUP_GPG_PRIVATE_KEY}" | gpg --batch --import
 
       - name: Download latest backup
+        if: steps.preflight.outputs.secrets_ok == 'true'
         # F-03: Download the actual .sql.gz.gpg file (not .sql.gz).
         # Backups are encrypted with GPG before upload.
         run: |
@@ -276,12 +294,14 @@ jobs:
             --endpoint-url "${R2_ENDPOINT}"
 
       - name: Start local PostgreSQL
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           sudo systemctl start postgresql
           sudo -u postgres createuser -s runner 2>/dev/null || true
           createdb backup_verify_test 2>/dev/null || true
 
       - name: Install Supabase-compatible extensions
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           # Supabase dumps reference extensions that aren't in default PostgreSQL.
           # Install common ones so the restore can create tables that depend on them.
@@ -294,6 +314,7 @@ jobs:
           psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
 
       - name: Decrypt backup
+        if: steps.preflight.outputs.secrets_ok == 'true'
         # F-03: The backup workflow creates .sql.gz.gpg files (pg_dump | gzip | gpg).
         # Verification MUST decrypt before decompressing — previously this step
         # was missing, so verify was testing a corrupt/unreadable file.
@@ -302,6 +323,7 @@ jobs:
           echo "Decrypted backup successfully ($(du -h /tmp/verify_backup.sql.gz | cut -f1))"
 
       - name: Test restore
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           # The dump uses --clean which generates DROP/ALTER for objects that
           # don't exist in a fresh database. Pipe through psql with ON_ERROR_STOP
