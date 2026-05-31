@@ -1,8 +1,10 @@
 "use client";
 
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { getStoredCookiePreferences, reopenCookieConsent } from "@/components/cookie-consent";
+import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
 
@@ -18,7 +20,8 @@ import { t } from "@/lib/i18n";
  * Allows users to re-open cookie settings to adjust.
  * Shown on page load and updates when consent changes.
  */
-export function ConsentSummaryBanner(): JSX.Element | null {
+export function ConsentSummaryBanner(): ReactElement | null {
+  const [locale] = useLocale();
   const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
   const [replayEnabled, setReplayEnabled] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -84,7 +87,7 @@ export function ConsentSummaryBanner(): JSX.Element | null {
           <div className="mb-2 flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-              {t("consent.summary.title") || "Your privacy settings"}
+              {t(locale, "consent.summary.title") || "Your privacy settings"}
             </h3>
           </div>
 
@@ -94,8 +97,8 @@ export function ConsentSummaryBanner(): JSX.Element | null {
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <span className="text-blue-800 dark:text-blue-200">
-                <strong>{t("consent.category.functional") || "Functional"}</strong>:
-                {t("consent.summary.functional_desc") || "Always enabled"}
+                <strong>{t(locale, "consent.category.functional") || "Functional"}</strong>:
+                {t(locale, "consent.summary.functional_desc") || "Always enabled"}
               </span>
             </div>
 
@@ -107,10 +110,10 @@ export function ConsentSummaryBanner(): JSX.Element | null {
                 <XCircle className="h-4 w-4 text-red-600" />
               )}
               <span className="text-blue-800 dark:text-blue-200">
-                <strong>{t("consent.category.analytics") || "Analytics"}</strong>:
+                <strong>{t(locale, "consent.category.analytics") || "Analytics"}</strong>:
                 {prefs.analytics
-                  ? t("consent.summary.enabled") || "Enabled"
-                  : t("consent.summary.disabled") || "Disabled"}
+                  ? t(locale, "consent.summary.enabled") || "Enabled"
+                  : t(locale, "consent.summary.disabled") || "Disabled"}
               </span>
             </div>
 
@@ -122,10 +125,10 @@ export function ConsentSummaryBanner(): JSX.Element | null {
                 <XCircle className="h-4 w-4 text-red-600" />
               )}
               <span className="text-blue-800 dark:text-blue-200">
-                <strong>{t("consent.category.marketing") || "Marketing"}</strong>:
+                <strong>{t(locale, "consent.category.marketing") || "Marketing"}</strong>:
                 {prefs.marketing
-                  ? t("consent.summary.enabled") || "Enabled"
-                  : t("consent.summary.disabled") || "Disabled"}
+                  ? t(locale, "consent.summary.enabled") || "Enabled"
+                  : t(locale, "consent.summary.disabled") || "Disabled"}
               </span>
             </div>
 
@@ -137,10 +140,10 @@ export function ConsentSummaryBanner(): JSX.Element | null {
                 <XCircle className="h-4 w-4 text-red-600" />
               )}
               <span className="text-blue-800 dark:text-blue-200">
-                <strong>{t("consent.category.replay") || "Session Replay"}</strong>:
+                <strong>{t(locale, "consent.category.replay") || "Session Replay"}</strong>:
                 {replayEnabled
-                  ? t("consent.summary.enabled") || "Enabled"
-                  : t("consent.summary.disabled") || "Disabled"}
+                  ? t(locale, "consent.summary.enabled") || "Enabled"
+                  : t(locale, "consent.summary.disabled") || "Disabled"}
               </span>
             </div>
           </div>
@@ -154,7 +157,7 @@ export function ConsentSummaryBanner(): JSX.Element | null {
             onClick={() => reopenCookieConsent()}
             className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
           >
-            {t("consent.summary.change") || "Change settings"}
+            {t(locale, "consent.summary.change") || "Change settings"}
           </Button>
           <Button
             variant="ghost"
@@ -165,7 +168,7 @@ export function ConsentSummaryBanner(): JSX.Element | null {
             }}
             className="text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900"
           >
-            {t("consent.summary.dismiss") || "Dismiss"}
+            {t(locale, "consent.summary.dismiss") || "Dismiss"}
           </Button>
         </div>
       </div>
