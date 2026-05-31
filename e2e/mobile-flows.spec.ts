@@ -13,6 +13,35 @@ import { test, expect, type Locator } from "@playwright/test";
  * - Viewport meta tag and responsive layout
  */
 
+/**
+ * Pre-seed the cookie-consent localStorage entry so the consent banner does
+ * NOT render during these tests. Two reasons:
+ *
+ * 1. The banner is a fixed-position overlay above the form. In CI it
+ *    sometimes intercepts the first click on a form button, producing
+ *    flaky test failures.
+ * 2. The analytics flag controls whether Plausible/Sentry-replay scripts
+ *    load. With analytics enabled, those scripts heartbeat indefinitely
+ *    and `page.waitForLoadState("networkidle")` never resolves, hitting
+ *    the 30s test timeout. Setting analytics=false (and not loading the
+ *    scripts at all) is also what Playwright best-practice guidance
+ *    recommends as the alternative to the discouraged "networkidle".
+ *
+ * Schema: src/components/cookie-consent.tsx → CookiePreferences.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        "cookie-consent",
+        JSON.stringify({ functional: true, analytics: false, marketing: false }),
+      );
+    } catch {
+      // Some browser contexts (about:blank) throw on storage access — ignore.
+    }
+  });
+});
+
 test.describe("Mobile — critical page rendering", () => {
   test("homepage renders without horizontal overflow", async ({ page }) => {
     await page.goto("/");
@@ -73,7 +102,9 @@ async function waitForBoundingBox(
 test.describe("Mobile — touch target sizing", () => {
   test("login page buttons meet 44x44px minimum touch target", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    // networkidle removed: Playwright officially discourages it on apps with
+    // long-lived realtime/analytics connections. expect.toBeVisible() below
+    // already auto-waits for the element to appear after hydration.
 
     const submitBtn = page.locator('button[type="submit"]');
     await expect(submitBtn).toBeVisible();
@@ -85,7 +116,7 @@ test.describe("Mobile — touch target sizing", () => {
 
   test("form inputs have adequate height for touch", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    // networkidle removed (see comment above).
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     await expect(emailInput).toBeVisible();
@@ -100,7 +131,7 @@ test.describe("Mobile — form interactions", () => {
   test("login form can be filled and submitted on mobile", async ({ page }) => {
     // Use trailing slash to avoid 308 redirect mid-test
     await page.goto("/login/");
-    await page.waitForLoadState("networkidle");
+    // networkidle removed (see "login page buttons" test above).
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     const passwordInput = page.locator('input[type="password"], input[name="password"]');
@@ -142,7 +173,7 @@ test.describe("Mobile — viewport meta", () => {
 test.describe("Mobile — navigation", () => {
   test("links are navigable on mobile", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    // networkidle removed (see "login page buttons" test above).
 
     // Registration link should be visible and tappable
     // trailingSlash: true → Link renders href="/register/"

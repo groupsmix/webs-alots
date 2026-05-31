@@ -8,6 +8,22 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Registration flow", () => {
   test.beforeEach(async ({ page }) => {
+    // Pre-seed cookie-consent so the consent banner does not render and
+    // intercept the first click on form controls. The banner is a fixed
+    // overlay above the auth form; without this seed, the test
+    // "shows validation on empty form submission" intermittently observes
+    // 0 invalid inputs because the click hits the banner instead of the
+    // submit button. Schema lives at src/components/cookie-consent.tsx.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem(
+          "cookie-consent",
+          JSON.stringify({ functional: true, analytics: false, marketing: false }),
+        );
+      } catch {
+        // about:blank or storage-disabled context — ignore.
+      }
+    });
     await page.goto("/register");
   });
 
