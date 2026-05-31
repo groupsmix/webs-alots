@@ -1,62 +1,82 @@
 /**
- * A154-01: HIBP Pwned Passwords integration.
+ * HIBP (Have I Been Pwned) k-anonymity password check — 6e / A154.
  *
- * Uses the k-anonymity range API (api.pwnedpasswords.com/range/{prefix})
- * to check whether a password has appeared in a data breach without ever
- * sending the full password hash over the network.
+ * Uses the Pwned Passwords Range API: only the first 5 characters of the
+ * SHA-1 hash of the password are sent to the API (k-anonymity model).
+ * The plaintext password never leaves the browser/server.
  *
- * Non-blocking: if the HIBP API is unreachable or slow (>3s), the check
- * is skipped silently — we never block login/registration on an external
- * service failure. The caller decides how to handle a positive match
- * (warn, soft-block, or hard-block).
+ * @see https://haveibeenpwned.com/API/v3#PwnedPasswords
  */
 
-import { logger } from "@/lib/logger";
+const HIBP_API_URL = "https://api.pwnedpasswords.com/range";
 
 /**
- * Check if a password has appeared in known data breaches via HIBP.
+ * Check whether a password appears in the HIBP Pwned Passwords database.
  *
- * Returns the number of times the password was seen in breaches,
- * or `0` if it was not found (or if the API is unreachable).
+ * Returns the number of times the password has been seen in known data
+ * breaches. A return value of 0 means the password was not found.
+ * Throws on network error so callers can decide whether to block (fail-closed)
+ * or warn (fail-open).
+ *
+ * @param password - The plaintext password to check (never transmitted).
+ * @returns Number of times the password appears in breach datasets.
  */
-export async function checkPasswordBreached(password: string): Promise<number> {
+export async function checkPasswordPwned(password: string): Promise<number> {
+  // SHA-1 hash the password. We use SubtleCrypto (available in browser + edge)
+  // rather than Node's `crypto` module for environment portability.
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest("SHA-1", encoder.encode(password));
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
+
+  // k-anonymity: send only the first 5 characters of the hash.
+  const prefix = hashHex.slice(0, 5);
+  const suffix = hashHex.slice(5);
+
+  const response = await fetch(`${HIBP_API_URL}/${prefix}`, {
+    // Tell HIBP to return results in the original hash format (not NTLM).
+    headers: { "Add-Padding": "true" },
+    signal: AbortSignal.timeout(5_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HIBP API error: ${response.status}`);
+  }
+
+  const text = await response.text();
+
+  // Response is a newline-separated list of "<SUFFIX>:<count>" pairs.
+  for (const line of text.split("\n")) {
+    const [hashSuffix, countStr] = line.trim().split(":");
+    if (hashSuffix === suffix) {
+      return parseInt(countStr ?? "0", 10);
+    }
+  }
+
+  return 0;
+}
+
+/**
+ * Validate that a password is not in the HIBP breach database.
+ *
+ * Returns `null` when the password is safe, or an error message string
+ * when it appears in breaches. Returns `null` on network failure (fail-open)
+ * to avoid blocking legitimate password resets during HIBP outages.
+ *
+ * @param password - The plaintext password to validate.
+ */
+export async function validatePasswordNotPwned(password: string): Promise<string | null> {
   try {
-    // SHA-1 hash the password
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest("SHA-1", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
-
-    const prefix = hashHex.slice(0, 5);
-    const suffix = hashHex.slice(5);
-
-    const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
-      headers: { "Add-Padding": "true" },
-      signal: AbortSignal.timeout(3000),
-    });
-
-    if (!response.ok) {
-      return 0;
+    const count = await checkPasswordPwned(password);
+    if (count > 0) {
+      return `This password has appeared in ${count.toLocaleString()} known data breach${count === 1 ? "" : "es"}. Please choose a different password.`;
     }
-
-    const body = await response.text();
-
-    // Each line is: SUFFIX:COUNT
-    for (const line of body.split("\n")) {
-      const [lineSuffix, countStr] = line.trim().split(":");
-      if (lineSuffix === suffix) {
-        return parseInt(countStr, 10) || 1;
-      }
-    }
-
-    return 0;
-  } catch (err) {
-    // Non-blocking: if HIBP is down, skip the check
-    logger.warn("HIBP check failed (non-blocking)", { context: "hibp", error: err });
-    return 0;
+    return null;
+  } catch {
+    // Network error or HIBP unavailable — fail-open so users can still reset passwords.
+    // The password policy (length/complexity) still applies regardless.
+    return null;
   }
 }
