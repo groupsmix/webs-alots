@@ -113,37 +113,13 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // API Versioning: Sunset header on unversioned routes that are now
-      // also available under /api/v1/. Signals to API consumers that the
-      // unversioned paths will be removed in a future release.
-      ...[
-        "booking",
-        "upload",
-        "checkin",
-        "chat",
-        "notifications",
-        "webhooks",
-        "payments",
-        "consent",
-        "files",
-      ].flatMap((route) => [
-        {
-          source: `/api/${route}`,
-          headers: [
-            { key: "Sunset", value: "Sat, 31 Dec 2026 23:59:59 GMT" },
-            { key: "Deprecation", value: "true" },
-            { key: "Link", value: `</api/v1/${route}>; rel="successor-version"` },
-          ],
-        },
-        {
-          source: `/api/${route}/:path*`,
-          headers: [
-            { key: "Sunset", value: "Sat, 31 Dec 2026 23:59:59 GMT" },
-            { key: "Deprecation", value: "true" },
-            { key: "Link", value: `</api/v1/${route}>; rel="successor-version"` },
-          ],
-        },
-      ]),
+      // API Versioning: Sunset headers removed per audit finding S0-03-04.
+      // The /api/v1/* routes are rewrites to unversioned handlers (see
+      // rewrites() below), NOT independent implementations. Advertising a
+      // Sunset date on the unversioned paths is misleading because both
+      // paths resolve to the same handler. Re-add Sunset headers only once
+      // real v1 handlers are implemented and unversioned paths are scheduled
+      // for removal.
     ];
   },
 

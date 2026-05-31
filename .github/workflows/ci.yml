@@ -249,6 +249,11 @@ jobs:
           # closed on runaway shared bundle growth (R-17).
           BUNDLE_BUDGET_KB: "800"
 
+      # INF-01: Verify that the cron handler exports a `scheduled` function.
+      # Without this, cron triggers silently fail on Cloudflare Workers.
+      - name: Verify cron scheduled export
+        run: node scripts/verify-cron-export.mjs
+
       # AUDIT FINDING #20: Guard against unsafe dangerouslySetInnerHTML usage
       # outside of known-safe helper files (safeJsonLdStringify, sanitizeHtml).
       - name: Guard dangerouslySetInnerHTML allowlist
