@@ -38,6 +38,7 @@ import {
 } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { requiresEncryption, normalizePhiCategory } from "@/lib/encryption";
+import { getAvScanRequired, getAvScanUrl, getR2Config, isCi, isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
   uploadToR2,
@@ -196,7 +197,9 @@ export function expectedKeyPrefixForProfile(
 export const POST = withAuth(
   async (request, { profile }) => {
     if (!isR2Configured()) {
-      logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
+      logger.warn("Upload attempted but R2 storage is not configured", {
+        context: "upload",
+      });
       return apiError("File storage is not configured. Contact the administrator.", 503);
     }
 
@@ -252,16 +255,29 @@ export const POST = withAuth(
     // uploaded files are sent to an external ClamAV REST API before
     // persisting to R2. Deploy a ClamAV REST service and set AV_SCAN_URL
     // to enable (e.g. clamav-rest, ClamScan Lambda).
-    if (process.env.AV_SCAN_URL) {
+    //
+    // A52-3 / A31-A60 Top Finding #3 (HIGH): PHI categories ALWAYS
+    // fail closed when the AV service is unreachable or non-OK. Non-PHI
+    // uploads still respect AV_SCAN_REQUIRED for ops flexibility. The
+    // category-aware policy beats a single env switch because a
+    // misconfigured prod that forgets AV_SCAN_REQUIRED=true would
+    // otherwise let PHI uploads through unscanned.
+    const phiFailClosed = requiresEncryption(category);
+    const failClosed = phiFailClosed || getAvScanRequired();
+    const avScanUrl = getAvScanUrl();
+    if (avScanUrl) {
       try {
-        const avResponse = await fetch(process.env.AV_SCAN_URL, {
+        const avResponse = await fetch(avScanUrl, {
           method: "POST",
           body: buffer,
           headers: { "Content-Type": file.type },
           signal: AbortSignal.timeout(15_000),
         });
         if (avResponse.ok) {
-          const avResult = (await avResponse.json()) as { clean?: boolean; malware?: string };
+          const avResult = (await avResponse.json()) as {
+            clean?: boolean;
+            malware?: string;
+          };
           if (avResult.clean === false) {
             logger.warn("AV scan detected malware in upload", {
               context: "upload",
@@ -274,10 +290,10 @@ export const POST = withAuth(
           logger.warn("AV scan service returned non-OK status", {
             context: "upload",
             status: avResponse.status,
+            category,
+            phiFailClosed,
           });
-          // Fail open if AV service is down (availability > blocking uploads).
-          // In strict mode (AV_SCAN_REQUIRED=true), fail closed instead.
-          if (process.env.AV_SCAN_REQUIRED === "true") {
+          if (failClosed) {
             return apiError("Virus scan unavailable — upload rejected", 503);
           }
         }
@@ -285,11 +301,24 @@ export const POST = withAuth(
         logger.warn("AV scan service unreachable", {
           context: "upload",
           error: err instanceof Error ? err.message : String(err),
+          category,
+          phiFailClosed,
         });
-        if (process.env.AV_SCAN_REQUIRED === "true") {
+        if (failClosed) {
           return apiError("Virus scan unavailable — upload rejected", 503);
         }
       }
+    } else if (phiFailClosed && isProduction() && !isCi()) {
+      // A52-3: PHI upload attempted in production with no AV scanner
+      // configured at all. This is a deployment misconfiguration —
+      // block the upload and surface it loudly so the operator notices.
+      // Non-production envs, CI environments, and non-PHI uploads
+      // pre-existed without an AV scanner, so we don't break those paths.
+      logger.error("PHI upload rejected in production: AV_SCAN_URL not configured", {
+        context: "upload",
+        category,
+      });
+      return apiError("Virus scan not configured for clinical uploads", 503);
     }
     // A52.8: Strip EXIF/IPTC metadata from JPEG images before storage.
     // Patient X-rays and clinical photos may contain DICOM-like metadata
@@ -328,7 +357,12 @@ export const POST = withAuth(
     const isImage = file.type.startsWith("image/");
     const thumbnails = isImage && url ? getResponsiveImageUrls(url) : undefined;
 
-    return apiSuccess({ url, key, encrypted: requiresEncryption(category), thumbnails });
+    return apiSuccess({
+      url,
+      key,
+      encrypted: requiresEncryption(category),
+      thumbnails,
+    });
   },
   ["super_admin", "clinic_admin", "receptionist", "doctor"],
 );
@@ -468,20 +502,22 @@ export const PUT = withAuthValidation(
     // W8-R-01: AV scan for presigned uploads. The POST path runs ClamAV but
     // the PUT (confirm) path did not — an inconsistent control. Fetch the
     // full object body and send it to the AV scanner.
-    // nosemgrep: semgrep.env-access — AV_SCAN_URL validated at boot in env.ts
-    if (process.env.AV_SCAN_URL) {
+    const avScanUrl = getAvScanUrl();
+    if (avScanUrl) {
       try {
         const fullBody = await readR2ObjectHead(key, metadata.contentLength);
         if (fullBody) {
-          // nosemgrep: semgrep.env-access — same var, second access
-          const avResponse = await fetch(process.env.AV_SCAN_URL, {
+          const avResponse = await fetch(avScanUrl, {
             method: "POST",
             body: new Uint8Array(fullBody),
             headers: { "Content-Type": contentType },
             signal: AbortSignal.timeout(15_000),
           });
           if (avResponse.ok) {
-            const avResult = (await avResponse.json()) as { clean?: boolean; malware?: string };
+            const avResult = (await avResponse.json()) as {
+              clean?: boolean;
+              malware?: string;
+            };
             if (avResult.clean === false) {
               logger.warn("AV scan detected malware in presigned upload, deleting", {
                 context: "upload",
@@ -497,8 +533,7 @@ export const PUT = withAuthValidation(
               status: avResponse.status,
               key,
             });
-            // nosemgrep: semgrep.env-access — AV_SCAN_REQUIRED checked at runtime for fail-closed
-            if (process.env.AV_SCAN_REQUIRED === "true") {
+            if (getAvScanRequired()) {
               await deleteFromR2(key);
               return apiError("Virus scan unavailable — upload rejected", 503);
             }
@@ -510,8 +545,7 @@ export const PUT = withAuthValidation(
           error: err instanceof Error ? err.message : String(err),
           key,
         });
-        // nosemgrep: semgrep.env-access — AV_SCAN_REQUIRED checked at runtime for fail-closed
-        if (process.env.AV_SCAN_REQUIRED === "true") {
+        if (getAvScanRequired()) {
           await deleteFromR2(key);
           return apiError("Virus scan unavailable — upload rejected", 503);
         }
@@ -577,9 +611,8 @@ export const GET = withAuth(
       return apiInternalError("Failed to generate upload URL");
     }
 
-    const publicUrl = process.env.R2_PUBLIC_URL
-      ? `${process.env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`
-      : null;
+    const r2PublicUrl = getR2Config().publicUrl;
+    const publicUrl = r2PublicUrl ? `${r2PublicUrl.replace(/\/$/, "")}/${key}` : null;
 
     // L3-H2: Include responsive thumbnail URLs for image content types so the
     // client can render optimized previews after direct-upload completes.
