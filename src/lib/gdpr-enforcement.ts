@@ -64,9 +64,7 @@ export async function getProcessingEnforcement(
   try {
     const { data, error } = await supabase
       .from("users")
-      .select(
-        "processing_restricted, processing_objection_active, processing_objection_activities",
-      )
+      .select("processing_restricted, processing_objection_active, processing_objection_activities")
       .eq("id", userId)
       .single();
 
@@ -80,8 +78,7 @@ export async function getProcessingEnforcement(
     }
 
     const restricted = (data as Record<string, unknown>).processing_restricted === true;
-    const objectionActive =
-      (data as Record<string, unknown>).processing_objection_active === true;
+    const objectionActive = (data as Record<string, unknown>).processing_objection_active === true;
     const objectedActivities: string[] = Array.isArray(
       (data as Record<string, unknown>).processing_objection_activities,
     )
@@ -109,10 +106,7 @@ function makeEnforcement(
     objectedActivities,
     objectsTo(activity: ProcessingActivity): boolean {
       if (!objectionActive) return false;
-      return (
-        objectedActivities.includes("all") ||
-        objectedActivities.includes(activity)
-      );
+      return objectedActivities.includes("all") || objectedActivities.includes(activity);
     },
   };
 }
@@ -137,7 +131,8 @@ export function objectedResponse(activity: ProcessingActivity): {
   status: number;
 } {
   return {
-    error: `You have objected to this type of processing (${activity}) under GDPR Art.21. ` +
+    error:
+      `You have objected to this type of processing (${activity}) under GDPR Art.21. ` +
       "Withdraw your objection via your account privacy settings to re-enable it.",
     code: "PROCESSING_OBJECTED",
     status: 403,

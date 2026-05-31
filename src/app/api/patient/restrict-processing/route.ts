@@ -75,25 +75,29 @@ export const POST = withAuth(
     let updateError: unknown = null;
 
     if (type === "restriction") {
-      // Art.18: suspend all non-essential processing for this user
+      // Art.18: suspend all non-essential processing for this user.
+      // The processing_restricted_* columns are added by migration 00126 but
+      // not yet in the generated Database types; cast through `never` (the
+      // established Supabase escape hatch for excess-property rejection).
       const { error } = await supabase
         .from("users")
         .update({
           processing_restricted: true,
           processing_restricted_at: new Date().toISOString(),
           processing_restriction_reason: reason,
-        })
+        } as never)
         .eq("id", profile.id);
       updateError = error;
     } else {
-      // Art.21: object to specific legitimate-interest processing activities
+      // Art.21: object to specific legitimate-interest processing activities.
+      // Same generated-types caveat as above.
       const { error } = await supabase
         .from("users")
         .update({
           processing_objection_active: true,
           processing_objection_at: new Date().toISOString(),
           processing_objection_activities: processingActivities,
-        })
+        } as never)
         .eq("id", profile.id);
       updateError = error;
     }
@@ -143,7 +147,11 @@ export const POST = withAuth(
 export const DELETE = withAuth(
   async (request: NextRequest, { supabase, profile }) => {
     if (profile.role !== "patient") {
-      return apiError("Only patients can withdraw restriction/objection requests.", 403, "FORBIDDEN");
+      return apiError(
+        "Only patients can withdraw restriction/objection requests.",
+        403,
+        "FORBIDDEN",
+      );
     }
 
     let body: unknown;
@@ -169,7 +177,7 @@ export const DELETE = withAuth(
           processing_restricted: false,
           processing_restricted_at: null,
           processing_restriction_reason: null,
-        } as Record<string, unknown>)
+        } as never)
         .eq("id", profile.id);
       updateError = error;
     } else {
@@ -179,7 +187,7 @@ export const DELETE = withAuth(
           processing_objection_active: false,
           processing_objection_at: null,
           processing_objection_activities: [],
-        } as Record<string, unknown>)
+        } as never)
         .eq("id", profile.id);
       updateError = error;
     }
