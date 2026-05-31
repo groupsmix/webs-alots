@@ -109,13 +109,13 @@ test.describe("TC-03 — Cron routes reject malformed Authorization headers", ()
 
 test.describe("TC-03 — Cron routes reject CRLF-injected tokens (I-06)", () => {
   const crlfTokens = [
-    "valid-secret-part\r\nX-Injected: evil",
-    "valid-secret\nX-Another: header",
-    "valid-secret\r\n\r\nbody-injection",
+    { label: "CRLF header injection", value: "valid-secret-part\r\nX-Injected: evil" },
+    { label: "LF header injection", value: "valid-secret\nX-Another: header" },
+    { label: "CRLF body injection", value: "valid-secret\r\n\r\nbody-injection" },
   ];
 
-  for (const token of crlfTokens) {
-    test(`GET /api/cron/notifications with CRLF token → 401`, async ({ request }) => {
+  for (const { label, value: token } of crlfTokens) {
+    test(`GET /api/cron/notifications with ${label} → 401`, async ({ request }) => {
       // The fetch API normalises/rejects CRLF in headers in most environments,
       // but we test the endpoint still returns 401 regardless of how the runtime handles it.
       try {
