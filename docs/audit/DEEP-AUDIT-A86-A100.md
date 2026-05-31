@@ -610,7 +610,7 @@ Confirmed by direct read of:
 ### 1. Kernel hacker
 
 - **(F-A98-K1) P1 — `timingSafeEqual` used correctly for CRON_SECRET but the call site (`cron-auth.ts`) compares lengths first, leaking length via timing**
-  The early-exit `if (a.length !== b.length) return false` is a classic side-channel. For CRON_SECRET this leaks the secret _length_ — usually fine, but worth a `pad-then-xor` fix if defense-in-depth matters.
+  The early-exit `if (a.length !== b.length) return false` is a classic side-channel. For CRON*SECRET this leaks the secret \_length* — usually fine, but worth a `pad-then-xor` fix if defense-in-depth matters.
 
 - **(F-A98-K2) P2 — `crypto.randomUUID()` used for trace IDs and idempotency keys**
   randomUUID is 122 bits of entropy — fine for trace, _under-rotated for long-lived idempotency_. If a webhook idempotency key TTL is > 1 year, collision risk grows.
