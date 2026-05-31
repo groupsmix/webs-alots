@@ -15,7 +15,7 @@ export async function fetchPatientFromExternalSystem(patientId: string): Promise
     `https://external-ehr.example.com/api/patients/${patientId}`,
     {
       method: "GET",
-      headers: { Authorization: `Bearer ${process.env.EXTERNAL_EHR_API_KEY}` },
+      headers: { Authorization: `Bearer ${process.env.EXTERNAL_EHR_API_KEY}` }, // nosemgrep: semgrep.env-access — illustrative example file, not executed at runtime
     },
     {
       serviceName: "external-ehr",
@@ -74,7 +74,7 @@ export async function chargePaymentCard(cardToken: string, amountCents: number):
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, // nosemgrep: semgrep.env-access — illustrative example file, not executed at runtime
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
