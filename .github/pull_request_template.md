@@ -40,19 +40,20 @@
 
 ## Rollback
 
-<!-- How to revert this change if it causes issues in production. -->
-<!-- e.g., "Revert commit X" or "Toggle feature flag Y" -->
+<!-- How to revert this change if it causes issues in production.
+     Example: "Revert this commit" or "Run migration 00XXX_undo.sql" -->
 
-## New SLO / metric required?
+## SLO / Metrics Impact
 
-- [ ] Yes — describe below
-- [ ] No
+- [ ] This PR introduces or modifies an SLO-tracked endpoint
+- [ ] New metrics or alerts are needed
+- [ ] N/A — no SLO/metrics impact
 
-## Drive-by refactors
+## Drive-by Refactors
 
-<!-- Declare any opportunistic changes unrelated to the PR's primary goal. "None" if clean. -->
+<!-- List any unrelated cleanup included in this PR (keep minimal). -->
 
-None
+- None
 
 ## Checklist
 

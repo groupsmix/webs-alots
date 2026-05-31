@@ -25,9 +25,9 @@ type TableName = keyof Database["public"]["Tables"];
 const DEFAULT_QUERY_LIMIT = 1000;
 
 /**
- * Q-03: Allow-list of columns that may appear in dynamic `.order()` calls.
- * Prevents enumeration or SQL injection via order parameter even though
- * callers currently pass hardcoded strings. Defense-in-depth.
+ * Q-03 / Q-42: Allowlist of column names permitted in dynamic .order() clauses.
+ * Prevents SQL injection via dynamic column name interpolation even though
+ * current callers use hardcoded strings. Defense-in-depth.
  */
 const ALLOWED_ORDER_COLUMNS = new Set([
   "id",
@@ -35,12 +35,14 @@ const ALLOWED_ORDER_COLUMNS = new Set([
   "updated_at",
   "appointment_date",
   "start_time",
+  "end_time",
   "slot_start",
   "slot_end",
   "start_date",
   "due_date",
   "day_of_week",
   "sent_at",
+  "uploaded_at",
   "name",
   "first_name",
   "last_name",
@@ -87,15 +89,15 @@ async function query<T>(
     q = q.in(opts.inFilter[0], opts.inFilter[1] as string[]);
   }
   if (opts?.order) {
-    // Q-03: Reject unknown order columns to prevent enumeration attacks.
-    if (!ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
-      logger.warn("Rejected unknown order column", {
+    // Q-03 / Q-42: Validate column name against allowlist before passing to PostgREST
+    if (ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
+      q = q.order(opts.order[0], opts.order[1]);
+    } else {
+      logger.warn("Rejected disallowed order column", {
         context: "data/server",
         table,
         column: opts.order[0],
       });
-    } else {
-      q = q.order(opts.order[0], opts.order[1]);
     }
   }
   // Always apply an upper-bound limit to prevent unbounded result sets.
@@ -142,14 +144,15 @@ async function _queryPaginated<T>(
     q = q.in(opts.inFilter[0], opts.inFilter[1] as string[]);
   }
   if (opts?.order) {
-    // Q-03: Reject unknown order columns (defense-in-depth).
-    if (!ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
-      logger.warn("Rejected unknown order column", {
+    // Q-03 / Q-42: Validate column name against allowlist before passing to PostgREST
+    if (ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
+      q = q.order(opts.order[0], opts.order[1]);
+    } else {
+      logger.warn("Rejected disallowed order column", {
         context: "data/server/paginated",
+        table,
         column: opts.order[0],
       });
-    } else {
-      q = q.order(opts.order[0], opts.order[1]);
     }
   }
   q = q.range(from, to);
