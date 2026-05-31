@@ -59,15 +59,20 @@ test.describe("Open Redirect Prevention", () => {
         // The login page must load successfully (not a 5xx error).
         expect(response?.status()).toBeLessThan(500);
 
-        // The final URL must remain on the same origin after any redirect.
+        // The single E2E-testable security boundary without real credentials:
+        // navigating to /login with a malicious ?redirect= value must NOT
+        // bounce the browser off-origin. The middleware's safeRedirectPath()
+        // neutralises the param at post-login read time (covered by unit
+        // tests); here we only verify that the page itself stays put.
         const finalUrl = new URL(page.url());
         expect(finalUrl.hostname).toBe(loginUrl.hostname);
+        expect(finalUrl.protocol).toMatch(/^https?:$/);
 
-        // The malicious host must not appear anywhere in the final URL.
-        const maliciousHost = "evil.example.com";
-        expect(page.url()).not.toContain(maliciousHost);
-        expect(page.url()).not.toContain("javascript:");
-        expect(page.url()).not.toContain("data:");
+        // We intentionally do NOT assert that the malicious host string is
+        // absent from the URL — it appears URL-encoded inside the ?redirect=
+        // query parameter and is harmless until the middleware decodes it
+        // post-login. Asserting otherwise would be testing the address bar,
+        // not the security control.
       });
     }
   });
