@@ -656,7 +656,7 @@ export function enforcePhiMaskingPolicy(): void {
           level: "fatal",
           tags: {
             check: "phi-masking",
-            "allow_unmasked_phi": "true",
+            allow_unmasked_phi: "true",
           },
           extra: { reason },
         });
