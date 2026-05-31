@@ -26,7 +26,8 @@
     "knip": "knip",
     "seed": "tsx scripts/seed.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "eval": "npx tsx evals/hallucination.eval.ts && npx tsx evals/jailbreak.eval.ts && npx tsx evals/bias.eval.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1037.0",

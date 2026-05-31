@@ -1,0 +1,106 @@
+name: AI Evaluations (Nightly)
+
+on:
+  schedule:
+    # Run at 02:00 UTC daily
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Evaluation suite to run (all, hallucination, jailbreak, bias)"
+        required: false
+        default: "all"
+
+permissions:
+  contents: read
+
+env:
+  EVAL_BASE_URL: ${{ secrets.EVAL_BASE_URL }}
+  EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
+
+jobs:
+  hallucination:
+    if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'hallucination' }}
+    runs-on: ubuntu-latest
+    name: Hallucination Tests (30 cases)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.13"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run hallucination evaluations
+        run: npx tsx evals/hallucination.eval.ts
+        continue-on-error: true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hallucination-results
+          path: evals/results/hallucination-*.json
+          retention-days: 90
+
+  jailbreak:
+    if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'jailbreak' }}
+    runs-on: ubuntu-latest
+    name: Jailbreak Tests (30 cases)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.13"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run jailbreak evaluations
+        run: npx tsx evals/jailbreak.eval.ts
+        continue-on-error: true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: jailbreak-results
+          path: evals/results/jailbreak-*.json
+          retention-days: 90
+
+  bias:
+    if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'bias' }}
+    runs-on: ubuntu-latest
+    name: Bias Tests (30 cases)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.13"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run bias evaluations
+        run: npx tsx evals/bias.eval.ts
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bias-results
+          path: evals/results/bias-*.json
+          retention-days: 90
