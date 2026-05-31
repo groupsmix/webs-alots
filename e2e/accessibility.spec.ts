@@ -30,10 +30,15 @@ const EXCLUDED_RULES = ["color-contrast", "aria-prohibited-attr", "aria-valid-at
  * auth → dashboard) which destroys the execution context mid-analysis.
  */
 async function stableGoto(page: import("@playwright/test").Page, path: string) {
-  await page.goto(path, { waitUntil: "load" });
-  // Wait for the page body to be attached (avoids unreliable networkidle
-  // which never resolves when dev server HMR keeps connections open).
-  await page.locator("body").waitFor({ state: "attached" });
+  // Use domcontentloaded to handle middleware redirects gracefully.
+  // The middleware may redirect (e.g., no-tenant → root) which destroys
+  // the execution context if axe-core runs mid-navigation.
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  // Wait for any client-side redirects to settle before running axe-core.
+  // A short deterministic wait lets middleware redirects complete without
+  // relying on networkidle (which hangs due to HMR WebSocket).
+  await page.waitForLoadState("load");
+  await page.waitForFunction(() => document.readyState === "complete");
 }
 
 const DECORATIVE_SELECTORS = [
@@ -87,8 +92,8 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
     // Clear consent to force the banner to appear
     await stableGoto(page, "/");
     await page.evaluate(() => localStorage.removeItem("cookie-consent"));
-    await page.reload();
-    await page.locator("body").waitFor({ state: "attached" });
+    await page.reload({ waitUntil: "load" });
+    await page.waitForFunction(() => document.readyState === "complete");
 
     // Scope analysis to the consent banner
     const banner = page.locator("#cookie-consent-banner");
