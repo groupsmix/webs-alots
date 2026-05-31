@@ -30,15 +30,22 @@ const EXCLUDED_RULES = ["color-contrast", "aria-prohibited-attr", "aria-valid-at
  * auth → dashboard) which destroys the execution context mid-analysis.
  */
 async function stableGoto(page: import("@playwright/test").Page, path: string) {
-  // Use domcontentloaded to handle middleware redirects gracefully.
-  // The middleware may redirect (e.g., no-tenant → root) which destroys
-  // the execution context if axe-core runs mid-navigation.
-  await page.goto(path, { waitUntil: "domcontentloaded" });
-  // Wait for any client-side redirects to settle before running axe-core.
-  // A short deterministic wait lets middleware redirects complete without
-  // relying on networkidle (which hangs due to HMR WebSocket).
-  await page.waitForLoadState("load");
-  await page.waitForFunction(() => document.readyState === "complete");
+  // Navigate and wait for the full page load including server-side redirects.
+  await page.goto(path, { waitUntil: "load" });
+  // Wait for React hydration to complete and any client-side redirects to
+  // settle. The middleware or Next.js Router may navigate after hydration,
+  // destroying the execution context if axe-core starts mid-navigation.
+  // Poll until no navigation occurs within a 500ms window.
+  let lastUrl = page.url();
+  let stable = false;
+  for (let i = 0; i < 6 && !stable; i++) {
+    await page.waitForTimeout(200);
+    const currentUrl = page.url();
+    if (currentUrl === lastUrl) {
+      stable = true;
+    }
+    lastUrl = currentUrl;
+  }
 }
 
 const DECORATIVE_SELECTORS = [
