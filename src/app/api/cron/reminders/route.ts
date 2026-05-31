@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { dispatchNotification } from "@/lib/notifications";
@@ -14,7 +15,17 @@ import { createAdminClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
-import { getWorkerBinding } from "@/lib/cf-bindings";
+
+/**
+ * Minimal KV namespace surface used by this file. The Cloudflare Workers
+ * types are not installed as a dependency, so we declare the slice we use
+ * locally (same pattern as src/lib/subdomain-cache.ts).
+ */
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
+}
 
 /**
  * A77-F1: Per-run appointment limit to prevent hitting the 15-minute Cron
@@ -205,7 +216,9 @@ async function handler(request: NextRequest) {
           }
         }
       } catch {
-        logger.warn("reminders cron: KV cursor write failed — non-fatal", { context: "cron/reminders" });
+        logger.warn("reminders cron: KV cursor write failed — non-fatal", {
+          context: "cron/reminders",
+        });
       }
     }
 
