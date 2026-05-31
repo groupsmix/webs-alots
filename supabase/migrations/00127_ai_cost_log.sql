@@ -24,9 +24,12 @@ CREATE INDEX idx_ai_cost_route_date
   ON ai_cost_log(route, created_at DESC);
 
 -- Index for recent cost queries (avoiding full table scans on getAICostLast30Days)
-CREATE INDEX idx_ai_cost_recent 
-  ON ai_cost_log(created_at DESC) 
-  WHERE created_at > NOW() - INTERVAL '90 days';
+-- NOTE: Postgres requires functions in index predicates to be IMMUTABLE.
+-- NOW() is STABLE, not IMMUTABLE, so a partial index `WHERE created_at > NOW() - INTERVAL '...'`
+-- is rejected (SQLSTATE 42P17). The fix is a plain index on created_at; per-clinic
+-- recency queries are already served by idx_ai_cost_clinic_date(clinic_id, created_at DESC).
+CREATE INDEX idx_ai_cost_recent
+  ON ai_cost_log(created_at DESC);
 
 -- Enable RLS: clinics can only read their own cost data
 ALTER TABLE ai_cost_log ENABLE ROW LEVEL SECURITY;
