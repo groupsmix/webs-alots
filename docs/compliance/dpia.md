@@ -2,6 +2,57 @@
 
 **C-01: Required by Moroccan Law 09-08 (Loi relative a la protection des personnes physiques a l'egard du traitement des donnees a caractere personnel) and GDPR-equivalent obligations.**
 
+## 0. Children's Data Assessment (A61-F1 Gap Resolution)
+
+**Audit finding:** A61-F1 (🟠 HIGH) — DPIA did not address whether the patient population
+includes minors (children < 16). This section resolves that gap.
+
+### Assessment
+
+A Moroccan clinic platform processing health records **will** encounter minor patients.
+Paediatric, dental, general practice, and family medicine clinics regularly treat children,
+and the platform's registration form accepts any DOB.
+
+### Applicable Law
+
+| Jurisdiction | Rule |
+|---|---|
+| **GDPR Art.8** | Consent for under-16s requires parental/guardian authorisation |
+| **Moroccan Law 09-08** | Heightened safeguards for sensitive data; minors cannot provide consent |
+
+### Technical Controls Implemented
+
+| Control | Implementation | File |
+|---|---|---|
+| Minor detection from DOB | `isMinorByDob(dob)` function | `src/lib/minors.ts` |
+| Minor AI processing audit log | `logMinorAIProcessing()` | `src/lib/ai/config.ts` |
+| Minor consent enforcement migration | Migration `00097_minor_consent_enforcement.sql` | `supabase/migrations/` |
+| `is_minor` flag in patient metadata | `PatientMetadata.is_minor` field | `src/lib/types/patient-metadata.ts` |
+
+### Remaining Gaps
+
+1. **Parental consent workflow:** No UI exists for a parent/guardian to give consent on
+   behalf of a minor patient. This is required before a minor can be registered and have
+   AI features applied. Tracked as a P1 feature in the product backlog.
+
+2. **No profiling of minors:** AI features MUST NOT profile or use historical data for
+   minors without explicit parental consent. The `is_minor` flag SHOULD gate AI routes —
+   currently only `patient-summary` checks this flag via `logMinorAIProcessing()`.
+
+3. **Age verification at registration:** The registration form accepts any DOB without
+   routing minors to a parental consent flow. This must be added before production launch
+   with minor patients.
+
+### Required Actions Before Serving Minor Patients
+
+- [ ] Implement parental consent capture at registration (route minor DOB to guardian consent form)
+- [ ] Gate all AI routes behind `is_minor` check — refuse AI processing for minors without parental consent
+- [ ] Add `guardian_name`, `guardian_phone`, `guardian_relationship` fields to patient schema
+- [ ] Update Privacy Policy to address children's data processing
+- [ ] Obtain CNDP guidance on minor health data (Law 09-08 does not specify an age threshold; CNDP may align with GDPR's Art.8)
+
+---
+
 ## 1. Processing Activities
 
 | Activity                   | Data Categories                                                 | Lawful Basis                                                       | Retention                                                  |

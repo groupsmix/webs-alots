@@ -120,7 +120,15 @@ The auto-suggest feature provides prescription suggestions that a doctor must ex
 
 **Approval:**
 
-| Name                           | Role          | Date             | Signature        |
-| ------------------------------ | ------------- | ---------------- | ---------------- |
-| **\*\*\*\***\_\_\_**\*\*\*\*** | CTO           | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
-| **\*\*\*\***\_\_\_**\*\*\*\*** | Legal Counsel | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+> ⚠️ **A72-F1 — Audit finding:** Blank signatures mean this document is **not yet
+> management-approved compliance evidence**. It cannot be submitted to a regulator or
+> auditor in this state. The CTO and Legal Counsel must sign (wet ink or qualified
+> electronic signature) and the dates filled before this document is used as evidence.
+> Until signed, status is DRAFT.
+
+| Name | Role | Date | Signature |
+| ---- | ---- | ---- | --------- |
+| _(print name)_ | CTO | __________ | __________ |
+| _(print name)_ | Legal Counsel | __________ | __________ |
+
+**Status:** 🔴 DRAFT — awaiting management sign-off
