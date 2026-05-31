@@ -106,7 +106,10 @@ export const TOKEN_LIMITS = {
  */
 export const safeBearerToken = z
   .string()
-  .min(TOKEN_LIMITS.MIN_TOKEN_LENGTH, `Token too short (min ${TOKEN_LIMITS.MIN_TOKEN_LENGTH} chars)`)
+  .min(
+    TOKEN_LIMITS.MIN_TOKEN_LENGTH,
+    `Token too short (min ${TOKEN_LIMITS.MIN_TOKEN_LENGTH} chars)`,
+  )
   .max(TOKEN_LIMITS.MAX_TOKEN_LENGTH, `Token too long (max ${TOKEN_LIMITS.MAX_TOKEN_LENGTH} chars)`)
   .regex(/^[A-Za-z0-9._-]+$/, "Bearer token contains invalid characters");
 
