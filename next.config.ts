@@ -17,6 +17,13 @@ const nextConfig: NextConfig = {
   // MEDIUM-9: Suppress X-Powered-By header (information disclosure).
   poweredByHeader: false,
 
+  // CI runs `tsc --noEmit` (ci.yml) so the redundant type-check inside
+  // `next build` is unnecessary. On the Cloudflare Workers Builds runner
+  // (≈2 GB heap) it OOMs during this phase — skipping it fixes the build.
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // PERF-01: Enable the stable `use cache` directive (Next.js 16).
   experimental: {
     useCache: true,
