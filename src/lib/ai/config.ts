@@ -2,6 +2,13 @@
  * Shared AI configuration — centralises kill-switch, URL allowlist,
  * model version pinning, and disclaimer injection.
  *
+ * Phase 2 bridge: `resolveAIConfig()` now checks the `ai_provider_configs`
+ * table first (database-backed routing) and falls back to the
+ * `OPENAI_API_KEY` environment variable for backward compatibility.
+ * This means every route that calls `resolveAIConfig()` automatically
+ * uses the admin-managed provider keys from the superadmin UI when
+ * available, without requiring route-by-route rewrites.
+ *
  * Findings addressed:
  *   F-AI-01: Kill switch enforcement across all AI routes
  *   F-AI-05: OPENAI_BASE_URL allowlist (prevents operator-overridable exfil)
@@ -12,6 +19,8 @@
 import { AI_DISCLAIMER_FR } from "@/lib/ai-disclaimer";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
+import { loadProviderConfigs } from "./router";
 
 // ── URL Allowlist (F-AI-05) ──
 
@@ -69,14 +78,20 @@ export interface AIConfig {
 }
 
 /**
- * Resolve and validate AI configuration from environment variables.
- * Returns null with an error reason if AI cannot be used.
+ * Resolve and validate AI configuration.
  *
- * Checks (in order):
- * 1. F-AI-01: Global kill-switch via KV
- * 2. OPENAI_API_KEY must be set
- * 3. F-AI-05: OPENAI_BASE_URL must be in allowlist
- * 4. F-AI-07: Model is pinned (falls back to DEFAULT_MODEL)
+ * Resolution order:
+ *   1. F-AI-01: Global kill-switch (KV + env)
+ *   2. Database — load active provider configs from `ai_provider_configs`.
+ *      Uses the first active provider that has an API key (OpenAI preferred
+ *      for backward compatibility with routes that call the OpenAI chat
+ *      completions API directly).
+ *   3. Environment fallback — `OPENAI_API_KEY` from Cloudflare secrets.
+ *   4. F-AI-05: OPENAI_BASE_URL allowlist (only for OpenAI / env fallback)
+ *   5. F-AI-07: Model pinning
+ *
+ * This bridge lets all existing routes transparently use admin-managed
+ * keys from the superadmin settings UI without per-route rewrites.
  */
 export async function resolveAIConfig(): Promise<
   { ok: true; config: AIConfig } | { ok: false; reason: string; statusCode: number }
@@ -86,12 +101,59 @@ export async function resolveAIConfig(): Promise<
     return { ok: false, reason: "AI features are disabled", statusCode: 503 };
   }
 
+  // ── Try database-backed config first ──
+  const dbResult = await resolveFromDatabase();
+  if (dbResult) {
+    return { ok: true, config: dbResult };
+  }
+
+  // ── Fallback to environment variables ──
+  return resolveFromEnv();
+}
+
+/** Try to load an active OpenAI-compatible provider from `ai_provider_configs`. */
+async function resolveFromDatabase(): Promise<AIConfig | null> {
+  try {
+    const supabase = createUntypedAdminClient("ai-config-resolve");
+    const configs = await loadProviderConfigs(supabase);
+
+    if (configs.size === 0) return null;
+
+    // Prefer OpenAI provider since callers use the OpenAI chat completions API
+    const openaiConfig = configs.get("openai");
+    if (openaiConfig?.isActive && openaiConfig.apiKey) {
+      logger.debug("AI config resolved from database (openai)", { context: "ai-config" });
+      return {
+        apiKey: openaiConfig.apiKey,
+        baseUrl: "https://api.openai.com/v1",
+        model: "gpt-4.1-mini",
+        seed: Date.now(),
+      };
+    }
+
+    // Fall back to any active provider with an OpenAI-compatible API
+    // (anthropic, google, etc. are NOT compatible — only check openai here)
+    return null;
+  } catch (err) {
+    logger.warn("Failed to load AI config from database, falling back to env", {
+      context: "ai-config",
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/** Original env-based resolution (backward compatible). */
+function resolveFromEnv():
+  | { ok: true; config: AIConfig }
+  | { ok: false; reason: string; statusCode: number } {
   // nosemgrep: semgrep.env-access — secret read at runtime; not in env.ts to avoid eager import
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return {
       ok: false,
-      reason: "AI service not configured. Please set OPENAI_API_KEY.",
+      reason:
+        "AI service not configured. Set OPENAI_API_KEY or configure a provider in the admin dashboard.",
       statusCode: 503,
     };
   }

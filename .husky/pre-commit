@@ -1,5 +1,5 @@
 npx lint-staged
-npx tsc --noEmit
+NODE_OPTIONS="--max-old-space-size=6144" npx tsc --noEmit
 
 # A206: Run gitleaks on staged changes to catch secrets before they reach CI.
 # Requires gitleaks to be installed locally (brew install gitleaks / go install).
