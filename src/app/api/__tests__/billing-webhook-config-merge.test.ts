@@ -51,12 +51,10 @@ vi.mock("@/lib/supabase-server", () => {
     from: vi.fn().mockImplementation((table: string) => {
       const builder = {
         select: vi.fn().mockReturnThis(),
-        insert: vi
-          .fn()
-          .mockReturnValue({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
         update: vi.fn().mockImplementation((payload: CapturedUpdate) => {
           if (table === "clinics") {
             captured.updates.push(payload);
