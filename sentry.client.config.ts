@@ -34,17 +34,20 @@ Sentry.init({
     return process.env.NODE_ENV === "production" ? 0.1 : 1.0;
   },
 
-  // Session replay: capture 1% of sessions, 100% on error.
+  // A69-F2: Sentry Replay is NOT initialised here unconditionally.
+  // Session recording requires explicit user consent (ePrivacy Directive /
+  // GDPR Art.7). The ConsentGatedReplay component in the root layout
+  // calls Sentry.addIntegration(replayIntegration()) dynamically ONLY after
+  // the user accepts the "marketing" cookie category.
+  //
+  // These sample rates remain as documentation of intent — they are applied
+  // when the Replay integration is added by ConsentGatedReplay.
   replaysSessionSampleRate: 0.01,
   replaysOnErrorSampleRate: 1.0,
 
   integrations: [
-    Sentry.replayIntegration({
-      // Audit P1 #13: Prevent PHI from leaking into Session Replays
-      maskAllText: true,
-      maskAllInputs: true,
-      blockAllMedia: true,
-    }),
+    // replayIntegration() intentionally removed — added dynamically by
+    // ConsentGatedReplay component after consent is confirmed.
     Sentry.browserTracingIntegration(),
   ],
 

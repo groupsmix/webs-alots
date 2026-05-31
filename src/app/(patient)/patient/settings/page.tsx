@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Download, Trash2, ShieldCheck, AlertTriangle, Lock, BellOff } from "lucide-react";
 import { useState } from "react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -182,6 +182,13 @@ export default function PatientSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/*
+        A69-F3 / A62-F2: GDPR Art.21 — per-category processing objection UI.
+        Patients can object to specific processing activities under Art.6(1)(f)
+        (legitimate interest) without requesting full account deletion.
+      */}
+      <ProcessingPreferencesCard />
 
       {/* Account Deletion */}
       <Card className="border-destructive/50">

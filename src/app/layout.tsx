@@ -8,6 +8,8 @@ import {
 } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+import { CookieConsent } from "@/components/cookie-consent";
+import { ConsentGatedReplay } from "@/components/consent-gated-replay";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { PlausibleScript } from "@/components/plausible-script";
@@ -173,6 +175,21 @@ export default async function RootLayout({
             {process.env.NEXT_PUBLIC_ENABLE_PERF_MONITORING === "true" && <PerformanceMonitor />}
           </ToastProvider>
         </ThemeProvider>
+        {/*
+          A69-F1: Cookie / consent banner on ALL pages (public + authenticated).
+          The CookieConsent component shows only when no prior choice is stored
+          in localStorage, so authenticated users who already accepted are
+          unaffected. This satisfies ePrivacy Directive + GDPR Art.7 for any
+          EU visitor that lands on a public page.
+        */}
+        <CookieConsent />
+        {/*
+          A69-F2: Gate Sentry Replay on session-recording consent.
+          Only enables Sentry's Replay integration after the user explicitly
+          accepts the "marketing" (session recording) consent category.
+          On public pages this was previously firing unconditionally.
+        */}
+        <ConsentGatedReplay />
         <ServiceWorkerRegister />
         <PlausibleScript />
       </body>

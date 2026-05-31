@@ -36,7 +36,27 @@ Sentry.init({
   // Don't send errors in development unless explicitly enabled.
   enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // R-20 Fix: Per-transaction sampling for fine-grained control
+  // A62-B2: Session Replay disabled by default (fail-secure).
+  // User must explicitly consent via cookie preferences to enable.
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 0,
+
+  // A62-B2: Session Replay masking to prevent PHI/PII in video frames.
+  integrations: [
+    new Sentry.Replay({
+      maskAllText: true,
+      maskAllInputs: true,
+      blockSelectors: [
+        '[data-contains-phi]',
+        '.patient-data',
+        '.medical-record',
+        '[data-card-number]',
+        '.consultation-message',
+      ],
+    }),
+  ],
+
+  // Performance monitoring: Sample 10% of transactions in production by default.
   tracesSampler(samplingContext) {
     // Extract transaction name from context
     const transactionName = samplingContext.name || "";
