@@ -931,6 +931,16 @@ export function getStripeSecretKey(): string | undefined {
   return process.env.STRIPE_SECRET_KEY;
 }
 
+/**
+ * External EHR API key. Used by the `http-resilience-example.ts` illustrative
+ * patterns. Returns undefined when not configured; callers should null-check
+ * before use. No central validation entry: the EHR integration is opt-in and
+ * the example file documents the pattern even when the key is not set.
+ */
+export function getExternalEhrApiKey(): string | undefined {
+  return process.env.EXTERNAL_EHR_API_KEY;
+}
+
 /** Stripe webhook secret. */
 export function getStripeWebhookSecret(): string | undefined {
   return process.env.STRIPE_WEBHOOK_SECRET;
