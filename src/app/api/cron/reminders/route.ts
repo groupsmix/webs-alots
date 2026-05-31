@@ -118,19 +118,8 @@ async function handler(request: NextRequest) {
       clinics:clinic_id (name)
     ` as const;
 
-    // First page to infer the row type.
-    // A77-F1: If a KV resume cursor exists, start from that point.
-    const firstQuery = supabase
-      .from("appointments")
-      .select(SELECT_COLS)
-      .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
-      .or(`slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`)
-      .order("slot_start", { ascending: true })
-      .limit(PAGE_SIZE)
-      // If we have a resume cursor from the previous run, skip ahead.
-      ...(resumeCursor ? [supabase.from("appointments").select("").gt("slot_start", resumeCursor)] : []);
-
     // Note: PostgREST chaining pattern — apply gt() filter if cursor exists
+    // A77-F1: If a KV resume cursor exists, start from that point.
     const baseQuery = (() => {
       const q = supabase
         .from("appointments")
@@ -141,11 +130,6 @@ async function handler(request: NextRequest) {
         .limit(PAGE_SIZE);
       return resumeCursor ? q.gt("slot_start", resumeCursor) : q;
     })();
-    void firstQuery; // suppress unused warning — replaced by baseQuery
-    // A77-F1: Resume from the last cursor if available
-    if (resumeCursor) {
-      firstQuery = firstQuery.gt("slot_start", resumeCursor);
-    }
 
     const { data: firstPage, error: firstError } = await baseQuery;
 
