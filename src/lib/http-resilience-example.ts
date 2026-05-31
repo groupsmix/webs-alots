@@ -68,10 +68,7 @@ export async function deliverWebhook(
 /**
  * Example 3: Payment processor call with tight timeout and circuit breaker.
  */
-export async function chargePaymentCard(
-  cardToken: string,
-  amountCents: number,
-): Promise<string> {
+export async function chargePaymentCard(cardToken: string, amountCents: number): Promise<string> {
   const response = await resilientFetch(
     "https://api.stripe.com/v1/payment_intents",
     {

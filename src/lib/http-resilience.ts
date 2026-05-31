@@ -194,10 +194,7 @@ export function calculateBackoffDelay(
   attemptNumber: number,
   config: RetryConfig = DEFAULT_RETRY_CONFIG,
 ): number {
-  const exponential = Math.min(
-    config.baseDelayMs * Math.pow(2, attemptNumber),
-    config.maxDelayMs,
-  );
+  const exponential = Math.min(config.baseDelayMs * Math.pow(2, attemptNumber), config.maxDelayMs);
   const jitter = exponential * 0.2 * (Math.random() * 2 - 1); // ±20%
   return Math.max(0, exponential + jitter);
 }
