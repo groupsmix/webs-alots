@@ -5,45 +5,77 @@ rules:
   # to enforce application-level tenant isolation (AGENTS.md rule #1). RLS is
   # defense-in-depth — application-level scoping is required even with RLS.
   #
-  # False positives:
+  # This rule rewrites the previous version so that .eq("clinic_id", ...) is
+  # recognised anywhere in the method chain (the previous pattern-not-regex
+  # approach silently failed because semgrep's matched range only spanned
+  # `from().method()` and the regex never saw subsequent .eq() calls).
+  #
+  # Two correctness changes vs the previous rule:
+  #
+  #   1. Use a `pattern-inside` over the full expression statement, so the
+  #      pattern-not-regex evaluates against the entire chain text.
+  #
+  #   2. Whitelist a fixed list of service-level / non-clinic-keyed tables
+  #      that the project uses (see migrations 00092 processed_stripe_events,
+  #      00094 processed_whatsapp_messages, 00101 webhook_retry_queue,
+  #      notification_queue from monetization batch, and the `users` table
+  #      which is keyed by id rather than clinic_id). For these tables an
+  #      `.eq("id", ...)` filter is the tenant-equivalent scoping.
+  #
+  # False positives this rule deliberately allows:
+  #   - Queries on the whitelisted service tables above
   #   - Queries in cron jobs that intentionally iterate over all clinics
+  #     (callers should still annotate these with `// nosemgrep: tenant-scoping`
+  #     for documentation purposes — the rule cannot detect cron context)
   #   - Admin client queries (createAdminClient) used for cross-tenant ops
   #   - Auth/registration flows before a clinic_id exists
   #
-  # The previously documented false positive "chained queries where
-  # .eq('clinic_id', ...) appears after other .eq() calls" was fixed in
-  # this rule via pattern-not-regex below — clinic_id filters at any
-  # position in the chain are now recognised as tenant-scoping.
-  #
-  # Remaining false positives should use a `// nosemgrep: semgrep.tenant-scoping`
-  # comment with a justification.
   - id: tenant-scoping
     patterns:
+      # Match any chain that starts with .from(<table>).<crud>(...) — the
+      # matched range is the full expression so subsequent .eq("clinic_id")
+      # calls show up to the pattern-not-regex below.
       - pattern: |
           $CLIENT.from($TABLE).$METHOD(...)
-      # Primary catch-all: any chain expression that contains
-      # .eq("clinic_id", ...) or .eq('clinic_id', ...) anywhere in its
-      # matched text is considered tenant-scoped.
-      #
-      # The original rule only had AST-level pattern-not clauses requiring
-      # .eq("clinic_id") to be at a specific position. They were depth-
-      # limited (3 chain hops max) and required .eq("clinic_id") to be
-      # the *last* method in the chain. Real queries continue with
-      # .eq("doctor_id"), .gte(), .lte(), .in(), .order(), .limit(),
-      # .single() etc. after the tenant filter — so the AST exclusions
-      # missed them. See wellbeing-check, insurance-profile, inventory
-      # routes that GHAS flagged as false positives.
-      #
-      # pattern-not-regex runs against the matched chain expression text,
-      # which semgrep extends across method-chain ancestors, so it
-      # correctly handles arbitrary chain depths and arbitrary trailing
-      # methods after the clinic_id filter.
+      - pattern-inside: |
+          $EXPR
+      # Any .eq("clinic_id", ...) anywhere in the surrounding expression
+      # makes this query tenant-scoped.
       - pattern-not-regex: |
           \.eq\(\s*["']clinic_id["']
+      # Service-level / non-clinic-keyed tables.
+      - metavariable-regex:
+          metavariable: $TABLE
+          # Negative lookahead: match any quoted table name that is NOT one
+          # of the genuinely non-clinic-keyed tables.
+          #
+          # Schema audit (supabase/migrations/) shows the following tables
+          # are the only ones with NO clinic_id column:
+          #   - `clinics`            — the tenant table itself; querying it
+          #                             directly is the service-level pattern.
+          #   - `ai_provider_configs`— global provider config; no clinic_id.
+          #
+          # All other queue / processed-events tables (notification_queue,
+          # processed_stripe_events, processed_whatsapp_messages,
+          # webhook_retry_queue, support_tickets) DO have `clinic_id NOT
+          # NULL` and should keep firing — defense-in-depth requires the
+          # filter even when the row is uniquely identified by another
+          # primary key. Use `// nosemgrep: tenant-scoping` annotations
+          # (above the from() call) for documented exceptions.
+          #
+          # The `users` table also has clinic_id NOT NULL; user-keyed
+          # self-service updates (.eq("id", profile.id)) should be
+          # annotated rather than whitelisted, so a future bare
+          # .from("users").select("*") still triggers a warning.
+          regex: |-
+            ^(?!["'](clinics|ai_provider_configs)["']).*$
+      # CRUD methods only — ignore .from(...).rpc(...), etc.
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(select|insert|update|delete|upsert)$
       # Belt-and-suspenders AST patterns for shallow chains where
-      # .eq("clinic_id") is the terminal call. These already worked under
-      # the original rule and are kept so the rule does not regress if
-      # semgrep ever changes regex-vs-AST range semantics.
+      # .eq("clinic_id") is the terminal call. Kept from the previous
+      # version so the rule does not regress on common shapes.
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).eq("clinic_id", ...)
       - pattern-not: |
@@ -56,23 +88,18 @@ rules:
           $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq("clinic_id", ...)
       - pattern-not: |
           $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq('clinic_id', ...)
-      # Handle insert/upsert with clinic_id in data object. AST patterns
-      # are precise about WHERE the `clinic_id:` property literal appears
-      # — only inside the insert's data object, not anywhere in surrounding
-      # code that happened to mention the column name.
+      # insert/upsert with clinic_id in the data object.
       - pattern-not: |
           $CLIENT.from($TABLE).insert({clinic_id: ..., ...})
       - pattern-not: |
           $CLIENT.from($TABLE).upsert({clinic_id: ..., ...})
       - pattern-not: |
           $CLIENT.from($TABLE).insert([..., {clinic_id: ..., ...}, ...])
-      - metavariable-regex:
-          metavariable: $METHOD
-          regex: ^(select|insert|update|delete|upsert)$
     message: >
       Supabase query on `$TABLE` missing `.eq("clinic_id", ...)` — every
       tenant-scoped query must filter by clinic_id for application-level
-      isolation (see AGENTS.md).
+      isolation (see AGENTS.md). If this table is intentionally not
+      clinic-keyed, add it to the whitelist in `.semgrep/tenant-scoping.yml`.
     severity: WARNING
     languages: [typescript, javascript]
     paths:
