@@ -136,7 +136,7 @@ export const POST = withAuth(
           : `Objection recorded. The following processing activities will be stopped: ${processingActivities.join(", ")}.`,
       type,
       processingActivities,
-      appliedAt: new Date().toISOString(),
+      submittedAt: new Date().toISOString(),
       reviewPeriodDays: 30,
     });
   },
