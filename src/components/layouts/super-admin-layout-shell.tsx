@@ -441,6 +441,8 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
   // Load command items on mount
   useEffect(() => {
     buildCommandItems();
+    // Q-49: Mount-only effect — `buildCommandItems` reads route metadata
+    // that never changes during the component lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

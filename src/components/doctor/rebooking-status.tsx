@@ -70,6 +70,8 @@ export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
 
   useEffect(() => {
     fetchStatus();
+    // Q-49: `fetchStatus` is intentionally excluded — it depends on `clinicId`
+    // and `doctorId` via closure and including it would cause re-render loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId, doctorId]);
 

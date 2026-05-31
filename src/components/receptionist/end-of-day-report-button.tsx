@@ -74,6 +74,8 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
     if (open && !report) {
       generateReport();
     }
+    // Q-49: Intentionally depend only on `open` — `generateReport` is stable
+    // (reads state via closures) and re-including it would trigger infinite loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
