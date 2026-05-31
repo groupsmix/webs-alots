@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
+import { getGaMeasurementId } from "@/lib/env";
 import { t } from "@/lib/i18n";
 
 /** Cookie preference categories. */
@@ -24,8 +25,61 @@ const ALL_ACCEPTED: CookiePreferences = {
   marketing: true,
 };
 
+/**
+ * Storage key for the cookie consent envelope.
+ * Bump CONSENT_VERSION below to force re-prompt without changing the key.
+ */
+const STORAGE_KEY = "cookie-consent";
+
+/**
+ * A64: Current consent schema version. Bump when categories, copy, or the
+ * list of third-party processors changes materially. Users with an older
+ * stored version are re-prompted at next page load (GDPR Art. 7(4) "specific
+ * consent" + EDPB 03/2022 guidance).
+ *
+ * Version history:
+ *   v1 (2026-05-31): initial versioned envelope. Categories: functional,
+ *                    analytics, marketing. Processors: Plausible, Google
+ *                    Analytics 4 (per-clinic), Sentry Replay (marketing).
+ */
+export const CONSENT_VERSION = 1;
+
+/**
+ * A64: Maximum age of stored consent before re-prompting. 12 months is the
+ * upper bound from ICO + CNIL guidance for cookie consent freshness.
+ * 365 * 24 * 60 * 60 * 1000 = 31_536_000_000 ms.
+ */
+export const CONSENT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+
+/** Versioned storage envelope written to localStorage. */
+interface StoredConsent {
+  /** Schema version. Compared against CONSENT_VERSION. */
+  v: number;
+  /** Granted-at timestamp (epoch milliseconds). */
+  t: number;
+  /** Category preferences. */
+  prefs: CookiePreferences;
+}
+
+/**
+ * Result of evaluating stored consent.
+ *
+ *   - missing:        nothing stored, or stored value is unparseable.
+ *   - stale-version:  stored at an older CONSENT_VERSION. Re-prompt required.
+ *   - expired:        older than CONSENT_MAX_AGE_MS. Re-prompt required.
+ *   - fresh:          valid, current, in-window. Caller can trust preferences.
+ */
+export type ConsentStatus =
+  | { kind: "missing" }
+  | { kind: "stale-version" }
+  | { kind: "expired" }
+  | { kind: "fresh"; preferences: CookiePreferences; grantedAt: number };
+
 /** Key used in the custom event that re-opens the cookie consent banner. */
 const REOPEN_EVENT = "cookie-consent:reopen";
+
+/** Key used in the custom event that signals same-tab consent changes. */
+const CHANGED_EVENT = "cookie-consent:changed";
 
 /**
  * Programmatically re-open the cookie consent banner.
@@ -37,32 +91,103 @@ export function reopenCookieConsent(): void {
   }
 }
 
+/** Type guard for `Record<string, unknown>`. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** Type guard for the CookiePreferences shape. */
+function isCookiePreferences(value: unknown): value is CookiePreferences {
+  return (
+    isRecord(value) &&
+    typeof value.functional === "boolean" &&
+    typeof value.analytics === "boolean" &&
+    typeof value.marketing === "boolean"
+  );
+}
+
+/**
+ * Read the raw stored envelope, migrating legacy formats.
+ *
+ * Legacy formats accepted:
+ *   - Legacy v0a: bare strings "accepted" / "declined" from the original banner.
+ *                 Migrated to a fresh envelope at the current version.
+ *   - Legacy v0b: bare CookiePreferences object (no version, no timestamp).
+ *                 Returned as `{ v: 0, t: 0, prefs }` so the caller detects
+ *                 stale-version and re-prompts.
+ *
+ * Returns `null` when no value is stored, the value is unparseable, or the
+ * shape does not match any known format.
+ */
+function readStoredEnvelope(): StoredConsent | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+
+  // Legacy v0a: bare string from the original banner.
+  if (raw === "accepted") {
+    return { v: CONSENT_VERSION, t: Date.now(), prefs: ALL_ACCEPTED };
+  }
+  if (raw === "declined") {
+    return { v: CONSENT_VERSION, t: Date.now(), prefs: DEFAULT_PREFERENCES };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!isRecord(parsed)) return null;
+
+  // v1+ envelope: { v: number, t: number, prefs: CookiePreferences }
+  if (
+    typeof parsed.v === "number" &&
+    typeof parsed.t === "number" &&
+    isCookiePreferences(parsed.prefs)
+  ) {
+    return { v: parsed.v, t: parsed.t, prefs: parsed.prefs };
+  }
+
+  // Legacy v0b: bare CookiePreferences object. Force re-prompt via
+  // stale-version path by returning v:0, t:0.
+  if (isCookiePreferences(parsed)) {
+    return { v: 0, t: 0, prefs: parsed };
+  }
+
+  return null;
+}
+
+/**
+ * Evaluate the current consent status.
+ *
+ * Used by the banner to decide whether to display, and by tests to assert
+ * migration + expiry behaviour. Public so server-rendered or library code
+ * can introspect, though both layers should remain unaware of localStorage
+ * during SSR.
+ */
+export function getConsentStatus(): ConsentStatus {
+  const env = readStoredEnvelope();
+  if (!env) return { kind: "missing" };
+  if (env.v < CONSENT_VERSION) return { kind: "stale-version" };
+  if (Date.now() - env.t > CONSENT_MAX_AGE_MS) return { kind: "expired" };
+  return { kind: "fresh", preferences: env.prefs, grantedAt: env.t };
+}
+
 /**
  * Read stored cookie preferences from localStorage.
- * L6-M-10: Returns defaults (all non-essential off) instead of null
- * when no consent has been given, eliminating nullable paths.
+ *
+ * L6-M-10: Returns defaults (all non-essential off) instead of null when
+ * no consent has been given, eliminating nullable paths in callers.
+ *
+ * A64: Also returns defaults when the stored consent is at an older
+ * version or older than CONSENT_MAX_AGE_MS. Callers see "no consent given"
+ * until the user re-confirms via the banner, which prevents stale opt-in
+ * from leaking past a re-prompt event.
  */
 export function getStoredCookiePreferences(): CookiePreferences {
-  if (typeof window === "undefined") return DEFAULT_PREFERENCES;
-  const raw = localStorage.getItem("cookie-consent");
-  if (!raw) return DEFAULT_PREFERENCES;
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      "functional" in parsed &&
-      "analytics" in parsed &&
-      "marketing" in parsed
-    ) {
-      return parsed as CookiePreferences;
-    }
-  } catch {
-    // Legacy format ("accepted" / "declined") — migrate
-    if (raw === "accepted") return ALL_ACCEPTED;
-    if (raw === "declined") return DEFAULT_PREFERENCES;
-  }
-  return DEFAULT_PREFERENCES;
+  const status = getConsentStatus();
+  return status.kind === "fresh" ? status.preferences : DEFAULT_PREFERENCES;
 }
 
 /**
@@ -81,8 +206,9 @@ function applyAnalyticsConsent(allowed: boolean): void {
     document
       .querySelectorAll('script[src*="googletagmanager.com"], script[src*="google-analytics.com"]')
       .forEach((el) => el.remove());
-    // Opt-out flag for Google Analytics (if loaded before removal)
-    const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+    // Opt-out flag for Google Analytics (if loaded before removal).
+    // A64: read through the env accessor so this file does not touch process.env directly.
+    const gaMeasurementId = getGaMeasurementId();
     if (gaMeasurementId) {
       (window as unknown as { [k: string]: boolean })[`ga-disable-${gaMeasurementId}`] = true;
     }
@@ -91,7 +217,7 @@ function applyAnalyticsConsent(allowed: boolean): void {
 
 /**
  * Log consent event to the server for GDPR/Loi 09-08 compliance.
- * Fire-and-forget — never blocks the UI or shows errors to the user.
+ * Fire-and-forget. Never blocks the UI or shows errors to the user.
  */
 function logConsentToServer(preferences: CookiePreferences): void {
   fetch("/api/consent", {
@@ -103,47 +229,85 @@ function logConsentToServer(preferences: CookiePreferences): void {
       granted: preferences.analytics || preferences.marketing,
     }),
   }).catch(() => {
-    // Consent logging is best-effort — never block the user experience
+    // Consent logging is best-effort. Never block the user experience.
   });
+}
+
+/**
+ * Persist a preferences set to localStorage as a versioned envelope.
+ * Exposed for tests; the banner calls `saveAndClose` which wraps this.
+ */
+export function persistConsent(prefs: CookiePreferences, now: number = Date.now()): void {
+  if (typeof window === "undefined") return;
+  const envelope: StoredConsent = { v: CONSENT_VERSION, t: now, prefs };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
 }
 
 /**
  * GDPR / Loi 09-08 cookie consent banner with granular preferences.
  *
  * Features:
- * - Accept All / Decline / Manage Preferences
- * - Granular toggles for Functional (always on), Analytics, Marketing
- * - Properly disables analytics scripts when declined
- * - Adds bottom padding to prevent content overlap
- * - Fully internationalised (fr, ar, en)
+ *   - Accept All / Decline / Manage Preferences
+ *   - Granular toggles for Functional (always on), Analytics, Marketing
+ *   - Properly disables analytics scripts when declined
+ *   - Adds bottom padding to prevent content overlap
+ *   - Fully internationalised (fr, ar, en)
+ *
+ * A64 v1 hardening:
+ *   - Versioned storage envelope ({ v, t, prefs }) with 12-month expiry.
+ *   - Side effects moved out of useState initialiser into useEffect.
+ *   - Cross-tab sync via the storage event so accepting in one tab closes
+ *     the banner in another.
  */
 export function CookieConsent() {
   const [locale] = useLocale();
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const hasConsent = localStorage.getItem("cookie-consent") !== null;
-    if (hasConsent) {
-      const stored = getStoredCookiePreferences();
-      applyAnalyticsConsent(stored.analytics);
-      return false;
-    }
-    return true;
-  });
+  const [visible, setVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>(DEFAULT_PREFERENCES);
 
-  // Listen for programmatic re-open (e.g. footer "Cookie Settings" link)
+  // A64: visibility decision moved to useEffect so the initialiser is pure
+  // and the side effect (applyAnalyticsConsent) only runs client-side.
+  useEffect(() => {
+    const status = getConsentStatus();
+    if (status.kind === "fresh") {
+      applyAnalyticsConsent(status.preferences.analytics);
+      setPreferences(status.preferences);
+      setVisible(false);
+    } else {
+      // missing / stale-version / expired all force re-prompt with defaults.
+      setPreferences(DEFAULT_PREFERENCES);
+      setVisible(true);
+    }
+  }, []);
+
+  // Listen for programmatic re-open (e.g. footer "Cookie Settings" link).
   useEffect(() => {
     const handler = () => {
-      const stored = getStoredCookiePreferences();
-      if (stored) setPreferences(stored);
+      const status = getConsentStatus();
+      if (status.kind === "fresh") setPreferences(status.preferences);
       setVisible(true);
     };
     window.addEventListener(REOPEN_EVENT, handler);
     return () => window.removeEventListener(REOPEN_EVENT, handler);
   }, []);
 
-  // Add bottom padding to body when banner is visible
+  // A64: cross-tab sync. When another tab writes consent, close the banner
+  // here too so the user does not see the dialog they already dismissed.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY) return;
+      const status = getConsentStatus();
+      if (status.kind === "fresh") {
+        setPreferences(status.preferences);
+        setVisible(false);
+        applyAnalyticsConsent(status.preferences.analytics);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // Add bottom padding to body when banner is visible.
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (visible) {
@@ -157,13 +321,14 @@ export function CookieConsent() {
   }, [visible]);
 
   const saveAndClose = useCallback((prefs: CookiePreferences) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cookie-consent", JSON.stringify(prefs));
-    }
+    persistConsent(prefs);
     applyAnalyticsConsent(prefs.analytics);
     logConsentToServer(prefs);
-    // A80-1 fix: Dispatch custom event so PlausibleScript's same-tab listener updates
-    window.dispatchEvent(new CustomEvent("cookie-consent:changed"));
+    // A80-1 fix: dispatch custom event so same-tab listeners (PlausibleScript,
+    // ConsentGatedAnalytics, ConsentGatedReplay) update without a reload.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(CHANGED_EVENT));
+    }
     setVisible(false);
     setShowPreferences(false);
   }, []);
@@ -191,7 +356,7 @@ export function CookieConsent() {
             </a>
             .
           </p>
-          {/* A69-3: Decline has equal visual weight as Accept All (EDPB 03/2022) */}
+          {/* A69-3: Decline has equal visual weight as Accept All (EDPB 03/2022). */}
           <div className="flex flex-wrap gap-2 shrink-0">
             <Button size="sm" onClick={declineAll}>
               {t(locale, "cookie.decline")}
@@ -212,7 +377,7 @@ export function CookieConsent() {
         {/* Granular preferences panel */}
         {showPreferences && (
           <div className="mt-4 space-y-3 border-t pt-4">
-            {/* Functional — always on */}
+            {/* Functional. Always on. */}
             <label className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">{t(locale, "cookie.functional")}</p>
