@@ -25,8 +25,9 @@
 #        • Set "Preview deployments" → Branch control → None
 #          (or "Pause deployments" to stop all builds), OR
 #        • Disconnect the GitHub integration entirely.
-#      Production deploys happen via `deploy.yml` / wrangler, not Pages,
-#      so this does not affect the live site.
+#      Production deploys happen via Cloudflare Workers Builds (the
+#      official OAuth GitHub integration), not Pages, so this does
+#      not affect the live site. See docs/deployment.md.
 #
 #   2. If "Cloudflare Pages" was a required status check in GitHub branch
 #      protection (Settings → Branches → main → Edit), remove it and add

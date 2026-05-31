@@ -186,5 +186,71 @@ After merge to `main`:
 
 1. **Cloudflare dashboard → Workers & Pages → webs-alots → Deployments** —
    confirm the latest build is "Active" and matches the merge commit SHA
-2. `curl -s https://oltigo.com/api/health` — should return `{"ok":true}`
+2. `curl -s https://oltigo.com/api/health` — should return `{\"ok\":true}`
 3. Check Sentry for any new errors tagged with the new release
+
+---
+
+## Updating Worker Runtime Secrets
+
+Worker runtime secrets (things the running Worker needs to read from
+`env.SECRET_NAME`) are managed **per-environment** in the Cloudflare
+dashboard. Unlike build-time vars, these are not injected into the bundle
+— they're retrieved at runtime.
+
+### Procedure (No GitHub Token Needed)
+
+1. **Cloudflare dashboard → Workers & Pages → webs-alots → Settings →
+   Variables and Secrets**
+2. Pick the environment tab (e.g. "Production", "Preview/Staging")
+3. Under **Worker** (not Build), add / edit the secret:
+   - **Variable name:** exactly as it appears in your code (e.g.
+     `SUPABASE_SERVICE_ROLE_KEY`)
+   - **Value:** paste the secret (Cloudflare encrypts it at rest)
+   - **Encryption:** enabled by default (recommended — leave it on)
+4. Click **Save and deploy** — the Worker redeploys with the new secret
+5. Repeat for each environment if they have different values (e.g. prod
+   vs staging Supabase keys)
+
+### What Goes Here
+
+- `SUPABASE_SERVICE_ROLE_KEY` — server-side Supabase access
+- `PHI_ENCRYPTION_KEY` — patient data encryption
+- `BACKUP_ENCRYPTION_KEY` — backup vault key
+- `BOOKING_TOKEN_SECRET` — appointment booking JWT secret
+- `PROFILE_HEADER_HMAC_KEY` — profile header signing
+- `R2_SIGNED_URL_SECRET` — signed URL generation
+- `CRON_SECRET` — cron trigger authentication
+- `OPENAI_API_KEY` — LLM API
+- `WHATSAPP_ACCOUNT_ID`, `WHATSAPP_AUTH_TOKEN`, `WHATSAPP_PHONE_ID` —
+  WhatsApp integration
+- `SENTRY_AUTH_TOKEN` — source map upload (if enabled)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Stripe payments
+- `CMI_API_KEY`, `CMI_MERCHANT_ID` — payment gateway
+- `RESEND_API_KEY` — email delivery
+
+### Verification
+
+After saving, tail the Worker logs to confirm it's reading the secret:
+
+```bash
+wrangler tail --env production --format json | grep -i "using key"
+```
+
+Or check that the feature using that secret works (e.g. send an email if
+you just updated `RESEND_API_KEY`).
+
+### Emergency Secret Rotation
+
+If a secret is compromised, rotate it immediately:
+
+1. Generate a new value (random 32+ chars, or from the service's
+   dashboard)
+2. Update it in Cloudflare dashboard (Worker redeploys in ~5 seconds)
+3. Update the secret at the source (Supabase, Stripe, etc.) so old tokens
+   are invalidated
+4. Monitor logs for any auth failures during the transition
+
+For automated monthly key rotation (e.g. PHI key or booking token), see
+`rotate-phi-key.yml` in `.github/workflows/` — it's a manual-dispatch
+workflow that does the rotation and pushes an encrypted snapshot to R2.

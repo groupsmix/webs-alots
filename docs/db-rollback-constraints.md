@@ -1,17 +1,17 @@
 # Database Rollback Constraints
 
 > **Audience:** Platform operators, on-call engineers, agents shipping schema changes
-> **Last updated:** April 2026
-> **Related:** [`backup-recovery-runbook.md`](./backup-recovery-runbook.md), [`incident-response.md`](./incident-response.md), [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml), [`scripts/staging-swap.sh`](../scripts/staging-swap.sh)
+> **Last updated:** May 2026
+> **Related:** [`deployment.md`](./deployment.md), [`backup-recovery-runbook.md`](./backup-recovery-runbook.md), [`incident-response.md`](./incident-response.md), [`scripts/staging-swap.sh`](../scripts/staging-swap.sh)
 
 ---
 
 ## TL;DR
 
-- **Worker code is rolled back automatically** by the deploy pipeline (CI-11) when the post-deploy health check fails.
+- **Worker code rollback is manual** since the move to Cloudflare Workers Builds (OAuth). Roll back via **Cloudflare dashboard → Workers & Pages → webs-alots → Deployments → ⋯ → Rollback to this deployment** (~30 seconds). See [`deployment.md`](./deployment.md#rollback).
 - **Database migrations are NOT rolled back automatically.** Migrations in `supabase/migrations/` are append-only and forward-only.
 - A Worker rollback **may leave the previous Worker code running against a newer database schema**. The application contract therefore requires every migration to be backwards-compatible with the previous Worker version (expand → migrate → contract).
-- If a release introduces a migration that is incompatible with the previous Worker, an automatic Worker rollback **will not restore service**; on-call must follow the manual procedures in this doc.
+- If a release introduces a migration that is incompatible with the previous Worker, a Worker rollback **will not restore service**; on-call must follow the manual procedures in this doc.
 
 ---
 
@@ -36,13 +36,13 @@ For these reasons, **every migration in this repo must be designed so that the p
 
 ## 2. What an Auto-Rollback Does and Does NOT Do
 
-The deploy pipeline (`.github/workflows/deploy.yml`, CI-11) takes the following actions when the post-deploy health check fails:
+A manual rollback (Cloudflare dashboard → Workers & Pages → webs-alots → Deployments → ⋯ → Rollback) has the following effect:
 
-| Action                                                       | Reverted? | Notes                                                                                                                                       |
-| ------------------------------------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Worker code (JS bundle from `npm run build:cf`)              | ✅ Yes    | `wrangler rollback` restores the immediately previous Worker version.                                                                       |
-| Worker bindings declared in `wrangler.toml` (R2, KV, Queues) | ✅ Yes    | Rolled back as part of the Worker version.                                                                                                  |
-| Worker secrets (`wrangler secret put`)                       | ❌ **No** | Secrets are stored separately and persist across rollbacks. Re-running `update-secrets.yml` is required if a release changed secret values. |
+| Action                                                       | Reverted? | Notes                                                                                                                                                          |
+| ------------------------------------------------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Worker code (JS bundle from `npm run build:cf`)              | ✅ Yes    | Selecting an older deployment instantly restores that Worker version.                                                                                          |
+| Worker bindings declared in `wrangler.toml` (R2, KV, Queues) | ✅ Yes    | Rolled back as part of the Worker version.                                                                                                                     |
+| Worker secrets (set in CF dashboard)                          | ❌ **No** | Secrets are stored separately and persist across rollbacks. Re-set the previous values in **Workers & Pages → webs-alots → Settings → Variables and Secrets**. |
 | Cron triggers in `wrangler.toml`                             | ✅ Yes    | Bound to the Worker version.                                                                                                                |
 | Cloudflare KV / R2 contents written during the bad release   | ❌ **No** | Stored externally; not versioned with the Worker.                                                                                           |
 | Supabase schema migrations applied during the release        | ❌ **No** | Forward-only — see Section 3 for manual procedures.                                                                                         |
