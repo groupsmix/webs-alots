@@ -65,9 +65,7 @@ async function waitForBoundingBox(
   }
   const finalBox = await locator.boundingBox();
   if (finalBox === null) {
-    throw new Error(
-      `boundingBox() remained null after ${timeoutMs}ms — element not laid out.`,
-    );
+    throw new Error(`boundingBox() remained null after ${timeoutMs}ms — element not laid out.`);
   }
   return finalBox;
 }
