@@ -10,10 +10,10 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getProcessingEnforcement } from "@/lib/gdpr-enforcement";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database-extended";
 import type { NotificationTrigger, NotificationChannel } from "./notifications";
-import { getProcessingEnforcement } from "@/lib/gdpr-enforcement";
 
 // We use the extended Database interface to properly type the notification_queue table
 type ExtendedClient = SupabaseClient<Database>;

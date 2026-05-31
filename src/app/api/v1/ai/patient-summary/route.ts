@@ -20,14 +20,14 @@ import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
-import { logger } from "@/lib/logger";
-import { isMinorByDob } from "@/lib/minors";
-import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
 import {
   getProcessingEnforcement,
   restrictedResponse,
   objectedResponse,
 } from "@/lib/gdpr-enforcement";
+import { logger } from "@/lib/logger";
+import { isMinorByDob } from "@/lib/minors";
+import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
 import type { Json } from "@/lib/types/database";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
 import { aiPatientSummaryRequestSchema } from "@/lib/validations";
