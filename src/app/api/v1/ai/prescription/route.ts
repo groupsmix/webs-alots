@@ -15,6 +15,7 @@ import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
+import { validateDrugNames } from "@/lib/ai/validate-drug-output";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
@@ -416,11 +417,22 @@ export const POST = withAuthValidation(
       });
 
       // A109-01: Include AI disclaimer in every AI response payload.
+      // F-AI-14: Validate drug names against Moroccan DCI database
+      const rxDrugNames = prescription.medications.map((m: AiMedication) => m.name);
+      const drugValidation = validateDrugNames(rxDrugNames);
+
       return apiSuccess({
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
         disclaimer: getAIDisclaimer(),
+        drugValidation: drugValidation.allKnown
+          ? undefined
+          : {
+              unknownDrugs: drugValidation.unknownDrugs,
+              warning:
+                "Certains médicaments suggérés ne figurent pas dans la pharmacopée marocaine. Veuillez vérifier.",
+            },
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

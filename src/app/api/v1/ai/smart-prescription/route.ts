@@ -15,6 +15,7 @@ import { resolveAIConfig } from "@/lib/ai/config";
 import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { fromUntyped } from "@/lib/ai/untyped-tables";
+import { validateDrugNames } from "@/lib/ai/validate-drug-output";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
@@ -350,10 +351,25 @@ Donne les informations complètes pour prescrire ce médicament à ce patient.`;
           }
         });
 
+      // F-AI-14: Validate drug names against Moroccan DCI database
+      const drugNames = [
+        result.medication.name,
+        result.medication.dci,
+        ...result.alternatives,
+      ].filter(Boolean);
+      const drugValidation = validateDrugNames(drugNames);
+
       return apiSuccess({
         ...result,
         patientId: data.patientId,
         disclaimer: getAIDisclaimer(),
+        drugValidation: drugValidation.allKnown
+          ? undefined
+          : {
+              unknownDrugs: drugValidation.unknownDrugs,
+              warning:
+                "Certains médicaments suggérés ne figurent pas dans la pharmacopée marocaine. Veuillez vérifier.",
+            },
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
