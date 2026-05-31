@@ -64,7 +64,12 @@ function parseKvEntries(toml: string, sectionPattern: RegExp, label: string): Kv
     if (line.startsWith("[[") || line.startsWith("[")) {
       // Save previous entry if we were in a matching section
       if (inSection && current.binding && current.id) {
-        entries.push({ binding: current.binding, id: current.id, preview_id: current.preview_id, source: label });
+        entries.push({
+          binding: current.binding,
+          id: current.id,
+          preview_id: current.preview_id,
+          source: label,
+        });
         current = {};
       }
 
@@ -87,7 +92,12 @@ function parseKvEntries(toml: string, sectionPattern: RegExp, label: string): Kv
 
   // Flush last entry
   if (inSection && current.binding && current.id) {
-    entries.push({ binding: current.binding, id: current.id, preview_id: current.preview_id, source: label });
+    entries.push({
+      binding: current.binding,
+      id: current.id,
+      preview_id: current.preview_id,
+      source: label,
+    });
   }
 
   return entries;
@@ -128,11 +138,11 @@ for (const stagingEntry of staging) {
   if (collisions.length > 0) {
     console.error(
       `\n[A-09 LAUNCH BLOCKER] KV namespace "${stagingEntry.binding}" in [env.staging.kv_namespaces] ` +
-      `shares ${collisions.join(" and ")} with the production namespace.\n` +
-      `\nFix: provision a dedicated staging namespace:\n` +
-      `   wrangler kv:namespace create RATE_LIMIT_KV_STAGING\n` +
-      `   wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview\n` +
-      `Then replace the id/preview_id in [env.staging.kv_namespaces] in wrangler.toml.\n`,
+        `shares ${collisions.join(" and ")} with the production namespace.\n` +
+        `\nFix: provision a dedicated staging namespace:\n` +
+        `   wrangler kv:namespace create RATE_LIMIT_KV_STAGING\n` +
+        `   wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview\n` +
+        `Then replace the id/preview_id in [env.staging.kv_namespaces] in wrangler.toml.\n`,
     );
     failed = true;
   }
@@ -141,8 +151,8 @@ for (const stagingEntry of staging) {
 if (staging.length === 0) {
   console.error(
     "\n[A-09 WARNING] No [env.staging.kv_namespaces] entries found in wrangler.toml.\n" +
-    "If staging uses the top-level KV namespace implicitly, it shares production counters.\n" +
-    "Provision a dedicated staging KV namespace and declare it explicitly.\n",
+      "If staging uses the top-level KV namespace implicitly, it shares production counters.\n" +
+      "Provision a dedicated staging KV namespace and declare it explicitly.\n",
   );
   // Warn but don't fail — the block may not be declared yet
 }

@@ -154,9 +154,7 @@ test.describe("TC-01 — Cross-tenant resource ID enumeration (IDOR)", () => {
   test("GET /api/files/download with cross-tenant file key is rejected", async ({ request }) => {
     // Attempt to download a file using a constructed cross-tenant R2 key
     const crossTenantKey = `${CLINIC_B_ID}/prescriptions/fake-file.pdf`;
-    const res = await request.get(
-      `/api/files/download?key=${encodeURIComponent(crossTenantKey)}`,
-    );
+    const res = await request.get(`/api/files/download?key=${encodeURIComponent(crossTenantKey)}`);
     expect(DENIED_STATUSES).toContain(res.status());
   });
 
@@ -171,9 +169,7 @@ test.describe("TC-01 — Cross-tenant resource ID enumeration (IDOR)", () => {
 // ── Cross-tenant write attempts (mass assignment + role escalation) ─────────
 
 test.describe("TC-01 — Cross-tenant write and role escalation", () => {
-  test("POST /api/v1/appointments with cross-clinic doctor_id is rejected", async ({
-    request,
-  }) => {
+  test("POST /api/v1/appointments with cross-clinic doctor_id is rejected", async ({ request }) => {
     const res = await request.post("/api/v1/appointments", {
       data: {
         doctorId: DOCTOR_B_ID,
