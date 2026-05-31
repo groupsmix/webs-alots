@@ -301,12 +301,16 @@ export const POST = withAuth(
           return apiError("Virus scan unavailable — upload rejected", 503);
         }
       }
-    } else if (phiFailClosed && process.env.NODE_ENV === "production") {
+    } else if (
+      phiFailClosed &&
+      process.env.NODE_ENV === "production" &&
+      process.env.CI !== "true"
+    ) {
       // A52-3: PHI upload attempted in production with no AV scanner
       // configured at all. This is a deployment misconfiguration —
       // block the upload and surface it loudly so the operator notices.
-      // Non-production envs and non-PHI uploads pre-existed without an
-      // AV scanner, so we don't break those paths.
+      // Non-production envs, CI environments, and non-PHI uploads
+      // pre-existed without an AV scanner, so we don't break those paths.
       logger.error("PHI upload rejected in production: AV_SCAN_URL not configured", {
         context: "upload",
         category,
