@@ -107,9 +107,11 @@ test.describe("Open Redirect Prevention", () => {
     expect(response?.status()).toBeLessThan(400);
     // Should show a login form element.
     const emailInput = page.locator('input[type="email"], input[name="email"]');
-    await expect(emailInput).toBeVisible({ timeout: 5_000 }).catch(() => {
-      // Fallback: just check we're not on an error page.
-      expect(page.url()).toContain("login");
-    });
+    await expect(emailInput)
+      .toBeVisible({ timeout: 5_000 })
+      .catch(() => {
+        // Fallback: just check we're not on an error page.
+        expect(page.url()).toContain("login");
+      });
   });
 });
