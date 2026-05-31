@@ -104,6 +104,21 @@ Sentry.init({
   },
 
   beforeSend(event) {
+    // A62-G2: Set fingerprint to group errors by type + route + status
+    // instead of by every unique trace. Reduces cardinality (issue count),
+    // allowing related errors to be deduplicated and grouped.
+    if (event.exception?.values && event.exception.values.length > 0) {
+      const errorType = event.exception.values[0]?.type || "Unknown";
+      const url = event.request?.url || event.transaction || "unknown";
+      const route = url.split("?")[0] || "unknown";
+      const statusCode =
+        event.tags?.["http.status_code"] || event.tags?.["http_status"] || "unknown";
+
+      // Fingerprint groups errors by: [error type, route, status code]
+      // This prevents every unique query param or user ID from creating a new issue.
+      event.fingerprint = [errorType, route, String(statusCode)];
+    }
+
     // Enrich with tenant context for per-clinic filtering in Sentry dashboard
     if (event.request?.headers) {
       const clinicId = event.request.headers["x-tenant-clinic-id"];
