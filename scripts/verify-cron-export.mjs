@@ -40,7 +40,7 @@ function checkSourceHandler() {
     return true;
   }
   console.error(
-    `::error::${SOURCE_PATH} does not export a 'scheduled' function. Cron jobs will not fire.`
+    `::error::${SOURCE_PATH} does not export a 'scheduled' function. Cron jobs will not fire.`,
   );
   return false;
 }
@@ -52,7 +52,7 @@ if (builtResult === true) {
   process.exit(0);
 } else if (builtResult === false) {
   console.error(
-    `::error::${HANDLER_PATH} does NOT contain a 'scheduled' export. Cron triggers will silently fail.`
+    `::error::${HANDLER_PATH} does NOT contain a 'scheduled' export. Cron triggers will silently fail.`,
   );
   process.exit(1);
 }
