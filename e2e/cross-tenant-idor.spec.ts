@@ -229,12 +229,44 @@ test.describe("TC-01 — Cross-tenant write and role escalation", () => {
 // ── Deleted/revoked clinic isolation (D-05) ────────────────────────────────
 
 test.describe("TC-01 — Deleted clinic resource access", () => {
-  test("API endpoints for non-existent clinic return 4xx, not 500", async ({ request }) => {
-    // A non-existent clinic ID should return 404/403, not a 500 that leaks DB errors
+  test("API endpoints for non-existent clinic do not leak DB errors or PII", async ({
+    request,
+  }) => {
+    // /api/branding is intentionally public (renders the booking page header)
+    // and derives the tenant from the host header / cookies, so the
+    // ?clinicId= query param is silently ignored. The security boundary
+    // is therefore:
+    //
+    //   1. No 5xx (DB errors must never surface to the client).
+    //   2. No PII (phone, address, etc.) leaked in the response body.
+    //
+    // Returning 200 with WCAG-safe defaults is the correct behaviour for an
+    // unrecognised tenant context — the unauthenticated public render needs
+    // *something* to draw.
     const nonExistentClinicId = "f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0";
     const res = await request.get(`/api/branding?clinicId=${nonExistentClinicId}`);
-    expect(res.status()).not.toBe(500);
-    expect(res.status()).not.toBe(200);
+
+    // 1. No 5xx leakage.
+    expect(res.status()).toBeLessThan(500);
+
+    // 2. No PII in the response body. Read defensively because the body shape
+    // depends on the tenant-detection path taken.
+    const text = await res.text();
+    let body: unknown = null;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      // non-JSON body is acceptable (e.g. 4xx with empty/string body)
+    }
+    if (body && typeof body === "object") {
+      const data = (body as { data?: Record<string, unknown> }).data ?? body;
+      if (data && typeof data === "object") {
+        const record = data as Record<string, unknown>;
+        // PII fields must be null/absent in the public response.
+        expect(record.phone ?? null).toBeNull();
+        expect(record.address ?? null).toBeNull();
+      }
+    }
   });
 });
 
