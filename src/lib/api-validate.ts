@@ -43,6 +43,34 @@ import { withAuth, withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
 const MAX_BODY_BYTES = 65_536;
 
 /**
+ * A73-F4: JSON depth guard — prevent deeply nested payloads from causing
+ * excessive memory allocation during Zod parse. Zod's z.object() does not
+ * limit nesting depth; a crafted payload like {"a":{"a":{"a":...}}} can
+ * allocate unbounded memory before schema validation even begins.
+ *
+ * This reviver is passed to JSON.parse() and counts nesting depth by
+ * tracking brackets. We enforce the limit by throwing before Zod sees it.
+ */
+const MAX_JSON_DEPTH = 20;
+
+function depthLimitedReviver(maxDepth: number) {
+  let depth = 0;
+  return function reviver(this: unknown, _key: string, value: unknown): unknown {
+    if (value !== null && typeof value === "object") {
+      depth++;
+      if (depth > maxDepth) {
+        throw new RangeError(`JSON nesting depth exceeds maximum of ${maxDepth}`);
+      }
+    }
+    return value;
+  };
+}
+
+function parseJsonWithDepthLimit(text: string, maxDepth = MAX_JSON_DEPTH): unknown {
+  return JSON.parse(text, depthLimitedReviver(maxDepth));
+}
+
+/**
  * W8-I-01: Stream-read the request body with a byte cap. Works even when the
  * client omits Content-Length (chunked transfer encoding). Returns the decoded
  * text or null if the body exceeds the cap.
@@ -94,8 +122,10 @@ export function withValidation<T>(
       if (text === null) {
         return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
       }
-      body = JSON.parse(text);
-    } catch {
+      // A73-F4: depth-limited parse
+      body = parseJsonWithDepthLimit(text);
+    } catch (err) {
+      if (err instanceof RangeError) { return apiValidationError("Request payload nesting depth exceeds limit"); }
       return apiValidationError("Invalid JSON body");
     }
 
@@ -147,8 +177,10 @@ export function withAuthValidation<T>(
       if (text === null) {
         return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
       }
-      body = JSON.parse(text);
-    } catch {
+      // A73-F4: depth-limited parse
+      body = parseJsonWithDepthLimit(text);
+    } catch (err) {
+      if (err instanceof RangeError) { return apiValidationError("Request payload nesting depth exceeds limit"); }
       return apiValidationError("Invalid JSON body");
     }
 

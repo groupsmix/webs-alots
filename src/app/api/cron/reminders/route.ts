@@ -14,6 +14,19 @@ import { createAdminClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
+import { getWorkerBinding } from "@/lib/cf-bindings";
+
+/**
+ * A77-F1: Per-run appointment limit to prevent hitting the 15-minute Cron
+ * Trigger wall-time limit mid-fan-out on high-volume days.
+ *
+ * The cron persists the last processed slot_start value in KV so the
+ * next 30-minute invocation resumes from that cursor instead of re-scanning
+ * from the beginning. This makes the fan-out O(batch) per invocation, not
+ * O(total patients on that day).
+ */
+const MAX_APPOINTMENTS_PER_RUN = 2_000;
+const CRON_CURSOR_KEY = "cron:reminders:last_slot_start";
 
 /**
  * GET /api/cron/reminders
@@ -60,6 +73,29 @@ async function handler(request: NextRequest) {
     const nowISO = now.toISOString();
     const twentyFourHoursISO = twentyFourHoursFromNow.toISOString();
 
+    // A77-F1: Read the KV resume cursor from the previous run.
+    // If a cursor exists, we skip appointments already processed in a prior
+    // invocation and resume from where we left off. The cursor is a slot_start
+    // ISO timestamp stored as an opaque string.
+    let resumeCursor: string | null = null;
+    try {
+      const kv = await getWorkerBinding<KVNamespace>("RATE_LIMIT_KV");
+      if (kv) {
+        resumeCursor = await kv.get(CRON_CURSOR_KEY);
+        // If the stored cursor is older than 2 hours (outside our processing
+        // window), discard it and start fresh.
+        if (resumeCursor && new Date(resumeCursor) < now) {
+          resumeCursor = null;
+          await kv.delete(CRON_CURSOR_KEY);
+        }
+      }
+    } catch {
+      // KV unavailable — proceed without cursor (process from start)
+      logger.warn("reminders cron: KV unavailable for cursor read — processing from start", {
+        context: "cron/reminders",
+      });
+    }
+
     // AUDIT FINDING #12: Cursor-based pagination instead of .limit(500).
     // At 10x scale (5,000+ appointments/day), the hard limit silently drops
     // reminders. Iterate with cursor-based pagination using slot_start order
@@ -82,16 +118,36 @@ async function handler(request: NextRequest) {
       clinics:clinic_id (name)
     ` as const;
 
-    // First page to infer the row type
+    // First page to infer the row type.
+    // A77-F1: If a KV resume cursor exists, start from that point.
     const firstQuery = supabase
       .from("appointments")
       .select(SELECT_COLS)
       .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
       .or(`slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`)
       .order("slot_start", { ascending: true })
-      .limit(PAGE_SIZE);
+      .limit(PAGE_SIZE)
+      // If we have a resume cursor from the previous run, skip ahead.
+      ...(resumeCursor ? [supabase.from("appointments").select("").gt("slot_start", resumeCursor)] : []);
 
-    const { data: firstPage, error: firstError } = await firstQuery;
+    // Note: PostgREST chaining pattern — apply gt() filter if cursor exists
+    const baseQuery = (() => {
+      const q = supabase
+        .from("appointments")
+        .select(SELECT_COLS)
+        .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
+        .or(`slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`)
+        .order("slot_start", { ascending: true })
+        .limit(PAGE_SIZE);
+      return resumeCursor ? q.gt("slot_start", resumeCursor) : q;
+    })();
+    void firstQuery; // suppress unused warning — replaced by baseQuery
+    // A77-F1: Resume from the last cursor if available
+    if (resumeCursor) {
+      firstQuery = firstQuery.gt("slot_start", resumeCursor);
+    }
+
+    const { data: firstPage, error: firstError } = await baseQuery;
 
     if (firstError) {
       logger.warn("Failed to send reminder batch", {
@@ -104,13 +160,13 @@ async function handler(request: NextRequest) {
     type AppointmentRow = NonNullable<typeof firstPage>[number];
     const appointments: AppointmentRow[] = firstPage ? [...firstPage] : [];
 
-    // Continue paginating if the first page was full
+    // Continue paginating if the first page was full AND we haven't hit the per-run limit
     if (firstPage && firstPage.length === PAGE_SIZE) {
       let cursor: string | null =
         (firstPage[firstPage.length - 1] as AppointmentRow).slot_start ?? null;
       let hasMore = true;
 
-      while (hasMore && cursor) {
+      while (hasMore && cursor && appointments.length < MAX_APPOINTMENTS_PER_RUN) {
         const { data: page, error } = await supabase
           .from("appointments")
           .select(SELECT_COLS)
@@ -128,8 +184,11 @@ async function handler(request: NextRequest) {
         if (!page || page.length === 0) {
           hasMore = false;
         } else {
-          appointments.push(...page);
-          if (page.length < PAGE_SIZE) {
+          // A77-F1: Don't exceed the per-run limit to prevent hitting wall-clock timeout
+          const remainingBudget = MAX_APPOINTMENTS_PER_RUN - appointments.length;
+          appointments.push(...page.slice(0, remainingBudget));
+
+          if (page.length < PAGE_SIZE || appointments.length >= MAX_APPOINTMENTS_PER_RUN) {
             hasMore = false;
           } else {
             cursor = (page[page.length - 1] as AppointmentRow).slot_start ?? null;
@@ -347,6 +406,32 @@ async function handler(request: NextRequest) {
         onConflict: "appointment_id,trigger,channel",
         ignoreDuplicates: true,
       });
+    }
+
+    // A77-F1: Persist the last processed appointment's slot_start to KV
+    // so the next 30-minute invocation can resume from here instead of
+    // restarting from the beginning. This makes fan-out O(batch) per run.
+    try {
+      if (appointments.length > 0) {
+        const lastAppt = appointments[appointments.length - 1] as AppointmentRow;
+        const lastSlotStart = lastAppt.slot_start as string | null;
+        // Only persist if we hit the limit (indicating there's more work to do).
+        // If we drained the window, clear the cursor so the next run starts fresh.
+        const kv = await getWorkerBinding<KVNamespace>("RATE_LIMIT_KV");
+        if (kv) {
+          if (appointments.length >= MAX_APPOINTMENTS_PER_RUN && lastSlotStart) {
+            await kv.put(CRON_CURSOR_KEY, lastSlotStart, { expirationTtl: 3600 });
+          } else {
+            await kv.delete(CRON_CURSOR_KEY);
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn("cron/reminders: failed to persist KV cursor", {
+        context: "cron/reminders",
+        error: err,
+      });
+      // Non-fatal — next run will just restart from beginning
     }
 
     return apiSuccess({
