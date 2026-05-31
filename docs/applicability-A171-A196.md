@@ -1,8 +1,8 @@
 # Applicability Audit: A171-A196
 
-> **Source:** Security audit April 2026
+> **Source:** Security audit April 2026; re-verified 2026-05-31 (see `docs/audit/AUDIT-A171-A196-RE-VERIFICATION-2026-05-31.md`)
 > **Project:** Oltigo Health (groupsmix/webs-alots)
-> **Last updated:** April 2026
+> **Last updated:** 2026-05-31
 
 ## Project Profile
 
@@ -34,7 +34,7 @@ Stripe/CMI, Sentry, Plausible, OpenAI, Resend, Meta APIs.
 | A175 | SLSA L3+ build provenance                                            | PARTIAL         | Branch protection rules (>= 1 reviewer, required status checks) -- **manual config** | --                                                     |
 | A176 | Code/artifact signing: compromise procedure                          | PARTIAL -> DONE | Added signing-identity compromise section to SOP                                     | [SOP-SECRET-ROTATION.md](./SOP-SECRET-ROTATION.md)     |
 | A177 | M&A / acquired code                                                  | N/A             | No acquired code in this project                                                     | --                                                     |
-| A178 | OSS outbound (CLA, SPDX headers)                                     | N/A             | Closed-source / private repo                                                         | --                                                     |
+| A178 | OSS outbound (CLA, DCO, SPDX headers)                                | PARTIAL -> DONE (DCO + licensing position) | DCO sign-off section + licensing position clarification; CLA bot + SPDX headers deferred | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## Workforce / IAM / Endpoint (A179-A186)
 
