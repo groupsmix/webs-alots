@@ -30,11 +30,11 @@
                        └─────────────────────┘
 ```
 
-| Stage | Trigger | Where it runs | Credentials |
-| --- | --- | --- | --- |
-| PR validation | `pull_request` | GitHub Actions (`ci.yml`, `pr-preview.yml`) | None Cloudflare-related |
-| Migrations | `push` to `main` / `staging` | Supabase GitHub integration | OAuth (Supabase ↔ GitHub) |
-| Worker build & deploy | `push` to `main` / `staging` | Cloudflare Workers Builds | OAuth (Cloudflare ↔ GitHub) |
+| Stage                 | Trigger                      | Where it runs                               | Credentials                  |
+| --------------------- | ---------------------------- | ------------------------------------------- | ---------------------------- |
+| PR validation         | `pull_request`               | GitHub Actions (`ci.yml`, `pr-preview.yml`) | None Cloudflare-related      |
+| Migrations            | `push` to `main` / `staging` | Supabase GitHub integration                 | OAuth (Supabase ↔ GitHub)   |
+| Worker build & deploy | `push` to `main` / `staging` | Cloudflare Workers Builds                   | OAuth (Cloudflare ↔ GitHub) |
 
 ---
 
@@ -58,11 +58,11 @@
 
 In **Workers & Pages → webs-alots → Settings → Build → Variables and Secrets**:
 
-| Variable | Type | Where it's used |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Plaintext | Inlined into client bundle at build time |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Secret | Inlined into client bundle at build time |
-| `NODE_VERSION` | Plaintext (`22`) | Selects the Node toolchain for the build |
+| Variable                        | Type             | Where it's used                          |
+| ------------------------------- | ---------------- | ---------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Plaintext        | Inlined into client bundle at build time |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Secret           | Inlined into client bundle at build time |
+| `NODE_VERSION`                  | Plaintext (`22`) | Selects the Node toolchain for the build |
 
 Set these for both **Production** and **Preview** environments (different
 Supabase URLs per env).
@@ -124,35 +124,36 @@ Alternatively, set Pages → **Preview deployments** → **Branch control** →
 After this conversion, you can safely **delete** these from GitHub repo
 Secrets — nothing references them anymore:
 
-| Secret | Why it can go |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | `update-secrets.yml` is gone; the deploy is OAuth via Workers Builds |
-| `SUPABASE_ACCESS_TOKEN` | Supabase ↔ GitHub integration handles migrations |
-| `SUPABASE_DB_PASSWORD` | Same |
-| `SUPABASE_PROJECT_REF` | Same |
-| `STAGING_SUPABASE_DB_PASSWORD` | Same |
-| `STAGING_SUPABASE_PROJECT_REF` | Same |
+| Secret                         | Why it can go                                                        |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`         | `update-secrets.yml` is gone; the deploy is OAuth via Workers Builds |
+| `SUPABASE_ACCESS_TOKEN`        | Supabase ↔ GitHub integration handles migrations                    |
+| `SUPABASE_DB_PASSWORD`         | Same                                                                 |
+| `SUPABASE_PROJECT_REF`         | Same                                                                 |
+| `STAGING_SUPABASE_DB_PASSWORD` | Same                                                                 |
+| `STAGING_SUPABASE_PROJECT_REF` | Same                                                                 |
 
 ### Secrets You Should Keep
 
 These are not Cloudflare account API tokens — they're scoped to specific
 resources and required by a few remaining manual / scheduled workflows:
 
-| Secret | Used by | What it actually is |
-| --- | --- | --- |
-| `CLOUDFLARE_ACCOUNT_ID` | `rotate-phi-key.yml`, `restore-test.yml` | Just a URL component for `https://<id>.r2.cloudflarestorage.com`. Not a secret in the traditional sense — leaking it grants nothing on its own. |
-| `R2_ACCESS_KEY_ID` | `backup.yml`, `restore-test.yml`, `rotate-phi-key.yml` | S3-compatible R2 access key, scoped to a single bucket. Different from the global CF API token — much smaller blast radius. |
-| `R2_SECRET_ACCESS_KEY` | Same | Companion to the above. |
-| `R2_BACKUP_BUCKET` | `backup.yml`, `restore-test.yml` | Bucket name. |
-| `BACKUP_GPG_PRIVATE_KEY` | `restore-test.yml` | GPG private key to decrypt backups in the restore drill. |
-| `SUPABASE_DB_URL` | `backup.yml` | Direct DB URL for `pg_dump`. |
-| `SUPABASE_SERVICE_ROLE_KEY` | `rotate-phi-key.yml` | Required to update PHI rows during key rotation. |
-| `NEXT_PUBLIC_SUPABASE_URL` | `rotate-phi-key.yml` | Read by the rotation script. |
+| Secret                      | Used by                                                | What it actually is                                                                                                                             |
+| --------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_ACCOUNT_ID`     | `rotate-phi-key.yml`, `restore-test.yml`               | Just a URL component for `https://<id>.r2.cloudflarestorage.com`. Not a secret in the traditional sense — leaking it grants nothing on its own. |
+| `R2_ACCESS_KEY_ID`          | `backup.yml`, `restore-test.yml`, `rotate-phi-key.yml` | S3-compatible R2 access key, scoped to a single bucket. Different from the global CF API token — much smaller blast radius.                     |
+| `R2_SECRET_ACCESS_KEY`      | Same                                                   | Companion to the above.                                                                                                                         |
+| `R2_BACKUP_BUCKET`          | `backup.yml`, `restore-test.yml`                       | Bucket name.                                                                                                                                    |
+| `BACKUP_GPG_PRIVATE_KEY`    | `restore-test.yml`                                     | GPG private key to decrypt backups in the restore drill.                                                                                        |
+| `SUPABASE_DB_URL`           | `backup.yml`                                           | Direct DB URL for `pg_dump`.                                                                                                                    |
+| `SUPABASE_SERVICE_ROLE_KEY` | `rotate-phi-key.yml`                                   | Required to update PHI rows during key rotation.                                                                                                |
+| `NEXT_PUBLIC_SUPABASE_URL`  | `rotate-phi-key.yml`                                   | Read by the rotation script.                                                                                                                    |
 
 ### Why Not Also Delete the R2 Keys?
 
 R2 access keys are S3-compatible credentials scoped to a single bucket,
 not Cloudflare account API tokens. They:
+
 - Cannot manage Workers, DNS, KV, or any non-R2 resource
 - Can be rotated independently in **R2 → Manage R2 API Tokens**
 - Have a tiny blast radius if leaked (one bucket)
@@ -170,20 +171,20 @@ code pushes — so they don't run on every deploy. **None of them use a
 Cloudflare account API token.** They use R2 S3 access keys (bucket-scoped)
 or Supabase credentials only.
 
-| Workflow | Trigger | Purpose | Credentials |
-| --- | --- | --- | --- |
-| `backup.yml` | Daily cron (02:00 UTC) | Pull encrypted Supabase backup to R2 | R2 S3 keys + Supabase DB URL |
-| `restore-test.yml` | Monthly cron (1st @ 04:00 UTC) | Restore-drill the latest backup | R2 S3 keys + GPG key |
-| `rotate-phi-key.yml` | Manual | Rotate PHI encryption key, re-encrypt R2 PHI | R2 S3 keys + Supabase service role |
-| `access-review.yml` | Quarterly cron | Snapshot team/access for SOC 2 evidence | GitHub token only |
-| `asm.yml` | Daily cron | Attack-surface monitor | None Cloudflare-related |
-| `migration-check.yml` | PR | Validate migrations are forward-only | None |
+| Workflow              | Trigger                        | Purpose                                      | Credentials                        |
+| --------------------- | ------------------------------ | -------------------------------------------- | ---------------------------------- |
+| `backup.yml`          | Daily cron (02:00 UTC)         | Pull encrypted Supabase backup to R2         | R2 S3 keys + Supabase DB URL       |
+| `restore-test.yml`    | Monthly cron (1st @ 04:00 UTC) | Restore-drill the latest backup              | R2 S3 keys + GPG key               |
+| `rotate-phi-key.yml`  | Manual                         | Rotate PHI encryption key, re-encrypt R2 PHI | R2 S3 keys + Supabase service role |
+| `access-review.yml`   | Quarterly cron                 | Snapshot team/access for SOC 2 evidence      | GitHub token only                  |
+| `asm.yml`             | Daily cron                     | Attack-surface monitor                       | None Cloudflare-related            |
+| `migration-check.yml` | PR                             | Validate migrations are forward-only         | None                               |
 
 ### What Was Removed
 
-| Workflow | Status | Reason |
-| --- | --- | --- |
-| `deploy.yml` | ❌ Deleted | Replaced by Cloudflare Workers Builds (OAuth) |
+| Workflow             | Status     | Reason                                                                                            |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
+| `deploy.yml`         | ❌ Deleted | Replaced by Cloudflare Workers Builds (OAuth)                                                     |
 | `update-secrets.yml` | ❌ Deleted | Replaced by Cloudflare dashboard / `wrangler login` (see "Updating Worker Runtime Secrets" above) |
 
 ---

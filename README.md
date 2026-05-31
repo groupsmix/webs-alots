@@ -274,11 +274,11 @@ Production and staging deploys are triggered by **Cloudflare Workers Builds**, w
 
 See **[docs/deployment.md](docs/deployment.md)** for the full setup walkthrough, environment variable list, and rollback procedure.
 
-| Stage | Where it runs | Triggered by |
-| --- | --- | --- |
-| PR validation (lint, typecheck, tests, E2E, build check) | GitHub Actions (`ci.yml`, `pr-preview.yml`) | `pull_request` |
-| Database migrations | Supabase GitHub integration | `push` to `main` / `staging` |
-| Worker build & deploy | Cloudflare Workers Builds | `push` to `main` / `staging` |
+| Stage                                                    | Where it runs                               | Triggered by                 |
+| -------------------------------------------------------- | ------------------------------------------- | ---------------------------- |
+| PR validation (lint, typecheck, tests, E2E, build check) | GitHub Actions (`ci.yml`, `pr-preview.yml`) | `pull_request`               |
+| Database migrations                                      | Supabase GitHub integration                 | `push` to `main` / `staging` |
+| Worker build & deploy                                    | Cloudflare Workers Builds                   | `push` to `main` / `staging` |
 
 ### Manual Deploy (Local)
 
