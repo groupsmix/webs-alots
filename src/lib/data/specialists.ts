@@ -14,11 +14,29 @@ type TableName = keyof Database["public"]["Tables"];
 
 /** Q-03: Allow-list of columns that may appear in `.order()` calls. */
 const ALLOWED_ORDER_COLUMNS = new Set([
-  "id", "created_at", "updated_at", "appointment_date", "start_time",
-  "slot_start", "slot_end", "start_date", "due_date", "day_of_week",
-  "sent_at", "name", "first_name", "last_name", "tooth_number",
-  "sterilized_at", "before_date", "sort_order", "date", "status",
-  "priority", "amount", "price",
+  "id",
+  "created_at",
+  "updated_at",
+  "appointment_date",
+  "start_time",
+  "slot_start",
+  "slot_end",
+  "start_date",
+  "due_date",
+  "day_of_week",
+  "sent_at",
+  "name",
+  "first_name",
+  "last_name",
+  "tooth_number",
+  "sterilized_at",
+  "before_date",
+  "sort_order",
+  "date",
+  "status",
+  "priority",
+  "amount",
+  "price",
 ]);
 
 // ── Patient name resolution helper ──
@@ -59,7 +77,10 @@ async function fetchRows<T>(
   }
   if (opts?.order) {
     if (!ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
-      logger.warn("Rejected unknown order column", { context: "data/specialists", column: opts.order[0] });
+      logger.warn("Rejected unknown order column", {
+        context: "data/specialists",
+        column: opts.order[0],
+      });
     } else {
       q = q.order(opts.order[0], opts.order[1]);
     }
