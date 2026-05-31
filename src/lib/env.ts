@@ -244,6 +244,16 @@ const ENV_RULES: EnvRule[] = [
     group: "observability",
   },
 
+  // A64: Plausible analytics domain. Optional, but when set it activates
+  // the PlausibleScript on the public root domain. Listed in the registry
+  // so audits surface analytics configuration changes.
+  {
+    name: "NEXT_PUBLIC_PLAUSIBLE_DOMAIN",
+    required: false,
+    description: "Plausible site domain (NEXT_PUBLIC_*), e.g. oltigo.com. Optional.",
+    group: "observability",
+  },
+
   // R-24: Require explicit Plausible host when analytics domain is configured
   // to prevent CSP from falling back to the upstream plausible.io domain.
   {
@@ -251,6 +261,16 @@ const ENV_RULES: EnvRule[] = [
     required: !!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && process.env.NODE_ENV === "production",
     description:
       "Self-hosted Plausible Analytics host URL (required in production when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set)",
+    group: "observability",
+  },
+
+  // A64: Per-clinic Google Analytics measurement ID. Optional. When unset,
+  // the analytics-script + cookie-consent disable paths short-circuit.
+  // Listed so the audit registry sees every analytics channel.
+  {
+    name: "NEXT_PUBLIC_GA_MEASUREMENT_ID",
+    required: false,
+    description: "Google Analytics 4 measurement ID (per-clinic, optional).",
     group: "observability",
   },
 
@@ -1167,4 +1187,32 @@ export function getAvScanUrl(): string | undefined {
  */
 export function getAvScanRequired(): boolean {
   return process.env.AV_SCAN_REQUIRED === "true";
+}
+
+/**
+ * Plausible Analytics site domain. When set, the PlausibleScript component
+ * renders. Always client-bundled via the NEXT_PUBLIC_ prefix.
+ * A64: centralised so cookie-consent + plausible-script do not read process.env directly.
+ */
+export function getPlausibleDomain(): string | undefined {
+  return process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+}
+
+/**
+ * Plausible Analytics host URL. Defaults to plausible.io for the SaaS
+ * offering. Required in production when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set
+ * (enforced at the registry level in OBSERVABILITY_ENV_REGISTRY).
+ * A64: centralised so plausible-script does not read process.env directly.
+ */
+export function getPlausibleHost(): string {
+  return process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
+}
+
+/**
+ * Per-clinic Google Analytics 4 measurement ID. Optional. When unset,
+ * the analytics-script consent gate short-circuits without touching the GA SDK.
+ * A64: centralised so cookie-consent does not read process.env directly.
+ */
+export function getGaMeasurementId(): string | undefined {
+  return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 }

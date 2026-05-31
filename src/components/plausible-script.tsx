@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useSyncExternalStore } from "react";
 import { getStoredCookiePreferences } from "@/components/cookie-consent";
+import { getPlausibleDomain, getPlausibleHost } from "@/lib/env";
 
 /**
  * Subscribe to localStorage changes for cookie consent.
@@ -14,7 +15,7 @@ function subscribeToConsent(callback: () => void): () => void {
   const onStorage = (e: StorageEvent) => {
     if (e.key === "cookie-consent") callback();
   };
-  // Also listen for same-tab consent changes (custom event from cookie-consent)
+  // Also listen for same-tab consent changes (custom event from cookie-consent).
   const onCustom = () => callback();
   window.addEventListener("storage", onStorage);
   window.addEventListener("cookie-consent:changed", onCustom);
@@ -35,7 +36,7 @@ function getServerSnapshot(): boolean {
 }
 
 /**
- * Plausible Analytics — platform-level analytics for the root domain.
+ * Plausible Analytics. Platform-level analytics for the root domain.
  *
  * Unlike the per-clinic AnalyticsScript (GA/GTM), this tracks aggregate
  * metrics across the SaaS landing page (oltigo.com) such as visitor
@@ -44,15 +45,18 @@ function getServerSnapshot(): boolean {
  * Activated by setting NEXT_PUBLIC_PLAUSIBLE_DOMAIN in the environment.
  * Supports both Plausible Cloud and self-hosted instances.
  *
- * A69-F1: Consent-before-fire — the script is only rendered when the user
+ * A69-F1: Consent-before-fire. The script is only rendered when the user
  * has explicitly accepted analytics cookies. Although Plausible is cookieless
  * and claims GDPR-safe without consent, the EU ePrivacy Directive and
  * French/German DPA guidance may still require prior consent for any
  * tracking. Rendering conditionally eliminates the race window where the
  * script could phone home before the consent check runs on mount.
+ *
+ * A64: env values read through `src/lib/env.ts` so this file no longer
+ * touches `process.env` directly.
  */
 export function PlausibleScript() {
-  const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+  const domain = getPlausibleDomain();
   const analyticsConsented = useSyncExternalStore(
     subscribeToConsent,
     getAnalyticsConsented,
@@ -61,7 +65,7 @@ export function PlausibleScript() {
 
   if (!domain || !analyticsConsented) return null;
 
-  const host = process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
+  const host = getPlausibleHost();
 
   return (
     <Script
