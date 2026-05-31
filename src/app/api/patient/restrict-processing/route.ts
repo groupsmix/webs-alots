@@ -82,7 +82,7 @@ export const POST = withAuth(
           processing_restricted: true,
           processing_restricted_at: new Date().toISOString(),
           processing_restriction_reason: reason,
-        } as Record<string, unknown>)
+        })
         .eq("id", profile.id);
       updateError = error;
     } else {
@@ -93,7 +93,7 @@ export const POST = withAuth(
           processing_objection_active: true,
           processing_objection_at: new Date().toISOString(),
           processing_objection_activities: processingActivities,
-        } as Record<string, unknown>)
+        })
         .eq("id", profile.id);
       updateError = error;
     }
