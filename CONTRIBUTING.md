@@ -190,7 +190,7 @@ the CI signoff check (target: enabled after this PR merges).
 
 This repository is **closed-source / private**. The `package.json` declares
 `"license": "UNLICENSED"` which, in npm's vocabulary, signals "not licensed
-for redistribution" — it is **not** "no license declared". External
+for redistribution" - it is **not** "no license declared". External
 contributors submitting PRs assign their contribution to Oltigo Health
 under the same terms via the DCO sign-off above.
 
