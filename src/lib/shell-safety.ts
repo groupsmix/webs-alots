@@ -55,7 +55,9 @@ export async function safeExecCommand(
 ): Promise<{ stdout: string; stderr: string }> {
   // Validate command is whitelisted
   if (!(command in SAFE_SHELL_COMMANDS)) {
-    throw new Error(`Command not whitelisted: ${command}. Allowed: ${Object.keys(SAFE_SHELL_COMMANDS).join(", ")}`);
+    throw new Error(
+      `Command not whitelisted: ${command}. Allowed: ${Object.keys(SAFE_SHELL_COMMANDS).join(", ")}`,
+    );
   }
 
   // Validate each argument for shell metacharacters
