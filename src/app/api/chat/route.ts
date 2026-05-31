@@ -7,6 +7,7 @@ import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { detectLanguage } from "@/lib/support/language-detect";
@@ -126,9 +127,9 @@ function validateAndPrefixAIOutput(text: string): string | null {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
-  // A107-03: Global AI kill switch
-  if (process.env.AI_DISABLED === "true") {
-    return apiError("AI features are temporarily disabled", 503, "AI_DISABLED");
+  // F-AI-01: Global AI kill switch (checks both env var AND KV flag)
+  if (!(await isAIEnabled())) {
+    return apiError("AI features are disabled", 503, "AI_DISABLED");
   }
 
   // Resolve clinic ID strictly from tenant context (middleware headers)

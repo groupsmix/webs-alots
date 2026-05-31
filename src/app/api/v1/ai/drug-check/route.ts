@@ -14,6 +14,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { checkInteractions, validateDose, ALERT_DISPLAY_MAP } from "@/lib/cdss";
 import type { DoseRoute } from "@/lib/cdss";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiDrugCheckLimiter } from "@/lib/rate-limit";
 import { cdssCheckRequestSchema } from "@/lib/validations/clinical-cdss";
@@ -22,6 +23,11 @@ import type { AuthContext } from "@/lib/with-auth";
 export const POST = withAuthValidation(
   cdssCheckRequestSchema,
   async (data, _request: NextRequest, auth: AuthContext) => {
+    // F-AI-01: Early kill switch — fail fast before processing
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;
