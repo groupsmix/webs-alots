@@ -113,9 +113,20 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
   });
 
   test("cookie consent banner has no critical a11y violations", async ({ page }) => {
-    // Clear consent to force the banner to appear
+    // Clear consent to force the banner to appear.
+    // Navigate to root and wait for any redirects to finish before
+    // interacting with localStorage (avoids context-destroyed errors).
     await stableGoto(page, "/");
-    await page.evaluate(() => localStorage.removeItem("cookie-consent"));
+    // Retry localStorage clear in case a late navigation fires.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await page.evaluate(() => localStorage.removeItem("cookie-consent"));
+        break;
+      } catch {
+        await page.waitForLoadState("load");
+        await page.waitForTimeout(300);
+      }
+    }
     await page.reload({ waitUntil: "load" });
     await page.waitForFunction(() => document.readyState === "complete");
 
