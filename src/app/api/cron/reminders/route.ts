@@ -163,7 +163,7 @@ async function handler(request: NextRequest) {
 
       while (hasMore && cursor && appointments.length < MAX_APPOINTMENTS_PER_RUN) {
         const { data: page, error } = await supabase
-          .from("appointments") // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep using service-role admin client; per-clinic dispatch happens row-by-row downstream // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep using service-role admin client; per-clinic dispatch happens row-by-row downstream
+          .from("appointments") // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep using service-role admin client; per-clinic dispatch happens row-by-row downstream
           .select(SELECT_COLS)
           .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
           .or(`slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`)
