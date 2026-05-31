@@ -1,1 +1,3 @@
+# Q-53: Run typecheck on changed files before push to catch type errors early
+npx tsc --noEmit 2>&1 | head -50
 npx vitest run --changed --passWithNoTests

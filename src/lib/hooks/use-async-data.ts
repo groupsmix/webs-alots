@@ -61,6 +61,8 @@ export function useAsyncData<T>(
     return () => {
       controller.abort();
     };
+    // Q-49: `deps` is the caller-supplied dependency array — including
+    // `runFetch` here would ignore the caller's explicit dependency contract.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
