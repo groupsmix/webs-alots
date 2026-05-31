@@ -36,6 +36,9 @@ const ALLOWED_AI_BASE_URLS = new Set(["https://api.openai.com/v1", "https://api.
 // in env (e.g. "oltigo-prod") to allowlist only that resource.
 function isAllowedBaseUrl(url: string): boolean {
   if (ALLOWED_AI_BASE_URLS.has(url)) return true;
+  // Workers AI OpenAI-compatible endpoint
+  if (url.startsWith("https://api.cloudflare.com/client/v4/accounts/") && url.endsWith("/ai/v1"))
+    return true;
   try {
     const parsed = new URL(url);
     if (parsed.hostname.endsWith(".openai.azure.com")) {
@@ -65,6 +68,7 @@ const ALLOWED_MODELS = new Set([
   "gpt-4o-mini-2024-07-18",
   "gpt-4o-2024-08-06",
   "gpt-4o-2024-11-20",
+  "@cf/meta/llama-3.1-8b-instruct",
 ]);
 
 // ── Public API ──
@@ -126,13 +130,24 @@ async function resolveFromDatabase(): Promise<AIConfig | null> {
       return {
         apiKey: openaiConfig.apiKey,
         baseUrl: "https://api.openai.com/v1",
-        model: "gpt-4.1-mini",
+        model: DEFAULT_MODEL,
         seed: Date.now(),
       };
     }
 
-    // Fall back to any active provider with an OpenAI-compatible API
-    // (anthropic, google, etc. are NOT compatible — only check openai here)
+    // Fall back to Workers AI via OpenAI-compatible endpoint (free, no API key purchase needed)
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime cred for Workers AI fallback
+    const aiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — runtime cred for Workers AI fallback
+    if (accountId && aiToken) {
+      logger.debug("AI config resolved from Workers AI (free fallback)", { context: "ai-config" });
+      return {
+        apiKey: aiToken,
+        baseUrl: `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1`,
+        model: "@cf/meta/llama-3.1-8b-instruct",
+        seed: Date.now(),
+      };
+    }
+
     return null;
   } catch (err) {
     logger.warn("Failed to load AI config from database, falling back to env", {
@@ -150,6 +165,22 @@ function resolveFromEnv():
   // nosemgrep: semgrep.env-access — secret read at runtime; not in env.ts to avoid eager import
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    // Try Workers AI as last resort (free, no API key purchase needed)
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime cred for Workers AI fallback
+    const aiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — runtime cred for Workers AI fallback
+    if (accountId && aiToken) {
+      logger.debug("AI config resolved from Workers AI env fallback", { context: "ai-config" });
+      return {
+        ok: true,
+        config: {
+          apiKey: aiToken,
+          baseUrl: `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1`,
+          model: "@cf/meta/llama-3.1-8b-instruct",
+          seed: Date.now(),
+        },
+      };
+    }
+
     return {
       ok: false,
       reason:
