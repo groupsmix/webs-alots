@@ -790,6 +790,13 @@ jobs:
           # C-08: PHI_ENCRYPTION_KEY is now required in production mode.
           # Must be exactly 64 hex chars (AES-256-GCM key shape).
           PHI_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          # A6-05/A22-01: BACKUP_ENCRYPTION_KEY is required in production mode
+          # (enforceBackupEncryptionConfigured in src/lib/env.ts). `next start`
+          # boots in production; the validator hard-fails without this key
+          # and Playwright never gets a running web server. The actual
+          # backup encryption path is never exercised by E2E, so a 64-hex
+          # placeholder satisfies the startup health check.
+          BACKUP_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           # Force the in-memory rate limiter in CI. The Supabase rate-limit RPC
           # (rate_limit_check_and_increment) isn't reliably available on the
           # ephemeral supabase-cli instance during boot, so the limiter's

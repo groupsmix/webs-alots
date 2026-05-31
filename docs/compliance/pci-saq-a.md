@@ -42,7 +42,39 @@ Oltigo Health **never** receives, stores, processes, or transmits cardholder dat
 - [ ] Confirm no new flows introduce direct card handling
 - [ ] File updated SAQ-A with acquiring bank if required
 
-## 5. ASV Scan & Penetration Test Evidence (A65-2)
+## 5. CMI AOC Tracking (A65-F3)
+
+> **Audit finding A65-F3:** CMI (Centre Monétique Interbancaire) Attestation of Compliance (AOC) is not tracked or retained in this repository. PCI DSS v4.0 Req 12.8.4 requires that service provider PCI compliance status is monitored at least annually.
+
+### Current Status
+
+| Item              | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| CMI PCI level     | Level 1 (BAM-regulated)                                                |
+| AOC last obtained | _Not yet obtained — **ACTION REQUIRED**_                               |
+| AOC next renewal  | _TBD — set after first AOC is filed_                                   |
+| Storage location  | `docs/compliance/aoc/cmi-aoc-YYYY.pdf`                                 |
+| Contact           | CMI Compliance Dept. — request via acquiring bank relationship manager |
+
+### How to Obtain the CMI AOC
+
+1. Contact CMI's compliance department through your acquiring bank relationship manager (Attijariwafa, CIH, or Banque Populaire depending on your merchant agreement).
+2. Request the current **Attestation of Compliance (AOC) — Service Provider** form for their PCI DSS certification.
+3. Confirm the AOC covers the hosted payment page product used by Oltigo (CMI DirectPay / CMI Redirect).
+4. Save the signed PDF to `docs/compliance/aoc/cmi-aoc-YYYY.pdf` (where `YYYY` = certificate year) and commit it.
+5. Update the table above with the obtained date and next renewal date.
+
+### Annual Reminder
+
+Add a recurring calendar event each **January** to:
+
+- Verify the CMI AOC on file has not expired.
+- Request a renewed AOC if the existing one covers fewer than 6 months remaining.
+- Repeat the Stripe AOC check at [stripe.com/docs/security](https://stripe.com/docs/security).
+
+> Until the CMI AOC is obtained and filed, this requirement is **open**. No cardholder data flows through Oltigo's systems, but evidence of CMI's certification must be retained to satisfy PCI DSS 12.8.4.
+
+## 6. ASV Scan & Penetration Test Evidence (A65-F1, A65-F2)
 
 | Activity           | Cadence   | Last completed | Next due | Evidence location           |
 | ------------------ | --------- | -------------- | -------- | --------------------------- |

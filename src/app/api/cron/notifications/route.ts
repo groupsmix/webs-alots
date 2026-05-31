@@ -34,4 +34,13 @@ async function handler(request: NextRequest) {
   }
 }
 
+// A76-F2: The notification queue is the primary delivery mechanism. The 15-minute
+// cron is a recovery sweep for items that missed their delivery window (e.g. a
+// Worker was restarted mid-delivery). It MUST NOT duplicate work done by the
+// inline queue processor. The queue's built-in idempotency check (status='sent')
+// prevents double-delivery as long as items are marked before the next sweep.
+//
+// If the reminders cron also directly calls sendInteractiveMessage, that path
+// bypasses this queue entirely — the reminders cron should be migrated to use
+// enqueueNotification() for WhatsApp so this cron remains the sole delivery path.
 export const GET = withSentryCron("notifications-every-15m", "*/15 * * * *", handler);
