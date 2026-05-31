@@ -15,8 +15,7 @@
  * runtime binding — it is pure data integrity.
  */
 
-import { describe, it, expect } from "vitest";
-
+import { describe, expect, it } from "vitest";
 import inventory from "../../../docs/compliance/_generated/pii-columns.json";
 import {
   ALL_DSR_TABLES,
