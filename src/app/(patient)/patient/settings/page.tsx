@@ -8,6 +8,150 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
 
+// ---------------------------------------------------------------------------
+// A69-F3: Per-category processing preferences (Art.21 objection UI)
+// ---------------------------------------------------------------------------
+const PROCESSING_ACTIVITIES = [
+  {
+    id: "whatsapp_reminders",
+    label: "Rappels WhatsApp",
+    description:
+      "Rappels automatiques de rendez-vous par WhatsApp. Base juridique : intérêt légitime (Art.6(1)(f)).",
+  },
+  {
+    id: "ai_summaries",
+    label: "Résumés IA du dossier",
+    description:
+      "Génération de résumés de votre dossier médical par intelligence artificielle pour aider votre médecin.",
+  },
+  {
+    id: "ai_prescription_suggestions",
+    label: "Suggestions de prescription IA",
+    description:
+      "Suggestions de médicaments basées sur votre historique, soumises à l'approbation du médecin.",
+  },
+  {
+    id: "ai_drug_interactions",
+    label: "Vérification d'interactions médicamenteuses",
+    description: "Analyse automatisée de vos médicaments pour détecter des interactions.",
+  },
+];
+
+function ProcessingPreferencesCard() {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  async function objectTo(activityId: string) {
+    setLoading(activityId);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/patient/restrict-processing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "objection",
+          reason: `Patient objected to ${activityId} via privacy settings`,
+          processingActivities: [activityId],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error ?? "Erreur lors de l'enregistrement." });
+      } else {
+        setMessage({ type: "success", text: "Opposition enregistrée avec succès." });
+      }
+    } catch (err) {
+      logger.error("Failed to submit objection", { context: "patient-settings", error: err });
+      setMessage({ type: "error", text: "Erreur réseau. Veuillez réessayer." });
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function withdrawObjection(activityId: string) {
+    setLoading(activityId);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/patient/restrict-processing", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "objection", reason: `Withdrew objection to ${activityId}` }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error ?? "Erreur." });
+      } else {
+        setMessage({ type: "success", text: "Opposition retirée." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Erreur réseau." });
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BellOff className="h-5 w-5" />
+          Mes préférences de traitement (Art. 21 RGPD)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Vous pouvez vous opposer à certains traitements fondés sur l&apos;intérêt légitime (Art.
+          6(1)(f) RGPD). Votre médecin et le personnel soignant conservent toujours l&apos;accès à
+          votre dossier médical pour assurer votre prise en charge.
+        </p>
+        {message && (
+          <div
+            className={`rounded-md px-4 py-3 text-sm ${message.type === "success" ? "bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}
+          >
+            {message.text}
+          </div>
+        )}
+        <div className="space-y-3">
+          {PROCESSING_ACTIVITIES.map((activity) => (
+            <div
+              key={activity.id}
+              className="flex items-start justify-between gap-4 rounded-lg border p-3"
+            >
+              <div>
+                <p className="text-sm font-medium">{activity.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={loading === activity.id}
+                  onClick={() => objectTo(activity.id)}
+                >
+                  <Lock className="h-3 w-3 mr-1" />
+                  Refuser
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={loading === activity.id}
+                  onClick={() => withdrawObjection(activity.id)}
+                >
+                  Autoriser
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Pour une restriction complète de tout traitement non essentiel (Art. 18 RGPD), contactez
+          notre DPO via la politique de confidentialité.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function PatientSettingsPage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
