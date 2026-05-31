@@ -44,7 +44,8 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "BOOKING_TOKEN_SECRET",
     required: process.env.NODE_ENV === "production",
-    description: "HMAC secret for booking verification tokens (required in production)",
+    description:
+      "HMAC secret for booking verification tokens (required in production)",
     group: "auth",
   },
   // R-15: Set to the previous BOOKING_TOKEN_SECRET during key rotation.
@@ -52,7 +53,8 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "BOOKING_TOKEN_SECRET_OLD",
     required: false,
-    description: "Previous HMAC secret — set during rotation, remove after overlap window",
+    description:
+      "Previous HMAC secret — set during rotation, remove after overlap window",
     group: "auth",
   },
 
@@ -84,7 +86,8 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "SUPABASE_SERVICE_ROLE_KEY",
     required: process.env.NODE_ENV === "production",
-    description: "Required server-only key for admin Supabase operations (required in production)",
+    description:
+      "Required server-only key for admin Supabase operations (required in production)",
     group: "core",
   },
 
@@ -155,7 +158,12 @@ const ENV_RULES: EnvRule[] = [
     description: "Stripe webhook signing secret",
     group: "payments",
   },
-  { name: "CMI_MERCHANT_ID", required: false, description: "CMI merchant ID", group: "payments" },
+  {
+    name: "CMI_MERCHANT_ID",
+    required: false,
+    description: "CMI merchant ID",
+    group: "payments",
+  },
   {
     name: "CMI_SECRET_KEY",
     required: false,
@@ -243,7 +251,9 @@ const ENV_RULES: EnvRule[] = [
   // to prevent CSP from falling back to the upstream plausible.io domain.
   {
     name: "NEXT_PUBLIC_PLAUSIBLE_HOST",
-    required: !!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && process.env.NODE_ENV === "production",
+    required:
+      !!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN &&
+      process.env.NODE_ENV === "production",
     description:
       "Self-hosted Plausible Analytics host URL (required in production when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set)",
     group: "observability",
@@ -298,7 +308,8 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "ADMIN_GEO_RESTRICTION_ENABLED",
     required: false,
-    description: "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
+    description:
+      "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
     group: "security",
   },
   {
@@ -412,9 +423,17 @@ export function validateEnv(): EnvValidationResult {
   for (const rule of ENV_RULES) {
     if (!process.env[rule.name]) {
       if (rule.required) {
-        missing.push({ name: rule.name, description: rule.description, group: rule.group });
+        missing.push({
+          name: rule.name,
+          description: rule.description,
+          group: rule.group,
+        });
       } else {
-        warnings.push({ name: rule.name, description: rule.description, group: rule.group });
+        warnings.push({
+          name: rule.name,
+          description: rule.description,
+          group: rule.group,
+        });
       }
     }
   }
@@ -422,7 +441,10 @@ export function validateEnv(): EnvValidationResult {
   // Sec-10: When WhatsApp provider is Meta, META_APP_SECRET must be set.
   // Without it, webhook signature verification always returns false and
   // appointment confirmations via WhatsApp silently break (401 to Meta).
-  if (process.env.WHATSAPP_PROVIDER === "meta" && !process.env.META_APP_SECRET) {
+  if (
+    process.env.WHATSAPP_PROVIDER === "meta" &&
+    !process.env.META_APP_SECRET
+  ) {
     missing.push({
       name: "META_APP_SECRET",
       description:
@@ -435,11 +457,13 @@ export function validateEnv(): EnvValidationResult {
   // CLOUDFLARE_API_TOKEN or (CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL).
   if (customDomainsEnabledFromEnv()) {
     const hasToken = !!process.env.CLOUDFLARE_API_TOKEN;
-    const hasGlobalKey = !!process.env.CLOUDFLARE_API_KEY && !!process.env.CLOUDFLARE_EMAIL;
+    const hasGlobalKey =
+      !!process.env.CLOUDFLARE_API_KEY && !!process.env.CLOUDFLARE_EMAIL;
     if (!hasToken && !hasGlobalKey) {
       missing.push({
         name: "CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL",
-        description: "Cloudflare auth required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
+        description:
+          "Cloudflare auth required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
         group: "domains",
       });
     }
@@ -479,7 +503,9 @@ export function enforceEnvValidation(): void {
 
     // F-34: Emit Sentry alert for WhatsApp provider degradation in production
     if (process.env.NODE_ENV === "production") {
-      const whatsappWarnings = result.warnings.filter((w) => w.group === "whatsapp");
+      const whatsappWarnings = result.warnings.filter(
+        (w) => w.group === "whatsapp",
+      );
       if (whatsappWarnings.length > 0) {
         try {
           import("@sentry/nextjs").then((Sentry) => {
@@ -593,7 +619,8 @@ export function enforceSecurityFlagAcknowledgments(): void {
   if (process.env.NODE_ENV !== "production") return;
 
   const violations = SECURITY_FLAG_ACKNOWLEDGMENTS.filter(
-    ({ flag, ack }) => process.env[flag] === "true" && process.env[ack] !== "true",
+    ({ flag, ack }) =>
+      process.env[flag] === "true" && process.env[ack] !== "true",
   );
 
   if (violations.length === 0) return;
@@ -609,7 +636,10 @@ export function enforceSecurityFlagAcknowledgments(): void {
     "production without an explicit acknowledgement:\n\n" +
     lines.join("\n\n") +
     "\n\nThis check exists so flipping these flags is always a deliberate decision.";
-  logger.error(message, { context: "env-validation", check: "security-flag-ack" });
+  logger.error(message, {
+    context: "env-validation",
+    check: "security-flag-ack",
+  });
   throw new Error(message);
 }
 
@@ -637,7 +667,8 @@ export function enforcePhiMaskingPolicy(): void {
   }
 
   if (masking === "none" && allowUnmasked) {
-    const reason = process.env.ALLOW_UNMASKED_PHI_REASON || "(no reason provided)";
+    const reason =
+      process.env.ALLOW_UNMASKED_PHI_REASON || "(no reason provided)";
     const message =
       "PHI masking is DISABLED in production (ALLOW_UNMASKED_PHI=true). " +
       "This must be approved by the Security Officer / DPO and documented. " +
@@ -688,7 +719,10 @@ export function enforcePhiEncryptionConfigured(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY is required in production.\n" +
       "Patient files (Moroccan Law 09-08 PHI) cannot be encrypted without it. Generate a key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "phi-encryption",
+    });
     throw new Error(message);
   }
 
@@ -696,7 +730,10 @@ export function enforcePhiEncryptionConfigured(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
       "Generate a valid key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "phi-encryption",
+    });
     throw new Error(message);
   }
 }
@@ -719,7 +756,10 @@ export function enforceBackupEncryptionConfigured(): void {
       "Database backups contain all PHI for all tenants (all clinic data). An unencrypted backup\n" +
       "is a single-point-of-compromise for the entire platform and violates Moroccan Law 09-08.\n" +
       "Generate a key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "backup-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "backup-encryption",
+    });
     throw new Error(message);
   }
 
@@ -727,7 +767,10 @@ export function enforceBackupEncryptionConfigured(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] BACKUP_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
       "Generate a valid key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "backup-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "backup-encryption",
+    });
     throw new Error(message);
   }
 }
@@ -750,7 +793,10 @@ export function enforceCronSecretMinLength(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] CRON_SECRET must be at least 32 characters.\n" +
       "A short secret is vulnerable to brute-force. Generate one: `openssl rand -hex 32`.";
-    logger.error(message, { context: "env-validation", check: "cron-secret-length" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "cron-secret-length",
+    });
     throw new Error(message);
   }
 }
@@ -776,7 +822,10 @@ export function enforceBookingTokenSecretMinLength(): void {
       "[STARTUP HEALTH CHECK FAILED] BOOKING_TOKEN_SECRET must be at least 32 characters.\n" +
       "A short secret lets attackers forge booking tokens and skip OTP verification. " +
       "Generate one: `openssl rand -hex 32`.";
-    logger.error(message, { context: "env-validation", check: "booking-token-secret-length" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "booking-token-secret-length",
+    });
     throw new Error(message);
   }
 }
@@ -798,7 +847,10 @@ export function enforceHmacKeyIndependence(): void {
       "[STARTUP HEALTH CHECK FAILED] PROFILE_HEADER_HMAC_KEY must not equal CRON_SECRET.\n" +
       "Using the same value means a leaked cron token also compromises session-header " +
       "forgery. Generate a distinct key: `openssl rand -hex 32`.";
-    logger.error(message, { context: "env-validation", check: "hmac-key-independence" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "hmac-key-independence",
+    });
     throw new Error(message);
   }
 }
@@ -819,7 +871,10 @@ export function enforceRateLimitBackend(): void {
     const message =
       `[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND="${backend}" is not a recognized value.\n` +
       `Valid options: ${[...VALID_BACKENDS].join(", ")}. A typo silently downgrades to in-memory limiting.`;
-    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "rate-limit-backend",
+    });
     throw new Error(message);
   }
 
@@ -849,7 +904,10 @@ export function enforceRateLimitBackend(): void {
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +
       "multi-isolate Worker deployment. Use 'kv' or 'supabase'.";
-    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "rate-limit-backend",
+    });
     throw new Error(message);
   }
 }
@@ -881,7 +939,10 @@ export function enforceEmailProviderExclusivity(): void {
       "[STARTUP HEALTH CHECK FAILED] Both Resend (RESEND_API_KEY) and the HTTP email relay\n" +
       "(EMAIL_RELAY_HOST/SMTP_HOST + USER + PASS) are configured. Configure exactly one email\n" +
       "provider — having both risks duplicate sends and ambiguous routing.";
-    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "email-provider-exclusivity",
+    });
     throw new Error(message);
   }
 
@@ -890,7 +951,10 @@ export function enforceEmailProviderExclusivity(): void {
       "[STARTUP HEALTH CHECK FAILED] No email provider is configured. Set either\n" +
       "RESEND_API_KEY or the HTTP email relay credentials\n" +
       "(EMAIL_RELAY_HOST/SMTP_HOST + EMAIL_RELAY_USER/SMTP_USER + EMAIL_RELAY_PASS/SMTP_PASS).";
-    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "email-provider-exclusivity",
+    });
     throw new Error(message);
   }
 }
@@ -988,6 +1052,7 @@ export function getR2Config(): {
   secretAccessKey: string | undefined;
   bucketName: string | undefined;
   signedUrlSecret: string | undefined;
+  publicUrl: string | undefined;
 } {
   return {
     accountId: process.env.R2_ACCOUNT_ID,
@@ -995,6 +1060,7 @@ export function getR2Config(): {
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     bucketName: process.env.R2_BUCKET_NAME,
     signedUrlSecret: process.env.R2_SIGNED_URL_SECRET,
+    publicUrl: process.env.R2_PUBLIC_URL,
   };
 }
 
@@ -1079,4 +1145,41 @@ export function getWorkerEnv(): string | undefined {
  */
 export function getAllowStagingDestructiveCrons(): boolean {
   return process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
+}
+
+/**
+ * Whether the current process is running in production (NODE_ENV).
+ * Centralised so callers don't sprinkle `process.env.NODE_ENV` checks
+ * across the codebase (semgrep.env-access). Use this for runtime gating;
+ * for build-time/edge gating, see callers of `getWorkerEnv()`.
+ */
+export function isProduction(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
+/**
+ * Whether the current process is running inside CI (GitHub Actions sets
+ * `CI=true`). Useful for gating production-only side effects when the
+ * Next.js `next start` command sets `NODE_ENV=production` during CI.
+ */
+export function isCi(): boolean {
+  return process.env.CI === "true";
+}
+
+/**
+ * AV scan service endpoint. Required in production for clinical (PHI)
+ * uploads — see `enforceEnvValidation()` for the registry-level guard.
+ * Returns `undefined` when unset; callers must handle that case.
+ */
+export function getAvScanUrl(): string | undefined {
+  return process.env.AV_SCAN_URL;
+}
+
+/**
+ * Whether the upload pipeline should fail-closed when the AV scan
+ * service is unreachable or returns a non-OK status. W8-S-01 control.
+ * Non-PHI uploads honour this flag; PHI uploads always fail closed.
+ */
+export function getAvScanRequired(): boolean {
+  return process.env.AV_SCAN_REQUIRED === "true";
 }
