@@ -39,13 +39,46 @@ async function stableGoto(page: import("@playwright/test").Page, path: string) {
   let lastUrl = page.url();
   let stable = false;
   for (let i = 0; i < 6 && !stable; i++) {
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
     const currentUrl = page.url();
     if (currentUrl === lastUrl) {
       stable = true;
     }
     lastUrl = currentUrl;
   }
+}
+
+/**
+ * Run axe-core analysis with retry on navigation-destroyed contexts.
+ * Next.js client-side routing may trigger a navigation even after
+ * stableGoto, destroying the execution context mid-analyze().
+ */
+async function analyzeWithRetry(
+  page: import("@playwright/test").Page,
+  options?: { include?: string },
+) {
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
+      if (options?.include) {
+        builder = builder.include(options.include);
+      } else {
+        for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
+      }
+      return await builder.analyze();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("Execution context was destroyed") && attempt < maxRetries - 1) {
+        // Wait for the new page to finish loading after navigation
+        await page.waitForLoadState("load");
+        await page.waitForTimeout(300);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("analyzeWithRetry: exhausted retries");
 }
 
 const DECORATIVE_SELECTORS = [
@@ -57,41 +90,25 @@ const DECORATIVE_SELECTORS = [
 test.describe("Accessibility — WCAG 2.2 AA", () => {
   test("public landing page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/");
-
-    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
-    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
-    const results = await builder.analyze();
-
+    const results = await analyzeWithRetry(page);
     expect(results.violations).toEqual([]);
   });
 
   test("booking page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/booking");
-
-    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
-    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
-    const results = await builder.analyze();
-
+    const results = await analyzeWithRetry(page);
     expect(results.violations).toEqual([]);
   });
 
   test("login page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/login");
-
-    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
-    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
-    const results = await builder.analyze();
-
+    const results = await analyzeWithRetry(page);
     expect(results.violations).toEqual([]);
   });
 
   test("privacy policy page has no critical a11y violations", async ({ page }) => {
     await stableGoto(page, "/privacy");
-
-    let builder = new AxeBuilder({ page }).withTags(AXE_TAGS).disableRules(EXCLUDED_RULES);
-    for (const sel of DECORATIVE_SELECTORS) builder = builder.exclude(sel);
-    const results = await builder.analyze();
-
+    const results = await analyzeWithRetry(page);
     expect(results.violations).toEqual([]);
   });
 
@@ -105,12 +122,7 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
     // Scope analysis to the consent banner
     const banner = page.locator("#cookie-consent-banner");
     if (await banner.isVisible()) {
-      const results = await new AxeBuilder({ page })
-        .include("#cookie-consent-banner")
-        .withTags(AXE_TAGS)
-        .disableRules(EXCLUDED_RULES)
-        .analyze();
-
+      const results = await analyzeWithRetry(page, { include: "#cookie-consent-banner" });
       expect(results.violations).toEqual([]);
     }
   });
