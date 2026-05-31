@@ -1,21 +1,32 @@
 /**
  * A62-D1 / A62-D2 / A62-D3: Example usage of HTTP resilience patterns.
  *
- * This file documents how to use the resilience library in actual route handlers
- * and service functions.
+ * This file documents how to use the resilience library in actual route
+ * handlers and service functions. The patterns shown here are the
+ * project-recommended way to call any external HTTP service.
+ *
+ * NOTE: external secrets are read through the named getters in
+ * `src/lib/env.ts` (never `process.env` directly). The env-access semgrep
+ * rule enforces this for all source files outside the allow-list.
  */
 
+import { getExternalEhrApiKey, getStripeSecretKey } from "@/lib/env";
 import { resilientFetch, HTTP_TIMEOUTS } from "@/lib/http-resilience";
 
 /**
  * Example 1: Simple external API call with timeout and retries.
  */
 export async function fetchPatientFromExternalSystem(patientId: string): Promise<unknown> {
+  const apiKey = getExternalEhrApiKey();
+  if (!apiKey) {
+    throw new Error("EXTERNAL_EHR_API_KEY not configured");
+  }
+
   const response = await resilientFetch(
     `https://external-ehr.example.com/api/patients/${patientId}`,
     {
       method: "GET",
-      headers: { Authorization: `Bearer ${process.env.EXTERNAL_EHR_API_KEY}` },
+      headers: { Authorization: `Bearer ${apiKey}` },
     },
     {
       serviceName: "external-ehr",
@@ -69,12 +80,17 @@ export async function deliverWebhook(
  * Example 3: Payment processor call with tight timeout and circuit breaker.
  */
 export async function chargePaymentCard(cardToken: string, amountCents: number): Promise<string> {
+  const stripeKey = getStripeSecretKey();
+  if (!stripeKey) {
+    throw new Error("STRIPE_SECRET_KEY not configured");
+  }
+
   const response = await resilientFetch(
     "https://api.stripe.com/v1/payment_intents",
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
@@ -86,7 +102,7 @@ export async function chargePaymentCard(cardToken: string, amountCents: number):
     },
     {
       serviceName: "stripe-payments",
-      timeoutMs: HTTP_TIMEOUTS.CRITICAL, // 5s — fail fast for payments
+      timeoutMs: HTTP_TIMEOUTS.CRITICAL, // 5s, fail fast for payments
       retryConfig: {
         maxAttempts: 2, // Minimal retries for payments (idempotency risk)
         baseDelayMs: 100,
@@ -121,7 +137,7 @@ export async function checkDownstreamHealth(endpoint: string): Promise<boolean> 
         serviceName: "health-check",
         timeoutMs: HTTP_TIMEOUTS.CRITICAL, // 5s
         retryConfig: {
-          maxAttempts: 1, // No retries — just check once
+          maxAttempts: 1, // No retries, just check once
           baseDelayMs: 0,
           maxDelayMs: 0,
           retryableStatuses: [],
@@ -135,7 +151,7 @@ export async function checkDownstreamHealth(endpoint: string): Promise<boolean> 
 }
 
 /**
- * Example 5: Migration guide — replacing old fetch() calls.
+ * Example 5: Migration guide, replacing old fetch() calls.
  *
  * OLD:
  *   const response = await fetch(url, { method: "POST" });

@@ -155,7 +155,12 @@ const ENV_RULES: EnvRule[] = [
     description: "Stripe webhook signing secret",
     group: "payments",
   },
-  { name: "CMI_MERCHANT_ID", required: false, description: "CMI merchant ID", group: "payments" },
+  {
+    name: "CMI_MERCHANT_ID",
+    required: false,
+    description: "CMI merchant ID",
+    group: "payments",
+  },
   {
     name: "CMI_SECRET_KEY",
     required: false,
@@ -412,9 +417,17 @@ export function validateEnv(): EnvValidationResult {
   for (const rule of ENV_RULES) {
     if (!process.env[rule.name]) {
       if (rule.required) {
-        missing.push({ name: rule.name, description: rule.description, group: rule.group });
+        missing.push({
+          name: rule.name,
+          description: rule.description,
+          group: rule.group,
+        });
       } else {
-        warnings.push({ name: rule.name, description: rule.description, group: rule.group });
+        warnings.push({
+          name: rule.name,
+          description: rule.description,
+          group: rule.group,
+        });
       }
     }
   }
@@ -609,7 +622,10 @@ export function enforceSecurityFlagAcknowledgments(): void {
     "production without an explicit acknowledgement:\n\n" +
     lines.join("\n\n") +
     "\n\nThis check exists so flipping these flags is always a deliberate decision.";
-  logger.error(message, { context: "env-validation", check: "security-flag-ack" });
+  logger.error(message, {
+    context: "env-validation",
+    check: "security-flag-ack",
+  });
   throw new Error(message);
 }
 
@@ -688,7 +704,10 @@ export function enforcePhiEncryptionConfigured(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY is required in production.\n" +
       "Patient files (Moroccan Law 09-08 PHI) cannot be encrypted without it. Generate a key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "phi-encryption",
+    });
     throw new Error(message);
   }
 
@@ -696,7 +715,10 @@ export function enforcePhiEncryptionConfigured(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
       "Generate a valid key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "phi-encryption",
+    });
     throw new Error(message);
   }
 }
@@ -719,7 +741,10 @@ export function enforceBackupEncryptionConfigured(): void {
       "Database backups contain all PHI for all tenants (all clinic data). An unencrypted backup\n" +
       "is a single-point-of-compromise for the entire platform and violates Moroccan Law 09-08.\n" +
       "Generate a key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "backup-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "backup-encryption",
+    });
     throw new Error(message);
   }
 
@@ -727,7 +752,10 @@ export function enforceBackupEncryptionConfigured(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] BACKUP_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
       "Generate a valid key with: openssl rand -hex 32";
-    logger.error(message, { context: "env-validation", check: "backup-encryption" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "backup-encryption",
+    });
     throw new Error(message);
   }
 }
@@ -750,7 +778,10 @@ export function enforceCronSecretMinLength(): void {
     const message =
       "[STARTUP HEALTH CHECK FAILED] CRON_SECRET must be at least 32 characters.\n" +
       "A short secret is vulnerable to brute-force. Generate one: `openssl rand -hex 32`.";
-    logger.error(message, { context: "env-validation", check: "cron-secret-length" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "cron-secret-length",
+    });
     throw new Error(message);
   }
 }
@@ -776,7 +807,10 @@ export function enforceBookingTokenSecretMinLength(): void {
       "[STARTUP HEALTH CHECK FAILED] BOOKING_TOKEN_SECRET must be at least 32 characters.\n" +
       "A short secret lets attackers forge booking tokens and skip OTP verification. " +
       "Generate one: `openssl rand -hex 32`.";
-    logger.error(message, { context: "env-validation", check: "booking-token-secret-length" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "booking-token-secret-length",
+    });
     throw new Error(message);
   }
 }
@@ -798,7 +832,10 @@ export function enforceHmacKeyIndependence(): void {
       "[STARTUP HEALTH CHECK FAILED] PROFILE_HEADER_HMAC_KEY must not equal CRON_SECRET.\n" +
       "Using the same value means a leaked cron token also compromises session-header " +
       "forgery. Generate a distinct key: `openssl rand -hex 32`.";
-    logger.error(message, { context: "env-validation", check: "hmac-key-independence" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "hmac-key-independence",
+    });
     throw new Error(message);
   }
 }
@@ -819,7 +856,10 @@ export function enforceRateLimitBackend(): void {
     const message =
       `[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND="${backend}" is not a recognized value.\n` +
       `Valid options: ${[...VALID_BACKENDS].join(", ")}. A typo silently downgrades to in-memory limiting.`;
-    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "rate-limit-backend",
+    });
     throw new Error(message);
   }
 
@@ -849,7 +889,10 @@ export function enforceRateLimitBackend(): void {
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +
       "multi-isolate Worker deployment. Use 'kv' or 'supabase'.";
-    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "rate-limit-backend",
+    });
     throw new Error(message);
   }
 }
@@ -881,7 +924,10 @@ export function enforceEmailProviderExclusivity(): void {
       "[STARTUP HEALTH CHECK FAILED] Both Resend (RESEND_API_KEY) and the HTTP email relay\n" +
       "(EMAIL_RELAY_HOST/SMTP_HOST + USER + PASS) are configured. Configure exactly one email\n" +
       "provider — having both risks duplicate sends and ambiguous routing.";
-    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "email-provider-exclusivity",
+    });
     throw new Error(message);
   }
 
@@ -890,7 +936,10 @@ export function enforceEmailProviderExclusivity(): void {
       "[STARTUP HEALTH CHECK FAILED] No email provider is configured. Set either\n" +
       "RESEND_API_KEY or the HTTP email relay credentials\n" +
       "(EMAIL_RELAY_HOST/SMTP_HOST + EMAIL_RELAY_USER/SMTP_USER + EMAIL_RELAY_PASS/SMTP_PASS).";
-    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    logger.error(message, {
+      context: "env-validation",
+      check: "email-provider-exclusivity",
+    });
     throw new Error(message);
   }
 }
@@ -929,6 +978,16 @@ export function getPhiEncryptionKey(): string | undefined {
 /** Stripe secret key. */
 export function getStripeSecretKey(): string | undefined {
   return process.env.STRIPE_SECRET_KEY;
+}
+
+/**
+ * External EHR API key. Used by the `http-resilience-example.ts` illustrative
+ * patterns. Returns undefined when not configured; callers should null-check
+ * before use. No central validation entry: the EHR integration is opt-in and
+ * the example file documents the pattern even when the key is not set.
+ */
+export function getExternalEhrApiKey(): string | undefined {
+  return process.env.EXTERNAL_EHR_API_KEY;
 }
 
 /** Stripe webhook secret. */
@@ -978,6 +1037,7 @@ export function getR2Config(): {
   secretAccessKey: string | undefined;
   bucketName: string | undefined;
   signedUrlSecret: string | undefined;
+  publicUrl: string | undefined;
 } {
   return {
     accountId: process.env.R2_ACCOUNT_ID,
@@ -985,6 +1045,7 @@ export function getR2Config(): {
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     bucketName: process.env.R2_BUCKET_NAME,
     signedUrlSecret: process.env.R2_SIGNED_URL_SECRET,
+    publicUrl: process.env.R2_PUBLIC_URL,
   };
 }
 
@@ -1069,4 +1130,41 @@ export function getWorkerEnv(): string | undefined {
  */
 export function getAllowStagingDestructiveCrons(): boolean {
   return process.env.ALLOW_STAGING_DESTRUCTIVE_CRONS === "true";
+}
+
+/**
+ * Whether the current process is running in production (NODE_ENV).
+ * Centralised so callers don't sprinkle `process.env.NODE_ENV` checks
+ * across the codebase (semgrep.env-access). Use this for runtime gating;
+ * for build-time/edge gating, see callers of `getWorkerEnv()`.
+ */
+export function isProduction(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
+/**
+ * Whether the current process is running inside CI (GitHub Actions sets
+ * `CI=true`). Useful for gating production-only side effects when the
+ * Next.js `next start` command sets `NODE_ENV=production` during CI.
+ */
+export function isCi(): boolean {
+  return process.env.CI === "true";
+}
+
+/**
+ * AV scan service endpoint. Required in production for clinical (PHI)
+ * uploads — see `enforceEnvValidation()` for the registry-level guard.
+ * Returns `undefined` when unset; callers must handle that case.
+ */
+export function getAvScanUrl(): string | undefined {
+  return process.env.AV_SCAN_URL;
+}
+
+/**
+ * Whether the upload pipeline should fail-closed when the AV scan
+ * service is unreachable or returns a non-OK status. W8-S-01 control.
+ * Non-PHI uploads honour this flag; PHI uploads always fail closed.
+ */
+export function getAvScanRequired(): boolean {
+  return process.env.AV_SCAN_REQUIRED === "true";
 }

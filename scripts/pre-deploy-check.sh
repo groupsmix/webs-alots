@@ -76,4 +76,9 @@ if grep -n 'cacheTag(' src/lib/data/public.ts 2>/dev/null | grep -v 'clinicId' |
   exit 1
 fi
 
+# A-09: Verify staging and production KV namespaces are distinct.
+# Shared KV means a staging load test exhausts prod rate-limit counters.
+echo "Checking KV namespace isolation (A-09)..."
+npx tsx scripts/check-kv-isolation.ts || exit 1
+
 echo "Configuration check passed."

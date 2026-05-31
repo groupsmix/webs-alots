@@ -53,6 +53,13 @@ jobs:
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 
+      # A-09 / A31-A60 Top Finding #1 (CRIT): Prevent staging vs production
+      # KV-namespace ID collision. Lint mode (no --strict) warns on
+      # placeholder IDs, hard-fails on collision. Deploy workflow should
+      # invoke this with --strict to also block placeholder IDs.
+      - name: Check RATE_LIMIT_KV namespace IDs
+        run: node scripts/check-kv-namespace-collision.mjs
+
       # CI-001: Enforce a warning ceiling that ratchets downward over time.
       # The baseline is stored in .eslint-warning-baseline and must be
       # reduced whenever warnings are fixed — never increased.
@@ -811,10 +818,11 @@ jobs:
           # acknowledgement env var to pass the security-posture startup
           # health check (enforceFlagAcknowledgements in src/lib/env.ts).
           PHONE_AUTH_ACK: "true"
-          # AV_SCAN_URL and AV_SCAN_REQUIRED are required in production
-          # mode. AV scanning is not available in CI (no ClamAV), so
-          # provide placeholder values to satisfy the startup health check.
-          AV_SCAN_URL: http://localhost:9999/scan
+          # AV_SCAN_REQUIRED is needed in production mode but set to false
+          # for CI since there's no ClamAV. AV_SCAN_URL is intentionally
+          # omitted so PHI uploads don't attempt to reach a non-existent
+          # scanner and fail with 503 (A52-3: PHI always fails closed if
+          # AV is configured but unreachable; unset = skips that path).
           AV_SCAN_REQUIRED: "false"
 
       - name: Upload Playwright report

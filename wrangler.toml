@@ -89,15 +89,19 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 binding = "NOTIFICATION_QUEUE"
 queue = "notification-queue"
 
-[[queues.consumers]]
-queue = "notification-queue"
-max_batch_size = 25
-# P-05: Increased from 5s to 30s (Queues max). WhatsApp Meta API calls can take
-# >5s under load; with a 5s timeout all batches would fail, exhaust max_retries=3,
-# and land in the DLQ silently. 30s gives each batch enough headroom.
-max_batch_timeout = 30         # seconds — flush batch after 30s even if not full
-max_retries = 3
-dead_letter_queue = "notification-queue-dlq"
+# [[queues.consumers]]   ← DEFERRED (same root cause as Durable Objects above)
+# The @opennextjs/cloudflare build does NOT re-export a `queue()` handler from
+# the generated entrypoint (.open-next/worker.js). Declaring the consumer here
+# makes `wrangler deploy` fail with:
+#   "Queue handler is missing."
+# The 15-minute cron fallback (/api/cron/notifications) continues to process
+# pending notifications until the queue consumer is wired through OpenNext.
+#
+# queue = "notification-queue"
+# max_batch_size = 25
+# max_batch_timeout = 30
+# max_retries = 3
+# dead_letter_queue = "notification-queue-dlq"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
@@ -150,12 +154,12 @@ NEXT_PUBLIC_DATA_MASKING = "partial"
 binding = "NOTIFICATION_QUEUE"
 queue = "notification-queue"
 
-[[env.production.queues.consumers]]
-queue = "notification-queue"
-max_batch_size = 25
-max_batch_timeout = 30         # P-05: was 5 — see top-level comment
-max_retries = 3
-dead_letter_queue = "notification-queue-dlq"
+# [[env.production.queues.consumers]]  ← DEFERRED (see top-level comment)
+# queue = "notification-queue"
+# max_batch_size = 25
+# max_batch_timeout = 30
+# max_retries = 3
+# dead_letter_queue = "notification-queue-dlq"
 
 [[env.production.r2_buckets]]
 binding = "UPLOADS_BUCKET"
@@ -191,12 +195,17 @@ crons = [
 [env.production.observability]
 enabled = true
 
-# P-02: Removed cpu_ms = 50 per-env override. The top-level [limits] block is
-# intentionally commented out to use Workers Unbound (no CPU ceiling). Keeping
-# cpu_ms = 50 here would re-impose the cap for the production env, killing the
-# billing cron (0 2 * * *) which routinely exceeds 50ms per tenant at scale.
+# P-02: Removed cpu_ms = 50 per-env override (Bundled-tier ceiling killed
+# the billing cron which exceeds 50ms per tenant at scale).
+#
+# A42-4 (Top Finding #2, A31-A60 audit): re-introduced an Unbound-tier
+# ceiling of 30_000 ms. This caps runaway billing-cron blowups so a
+# misbehaving tenant loop cannot rack unbounded $$ — without re-imposing
+# the 50ms Bundled cap. Pair with billing-anomaly alert in Cloudflare
+# Notifications (see docs/audit-roadmap.md → "Dashboard actions").
 # Pre-requisite: account must be on Workers Paid + Unbound pricing.
 [env.production.limits]
+cpu_ms = 30000
 
 # ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
@@ -222,12 +231,12 @@ NEXT_PUBLIC_DATA_MASKING = "partial"
 binding = "NOTIFICATION_QUEUE"
 queue = "notification-queue-staging"
 
-[[env.staging.queues.consumers]]
-queue = "notification-queue-staging"
-max_batch_size = 25
-max_batch_timeout = 30         # P-05: was 5 — see top-level comment
-max_retries = 3
-dead_letter_queue = "notification-queue-staging-dlq"
+# [[env.staging.queues.consumers]]  ← DEFERRED (see top-level comment)
+# queue = "notification-queue-staging"
+# max_batch_size = 25
+# max_batch_timeout = 30
+# max_retries = 3
+# dead_letter_queue = "notification-queue-staging-dlq"
 
 [[env.staging.r2_buckets]]
 binding = "UPLOADS_BUCKET"
@@ -269,10 +278,23 @@ bucket_name = "webs-alots-uploads-staging"
 # Replace BOTH ids below with the staging-specific values returned above.
 # Until fixed, a staging k6 load test exhausts prod rate-limit token buckets,
 # giving real users 429 errors during launch-day traffic.
+#
+# A-09 / A31-A60 Top Finding #1 (CRIT) — placeholder IDs below are
+# DELIBERATELY INVALID so wrangler refuses to deploy staging until a
+# real staging-only KV namespace is provisioned. To fix:
+#
+#   $ ./scripts/create-staging-kv.sh
+#
+# which runs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` (and
+# `--preview`) against your Cloudflare account and prints the IDs to
+# paste below. CI guard `scripts/check-kv-namespace-collision.mjs`
+# prevents this regressing once fixed.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "7ac37dff0a794542b0c766f38e73f105"          # FIXME(A-09): replace with staging-only KV ID
-preview_id = "854c78ea8c9442ed8706d3ec31fe292e"  # FIXME(A-09): replace with staging-only preview ID
+# A-09 resolved 2026-05-31: dedicated staging KV namespace.
+# Created via Cloudflare API (account 0dadac33…1ba4).
+id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING
+preview_id = "4965f9300c924de3afc0407679ff775b"  # RATE_LIMIT_KV_STAGING_preview
 
 # W8-A31-01: Routes for staging (uses staging subdomain)
 [env.staging.routes]
@@ -298,8 +320,9 @@ crons = [
 [env.staging.observability]
 enabled = true
 
-# P-02: Removed cpu_ms = 50 (matches production — see [env.production.limits] comment).
+# P-02 + A42-4: matches production limits (see [env.production.limits] comment).
 [env.staging.limits]
+cpu_ms = 30000
 
 # ── Limits ────────────────────────────────────────────────────────────
 # H-04: Workers Unbound removes the 50ms CPU ceiling. Routes that need
