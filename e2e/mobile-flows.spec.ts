@@ -73,7 +73,7 @@ async function waitForBoundingBox(
 test.describe("Mobile — touch target sizing", () => {
   test("login page buttons meet 44x44px minimum touch target", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const submitBtn = page.locator('button[type="submit"]');
     await expect(submitBtn).toBeVisible();
@@ -85,7 +85,7 @@ test.describe("Mobile — touch target sizing", () => {
 
   test("form inputs have adequate height for touch", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     await expect(emailInput).toBeVisible();
@@ -100,7 +100,7 @@ test.describe("Mobile — form interactions", () => {
   test("login form can be filled and submitted on mobile", async ({ page }) => {
     // Use trailing slash to avoid 308 redirect mid-test
     await page.goto("/login/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     const passwordInput = page.locator('input[type="password"], input[name="password"]');
@@ -142,7 +142,7 @@ test.describe("Mobile — viewport meta", () => {
 test.describe("Mobile — navigation", () => {
   test("links are navigable on mobile", async ({ page }) => {
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Registration link should be visible and tappable
     // trailingSlash: true → Link renders href="/register/"
