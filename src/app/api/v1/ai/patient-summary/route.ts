@@ -23,7 +23,6 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { isMinorByDob } from "@/lib/minors";
 import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
-import { capPrompt } from "@/lib/ai/prompt-safety";
 import type { Json } from "@/lib/types/database";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
 import { aiPatientSummaryRequestSchema } from "@/lib/validations";
