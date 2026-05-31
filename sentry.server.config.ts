@@ -41,20 +41,9 @@ Sentry.init({
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
 
-  // A62-B2: Session Replay masking to prevent PHI/PII in video frames.
-  integrations: [
-    new Sentry.Replay({
-      maskAllText: true,
-      maskAllInputs: true,
-      blockSelectors: [
-        '[data-contains-phi]',
-        '.patient-data',
-        '.medical-record',
-        '[data-card-number]',
-        '.consultation-message',
-      ],
-    }),
-  ],
+  // A62-B2: Session Replay is a browser-only integration; configured in
+  // sentry.client.config.ts and dynamically enabled via ConsentGatedReplay.
+  // Server config does not include Replay integration.
 
   // Performance monitoring: Sample 10% of transactions in production by default.
   tracesSampler(samplingContext) {
