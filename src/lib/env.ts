@@ -44,8 +44,7 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "BOOKING_TOKEN_SECRET",
     required: process.env.NODE_ENV === "production",
-    description:
-      "HMAC secret for booking verification tokens (required in production)",
+    description: "HMAC secret for booking verification tokens (required in production)",
     group: "auth",
   },
   // R-15: Set to the previous BOOKING_TOKEN_SECRET during key rotation.
@@ -53,8 +52,7 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "BOOKING_TOKEN_SECRET_OLD",
     required: false,
-    description:
-      "Previous HMAC secret — set during rotation, remove after overlap window",
+    description: "Previous HMAC secret — set during rotation, remove after overlap window",
     group: "auth",
   },
 
@@ -86,8 +84,7 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "SUPABASE_SERVICE_ROLE_KEY",
     required: process.env.NODE_ENV === "production",
-    description:
-      "Required server-only key for admin Supabase operations (required in production)",
+    description: "Required server-only key for admin Supabase operations (required in production)",
     group: "core",
   },
 
@@ -251,9 +248,7 @@ const ENV_RULES: EnvRule[] = [
   // to prevent CSP from falling back to the upstream plausible.io domain.
   {
     name: "NEXT_PUBLIC_PLAUSIBLE_HOST",
-    required:
-      !!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN &&
-      process.env.NODE_ENV === "production",
+    required: !!process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && process.env.NODE_ENV === "production",
     description:
       "Self-hosted Plausible Analytics host URL (required in production when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set)",
     group: "observability",
@@ -308,8 +303,7 @@ const ENV_RULES: EnvRule[] = [
   {
     name: "ADMIN_GEO_RESTRICTION_ENABLED",
     required: false,
-    description:
-      "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
+    description: "Toggle admin-route geo-restriction (defaults to true; set to 'false' to disable)",
     group: "security",
   },
   {
@@ -441,10 +435,7 @@ export function validateEnv(): EnvValidationResult {
   // Sec-10: When WhatsApp provider is Meta, META_APP_SECRET must be set.
   // Without it, webhook signature verification always returns false and
   // appointment confirmations via WhatsApp silently break (401 to Meta).
-  if (
-    process.env.WHATSAPP_PROVIDER === "meta" &&
-    !process.env.META_APP_SECRET
-  ) {
+  if (process.env.WHATSAPP_PROVIDER === "meta" && !process.env.META_APP_SECRET) {
     missing.push({
       name: "META_APP_SECRET",
       description:
@@ -457,13 +448,11 @@ export function validateEnv(): EnvValidationResult {
   // CLOUDFLARE_API_TOKEN or (CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL).
   if (customDomainsEnabledFromEnv()) {
     const hasToken = !!process.env.CLOUDFLARE_API_TOKEN;
-    const hasGlobalKey =
-      !!process.env.CLOUDFLARE_API_KEY && !!process.env.CLOUDFLARE_EMAIL;
+    const hasGlobalKey = !!process.env.CLOUDFLARE_API_KEY && !!process.env.CLOUDFLARE_EMAIL;
     if (!hasToken && !hasGlobalKey) {
       missing.push({
         name: "CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL",
-        description:
-          "Cloudflare auth required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
+        description: "Cloudflare auth required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
         group: "domains",
       });
     }
@@ -503,9 +492,7 @@ export function enforceEnvValidation(): void {
 
     // F-34: Emit Sentry alert for WhatsApp provider degradation in production
     if (process.env.NODE_ENV === "production") {
-      const whatsappWarnings = result.warnings.filter(
-        (w) => w.group === "whatsapp",
-      );
+      const whatsappWarnings = result.warnings.filter((w) => w.group === "whatsapp");
       if (whatsappWarnings.length > 0) {
         try {
           import("@sentry/nextjs").then((Sentry) => {
@@ -619,8 +606,7 @@ export function enforceSecurityFlagAcknowledgments(): void {
   if (process.env.NODE_ENV !== "production") return;
 
   const violations = SECURITY_FLAG_ACKNOWLEDGMENTS.filter(
-    ({ flag, ack }) =>
-      process.env[flag] === "true" && process.env[ack] !== "true",
+    ({ flag, ack }) => process.env[flag] === "true" && process.env[ack] !== "true",
   );
 
   if (violations.length === 0) return;
@@ -667,8 +653,7 @@ export function enforcePhiMaskingPolicy(): void {
   }
 
   if (masking === "none" && allowUnmasked) {
-    const reason =
-      process.env.ALLOW_UNMASKED_PHI_REASON || "(no reason provided)";
+    const reason = process.env.ALLOW_UNMASKED_PHI_REASON || "(no reason provided)";
     const message =
       "PHI masking is DISABLED in production (ALLOW_UNMASKED_PHI=true). " +
       "This must be approved by the Security Officer / DPO and documented. " +
