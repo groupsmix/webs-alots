@@ -522,7 +522,7 @@ export async function calculateUsageBill(
   const { data } = await supabase
     .from("tenant_usage_log")
     .select("resource_type, unit_count, cost_usd")
-    .eq("clinic_id", clinicId)
+    .eq("clinic_id", clinicId) // tenant-scoped
     .gte("created_at", monthStart.toISOString())
     .lte("created_at", monthEnd.toISOString());
 
