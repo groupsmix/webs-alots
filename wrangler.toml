@@ -172,11 +172,13 @@ id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
 # W8-A31-01: Routes (was missing — worker would not receive traffic)
-[env.production.routes]
-routes = [
-  { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
-  { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
-]
+[[env.production.routes]]
+pattern = "oltigo.com/*"
+zone_name = "oltigo.com"
+
+[[env.production.routes]]
+pattern = "*.oltigo.com/*"
+zone_name = "oltigo.com"
 
 # W8-A31-01: Cron triggers (was missing — scheduled jobs would not run)
 [env.production.triggers]
@@ -297,11 +299,13 @@ id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING
 preview_id = "4965f9300c924de3afc0407679ff775b"  # RATE_LIMIT_KV_STAGING_preview
 
 # W8-A31-01: Routes for staging (uses staging subdomain)
-[env.staging.routes]
-routes = [
-  { pattern = "staging.oltigo.com/*", zone_name = "oltigo.com" },
-  { pattern = "*.staging.oltigo.com/*", zone_name = "oltigo.com" },
-]
+[[env.staging.routes]]
+pattern = "staging.oltigo.com/*"
+zone_name = "oltigo.com"
+
+[[env.staging.routes]]
+pattern = "*.staging.oltigo.com/*"
+zone_name = "oltigo.com"
 
 # W8-A31-01: Cron triggers for staging
 [env.staging.triggers]
