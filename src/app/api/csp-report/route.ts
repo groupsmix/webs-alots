@@ -58,6 +58,21 @@ function truncateField(value: unknown): string | undefined {
   return value.length > MAX_FIELD_CHARS ? value.slice(0, MAX_FIELD_CHARS) : value;
 }
 
+/**
+ * Q-23: Scrub potential secrets/tokens/nonces from CSP report URIs.
+ * Removes query strings, fragments, and inline nonce/hash values that
+ * may contain session tokens or CSP nonces.
+ */
+function scrubUri(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  let scrubbed = value;
+  // Remove query strings and fragments (may contain tokens)
+  scrubbed = scrubbed.replace(/[?#].*$/, "");
+  // Redact inline nonce/hash patterns (e.g. 'nonce-abc123', 'sha256-...')
+  scrubbed = scrubbed.replace(/'(nonce|sha\d+)-[^']+'/g, "'$1-REDACTED'");
+  return truncateField(scrubbed);
+}
+
 export async function POST(request: NextRequest) {
   // Read the raw body first so we can enforce a hard size cap before
   // parsing. `request.text()` materialises the entire body, but the
@@ -98,12 +113,13 @@ export async function POST(request: NextRequest) {
     // alert rule (Audit 3.4 Fix). Every field is truncated and the
     // original-policy is intentionally dropped — it is large, low-signal,
     // and attacker-influenced via document-uri reflection.
+    // Q-23: Scrub URIs to prevent token/nonce leakage in logs.
     logger.error("CSP violation detected", {
       context: "csp-report",
-      blockedUri: truncateField(report["blocked-uri"]),
+      blockedUri: scrubUri(report["blocked-uri"]),
       violatedDirective: truncateField(report["violated-directive"]),
-      documentUri: truncateField(report["document-uri"]),
-      referrer: truncateField(report.referrer),
+      documentUri: scrubUri(report["document-uri"]),
+      referrer: scrubUri(report.referrer),
       alert: true,
     });
   }

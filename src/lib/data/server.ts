@@ -24,6 +24,37 @@ type TableName = keyof Database["public"]["Tables"];
 /** Default upper-bound limit for list queries to prevent unbounded result sets. */
 const DEFAULT_QUERY_LIMIT = 1000;
 
+/**
+ * Q-03: Allow-list of columns that may appear in dynamic `.order()` calls.
+ * Prevents enumeration or SQL injection via order parameter even though
+ * callers currently pass hardcoded strings. Defense-in-depth.
+ */
+const ALLOWED_ORDER_COLUMNS = new Set([
+  "id",
+  "created_at",
+  "updated_at",
+  "appointment_date",
+  "start_time",
+  "slot_start",
+  "slot_end",
+  "start_date",
+  "due_date",
+  "day_of_week",
+  "sent_at",
+  "name",
+  "first_name",
+  "last_name",
+  "tooth_number",
+  "sterilized_at",
+  "before_date",
+  "sort_order",
+  "date",
+  "status",
+  "priority",
+  "amount",
+  "price",
+]);
+
 /** Paginated result envelope returned by `queryPaginated`. */
 interface PaginatedResult<T> {
   data: T[];
@@ -56,7 +87,16 @@ async function query<T>(
     q = q.in(opts.inFilter[0], opts.inFilter[1] as string[]);
   }
   if (opts?.order) {
-    q = q.order(opts.order[0], opts.order[1]);
+    // Q-03: Reject unknown order columns to prevent enumeration attacks.
+    if (!ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
+      logger.warn("Rejected unknown order column", {
+        context: "data/server",
+        table,
+        column: opts.order[0],
+      });
+    } else {
+      q = q.order(opts.order[0], opts.order[1]);
+    }
   }
   // Always apply an upper-bound limit to prevent unbounded result sets.
   // Callers can override with a smaller value via opts.limit.
@@ -102,7 +142,15 @@ async function _queryPaginated<T>(
     q = q.in(opts.inFilter[0], opts.inFilter[1] as string[]);
   }
   if (opts?.order) {
-    q = q.order(opts.order[0], opts.order[1]);
+    // Q-03: Reject unknown order columns (defense-in-depth).
+    if (!ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
+      logger.warn("Rejected unknown order column", {
+        context: "data/server/paginated",
+        column: opts.order[0],
+      });
+    } else {
+      q = q.order(opts.order[0], opts.order[1]);
+    }
   }
   q = q.range(from, to);
 
