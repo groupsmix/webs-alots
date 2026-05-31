@@ -125,7 +125,9 @@ export function withValidation<T>(
       // A73-F4: depth-limited parse
       body = parseJsonWithDepthLimit(text);
     } catch (err) {
-      if (err instanceof RangeError) { return apiValidationError("Request payload nesting depth exceeds limit"); }
+      if (err instanceof RangeError) {
+        return apiValidationError("Request payload nesting depth exceeds limit");
+      }
       return apiValidationError("Invalid JSON body");
     }
 
@@ -180,7 +182,9 @@ export function withAuthValidation<T>(
       // A73-F4: depth-limited parse
       body = parseJsonWithDepthLimit(text);
     } catch (err) {
-      if (err instanceof RangeError) { return apiValidationError("Request payload nesting depth exceeds limit"); }
+      if (err instanceof RangeError) {
+        return apiValidationError("Request payload nesting depth exceeds limit");
+      }
       return apiValidationError("Invalid JSON body");
     }
 
