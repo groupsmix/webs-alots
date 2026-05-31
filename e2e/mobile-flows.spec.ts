@@ -27,17 +27,23 @@ import { test, expect, type Locator } from "@playwright/test";
  *    scripts at all) is also what Playwright best-practice guidance
  *    recommends as the alternative to the discouraged "networkidle".
  *
- * Schema: src/components/cookie-consent.tsx → CookiePreferences.
+ * Schema: src/components/cookie-consent.tsx, v1 envelope { v, t, prefs }.
+ * v1 is required so getConsentStatus() returns "fresh" instead of
+ * "stale-version" (A64). The 12-month expiry window starts at t.
  */
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     try {
       localStorage.setItem(
         "cookie-consent",
-        JSON.stringify({ functional: true, analytics: false, marketing: false }),
+        JSON.stringify({
+          v: 1,
+          t: Date.now(),
+          prefs: { functional: true, analytics: false, marketing: false },
+        }),
       );
     } catch {
-      // Some browser contexts (about:blank) throw on storage access — ignore.
+      // Some browser contexts (about:blank) throw on storage access. Ignore.
     }
   });
 });

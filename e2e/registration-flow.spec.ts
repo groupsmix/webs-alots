@@ -13,15 +13,21 @@ test.describe("Registration flow", () => {
     // overlay above the auth form; without this seed, the test
     // "shows validation on empty form submission" intermittently observes
     // 0 invalid inputs because the click hits the banner instead of the
-    // submit button. Schema lives at src/components/cookie-consent.tsx.
+    // submit button. Schema: src/components/cookie-consent.tsx, v1
+    // envelope { v, t, prefs } (A64). v1 ensures getConsentStatus()
+    // returns "fresh" rather than "stale-version".
     await page.addInitScript(() => {
       try {
         localStorage.setItem(
           "cookie-consent",
-          JSON.stringify({ functional: true, analytics: false, marketing: false }),
+          JSON.stringify({
+            v: 1,
+            t: Date.now(),
+            prefs: { functional: true, analytics: false, marketing: false },
+          }),
         );
       } catch {
-        // about:blank or storage-disabled context — ignore.
+        // about:blank or storage-disabled context. Ignore.
       }
     });
     await page.goto("/register");
