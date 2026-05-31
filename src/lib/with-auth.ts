@@ -199,14 +199,15 @@ export function withAuth(
       // Under Moroccan Law 09-08 (HIPAA-equivalent), access logs for patient
       // data must be fully retained. Non-PHI endpoints (health, docs, features)
       // can be downsampled to reduce volume.
+      // DI-HIGH-03: Removed 1% random sampling for PHI endpoints — compliance
+      // requires deterministic, complete audit trails for all PHI access.
       if (request.method === "GET") {
         const pathname = request.nextUrl.pathname;
         const isPhiEndpoint =
           /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(
             pathname,
           );
-        const shouldLog =
-          process.env.NODE_ENV !== "production" || isPhiEndpoint || Math.random() < 0.01;
+        const shouldLog = process.env.NODE_ENV !== "production" || isPhiEndpoint;
         if (shouldLog) {
           // INJ-02: Sanitize pathname to prevent log injection via CRLF/tab
           const safePath = pathname.replace(/[\r\n\t]/g, "?");

@@ -38,6 +38,22 @@
 - [ ] This PR changes Sentry configuration or error handling
 - [ ] N/A — no observability changes
 
+## Rollback
+
+<!-- How to revert this change if it causes issues in production. -->
+<!-- e.g., "Revert commit X" or "Toggle feature flag Y" -->
+
+## New SLO / metric required?
+
+- [ ] Yes — describe below
+- [ ] No
+
+## Drive-by refactors
+
+<!-- Declare any opportunistic changes unrelated to the PR's primary goal. "None" if clean. -->
+
+None
+
 ## Checklist
 
 - [ ] Code follows the project's style guide

@@ -31,8 +31,7 @@ const EXCLUDED_RULES = ["color-contrast", "aria-prohibited-attr", "aria-valid-at
  */
 async function stableGoto(page: import("@playwright/test").Page, path: string) {
   await page.goto(path, { waitUntil: "load" });
-  await page.waitForLoadState("load");
-  await page.waitForTimeout(500);
+  await page.waitForLoadState("networkidle");
 }
 
 const DECORATIVE_SELECTORS = [
@@ -87,8 +86,7 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
     await stableGoto(page, "/");
     await page.evaluate(() => localStorage.removeItem("cookie-consent"));
     await page.reload();
-    await page.waitForLoadState("load");
-    await page.waitForTimeout(500);
+    await page.waitForLoadState("networkidle");
 
     // Scope analysis to the consent banner
     const banner = page.locator("#cookie-consent-banner");
