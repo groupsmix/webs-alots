@@ -30,9 +30,9 @@
                        └─────────────────────┘
 ```
 
-| Stage                 | Trigger                      | Where it runs                               | Credentials                  |
-| --------------------- | ---------------------------- | ------------------------------------------- | ---------------------------- |
-| PR validation         | `pull_request`               | GitHub Actions (`ci.yml`, `pr-preview.yml`) | None Cloudflare-related      |
+| Stage                 | Trigger                      | Where it runs                               | Credentials                 |
+| --------------------- | ---------------------------- | ------------------------------------------- | --------------------------- |
+| PR validation         | `pull_request`               | GitHub Actions (`ci.yml`, `pr-preview.yml`) | None Cloudflare-related     |
 | Migrations            | `push` to `main` / `staging` | Supabase GitHub integration                 | OAuth (Supabase ↔ GitHub)   |
 | Worker build & deploy | `push` to `main` / `staging` | Cloudflare Workers Builds                   | OAuth (Cloudflare ↔ GitHub) |
 
@@ -127,7 +127,7 @@ Secrets — nothing references them anymore:
 | Secret                         | Why it can go                                                        |
 | ------------------------------ | -------------------------------------------------------------------- |
 | `CLOUDFLARE_API_TOKEN`         | `update-secrets.yml` is gone; the deploy is OAuth via Workers Builds |
-| `SUPABASE_ACCESS_TOKEN`        | Supabase ↔ GitHub integration handles migrations                    |
+| `SUPABASE_ACCESS_TOKEN`        | Supabase ↔ GitHub integration handles migrations                     |
 | `SUPABASE_DB_PASSWORD`         | Same                                                                 |
 | `SUPABASE_PROJECT_REF`         | Same                                                                 |
 | `STAGING_SUPABASE_DB_PASSWORD` | Same                                                                 |
