@@ -12,6 +12,7 @@
 
 import { getExternalEhrApiKey, getStripeSecretKey } from "@/lib/env";
 import { resilientFetch, HTTP_TIMEOUTS } from "@/lib/http-resilience";
+import { logger } from "@/lib/logger";
 
 /**
  * Example 1: Simple external API call with timeout and retries.
@@ -66,7 +67,11 @@ export async function deliverWebhook(
         retryableStatuses: [408, 429, 500, 502, 503, 504], // Standard retryables
       },
       onRetry: (attemptNumber, reason) => {
-        console.log(`Webhook retry ${attemptNumber}: ${reason}`);
+        logger.info("Webhook retry", {
+          context: "webhook-delivery",
+          attemptNumber,
+          reason,
+        });
       },
     },
   );
