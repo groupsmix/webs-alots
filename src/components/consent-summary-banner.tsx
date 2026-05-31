@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { getStoredCookiePreferences, reopenCookieConsent } from "@/components/cookie-consent";
-import { setSentryReplayConsent } from "@/lib/hooks/use-sentry-replay-consent";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
 

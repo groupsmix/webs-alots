@@ -8,8 +8,8 @@ import {
 } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
-import { CookieConsent } from "@/components/cookie-consent";
 import { ConsentGatedReplay } from "@/components/consent-gated-replay";
+import { CookieConsent } from "@/components/cookie-consent";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { PlausibleScript } from "@/components/plausible-script";
