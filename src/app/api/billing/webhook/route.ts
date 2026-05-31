@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
+import { provisionChatbotForPlan } from "@/lib/chatbot-provisioning";
 import { getPlanByPriceId, type PlanSlug } from "@/lib/config/subscription-plans";
 import { logger } from "@/lib/logger";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
@@ -234,6 +235,9 @@ export async function POST(request: NextRequest) {
             error: updateError,
           });
         }
+
+        // Feature Task 1: Auto-provision chatbot for the new plan
+        void provisionChatbotForPlan(supabase, clinicId, planId);
         break;
       }
 
@@ -305,6 +309,11 @@ export async function POST(request: NextRequest) {
             clinicId,
             error: renewError,
           });
+        }
+
+        // Feature Task 1: Update chatbot intelligence on plan renewal/change
+        if (plan) {
+          void provisionChatbotForPlan(supabase, clinicId, plan.slug);
         }
         break;
       }
@@ -396,6 +405,9 @@ export async function POST(request: NextRequest) {
             error: cancelError,
           });
         }
+
+        // Feature Task 1: Disable chatbot on cancellation
+        void provisionChatbotForPlan(supabase, clinicId, "free");
         break;
       }
 
