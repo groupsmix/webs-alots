@@ -2,19 +2,25 @@
 # Usage: docker compose up -d
 #
 # This starts a local Supabase stack (Postgres + Auth + Storage + REST API),
-# Redis for rate limiting, and Mailhog for email testing — so you can
+# Redis for rate limiting, and Mailpit for email testing — so you can
 # develop without needing remote services.
+#
+# Before starting, generate secrets:
+#   POSTGRES_PASSWORD=$(openssl rand -hex 16)
+#   MINIO_ROOT_USER=$(openssl rand -hex 8)
+#   MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)
+#   REDIS_PASSWORD=$(openssl rand -hex 16)
 #
 # After starting, update your .env.local:
 #   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 #   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
 #   SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
-#   RATE_LIMIT_REDIS_URL=redis://localhost:6379
+#   RATE_LIMIT_REDIS_URL=redis://:$REDIS_PASSWORD@localhost:6379
 #   SMTP_HOST=localhost
 #   SMTP_PORT=1025
 #   SMTP_SECURE=false
 #
-# Mailhog web UI: http://localhost:8025
+# Mailpit web UI: http://localhost:8025
 #
 # SECURITY HARDENING (A31 findings):
 # - Bind Postgres to 127.0.0.1 only (not 0.0.0.0)
@@ -101,15 +107,26 @@ services:
     restart: unless-stopped
 
   # ---------- Redis (rate limiting + caching) ----------
+  # A9-02: Pin Redis by digest for reproducible builds.
+  # To update: docker pull redis:7-alpine && docker inspect --format='{{index .RepoDigests 0}}' redis:7-alpine
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     ports:
       - "127.0.0.1:6379:6379"
-    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    environment:
+      # Expose REDIS_PASSWORD inside the container so the healthcheck can use it.
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+    # A24-04: Require authentication for Redis, even in development.
+    # Exercises the same code path as production and prevents accidental
+    # unauthenticated connections. Set REDIS_PASSWORD before starting.
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # A24-04: Authenticate the healthcheck ping with the same password.
+      # $$REDIS_PASSWORD is Docker Compose's escape for a literal $, which the
+      # shell then expands from the container environment at runtime.
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a $$REDIS_PASSWORD ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -119,18 +136,25 @@ services:
       - ALL
     restart: unless-stopped
 
-  # ---------- Mailhog (email testing) ----------
+  # ---------- Mailpit (email testing) ----------
+  # A9-01: Mailhog (last release Oct 2021, unmaintained) replaced with Mailpit.
+  # Mailpit is an actively-maintained drop-in replacement with the same ports.
   # Web UI: http://localhost:8025
   # SMTP:   localhost:1025
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
+  # To update: docker pull axllent/mailpit:v1.30 && docker inspect --format='{{index .RepoDigests 0}}' axllent/mailpit:v1.30
+  mailpit:
+    image: axllent/mailpit:v1.30@sha256:3bd7c2f2696deb35a4780d152b404dceec99cb041b942c0877b3b22384714f85
     ports:
+      # A31.6: Bind to localhost only (unauthenticated email viewing UI)
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:8025:8025"
-    environment:
-      MH_STORAGE: memory
-      MH_UI_BIND_ADDR: 0.0.0.0:8025
-      MH_SMTP_BIND_ADDR: 0.0.0.0:1025
+    # Mailpit's defaults already bind SMTP to :1025 and Web UI to :8025.
+    # No environment overrides needed for local development.
+    healthcheck:
+      test: ["CMD", "mailpit", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     security_opt:
       - no-new-privileges:true
     cap_drop:
