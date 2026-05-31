@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { logAuthEvent } from "@/lib/audit-log";
-import { checkPasswordBreached } from "@/lib/hibp";
+import { checkPasswordPwned } from "@/lib/hibp";
 import { logger } from "@/lib/logger";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 import {
@@ -148,7 +148,7 @@ export async function signInWithPassword(
   // A154-01: HIBP breached-password check (fire-and-forget, non-blocking).
   // If the password appears in known breaches, log a security event.
   // The user is still allowed to log in — this is informational.
-  checkPasswordBreached(password)
+  checkPasswordPwned(password)
     .then((count) => {
       if (count > 0) {
         logger.warn("User logged in with breached password", {
