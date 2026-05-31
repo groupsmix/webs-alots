@@ -43,7 +43,8 @@ Sentry.init({
     const transactionDescription = samplingContext.description || "";
 
     // Determine sampling rate based on route type
-    const combinedContext = `${transactionName} ${transactionDescription}`.toLowerCase();
+    const combinedContext =
+      `${transactionName} ${transactionDescription}`.toLowerCase();
 
     // Critical paths: webhooks, cron, payment
     if (
@@ -111,7 +112,10 @@ Sentry.init({
       const errorType = event.exception.values[0]?.type || "Unknown";
       const url = event.request?.url || event.transaction || "unknown";
       const route = url.split("?")[0] || "unknown";
-      const statusCode = event.tags?.["http.status_code"] || event.tags?.["http_status"] || "unknown";
+      const statusCode =
+        event.tags?.["http.status_code"] ||
+        event.tags?.["http_status"] ||
+        "unknown";
 
       // Fingerprint groups errors by: [error type, route, status code]
       // This prevents every unique query param or user ID from creating a new issue.
@@ -133,7 +137,12 @@ Sentry.init({
     // API-006: Scrub security-sensitive headers to prevent secret leakage
     // (e.g., cron secret, booking tokens) via Sentry breadcrumbs.
     if (event.request?.headers) {
-      const sensitiveHeaders = ["x-cron-secret", "x-booking-token", "authorization", "cookie"];
+      const sensitiveHeaders = [
+        "x-cron-secret",
+        "x-booking-token",
+        "authorization",
+        "cookie",
+      ];
       for (const h of sensitiveHeaders) {
         if (event.request.headers[h]) {
           event.request.headers[h] = "[REDACTED]";
@@ -159,13 +168,18 @@ Sentry.init({
       }
     }
     if (event.request?.query_string) {
-      event.request.query_string = scrubUrl("?" + event.request.query_string).slice(1);
+      event.request.query_string = scrubUrl(
+        "?" + event.request.query_string,
+      ).slice(1);
     }
 
     // Scrub contexts
     if (event.contexts) {
       for (const key in event.contexts) {
-        event.contexts[key] = redactPII(event.contexts[key]) as Record<string, unknown>;
+        event.contexts[key] = redactPII(event.contexts[key]) as Record<
+          string,
+          unknown
+        >;
       }
     }
 
