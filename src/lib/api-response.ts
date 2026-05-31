@@ -21,6 +21,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { API_ERROR_CODES } from "@/lib/api-error-codes";
 import { logger } from "@/lib/logger";
 
 // OBS-003: Generate a per-response request ID for correlation.
@@ -121,7 +122,42 @@ export function apiRateLimited(
  * Never expose internal details to the client.
  */
 export function apiInternalError(message = "Internal server error"): NextResponse<ApiErrorBody> {
-  return apiError(message, 500, "INTERNAL_ERROR");
+  return apiError(message, 500, API_ERROR_CODES.INTERNAL_ERROR);
+}
+
+/**
+ * Q-30: Serialize Error.cause chains for structured logging.
+ *
+ * JavaScript errors can carry a `cause` property (ES2022) forming a chain.
+ * This helper recursively extracts the chain (up to 5 deep) so the full
+ * context reaches observability tooling (Sentry, Workers Logs).
+ */
+export function serializeErrorCause(err: unknown, depth = 0): Record<string, unknown> | undefined {
+  if (depth > 5 || !err) return undefined;
+  if (!(err instanceof Error)) return { raw: String(err) };
+  const serialized: Record<string, unknown> = {
+    message: err.message,
+    name: err.name,
+  };
+  if (err.stack) serialized.stack = err.stack;
+  if (err.cause) serialized.cause = serializeErrorCause(err.cause, depth + 1);
+  return serialized;
+}
+
+/**
+ * Q-30: Log an error with full cause chain preserved, then return 500.
+ *
+ * Use this in catch blocks instead of raw `logger.error` + `apiInternalError`
+ * to ensure Error.cause chains are not discarded.
+ */
+export function logAndReturnInternalError(
+  err: unknown,
+  context: string,
+  clientMessage = "Internal server error",
+): NextResponse<ApiErrorBody> {
+  const errorData = err instanceof Error ? serializeErrorCause(err) : { raw: String(err) };
+  logger.error(clientMessage, { context, error: errorData });
+  return apiInternalError(clientMessage);
 }
 
 /**
