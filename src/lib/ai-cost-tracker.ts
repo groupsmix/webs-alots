@@ -14,6 +14,7 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 /**
  * Cost per token (in USD) for each AI model.
@@ -65,7 +66,13 @@ export async function logAICost(
     });
   } catch (err) {
     // Non-fatal — log but don't crash the AI request
-    console.error("ai-cost-tracker: failed to log cost", { clinicId, route, model, error: err });
+    logger.error("ai-cost-tracker: failed to log cost", {
+      context: "ai-cost-tracker",
+      clinicId,
+      route,
+      model,
+      error: err,
+    });
   }
 }
 
@@ -90,7 +97,11 @@ export async function getAICostLast30Days(
     .gte("created_at", thirtyDaysAgo);
 
   if (error) {
-    console.error("ai-cost-tracker: failed to fetch costs", { clinicId, error });
+    logger.error("ai-cost-tracker: failed to fetch costs", {
+      context: "ai-cost-tracker",
+      clinicId,
+      error,
+    });
     return 0;
   }
 
@@ -122,7 +133,11 @@ export async function getAICostByRoute(
     .gte("created_at", thirtyDaysAgo);
 
   if (error) {
-    console.error("ai-cost-tracker: failed to fetch costs by route", { clinicId, error });
+    logger.error("ai-cost-tracker: failed to fetch costs by route", {
+      context: "ai-cost-tracker",
+      clinicId,
+      error,
+    });
     return [];
   }
 
