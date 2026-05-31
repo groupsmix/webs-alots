@@ -252,6 +252,15 @@ export const POST = withAuth(
     // uploaded files are sent to an external ClamAV REST API before
     // persisting to R2. Deploy a ClamAV REST service and set AV_SCAN_URL
     // to enable (e.g. clamav-rest, ClamScan Lambda).
+    //
+    // A52-3 / A31-A60 Top Finding #3 (HIGH): PHI categories ALWAYS
+    // fail closed when the AV service is unreachable or non-OK. Non-PHI
+    // uploads still respect AV_SCAN_REQUIRED for ops flexibility. The
+    // category-aware policy beats a single env switch because a
+    // misconfigured prod that forgets AV_SCAN_REQUIRED=true would
+    // otherwise let PHI uploads through unscanned.
+    const phiFailClosed = requiresEncryption(category);
+    const failClosed = phiFailClosed || process.env.AV_SCAN_REQUIRED === "true";
     if (process.env.AV_SCAN_URL) {
       try {
         const avResponse = await fetch(process.env.AV_SCAN_URL, {
@@ -274,10 +283,10 @@ export const POST = withAuth(
           logger.warn("AV scan service returned non-OK status", {
             context: "upload",
             status: avResponse.status,
+            category,
+            phiFailClosed,
           });
-          // Fail open if AV service is down (availability > blocking uploads).
-          // In strict mode (AV_SCAN_REQUIRED=true), fail closed instead.
-          if (process.env.AV_SCAN_REQUIRED === "true") {
+          if (failClosed) {
             return apiError("Virus scan unavailable — upload rejected", 503);
           }
         }
@@ -285,11 +294,23 @@ export const POST = withAuth(
         logger.warn("AV scan service unreachable", {
           context: "upload",
           error: err instanceof Error ? err.message : String(err),
+          category,
+          phiFailClosed,
         });
-        if (process.env.AV_SCAN_REQUIRED === "true") {
+        if (failClosed) {
           return apiError("Virus scan unavailable — upload rejected", 503);
         }
       }
+    } else if (phiFailClosed) {
+      // A52-3: PHI upload attempted with no AV scanner configured at all.
+      // This is a deployment misconfiguration, not a runtime fault — block
+      // the upload and surface it loudly. Non-PHI uploads pre-existed
+      // without an AV scanner, so we don't break that path.
+      logger.error("PHI upload rejected: AV_SCAN_URL not configured", {
+        context: "upload",
+        category,
+      });
+      return apiError("Virus scan not configured for clinical uploads", 503);
     }
     // A52.8: Strip EXIF/IPTC metadata from JPEG images before storage.
     // Patient X-rays and clinical photos may contain DICOM-like metadata

@@ -53,6 +53,13 @@ jobs:
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 
+      # A-09 / A31-A60 Top Finding #1 (CRIT): Prevent staging vs production
+      # KV-namespace ID collision. Lint mode (no --strict) warns on
+      # placeholder IDs, hard-fails on collision. Deploy workflow should
+      # invoke this with --strict to also block placeholder IDs.
+      - name: Check RATE_LIMIT_KV namespace IDs
+        run: node scripts/check-kv-namespace-collision.mjs
+
       # CI-001: Enforce a warning ceiling that ratchets downward over time.
       # The baseline is stored in .eslint-warning-baseline and must be
       # reduced whenever warnings are fixed — never increased.
