@@ -94,7 +94,11 @@ export async function getAICostLast30Days(
     return 0;
   }
 
-  return (data || []).reduce((sum: number, row: any) => sum + (row.estimated_cost_usd || 0), 0);
+  return (data || []).reduce(
+    (sum: number, row: { estimated_cost_usd: number | null }) =>
+      sum + (row.estimated_cost_usd || 0),
+    0,
+  );
 }
 
 /**
