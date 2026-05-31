@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { routeAIRequest, loadProviderConfigs } from "@/lib/ai/router";
 import type { AIRequest } from "@/lib/ai/types";
 import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
@@ -23,6 +24,11 @@ import type { AuthContext } from "@/lib/with-auth";
  *   language?: "fr" | "ar" (default: "fr")
  */
 async function handler(req: NextRequest, auth: AuthContext) {
+  // F-AI-01: Early kill switch — fail fast before processing
+  if (!(await isAIEnabled())) {
+    return apiError("AI features are disabled", 503, "AI_DISABLED");
+  }
+
   const clinicId = auth.profile.clinic_id;
   if (!clinicId) {
     return apiError("Clinic context required", 400);

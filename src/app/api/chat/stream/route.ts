@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createStreamingChatResponse } from "@/lib/ai/streaming-chat";
 import { apiError } from "@/lib/api-response";
 import { buildSystemPrompt, fetchChatbotContext } from "@/lib/chatbot-data";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { requireTenant } from "@/lib/tenant";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
@@ -24,9 +25,9 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 export const POST = withAuth(
   async (request: NextRequest, _auth: AuthContext) => {
-    // AI kill switch
-    if (process.env.AI_DISABLED === "true") {
-      return apiError("Les fonctionnalités IA sont temporairement désactivées", 503, "AI_DISABLED");
+    // F-AI-01: Early kill switch (checks both env var AND KV flag)
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are disabled", 503, "AI_DISABLED");
     }
 
     const tenant = await requireTenant();
