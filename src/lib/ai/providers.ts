@@ -6,7 +6,6 @@
  */
 
 import { logger } from "@/lib/logger";
-import { resilientFetch, HTTP_TIMEOUTS } from "@/lib/http-resilience";
 import { PROVIDER_MODELS } from "./models";
 import type { AIProvider, AIRequest } from "./types";
 
@@ -146,27 +145,19 @@ async function callOpenAI(req: AIRequest, opts: CallOptions): Promise<ProviderRe
   if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
   messages.push({ role: "user", content: req.prompt });
 
-  // A74-F1/F2/F3: resilientFetch adds timeout, circuit breaker, and retry-with-jitter
-  const res = await resilientFetch(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${opts.apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: req.maxTokens ?? 1024,
-        temperature: req.temperature ?? 0.7,
-      }),
+  const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${opts.apiKey}`,
     },
-    {
-      serviceName: "openai",
-      timeoutMs: HTTP_TIMEOUTS.ASYNC, // 30 s — AI completions can be slow
-    },
-  );
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: req.maxTokens ?? 1024,
+      temperature: req.temperature ?? 0.7,
+    }),
+  });
 
   if (!res.ok) {
     const rl = parseRateLimitHeaders(res);
