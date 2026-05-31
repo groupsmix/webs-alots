@@ -63,7 +63,7 @@ export async function getProcessingEnforcement(
 ): Promise<ProcessingEnforcement> {
   try {
     const { data, error } = await supabase
-      .from("users")
+      .from("users") // nosemgrep: semgrep.tenant-scoping — per-user GDPR flag lookup scoped by .eq("id", userId); clinic_id does not apply (cross-tenant patients allowed)
       .select("processing_restricted, processing_objection_active, processing_objection_activities")
       .eq("id", userId)
       .single();

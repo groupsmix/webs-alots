@@ -80,7 +80,7 @@ export const POST = withAuth(
       // not yet in the generated Database types; cast through `never` (the
       // established Supabase escape hatch for excess-property rejection).
       const { error } = await supabase
-        .from("users")
+        .from("users") // nosemgrep: semgrep.tenant-scoping — patient self-service: scoped by .eq("id", profile.id) where profile.id == authenticated user
         .update({
           processing_restricted: true,
           processing_restricted_at: new Date().toISOString(),
@@ -92,7 +92,7 @@ export const POST = withAuth(
       // Art.21: object to specific legitimate-interest processing activities.
       // Same generated-types caveat as above.
       const { error } = await supabase
-        .from("users")
+        .from("users") // nosemgrep: semgrep.tenant-scoping — patient self-service: scoped by .eq("id", profile.id) where profile.id == authenticated user
         .update({
           processing_objection_active: true,
           processing_objection_at: new Date().toISOString(),
@@ -174,7 +174,7 @@ export const DELETE = withAuth(
 
     if (type === "restriction") {
       const { error } = await supabase
-        .from("users")
+        .from("users") // nosemgrep: semgrep.tenant-scoping — patient self-service: scoped by .eq("id", profile.id) where profile.id == authenticated user
         .update({
           processing_restricted: false,
           processing_restricted_at: null,
@@ -184,7 +184,7 @@ export const DELETE = withAuth(
       updateError = error;
     } else {
       const { error } = await supabase
-        .from("users")
+        .from("users") // nosemgrep: semgrep.tenant-scoping — patient self-service: scoped by .eq("id", profile.id) where profile.id == authenticated user
         .update({
           processing_objection_active: false,
           processing_objection_at: null,

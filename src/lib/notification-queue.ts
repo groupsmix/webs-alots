@@ -188,7 +188,7 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
             });
             // Mark as skipped (treat as sent to not retry) but audit it
             await supabase
-              .from("notification_queue")
+              .from("notification_queue") // nosemgrep: semgrep.tenant-scoping — updating a specific queue row by .eq("id", item.id); item was already tenant-scoped on selection upstream
               .update({ status: "sent", updated_at: new Date().toISOString() })
               .eq("id", item.id);
             result.sent++;
