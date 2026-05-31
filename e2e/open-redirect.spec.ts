@@ -49,7 +49,9 @@ test.describe("Open Redirect Prevention", () => {
   test.describe("Malicious redirect values are neutralised", () => {
     for (const { label, value } of MALICIOUS_REDIRECTS) {
       test(`rejects ${label}`, async ({ page }) => {
-        const loginUrl = new URL(LOGIN_PATH, page.url() || "http://localhost:3000");
+        // page.url() returns "about:blank" before first navigation, which is
+        // not a valid URL base — use the explicit dev-server origin instead.
+        const loginUrl = new URL(LOGIN_PATH, "http://localhost:3000");
         loginUrl.searchParams.set("redirect", value);
 
         const response = await page.goto(loginUrl.toString());
@@ -91,8 +93,9 @@ test.describe("Open Redirect Prevention", () => {
 
         // Safe paths should be preserved as-is (or normalised but still valid).
         if (redirectParam !== null) {
-          // It must start with a single slash.
-          expect(redirectParam).toMatch(/^\/[^/]/);
+          // Must start with a single slash that is NOT followed by another slash
+          // (rejects "//evil.com" protocol-relative attacks while accepting "/" root).
+          expect(redirectParam).toMatch(/^\/(?!\/)/);
         }
         // If the middleware stripped the param entirely for a safe path,
         // that's also acceptable — the test just verifies no open redirect.
