@@ -121,46 +121,113 @@ Alternatively, set Pages → **Preview deployments** → **Branch control** →
 
 ## GitHub Secrets — What Stays, What Goes
 
-After this conversion, you can **delete** these from GitHub repo Secrets:
+After this conversion, you can safely **delete** these from GitHub repo
+Secrets — nothing references them anymore:
 
-- ~~`CLOUDFLARE_API_TOKEN`~~ — no longer used by any deploy workflow
-- ~~`CLOUDFLARE_ACCOUNT_ID`~~ — no longer used by any deploy workflow
-- ~~`SUPABASE_ACCESS_TOKEN`~~ — Supabase integration handles this
-- ~~`SUPABASE_DB_PASSWORD`~~ — Supabase integration handles this
-- ~~`SUPABASE_PROJECT_REF`~~ — Supabase integration handles this
-- ~~`STAGING_SUPABASE_DB_PASSWORD`~~ — same
-- ~~`STAGING_SUPABASE_PROJECT_REF`~~ — same
+| Secret | Why it can go |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | `update-secrets.yml` is gone; the deploy is OAuth via Workers Builds |
+| `SUPABASE_ACCESS_TOKEN` | Supabase ↔ GitHub integration handles migrations |
+| `SUPABASE_DB_PASSWORD` | Same |
+| `SUPABASE_PROJECT_REF` | Same |
+| `STAGING_SUPABASE_DB_PASSWORD` | Same |
+| `STAGING_SUPABASE_PROJECT_REF` | Same |
 
-> ⚠️ **Keep these GitHub Secrets** if you still want the optional ops
-> workflows (manual key rotation, secret push, monthly restore drill):
-> - `CLOUDFLARE_API_TOKEN`
-> - `CLOUDFLARE_ACCOUNT_ID`
-> - `SUPABASE_DB_URL` (for `backup.yml`)
-> - `SUPABASE_SERVICE_ROLE_KEY` (for `rotate-phi-key.yml`)
->
-> If you want **zero Cloudflare API tokens anywhere**, delete the
-> `update-secrets.yml`, `rotate-phi-key.yml`, and the Cloudflare step in
-> `restore-test.yml` workflows, and perform those operations via the
-> Cloudflare dashboard or local `wrangler login` instead.
+### Secrets You Should Keep
+
+These are not Cloudflare account API tokens — they're scoped to specific
+resources and required by a few remaining manual / scheduled workflows:
+
+| Secret | Used by | What it actually is |
+| --- | --- | --- |
+| `CLOUDFLARE_ACCOUNT_ID` | `rotate-phi-key.yml`, `restore-test.yml` | Just a URL component for `https://<id>.r2.cloudflarestorage.com`. Not a secret in the traditional sense — leaking it grants nothing on its own. |
+| `R2_ACCESS_KEY_ID` | `backup.yml`, `restore-test.yml`, `rotate-phi-key.yml` | S3-compatible R2 access key, scoped to a single bucket. Different from the global CF API token — much smaller blast radius. |
+| `R2_SECRET_ACCESS_KEY` | Same | Companion to the above. |
+| `R2_BACKUP_BUCKET` | `backup.yml`, `restore-test.yml` | Bucket name. |
+| `BACKUP_GPG_PRIVATE_KEY` | `restore-test.yml` | GPG private key to decrypt backups in the restore drill. |
+| `SUPABASE_DB_URL` | `backup.yml` | Direct DB URL for `pg_dump`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | `rotate-phi-key.yml` | Required to update PHI rows during key rotation. |
+| `NEXT_PUBLIC_SUPABASE_URL` | `rotate-phi-key.yml` | Read by the rotation script. |
+
+### Why Not Also Delete the R2 Keys?
+
+R2 access keys are S3-compatible credentials scoped to a single bucket,
+not Cloudflare account API tokens. They:
+- Cannot manage Workers, DNS, KV, or any non-R2 resource
+- Can be rotated independently in **R2 → Manage R2 API Tokens**
+- Have a tiny blast radius if leaked (one bucket)
+
+Removing them would require rewriting `backup.yml` and `restore-test.yml`
+to run as Cloudflare Workers cron triggers using the R2 binding. Doable
+but a sizable rewrite; not worth doing for marginal security gain.
 
 ---
 
-## Optional Ops Workflows
+## Remaining Ops Workflows
 
-These remain in `.github/workflows/` and still require Cloudflare API
-access **for the specific privileged operations they perform**. They are
-manual (`workflow_dispatch`) or scheduled — never triggered by code
-pushes — so they don't run on every deploy:
+These are manual (`workflow_dispatch`) or scheduled — never triggered by
+code pushes — so they don't run on every deploy. **None of them use a
+Cloudflare account API token.** They use R2 S3 access keys (bucket-scoped)
+or Supabase credentials only.
 
-| Workflow | Trigger | Purpose | CF token needed? |
+| Workflow | Trigger | Purpose | Credentials |
 | --- | --- | --- | --- |
-| `update-secrets.yml` | Manual | Push Worker runtime secrets from GH Secrets | Yes |
-| `rotate-phi-key.yml` | Manual | Rotate PHI encryption key | Yes |
-| `restore-test.yml` | Monthly cron | Restore-drill the latest Supabase backup | Yes (CF account ID) |
-| `backup.yml` | Daily cron | Pull encrypted Supabase backup to R2 | No (Supabase URL only) |
+| `backup.yml` | Daily cron (02:00 UTC) | Pull encrypted Supabase backup to R2 | R2 S3 keys + Supabase DB URL |
+| `restore-test.yml` | Monthly cron (1st @ 04:00 UTC) | Restore-drill the latest backup | R2 S3 keys + GPG key |
+| `rotate-phi-key.yml` | Manual | Rotate PHI encryption key, re-encrypt R2 PHI | R2 S3 keys + Supabase service role |
+| `access-review.yml` | Quarterly cron | Snapshot team/access for SOC 2 evidence | GitHub token only |
+| `asm.yml` | Daily cron | Attack-surface monitor | None Cloudflare-related |
+| `migration-check.yml` | PR | Validate migrations are forward-only | None |
 
-All four can be removed if you prefer to do their operations manually in
-the Cloudflare and Supabase dashboards.
+### What Was Removed
+
+| Workflow | Status | Reason |
+| --- | --- | --- |
+| `deploy.yml` | ❌ Deleted | Replaced by Cloudflare Workers Builds (OAuth) |
+| `update-secrets.yml` | ❌ Deleted | Replaced by Cloudflare dashboard / `wrangler login` (see "Updating Worker Runtime Secrets" above) |
+
+---
+
+## Updating Worker Runtime Secrets
+
+> Replaces the deprecated `.github/workflows/update-secrets.yml`.
+
+Worker secrets (e.g. `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`,
+`STRIPE_SECRET_KEY`, `WHATSAPP_TOKEN`) used to be synced via a manual
+GitHub Actions workflow. That workflow needed `CLOUDFLARE_API_TOKEN` and
+has been removed.
+
+### Option A — Cloudflare Dashboard (Recommended)
+
+1. **Workers & Pages → `webs-alots` → Settings → Variables and Secrets**
+2. Select **Worker** tab (not "Build")
+3. **Add Variable** → set Type: **Secret** → enter name + value
+4. Click **Deploy** at the top — Cloudflare creates a new Worker version
+   with the updated secret immediately, no code rebuild required
+
+This is the OAuth-equivalent path. No tokens needed.
+
+### Option B — Local `wrangler` (also OAuth)
+
+```bash
+# One-time OAuth login (opens browser)
+npx wrangler login
+
+# Production
+echo "your-secret-value" | npx wrangler secret put OPENAI_API_KEY
+
+# Staging
+echo "your-secret-value" | npx wrangler secret put OPENAI_API_KEY --env staging
+```
+
+`wrangler login` uses OAuth — no API token. The credentials persist in
+`~/.wrangler/config/default.toml` locally.
+
+### Which to Use?
+
+- **Routine secret updates / new variables:** Dashboard (Option A)
+- **Scripted bulk rotations across many secrets:** Local `wrangler` (Option B)
+- **Don't do this anymore:** Round-tripping secrets through GitHub Actions
 
 ---
 
