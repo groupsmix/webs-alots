@@ -126,9 +126,9 @@ The auto-suggest feature provides prescription suggestions that a doctor must ex
 > electronic signature) and the dates filled before this document is used as evidence.
 > Until signed, status is DRAFT.
 
-| Name | Role | Date | Signature |
-| ---- | ---- | ---- | --------- |
-| _(print name)_ | CTO | __________ | __________ |
-| _(print name)_ | Legal Counsel | __________ | __________ |
+| Name           | Role          | Date         | Signature    |
+| -------------- | ------------- | ------------ | ------------ |
+| _(print name)_ | CTO           | ****\_\_**** | ****\_\_**** |
+| _(print name)_ | Legal Counsel | ****\_\_**** | ****\_\_**** |
 
 **Status:** 🔴 DRAFT — awaiting management sign-off

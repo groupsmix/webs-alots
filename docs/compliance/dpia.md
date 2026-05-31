@@ -15,19 +15,19 @@ and the platform's registration form accepts any DOB.
 
 ### Applicable Law
 
-| Jurisdiction | Rule |
-|---|---|
-| **GDPR Art.8** | Consent for under-16s requires parental/guardian authorisation |
+| Jurisdiction           | Rule                                                                    |
+| ---------------------- | ----------------------------------------------------------------------- |
+| **GDPR Art.8**         | Consent for under-16s requires parental/guardian authorisation          |
 | **Moroccan Law 09-08** | Heightened safeguards for sensitive data; minors cannot provide consent |
 
 ### Technical Controls Implemented
 
-| Control | Implementation | File |
-|---|---|---|
-| Minor detection from DOB | `isMinorByDob(dob)` function | `src/lib/minors.ts` |
-| Minor AI processing audit log | `logMinorAIProcessing()` | `src/lib/ai/config.ts` |
-| Minor consent enforcement migration | Migration `00097_minor_consent_enforcement.sql` | `supabase/migrations/` |
-| `is_minor` flag in patient metadata | `PatientMetadata.is_minor` field | `src/lib/types/patient-metadata.ts` |
+| Control                             | Implementation                                  | File                                |
+| ----------------------------------- | ----------------------------------------------- | ----------------------------------- |
+| Minor detection from DOB            | `isMinorByDob(dob)` function                    | `src/lib/minors.ts`                 |
+| Minor AI processing audit log       | `logMinorAIProcessing()`                        | `src/lib/ai/config.ts`              |
+| Minor consent enforcement migration | Migration `00097_minor_consent_enforcement.sql` | `supabase/migrations/`              |
+| `is_minor` flag in patient metadata | `PatientMetadata.is_minor` field                | `src/lib/types/patient-metadata.ts` |
 
 ### Remaining Gaps
 

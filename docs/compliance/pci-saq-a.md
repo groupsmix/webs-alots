@@ -48,13 +48,13 @@ Oltigo Health **never** receives, stores, processes, or transmits cardholder dat
 
 ### Current Status
 
-| Item | Value |
-| --- | --- |
-| CMI PCI level | Level 1 (BAM-regulated) |
-| AOC last obtained | _Not yet obtained — **ACTION REQUIRED**_ |
-| AOC next renewal | _TBD — set after first AOC is filed_ |
-| Storage location | `docs/compliance/aoc/cmi-aoc-YYYY.pdf` |
-| Contact | CMI Compliance Dept. — request via acquiring bank relationship manager |
+| Item              | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| CMI PCI level     | Level 1 (BAM-regulated)                                                |
+| AOC last obtained | _Not yet obtained — **ACTION REQUIRED**_                               |
+| AOC next renewal  | _TBD — set after first AOC is filed_                                   |
+| Storage location  | `docs/compliance/aoc/cmi-aoc-YYYY.pdf`                                 |
+| Contact           | CMI Compliance Dept. — request via acquiring bank relationship manager |
 
 ### How to Obtain the CMI AOC
 
@@ -67,6 +67,7 @@ Oltigo Health **never** receives, stores, processes, or transmits cardholder dat
 ### Annual Reminder
 
 Add a recurring calendar event each **January** to:
+
 - Verify the CMI AOC on file has not expired.
 - Request a renewed AOC if the existing one covers fewer than 6 months remaining.
 - Repeat the Stripe AOC check at [stripe.com/docs/security](https://stripe.com/docs/security).

@@ -127,8 +127,8 @@ export default function SubProcessorsPage() {
         <p className="mt-4 text-sm text-muted-foreground max-w-2xl">
           Conformément à l&apos;article 28(3)(a) du RGPD et à la loi marocaine 09-08, Oltigo Health
           publie la liste de ses sous-traitants. Les cabinets clients (responsables du traitement)
-          peuvent consulter cette liste pour vérifier les autorisations de sous-traitance.
-          Toute modification substantielle sera communiquée avec un préavis d&apos;au moins
+          peuvent consulter cette liste pour vérifier les autorisations de sous-traitance. Toute
+          modification substantielle sera communiquée avec un préavis d&apos;au moins
           <strong> 30 jours</strong>.
         </p>
       </div>
