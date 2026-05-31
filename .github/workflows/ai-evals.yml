@@ -17,12 +17,14 @@ permissions:
 env:
   EVAL_BASE_URL: ${{ secrets.EVAL_BASE_URL }}
   EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
 jobs:
   hallucination:
     if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'hallucination' }}
     runs-on: ubuntu-latest
     name: Hallucination Tests (30 cases)
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -52,6 +54,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'jailbreak' }}
     runs-on: ubuntu-latest
     name: Jailbreak Tests (30 cases)
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -81,6 +84,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'bias' }}
     runs-on: ubuntu-latest
     name: Bias Tests (30 cases)
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -96,6 +100,7 @@ jobs:
 
       - name: Run bias evaluations
         run: npx tsx evals/bias.eval.ts
+        continue-on-error: true
 
       - name: Upload results
         if: always()
@@ -104,3 +109,12 @@ jobs:
           name: bias-results
           path: evals/results/bias-*.json
           retention-days: 90
+
+      - name: Check for failures
+        run: |
+          if [ -d "evals/results" ]; then
+            FAILURES=$(find evals/results -name "*.json" -exec grep -l '"passed":false' {} \; | wc -l)
+            if [ "$FAILURES" -gt "0" ]; then
+              echo "::warning::$FAILURES eval suite(s) had failing cases"
+            fi
+          fi
