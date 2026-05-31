@@ -163,6 +163,43 @@ Pull requests run:
 
 Deploy pipeline (on push to `main`/`staging`) additionally runs unit tests before deploying.
 
+## Developer Certificate of Origin (DCO)
+
+> **Audit:** A178 (OSS Outbound).
+
+To certify that you wrote the contribution yourself, or otherwise have the
+right to submit it under the project's license, every commit must be signed
+off under the [Developer Certificate of Origin 1.1](https://developercertificate.org/).
+
+Sign off automatically by passing `-s` (or `--signoff`) when committing:
+
+```bash
+git commit -s -m "feat: short description"
+```
+
+This appends a trailer to your commit message:
+
+```
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+By signing off you agree to the DCO. Unsigned commits will be rejected by
+the CI signoff check (target: enabled after this PR merges).
+
+### Licensing position
+
+This repository is **closed-source / private**. The `package.json` declares
+`"license": "UNLICENSED"` which, in npm's vocabulary, signals "not licensed
+for redistribution" - it is **not** "no license declared". External
+contributors submitting PRs assign their contribution to Oltigo Health
+under the same terms via the DCO sign-off above.
+
+If the project is ever open-sourced or dual-licensed, this section will be
+updated, the `LICENSE` file will be replaced, and the `package.json` license
+field will be set to the chosen SPDX identifier.
+
+---
+
 ## Questions?
 
 Open a discussion or reach out to the maintainers.

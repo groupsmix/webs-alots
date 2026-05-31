@@ -71,9 +71,11 @@ async function reportCronError(
     const publicKey = dsnUrl.username;
 
     const eventId = crypto.randomUUID().replace(/-/g, "");
-    const envelope =
-      `{"event_id":"${eventId}","dsn":"${dsn}"}\n` +
-      `{"type":"event"}\n` +
+    // I-02: Use JSON.stringify for every Sentry envelope line to prevent
+    // JSON injection if the DSN or any extra value contains quote/newline chars.
+    const envelope = [
+      JSON.stringify({ event_id: eventId, dsn }),
+      JSON.stringify({ type: "event" }),
       JSON.stringify({
         event_id: eventId,
         timestamp: Date.now() / 1000,
@@ -83,14 +85,19 @@ async function reportCronError(
         message: { formatted: message },
         tags: { component: "cron-handler", ...extra },
         environment: env.NODE_ENV || "production",
-      });
+      }),
+    ].join("\n");
 
     const headers = new Headers();
     headers.set("Content-Type", "application/x-sentry-envelope");
+    // P-03: Hard timeout so a Sentry network partition can't hang the cron
+    // handler for 30 s. reportCronError is called inside ctx.waitUntil()
+    // so 3 s is generous without blocking the next cron tick.
     await fetch(`https://${sentryHost}/api/${projectId}/envelope/?sentry_key=${publicKey}`, {
       method: "POST",
       body: envelope,
       headers,
+      signal: AbortSignal.timeout(3000),
     });
   } catch {
     // Sentry reporting is best-effort; error already logged to console
@@ -129,6 +136,14 @@ export default {
       batch.retryAll();
       return;
     }
+    // I-06: Validate CRON_SECRET format to prevent CRLF header injection.
+    // The secret should be a 64-char hex string (openssl rand -hex 32 output).
+    // Reject any value with whitespace or control characters.
+    if (!/^[\x21-\x7E]+$/.test(cronSecret)) {
+      console.error("[Queue] CRON_SECRET contains illegal characters — refusing to forward");
+      batch.retryAll();
+      return;
+    }
 
     const baseUrl =
       env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
@@ -152,7 +167,10 @@ export default {
       } else {
         const body = await res.text();
         const truncated = body.length > 200 ? body.slice(0, 200) + "…" : body;
-        console.error(`[Queue] /api/cron/notifications responded ${res.status}: ${truncated}`);
+        // T-04: Strip newlines/CRLF before logging to prevent log injection
+        // via attacker-controlled response bodies with embedded log lines.
+        const sanitized = truncated.replace(/[\r\n\t]/g, " ");
+        console.error(`[Queue] /api/cron/notifications responded ${res.status}: ${sanitized}`);
         batch.retryAll();
       }
     } catch (err) {
@@ -184,6 +202,19 @@ export default {
       );
       return;
     }
+    // I-06: Validate CRON_SECRET format before injecting it into an HTTP header.
+    // A secret with CRLF (\r\n) would split the Authorization header and inject
+    // arbitrary headers into every internal cron request.
+    if (!/^[\x21-\x7E]+$/.test(cronSecret)) {
+      void reportCronError(
+        env,
+        "CRON_SECRET contains illegal characters — refusing all cron jobs",
+        {
+          cron: controller.cron,
+        },
+      );
+      return;
+    }
 
     const cronBaseUrl =
       env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
@@ -197,6 +228,17 @@ export default {
     }
 
     for (const route of routes) {
+      // I-01: Assert route is a known /api/cron/* path before using it as a
+      // URL base. Prevents a URL-resolution attack where a route like
+      // "//attacker.com/path" would override the cronBaseUrl entirely.
+      if (!route.startsWith("/api/cron/")) {
+        void reportCronError(env, `Route "${route}" does not start with /api/cron/ — skipping`, {
+          cron: controller.cron,
+          route,
+        });
+        continue;
+      }
+
       console.log(`[Cron] Firing ${controller.cron} → ${route}`);
 
       const url = new URL(route, cronBaseUrl);
@@ -215,7 +257,9 @@ export default {
             } else {
               const body = await res.text();
               const truncated = body.length > 200 ? body.slice(0, 200) + "…" : body;
-              console.error(`[Cron] ${route} responded ${res.status}: ${truncated}`);
+              // T-04: Strip newlines/CRLF to prevent log injection via response bodies.
+              const sanitized = truncated.replace(/[\r\n\t]/g, " ");
+              console.error(`[Cron] ${route} responded ${res.status}: ${sanitized}`);
               void reportCronError(env, `${route} responded ${res.status}`, {
                 cron: controller.cron,
                 route,

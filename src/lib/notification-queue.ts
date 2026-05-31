@@ -10,6 +10,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getProcessingEnforcement } from "@/lib/gdpr-enforcement";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database-extended";
 import type { NotificationTrigger, NotificationChannel } from "./notifications";
@@ -169,7 +170,32 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           body: string;
           trigger?: string;
           metadata?: Record<string, string>;
+          userId?: string;
         };
+
+        // A62-F2: GDPR Art.21 — skip sending to patients who have objected
+        // to WhatsApp/notification processing under legitimate interest.
+        // Only check when a userId is recorded in the notification payload.
+        if (payload.userId) {
+          const enforcement = await getProcessingEnforcement(supabase, payload.userId);
+          if (enforcement.restricted || enforcement.objectsTo("whatsapp_reminders")) {
+            logger.info("notification-queue: skipping — GDPR Art.18/21 restriction", {
+              context: "notification-queue",
+              notificationId: item.id,
+              userId: payload.userId,
+              restricted: enforcement.restricted,
+              objectedActivities: enforcement.objectedActivities,
+            });
+            // Mark as skipped (treat as sent to not retry) but audit it
+            await supabase
+              .from("notification_queue") // nosemgrep: semgrep.tenant-scoping — updating a specific queue row by .eq("id", item.id); item was already tenant-scoped on selection upstream
+              .update({ status: "sent", updated_at: new Date().toISOString() })
+              .eq("id", item.id);
+            result.sent++;
+            continue;
+          }
+        }
+
         const sendResult = await deliverNotification(
           item.channel as NotificationChannel,
           item.recipient,

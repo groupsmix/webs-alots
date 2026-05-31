@@ -8,12 +8,32 @@ import { Database as GenDatabase } from "./database";
 
 type UsersRowExtended = GenDatabase["public"]["Tables"]["users"]["Row"] & {
   deletion_requested_at: string | null;
+  // A62-F1 (Art.18 restriction)
+  processing_restricted: boolean;
+  processing_restricted_at: string | null;
+  processing_restriction_reason: string | null;
+  // A62-F2 (Art.21 objection)
+  processing_objection_active: boolean;
+  processing_objection_at: string | null;
+  processing_objection_activities: string[];
 };
 type UsersInsertExtended = GenDatabase["public"]["Tables"]["users"]["Insert"] & {
   deletion_requested_at?: string | null;
+  processing_restricted?: boolean;
+  processing_restricted_at?: string | null;
+  processing_restriction_reason?: string | null;
+  processing_objection_active?: boolean;
+  processing_objection_at?: string | null;
+  processing_objection_activities?: string[];
 };
 type UsersUpdateExtended = GenDatabase["public"]["Tables"]["users"]["Update"] & {
   deletion_requested_at?: string | null;
+  processing_restricted?: boolean;
+  processing_restricted_at?: string | null;
+  processing_restriction_reason?: string | null;
+  processing_objection_active?: boolean;
+  processing_objection_at?: string | null;
+  processing_objection_activities?: string[];
 };
 
 // Define the missing tables that are not in the generated types
