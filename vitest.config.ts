@@ -17,6 +17,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    // DI-HIGH-04: Clear mocks globally to prevent inter-test state leakage.
+    // Previously 10+ test files had incomplete beforeEach cleanup.
+    clearMocks: true,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     exclude: ["src/components/__tests__/setup.tsx"],
     setupFiles: ["./src/components/__tests__/setup.tsx"],

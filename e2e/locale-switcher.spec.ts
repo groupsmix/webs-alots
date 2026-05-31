@@ -45,8 +45,8 @@ test.describe("Locale behavior", () => {
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
 
-    // Give client-side hydration time to apply dir attribute
-    await page.waitForTimeout(1000);
+    // Wait for client-side hydration to apply dir attribute
+    await page.waitForFunction(() => document.documentElement.getAttribute("dir") !== null || document.documentElement.getAttribute("lang") === "ar");
 
     const dir = await page.locator("html").getAttribute("dir");
     const htmlLang = await page.locator("html").getAttribute("lang");
