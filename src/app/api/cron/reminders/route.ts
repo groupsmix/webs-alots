@@ -197,6 +197,34 @@ async function handler(request: NextRequest) {
       }
     }
 
+    // A77-F1: Persist KV cursor so next run resumes instead of restarting.
+    // If we hit the cap the last slot_start becomes the cursor.
+    // If we processed everything, delete any stale cursor.
+    {
+      const hitCap = appointments.length >= MAX_APPOINTMENTS_PER_RUN;
+      try {
+        const kv = await getWorkerBinding<KVNamespace>("RATE_LIMIT_KV");
+        if (kv) {
+          if (hitCap) {
+            const lastSlot = (appointments[appointments.length - 1] as AppointmentRow | undefined)
+              ?.slot_start;
+            if (lastSlot) {
+              await kv.put(CRON_CURSOR_KEY, lastSlot, { expirationTtl: 7200 }); // 2h TTL
+              logger.info("reminders cron: run cap reached — cursor saved for next run", {
+                context: "cron/reminders",
+                cursor: lastSlot,
+                processed: appointments.length,
+              });
+            }
+          } else {
+            await kv.delete(CRON_CURSOR_KEY); // full backlog done, start fresh next time
+          }
+        }
+      } catch {
+        logger.warn("reminders cron: KV cursor write failed — non-fatal", { context: "cron/reminders" });
+      }
+    }
+
     if (!appointments || appointments.length === 0) {
       return apiSuccess({ message: "No upcoming appointments", sent: 0 });
     }
