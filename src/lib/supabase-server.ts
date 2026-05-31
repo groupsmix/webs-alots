@@ -195,7 +195,8 @@ export type AdminPurpose =
   | "ai-config-update"
   | "ai-config-test"
   | "ai-feature-toggle"
-  | "ai-route";
+  | "ai-route"
+  | "ai-config-resolve";
 
 /**
  * Create a Supabase admin client using the service role key.

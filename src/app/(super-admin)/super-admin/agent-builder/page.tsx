@@ -332,7 +332,7 @@ export default function AgentBuilderPage() {
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold">Agent Builder</h1>
+            <h1 className="text-lg font-semibold">Website Builder</h1>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={handleSaveDraft} title="Save Draft">
