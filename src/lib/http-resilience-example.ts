@@ -10,8 +10,8 @@
  * rule enforces this for all source files outside the allow-list.
  */
 
-import { resilientFetch, HTTP_TIMEOUTS } from "@/lib/http-resilience";
 import { getExternalEhrApiKey, getStripeSecretKey } from "@/lib/env";
+import { resilientFetch, HTTP_TIMEOUTS } from "@/lib/http-resilience";
 
 /**
  * Example 1: Simple external API call with timeout and retries.
