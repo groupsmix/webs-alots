@@ -268,32 +268,26 @@ The middleware enforces Origin-header checks on all mutation requests (`POST`, `
 
 This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. The build produces a Worker bundle (`.open-next/worker.js`) and static assets (`.open-next/assets/`), both served by the Workers runtime.
 
-> **Note:** A Cloudflare Pages project is also connected to this repo. The Pages output directory (`destination_dir`) is configured via the Cloudflare dashboard/API to `.open-next/assets`. Do **not** add `pages_build_output_dir` to `wrangler.toml` — the `ASSETS` binding name used by OpenNext is reserved by Pages and will cause the build to fail.
+### Deploy Model (OAuth, no API tokens)
 
-### Manual Deploy
+Production and staging deploys are triggered by **Cloudflare Workers Builds**, which watches this repo via the official Cloudflare ↔ GitHub integration. No Cloudflare API token is stored in GitHub Secrets. Database migrations are handled by the Supabase ↔ GitHub integration.
+
+See **[docs/deployment.md](docs/deployment.md)** for the full setup walkthrough, environment variable list, and rollback procedure.
+
+| Stage | Where it runs | Triggered by |
+| --- | --- | --- |
+| PR validation (lint, typecheck, tests, E2E, build check) | GitHub Actions (`ci.yml`, `pr-preview.yml`) | `pull_request` |
+| Database migrations | Supabase GitHub integration | `push` to `main` / `staging` |
+| Worker build & deploy | Cloudflare Workers Builds | `push` to `main` / `staging` |
+
+### Manual Deploy (Local)
 
 ```bash
 npm run deploy
 ```
 
+Requires `wrangler login` first. Useful for emergency deploys when CI is unavailable. The normal path is to push to `main` and let Workers Builds handle it.
+
 ### Staging Deploy
 
-```bash
-# Deploy to the staging worker
-npm run build:cf && wrangler deploy --env staging
-```
-
-Staging uses a separate Supabase project for data isolation. Set `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_ANON_KEY` in GitHub Actions secrets.
-
-### Auto-Deploy via GitHub Actions
-
-Pushes to `main` and `staging` automatically build and deploy to Cloudflare Workers. Add these secrets in your GitHub repo settings (**Settings > Secrets and variables > Actions**):
-
-| Secret                          | Description                                        |
-| ------------------------------- | -------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`          | Cloudflare API token with Workers edit permissions |
-| `CLOUDFLARE_ACCOUNT_ID`         | Your Cloudflare account ID                         |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL (used at build time)          |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (used at build time)             |
-| `STAGING_SUPABASE_URL`          | Staging Supabase project URL (staging branch only) |
-| `STAGING_SUPABASE_ANON_KEY`     | Staging Supabase anon key (staging branch only)    |
+Pushes to the `staging` branch are deployed to the staging Worker by Workers Builds (deploy command: `npx wrangler deploy --env staging`). Staging uses a separate Supabase project for data isolation — configure its URL and anon key in **Workers Builds → Variables and Secrets** under the preview environment.
