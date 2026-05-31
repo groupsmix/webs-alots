@@ -212,6 +212,23 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
             })
             .eq("id", item.id);
           result.sent++;
+
+          // Meter usage (fire-and-forget)
+          if (item.clinic_id) {
+            const resourceType = item.channel === "sms" ? "sms" : "whatsapp";
+            import("./tenant-metering").then(({ recordUsage }) =>
+              recordUsage(
+                supabase,
+                item.clinic_id as string,
+                resourceType as "whatsapp" | "sms",
+                1,
+                {
+                  notificationId: item.id,
+                  channel: item.channel,
+                },
+              ).catch(() => {}),
+            );
+          }
         } else {
           // Handle failure
           const newAttempts = (item.attempts ?? 0) + 1;
