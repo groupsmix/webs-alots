@@ -64,6 +64,8 @@ export interface AIConfig {
   apiKey: string;
   baseUrl: string;
   model: string;
+  /** F-AI-14: Deterministic seed for reproducibility. Log with audit events. */
+  seed: number;
 }
 
 /**
@@ -126,7 +128,12 @@ export async function resolveAIConfig(): Promise<
     };
   }
 
-  return { ok: true, config: { apiKey, baseUrl, model } };
+  // F-AI-14: Generate a per-request seed for OpenAI reproducibility.
+  // Callers should pass this as `seed` in the API request and log it
+  // in audit events so any problematic output can be reproduced.
+  const seed = Date.now();
+
+  return { ok: true, config: { apiKey, baseUrl, model, seed } };
 }
 
 /**
