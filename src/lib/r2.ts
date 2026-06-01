@@ -36,8 +36,9 @@
  *                          Rotate per `docs/SOP-SECRET-ROTATION.md` §8.
  */
 
-import { createHmac } from "crypto";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
+import { createHmac } from "crypto";
 
 /**
  * Resolve the HMAC secret used for R2 signed URLs and upload-key filename
@@ -221,19 +222,9 @@ export interface PresignedUploadPost {
  * Returns null when the binding is unavailable (e.g. during `next build`
  * static analysis, local Node tooling, or tests) so callers degrade safely.
  */
-export function getR2Bucket(): R2Bucket | null {
-  try {
-    // Lazy require so the build/static-analysis phase (which has no request
-    // context) doesn't blow up importing the Cloudflare context helper.
-    const { getCloudflareContext } = require("@opennextjs/cloudflare") as {
-      getCloudflareContext: () => { env?: Record<string, unknown> };
-    };
-    const env = getCloudflareContext().env;
-    const bucket = env?.UPLOADS_BUCKET as R2Bucket | undefined;
-    return bucket ?? null;
-  } catch {
-    return null;
-  }
+export async function getR2Bucket(): Promise<R2Bucket | null> {
+  const bucket = await getWorkerBinding<R2Bucket>("UPLOADS_BUCKET");
+  return bucket ?? null;
 }
 
 /**
@@ -267,7 +258,10 @@ function getR2BucketName(): string | undefined {
  * tooling). Callers gate uploads on this before attempting object I/O.
  */
 export function isR2Configured(): boolean {
-  return getR2Bucket() !== null || getR2PresignConfig() !== null;
+  // Synchronous: determined by the presign/env config, which is present in
+  // production (it gates the presign path) and in local tooling. The native
+  // binding is resolved asynchronously per-invocation inside each operation.
+  return getR2PresignConfig() !== null;
 }
 
 /**
@@ -292,7 +286,7 @@ export async function uploadToR2(
   contentType: string,
   options: { hashFilename?: boolean } = {},
 ): Promise<string | null> {
-  const bucket = getR2Bucket();
+  const bucket = await getR2Bucket();
   if (!bucket) return null;
 
   // R-16 Fix: Hash filenames on write so guessable basenames don't survive to the URL
@@ -378,7 +372,7 @@ function hashFilename(key: string): string {
  * @param key  Object key to delete
  */
 export async function deleteFromR2(key: string): Promise<void> {
-  const bucket = getR2Bucket();
+  const bucket = await getR2Bucket();
   if (!bucket) return;
 
   await bucket.delete(key);
@@ -519,7 +513,7 @@ export interface R2ObjectMetadata {
  * Returns `null` if the object does not exist or R2 is not configured.
  */
 export async function getR2ObjectMetadata(key: string): Promise<R2ObjectMetadata | null> {
-  const bucket = getR2Bucket();
+  const bucket = await getR2Bucket();
   if (!bucket) return null;
 
   try {
@@ -554,7 +548,7 @@ export async function listR2Objects(
   prefix: string,
   opts: { limit?: number; pageSize?: number } = {},
 ): Promise<string[]> {
-  const bucket = getR2Bucket();
+  const bucket = await getR2Bucket();
   if (!bucket) return [];
 
   const limit = opts.limit ?? Number.POSITIVE_INFINITY;
@@ -590,7 +584,7 @@ export async function listR2Objects(
  * @returns Buffer with the first bytes, or null if not found / not configured
  */
 export async function readR2ObjectHead(key: string, bytes = 16): Promise<Buffer | null> {
-  const bucket = getR2Bucket();
+  const bucket = await getR2Bucket();
   if (!bucket) return null;
 
   try {
