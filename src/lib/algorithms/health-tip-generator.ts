@@ -16,46 +16,51 @@ export interface HealthTip {
 
 const HEALTH_TIPS_DB: Record<string, HealthTip> = {
   // Diabetes (E10-E14)
-  "DIABETE": {
+  DIABETE: {
     condition: "Diabète",
-    tipFr: "N'oubliez pas de boire beaucoup d'eau et de marcher 30 minutes par jour. Évitez les sucres rapides (sodas, pâtisseries).",
-    tipAr: "عفاك متنساش تشرب الما بزاف وتتمشى 30 دقيقة فاليوم. حاول تبعد على الحلاوة والمونادا."
+    tipFr:
+      "N'oubliez pas de boire beaucoup d'eau et de marcher 30 minutes par jour. Évitez les sucres rapides (sodas, pâtisseries).",
+    tipAr: "عفاك متنساش تشرب الما بزاف وتتمشى 30 دقيقة فاليوم. حاول تبعد على الحلاوة والمونادا.",
   },
-  
+
   // Hypertension (I10-I15)
-  "HYPERTENSION": {
+  HYPERTENSION: {
     condition: "Hypertension",
-    tipFr: "Pour votre tension, pensez à réduire le sel dans vos repas. Évitez d'ajouter du sel à table.",
-    tipAr: "على قبل الطانسيو ديالك، حاول تنقص من الملحة فالماكلة. وماتزيدش الملحة فوق الطبلة."
+    tipFr:
+      "Pour votre tension, pensez à réduire le sel dans vos repas. Évitez d'ajouter du sel à table.",
+    tipAr: "على قبل الطانسيو ديالك، حاول تنقص من الملحة فالماكلة. وماتزيدش الملحة فوق الطبلة.",
   },
-  
+
   // Asthma (J45)
-  "ASTHME": {
+  ASTHME: {
     condition: "Asthme",
-    tipFr: "Aérez bien votre chambre tous les jours et évitez les tapis qui retiennent la poussière.",
-    tipAr: "هوي البيت ديالك كل نهار وحاول تبعد على الزرابي اللي كيشدو الغبرة."
+    tipFr:
+      "Aérez bien votre chambre tous les jours et évitez les tapis qui retiennent la poussière.",
+    tipAr: "هوي البيت ديالك كل نهار وحاول تبعد على الزرابي اللي كيشدو الغبرة.",
   },
-  
+
   // Gastritis / Reflux (K20-K31)
-  "GASTRIQUE": {
+  GASTRIQUE: {
     condition: "Problèmes gastriques",
-    tipFr: "Évitez de vous allonger juste après avoir mangé. Attendez au moins 2 heures avant de dormir.",
-    tipAr: "ماتنعسش مباشرة من بعد الماكلة. تسنى على الأقل ساعتين عاد تنعس."
+    tipFr:
+      "Évitez de vous allonger juste après avoir mangé. Attendez au moins 2 heures avant de dormir.",
+    tipAr: "ماتنعسش مباشرة من بعد الماكلة. تسنى على الأقل ساعتين عاد تنعس.",
   },
 
   // Lower Back Pain (M54)
-  "LOMBALGIE": {
+  LOMBALGIE: {
     condition: "Lombalgie",
     tipFr: "Pliez toujours vos genoux pour ramasser un objet par terre, gardez le dos droit.",
-    tipAr: "ديما طوي ركابيك فاش تبغي تهز شي حاجة من الأرض، وخلي ظهرك مقاد."
+    tipAr: "ديما طوي ركابيك فاش تبغي تهز شي حاجة من الأرض، وخلي ظهرك مقاد.",
   },
 
   // General Post-visit (fallback)
-  "GENERAL": {
+  GENERAL: {
     condition: "Conseil général",
-    tipFr: "Pensez à bien suivre votre traitement comme indiqué par le médecin. Bon rétablissement !",
-    tipAr: "حاول تبع الدوا ديالك كيفما قال ليك الطبيب. بالشفاء العاجل إن شاء الله!"
-  }
+    tipFr:
+      "Pensez à bien suivre votre traitement comme indiqué par le médecin. Bon rétablissement !",
+    tipAr: "حاول تبع الدوا ديالك كيفما قال ليك الطبيب. بالشفاء العاجل إن شاء الله!",
+  },
 };
 
 /**
@@ -72,7 +77,7 @@ function mapCodeToCategory(code: string): string | null {
 
 /**
  * Generates a personalized health tip based on the patient's diagnoses.
- * 
+ *
  * @param diagnosisCodes Array of ICD-10 codes from the recent consultation
  */
 export function generateHealthTip(diagnosisCodes: string[]): HealthTip {

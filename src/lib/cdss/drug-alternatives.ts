@@ -270,8 +270,7 @@ const ALTERNATIVES_DB: Record<string, DrugAlternative[]> = {
   "enalapril|valsartan": [
     {
       drug: "amlodipine",
-      rationale:
-        "Inhibiteur calcique sûr à associer avec un IEC ou un ARA2 (mais pas les deux).",
+      rationale: "Inhibiteur calcique sûr à associer avec un IEC ou un ARA2 (mais pas les deux).",
       therapeuticClass: "Inhibiteur calcique",
     },
   ],
@@ -280,8 +279,7 @@ const ALTERNATIVES_DB: Record<string, DrugAlternative[]> = {
   "atenolol|verapamil": [
     {
       drug: "amlodipine",
-      rationale:
-        "Dihydropyridine — pas de risque de bloc AV contrairement au vérapamil/diltiazem.",
+      rationale: "Dihydropyridine — pas de risque de bloc AV contrairement au vérapamil/diltiazem.",
       therapeuticClass: "Inhibiteur calcique (dihydropyridine)",
     },
   ],

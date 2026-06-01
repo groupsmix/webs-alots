@@ -12,7 +12,12 @@ import { type NextRequest } from "next/server";
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
-import { checkInteractions, validateDose, suggestAlternatives, ALERT_DISPLAY_MAP } from "@/lib/cdss";
+import {
+  checkInteractions,
+  validateDose,
+  suggestAlternatives,
+  ALERT_DISPLAY_MAP,
+} from "@/lib/cdss";
 import type { DoseRoute, AlternativeSuggestion } from "@/lib/cdss";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";

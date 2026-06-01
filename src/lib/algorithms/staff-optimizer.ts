@@ -43,15 +43,16 @@ export function optimizeStaffSchedule(historicalVolume: HourlyVolume[]): Optimiz
 
   for (const slot of historicalVolume) {
     // We need at least 1 staff member if there are any patients, otherwise 0
-    const requiredStaff = slot.averagePatients > 0 
-      ? Math.max(1, Math.ceil(slot.averagePatients / PATIENTS_PER_STAFF_HOUR))
-      : 0;
+    const requiredStaff =
+      slot.averagePatients > 0
+        ? Math.max(1, Math.ceil(slot.averagePatients / PATIENTS_PER_STAFF_HOUR))
+        : 0;
 
     let status: "optimal" | "overstaffed" | "understaffed" = "optimal";
     let costSavings = 0;
     let reasoning = {
       fr: "Effectif optimal pour le volume actuel.",
-      ar: "عدد الموظفين مثالي لحجم العمل الحالي."
+      ar: "عدد الموظفين مثالي لحجم العمل الحالي.",
     };
 
     if (slot.currentStaff > requiredStaff) {
@@ -59,26 +60,29 @@ export function optimizeStaffSchedule(historicalVolume: HourlyVolume[]): Optimiz
       const excess = slot.currentStaff - requiredStaff;
       costSavings = excess * HOURLY_STAFF_COST;
       totalWeeklySavings += costSavings;
-      
+
       reasoning = {
         fr: `Surcapacité : ${slot.currentStaff} employés pour en moyenne ${slot.averagePatients.toFixed(1)} patients. Vous pouvez réduire de ${excess} personne(s).`,
-        ar: `فائض في الموظفين: ${slot.currentStaff} موظف لمتوسط ${slot.averagePatients.toFixed(1)} مريض. يمكنك تقليل ${excess} شخص.`
+        ar: `فائض في الموظفين: ${slot.currentStaff} موظف لمتوسط ${slot.averagePatients.toFixed(1)} مريض. يمكنك تقليل ${excess} شخص.`,
       };
     } else if (slot.currentStaff < requiredStaff) {
       status = "understaffed";
       const deficit = requiredStaff - slot.currentStaff;
       costSavings = -(deficit * HOURLY_STAFF_COST); // Negative savings = cost to fix
-      
-      if (deficit >= 2 || (slot.averagePatients / Math.max(1, slot.currentStaff)) > (PATIENTS_PER_STAFF_HOUR * 1.5)) {
+
+      if (
+        deficit >= 2 ||
+        slot.averagePatients / Math.max(1, slot.currentStaff) > PATIENTS_PER_STAFF_HOUR * 1.5
+      ) {
         criticalUnderstaffedHours++;
         reasoning = {
           fr: `Sous-effectif critique ! Risque de temps d'attente élevé. Ajoutez ${deficit} personne(s).`,
-          ar: `نقص حاد في الموظفين! خطر زيادة وقت الانتظار. أضف ${deficit} شخص.`
+          ar: `نقص حاد في الموظفين! خطر زيادة وقت الانتظار. أضف ${deficit} شخص.`,
         };
       } else {
         reasoning = {
           fr: `Sous-effectif léger. Considérez l'ajout de ${deficit} personne(s) en renfort.`,
-          ar: `نقص طفيف في الموظفين. فكر في إضافة ${deficit} شخص كدعم.`
+          ar: `نقص طفيف في الموظفين. فكر في إضافة ${deficit} شخص كدعم.`,
         };
       }
     }
@@ -91,7 +95,7 @@ export function optimizeStaffSchedule(historicalVolume: HourlyVolume[]): Optimiz
         suggestedStaff: requiredStaff,
         status,
         reasoning,
-        costSavings
+        costSavings,
       });
     }
   }
@@ -106,6 +110,6 @@ export function optimizeStaffSchedule(historicalVolume: HourlyVolume[]): Optimiz
   return {
     suggestions,
     totalWeeklySavings,
-    criticalUnderstaffedHours
+    criticalUnderstaffedHours,
   };
 }

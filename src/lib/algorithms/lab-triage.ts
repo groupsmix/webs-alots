@@ -20,7 +20,7 @@ export function triageLabResult(lab: LabValue): LabTriageResult {
   let actionRequired = false;
   let urgency = {
     fr: "Revue de routine lors de la prochaine consultation.",
-    ar: "مراجعة روتينية في الاستشارة القادمة."
+    ar: "مراجعة روتينية في الاستشارة القادمة.",
   };
 
   if (explanation.status === "critical-low" || explanation.status === "critical-high") {
@@ -28,14 +28,14 @@ export function triageLabResult(lab: LabValue): LabTriageResult {
     actionRequired = true;
     urgency = {
       fr: "Urgence vitale possible. Contacter le patient immédiatement.",
-      ar: "حالة طوارئ محتملة. اتصل بالمريض على الفور."
+      ar: "حالة طوارئ محتملة. اتصل بالمريض على الفور.",
     };
   } else if (explanation.status === "low" || explanation.status === "high") {
     triageLevel = "priority";
     actionRequired = true;
     urgency = {
       fr: "Résultat anormal. Prévoir un suivi rapide.",
-      ar: "نتيجة غير طبيعية. تحديد موعد متابعة سريع."
+      ar: "نتيجة غير طبيعية. تحديد موعد متابعة سريع.",
     };
   }
 
@@ -43,7 +43,7 @@ export function triageLabResult(lab: LabValue): LabTriageResult {
     triageLevel,
     explanation,
     urgency,
-    actionRequired
+    actionRequired,
   };
 }
 

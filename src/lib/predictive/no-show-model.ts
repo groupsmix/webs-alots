@@ -52,7 +52,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "high_historical_rate",
       fr: "Taux historique d'absentéisme élevé",
-      ar: "معدل غياب تاريخي مرتفع"
+      ar: "معدل غياب تاريخي مرتفع",
     });
   }
 
@@ -61,7 +61,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "long_lead_time",
       fr: "Rendez-vous pris longtemps à l'avance",
-      ar: "تم حجز الموعد مسبقاً بفترة طويلة"
+      ar: "تم حجز الموعد مسبقاً بفترة طويلة",
     });
   }
 
@@ -70,7 +70,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "first_visit",
       fr: "Première visite",
-      ar: "الزيارة الأولى"
+      ar: "الزيارة الأولى",
     });
   }
 
@@ -79,7 +79,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "no_insurance",
       fr: "Aucune couverture d'assurance",
-      ar: "لا توجد تغطية تأمينية"
+      ar: "لا توجد تغطية تأمينية",
     });
   }
 
@@ -88,7 +88,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "monday_or_friday",
       fr: "Rendez-vous le lundi ou le vendredi",
-      ar: "موعد يوم الاثنين أو الجمعة"
+      ar: "موعد يوم الاثنين أو الجمعة",
     });
   }
 
@@ -97,7 +97,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "early_morning",
       fr: "Créneau tôt le matin",
-      ar: "موعد في الصباح الباكر"
+      ar: "موعد في الصباح الباكر",
     });
   }
 
@@ -106,7 +106,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "multiple_cancellations",
       fr: "Plusieurs annulations précédentes",
-      ar: "إلغاءات سابقة متعددة"
+      ar: "إلغاءات سابقة متعددة",
     });
   }
 
@@ -115,7 +115,7 @@ export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
     riskFactors.push({
       key: "long_absence",
       fr: "Longue absence depuis la dernière visite",
-      ar: "غياب طويل منذ الزيارة الأخيرة"
+      ar: "غياب طويل منذ الزيارة الأخيرة",
     });
   }
 
@@ -143,17 +143,17 @@ function getRecommendation(riskLevel: "low" | "medium" | "high"): { fr: string; 
     case "high":
       return {
         fr: "Envoyer un rappel 24h et 1h avant. Envisager de surréserver ce créneau.",
-        ar: "إرسال تذكير قبل 24 ساعة و 1 ساعة. فكر في الحجز الزائد لهذا الموعد."
+        ar: "إرسال تذكير قبل 24 ساعة و 1 ساعة. فكر في الحجز الزائد لهذا الموعد.",
       };
     case "medium":
       return {
         fr: "Envoyer un rappel 24h avant le rendez-vous.",
-        ar: "إرسال تذكير قبل 24 ساعة من الموعد."
+        ar: "إرسال تذكير قبل 24 ساعة من الموعد.",
       };
     case "low":
       return {
         fr: "Planification standard des rappels suffisante.",
-        ar: "جدولة التذكير القياسية كافية."
+        ar: "جدولة التذكير القياسية كافية.",
       };
   }
 }

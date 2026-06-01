@@ -17,7 +17,7 @@ export interface ScoredSlot extends AvailableSlot {
 export function suggestSmartSlots(
   availableSlots: AvailableSlot[],
   preferences: PatientPreferences,
-  limit: number = 3
+  limit: number = 3,
 ): ScoredSlot[] {
   const scoredSlots: ScoredSlot[] = [];
 
@@ -27,7 +27,7 @@ export function suggestSmartSlots(
     const date = new Date(slot.start);
     const dayOfWeek = date.getDay();
     const hour = date.getHours();
-    
+
     // 1. Urgency: If urgent, prioritize the soonest available slots heavily
     if (preferences.isUrgent) {
       const now = new Date();
@@ -39,7 +39,7 @@ export function suggestSmartSlots(
         score += 50;
       }
       // Decay score slightly over time so sooner is always better within the same bracket
-      score -= daysAway; 
+      score -= daysAway;
     }
 
     // 2. Day of Week match
@@ -47,9 +47,9 @@ export function suggestSmartSlots(
       score += 40;
       const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
       const dayNamesAr = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-      matchReasons.push({ 
+      matchReasons.push({
         fr: `Correspond à votre jour préféré (${dayNames[dayOfWeek]})`,
-        ar: `يطابق يومك المفضل (${dayNamesAr[dayOfWeek]})`
+        ar: `يطابق يومك المفضل (${dayNamesAr[dayOfWeek]})`,
       });
     }
 
