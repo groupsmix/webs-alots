@@ -1,7 +1,17 @@
+/// <reference types="@cloudflare/workers-types" />
 /**
  * Cloudflare R2 storage client.
  *
- * R2 is S3-compatible, so we use the AWS SDK v3.
+ * Object I/O (put / get / head / delete / list) uses Cloudflare's NATIVE R2
+ * binding (`UPLOADS_BUCKET`, declared in wrangler.toml and resolved per-request
+ * via getR2Bucket()). This avoids bundling the AWS SDK (~48 MiB), which pushed
+ * the Worker past the 10 MiB compressed upload limit.
+ *
+ * Presigned upload/download URLs are signed with the lightweight `aws4fetch`
+ * library against the R2 S3 API, since the native binding has no presigned-URL
+ * primitive. That signing path is the ONLY place R2 S3 credentials are still
+ * used.
+ *
  * Advantages over Supabase Storage:
  *   - Free tier: 10 GB storage, 10M class-A ops, no egress fees
  *   - Served via Cloudflare CDN edge network
@@ -13,11 +23,12 @@
  *   - For truly public assets (clinic logos, marketing images), use a separate
  *     "webs-alots-public" bucket and NEVER put user-uploaded files there
  *
- * Required env vars:
- *   R2_ACCOUNT_ID        — Cloudflare account ID
- *   R2_ACCESS_KEY_ID     — R2 API token access key
- *   R2_SECRET_ACCESS_KEY — R2 API token secret key
- *   R2_BUCKET_NAME       — R2 bucket name (e.g., "webs-alots-uploads")
+ * Env vars:
+ *   (object I/O) — none; uses the UPLOADS_BUCKET binding from wrangler.toml
+ *   R2_ACCOUNT_ID        — Cloudflare account ID (presign + public-URL only)
+ *   R2_ACCESS_KEY_ID     — R2 API token access key (presign only)
+ *   R2_SECRET_ACCESS_KEY — R2 API token secret key (presign only)
+ *   R2_BUCKET_NAME       — R2 bucket name, e.g. "webs-alots-uploads" (presign + logging)
  *   R2_PUBLIC_URL        — (Deprecated) Legacy public URL; use signed URLs instead
  *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs and
  *                          hashing upload filenames. **Required in production.**
