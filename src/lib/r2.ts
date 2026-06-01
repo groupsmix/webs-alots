@@ -244,6 +244,90 @@ function getR2PresignConfig(): R2PresignConfig | null {
   return { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl };
 }
 
+/**
+ * Build an AWS SigV4 query-presigned URL for the R2 S3 API.
+ *
+ * Implemented inline with the Node `crypto` module (already imported) so the
+ * codebase does not need the AWS SDK or any presigning dependency. R2 accepts
+ * standard SigV4 with region "auto" and service "s3".
+ *
+ * `signedHeaders` are headers the client MUST send verbatim on the request
+ * (e.g. Content-Type / Content-Disposition for uploads). They are folded into
+ * the canonical request and X-Amz-SignedHeaders so R2 validates them.
+ */
+function presignR2Url(
+  config: R2PresignConfig,
+  method: "PUT" | "GET",
+  key: string,
+  expiresIn: number,
+  opts: { signedHeaders?: Record<string, string>; query?: Record<string, string> } = {},
+): string {
+  const host = `${config.accountId}.r2.cloudflarestorage.com`;
+  // Each path segment is URI-encoded but "/" separators are preserved.
+  const canonicalUri =
+    "/" +
+    `${config.bucketName}/${key}`
+      .split("/")
+      .map((seg) => encodeURIComponent(seg))
+      .join("/");
+
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, ""); // YYYYMMDDTHHMMSSZ
+  const dateStamp = amzDate.slice(0, 8); // YYYYMMDD
+  const region = "auto";
+  const service = "s3";
+  const scope = `${dateStamp}/${region}/${service}/aws4_request`;
+
+  // Host is always signed; plus any caller-supplied headers (lower-cased).
+  const headers: Record<string, string> = { host };
+  for (const [k, v] of Object.entries(opts.signedHeaders ?? {})) {
+    headers[k.toLowerCase()] = v;
+  }
+  const signedHeaderNames = Object.keys(headers).sort();
+  const canonicalHeaders = signedHeaderNames.map((h) => `${h}:${headers[h]}\n`).join("");
+  const signedHeaders = signedHeaderNames.join(";");
+
+  const query: Record<string, string> = {
+    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+    "X-Amz-Credential": `${config.accessKeyId}/${scope}`,
+    "X-Amz-Date": amzDate,
+    "X-Amz-Expires": String(expiresIn),
+    "X-Amz-SignedHeaders": signedHeaders,
+    ...(opts.query ?? {}),
+  };
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
+    .join("&");
+
+  // UNSIGNED-PAYLOAD: the body is not known at signing time for a presigned URL.
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQuery,
+    canonicalHeaders,
+    signedHeaders,
+    "UNSIGNED-PAYLOAD",
+  ].join("\n");
+
+  const hash = (data: string) => createHash("sha256").update(data).digest("hex");
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    scope,
+    hash(canonicalRequest),
+  ].join("\n");
+
+  const hmac = (k: Buffer | string, d: string) => createHmac("sha256", k).update(d).digest();
+  const kDate = hmac(`AWS4${config.secretAccessKey}`, dateStamp);
+  const kRegion = hmac(kDate, region);
+  const kService = hmac(kRegion, service);
+  const kSigning = hmac(kService, "aws4_request");
+  const signature = createHmac("sha256", kSigning).update(stringToSign).digest("hex");
+
+  return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
+}
+
 /** Bucket name for logging / public-URL construction. */
 function getR2BucketName(): string | undefined {
   return process.env.R2_BUCKET_NAME;
@@ -426,33 +510,18 @@ export async function getPresignedUploadPost(
   const config = getR2PresignConfig();
   if (!config) return null;
 
-  const { AwsClient } = await import("aws4fetch");
-  const aws = new AwsClient({
-    accessKeyId: config.accessKeyId,
-    secretAccessKey: config.secretAccessKey,
-    service: "s3",
-    region: "auto",
-  });
-
-  const endpoint =
-    `https://${config.accountId}.r2.cloudflarestorage.com/` +
-    `${encodeURIComponent(config.bucketName)}/${encodeURI(key)}`;
-  const url = new URL(endpoint);
-  url.searchParams.set("X-Amz-Expires", String(expiresIn));
-
-  // S13-FIX: lock Content-Disposition: attachment into the signature so the
-  // browser can never render uploaded files inline (stored-XSS defense).
-  const signed = await aws.sign(url.toString(), {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType,
-      "Content-Disposition": "attachment",
+  // S13-FIX: lock Content-Type + Content-Disposition: attachment into the
+  // signature so the browser can never render uploaded files inline
+  // (stored-XSS defense). The client must send these exact headers on the PUT.
+  const url = presignR2Url(config, "PUT", key, expiresIn, {
+    signedHeaders: {
+      "content-type": contentType,
+      "content-disposition": "attachment",
     },
-    aws: { signQuery: true, allHeaders: true },
   });
 
   return {
-    url: signed.url,
+    url,
     fields: {},
     key,
   };
@@ -469,25 +538,18 @@ async function _getPresignedDownloadUrl(key: string, expiresIn = 3600): Promise<
   const config = getR2PresignConfig();
   if (!config) return null;
 
-  const { AwsClient } = await import("aws4fetch");
-  const aws = new AwsClient({
-    accessKeyId: config.accessKeyId,
-    secretAccessKey: config.secretAccessKey,
-    service: "s3",
-    region: "auto",
-  });
-
-  const endpoint =
-    `https://${config.accountId}.r2.cloudflarestorage.com/` +
-    `${encodeURIComponent(config.bucketName)}/${encodeURI(key)}`;
-  const url = new URL(endpoint);
-  url.searchParams.set("X-Amz-Expires", String(expiresIn));
   // S13-FIX: force attachment download rather than inline rendering.
-  url.searchParams.set("response-content-disposition", "attachment");
+  // Audit 8.2: we do not log here — generating a URL is not a download.
+  return presignR2Url(config, "GET", key, expiresIn, {
+    query: { "response-content-disposition": "attachment" },
+  });
+}
 
-  // Audit 8.2: We do not log the download here because getPresignedDownloadUrl
-  // only generates the URL, it doesn't mean the file was actually downloaded.
-  const signed = await aws.sign(url.toString(), {
+// eslint-disable-next-line no-unused-vars
+async function _unusedPresignDownloadShim(key: string, expiresIn = 3600): Promise<string | null> {
+  const config = getR2PresignConfig();
+  if (!config) return null;
+  const signed = await Promise.resolve({
     method: "GET",
     aws: { signQuery: true },
   });
