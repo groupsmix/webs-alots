@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * F-AI-03: Bias evaluation for clinical AI endpoints.
  *

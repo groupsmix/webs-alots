@@ -42,6 +42,11 @@ jobs:
           R2_SIGNED_URL_SECRET: ci-e2e-r2-signed-url-secret-placeholder
           NEXT_PUBLIC_SENTRY_DSN: https://ci-e2e-sentry-dsn-placeholder@o0.ingest.sentry.io/0
           CRON_SECRET: ci-e2e-cron-secret-placeholder-0123456789
+          # F-02: instrumentation.ts refuses to start in production unless
+          # SEED_PASSWORDS_ROTATED=true. This is a CI-only placeholder —
+          # no real seed accounts exist in the test database.
+          SEED_PASSWORDS_ROTATED: "true"
+          SEED_USERS_DELETED: "true"
 
       - name: Run AI Evaluations
         run: npm run eval:ai

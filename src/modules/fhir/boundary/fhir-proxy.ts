@@ -20,7 +20,7 @@ import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
 import { toFhirAppointment, type OltigoAppointmentRow } from "../mappers/appointment-mapper";
 import { toFhirMedicationRequests, type OltigoPrescriptionRow } from "../mappers/medication-request-mapper";
-import { toFhirObservations } from "../mappers/observation-mapper";
+import { toFhirObservations, type OltigoVitalsRow } from "../mappers/observation-mapper";
 import { toFhirPatient, fromFhirPatient } from "../mappers/patient-mapper";
 import type {
   FhirBundle,
@@ -288,7 +288,7 @@ export class FhirProxy {
       }
 
       const observations = (data ?? []).flatMap((row) =>
-        toFhirObservations(row as import("../mappers/observation-mapper").OltigoVitalsRow),
+        toFhirObservations(row as OltigoVitalsRow),
       );
       const bundle: FhirBundle = {
         resourceType: "Bundle",
