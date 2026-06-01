@@ -38,11 +38,16 @@ export const CRON_ROUTES: Record<string, string[]> = {
   "*/5 * * * *": ["/api/cron/uptime-monitor"],
   "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
   "*/30 * * * *": ["/api/cron/reminders"],
-  "0 * * * *": ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
+  "0 * * * *": ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders", "/api/cron/lab-triage"],
+  "0 */4 * * *": ["/api/cron/confirm-appointments"],
+  "0 1 * * *": ["/api/cron/compliance-check"],
   "0 2 * * *": ["/api/cron/billing"],
   "0 3 * * *": ["/api/cron/gdpr-purge"],
   "0 4 * * *": ["/api/cron/dedup-purge"],
   "0 5 * * *": ["/api/cron/stripe-reconcile"],
+  "0 6 * * *": ["/api/cron/backup-verify"],
+  "0 7 * * *": ["/api/cron/license-check"],
+  "0 10 * * *": ["/api/cron/health-tips"],
 };
 
 /**

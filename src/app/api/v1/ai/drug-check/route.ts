@@ -12,8 +12,8 @@ import { type NextRequest } from "next/server";
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
-import { checkInteractions, validateDose, ALERT_DISPLAY_MAP } from "@/lib/cdss";
-import type { DoseRoute } from "@/lib/cdss";
+import { checkInteractions, validateDose, suggestAlternatives, ALERT_DISPLAY_MAP } from "@/lib/cdss";
+import type { DoseRoute, AlternativeSuggestion } from "@/lib/cdss";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiDrugCheckLimiter } from "@/lib/rate-limit";
@@ -59,6 +59,17 @@ export const POST = withAuthValidation(
       );
     }
 
+    const alternatives: AlternativeSuggestion[] = [];
+    for (const alert of interactionAlerts) {
+      if (alert.severity === "critical" || alert.severity === "major") {
+        // alert.pair is [newDrug, currentMedication] or [newDrug, allergy]
+        const alt = suggestAlternatives(alert.pair[0], alert.pair[1]);
+        if (alt && !alternatives.find((a) => a.interactsWith === alt.interactsWith)) {
+          alternatives.push(alt);
+        }
+      }
+    }
+
     const hasCritical = interactionAlerts.some((a) => a.severity === "critical");
     const hasMajor = interactionAlerts.some((a) => a.severity === "major");
     const blocked = hasCritical || (doseResult !== null && !doseResult.valid);
@@ -91,6 +102,7 @@ export const POST = withAuthValidation(
         ...a,
         display: ALERT_DISPLAY_MAP[a.severity],
       })),
+      alternatives,
       doseValidation: doseResult,
       overallSeverity: hasCritical ? "critical" : hasMajor ? "major" : "safe",
     });
