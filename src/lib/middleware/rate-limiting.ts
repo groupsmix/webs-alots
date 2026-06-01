@@ -113,7 +113,7 @@ export async function applyRateLimit(
   // W8-T-02/W8-RL-03: Key on clinic_id rather than hostname so custom-domain
   // aliases for the same clinic share a single counter. The subdomain cache is
   // populated by earlier middleware invocations and is a fast Map lookup.
-  if (pathname.startsWith("/api/") && hostname) {
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/analytics") && hostname) {
     let clinicKey = hostname;
     const parts = hostname.split(".");
     const subdomain = parts.length >= 3 ? parts[0] : hostname;
