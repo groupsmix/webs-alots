@@ -412,6 +412,21 @@ but not yet started. Priorities: #13 (test coverage to 40%), #17 (circuit breake
 
 ---
 
+## AI Medical Features Evaluation
+
+The platform now includes an automated evaluation harness for AI features (`evals/`).
+When auditing the AI systems, reviewers should check the following automated tests:
+
+1. **Jailbreak Detection:** `evals/runners/jailbreak-runner.ts`
+2. **Drug Interaction Testing:** `evals/runners/drug-interaction-runner.ts`
+3. **Hallucination Testing:** `evals/runners/hallucination-runner.ts`
+4. **Bias & Cultural Testing:** `evals/runners/bias-runner.ts`
+
+These tests run nightly via GitHub Actions (`.github/workflows/ai-evals.yml`). Any regression >1% will trigger an alert.
+See `evals/MAINTENANCE.md` for instructions on updating test cases when underlying models change.
+
+---
+
 ## Notes for future audits
 
 - The "audit-wave" branch naming convention (`cleanup/audit-wave-0-to-2-safe-fixes`, `fix/audit-critical-blockers`, `fix/audit-remaining-blockers`, `infra/staging-kv-separation`, `security/codeowners-api-routes`, `obs/payment-reminders-sentry-checkin`) is intentional. Keep it.

@@ -18,7 +18,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
-import { toFhirObservations } from "../mappers/observation-mapper";
+import { toFhirAppointment, type OltigoAppointmentRow } from "../mappers/appointment-mapper";
+import {
+  toFhirMedicationRequests,
+  type OltigoPrescriptionRow,
+} from "../mappers/medication-request-mapper";
+import { toFhirObservations, type OltigoVitalsRow } from "../mappers/observation-mapper";
 import { toFhirPatient, fromFhirPatient } from "../mappers/patient-mapper";
 import type {
   FhirBundle,
@@ -286,7 +291,7 @@ export class FhirProxy {
       }
 
       const observations = (data ?? []).flatMap((row) =>
-        toFhirObservations(row as import("../mappers/observation-mapper").OltigoVitalsRow),
+        toFhirObservations(row as OltigoVitalsRow),
       );
       const bundle: FhirBundle = {
         resourceType: "Bundle",
@@ -301,6 +306,100 @@ export class FhirProxy {
       return { ok: true, data: bundle };
     } catch (err) {
       logger.error("FHIR vitals error", { context: "fhir-proxy", error: err });
+      return { ok: false, outcome: operationOutcome("error", "exception", "Erreur interne") };
+    }
+  }
+
+  /**
+   * Get patient prescriptions as FHIR MedicationRequests.
+   */
+  async searchMedicationRequests(params: {
+    patientId: string;
+  }): Promise<FhirProxyResult<FhirBundle>> {
+    try {
+      const { data, error } = await (this.supabase as SupabaseClient)
+        // nosemgrep: tenant-scoping
+        .from("prescriptions")
+        .select("*")
+        .eq("clinic_id", this.clinicId)
+        .eq("patient_id", params.patientId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        logger.error("FHIR prescriptions query failed", { context: "fhir-proxy", error });
+        return {
+          ok: false,
+          outcome: operationOutcome("error", "exception", "Erreur de lecture des prescriptions"),
+        };
+      }
+
+      const medicationRequests = (data ?? []).flatMap((row) =>
+        toFhirMedicationRequests(row as OltigoPrescriptionRow),
+      );
+
+      const bundle: FhirBundle = {
+        resourceType: "Bundle",
+        type: "searchset",
+        total: medicationRequests.length,
+        entry: medicationRequests.map((req) => ({
+          resource: req,
+          fullUrl: `urn:uuid:${req.id}`,
+        })),
+      };
+
+      return { ok: true, data: bundle };
+    } catch (err) {
+      logger.error("FHIR prescriptions error", { context: "fhir-proxy", error: err });
+      return { ok: false, outcome: operationOutcome("error", "exception", "Erreur interne") };
+    }
+  }
+
+  /**
+   * Search appointments for a patient or doctor as FHIR Appointments.
+   */
+  async searchAppointments(params: {
+    patientId?: string;
+    doctorId?: string;
+  }): Promise<FhirProxyResult<FhirBundle>> {
+    try {
+      let query = (this.supabase as SupabaseClient)
+        // nosemgrep: tenant-scoping
+        .from("appointments")
+        .select("*")
+        .eq("clinic_id", this.clinicId)
+        .order("slot_start", { ascending: false })
+        .limit(100);
+
+      if (params.patientId) query = query.eq("patient_id", params.patientId);
+      if (params.doctorId) query = query.eq("doctor_id", params.doctorId);
+
+      const { data, error } = await query;
+
+      if (error) {
+        logger.error("FHIR appointments query failed", { context: "fhir-proxy", error });
+        return {
+          ok: false,
+          outcome: operationOutcome("error", "exception", "Erreur de lecture des rendez-vous"),
+        };
+      }
+
+      const appointments = (data ?? []).map((row) =>
+        toFhirAppointment(row as OltigoAppointmentRow),
+      );
+
+      const bundle: FhirBundle = {
+        resourceType: "Bundle",
+        type: "searchset",
+        total: appointments.length,
+        entry: appointments.map((appt) => ({
+          resource: appt,
+          fullUrl: `urn:uuid:${appt.id}`,
+        })),
+      };
+
+      return { ok: true, data: bundle };
+    } catch (err) {
+      logger.error("FHIR appointments error", { context: "fhir-proxy", error: err });
       return { ok: false, outcome: operationOutcome("error", "exception", "Erreur interne") };
     }
   }

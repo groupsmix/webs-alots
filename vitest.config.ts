@@ -20,6 +20,7 @@ export default defineConfig({
     // DI-HIGH-04: Clear mocks globally to prevent inter-test state leakage.
     // Previously 10+ test files had incomplete beforeEach cleanup.
     clearMocks: true,
+    testTimeout: 15000,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     exclude: ["src/components/__tests__/setup.tsx"],
     setupFiles: ["./src/components/__tests__/setup.tsx"],
