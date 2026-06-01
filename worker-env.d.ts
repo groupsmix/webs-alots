@@ -40,6 +40,64 @@ interface Queue<Body = unknown> {
   sendBatch(messages: { body: Body }[]): Promise<void>;
 }
 
+/**
+ * Minimal R2 bucket binding types — the subset of @cloudflare/workers-types
+ * used by src/lib/r2.ts (put / get / head / delete / list). Mirrors the
+ * runtime shape without requiring the full package.
+ */
+interface R2HTTPMetadata {
+  contentType?: string;
+  contentDisposition?: string;
+}
+
+interface R2Object {
+  readonly key: string;
+  readonly size: number;
+  readonly httpMetadata?: R2HTTPMetadata;
+}
+
+interface R2ObjectBody extends R2Object {
+  arrayBuffer(): Promise<ArrayBuffer>;
+  text(): Promise<string>;
+}
+
+interface R2Objects {
+  objects: R2Object[];
+  truncated: boolean;
+  cursor?: string;
+}
+
+interface R2Range {
+  offset?: number;
+  length?: number;
+}
+
+interface R2GetOptions {
+  range?: R2Range;
+}
+
+interface R2PutOptions {
+  httpMetadata?: R2HTTPMetadata;
+}
+
+interface R2ListOptions {
+  prefix?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+interface R2Bucket {
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer | ArrayBufferView | string | null,
+    options?: R2PutOptions,
+  ): Promise<R2Object>;
+  get(key: string, options?: R2GetOptions): Promise<R2ObjectBody | null>;
+  head(key: string): Promise<R2Object | null>;
+  delete(key: string): Promise<void>;
+  list(options?: R2ListOptions): Promise<R2Objects>;
+}
+
 interface ExportedHandler<Env = Record<string, string>> {
   fetch?: (request: Request, env: Env, ctx: ExecutionContext) => Response | Promise<Response>;
   scheduled?: (

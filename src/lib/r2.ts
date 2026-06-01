@@ -1,7 +1,16 @@
 /**
  * Cloudflare R2 storage client.
  *
- * R2 is S3-compatible, so we use the AWS SDK v3.
+ * Object I/O (put / get / head / delete / list) uses Cloudflare's NATIVE R2
+ * binding (`UPLOADS_BUCKET`, declared in wrangler.toml and resolved per-request
+ * via getR2Bucket()). This avoids bundling the AWS SDK (~48 MiB), which pushed
+ * the Worker past the 10 MiB compressed upload limit.
+ *
+ * Presigned upload/download URLs are signed with the lightweight `aws4fetch`
+ * library against the R2 S3 API, since the native binding has no presigned-URL
+ * primitive. That signing path is the ONLY place R2 S3 credentials are still
+ * used.
+ *
  * Advantages over Supabase Storage:
  *   - Free tier: 10 GB storage, 10M class-A ops, no egress fees
  *   - Served via Cloudflare CDN edge network
@@ -13,11 +22,12 @@
  *   - For truly public assets (clinic logos, marketing images), use a separate
  *     "webs-alots-public" bucket and NEVER put user-uploaded files there
  *
- * Required env vars:
- *   R2_ACCOUNT_ID        — Cloudflare account ID
- *   R2_ACCESS_KEY_ID     — R2 API token access key
- *   R2_SECRET_ACCESS_KEY — R2 API token secret key
- *   R2_BUCKET_NAME       — R2 bucket name (e.g., "webs-alots-uploads")
+ * Env vars:
+ *   (object I/O) — none; uses the UPLOADS_BUCKET binding from wrangler.toml
+ *   R2_ACCOUNT_ID        — Cloudflare account ID (presign + public-URL only)
+ *   R2_ACCESS_KEY_ID     — R2 API token access key (presign only)
+ *   R2_SECRET_ACCESS_KEY — R2 API token secret key (presign only)
+ *   R2_BUCKET_NAME       — R2 bucket name, e.g. "webs-alots-uploads" (presign + logging)
  *   R2_PUBLIC_URL        — (Deprecated) Legacy public URL; use signed URLs instead
  *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs and
  *                          hashing upload filenames. **Required in production.**
@@ -25,7 +35,9 @@
  *                          Rotate per `docs/SOP-SECRET-ROTATION.md` §8.
  */
 
-import { createHmac } from "crypto";
+import { createHash, createHmac } from "crypto";
+import { getWorkerBinding } from "@/lib/cf-bindings";
+import { getR2Config, isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
@@ -47,17 +59,17 @@ import { logger } from "@/lib/logger";
  *     with a helpful error rather than silently using a shared constant.
  */
 function getR2SigningSecret(): string {
-  const keySecret = process.env.R2_SIGNED_URL_SECRET;
-  if (keySecret) return keySecret;
+  const { signedUrlSecret, secretAccessKey } = getR2Config();
+  if (signedUrlSecret) return signedUrlSecret;
 
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     throw new Error(
       "R2_SIGNED_URL_SECRET is required in production. " +
         "Generate one with `openssl rand -hex 32` and deploy it as a Cloudflare Worker secret.",
     );
   }
 
-  const fallback = process.env.R2_SECRET_ACCESS_KEY;
+  const fallback = secretAccessKey;
   if (!fallback) {
     throw new Error(
       "R2 signing secret is missing. Set R2_SIGNED_URL_SECRET in your .env.local " +
@@ -82,8 +94,7 @@ function getR2SigningSecret(): string {
  * @returns Signed URL that validates against the secret
  */
 function _generateSignedR2Url(key: string, expiresIn = 3600): string {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const bucketName = process.env.R2_BUCKET_NAME;
+  const { accountId, bucketName, signedUrlBase } = getR2Config();
 
   if (!accountId || !bucketName) {
     // R2 is not configured — return a best-effort placeholder URL.
@@ -106,7 +117,7 @@ function _generateSignedR2Url(key: string, expiresIn = 3600): string {
   const signature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
 
   // URL format: https://{domain}/r2/{bucket}/{key}?expires={expires}&sig={signature}
-  const baseUrl = process.env.R2_SIGNED_URL_BASE || `https://oltigo.com/r2`;
+  const baseUrl = signedUrlBase || `https://oltigo.com/r2`;
   const params = new URLSearchParams({
     b: bucketName,
     k: key,
@@ -164,22 +175,34 @@ function _validateSignedR2Url(
   return match === 0;
 }
 
-// AWS SDK types — imported dynamically at runtime to keep the heavy SDK
-// out of the main bundle (see PERF-01 audit finding).
-type S3ClientType = import("@aws-sdk/client-s3").S3Client;
-type PutObjectCommandInputType = import("@aws-sdk/client-s3").PutObjectCommandInput;
+/**
+ * Minimal structural type for the credentials/config used by the presigned
+ * URL signing path (the only path that still needs R2 S3 API credentials).
+ */
+type R2PresignConfig = {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+  publicUrl: string | undefined;
+};
 
 /**
- * Default maximum size enforced by direct-upload presigned POST policies.
- * Individual call-sites may pass a smaller bound when they know the
- * acceptable upper limit for that upload kind.
+ * Default maximum size for direct-upload presigned URLs. Individual call-sites
+ * may pass a smaller bound. Native R2 presigned PUT cannot enforce a
+ * content-length-range at write time the way an S3 POST policy could, so the
+ * authoritative size guard is the PUT /api/upload confirm step
+ * (HeadObject + per-category cap). The constant name is kept for backward
+ * compatibility with existing imports.
  */
 export const DEFAULT_PRESIGNED_POST_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
 /**
- * Returned by {@link getPresignedUploadPost}. Clients submit the file as the
- * `file` field of a `multipart/form-data` POST to `url`, including every
- * field returned in `fields`.
+ * Returned by {@link getPresignedUploadPost}. With the native-binding
+ * migration the client now PUTs the file body directly to `url` with the
+ * `Content-Type` and `Content-Disposition` headers that were signed into the
+ * URL. `fields` is retained (always empty) so existing response shapes and
+ * callers keep compiling; clients should send no multipart fields.
  */
 export interface PresignedUploadPost {
   url: string;
@@ -187,12 +210,28 @@ export interface PresignedUploadPost {
   key: string;
 }
 
-function getR2Config() {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucketName = process.env.R2_BUCKET_NAME;
-  const publicUrl = process.env.R2_PUBLIC_URL;
+/**
+ * Resolve the native R2 bucket binding from the Cloudflare request context.
+ *
+ * MUST be called lazily, per-invocation — getCloudflareContext().env is only
+ * populated inside the Worker request/runtime context. Calling it at module
+ * load (or caching the result across invocations) would capture `undefined`
+ * and break code paths such as the R2 cleanup cron.
+ *
+ * Returns null when the binding is unavailable (e.g. during `next build`
+ * static analysis, local Node tooling, or tests) so callers degrade safely.
+ */
+export async function getR2Bucket(): Promise<R2Bucket | null> {
+  const bucket = await getWorkerBinding<R2Bucket>("UPLOADS_BUCKET");
+  return bucket ?? null;
+}
+
+/**
+ * Resolve the S3 API credentials used only for presigned-URL signing.
+ * Returns null when any required value is missing.
+ */
+function getR2PresignConfig(): R2PresignConfig | null {
+  const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = getR2Config();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
     return null;
@@ -201,38 +240,97 @@ function getR2Config() {
   return { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl };
 }
 
-let _client: S3ClientType | null = null;
-let _lastConfigHash = "";
+/**
+ * Build an AWS SigV4 query-presigned URL for the R2 S3 API.
+ *
+ * Implemented inline with the Node `crypto` module (already imported) so the
+ * codebase does not need the AWS SDK or any presigning dependency. R2 accepts
+ * standard SigV4 with region "auto" and service "s3".
+ *
+ * `signedHeaders` are headers the client MUST send verbatim on the request
+ * (e.g. Content-Type / Content-Disposition for uploads). They are folded into
+ * the canonical request and X-Amz-SignedHeaders so R2 validates them.
+ */
+function presignR2Url(
+  config: R2PresignConfig,
+  method: "PUT" | "GET",
+  key: string,
+  expiresIn: number,
+  opts: { signedHeaders?: Record<string, string>; query?: Record<string, string> } = {},
+): string {
+  const host = `${config.accountId}.r2.cloudflarestorage.com`;
+  // Each path segment is URI-encoded but "/" separators are preserved.
+  const canonicalUri =
+    "/" +
+    `${config.bucketName}/${key}`
+      .split("/")
+      .map((seg) => encodeURIComponent(seg))
+      .join("/");
 
-async function getClient(): Promise<S3ClientType | null> {
-  const config = getR2Config();
-  if (!config) return null;
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, ""); // YYYYMMDDTHHMMSSZ
+  const dateStamp = amzDate.slice(0, 8); // YYYYMMDD
+  const region = "auto";
+  const service = "s3";
+  const scope = `${dateStamp}/${region}/${service}/aws4_request`;
 
-  // Rebuild the client whenever credentials or config change,
-  // ensuring stale credentials are never used after rotation.
-  const configHash = `${config.accountId}:${config.accessKeyId}:${config.bucketName}`;
-  if (_client && configHash === _lastConfigHash) return _client;
+  // Host is always signed; plus any caller-supplied headers (lower-cased).
+  const headers: Record<string, string> = { host };
+  for (const [k, v] of Object.entries(opts.signedHeaders ?? {})) {
+    headers[k.toLowerCase()] = v;
+  }
+  const signedHeaderNames = Object.keys(headers).sort();
+  const canonicalHeaders = signedHeaderNames.map((h) => `${h}:${headers[h]}\n`).join("");
+  const signedHeaders = signedHeaderNames.join(";");
 
-  const { S3Client } = await import("@aws-sdk/client-s3");
+  const query: Record<string, string> = {
+    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+    "X-Amz-Credential": `${config.accessKeyId}/${scope}`,
+    "X-Amz-Date": amzDate,
+    "X-Amz-Expires": String(expiresIn),
+    "X-Amz-SignedHeaders": signedHeaders,
+    ...(opts.query ?? {}),
+  };
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
+    .join("&");
 
-  _lastConfigHash = configHash;
-  _client = new S3Client({
-    region: "auto",
-    endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  });
+  // UNSIGNED-PAYLOAD: the body is not known at signing time for a presigned URL.
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQuery,
+    canonicalHeaders,
+    signedHeaders,
+    "UNSIGNED-PAYLOAD",
+  ].join("\n");
 
-  return _client;
+  const hash = (data: string) => createHash("sha256").update(data).digest("hex");
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hash(canonicalRequest)].join("\n");
+
+  const hmac = (k: Buffer | string, d: string) => createHmac("sha256", k).update(d).digest();
+  const kDate = hmac(`AWS4${config.secretAccessKey}`, dateStamp);
+  const kRegion = hmac(kDate, region);
+  const kService = hmac(kRegion, service);
+  const kSigning = hmac(kService, "aws4_request");
+  const signature = createHmac("sha256", kSigning).update(stringToSign).digest("hex");
+
+  return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
 /**
  * Check if R2 is configured and available.
+ *
+ * True when either the native binding is present (the production/runtime
+ * path) or the S3 API credentials are configured (the presign path / local
+ * tooling). Callers gate uploads on this before attempting object I/O.
  */
 export function isR2Configured(): boolean {
-  return getR2Config() !== null;
+  // Synchronous: determined by the presign/env config, which is present in
+  // production (it gates the presign path) and in local tooling. The native
+  // binding is resolved asynchronously per-invocation inside each operation.
+  return getR2PresignConfig() !== null;
 }
 
 /**
@@ -257,11 +355,8 @@ export async function uploadToR2(
   contentType: string,
   options: { hashFilename?: boolean } = {},
 ): Promise<string | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
-
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const bucket = await getR2Bucket();
+  if (!bucket) return null;
 
   // R-16 Fix: Hash filenames on write so guessable basenames don't survive to the URL
   // This prevents enumeration attacks where attackers guess filenames
@@ -275,15 +370,17 @@ export async function uploadToR2(
     });
   }
 
-  const params: PutObjectCommandInputType = {
-    Bucket: config.bucketName,
-    Key: finalKey,
-    Body: body,
-    ContentType: contentType,
-  };
-
   try {
-    await client.send(new PutObjectCommand(params));
+    // The R2 binding accepts ArrayBuffer/ArrayBufferView/ReadableStream/string.
+    // Normalise a Node Buffer to a plain Uint8Array view so it is accepted in
+    // the Workers runtime without relying on Node Buffer semantics.
+    const putBody =
+      body instanceof Uint8Array
+        ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength)
+        : body;
+    await bucket.put(finalKey, putBody, {
+      httpMetadata: { contentType },
+    });
   } catch (err) {
     // A84-F3: Surface R2 upload failures with a structured log entry so
     // operators can correlate storage outages (disk-full, network, auth)
@@ -301,10 +398,16 @@ export async function uploadToR2(
   // other sensitive content should generate short-lived signed URLs at read
   // time via generateSignedR2Url() / getPresignedDownloadUrl() rather than
   // relying on the public URL.
-  if (config.publicUrl) {
-    return `${config.publicUrl.replace(/\/$/, "")}/${finalKey}`;
+  const { accountId, bucketName, publicUrl } = getR2Config();
+  if (publicUrl) {
+    return `${publicUrl.replace(/\/$/, "")}/${finalKey}`;
   }
-  return `https://${config.bucketName}.${config.accountId}.r2.cloudflarestorage.com/${finalKey}`;
+  if (accountId && bucketName) {
+    return `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${finalKey}`;
+  }
+  // Binding present but no account/bucket env for URL construction: return a
+  // stable relative key the download proxy can resolve.
+  return `/r2/${finalKey}`;
 }
 
 /**
@@ -338,18 +441,10 @@ function hashFilename(key: string): string {
  * @param key  Object key to delete
  */
 export async function deleteFromR2(key: string): Promise<void> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return;
+  const bucket = await getR2Bucket();
+  if (!bucket) return;
 
-  const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: config.bucketName,
-      Key: key,
-    }),
-  );
+  await bucket.delete(key);
 }
 
 /**
@@ -385,30 +480,35 @@ export async function getPresignedUploadPost(
   maxSize: number = DEFAULT_PRESIGNED_POST_MAX_SIZE,
   expiresIn = 600,
 ): Promise<PresignedUploadPost | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
+  // Native R2 has no presigned POST primitive. We sign a presigned PUT URL
+  // against the R2 S3 API with aws4fetch instead. The browser PUTs the file
+  // body directly to `url` with the Content-Type / Content-Disposition headers
+  // that are signed into the URL (X-Amz-SignedHeaders).
+  //
+  // NOTE (size enforcement): a presigned PUT cannot enforce a
+  // content-length-range the way an S3 POST policy could. The authoritative
+  // size + magic-byte guard is the PUT /api/upload confirm step, which
+  // HeadObjects the upload and deletes it if it exceeds the per-category cap.
+  // `maxSize` is therefore advisory here and kept in the signature for
+  // backward compatibility.
+  void maxSize;
 
-  const { createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
+  const config = getR2PresignConfig();
+  if (!config) return null;
 
-  const presigned = await createPresignedPost(client, {
-    Bucket: config.bucketName,
-    Key: key,
-    Conditions: [
-      ["content-length-range", 0, maxSize],
-      ["eq", "$Content-Type", contentType],
-      ["eq", "$Content-Disposition", "attachment"],
-    ],
-    Fields: {
-      "Content-Type": contentType,
-      "Content-Disposition": "attachment",
+  // S13-FIX: lock Content-Type + Content-Disposition: attachment into the
+  // signature so the browser can never render uploaded files inline
+  // (stored-XSS defense). The client must send these exact headers on the PUT.
+  const url = presignR2Url(config, "PUT", key, expiresIn, {
+    signedHeaders: {
+      "content-type": contentType,
+      "content-disposition": "attachment",
     },
-    Expires: expiresIn,
   });
 
   return {
-    url: presigned.url,
-    fields: presigned.fields,
+    url,
+    fields: {},
     key,
   };
 }
@@ -421,29 +521,14 @@ export async function getPresignedUploadPost(
  * @returns Pre-signed download URL, or null if R2 is not configured
  */
 async function _getPresignedDownloadUrl(key: string, expiresIn = 3600): Promise<string | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
+  const config = getR2PresignConfig();
+  if (!config) return null;
 
-  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
-
-  // S13-FIX: Set Content-Disposition to "attachment" so browsers will always
-  // download the file rather than rendering it inline. This prevents stored XSS
-  // attacks where a malicious HTML file that bypasses magic-byte validation could
-  // be rendered in the context of the R2 storage domain.
-  const command = new GetObjectCommand({
-    Bucket: config.bucketName,
-    Key: key,
-    ResponseContentDisposition: "attachment",
+  // S13-FIX: force attachment download rather than inline rendering.
+  // Audit 8.2: we do not log here — generating a URL is not a download.
+  return presignR2Url(config, "GET", key, expiresIn, {
+    query: { "response-content-disposition": "attachment" },
   });
-
-  // Audit 8.2: We do not log the download here because getPresignedDownloadUrl
-  // only generates the URL, it doesn't mean the file was actually downloaded.
-  // The actual download access log should be tracked via Cloudflare Logpush
-  // on the R2 bucket or a dedicated download proxy route.
-
-  return getSignedUrl(client, command, { expiresIn });
 }
 
 /**
@@ -463,22 +548,15 @@ export interface R2ObjectMetadata {
  * Returns `null` if the object does not exist or R2 is not configured.
  */
 export async function getR2ObjectMetadata(key: string): Promise<R2ObjectMetadata | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
-
-  const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
+  const bucket = await getR2Bucket();
+  if (!bucket) return null;
 
   try {
-    const response = await client.send(
-      new HeadObjectCommand({
-        Bucket: config.bucketName,
-        Key: key,
-      }),
-    );
+    const head = await bucket.head(key);
+    if (!head) return null;
     return {
-      contentLength: response.ContentLength ?? 0,
-      contentType: response.ContentType ?? null,
+      contentLength: head.size ?? 0,
+      contentType: head.httpMetadata?.contentType ?? null,
     };
   } catch {
     return null;
@@ -505,40 +583,30 @@ export async function listR2Objects(
   prefix: string,
   opts: { limit?: number; pageSize?: number } = {},
 ): Promise<string[]> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return [];
+  const bucket = await getR2Bucket();
+  if (!bucket) return [];
 
   const limit = opts.limit ?? Number.POSITIVE_INFINITY;
   const pageSize = opts.pageSize ?? 1000;
   if (limit <= 0) return [];
 
-  const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
-
   const keys: string[] = [];
-  let continuationToken: string | undefined;
+  let cursor: string | undefined;
 
   do {
-    const response = await client.send(
-      new ListObjectsV2Command({
-        Bucket: config.bucketName,
-        Prefix: prefix,
-        MaxKeys: pageSize,
-        ContinuationToken: continuationToken,
-      }),
-    );
+    const result = await bucket.list({
+      prefix,
+      limit: pageSize,
+      cursor,
+    });
 
-    for (const obj of response.Contents ?? []) {
-      if (typeof obj.Key === "string") {
-        keys.push(obj.Key);
-        if (keys.length >= limit) return keys;
-      }
+    for (const obj of result.objects) {
+      keys.push(obj.key);
+      if (keys.length >= limit) return keys;
     }
 
-    continuationToken = response.IsTruncated
-      ? (response.NextContinuationToken ?? undefined)
-      : undefined;
-  } while (continuationToken);
+    cursor = result.truncated ? result.cursor : undefined;
+  } while (cursor);
 
   return keys;
 }
@@ -551,27 +619,15 @@ export async function listR2Objects(
  * @returns Buffer with the first bytes, or null if not found / not configured
  */
 export async function readR2ObjectHead(key: string, bytes = 16): Promise<Buffer | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
-
-  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-
-  const command = new GetObjectCommand({
-    Bucket: config.bucketName,
-    Key: key,
-    Range: `bytes=0-${bytes - 1}`,
-  });
+  const bucket = await getR2Bucket();
+  if (!bucket) return null;
 
   try {
-    const response = await client.send(command);
-    if (!response.Body) return null;
-    const chunks: Uint8Array[] = [];
-    // @ts-expect-error -- Body is a Readable stream in Node.js
-    for await (const chunk of response.Body) {
-      chunks.push(chunk as Uint8Array);
-    }
-    return Buffer.concat(chunks);
+    const object = await bucket.get(key, {
+      range: { offset: 0, length: bytes },
+    });
+    if (!object) return null;
+    return Buffer.from(await object.arrayBuffer());
   } catch {
     logger.warn("Failed to read R2 object head", { context: "r2", key });
     return null;

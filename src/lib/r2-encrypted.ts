@@ -11,7 +11,7 @@
 
 import { encryptBuffer, decryptBuffer, isEncryptionConfigured } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
-import { uploadToR2, deleteFromR2 } from "@/lib/r2";
+import { uploadToR2, deleteFromR2, getR2Bucket } from "@/lib/r2";
 
 /**
  * Diagnostic / audit metadata threaded through encrypted upload calls.
@@ -108,36 +108,16 @@ export async function downloadAndDecrypt(key: string): Promise<Buffer | null> {
   }
 
   try {
-    // Import getClient-level access for raw object download
-    const { S3Client, GetObjectCommand } = await import("@aws-sdk/client-s3");
-
-    const accountId = process.env.R2_ACCOUNT_ID;
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-    const bucketName = process.env.R2_BUCKET_NAME;
-
-    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
-      return null;
-    }
-
-    const client = new S3Client({
-      region: "auto",
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    });
+    // Native R2 binding: download the encrypted object directly from the
+    // bound bucket. No AWS SDK / credentials required (see src/lib/r2.ts).
+    const bucket = await getR2Bucket();
+    if (!bucket) return null;
 
     const encKey = key.endsWith(".enc") ? key : `${key}.enc`;
-    const response = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: encKey }));
+    const object = await bucket.get(encKey);
+    if (!object) return null;
 
-    if (!response.Body) return null;
-
-    // Collect the stream into a buffer
-    const chunks: Uint8Array[] = [];
-    const body = response.Body as AsyncIterable<Uint8Array>;
-    for await (const chunk of body) {
-      chunks.push(chunk);
-    }
-    const encrypted = Buffer.concat(chunks);
+    const encrypted = Buffer.from(await object.arrayBuffer());
 
     return decryptBuffer(encrypted);
   } catch (err) {

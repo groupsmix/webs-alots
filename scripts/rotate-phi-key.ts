@@ -22,15 +22,15 @@
  *   5. Uploads the re-encrypted file back to R2
  *   6. Logs progress and failures for manual retry
  *
+ * R2 access is performed via the R2 S3 API using inline SigV4 query
+ * presigning (Node's `crypto` module) + Node 22's built-in `fetch`. This
+ * mirrors the approach in `src/lib/r2.ts` so the Worker bundle does not
+ * need the AWS SDK (~48 MiB) which would exceed the 10 MiB Worker limit.
+ *
  * See src/lib/encryption.ts for the full key rotation procedure.
  */
 
-import {
-  S3Client,
-  ListObjectsV2Command,
-  GetObjectCommand,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
+import { createHash, createHmac } from "crypto";
 
 // ── Configuration ──
 
@@ -53,7 +53,10 @@ const ROOT_PREFIX = "clinics/";
 
 const IV_LENGTH = 12; // 96-bit IV for AES-GCM
 
-// ── Helpers ──
+// Presigned URLs are short-lived — each list/get/put is its own call.
+const PRESIGN_TTL_SECONDS = 300;
+
+// ── Crypto helpers ──
 
 function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(
@@ -114,6 +117,193 @@ function isPHIFile(key: string): boolean {
   return categories.some((cat) => key.includes(`/${cat}/`));
 }
 
+// ── R2 S3 API: inline SigV4 query presigner ──
+//
+// Mirrors `presignR2Url` in src/lib/r2.ts. Inlined here so this maintenance
+// script remains self-contained and does not need the AWS SDK (which was
+// removed to fit the 10 MiB Cloudflare Worker bundle limit).
+
+interface R2PresignConfig {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+}
+
+/**
+ * Build an AWS SigV4 query-presigned URL for the R2 S3 API.
+ *
+ * `key` may be an empty string to target the bucket root (used for the
+ * ListObjectsV2 endpoint). Additional query parameters can be supplied via
+ * `opts.query` and are folded into the canonical request so the signature
+ * remains valid.
+ */
+function presignR2Url(
+  config: R2PresignConfig,
+  method: "PUT" | "GET",
+  key: string,
+  expiresIn: number,
+  opts: { signedHeaders?: Record<string, string>; query?: Record<string, string> } = {},
+): string {
+  const host = `${config.accountId}.r2.cloudflarestorage.com`;
+  // Each path segment is URI-encoded but "/" separators are preserved. An
+  // empty `key` produces the bucket root (`/{bucket}/`) which is the path
+  // used by ListObjectsV2.
+  const canonicalUri =
+    "/" +
+    `${config.bucketName}/${key}`
+      .split("/")
+      .map((seg) => encodeURIComponent(seg))
+      .join("/");
+
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, ""); // YYYYMMDDTHHMMSSZ
+  const dateStamp = amzDate.slice(0, 8); // YYYYMMDD
+  const region = "auto";
+  const service = "s3";
+  const scope = `${dateStamp}/${region}/${service}/aws4_request`;
+
+  // Host is always signed; plus any caller-supplied headers (lower-cased).
+  const headers: Record<string, string> = { host };
+  for (const [k, v] of Object.entries(opts.signedHeaders ?? {})) {
+    headers[k.toLowerCase()] = v;
+  }
+  const signedHeaderNames = Object.keys(headers).sort();
+  const canonicalHeaders = signedHeaderNames.map((h) => `${h}:${headers[h]}\n`).join("");
+  const signedHeaders = signedHeaderNames.join(";");
+
+  const query: Record<string, string> = {
+    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+    "X-Amz-Credential": `${config.accessKeyId}/${scope}`,
+    "X-Amz-Date": amzDate,
+    "X-Amz-Expires": String(expiresIn),
+    "X-Amz-SignedHeaders": signedHeaders,
+    ...(opts.query ?? {}),
+  };
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
+    .join("&");
+
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQuery,
+    canonicalHeaders,
+    signedHeaders,
+    "UNSIGNED-PAYLOAD",
+  ].join("\n");
+
+  const hash = (data: string) => createHash("sha256").update(data).digest("hex");
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hash(canonicalRequest)].join("\n");
+
+  const hmac = (k: Buffer | string, d: string) => createHmac("sha256", k).update(d).digest();
+  const kDate = hmac(`AWS4${config.secretAccessKey}`, dateStamp);
+  const kRegion = hmac(kDate, region);
+  const kService = hmac(kRegion, service);
+  const kSigning = hmac(kService, "aws4_request");
+  const signature = createHmac("sha256", kSigning).update(stringToSign).digest("hex");
+
+  return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
+}
+
+// ── R2 S3 API: minimal client (LIST / GET / PUT) ──
+
+interface ListResult {
+  keys: string[];
+  nextContinuationToken: string | undefined;
+}
+
+/**
+ * Parse a key value out of a `<Key>...</Key>` XML element, decoding the
+ * limited set of XML entities R2's ListObjectsV2 response can contain. Keys
+ * with control characters or `<`/`>` are not legal in S3 object keys, so
+ * a regex-based extractor is safe here.
+ *
+ * Done in a single pass so the output of one substitution never feeds another
+ * (CodeQL js/incomplete-sanitization). For example a literal `&amp;lt;` in
+ * the source decodes to the literal `&lt;`, not to `<`.
+ */
+function decodeXmlText(s: string): string {
+  const map: Record<string, string> = {
+    amp: "&",
+    lt: "<",
+    gt: ">",
+    quot: '"',
+    apos: "'",
+  };
+  return s.replace(/&(amp|lt|gt|quot|apos);/g, (_match, name: string) => map[name] ?? _match);
+}
+
+async function listObjectsPage(
+  config: R2PresignConfig,
+  prefix: string,
+  continuationToken: string | undefined,
+): Promise<ListResult> {
+  const query: Record<string, string> = {
+    "list-type": "2",
+    prefix,
+  };
+  if (continuationToken) {
+    query["continuation-token"] = continuationToken;
+  }
+
+  const url = presignR2Url(config, "GET", "", PRESIGN_TTL_SECONDS, { query });
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "<unreadable body>");
+    throw new Error(`ListObjectsV2 failed: HTTP ${res.status} ${res.statusText} — ${body}`);
+  }
+  const xml = await res.text();
+
+  const keys: string[] = [];
+  const keyRegex = /<Contents>[\s\S]*?<Key>([^<]+)<\/Key>[\s\S]*?<\/Contents>/g;
+  let m: RegExpExecArray | null;
+  while ((m = keyRegex.exec(xml)) !== null) {
+    keys.push(decodeXmlText(m[1]));
+  }
+
+  const truncated = /<IsTruncated>\s*true\s*<\/IsTruncated>/i.test(xml);
+  let nextContinuationToken: string | undefined;
+  if (truncated) {
+    const tokenMatch = xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/);
+    nextContinuationToken = tokenMatch ? decodeXmlText(tokenMatch[1]) : undefined;
+  }
+
+  return { keys, nextContinuationToken };
+}
+
+async function getObject(config: R2PresignConfig, key: string): Promise<Uint8Array<ArrayBuffer>> {
+  const url = presignR2Url(config, "GET", key, PRESIGN_TTL_SECONDS);
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "<unreadable body>");
+    throw new Error(`GetObject ${key} failed: HTTP ${res.status} ${res.statusText} — ${body}`);
+  }
+  const buf = await res.arrayBuffer();
+  return new Uint8Array(buf) as Uint8Array<ArrayBuffer>;
+}
+
+async function putObject(
+  config: R2PresignConfig,
+  key: string,
+  body: Uint8Array<ArrayBuffer>,
+  contentType: string,
+): Promise<void> {
+  const url = presignR2Url(config, "PUT", key, PRESIGN_TTL_SECONDS, {
+    signedHeaders: { "content-type": contentType },
+  });
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { "content-type": contentType },
+    body,
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "<unreadable body>");
+    throw new Error(`PutObject ${key} failed: HTTP ${res.status} ${res.statusText} — ${errBody}`);
+  }
+}
+
 // ── Main ──
 
 async function main() {
@@ -146,6 +336,8 @@ async function main() {
     process.exit(1);
   }
 
+  const config: R2PresignConfig = { accountId, accessKeyId, secretAccessKey, bucketName };
+
   console.log("PHI Key Rotation Script");
   console.log("=======================");
   console.log(`Bucket: ${bucketName}`);
@@ -157,13 +349,6 @@ async function main() {
   const newKey = await importKey(newKeyHex);
   console.log("Keys imported successfully.");
 
-  // Create S3 client
-  const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey },
-  });
-
   // List all .enc files under clinics/
   console.log(`\nScanning ${ROOT_PREFIX}* for encrypted PHI files...`);
 
@@ -171,21 +356,19 @@ async function main() {
   let continuationToken: string | undefined;
 
   do {
-    const response = await client.send(
-      new ListObjectsV2Command({
-        Bucket: bucketName,
-        Prefix: ROOT_PREFIX,
-        ContinuationToken: continuationToken,
-      }),
+    const { keys, nextContinuationToken } = await listObjectsPage(
+      config,
+      ROOT_PREFIX,
+      continuationToken,
     );
 
-    for (const obj of response.Contents ?? []) {
-      if (obj.Key && isPHIFile(obj.Key)) {
-        encFiles.push(obj.Key);
+    for (const key of keys) {
+      if (isPHIFile(key)) {
+        encFiles.push(key);
       }
     }
 
-    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+    continuationToken = nextContinuationToken;
   } while (continuationToken);
 
   console.log(`Found ${encFiles.length} encrypted PHI file(s).`);
@@ -212,23 +395,7 @@ async function main() {
       }
 
       // Download
-      const getResponse = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
-
-      if (!getResponse.Body) {
-        throw new Error("Empty response body");
-      }
-
-      const chunks: Uint8Array[] = [];
-      const body = getResponse.Body as AsyncIterable<Uint8Array>;
-      for await (const chunk of body) {
-        chunks.push(chunk);
-      }
-      const encrypted = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0));
-      let offset = 0;
-      for (const chunk of chunks) {
-        encrypted.set(chunk, offset);
-        offset += chunk.length;
-      }
+      const encrypted = await getObject(config, key);
 
       // Decrypt with old key
       const plaintext = await decryptWithKey(encrypted, oldKey);
@@ -237,14 +404,7 @@ async function main() {
       const reEncrypted = await encryptWithKey(plaintext, newKey);
 
       // Upload back
-      await client.send(
-        new PutObjectCommand({
-          Bucket: bucketName,
-          Key: key,
-          Body: reEncrypted,
-          ContentType: "application/octet-stream",
-        }),
-      );
+      await putObject(config, key, reEncrypted, "application/octet-stream");
 
       succeeded++;
       console.log(`${progress} Re-encrypted: ${key}`);
