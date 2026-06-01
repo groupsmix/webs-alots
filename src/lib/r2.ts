@@ -59,17 +59,17 @@ import { logger } from "@/lib/logger";
  *     with a helpful error rather than silently using a shared constant.
  */
 function getR2SigningSecret(): string {
-  const keySecret = process.env.R2_SIGNED_URL_SECRET;
-  if (keySecret) return keySecret;
+  const { signedUrlSecret, secretAccessKey } = getR2Config();
+  if (signedUrlSecret) return signedUrlSecret;
 
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     throw new Error(
       "R2_SIGNED_URL_SECRET is required in production. " +
         "Generate one with `openssl rand -hex 32` and deploy it as a Cloudflare Worker secret.",
     );
   }
 
-  const fallback = process.env.R2_SECRET_ACCESS_KEY;
+  const fallback = secretAccessKey;
   if (!fallback) {
     throw new Error(
       "R2 signing secret is missing. Set R2_SIGNED_URL_SECRET in your .env.local " +
@@ -94,8 +94,7 @@ function getR2SigningSecret(): string {
  * @returns Signed URL that validates against the secret
  */
 function _generateSignedR2Url(key: string, expiresIn = 3600): string {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const bucketName = process.env.R2_BUCKET_NAME;
+  const { accountId, bucketName, signedUrlBase } = getR2Config();
 
   if (!accountId || !bucketName) {
     // R2 is not configured — return a best-effort placeholder URL.
@@ -118,7 +117,7 @@ function _generateSignedR2Url(key: string, expiresIn = 3600): string {
   const signature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
 
   // URL format: https://{domain}/r2/{bucket}/{key}?expires={expires}&sig={signature}
-  const baseUrl = process.env.R2_SIGNED_URL_BASE || `https://oltigo.com/r2`;
+  const baseUrl = signedUrlBase || `https://oltigo.com/r2`;
   const params = new URLSearchParams({
     b: bucketName,
     k: key,
