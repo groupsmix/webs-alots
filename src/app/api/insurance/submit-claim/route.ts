@@ -16,8 +16,8 @@
 
 import { z } from "zod";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { logAuditEvent } from "@/lib/audit-log";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { submitClaim, type MoroccanInsuranceType } from "@/lib/insurance/client";
 
 const submitClaimSchema = z.object({

@@ -8,13 +8,12 @@
  * Returns: { token: string, room_name: string, identity: string }
  */
 
-import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { generateVideoToken } from "@/lib/video/client";
-import { withAuthValidation } from "@/lib/api-validate";
 
 const joinRoomSchema = z.object({
   session_id: z.string().uuid(),

@@ -353,9 +353,10 @@ export default function RevenueCyclePage() {
                 const config = CLAIM_STATUS_CONFIG[claim.status];
                 const Icon = config.icon;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={claim.id}
-                    className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                    className="w-full text-left flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => window.location.href = `/admin/insurance-claims/${claim.id}`}
                   >
                     <Icon className={`h-4 w-4 shrink-0 ${
@@ -386,7 +387,7 @@ export default function RevenueCyclePage() {
                       )}
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </div>
+                  </button>
                 );
               })}
               {filteredClaims.length > 15 && (

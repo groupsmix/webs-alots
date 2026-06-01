@@ -7,12 +7,10 @@
  * Returns: { interactions: DrugInteractionResult[] }
  */
 
-import { NextRequest } from "next/server";
 import { z } from "zod";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { checkDrugInteractions } from "@/lib/drugs/client";
-import { logger } from "@/lib/logger";
 
 const interactionSchema = z.object({
   drugs: z

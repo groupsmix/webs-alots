@@ -12,8 +12,8 @@
  * @see https://www.twilio.com/docs/video
  */
 
-import { logger } from "@/lib/logger";
 import { getTwilioAccountSid, getTwilioApiKey, getTwilioApiSecret } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export type VideoRoomType = "go" | "peer-to-peer" | "group";
 

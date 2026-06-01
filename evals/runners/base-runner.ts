@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type TestCaseCategory = "jailbreak" | "drug-interaction" | "hallucination" | "bias";
 export type TestCaseOutcome = "refuse" | "dangerous" | "safe" | "flagged";
 export type TestCaseSeverity = "critical" | "high" | "medium" | "low" | "none";

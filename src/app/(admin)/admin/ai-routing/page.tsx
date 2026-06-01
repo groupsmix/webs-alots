@@ -20,7 +20,6 @@ import {
   RefreshCw,
   TrendingDown,
   Shield,
-  Loader2,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -28,15 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 
-interface ProviderHealth {
-  provider: string;
-  displayName: string;
-  isActive: boolean;
-  hasApiKey: boolean;
-  isRateLimited: boolean;
-  budgetUsedPercent: number;
-  requestsThisMonth: number;
-}
 
 interface ProviderConfig {
   provider: string;

@@ -14,8 +14,8 @@
  * @see https://open.fda.gov/apis/drug/
  */
 
-import { logger } from "@/lib/logger";
 import { getDrugDbProvider, getVidalApiKey } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export interface DrugSearchResult {
   /** Normalized brand or generic name */

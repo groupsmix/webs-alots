@@ -19,8 +19,8 @@
  *   Private: up to 100%
  */
 
-import { logger } from "@/lib/logger";
 import { getInsuranceProvider } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export type MoroccanInsuranceType = "AMO" | "CNOPS" | "CNSS" | "RAMED" | "private" | "none";
 

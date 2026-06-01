@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * F-AI-03: Hallucination evaluation for clinical AI endpoints.
  *

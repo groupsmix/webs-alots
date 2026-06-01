@@ -7,14 +7,13 @@
  * Body: { session_id: string }
  */
 
-import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { createVideoRoom } from "@/lib/video/client";
-import { withAuthValidation } from "@/lib/api-validate";
-import { STAFF_ROLES } from "@/lib/auth-roles";
 
 const createRoomSchema = z.object({
   session_id: z.string().uuid(),

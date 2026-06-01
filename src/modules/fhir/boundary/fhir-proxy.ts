@@ -18,10 +18,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
+import { toFhirAppointment, type OltigoAppointmentRow } from "../mappers/appointment-mapper";
+import { toFhirMedicationRequests, type OltigoPrescriptionRow } from "../mappers/medication-request-mapper";
 import { toFhirObservations } from "../mappers/observation-mapper";
 import { toFhirPatient, fromFhirPatient } from "../mappers/patient-mapper";
-import { toFhirMedicationRequests, type OltigoPrescriptionRow } from "../mappers/medication-request-mapper";
-import { toFhirAppointment, type OltigoAppointmentRow } from "../mappers/appointment-mapper";
 import type {
   FhirBundle,
   FhirOperationOutcome,
