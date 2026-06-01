@@ -29,52 +29,40 @@ export const GET = withAuth(
             {
               type: "Patient",
               profile: "http://hl7.org/fhir/StructureDefinition/Patient",
-              interaction: [
-                { code: "read" },
-                { code: "search-type" },
-                { code: "create" }
-              ],
+              interaction: [{ code: "read" }, { code: "search-type" }, { code: "create" }],
               searchParam: [
                 { name: "name", type: "string" },
                 { name: "phone", type: "string" },
-                { name: "_count", type: "number" }
-              ]
+                { name: "_count", type: "number" },
+              ],
             },
             {
               type: "Observation",
               profile: "http://hl7.org/fhir/StructureDefinition/Observation",
-              interaction: [
-                { code: "search-type" }
-              ],
+              interaction: [{ code: "search-type" }],
               searchParam: [
                 { name: "patient", type: "reference" },
-                { name: "_count", type: "number" }
-              ]
+                { name: "_count", type: "number" },
+              ],
             },
             {
               type: "MedicationRequest",
               profile: "http://hl7.org/fhir/StructureDefinition/MedicationRequest",
-              interaction: [
-                { code: "search-type" }
-              ],
-              searchParam: [
-                { name: "patient", type: "reference" }
-              ]
+              interaction: [{ code: "search-type" }],
+              searchParam: [{ name: "patient", type: "reference" }],
             },
             {
               type: "Appointment",
               profile: "http://hl7.org/fhir/StructureDefinition/Appointment",
-              interaction: [
-                { code: "search-type" }
-              ],
+              interaction: [{ code: "search-type" }],
               searchParam: [
                 { name: "patient", type: "reference" },
-                { name: "actor", type: "reference" }
-              ]
-            }
-          ]
-        }
-      ]
+                { name: "actor", type: "reference" },
+              ],
+            },
+          ],
+        },
+      ],
     };
 
     return apiSuccess(capabilityStatement);

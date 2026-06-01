@@ -51,7 +51,11 @@ export const POST = withAuthValidation(
     }
 
     if (!session.room_url) {
-      return apiError("La salle vidéo n'a pas encore été créée. Contactez le médecin.", 409, "ROOM_NOT_READY");
+      return apiError(
+        "La salle vidéo n'a pas encore été créée. Contactez le médecin.",
+        409,
+        "ROOM_NOT_READY",
+      );
     }
 
     if (session.status === "completed" || session.status === "cancelled") {

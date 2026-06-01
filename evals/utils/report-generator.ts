@@ -25,7 +25,7 @@ export function generateHtmlReport(metricsSummary: any, outputDir: string) {
   <h2>Summary</h2>
   <p>Total Cases: ${metricsSummary.total}</p>
   <p class="pass">Passed: ${metricsSummary.passed} (${metricsSummary.passRate}%)</p>
-  <p class="${metricsSummary.failed > 0 ? 'fail' : 'pass'}">Failed: ${metricsSummary.failed}</p>
+  <p class="${metricsSummary.failed > 0 ? "fail" : "pass"}">Failed: ${metricsSummary.failed}</p>
   
   <h2>Details</h2>
   <p>Run the CLI output or view artifact JSON for full failure details.</p>

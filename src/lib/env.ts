@@ -1248,4 +1248,3 @@ export function getVidalApiKey(): string | undefined {
 export function getInsuranceProvider(): string {
   return process.env.INSURANCE_PROVIDER ?? "sandbox";
 }
-

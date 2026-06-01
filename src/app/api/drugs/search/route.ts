@@ -20,7 +20,11 @@ export const GET = withAuth(
     const limit = Math.min(20, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
 
     if (q.length < 2) {
-      return apiError("Le terme de recherche doit comporter au moins 2 caractères", 400, "QUERY_TOO_SHORT");
+      return apiError(
+        "Le terme de recherche doit comporter au moins 2 caractères",
+        400,
+        "QUERY_TOO_SHORT",
+      );
     }
 
     const results = await searchDrugs(q, limit);

@@ -19,7 +19,10 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
 import { toFhirAppointment, type OltigoAppointmentRow } from "../mappers/appointment-mapper";
-import { toFhirMedicationRequests, type OltigoPrescriptionRow } from "../mappers/medication-request-mapper";
+import {
+  toFhirMedicationRequests,
+  type OltigoPrescriptionRow,
+} from "../mappers/medication-request-mapper";
 import { toFhirObservations, type OltigoVitalsRow } from "../mappers/observation-mapper";
 import { toFhirPatient, fromFhirPatient } from "../mappers/patient-mapper";
 import type {
@@ -406,7 +409,6 @@ export class FhirProxy {
    * This is the outbound proxy — sends data OUT to connected EHR endpoints.
    */
   async pushToEhr(
-
     resourceType: FhirResourceType,
     resource: unknown,
     endpoint: EhrEndpointConfig,

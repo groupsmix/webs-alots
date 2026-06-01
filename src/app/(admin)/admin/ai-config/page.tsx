@@ -105,7 +105,10 @@ function BudgetBar({ used, budget }: { used: number; budget: number }) {
         <span>{pct}%</span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+        <div
+          className={`h-full rounded-full transition-all ${color}`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <p className="text-xs text-muted-foreground">Budget: {formatCentsToDirhams(budget)}/mois</p>
     </div>
@@ -165,7 +168,9 @@ export default function AIConfigAdminPage() {
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <AlertTriangle className="h-10 w-10 text-amber-500" />
         <p className="text-muted-foreground">{error}</p>
-        <Button variant="outline" onClick={loadConfig}>Réessayer</Button>
+        <Button variant="outline" onClick={loadConfig}>
+          Réessayer
+        </Button>
       </div>
     );
   }
@@ -244,16 +249,13 @@ export default function AIConfigAdminPage() {
             const usage = data.usage[provider.provider];
             const tierInfo = TIER_LABELS[provider.routing_tier] ?? TIER_LABELS[0];
             const isRateLimited =
-              provider.rate_limited_until &&
-              new Date(provider.rate_limited_until) > new Date();
+              provider.rate_limited_until && new Date(provider.rate_limited_until) > new Date();
 
             return (
               <Card
                 key={provider.provider}
                 className={`transition-all ${
-                  provider.is_active
-                    ? "border-primary/20"
-                    : "opacity-60 border-muted"
+                  provider.is_active ? "border-primary/20" : "opacity-60 border-muted"
                 }`}
               >
                 <CardHeader className="pb-2">

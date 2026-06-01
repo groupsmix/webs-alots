@@ -27,7 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 
-
 interface ProviderConfig {
   provider: string;
   display_name: string;
@@ -61,7 +60,11 @@ const PROVIDER_ICONS: Record<string, string> = {
 
 const TIER_NAMES = ["Free", "Economy", "Standard", "Premium"];
 
-function ProviderStatusIcon({ isActive, hasApiKey, isRateLimited }: {
+function ProviderStatusIcon({
+  isActive,
+  hasApiKey,
+  isRateLimited,
+}: {
   isActive: boolean;
   hasApiKey: boolean;
   isRateLimited: boolean;
@@ -111,7 +114,9 @@ export default function ModelRoutingPage() {
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <AlertTriangle className="h-10 w-10 text-amber-500" />
         <p className="text-muted-foreground">{error ?? "Aucune donnée"}</p>
-        <Button variant="outline" onClick={loadData}>Réessayer</Button>
+        <Button variant="outline" onClick={loadData}>
+          Réessayer
+        </Button>
       </div>
     );
   }
@@ -127,7 +132,8 @@ export default function ModelRoutingPage() {
   const activeProvider = sortedProviders.find((p) => {
     if (!p.is_active || !p.has_api_key) return false;
     if (p.rate_limited_until && new Date(p.rate_limited_until) > new Date()) return false;
-    if (p.monthly_budget_cents > 0 && p.cost_this_month_cents >= p.monthly_budget_cents) return false;
+    if (p.monthly_budget_cents > 0 && p.cost_this_month_cents >= p.monthly_budget_cents)
+      return false;
     return true;
   });
 
@@ -135,7 +141,9 @@ export default function ModelRoutingPage() {
   const totalRequests = data.providers.reduce((s, p) => s + p.requests_this_month, 0);
   const totalTokens = data.providers.reduce((s, p) => s + p.tokens_this_month, 0);
   const failedProviders = data.providers.filter(
-    (p) => p.has_api_key && (!p.is_active || (p.rate_limited_until && new Date(p.rate_limited_until) > new Date()))
+    (p) =>
+      p.has_api_key &&
+      (!p.is_active || (p.rate_limited_until && new Date(p.rate_limited_until) > new Date())),
   ).length;
 
   return (
@@ -162,7 +170,7 @@ export default function ModelRoutingPage() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900 flex items-center justify-center text-xl">
-              {activeProvider ? PROVIDER_ICONS[activeProvider.provider] ?? "🤖" : "⚠️"}
+              {activeProvider ? (PROVIDER_ICONS[activeProvider.provider] ?? "🤖") : "⚠️"}
             </div>
             <div>
               <p className="text-xs text-violet-600 dark:text-violet-400 font-medium uppercase tracking-wide">
@@ -190,10 +198,30 @@ export default function ModelRoutingPage() {
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Coût total (mois)", value: formatMAD(totalCost), icon: DollarSign, color: "text-blue-500" },
-          { label: "Total requêtes", value: totalRequests.toLocaleString("fr-MA"), icon: Zap, color: "text-violet-500" },
-          { label: "Total tokens", value: `${(totalTokens / 1000).toFixed(1)}k`, icon: Activity, color: "text-green-500" },
-          { label: "Fournisseurs dégradés", value: failedProviders.toString(), icon: TrendingDown, color: failedProviders > 0 ? "text-red-500" : "text-muted-foreground" },
+          {
+            label: "Coût total (mois)",
+            value: formatMAD(totalCost),
+            icon: DollarSign,
+            color: "text-blue-500",
+          },
+          {
+            label: "Total requêtes",
+            value: totalRequests.toLocaleString("fr-MA"),
+            icon: Zap,
+            color: "text-violet-500",
+          },
+          {
+            label: "Total tokens",
+            value: `${(totalTokens / 1000).toFixed(1)}k`,
+            icon: Activity,
+            color: "text-green-500",
+          },
+          {
+            label: "Fournisseurs dégradés",
+            value: failedProviders.toString(),
+            icon: TrendingDown,
+            color: failedProviders > 0 ? "text-red-500" : "text-muted-foreground",
+          },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -222,12 +250,19 @@ export default function ModelRoutingPage() {
           <div className="space-y-2">
             {sortedProviders.map((provider, idx) => {
               const usage = data.usage[provider.provider];
-              const isRateLimited = !!(provider.rate_limited_until && new Date(provider.rate_limited_until) > new Date());
-              const isBudgetExceeded = provider.monthly_budget_cents > 0 && provider.cost_this_month_cents >= provider.monthly_budget_cents;
+              const isRateLimited = !!(
+                provider.rate_limited_until && new Date(provider.rate_limited_until) > new Date()
+              );
+              const isBudgetExceeded =
+                provider.monthly_budget_cents > 0 &&
+                provider.cost_this_month_cents >= provider.monthly_budget_cents;
               const isCurrentlySelected = provider.provider === activeProvider?.provider;
-              const budgetPct = provider.monthly_budget_cents > 0
-                ? Math.round((provider.cost_this_month_cents / provider.monthly_budget_cents) * 100)
-                : 0;
+              const budgetPct =
+                provider.monthly_budget_cents > 0
+                  ? Math.round(
+                      (provider.cost_this_month_cents / provider.monthly_budget_cents) * 100,
+                    )
+                  : 0;
 
               return (
                 <div key={provider.provider}>
@@ -244,7 +279,9 @@ export default function ModelRoutingPage() {
                     </span>
 
                     {/* Icon */}
-                    <span className="text-lg shrink-0">{PROVIDER_ICONS[provider.provider] ?? "🤖"}</span>
+                    <span className="text-lg shrink-0">
+                      {PROVIDER_ICONS[provider.provider] ?? "🤖"}
+                    </span>
 
                     {/* Name and tier */}
                     <div className="flex-1 min-w-0">
@@ -256,10 +293,14 @@ export default function ModelRoutingPage() {
                           </Badge>
                         )}
                         {isRateLimited && (
-                          <Badge variant="destructive" className="text-[10px]">Rate limited</Badge>
+                          <Badge variant="destructive" className="text-[10px]">
+                            Rate limited
+                          </Badge>
                         )}
                         {isBudgetExceeded && (
-                          <Badge variant="destructive" className="text-[10px]">Budget dépassé</Badge>
+                          <Badge variant="destructive" className="text-[10px]">
+                            Budget dépassé
+                          </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5">
@@ -272,9 +313,7 @@ export default function ModelRoutingPage() {
                           </p>
                         )}
                         {provider.monthly_budget_cents > 0 && (
-                          <p className="text-[10px] text-muted-foreground">
-                            Budget: {budgetPct}%
-                          </p>
+                          <p className="text-[10px] text-muted-foreground">Budget: {budgetPct}%</p>
                         )}
                       </div>
                     </div>

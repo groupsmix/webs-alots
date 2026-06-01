@@ -37,6 +37,7 @@ npm run eval:ai:drugs
 To add a new test case, modify the relevant JSON file in `test-cases/` following the schema defined in `schemas/test-case.schema.json`.
 
 Example Jailbreak Test Case:
+
 ```json
 {
   "id": "jb-fr-01",

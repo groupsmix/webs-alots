@@ -414,8 +414,9 @@ but not yet started. Priorities: #13 (test coverage to 40%), #17 (circuit breake
 
 ## AI Medical Features Evaluation
 
-The platform now includes an automated evaluation harness for AI features (`evals/`). 
+The platform now includes an automated evaluation harness for AI features (`evals/`).
 When auditing the AI systems, reviewers should check the following automated tests:
+
 1. **Jailbreak Detection:** `evals/runners/jailbreak-runner.ts`
 2. **Drug Interaction Testing:** `evals/runners/drug-interaction-runner.ts`
 3. **Hallucination Testing:** `evals/runners/hallucination-runner.ts`

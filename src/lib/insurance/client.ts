@@ -97,12 +97,12 @@ export async function submitClaim(params: {
 // ─── Sandbox Implementation ─────────────────────────────────────────────────
 
 const COVERAGE_RATES: Record<MoroccanInsuranceType, { coverage: number; coPay: number }> = {
-  AMO:     { coverage: 70, coPay: 30 },
-  CNOPS:   { coverage: 80, coPay: 20 },
-  CNSS:    { coverage: 70, coPay: 30 },
-  RAMED:   { coverage: 100, coPay: 0 },
+  AMO: { coverage: 70, coPay: 30 },
+  CNOPS: { coverage: 80, coPay: 20 },
+  CNSS: { coverage: 70, coPay: 30 },
+  RAMED: { coverage: 100, coPay: 0 },
   private: { coverage: 90, coPay: 10 },
-  none:    { coverage: 0, coPay: 100 },
+  none: { coverage: 0, coPay: 100 },
 };
 
 function sandboxEligibilityCheck(

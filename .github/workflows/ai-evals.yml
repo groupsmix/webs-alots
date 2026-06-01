@@ -1,13 +1,13 @@
 name: AI Evaluations
 on:
   schedule:
-    - cron: '0 2 * * *'  # 2 AM UTC daily
+    - cron: "0 2 * * *" # 2 AM UTC daily
   workflow_dispatch:
   pull_request:
     paths:
-      - 'src/app/api/v1/ai/**'
-      - 'src/lib/ai/**'
-      - 'evals/**'
+      - "src/app/api/v1/ai/**"
+      - "src/lib/ai/**"
+      - "evals/**"
 
 permissions:
   contents: read
@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '20'
-          cache: 'npm'
-          
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
 
@@ -60,7 +60,7 @@ jobs:
         with:
           name: ai-eval-results
           path: evals/results/
-          
+
       - name: Check for Regressions
         if: always()
         run: npx tsx evals/utils/regression-detector.ts

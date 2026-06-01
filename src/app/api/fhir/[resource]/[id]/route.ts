@@ -15,7 +15,7 @@ const ALLOWED_RESOURCE_TYPES = new Set(["Patient"]);
 export const GET = withAuth(
   async (request: NextRequest, auth: AuthContext) => {
     const tenant = await requireTenant();
-    
+
     // Extract [resource] and [id] from the path manually
     // e.g. /api/fhir/Patient/123 -> parts = ["", "api", "fhir", "Patient", "123"]
     const parts = request.nextUrl.pathname.split("/");

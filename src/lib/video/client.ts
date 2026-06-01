@@ -50,28 +50,27 @@ export async function createVideoRoom(
   const apiSecret = getTwilioApiSecret();
 
   if (!accountSid || !apiKey || !apiSecret) {
-    throw new Error("Twilio credentials not configured (TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET)");
+    throw new Error(
+      "Twilio credentials not configured (TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET)",
+    );
   }
 
   const roomName = `oltigo-session-${sessionId}`;
   const credentials = btoa(`${apiKey}:${apiSecret}`);
 
-  const response = await fetch(
-    `https://video.twilio.com/v1/Rooms`,
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${credentials}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        UniqueName: roomName,
-        Type: roomType,
-        StatusCallbackMethod: "POST",
-        RecordParticipantsOnConnect: "false",
-      }).toString(),
+  const response = await fetch(`https://video.twilio.com/v1/Rooms`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-  );
+    body: new URLSearchParams({
+      UniqueName: roomName,
+      Type: roomType,
+      StatusCallbackMethod: "POST",
+      RecordParticipantsOnConnect: "false",
+    }).toString(),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -79,7 +78,10 @@ export async function createVideoRoom(
     if (response.status === 409) {
       return fetchExistingRoom(roomName, accountSid, apiKey, apiSecret);
     }
-    logger.error("Failed to create Twilio video room", { context: "video-client", error: errorText });
+    logger.error("Failed to create Twilio video room", {
+      context: "video-client",
+      error: errorText,
+    });
     throw new Error(`Twilio room creation failed: ${errorText}`);
   }
 
@@ -105,7 +107,7 @@ async function fetchExistingRoom(
     `https://video.twilio.com/v1/Rooms/${encodeURIComponent(roomName)}`,
     {
       headers: {
-        "Authorization": `Basic ${credentials}`,
+        Authorization: `Basic ${credentials}`,
       },
     },
   );
@@ -161,10 +163,7 @@ export async function generateVideoToken(params: {
 
   const encoder = new TextEncoder();
   const toBase64Url = (obj: unknown) =>
-    btoa(JSON.stringify(obj))
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+    btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
   const headerB64 = toBase64Url(header);
   const payloadB64 = toBase64Url(payload);

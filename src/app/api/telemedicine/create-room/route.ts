@@ -41,7 +41,11 @@ export const POST = withAuthValidation(
     }
 
     if (session.status === "completed" || session.status === "cancelled") {
-      return apiError("Impossible de créer une salle pour une session terminée ou annulée", 400, "INVALID_STATUS");
+      return apiError(
+        "Impossible de créer une salle pour une session terminée ou annulée",
+        400,
+        "INVALID_STATUS",
+      );
     }
 
     // Create (or retrieve) the Twilio video room

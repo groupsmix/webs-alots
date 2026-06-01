@@ -56,10 +56,7 @@ interface OpenFdaLabel {
  * Search for drugs by name (supports auto-complete).
  * Returns up to `limit` results.
  */
-export async function searchDrugs(
-  query: string,
-  limit = 10,
-): Promise<DrugSearchResult[]> {
+export async function searchDrugs(query: string, limit = 10): Promise<DrugSearchResult[]> {
   const q = query.trim();
   if (!q) return [];
 
@@ -72,16 +69,13 @@ export async function searchDrugs(
   return searchOpenFdaDrugs(q, limit);
 }
 
-async function searchOpenFdaDrugs(
-  query: string,
-  limit: number,
-): Promise<DrugSearchResult[]> {
+async function searchOpenFdaDrugs(query: string, limit: number): Promise<DrugSearchResult[]> {
   const encoded = encodeURIComponent(query);
   const url = `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encoded}"+openfda.generic_name:"${encoded}"&limit=${limit}`;
 
   try {
     const response = await fetch(url, {
-      headers: { "Accept": "application/json" },
+      headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(5000),
     });
 
@@ -113,10 +107,7 @@ async function searchOpenFdaDrugs(
  * Stub for Vidal API integration (requires commercial license).
  * Replace with real Vidal REST API calls once credentials are available.
  */
-async function searchVidalDrugs(
-  _query: string,
-  _limit: number,
-): Promise<DrugSearchResult[]> {
+async function searchVidalDrugs(_query: string, _limit: number): Promise<DrugSearchResult[]> {
   const apiKey = getVidalApiKey();
   if (!apiKey) {
     throw new Error("VIDAL_API_KEY is not configured");
@@ -133,9 +124,7 @@ async function searchVidalDrugs(
  * NOTE: This is a heuristic check — for production, use a dedicated
  * interaction database (e.g., DrugBank, Vidal interactions module).
  */
-export async function checkDrugInteractions(
-  drugNames: string[],
-): Promise<DrugInteractionResult[]> {
+export async function checkDrugInteractions(drugNames: string[]): Promise<DrugInteractionResult[]> {
   if (drugNames.length < 2) return [];
 
   const interactions: DrugInteractionResult[] = [];
@@ -156,10 +145,7 @@ export async function checkDrugInteractions(
         const { results } = (await response.json()) as { results: OpenFdaLabel[] };
         const interactionText = results[0]?.drug_interactions?.[0] ?? "";
 
-        if (
-          interactionText &&
-          interactionText.toLowerCase().includes(drug2.toLowerCase())
-        ) {
+        if (interactionText && interactionText.toLowerCase().includes(drug2.toLowerCase())) {
           interactions.push({
             severity: "moderate",
             description: interactionText.slice(0, 500),

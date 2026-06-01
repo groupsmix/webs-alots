@@ -1,15 +1,7 @@
 /* eslint-disable i18next/no-literal-string */
 "use client";
 
-import {
-  Video,
-  Calendar,
-  Clock,
-  Loader2,
-  PhoneOff,
-  ExternalLink,
-  RefreshCw,
-} from "lucide-react";
+import { Video, Calendar, Clock, Loader2, PhoneOff, ExternalLink, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,10 +51,9 @@ export default function PatientTelemedicinePage() {
         setError("Utilisateur introuvable.");
         return;
       }
-      const res = await fetch(
-        `/api/telemedicine?patient_id=${user.id}&limit=20`,
-        { credentials: "include" }
-      );
+      const res = await fetch(`/api/telemedicine?patient_id=${user.id}&limit=20`, {
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Échec du chargement");
       const data = await res.json();
       setSessions(data.data?.sessions ?? []);
@@ -115,7 +106,9 @@ export default function PatientTelemedicinePage() {
   };
 
   const formatDuration = (s: number) =>
-    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+    `${Math.floor(s / 60)
+      .toString()
+      .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   if (loading) return <PageLoader message="Chargement de vos consultations..." />;
 

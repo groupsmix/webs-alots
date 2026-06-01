@@ -5,7 +5,7 @@ const scripts = [
   "runners/jailbreak-runner.ts",
   "runners/drug-interaction-runner.ts",
   "runners/hallucination-runner.ts",
-  "runners/bias-runner.ts"
+  "runners/bias-runner.ts",
 ];
 
 async function runScript(scriptPath: string): Promise<boolean> {
@@ -13,11 +13,11 @@ async function runScript(scriptPath: string): Promise<boolean> {
     console.log(`\n===========================================`);
     console.log(`🚀 RUNNING: ${scriptPath}`);
     console.log(`===========================================\n`);
-    
+
     const child = spawn("npx", ["tsx", path.join(__dirname, scriptPath)], {
       stdio: "inherit",
       // nosemgrep: semgrep.env-access - Test execution only
-      env: process.env
+      env: process.env,
     });
 
     child.on("close", (code) => {
@@ -32,9 +32,9 @@ async function runScript(scriptPath: string): Promise<boolean> {
 
 async function runAll() {
   console.log("Starting full AI Medical Evaluation Suite...");
-  
+
   let allPassed = true;
-  
+
   for (const script of scripts) {
     const passed = await runScript(script);
     if (!passed) {
@@ -44,7 +44,7 @@ async function runAll() {
       console.log(`\n✅ PASSED: ${script}`);
     }
   }
-  
+
   console.log(`\n===========================================`);
   if (allPassed) {
     console.log(`🎉 ALL EVALUATIONS PASSED SUCCESSFULLY!`);

@@ -82,10 +82,9 @@ export default function TelemedicinePage() {
         setError("Contexte clinique introuvable.");
         return;
       }
-      const res = await fetch(
-        `/api/telemedicine?doctor_id=${user.id}&limit=20`,
-        { credentials: "include" }
-      );
+      const res = await fetch(`/api/telemedicine?doctor_id=${user.id}&limit=20`, {
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Échec du chargement");
       const data = await res.json();
       setSessions(data.data?.sessions ?? []);
@@ -116,10 +115,8 @@ export default function TelemedicinePage() {
       const data = await res.json();
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === session.id
-            ? { ...s, room_url: data.data?.room?.url, status: "in_progress" }
-            : s
-        )
+          s.id === session.id ? { ...s, room_url: data.data?.room?.url, status: "in_progress" } : s,
+        ),
       );
     } catch (err) {
       alert(err instanceof Error ? err.message : "Erreur lors de la création de salle");
@@ -166,7 +163,9 @@ export default function TelemedicinePage() {
   };
 
   const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
@@ -187,7 +186,7 @@ export default function TelemedicinePage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualiser
           </Button>
-          <Button size="sm" onClick={() => window.location.href = "/doctor/telemedicine/new"}>
+          <Button size="sm" onClick={() => (window.location.href = "/doctor/telemedicine/new")}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle Session
           </Button>
@@ -246,18 +245,12 @@ export default function TelemedicinePage() {
                   variant="outline"
                   size="sm"
                   className="border-green-300"
-                  onClick={() =>
-                    window.open(videoToken.room_url, "_blank", "noopener,noreferrer")
-                  }
+                  onClick={() => window.open(videoToken.room_url, "_blank", "noopener,noreferrer")}
                 >
                   <ExternalLink className="h-4 w-4 text-green-600 mr-1" />
                   Ouvrir
                 </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={handleEndCall}
-                >
+                <Button size="sm" variant="destructive" onClick={handleEndCall}>
                   <PhoneOff className="h-4 w-4 mr-1" />
                   Terminer
                 </Button>
@@ -297,9 +290,7 @@ export default function TelemedicinePage() {
                       <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">
-                        Session {session.id.slice(0, 8)}...
-                      </p>
+                      <p className="font-medium text-sm">Session {session.id.slice(0, 8)}...</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                         <Calendar className="h-3 w-3" />
                         {new Date(session.scheduled_at).toLocaleString("fr-MA", {

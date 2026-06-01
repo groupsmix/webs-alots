@@ -16,8 +16,9 @@ The AI models and their safety filters evolve over time. To ensure the evaluatio
 
 ## Handling Model Updates
 
-After a model update, run `npm run eval:ai` locally. 
+After a model update, run `npm run eval:ai` locally.
 If the pass rate drops significantly:
+
 1. Examine the `evals/results/` to see which specific cases failed.
 2. Determine if the model's safety has regressed, or if the model's new capability makes the previous expected outcome obsolete.
 3. Update the `expected_outcome` if necessary, or fix the application's system prompt to handle the regression.

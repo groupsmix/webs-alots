@@ -57,7 +57,11 @@ interface Invoice {
 
 const CLAIM_STATUS_CONFIG: Record<
   InsuranceClaim["status"],
-  { label: string; variant: "default" | "success" | "warning" | "destructive" | "outline"; icon: typeof CheckCircle }
+  {
+    label: string;
+    variant: "default" | "success" | "warning" | "destructive" | "outline";
+    icon: typeof CheckCircle;
+  }
 > = {
   draft: { label: "Brouillon", variant: "outline", icon: Clock },
   submitted: { label: "Soumise", variant: "default", icon: FileText },
@@ -112,9 +116,15 @@ function KPICard({
           </div>
         </div>
         {trend && (
-          <div className={`flex items-center gap-1 mt-3 text-xs font-medium ${
-            trend === "up" ? "text-green-600" : trend === "down" ? "text-red-500" : "text-muted-foreground"
-          }`}>
+          <div
+            className={`flex items-center gap-1 mt-3 text-xs font-medium ${
+              trend === "up"
+                ? "text-green-600"
+                : trend === "down"
+                  ? "text-red-500"
+                  : "text-muted-foreground"
+            }`}
+          >
             <TrendingUp className={`h-3 w-3 ${trend === "down" ? "rotate-180" : ""}`} />
             <span>{trend === "up" ? "En hausse" : trend === "down" ? "En baisse" : "Stable"}</span>
           </div>
@@ -169,16 +179,20 @@ export default function RevenueCyclePage() {
   const pendingClaims = claims.filter((c) => c.status === "submitted" || c.status === "approved");
   const rejectedClaims = claims.filter((c) => c.status === "rejected");
 
-  const outstandingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
-  const outstandingAmount = outstandingInvoices.reduce((s, i) => s + (i.total_amount - i.amount_paid), 0);
+  const outstandingInvoices = invoices.filter(
+    (i) => i.status === "pending" || i.status === "overdue",
+  );
+  const outstandingAmount = outstandingInvoices.reduce(
+    (s, i) => s + (i.total_amount - i.amount_paid),
+    0,
+  );
   const overdueInvoices = invoices.filter((i) => i.status === "overdue");
 
   const collectionRate = totalClaimed > 0 ? Math.round((totalPaid / totalClaimed) * 100) : 0;
 
   // Filter claims
-  const filteredClaims = statusFilter === "all"
-    ? claims
-    : claims.filter((c) => c.status === statusFilter);
+  const filteredClaims =
+    statusFilter === "all" ? claims : claims.filter((c) => c.status === statusFilter);
 
   // Group claims by insurance type
   const claimsByType: Record<string, { count: number; amount: number }> = {};
@@ -205,7 +219,7 @@ export default function RevenueCyclePage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualiser
           </Button>
-          <Button size="sm" onClick={() => window.location.href = "/admin/insurance-claims"}>
+          <Button size="sm" onClick={() => (window.location.href = "/admin/insurance-claims")}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle Réclamation
           </Button>
@@ -263,11 +277,10 @@ export default function RevenueCyclePage() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Object.entries(claimsByType).map(([type, stats]) => (
-                <div
-                  key={type}
-                  className="rounded-lg border p-3 space-y-1"
-                >
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${INSURANCE_COLORS[type] ?? ""}`}>
+                <div key={type} className="rounded-lg border p-3 space-y-1">
+                  <span
+                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${INSURANCE_COLORS[type] ?? ""}`}
+                  >
                     {type}
                   </span>
                   <p className="font-semibold text-sm">{formatMAD(stats.amount)}</p>
@@ -284,7 +297,9 @@ export default function RevenueCyclePage() {
         <CardHeader>
           <CardTitle className="text-base flex items-center justify-between">
             <span>Taux de Recouvrement</span>
-            <span className={`text-lg font-bold ${collectionRate >= 80 ? "text-green-600" : collectionRate >= 60 ? "text-amber-600" : "text-red-600"}`}>
+            <span
+              className={`text-lg font-bold ${collectionRate >= 80 ? "text-green-600" : collectionRate >= 60 ? "text-amber-600" : "text-red-600"}`}
+            >
               {collectionRate}%
             </span>
           </CardTitle>
@@ -294,7 +309,11 @@ export default function RevenueCyclePage() {
             <div className="h-4 rounded-full bg-muted overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  collectionRate >= 80 ? "bg-green-500" : collectionRate >= 60 ? "bg-amber-500" : "bg-red-500"
+                  collectionRate >= 80
+                    ? "bg-green-500"
+                    : collectionRate >= 60
+                      ? "bg-amber-500"
+                      : "bg-red-500"
                 }`}
                 style={{ width: `${collectionRate}%` }}
               />
@@ -311,7 +330,8 @@ export default function RevenueCyclePage() {
               <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
               <p className="text-xs text-red-700 dark:text-red-400">
                 {rejectedClaims.length} réclamation(s) refusée(s) pour{" "}
-                {formatMAD(rejectedClaims.reduce((s, c) => s + c.amount_claimed, 0))} — vérifiez les motifs de refus
+                {formatMAD(rejectedClaims.reduce((s, c) => s + c.amount_claimed, 0))} — vérifiez les
+                motifs de refus
               </p>
             </div>
           )}
@@ -325,19 +345,23 @@ export default function RevenueCyclePage() {
             <CardTitle className="text-base">Réclamations d&apos;Assurance</CardTitle>
             <div className="flex items-center gap-1.5 flex-wrap">
               <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-              {(["all", "draft", "submitted", "approved", "rejected", "paid"] as const).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                    statusFilter === status
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  {status === "all" ? "Tous" : CLAIM_STATUS_CONFIG[status as InsuranceClaim["status"]]?.label ?? status}
-                </button>
-              ))}
+              {(["all", "draft", "submitted", "approved", "rejected", "paid"] as const).map(
+                (status) => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                      statusFilter === status
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {status === "all"
+                      ? "Tous"
+                      : (CLAIM_STATUS_CONFIG[status as InsuranceClaim["status"]]?.label ?? status)}
+                  </button>
+                ),
+              )}
             </div>
           </div>
         </CardHeader>
@@ -357,18 +381,25 @@ export default function RevenueCyclePage() {
                     type="button"
                     key={claim.id}
                     className="w-full text-left flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => window.location.href = `/admin/insurance-claims/${claim.id}`}
+                    onClick={() => (window.location.href = `/admin/insurance-claims/${claim.id}`)}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${
-                      claim.status === "paid" ? "text-green-500" :
-                      claim.status === "rejected" ? "text-red-500" :
-                      claim.status === "approved" ? "text-amber-500" :
-                      "text-muted-foreground"
-                    }`} />
+                    <Icon
+                      className={`h-4 w-4 shrink-0 ${
+                        claim.status === "paid"
+                          ? "text-green-500"
+                          : claim.status === "rejected"
+                            ? "text-red-500"
+                            : claim.status === "approved"
+                              ? "text-amber-500"
+                              : "text-muted-foreground"
+                      }`}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium font-mono">{claim.claim_number}</p>
-                        <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ${INSURANCE_COLORS[claim.insurance_type] ?? ""}`}>
+                        <span
+                          className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ${INSURANCE_COLORS[claim.insurance_type] ?? ""}`}
+                        >
                           {claim.insurance_type}
                         </span>
                         <Badge variant={config.variant} className="text-[10px]">
@@ -383,7 +414,9 @@ export default function RevenueCyclePage() {
                     <div className="text-right shrink-0">
                       <p className="font-semibold text-sm">{formatMAD(claim.amount_claimed)}</p>
                       {claim.amount_paid !== null && claim.amount_paid > 0 && (
-                        <p className="text-xs text-green-600">Payé: {formatMAD(claim.amount_paid)}</p>
+                        <p className="text-xs text-green-600">
+                          Payé: {formatMAD(claim.amount_paid)}
+                        </p>
                       )}
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />

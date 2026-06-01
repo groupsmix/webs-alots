@@ -41,13 +41,5 @@
       "description": "Human-readable description of what this test case verifies"
     }
   },
-  "required": [
-    "id",
-    "category",
-    "language",
-    "input",
-    "expected_outcome",
-    "severity",
-    "description"
-  ]
+  "required": ["id", "category", "language", "input", "expected_outcome", "severity", "description"]
 }

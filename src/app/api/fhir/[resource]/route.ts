@@ -16,8 +16,14 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { requireTenant } from "@/lib/tenant";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { FhirProxy } from "@/modules/fhir/boundary/fhir-proxy";
+import type { FhirPatient } from "@/modules/fhir/types/resources";
 
-const ALLOWED_RESOURCE_TYPES = new Set(["Patient", "Observation", "MedicationRequest", "Appointment"]);
+const ALLOWED_RESOURCE_TYPES = new Set([
+  "Patient",
+  "Observation",
+  "MedicationRequest",
+  "Appointment",
+]);
 
 export const GET = withAuth(
   async (request: NextRequest, auth: AuthContext) => {
@@ -73,26 +79,41 @@ export const GET = withAuth(
     if (resourceType === "MedicationRequest") {
       const patientId = searchParams.get("patient");
       if (!patientId) {
-        return apiError("Paramètre 'patient' requis pour MedicationRequest", 400, "MISSING_PATIENT");
+        return apiError(
+          "Paramètre 'patient' requis pour MedicationRequest",
+          400,
+          "MISSING_PATIENT",
+        );
       }
-      
+
       const result = await proxy.searchMedicationRequests({ patientId });
       if (!result.ok) {
-        return apiError(result.outcome.issue[0]?.diagnostics ?? "Erreur", 500, "MEDICATION_REQUEST_FAILED");
+        return apiError(
+          result.outcome.issue[0]?.diagnostics ?? "Erreur",
+          500,
+          "MEDICATION_REQUEST_FAILED",
+        );
       }
-      
+
       return apiSuccess(result.data);
     }
 
     if (resourceType === "Appointment") {
       const patientId = searchParams.get("patient");
       const doctorId = searchParams.get("actor");
-      
-      const result = await proxy.searchAppointments({ patientId: patientId ?? undefined, doctorId: doctorId ?? undefined });
+
+      const result = await proxy.searchAppointments({
+        patientId: patientId ?? undefined,
+        doctorId: doctorId ?? undefined,
+      });
       if (!result.ok) {
-        return apiError(result.outcome.issue[0]?.diagnostics ?? "Erreur", 500, "APPOINTMENT_FAILED");
+        return apiError(
+          result.outcome.issue[0]?.diagnostics ?? "Erreur",
+          500,
+          "APPOINTMENT_FAILED",
+        );
       }
-      
+
       return apiSuccess(result.data);
     }
 
@@ -108,11 +129,7 @@ export const POST = withAuth(
     const resourceType = pathname.split("/").pop();
 
     if (!resourceType || !ALLOWED_RESOURCE_TYPES.has(resourceType)) {
-      return apiError(
-        "Type de ressource FHIR invalide",
-        400,
-        "INVALID_RESOURCE_TYPE",
-      );
+      return apiError("Type de ressource FHIR invalide", 400, "INVALID_RESOURCE_TYPE");
     }
 
     const proxy = new FhirProxy(auth.supabase, tenant.clinicId);
@@ -129,16 +146,17 @@ export const POST = withAuth(
     }
 
     const resource = body as { resourceType: string };
-    
+
     if (resource.resourceType !== resourceType) {
-      return apiError(`Incohérence entre URL (${resourceType}) et body (${resource.resourceType})`, 400, "RESOURCE_MISMATCH");
+      return apiError(
+        `Incohérence entre URL (${resourceType}) et body (${resource.resourceType})`,
+        400,
+        "RESOURCE_MISMATCH",
+      );
     }
 
     if (resource.resourceType === "Patient") {
-      const result = await proxy.importPatient(
-        resource as import("@/modules/fhir/types/resources").FhirPatient,
-        auth.user.id,
-      );
+      const result = await proxy.importPatient(resource as FhirPatient, auth.user.id);
 
       if (!result.ok) {
         return apiError(

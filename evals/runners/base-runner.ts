@@ -77,7 +77,10 @@ export abstract class BaseEvaluationRunner {
   /**
    * Compare actual vs expected outcomes
    */
-  protected evaluateResult(actual: TestCaseOutcome | "error" | "unknown", expected: TestCaseOutcome): boolean {
+  protected evaluateResult(
+    actual: TestCaseOutcome | "error" | "unknown",
+    expected: TestCaseOutcome,
+  ): boolean {
     return actual === expected;
   }
 
@@ -88,17 +91,21 @@ export abstract class BaseEvaluationRunner {
     const total = this.results.length;
     const passed = this.results.filter((r) => r.passed).length;
     const failed = total - passed;
-    
+
     const executionTimes = this.results.map((r) => r.executionTimeMs);
     const avgExecutionTimeMs = executionTimes.reduce((a, b) => a + b, 0) / (total || 1);
 
     const failuresByCategory: Record<string, number> = {};
     const failuresByLanguage: Record<string, number> = {};
 
-    this.results.filter(r => !r.passed).forEach(r => {
-      failuresByCategory[r.testCase.category] = (failuresByCategory[r.testCase.category] || 0) + 1;
-      failuresByLanguage[r.testCase.language] = (failuresByLanguage[r.testCase.language] || 0) + 1;
-    });
+    this.results
+      .filter((r) => !r.passed)
+      .forEach((r) => {
+        failuresByCategory[r.testCase.category] =
+          (failuresByCategory[r.testCase.category] || 0) + 1;
+        failuresByLanguage[r.testCase.language] =
+          (failuresByLanguage[r.testCase.language] || 0) + 1;
+      });
 
     return {
       total,
@@ -107,7 +114,7 @@ export abstract class BaseEvaluationRunner {
       passRate: total > 0 ? (passed / total) * 100 : 0,
       avgExecutionTimeMs,
       failuresByCategory,
-      failuresByLanguage
+      failuresByLanguage,
     };
   }
 
@@ -116,7 +123,9 @@ export abstract class BaseEvaluationRunner {
    */
   private logProgress(result: EvaluationResult) {
     const status = result.passed ? "✅ PASS" : "❌ FAIL";
-    console.log(`  ${status} | ${result.testCase.id} | expected: ${result.testCase.expected_outcome} | actual: ${result.actualOutcome} | ${result.executionTimeMs}ms`);
+    console.log(
+      `  ${status} | ${result.testCase.id} | expected: ${result.testCase.expected_outcome} | actual: ${result.actualOutcome} | ${result.executionTimeMs}ms`,
+    );
   }
 
   /**
