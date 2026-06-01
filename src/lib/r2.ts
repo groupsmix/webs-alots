@@ -308,12 +308,7 @@ function presignR2Url(
   ].join("\n");
 
   const hash = (data: string) => createHash("sha256").update(data).digest("hex");
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    scope,
-    hash(canonicalRequest),
-  ].join("\n");
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, hash(canonicalRequest)].join("\n");
 
   const hmac = (k: Buffer | string, d: string) => createHmac("sha256", k).update(d).digest();
   const kDate = hmac(`AWS4${config.secretAccessKey}`, dateStamp);
@@ -381,7 +376,9 @@ export async function uploadToR2(
     // Normalise a Node Buffer to a plain Uint8Array view so it is accepted in
     // the Workers runtime without relying on Node Buffer semantics.
     const putBody =
-      body instanceof Uint8Array ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength) : body;
+      body instanceof Uint8Array
+        ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength)
+        : body;
     await bucket.put(finalKey, putBody, {
       httpMetadata: { contentType },
     });
