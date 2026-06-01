@@ -35,7 +35,7 @@
  *                          Rotate per `docs/SOP-SECRET-ROTATION.md` §8.
  */
 
-import { createHmac } from "crypto";
+import { createHash, createHmac } from "crypto";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 
@@ -543,18 +543,6 @@ async function _getPresignedDownloadUrl(key: string, expiresIn = 3600): Promise<
   return presignR2Url(config, "GET", key, expiresIn, {
     query: { "response-content-disposition": "attachment" },
   });
-}
-
-// eslint-disable-next-line no-unused-vars
-async function _unusedPresignDownloadShim(key: string, expiresIn = 3600): Promise<string | null> {
-  const config = getR2PresignConfig();
-  if (!config) return null;
-  const signed = await Promise.resolve({
-    method: "GET",
-    aws: { signQuery: true },
-  });
-
-  return signed.url;
 }
 
 /**
