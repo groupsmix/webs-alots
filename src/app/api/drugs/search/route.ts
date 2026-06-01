@@ -10,8 +10,8 @@
 
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { withAuth } from "@/lib/with-auth";
 import { searchDrugs } from "@/lib/drugs/client";
+import { withAuth } from "@/lib/with-auth";
 
 export const GET = withAuth(
   async (request: NextRequest) => {
