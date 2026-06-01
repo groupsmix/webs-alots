@@ -110,7 +110,7 @@ export async function downloadAndDecrypt(key: string): Promise<Buffer | null> {
   try {
     // Native R2 binding: download the encrypted object directly from the
     // bound bucket. No AWS SDK / credentials required (see src/lib/r2.ts).
-    const bucket = getR2Bucket();
+    const bucket = await getR2Bucket();
     if (!bucket) return null;
 
     const encKey = key.endsWith(".enc") ? key : `${key}.enc`;

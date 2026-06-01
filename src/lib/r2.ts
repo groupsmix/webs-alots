@@ -36,9 +36,9 @@
  *                          Rotate per `docs/SOP-SECRET-ROTATION.md` §8.
  */
 
+import { createHmac } from "crypto";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
-import { createHmac } from "crypto";
 
 /**
  * Resolve the HMAC secret used for R2 signed URLs and upload-key filename
