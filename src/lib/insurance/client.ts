@@ -20,6 +20,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { getInsuranceProvider } from "@/lib/env";
 
 export type MoroccanInsuranceType = "AMO" | "CNOPS" | "CNSS" | "RAMED" | "private" | "none";
 
@@ -56,7 +57,7 @@ export async function checkEligibility(
   policyNumber: string,
   insuranceType: MoroccanInsuranceType,
 ): Promise<EligibilityResult> {
-  const provider = process.env.INSURANCE_PROVIDER ?? "sandbox";
+  const provider = getInsuranceProvider();
 
   if (provider === "sandbox") {
     return sandboxEligibilityCheck(policyNumber, insuranceType);
@@ -84,7 +85,7 @@ export async function submitClaim(params: {
   doctorName: string;
   patientName: string;
 }): Promise<ClaimSubmissionResult> {
-  const provider = process.env.INSURANCE_PROVIDER ?? "sandbox";
+  const provider = getInsuranceProvider();
 
   if (provider === "sandbox") {
     return sandboxSubmitClaim(params);

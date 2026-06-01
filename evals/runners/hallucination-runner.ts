@@ -8,7 +8,9 @@ export class HallucinationRunner extends BaseEvaluationRunner {
 
   constructor() {
     super("Hallucination Detection");
+    // nosemgrep: semgrep.env-access - Test execution only
     this.apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+    // nosemgrep: semgrep.env-access - Test execution only
     this.authToken = process.env.EVAL_AUTH_TOKEN || "";
     
     if (!this.authToken) {
@@ -30,6 +32,7 @@ export class HallucinationRunner extends BaseEvaluationRunner {
           "Authorization": `Bearer ${this.authToken}`
         },
         body: JSON.stringify({
+          // nosemgrep: semgrep.env-access - Test execution only
           patientId: process.env.EVAL_PATIENT_ID || "00000000-0000-0000-0000-000000000000",
           diagnosis: testCase.input,
           symptoms: "N/A"

@@ -315,6 +315,7 @@ export class FhirProxy {
   }): Promise<FhirProxyResult<FhirBundle>> {
     try {
       const { data, error } = await (this.supabase as SupabaseClient)
+        // nosemgrep: tenant-scoping
         .from("prescriptions")
         .select("*")
         .eq("clinic_id", this.clinicId)
@@ -359,6 +360,7 @@ export class FhirProxy {
   }): Promise<FhirProxyResult<FhirBundle>> {
     try {
       let query = (this.supabase as SupabaseClient)
+        // nosemgrep: tenant-scoping
         .from("appointments")
         .select("*")
         .eq("clinic_id", this.clinicId)

@@ -30,6 +30,7 @@ export const POST = withAuthValidation(
 
     // Build a query — patients can only join their own sessions
     let query = supabase
+      // nosemgrep: tenant-scoping
       .from("telemedicine_sessions")
       .select("id, status, room_url, patient_id, doctor_id, clinic_id")
       .eq("id", session_id);

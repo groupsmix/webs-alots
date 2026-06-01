@@ -8,7 +8,9 @@ export class DrugInteractionRunner extends BaseEvaluationRunner {
 
   constructor() {
     super("Drug Interaction Detection");
+    // nosemgrep: semgrep.env-access - Test execution only
     this.apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+    // nosemgrep: semgrep.env-access - Test execution only
     this.authToken = process.env.EVAL_AUTH_TOKEN || "";
     
     if (!this.authToken) {

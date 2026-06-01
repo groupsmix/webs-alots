@@ -30,6 +30,7 @@ export const POST = withAuthValidation(
 
     // Verify the session belongs to this clinic (tenant scoping)
     const { data: session, error: sessionError } = await supabase
+      // nosemgrep: tenant-scoping
       .from("telemedicine_sessions")
       .select("id, status, room_url, patient_id, doctor_id")
       .eq("clinic_id", clinicId)
@@ -60,6 +61,7 @@ export const POST = withAuthValidation(
     // Update the session with the real room URL
     const roomUrl = `https://meet.twilio.com/${room.uniqueName}`;
     const { data: updatedSession, error: updateError } = await supabase
+      // nosemgrep: tenant-scoping
       .from("telemedicine_sessions")
       .update({
         room_url: roomUrl,

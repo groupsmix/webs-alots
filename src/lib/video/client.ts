@@ -13,6 +13,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { getTwilioAccountSid, getTwilioApiKey, getTwilioApiSecret } from "@/lib/env";
 
 export type VideoRoomType = "go" | "peer-to-peer" | "group";
 
@@ -44,9 +45,9 @@ export async function createVideoRoom(
   sessionId: string,
   roomType: VideoRoomType = "go",
 ): Promise<VideoRoom> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const apiKey = process.env.TWILIO_API_KEY;
-  const apiSecret = process.env.TWILIO_API_SECRET;
+  const accountSid = getTwilioAccountSid();
+  const apiKey = getTwilioApiKey();
+  const apiSecret = getTwilioApiSecret();
 
   if (!accountSid || !apiKey || !apiSecret) {
     throw new Error("Twilio credentials not configured (TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET)");
@@ -133,9 +134,9 @@ export async function generateVideoToken(params: {
   roomName: string;
   ttlSeconds?: number;
 }): Promise<string> {
-  const apiKey = process.env.TWILIO_API_KEY;
-  const apiSecret = process.env.TWILIO_API_SECRET;
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const apiKey = getTwilioApiKey();
+  const apiSecret = getTwilioApiSecret();
+  const accountSid = getTwilioAccountSid();
 
   if (!apiKey || !apiSecret || !accountSid) {
     throw new Error("Twilio credentials not configured");

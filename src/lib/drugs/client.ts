@@ -15,6 +15,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { getDrugDbProvider, getVidalApiKey } from "@/lib/env";
 
 export interface DrugSearchResult {
   /** Normalized brand or generic name */
@@ -62,7 +63,7 @@ export async function searchDrugs(
   const q = query.trim();
   if (!q) return [];
 
-  const provider = process.env.DRUG_DB_PROVIDER ?? "openfda";
+  const provider = getDrugDbProvider();
 
   if (provider === "vidal") {
     return searchVidalDrugs(q, limit);
@@ -116,7 +117,7 @@ async function searchVidalDrugs(
   _query: string,
   _limit: number,
 ): Promise<DrugSearchResult[]> {
-  const apiKey = process.env.VIDAL_API_KEY;
+  const apiKey = getVidalApiKey();
   if (!apiKey) {
     throw new Error("VIDAL_API_KEY is not configured");
   }

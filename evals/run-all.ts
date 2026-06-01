@@ -16,6 +16,7 @@ async function runScript(scriptPath: string): Promise<boolean> {
     
     const child = spawn("npx", ["tsx", path.join(__dirname, scriptPath)], {
       stdio: "inherit",
+      // nosemgrep: semgrep.env-access - Test execution only
       env: process.env
     });
 

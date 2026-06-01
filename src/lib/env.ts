@@ -1218,3 +1218,34 @@ export function getPlausibleHost(): string {
 export function getGaMeasurementId(): string | undefined {
   return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 }
+
+/** Twilio account SID. */
+export function getTwilioAccountSid(): string | undefined {
+  return process.env.TWILIO_ACCOUNT_SID;
+}
+
+/** Twilio API Key SID. */
+export function getTwilioApiKey(): string | undefined {
+  return process.env.TWILIO_API_KEY;
+}
+
+/** Twilio API Secret. */
+export function getTwilioApiSecret(): string | undefined {
+  return process.env.TWILIO_API_SECRET;
+}
+
+/** Drug database provider. */
+export function getDrugDbProvider(): string {
+  return process.env.DRUG_DB_PROVIDER ?? "openfda";
+}
+
+/** Vidal API Key. */
+export function getVidalApiKey(): string | undefined {
+  return process.env.VIDAL_API_KEY;
+}
+
+/** Insurance provider. */
+export function getInsuranceProvider(): string {
+  return process.env.INSURANCE_PROVIDER ?? "sandbox";
+}
+
