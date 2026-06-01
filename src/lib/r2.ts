@@ -281,11 +281,8 @@ export async function uploadToR2(
   contentType: string,
   options: { hashFilename?: boolean } = {},
 ): Promise<string | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
-
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const bucket = getR2Bucket();
+  if (!bucket) return null;
 
   // R-16 Fix: Hash filenames on write so guessable basenames don't survive to the URL
   // This prevents enumeration attacks where attackers guess filenames
@@ -299,15 +296,15 @@ export async function uploadToR2(
     });
   }
 
-  const params: PutObjectCommandInputType = {
-    Bucket: config.bucketName,
-    Key: finalKey,
-    Body: body,
-    ContentType: contentType,
-  };
-
   try {
-    await client.send(new PutObjectCommand(params));
+    // The R2 binding accepts ArrayBuffer/ArrayBufferView/ReadableStream/string.
+    // Normalise a Node Buffer to a plain Uint8Array view so it is accepted in
+    // the Workers runtime without relying on Node Buffer semantics.
+    const putBody =
+      body instanceof Uint8Array ? new Uint8Array(body.buffer, body.byteOffset, body.byteLength) : body;
+    await bucket.put(finalKey, putBody, {
+      httpMetadata: { contentType },
+    });
   } catch (err) {
     // A84-F3: Surface R2 upload failures with a structured log entry so
     // operators can correlate storage outages (disk-full, network, auth)
@@ -325,10 +322,18 @@ export async function uploadToR2(
   // other sensitive content should generate short-lived signed URLs at read
   // time via generateSignedR2Url() / getPresignedDownloadUrl() rather than
   // relying on the public URL.
-  if (config.publicUrl) {
-    return `${config.publicUrl.replace(/\/$/, "")}/${finalKey}`;
+  const publicUrl = process.env.R2_PUBLIC_URL;
+  if (publicUrl) {
+    return `${publicUrl.replace(/\/$/, "")}/${finalKey}`;
   }
-  return `https://${config.bucketName}.${config.accountId}.r2.cloudflarestorage.com/${finalKey}`;
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const bucketName = getR2BucketName();
+  if (accountId && bucketName) {
+    return `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${finalKey}`;
+  }
+  // Binding present but no account/bucket env for URL construction: return a
+  // stable relative key the download proxy can resolve.
+  return `/r2/${finalKey}`;
 }
 
 /**
@@ -362,18 +367,10 @@ function hashFilename(key: string): string {
  * @param key  Object key to delete
  */
 export async function deleteFromR2(key: string): Promise<void> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return;
+  const bucket = getR2Bucket();
+  if (!bucket) return;
 
-  const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: config.bucketName,
-      Key: key,
-    }),
-  );
+  await bucket.delete(key);
 }
 
 /**
