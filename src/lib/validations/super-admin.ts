@@ -26,6 +26,9 @@ export const clinicProvisionSchema = z.object({
   specialty: z.string().max(200).optional(),
   whatsapp_number: z.string().max(30).optional(),
   payment_gateway: z.enum(["cmi", "stripe", "cash"]).optional(),
+  primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  template_id: z.string().max(50).optional(),
 });
 
 export const churnPredictionQuerySchema = z.object({

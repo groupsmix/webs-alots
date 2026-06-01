@@ -36,9 +36,9 @@ const scheduleEntrySchema = z.object({
 });
 
 const brandingSchema = z.object({
-  primary_color: z.string().max(20).optional(),
-  secondary_color: z.string().max(20).optional(),
-  template_id: z.string().max(50).optional(),
+  primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").optional(),
+  secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color").optional(),
+  template_id: z.enum(["modern", "classic", "minimal"]).optional(),
 });
 
 const wizardSchema = z.object({
@@ -212,6 +212,20 @@ export const POST = withAuthValidation(
         brandingUpdate.hero_title_ar = preset.hero.titleAr;
         brandingUpdate.hero_subtitle = preset.hero.subtitle;
         brandingUpdate.hero_subtitle_ar = preset.hero.subtitleAr;
+      }
+
+      // Apply fallbacks and log warnings
+      if (!brandingUpdate.primary_color) {
+        logger.warn("Missing primary_color in wizard, applying fallback", { context: "onboarding/wizard", clinicId: body.clinic_id });
+        brandingUpdate.primary_color = "#1E4DA1";
+      }
+      if (!brandingUpdate.secondary_color) {
+        logger.warn("Missing secondary_color in wizard, applying fallback", { context: "onboarding/wizard", clinicId: body.clinic_id });
+        brandingUpdate.secondary_color = "#0F6E56";
+      }
+      if (!brandingUpdate.template_id) {
+        logger.warn("Missing template_id in wizard, applying fallback", { context: "onboarding/wizard", clinicId: body.clinic_id });
+        brandingUpdate.template_id = "modern";
       }
 
       if (Object.keys(brandingUpdate).length > 0) {

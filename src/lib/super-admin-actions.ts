@@ -57,6 +57,9 @@ interface ClinicRow {
   status: string | null;
   subdomain: string | null;
   created_at: string | null;
+  primary_color?: string;
+  secondary_color?: string;
+  template_id?: string;
 }
 
 interface UserRow {
@@ -161,7 +164,7 @@ export async function fetchClinics(): Promise<ClinicRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("clinics")
-    .select("id, name, type, config, tier, status, subdomain, created_at")
+    .select("id, name, type, config, tier, status, subdomain, created_at, primary_color, secondary_color, template_id")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to fetch clinics: ${error.message}`);
@@ -172,12 +175,29 @@ export async function fetchClinicById(clinicId: string): Promise<ClinicRow | nul
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("clinics") // nosemgrep: tenant-scoping — super-admin fetches specific clinic by id
-    .select("id, name, type, config, tier, status, subdomain, created_at")
+    .select("id, name, type, config, tier, status, subdomain, created_at, primary_color, secondary_color, template_id")
     .eq("id", clinicId)
     .single();
 
   if (error) return null;
   return data as ClinicRow;
+}
+
+export async function updateClinicBranding(
+  clinicId: string,
+  branding: { primary_color?: string; secondary_color?: string; template_id?: string },
+): Promise<void> {
+  const supabase = await rawClient();
+  const { error } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin updates specific clinic
+    .update({
+      primary_color: branding.primary_color,
+      secondary_color: branding.secondary_color,
+      template_id: branding.template_id,
+    })
+    .eq("id", clinicId);
+
+  if (error) throw new Error(`Failed to update branding: ${error.message}`);
 }
 
 export interface ClinicFeatureOverride {

@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   // Enable static generation for better performance
   trailingSlash: true,
 
+  compress: true,
+
   // MEDIUM-9: Suppress X-Powered-By header (information disclosure).
   poweredByHeader: false,
 

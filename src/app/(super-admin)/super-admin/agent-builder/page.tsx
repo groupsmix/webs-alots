@@ -11,6 +11,8 @@ import type { ClinicConfig, TemplateStyle } from "@/components/agent-builder/typ
 import { createEmptyConfig } from "@/components/agent-builder/types";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchClinics, updateClinicBranding } from "@/lib/super-admin-actions";
 
 const GREETING_MESSAGE =
   "Hi! I can help you create a new clinic website. Just give me the customer info (name, specialty, city, phone) and I'll design their site.";
@@ -262,7 +264,16 @@ export default function AgentBuilderPage() {
   const [config, setConfig] = useState<ClinicConfig>(
     () => loadDraft()?.config ?? createEmptyConfig(),
   );
+  const [deploying, setDeploying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [mode, setMode] = useState<"create" | "edit">("create");
+  const [selectedClinicId, setSelectedClinicId] = useState<string>("new");
+  const [clinics, setClinics] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchClinics().then(setClinics).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -324,6 +335,54 @@ export default function AgentBuilderPage() {
     sessionStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
+  const handleDeploy = async () => {
+    if (!config.name || !config.specialty || !config.city || !config.phone) {
+      alert("Missing required fields (name, specialty, city, phone).");
+      return;
+    }
+    setDeploying(true);
+    try {
+      if (mode === "edit" && selectedClinicId !== "new") {
+        await updateClinicBranding(selectedClinicId, {
+          primary_color: config.colors?.[0],
+          secondary_color: config.colors?.[1],
+          template_id: config.template,
+        });
+        alert(`Design updated successfully!`);
+      } else {
+        const res = await fetch("/api/admin/onboarding-provision", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clinic_name: config.name,
+            subdomain: config.subdomain || slugify(config.name),
+            owner_email: config.email || "admin@example.com",
+            owner_phone: config.phone,
+            city: config.city,
+            specialty: config.specialty,
+            clinic_type: "clinic",
+            tier: "standard",
+            primary_color: config.colors?.[0],
+            secondary_color: config.colors?.[1],
+            template_id: config.template,
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Deployment failed.");
+          return;
+        }
+        const data = await res.json();
+        alert(`Site deployed at https://${data.data.subdomain}.oltigo.com`);
+      }
+    } catch (err) {
+      alert("Network error during deployment");
+    } finally {
+      setDeploying(false);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
       {/* Chat Panel */}
@@ -347,11 +406,53 @@ export default function AgentBuilderPage() {
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs">Reset</span>
             </Button>
-            <Button variant="default" size="sm" title="Deploy Site">
+            <Button variant="default" size="sm" title="Deploy Site" onClick={handleDeploy} disabled={deploying}>
               <Rocket className="mr-1 h-3.5 w-3.5" />
-              <span className="text-xs">Deploy</span>
+              <span className="text-xs">{deploying ? "Deploying..." : mode === "edit" ? "Update Design" : "Deploy"}</span>
             </Button>
           </div>
+        </div>
+
+        {/* Target Selection */}
+        <div className="flex items-center gap-3 border-b px-4 py-2 bg-muted/20">
+          <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Target Clinic:</span>
+          <Select
+            value={selectedClinicId}
+            onValueChange={(val) => {
+              setSelectedClinicId(val);
+              if (val === "new") {
+                setMode("create");
+                handleStartOver();
+              } else {
+                setMode("edit");
+                const clinic = clinics.find((c) => c.id === val);
+                if (clinic) {
+                  const cfg = (clinic.config || {}) as any;
+                  setConfig({
+                    name: clinic.name,
+                    subdomain: clinic.subdomain || "",
+                    specialty: cfg.specialty || "",
+                    city: cfg.city || "",
+                    phone: cfg.phone || "",
+                    email: cfg.email || "",
+                    template: (clinic.template_id as TemplateStyle) || "modern",
+                    colors: [clinic.primary_color || "#1E4DA1", clinic.secondary_color || "#0F6E56"],
+                    services: [],
+                  });
+                }
+              }
+            }}
+          >
+            <SelectTrigger className="w-[220px] h-8 text-xs bg-background">
+              <SelectValue placeholder="Select Clinic" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="new">Create New Clinic</SelectItem>
+              {clinics.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Messages */}
