@@ -33,6 +33,6 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_clinic_timestamp
   WHERE clinic_id IS NOT NULL;
 
 -- Notification queue: dequeue performance (claim_notification_batch RPC).
--- NOTE: the column is next_retry_at (see migration 00050); idx_notification_queue_status_retry
--- (migration 00057) already covers this case. This index is intentionally omitted here
--- to avoid the duplicate and to prevent an error on the non-existent next_attempt_at column.
+CREATE INDEX IF NOT EXISTS idx_notification_queue_dequeue
+  ON notification_queue (status, next_retry_at ASC)
+  WHERE status IN ('pending', 'failed');
