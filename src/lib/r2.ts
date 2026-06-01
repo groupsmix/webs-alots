@@ -37,6 +37,7 @@
 
 import { createHash, createHmac } from "crypto";
 import { getWorkerBinding } from "@/lib/cf-bindings";
+import { getR2Config } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
@@ -231,11 +232,7 @@ export async function getR2Bucket(): Promise<R2Bucket | null> {
  * Returns null when any required value is missing.
  */
 function getR2PresignConfig(): R2PresignConfig | null {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucketName = process.env.R2_BUCKET_NAME;
-  const publicUrl = process.env.R2_PUBLIC_URL;
+  const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } = getR2Config();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
     return null;
@@ -330,7 +327,7 @@ function presignR2Url(
 
 /** Bucket name for logging / public-URL construction. */
 function getR2BucketName(): string | undefined {
-  return process.env.R2_BUCKET_NAME;
+  return getR2Config().bucketName;
 }
 
 /**
@@ -410,12 +407,10 @@ export async function uploadToR2(
   // other sensitive content should generate short-lived signed URLs at read
   // time via generateSignedR2Url() / getPresignedDownloadUrl() rather than
   // relying on the public URL.
-  const publicUrl = process.env.R2_PUBLIC_URL;
+  const { accountId, bucketName, publicUrl } = getR2Config();
   if (publicUrl) {
     return `${publicUrl.replace(/\/$/, "")}/${finalKey}`;
   }
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const bucketName = getR2BucketName();
   if (accountId && bucketName) {
     return `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${finalKey}`;
   }
