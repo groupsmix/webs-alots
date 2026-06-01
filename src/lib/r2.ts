@@ -1,4 +1,3 @@
-/// <reference types="@cloudflare/workers-types" />
 /**
  * Cloudflare R2 storage client.
  *
