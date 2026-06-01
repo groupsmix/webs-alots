@@ -209,15 +209,20 @@ export function register() {
       },
     });
 
-    // Initialize OpenTelemetry for distributed tracing
-    // The @vercel/otel package handles this elegantly for Next.js
-    try {
-      // Lazy load to not break edge runtime
-      import("@vercel/otel").then(({ registerOTel }) => {
-        registerOTel({ serviceName: "oltigo-health-web" });
-      });
-    } catch {
-      // Ignored
+    // Initialize OpenTelemetry for distributed tracing.
+    // `@vercel/otel` is an optional runtime dependency: load it by string
+    // specifier so TypeScript doesn't bind to it at compile time and so it
+    // stays out of the Workers/edge bundle. Failures are swallowed: tracing
+    // is best-effort and must not block app startup.
+    {
+      const otelModuleId = "@vercel/otel";
+      void import(/* webpackIgnore: true */ otelModuleId)
+        .then((mod: { registerOTel?: (opts: { serviceName: string }) => void }) => {
+          mod.registerOTel?.({ serviceName: "oltigo-health-web" });
+        })
+        .catch(() => {
+          // OTel registration is best-effort; ignored.
+        });
     }
   }
   // Validate all required environment variables at startup so missing

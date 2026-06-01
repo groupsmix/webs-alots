@@ -9,15 +9,15 @@ import { createAdminClient } from "@/lib/supabase-server";
 export async function checkSuspiciousLogin(
   email: string,
   clientIp: string,
-  clinicId?: string
+  clinicId?: string,
 ): Promise<void> {
   try {
     const supabase = createAdminClient("audit_log", clinicId);
-    
+
     // For this implementation, we will log the check.
     // A robust implementation would store the IP/fingerprint in a `user_devices`
     // table and trigger a notification if the IP is unseen.
-    
+
     logger.info("Suspicious login check initiated", {
       context: "suspicious-login",
       email,
@@ -26,7 +26,7 @@ export async function checkSuspiciousLogin(
 
     // We can simulate an alert trigger here. In reality, we'd enqueue a task
     // to the notification worker to send an email to the user.
-    await supabase.from("audit_logs").insert({
+    await supabase.from("activity_logs").insert({
       clinic_id: clinicId ?? null,
       action: "suspicious_login_checked",
       actor: email,
@@ -35,7 +35,6 @@ export async function checkSuspiciousLogin(
       description: `Suspicious login checks performed for ${email}`,
       metadata: { status: "checked" },
     });
-    
   } catch (err) {
     logger.warn("Failed to perform suspicious login check", {
       context: "suspicious-login",

@@ -19,7 +19,7 @@ export async function checkBurnRate(window: "1h" | "6h" | "1d"): Promise<SLOStat
   // We simulate a healthy burn rate here.
   const errorRate = 0.0005; // 0.05% error rate
   const targetErrorRate = 0.001; // 99.9% availability target (0.1% error budget)
-  
+
   // Burn rate is how fast the error budget is being consumed relative to the target.
   // e.g., if error rate is 0.5% and target is 0.1%, burn rate is 5.
   const burnRate = errorRate / targetErrorRate;

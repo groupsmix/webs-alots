@@ -3,8 +3,8 @@
  *
  * Extracted from middleware.ts to keep the orchestrator under ~300 lines.
  */
-import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 
 /**
  * Enforce MFA requirements based on role.

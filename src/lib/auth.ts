@@ -6,6 +6,7 @@ import { logAuthEvent } from "@/lib/audit-log";
 import { checkPasswordPwned } from "@/lib/hibp";
 import { logger } from "@/lib/logger";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
+import { checkSuspiciousLogin } from "@/lib/middleware/suspicious-login";
 import {
   loginLimiter,
   accountLockoutLimiter,
@@ -14,7 +15,6 @@ import {
 } from "@/lib/rate-limit";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { createClient } from "@/lib/supabase-server";
-import { checkSuspiciousLogin } from "@/lib/middleware/suspicious-login";
 
 /**
  * Phone auth feature flag.

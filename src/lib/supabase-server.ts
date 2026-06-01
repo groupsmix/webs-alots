@@ -23,7 +23,7 @@ function requireEnv(name: string): string {
 /**
  * Get trace headers from the current request context for distributed tracing.
  */
-async function getTraceHeaders(): Record<string, string> {
+async function getTraceHeaders(): Promise<Record<string, string>> {
   try {
     const { headers } = await import("next/headers");
     const h = await headers();

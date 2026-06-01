@@ -13,7 +13,7 @@ describe("Drug Alternatives", () => {
     // Lookup order shouldn't matter
     const result1 = suggestAlternatives("ibuprofene", "warfarine");
     const result2 = suggestAlternatives("warfarine", "ibuprofene");
-    
+
     // Result1 is suggesting alternatives for ibuprofen
     expect(result1?.alternatives.some((a) => a.drug === "paracétamol")).toBe(true);
     // Result2 is suggesting alternatives for warfarin (which we don't have explicit alternatives for, it maps to the same key, but the alternatives listed are meant for ibuprofen)
@@ -29,11 +29,11 @@ describe("Drug Alternatives", () => {
   it("should suggest all alternatives for multiple pairs", () => {
     const results = suggestAllAlternatives([
       { drugA: "ibuprofene", drugB: "warfarine" },
-      { drugA: "clopidogrel", drugB: "omeprazole" }
+      { drugA: "clopidogrel", drugB: "omeprazole" },
     ]);
-    
+
     expect(results).toHaveLength(2);
-    expect(results[0].alternatives.some(a => a.drug === "paracétamol")).toBe(true);
-    expect(results[1].alternatives.some(a => a.drug === "pantoprazole")).toBe(true);
+    expect(results[0].alternatives.some((a) => a.drug === "paracétamol")).toBe(true);
+    expect(results[1].alternatives.some((a) => a.drug === "pantoprazole")).toBe(true);
   });
 });
