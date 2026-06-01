@@ -1,6 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { enqueueNotification } from "@/lib/notifications";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Finds all unconfirmed appointments that are 24-48 hours away,
@@ -8,7 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  */
 export async function sendAppointmentConfirmations(
   supabase: SupabaseClient,
-  clinicId: string
+  clinicId: string,
 ): Promise<{ processed: number; errors: number }> {
   let processed = 0;
   let errors = 0;
@@ -20,7 +20,8 @@ export async function sendAppointmentConfirmations(
   try {
     const { data: appointments, error } = await supabase
       .from("appointments")
-      .select(`
+      .select(
+        `
         id,
         start_time,
         patient:patient_id (
@@ -32,7 +33,8 @@ export async function sendAppointmentConfirmations(
           first_name,
           last_name
         )
-      `)
+      `,
+      )
       .eq("clinic_id", clinicId)
       .eq("status", "scheduled")
       .gte("start_time", windowStart.toISOString())
@@ -48,7 +50,11 @@ export async function sendAppointmentConfirmations(
 
     for (const apt of appointments) {
       try {
-        const patientData = apt.patient as unknown as { id: string; first_name: string; phone: string | null };
+        const patientData = apt.patient as unknown as {
+          id: string;
+          first_name: string;
+          phone: string | null;
+        };
         const doctorData = apt.doctor as unknown as { first_name: string; last_name: string };
 
         if (!patientData.phone) {
@@ -69,7 +75,10 @@ export async function sendAppointmentConfirmations(
             patient_name: patientData.first_name,
             doctor_name: `Dr. ${doctorData.last_name}`,
             date: new Date(apt.start_time).toLocaleDateString("fr-MA"),
-            time: new Date(apt.start_time).toLocaleTimeString("fr-MA", { hour: "2-digit", minute: "2-digit" }),
+            time: new Date(apt.start_time).toLocaleTimeString("fr-MA", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
           },
           appointmentId: apt.id,
           priority: "high",
@@ -80,7 +89,7 @@ export async function sendAppointmentConfirmations(
         // We'll update the appointment record to track this if the column exists, otherwise just log it.
         await supabase
           .from("appointments")
-          .update({ 
+          .update({
             // Optional: confirmation_requested_at: new Date().toISOString()
           })
           .eq("id", apt.id)

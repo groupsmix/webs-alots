@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { NoShowPrediction } from "@/lib/predictive/no-show-model";
 
 interface NoShowIndicatorProps {
@@ -14,10 +14,14 @@ interface NoShowIndicatorProps {
   showDetails?: boolean;
 }
 
-export function NoShowIndicator({ appointmentId, className = "", showDetails = false }: NoShowIndicatorProps) {
+export function NoShowIndicator({
+  appointmentId,
+  className = "",
+  showDetails = false,
+}: NoShowIndicatorProps) {
   const [locale] = useLocale();
   const lang = locale === "ar" ? "ar" : "fr";
-  
+
   const [prediction, setPrediction] = useState<NoShowPrediction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -33,7 +37,7 @@ export function NoShowIndicator({ appointmentId, className = "", showDetails = f
         } else {
           setError(true);
         }
-      } catch (err) {
+      } catch {
         setError(true);
       } finally {
         setLoading(false);
@@ -86,31 +90,32 @@ export function NoShowIndicator({ appointmentId, className = "", showDetails = f
   );
 
   if (!showDetails) {
+    // The codebase Tooltip accepts a plain-string `content` prop, so we
+    // flatten the rich content (risk factors + recommendation) into a
+    // single multi-line string. Newlines render via white-space wrapping
+    // on the tooltip; we strip the auto whitespace-nowrap when used here.
+    const factorsHeading =
+      lang === "ar" ? "عوامل الخطر الرئيسية:" : "Principaux facteurs de risque :";
+    const recommendationLabel = lang === "ar" ? "توصية:" : "Recommandation :";
+    const tooltipText = [
+      factorsHeading,
+      ...prediction.topRiskFactors.map((factor) => `• ${factor[lang]}`),
+      "",
+      `${recommendationLabel} ${prediction.recommendation[lang]}`,
+    ].join("\n");
+
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="inline-flex cursor-help">{IndicatorBadge}</div>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs space-y-2 p-3">
-            <p className="font-semibold">{lang === "ar" ? "عوامل الخطر الرئيسية:" : "Principaux facteurs de risque :"}</p>
-            <ul className="list-inside list-disc text-xs">
-              {prediction.topRiskFactors.map((factor) => (
-                <li key={factor.key}>{factor[lang]}</li>
-              ))}
-            </ul>
-            <div className="mt-2 border-t pt-2 text-xs">
-              <strong>{lang === "ar" ? "توصية:" : "Recommandation :"}</strong> {prediction.recommendation[lang]}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip content={tooltipText} className="max-w-xs whitespace-pre-line">
+        <div className="inline-flex cursor-help">{IndicatorBadge}</div>
+      </Tooltip>
     );
   }
 
   return (
     <Card className={`overflow-hidden ${className}`}>
-      <div className={`h-1 w-full ${prediction.riskLevel === 'high' ? 'bg-red-500' : prediction.riskLevel === 'medium' ? 'bg-amber-500' : 'bg-green-500'}`} />
+      <div
+        className={`h-1 w-full ${prediction.riskLevel === "high" ? "bg-red-500" : prediction.riskLevel === "medium" ? "bg-amber-500" : "bg-green-500"}`}
+      />
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-center">
           <h4 className="font-medium text-sm">
@@ -118,7 +123,7 @@ export function NoShowIndicator({ appointmentId, className = "", showDetails = f
           </h4>
           {IndicatorBadge}
         </div>
-        
+
         {prediction.riskLevel !== "low" && (
           <div className="space-y-2 text-sm bg-muted/50 p-3 rounded-md">
             <p className="font-medium text-xs text-muted-foreground uppercase tracking-wider">
@@ -134,7 +139,7 @@ export function NoShowIndicator({ appointmentId, className = "", showDetails = f
             </ul>
           </div>
         )}
-        
+
         <div className="bg-primary/5 p-3 rounded-md text-sm border border-primary/10">
           <p className="font-medium text-xs text-primary uppercase tracking-wider mb-1">
             {lang === "ar" ? "الإجراء الموصى به" : "Action recommandée"}

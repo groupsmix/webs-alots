@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { verifyCronSecret } from "@/lib/api-validate";
 import { triageLabResult } from "@/lib/algorithms/lab-triage";
-import { enqueueNotification } from "@/lib/notifications";
+import { apiSuccess, apiInternalError } from "@/lib/api-response";
+import { verifyCronSecret } from "@/lib/cron-auth";
+import type { LabValue } from "@/lib/lab-results/explainer";
 import { logger } from "@/lib/logger";
+import { enqueueNotification } from "@/lib/notifications";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 /**
@@ -14,11 +15,10 @@ import { createUntypedAdminClient } from "@/lib/supabase-server";
  * assigned doctor and marked for dashboard display.
  */
 export async function GET(req: NextRequest) {
-  if (!verifyCronSecret(req)) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const authError = verifyCronSecret(req);
+  if (authError) return authError;
 
-  const supabase = createUntypedAdminClient("cron-lab-triage");
+  const supabase = createUntypedAdminClient("cron");
 
   try {
     // Note: Assuming a 'lab_results' table with a 'status' column (unreviewed/reviewed)
@@ -26,7 +26,8 @@ export async function GET(req: NextRequest) {
     // In a real app we'd also check if we already alerted on this.
     const { data: recentLabs, error: labsError } = await supabase
       .from("lab_results")
-      .select(`
+      .select(
+        `
         id,
         clinic_id,
         doctor_id,
@@ -34,7 +35,8 @@ export async function GET(req: NextRequest) {
         data,
         status,
         alert_sent
-      `)
+      `,
+      )
       .eq("status", "unreviewed")
       .eq("alert_sent", false)
       .limit(100);
@@ -48,7 +50,10 @@ export async function GET(req: NextRequest) {
 
     for (const labDoc of recentLabs) {
       try {
-        const values = labDoc.data as any[]; // Array of LabValue
+        // `labDoc.data` is a JSON column whose runtime shape is `LabValue[]`.
+        // We assert that here; downstream we still check `Array.isArray`
+        // before iterating, which preserves runtime safety.
+        const values = labDoc.data as LabValue[];
         if (!Array.isArray(values)) continue;
 
         let hasCritical = false;
@@ -58,13 +63,15 @@ export async function GET(req: NextRequest) {
           const triage = triageLabResult(val);
           if (triage.triageLevel === "critical") {
             hasCritical = true;
-            criticalAlerts.push(`${val.testName}: ${val.value} ${val.unit} (${triage.explanation.status})`);
+            criticalAlerts.push(
+              `${val.testName}: ${val.value} ${val.unit} (${triage.explanation.status})`,
+            );
           }
         }
 
         if (hasCritical) {
           criticalCount++;
-          
+
           // Alert doctor
           await enqueueNotification(supabase, {
             clinicId: labDoc.clinic_id,
@@ -73,7 +80,7 @@ export async function GET(req: NextRequest) {
             templateName: "critical_lab_alert",
             templateData: {
               lab_id: labDoc.id,
-              alerts: criticalAlerts.join(", ")
+              alerts: criticalAlerts.join(", "),
             },
             appointmentId: null,
             priority: "urgent",
@@ -84,17 +91,17 @@ export async function GET(req: NextRequest) {
             .from("lab_results")
             .update({ alert_sent: true, is_critical: true })
             .eq("id", labDoc.id);
-            
+
           logger.warn("Critical lab result detected", {
             clinicId: labDoc.clinic_id,
             labId: labDoc.id,
-            doctorId: labDoc.doctor_id
+            doctorId: labDoc.doctor_id,
           });
         }
       } catch (err) {
         logger.error("Failed to process lab document", {
           labId: labDoc.id,
-          error: String(err)
+          error: String(err),
         });
       }
     }
@@ -102,9 +109,8 @@ export async function GET(req: NextRequest) {
     return apiSuccess({
       message: "Lab triage complete",
       processed: recentLabs.length,
-      criticalAlerts: criticalCount
+      criticalAlerts: criticalCount,
     });
-
   } catch (err) {
     logger.error("Lab triage cron failed", {
       context: "cron/lab-triage",

@@ -1,10 +1,11 @@
 "use client";
 
 import { AlertOctagon, ChevronRight, TestTube2 } from "lucide-react";
-import { useLocale } from "@/components/locale-switcher";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { useLocale } from "@/components/locale-switcher";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface CriticalLabAlert {
   id: string;
@@ -31,12 +32,14 @@ export function CriticalLabAlerts({ alerts, className = "" }: CriticalLabAlertsP
     <div className={`space-y-3 ${className}`}>
       <h3 className="font-semibold text-red-600 flex items-center gap-2">
         <AlertOctagon className="h-5 w-5" />
-        {lang === "ar" ? "نتائج مخبرية حرجة تتطلب انتباهاً فورياً" : "Résultats de laboratoire critiques nécessitant une attention immédiate"}
+        {lang === "ar"
+          ? "نتائج مخبرية حرجة تتطلب انتباهاً فورياً"
+          : "Résultats de laboratoire critiques nécessitant une attention immédiate"}
         <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded-full ml-1">
           {alerts.length}
         </span>
       </h3>
-      
+
       <div className="grid gap-3">
         {alerts.map((alert) => (
           <Card key={alert.id} className="border-red-300 bg-red-50/50 shadow-sm overflow-hidden">
@@ -47,25 +50,33 @@ export function CriticalLabAlerts({ alerts, className = "" }: CriticalLabAlertsP
                   <TestTube2 className="h-4 w-4 text-red-500" />
                   <span className="font-medium text-red-900">{alert.patientName}</span>
                   <span className="text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded">
-                    {new Date(alert.reportedAt).toLocaleTimeString(lang === "ar" ? "ar-MA" : "fr-MA", { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(alert.reportedAt).toLocaleTimeString(
+                      lang === "ar" ? "ar-MA" : "fr-MA",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )}
                   </span>
                 </div>
                 <div className="text-sm text-red-800 flex flex-wrap gap-1">
                   {lang === "ar" ? "تحاليل غير طبيعية:" : "Valeurs anormales :"}
                   {alert.testNames.map((test, i) => (
                     <span key={test} className="font-semibold">
-                      {test}{i < alert.testNames.length - 1 ? ", " : ""}
+                      {test}
+                      {i < alert.testNames.length - 1 ? ", " : ""}
                     </span>
                   ))}
                 </div>
               </div>
-              
-              <Button size="sm" variant="destructive" asChild className="shrink-0 w-full sm:w-auto">
-                <Link href={`/patients/${alert.patientId}/labs/${alert.id}`}>
-                  {lang === "ar" ? "مراجعة النتائج" : "Examiner les résultats"}
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
+
+              <Link
+                href={`/patients/${alert.patientId}/labs/${alert.id}`}
+                className={cn(
+                  buttonVariants({ size: "sm", variant: "destructive" }),
+                  "shrink-0 w-full sm:w-auto",
+                )}
+              >
+                {lang === "ar" ? "مراجعة النتائج" : "Examiner les résultats"}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Link>
             </CardContent>
           </Card>
         ))}

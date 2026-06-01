@@ -27,14 +27,14 @@ async function handler(req: NextRequest, auth: AuthContext) {
     // 1. Fetch historical revenue data (last 12 months)
     // We assume there's a billing/payments table or we aggregate from appointments
     // For this implementation, we will query appointments that were paid/completed
-    
+
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     twelveMonthsAgo.setDate(1); // Start of month
 
     const { data: appointments, error } = await supabase
       .from("appointments")
-      .select("start_time, status, type_id")
+      .select("start_time, status")
       .eq("clinic_id", clinicId)
       .in("status", ["completed", "paid"])
       .gte("start_time", twelveMonthsAgo.toISOString())
@@ -49,7 +49,7 @@ async function handler(req: NextRequest, auth: AuthContext) {
     // Here we use a simplified approximation based on appointment counts and average cost
     // or standard consultation fee (e.g., 200 MAD).
     const monthlyMap = new Map<string, number>();
-    
+
     // Initialize last 12 months with 0
     for (let i = 0; i < 12; i++) {
       const d = new Date(twelveMonthsAgo);
@@ -62,6 +62,9 @@ async function handler(req: NextRequest, auth: AuthContext) {
 
     if (appointments) {
       for (const apt of appointments) {
+        // start_time is nullable in the schema — skip rows without one
+        // rather than feeding `new Date(null)` (which yields Invalid Date).
+        if (!apt.start_time) continue;
         const d = new Date(apt.start_time);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         if (monthlyMap.has(key)) {
@@ -79,9 +82,8 @@ async function handler(req: NextRequest, auth: AuthContext) {
 
     return apiSuccess({
       history,
-      forecast
+      forecast,
     });
-
   } catch (err) {
     logger.error("Failed to generate revenue forecast", {
       context: "api/admin/revenue-forecast",

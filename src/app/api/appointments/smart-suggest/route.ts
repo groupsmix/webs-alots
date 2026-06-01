@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
+import { suggestSmartSlots, type PatientPreferences } from "@/lib/algorithms/smart-scheduler";
 import { apiSuccess, apiError, apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
-import { suggestSmartSlots, type PatientPreferences } from "@/lib/algorithms/smart-scheduler";
 import { getAvailableSlots } from "@/lib/scheduling/availability";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
@@ -25,6 +25,10 @@ async function handler(req: NextRequest, auth: AuthContext) {
   const { supabase, profile } = auth;
   const clinicId = profile.clinic_id;
 
+  if (!clinicId) {
+    return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+  }
+
   try {
     // 1. Determine patient preferences from historical data
     // In a real application, this would query past appointments
@@ -41,7 +45,7 @@ async function handler(req: NextRequest, auth: AuthContext) {
     const preferences: PatientPreferences = {
       preferredDaysOfWeek: [],
       preferredTimeOfDay: "any",
-      isUrgent
+      isUrgent,
     };
 
     if (pastAppointments && pastAppointments.length > 0) {
@@ -50,10 +54,12 @@ async function handler(req: NextRequest, auth: AuthContext) {
       let afternoonCount = 0;
 
       for (const apt of pastAppointments) {
+        // start_time is nullable in the schema; skip rows missing it.
+        if (!apt.start_time) continue;
         const d = new Date(apt.start_time);
         const day = d.getDay();
         const hour = d.getHours();
-        
+
         daysCount[day] = (daysCount[day] || 0) + 1;
         if (hour < 12) morningCount++;
         else if (hour < 17) afternoonCount++;
@@ -76,12 +82,16 @@ async function handler(req: NextRequest, auth: AuthContext) {
     // 2. Fetch doctor's available slots for the next 7 days
     const today = new Date();
     const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    // Fetch doctor working hours
+
+    // Fetch doctor working hours (one row per day-of-week per doctor).
+    // The table is `doctor_availability`; the slot length column is
+    // `slot_duration` (in minutes).
     const { data: hours, error: hoursError } = await supabase
-      .from("doctor_schedules")
-      .select("*")
-      .eq("doctor_id", doctorId);
+      .from("doctor_availability")
+      .select("day_of_week, start_time, end_time, slot_duration")
+      .eq("doctor_id", doctorId)
+      .eq("clinic_id", clinicId)
+      .eq("is_active", true);
 
     if (hoursError) throw hoursError;
 
@@ -97,29 +107,34 @@ async function handler(req: NextRequest, auth: AuthContext) {
 
     if (bookingsError) throw bookingsError;
 
-    const doctorWorkingHours = hours?.map(h => ({
-      dayOfWeek: h.day_of_week,
-      startTime: h.start_time,
-      endTime: h.end_time,
-      slotDurationMinutes: h.slot_duration_minutes
-    })) || [];
+    const doctorWorkingHours =
+      hours?.map((h) => ({
+        dayOfWeek: h.day_of_week,
+        startTime: h.start_time,
+        endTime: h.end_time,
+        slotDurationMinutes: h.slot_duration,
+      })) || [];
 
-    const existingBookings = bookings?.map(b => ({
-      start: new Date(b.start_time),
-      end: new Date(b.end_time || new Date(new Date(b.start_time).getTime() + 30 * 60000))
-    })) || [];
+    // bookings.start_time is nullable in the schema; drop rows missing it
+    // (the slot computation requires a concrete start).
+    const existingBookings = (bookings ?? []).flatMap((b) => {
+      if (!b.start_time) return [];
+      const start = new Date(b.start_time);
+      const end = b.end_time ? new Date(b.end_time) : new Date(start.getTime() + 30 * 60000);
+      return [{ start, end }];
+    });
 
     // Generate slots day by day and concatenate
-    let allAvailableSlots = [];
+    const allAvailableSlots: ReturnType<typeof getAvailableSlots> = [];
     for (let i = 0; i < 7; i++) {
       const queryDate = new Date(today);
       queryDate.setDate(queryDate.getDate() + i);
-      
+
       const daySlots = getAvailableSlots({
         date: queryDate,
         doctorWorkingHours,
         existingBookings,
-        appointmentDurationMinutes: 30 // Assume standard 30 min duration
+        appointmentDurationMinutes: 30, // Assume standard 30 min duration
       });
       allAvailableSlots.push(...daySlots);
     }
@@ -130,7 +145,7 @@ async function handler(req: NextRequest, auth: AuthContext) {
     return apiSuccess({
       patientId,
       preferencesExtracted: preferences,
-      suggestions
+      suggestions,
     });
   } catch (err) {
     logger.error("Failed to generate smart schedule suggestions", {

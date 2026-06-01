@@ -22,24 +22,40 @@ async function handler(req: NextRequest, auth: AuthContext) {
   const { supabase, profile } = auth;
   const clinicId = profile.clinic_id;
 
+  if (!clinicId) {
+    return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+  }
+
   try {
     // 1. Fetch appointment details
     const { data: appointment, error: aptError } = await supabase
       .from("appointments")
-      .select(`
+      .select(
+        `
         *,
         patient:patient_id (
           id,
           first_visit_date,
           insurance_provider
         )
-      `)
+      `,
+      )
       .eq("id", appointmentId)
       .eq("clinic_id", clinicId)
       .single();
 
     if (aptError || !appointment) {
       return apiError("Appointment not found", 404, "NOT_FOUND");
+    }
+
+    // Without a start_time the predictive features (lead time, day of week,
+    // hour, gap since last visit) cannot be computed.
+    if (!appointment.start_time) {
+      return apiError(
+        "Appointment is missing a start_time and cannot be scored",
+        400,
+        "INVALID_APPOINTMENT",
+      );
     }
 
     // 2. Fetch patient's past appointments for statistics
@@ -66,14 +82,17 @@ async function handler(req: NextRequest, auth: AuthContext) {
       const lastVisit = new Date(history[0].start_time);
       const currentVisit = new Date(appointment.start_time);
       daysSinceLastVisit = Math.floor(
-        (currentVisit.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24)
+        (currentVisit.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24),
       );
     }
 
     const appointmentDate = new Date(appointment.start_time);
-    const createdAt = new Date(appointment.created_at);
+    // created_at is nullable in the schema; fall back to the appointment
+    // date itself (lead time = 0) when missing rather than NaN-ing through
+    // the entire feature vector.
+    const createdAt = appointment.created_at ? new Date(appointment.created_at) : appointmentDate;
     const leadTimeDays = Math.floor(
-      (appointmentDate.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      (appointmentDate.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     const isFirstVisit = totalPast === 0;
@@ -99,7 +118,7 @@ async function handler(req: NextRequest, auth: AuthContext) {
     return apiSuccess({
       appointmentId,
       prediction,
-      featuresCalculated: features
+      featuresCalculated: features,
     });
   } catch (err) {
     logger.error("Failed to predict no-show risk", {

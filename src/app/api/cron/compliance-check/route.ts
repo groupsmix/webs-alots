@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { verifyCronSecret } from "@/lib/api-validate";
 import { runAutomatedComplianceChecks } from "@/lib/automation/compliance-monitor";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
@@ -12,11 +12,10 @@ import { createUntypedAdminClient } from "@/lib/supabase-server";
  * If any check fails, it alerts the super_admin.
  */
 export async function GET(req: NextRequest) {
-  if (!verifyCronSecret(req)) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const authError = verifyCronSecret(req);
+  if (authError) return authError;
 
-  const supabase = createUntypedAdminClient("cron-compliance");
+  const supabase = createUntypedAdminClient("cron");
 
   try {
     const report = await runAutomatedComplianceChecks(supabase);
@@ -24,7 +23,7 @@ export async function GET(req: NextRequest) {
     if (report.overallStatus !== "compliant") {
       logger.warn("Compliance checks failed", {
         context: "cron/compliance-check",
-        failedChecks: report.checks.filter(c => c.status !== "compliant").map(c => c.id)
+        failedChecks: report.checks.filter((c) => c.status !== "compliant").map((c) => c.id),
       });
 
       // Fetch super admins to notify
@@ -43,16 +42,15 @@ export async function GET(req: NextRequest) {
       }
     } else {
       logger.info("Compliance checks passed", {
-        context: "cron/compliance-check"
+        context: "cron/compliance-check",
       });
     }
 
     return apiSuccess({
       message: "Compliance checks completed",
       status: report.overallStatus,
-      report
+      report,
     });
-
   } catch (err) {
     logger.error("Compliance cron failed", {
       context: "cron/compliance-check",

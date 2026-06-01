@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { verifyCronSecret } from "@/lib/api-validate";
 import { sendAppointmentConfirmations } from "@/lib/automation/appointment-confirmation";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
@@ -15,11 +15,10 @@ import { createUntypedAdminClient } from "@/lib/supabase-server";
  * Auth: Internal CRON_SECRET only
  */
 export async function GET(req: NextRequest) {
-  if (!verifyCronSecret(req)) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const authError = verifyCronSecret(req);
+  if (authError) return authError;
 
-  const supabase = createUntypedAdminClient("cron-confirm-appointments");
+  const supabase = createUntypedAdminClient("cron");
 
   try {
     // 1. Fetch all active clinics

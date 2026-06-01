@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { RevenueForecast as ForecastResult, MonthlyRevenue } from "@/lib/predictive/revenue-forecast";
+import type {
+  RevenueForecast as ForecastResult,
+  MonthlyRevenue,
+} from "@/lib/predictive/revenue-forecast";
 
 interface RevenueForecastData {
   history: MonthlyRevenue[];
@@ -15,7 +18,7 @@ interface RevenueForecastData {
 export function RevenueForecastCard({ className = "" }: { className?: string }) {
   const [locale] = useLocale();
   const lang = locale === "ar" ? "ar" : "fr";
-  
+
   const [months, setMonths] = useState<"1" | "3" | "6">("3");
   const [data, setData] = useState<RevenueForecastData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ export function RevenueForecastCard({ className = "" }: { className?: string }) 
         } else {
           setError(true);
         }
-      } catch (err) {
+      } catch {
         setError(true);
       } finally {
         setLoading(false);
@@ -54,29 +57,50 @@ export function RevenueForecastCard({ className = "" }: { className?: string }) 
   const formatMonth = (yearMonth: string) => {
     const [year, month] = yearMonth.split("-").map(Number);
     const date = new Date(year, month - 1);
-    return date.toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-MA", { month: "short", year: "numeric" });
+    return date.toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-MA", {
+      month: "short",
+      year: "numeric",
+    });
   };
 
   if (error) {
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">{lang === "ar" ? "توقعات الإيرادات" : "Prévisions de revenus"}</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {lang === "ar" ? "توقعات الإيرادات" : "Prévisions de revenus"}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-destructive">{lang === "ar" ? "فشل في تحميل التوقعات." : "Échec du chargement des prévisions."}</div>
+          <div className="text-sm text-destructive">
+            {lang === "ar" ? "فشل في تحميل التوقعات." : "Échec du chargement des prévisions."}
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  const trendIcon = data?.forecast.trend === "increasing" ? <TrendingUp className="h-5 w-5 text-green-500" />
-                  : data?.forecast.trend === "decreasing" ? <TrendingDown className="h-5 w-5 text-red-500" />
-                  : <Minus className="h-5 w-5 text-slate-500" />;
+  const trendIcon =
+    data?.forecast.trend === "increasing" ? (
+      <TrendingUp className="h-5 w-5 text-green-500" />
+    ) : data?.forecast.trend === "decreasing" ? (
+      <TrendingDown className="h-5 w-5 text-red-500" />
+    ) : (
+      <Minus className="h-5 w-5 text-slate-500" />
+    );
 
-  const trendText = data?.forecast.trend === "increasing" ? (lang === "ar" ? "اتجاه تصاعدي" : "Tendance à la hausse")
-                  : data?.forecast.trend === "decreasing" ? (lang === "ar" ? "اتجاه تنازلي" : "Tendance à la baisse")
-                  : (lang === "ar" ? "مستقر" : "Stable");
+  const trendText =
+    data?.forecast.trend === "increasing"
+      ? lang === "ar"
+        ? "اتجاه تصاعدي"
+        : "Tendance à la hausse"
+      : data?.forecast.trend === "decreasing"
+        ? lang === "ar"
+          ? "اتجاه تنازلي"
+          : "Tendance à la baisse"
+        : lang === "ar"
+          ? "مستقر"
+          : "Stable";
 
   return (
     <Card className={className}>
@@ -87,18 +111,26 @@ export function RevenueForecastCard({ className = "" }: { className?: string }) 
             {lang === "ar" ? "توقعات الإيرادات" : "Prévisions de revenus"}
           </CardTitle>
           <CardDescription>
-            {lang === "ar" ? "بناءً على التنعيم الأسي المزدوج" : "Basé sur le lissage exponentiel double"}
+            {lang === "ar"
+              ? "بناءً على التنعيم الأسي المزدوج"
+              : "Basé sur le lissage exponentiel double"}
           </CardDescription>
         </div>
         <Tabs value={months} onValueChange={(v) => setMonths(v as "1" | "3" | "6")}>
           <TabsList className="grid w-full grid-cols-3 h-8">
-            <TabsTrigger value="1" className="text-xs">1 {lang === "ar" ? "شهر" : "Mois"}</TabsTrigger>
-            <TabsTrigger value="3" className="text-xs">3 {lang === "ar" ? "أشهر" : "Mois"}</TabsTrigger>
-            <TabsTrigger value="6" className="text-xs">6 {lang === "ar" ? "أشهر" : "Mois"}</TabsTrigger>
+            <TabsTrigger value="1" className="text-xs">
+              1 {lang === "ar" ? "شهر" : "Mois"}
+            </TabsTrigger>
+            <TabsTrigger value="3" className="text-xs">
+              3 {lang === "ar" ? "أشهر" : "Mois"}
+            </TabsTrigger>
+            <TabsTrigger value="6" className="text-xs">
+              6 {lang === "ar" ? "أشهر" : "Mois"}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
-      
+
       <CardContent>
         {loading || !data ? (
           <div className="h-[200px] flex items-center justify-center">
@@ -106,8 +138,8 @@ export function RevenueForecastCard({ className = "" }: { className?: string }) 
           </div>
         ) : data.forecast.modelType === "insufficient_data" ? (
           <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground text-center">
-            {lang === "ar" 
-              ? "بيانات تاريخية غير كافية للتنبؤ (يتطلب 3 أشهر على الأقل)." 
+            {lang === "ar"
+              ? "بيانات تاريخية غير كافية للتنبؤ (يتطلب 3 أشهر على الأقل)."
               : "Données historiques insuffisantes pour générer une prévision (nécessite au moins 3 mois)."}
           </div>
         ) : (
@@ -116,7 +148,9 @@ export function RevenueForecastCard({ className = "" }: { className?: string }) 
               {trendIcon}
               <span className="font-medium text-sm">{trendText}</span>
               <span className="text-xs text-muted-foreground ml-auto">
-                {lang === "ar" ? `مستوى الثقة ${(data.forecast.confidenceLevel * 100).toFixed(0)}%` : `Niveau de confiance ${(data.forecast.confidenceLevel * 100).toFixed(0)}%`}
+                {lang === "ar"
+                  ? `مستوى الثقة ${(data.forecast.confidenceLevel * 100).toFixed(0)}%`
+                  : `Niveau de confiance ${(data.forecast.confidenceLevel * 100).toFixed(0)}%`}
               </span>
             </div>
 
@@ -129,21 +163,23 @@ export function RevenueForecastCard({ className = "" }: { className?: string }) 
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{lang === "ar" ? "الحد الأدنى المتوقع" : "Plage estimée"}</span>
-                    <span>{formatCurrency(pt.lowerBound)} - {formatCurrency(pt.upperBound)}</span>
+                    <span>
+                      {formatCurrency(pt.lowerBound)} - {formatCurrency(pt.upperBound)}
+                    </span>
                   </div>
                   {/* Visual confidence bar */}
                   <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden flex">
-                    <div 
-                      className="bg-primary/20" 
-                      style={{ 
-                        width: `${Math.max(0, (pt.lowerBound / (pt.upperBound * 1.2)) * 100)}%` 
-                      }} 
+                    <div
+                      className="bg-primary/20"
+                      style={{
+                        width: `${Math.max(0, (pt.lowerBound / (pt.upperBound * 1.2)) * 100)}%`,
+                      }}
                     />
-                    <div 
-                      className="bg-primary" 
-                      style={{ 
-                        width: `${Math.max(2, ((pt.upperBound - pt.lowerBound) / (pt.upperBound * 1.2)) * 100)}%` 
-                      }} 
+                    <div
+                      className="bg-primary"
+                      style={{
+                        width: `${Math.max(2, ((pt.upperBound - pt.lowerBound) / (pt.upperBound * 1.2)) * 100)}%`,
+                      }}
                     />
                   </div>
                 </div>

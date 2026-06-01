@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { verifyCronSecret } from "@/lib/api-validate";
 import { checkExpiringLicenses } from "@/lib/automation/license-monitor";
-import { enqueueNotification } from "@/lib/notifications";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { enqueueNotification } from "@/lib/notifications";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 /**
@@ -13,11 +13,10 @@ import { createUntypedAdminClient } from "@/lib/supabase-server";
  * within 90, 60, or 30 days and sends an alert.
  */
 export async function GET(req: NextRequest) {
-  if (!verifyCronSecret(req)) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const authError = verifyCronSecret(req);
+  if (authError) return authError;
 
-  const supabase = createUntypedAdminClient("cron-license-check");
+  const supabase = createUntypedAdminClient("cron");
 
   try {
     const expiringLicenses = await checkExpiringLicenses(supabase);
@@ -29,7 +28,6 @@ export async function GET(req: NextRequest) {
       // to avoid spamming the doctor every single day.
       const d = license.daysUntilExpiry;
       if ([90, 60, 30, 14, 7, 0, -1].includes(d)) {
-        
         // Notify the doctor
         await enqueueNotification(supabase, {
           clinicId: "system", // Or resolve doctor's primary clinic
@@ -40,16 +38,16 @@ export async function GET(req: NextRequest) {
             doctor_name: license.doctorName,
             license_number: license.licenseNumber,
             days_remaining: d,
-            expiry_date: new Date(license.expiryDate).toLocaleDateString("fr-MA")
+            expiry_date: new Date(license.expiryDate).toLocaleDateString("fr-MA"),
           },
           appointmentId: null,
-          priority: d <= 30 ? "urgent" : "normal"
+          priority: d <= 30 ? "urgent" : "normal",
         });
 
         alertCount++;
-        
+
         logger.info(`Sent license expiry alert to ${license.doctorId}`, {
-          daysRemaining: d
+          daysRemaining: d,
         });
       }
     }
@@ -57,9 +55,8 @@ export async function GET(req: NextRequest) {
     return apiSuccess({
       message: "License check completed",
       totalExpiring: expiringLicenses.length,
-      alertsSent: alertCount
+      alertsSent: alertCount,
     });
-
   } catch (err) {
     logger.error("License check cron failed", {
       context: "cron/license-check",

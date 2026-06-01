@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { verifyCronSecret } from "@/lib/api-validate";
 import { generateHealthTip } from "@/lib/algorithms/health-tip-generator";
-import { enqueueNotification } from "@/lib/notifications";
+import { apiSuccess, apiInternalError } from "@/lib/api-response";
+import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { enqueueNotification } from "@/lib/notifications";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 /**
@@ -13,11 +13,10 @@ import { createUntypedAdminClient } from "@/lib/supabase-server";
  * personalized follow-up health tips to patients via WhatsApp.
  */
 export async function GET(req: NextRequest) {
-  if (!verifyCronSecret(req)) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const authError = verifyCronSecret(req);
+  if (authError) return authError;
 
-  const supabase = createUntypedAdminClient("cron-health-tips");
+  const supabase = createUntypedAdminClient("cron");
 
   try {
     const now = new Date();
@@ -30,7 +29,8 @@ export async function GET(req: NextRequest) {
     // If diagnosis are on the appointment, we would query that instead.
     const { data: consultations, error } = await supabase
       .from("consultations")
-      .select(`
+      .select(
+        `
         id,
         clinic_id,
         patient_id,
@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
           phone,
           first_name
         )
-      `)
+      `,
+      )
       .gte("created_at", windowStart.toISOString())
       .lte("created_at", windowEnd.toISOString())
       .limit(200);
@@ -55,11 +56,15 @@ export async function GET(req: NextRequest) {
 
     for (const consult of consultations) {
       try {
-        const patientData = consult.patient as unknown as { id: string; phone: string | null; first_name: string };
+        const patientData = consult.patient as unknown as {
+          id: string;
+          phone: string | null;
+          first_name: string;
+        };
         if (!patientData.phone) continue;
 
         // Generate tip
-        const codes = consult.diagnosis_codes as string[] || [];
+        const codes = (consult.diagnosis_codes as string[]) || [];
         const tip = generateHealthTip(codes);
 
         // We use Darija for WhatsApp tips as requested in requirements
@@ -70,10 +75,10 @@ export async function GET(req: NextRequest) {
           clinicId: consult.clinic_id,
           patientId: patientData.id,
           channel: "whatsapp",
-          templateName: "health_tip_darija", 
+          templateName: "health_tip_darija",
           templateData: {
             patient_name: patientData.first_name,
-            tip_content: messageText
+            tip_content: messageText,
           },
           appointmentId: null,
           priority: "low",
@@ -83,7 +88,7 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         logger.error("Failed to generate/send health tip", {
           consultationId: consult.id,
-          error: String(err)
+          error: String(err),
         });
       }
     }
@@ -91,15 +96,14 @@ export async function GET(req: NextRequest) {
     logger.info("Health tips cron completed", {
       context: "cron/health-tips",
       processed: consultations.length,
-      sentCount
+      sentCount,
     });
 
     return apiSuccess({
       message: "Health tips processed",
       processed: consultations.length,
-      sent: sentCount
+      sent: sentCount,
     });
-
   } catch (err) {
     logger.error("Health tips cron failed", {
       context: "cron/health-tips",

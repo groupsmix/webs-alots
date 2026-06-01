@@ -18,14 +18,14 @@ interface FollowUpSuggestionsProps {
 
 export function FollowUpSuggestions({
   diagnosisCodes,
-  patientId,
-  consultationId,
+  patientId: _patientId,
+  consultationId: _consultationId,
   className = "",
   onSchedule,
 }: FollowUpSuggestionsProps) {
   const [locale] = useLocale();
   const lang = locale === "ar" ? "ar" : "fr";
-  
+
   const [suggestion, setSuggestion] = useState<FollowUpSuggestion | null>(null);
   const [isScheduled, setIsScheduled] = useState(false);
 
@@ -49,8 +49,8 @@ export function FollowUpSuggestions({
     suggestion.priority === "urgent"
       ? "text-red-600 bg-red-100 border-red-200"
       : suggestion.priority === "important"
-      ? "text-amber-600 bg-amber-100 border-amber-200"
-      : "text-blue-600 bg-blue-100 border-blue-200";
+        ? "text-amber-600 bg-amber-100 border-amber-200"
+        : "text-blue-600 bg-blue-100 border-blue-200";
 
   return (
     <Card className={`border-primary/20 bg-primary/5 ${className}`}>
@@ -65,8 +65,8 @@ export function FollowUpSuggestions({
           <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
             <CheckCircle className="h-5 w-5" />
             <span className="text-sm font-medium">
-              {lang === "ar" 
-                ? "تمت جدولة المتابعة بنجاح." 
+              {lang === "ar"
+                ? "تمت جدولة المتابعة بنجاح."
                 : "Rendez-vous de suivi programmé avec succès."}
             </span>
           </div>
@@ -81,20 +81,29 @@ export function FollowUpSuggestions({
                     {lang === "ar" ? "يوماً" : "jours"}
                   </span>
                   <Badge variant="outline" className={`ml-2 text-xs font-normal ${priorityColor}`}>
-                    {lang === "ar" && suggestion.priority === "urgent" ? "عاجل" :
-                     lang === "ar" && suggestion.priority === "important" ? "هام" :
-                     lang === "ar" ? "روتيني" :
-                     suggestion.priority === "urgent" ? "Urgent" :
-                     suggestion.priority === "important" ? "Important" : "Routine"}
+                    {lang === "ar" && suggestion.priority === "urgent"
+                      ? "عاجل"
+                      : lang === "ar" && suggestion.priority === "important"
+                        ? "هام"
+                        : lang === "ar"
+                          ? "روتيني"
+                          : suggestion.priority === "urgent"
+                            ? "Urgent"
+                            : suggestion.priority === "important"
+                              ? "Important"
+                              : "Routine"}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {suggestion.recommendedDate.toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-MA", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  {suggestion.recommendedDate.toLocaleDateString(
+                    lang === "ar" ? "ar-MA" : "fr-MA",
+                    {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    },
+                  )}
                 </p>
               </div>
               <Button size="sm" onClick={handleSchedule} className="w-full sm:w-auto">

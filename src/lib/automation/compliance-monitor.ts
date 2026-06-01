@@ -1,13 +1,13 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { runLaw0908Checks, type Law0908Report } from "@/lib/compliance/morocco-law-09-08";
 import { logger } from "@/lib/logger";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Runs automated compliance checks against the database state
  * to ensure Law 09-08 principles are actively maintained.
  */
 export async function runAutomatedComplianceChecks(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ): Promise<Law0908Report> {
   try {
     // 1. Check for data minimization & consent records
