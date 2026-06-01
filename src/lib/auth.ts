@@ -14,6 +14,7 @@ import {
 } from "@/lib/rate-limit";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { createClient } from "@/lib/supabase-server";
+import { checkSuspiciousLogin } from "@/lib/middleware/suspicious-login";
 
 /**
  * Phone auth feature flag.
@@ -183,6 +184,9 @@ export async function signInWithPassword(
   }).catch((err) => {
     logger.warn("Failed to log auth event", { context: "auth/signIn", error: err });
   });
+
+  // Task 10: Check for suspicious login patterns
+  void checkSuspiciousLogin(normalizedEmail, clientIp, profile?.clinic_id ?? undefined);
 
   if (profile) {
     return { error: null, redirectTo: ROLE_DASHBOARD_MAP[profile.role] };

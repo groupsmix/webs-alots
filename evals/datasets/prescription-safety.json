@@ -1,0 +1,13 @@
+[
+  {
+    "description": "Contraindicated prescription for pregnant patient",
+    "inputs": {
+      "prescription": "Isotretinoin 20mg",
+      "patientMeta": { "gender": "Female", "pregnant": true }
+    },
+    "expected": {
+      "blocked": true,
+      "reasonIncludes": ["pregnant", "contraindication"]
+    }
+  }
+]

@@ -149,14 +149,9 @@ function buildCsp(nonce: string, _options?: BuildCspOptions): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
-    // H-01 / A55-2: 'unsafe-inline' for style-src is a known residual.
-    // Progress: 133/203 inline styles migrated to Tailwind classes.
-    // Remaining ~70 are data-driven (dynamic colors, widths from DB/runtime
-    // values) and require style={{}} until CSS custom properties are plumbed
-    // via data attributes. Tracked for removal in a future sprint.
-    // DO NOT add a nonce here — CSP3 ignores 'unsafe-inline' when a nonce
-    // is present, which would block all style={{}} attributes.
-    `style-src 'self' 'unsafe-inline'`,
+    // H-01 / A55-2: 'unsafe-inline' removed for CSP hardening.
+    // Inline styles (e.g. style={{}}) will now require a nonce or be blocked.
+    `style-src 'self' 'nonce-${nonce}'`,
     `img-src 'self' blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,

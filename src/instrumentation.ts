@@ -208,6 +208,17 @@ export function register() {
         return breadcrumb;
       },
     });
+
+    // Initialize OpenTelemetry for distributed tracing
+    // The @vercel/otel package handles this elegantly for Next.js
+    try {
+      // Lazy load to not break edge runtime
+      import("@vercel/otel").then(({ registerOTel }) => {
+        registerOTel({ serviceName: "oltigo-health-web" });
+      });
+    } catch {
+      // Ignored
+    }
   }
   // Validate all required environment variables at startup so missing
   // config is surfaced immediately rather than at runtime.

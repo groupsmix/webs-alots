@@ -17,6 +17,7 @@ import { resolveAIConfig, logMinorAIProcessing } from "@/lib/ai/config";
 import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
+import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -41,6 +42,7 @@ interface PatientSummaryResponse {
   generatedAt: string;
   patientId: string;
   cached: boolean;
+  disclaimer?: string;
 }
 
 // ── Patient context fetcher ──
@@ -339,6 +341,7 @@ export const POST = withAuthValidation(
             generatedAt: cachedSummary.generated_at,
             patientId: data.patientId,
             cached: true,
+            disclaimer: getAIDisclaimer(),
           });
         }
       }
@@ -510,6 +513,7 @@ export const POST = withAuthValidation(
         generatedAt,
         patientId: data.patientId,
         cached: false,
+        disclaimer: getAIDisclaimer(),
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

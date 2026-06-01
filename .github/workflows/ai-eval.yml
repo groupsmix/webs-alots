@@ -1,0 +1,42 @@
+name: AI Safety Evaluation
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Run at 2 AM UTC every day
+  pull_request:
+    paths:
+      - 'src/app/api/v1/ai/**'
+      - 'src/lib/ai/**'
+      - 'evals/**'
+
+jobs:
+  evaluate-ai:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run AI Evaluations
+        run: npx tsx evals/runners/evaluate.ts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_KEY }}
+          
+      - name: Upload Evaluation Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-eval-report
+          path: evals/reports/*.json
+          retention-days: 14

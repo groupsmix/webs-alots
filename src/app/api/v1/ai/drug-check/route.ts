@@ -9,6 +9,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -110,6 +111,7 @@ export const POST = withAuthValidation(
       alternatives,
       doseValidation: doseResult,
       overallSeverity: hasCritical ? "critical" : hasMajor ? "major" : "safe",
+      disclaimer: getAIDisclaimer(),
     });
   },
   ["doctor", "clinic_admin", "super_admin"],

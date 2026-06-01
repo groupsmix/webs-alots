@@ -21,6 +21,24 @@ function requireEnv(name: string): string {
 }
 
 /**
+ * Get trace headers from the current request context for distributed tracing.
+ */
+async function getTraceHeaders(): Record<string, string> {
+  try {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    const traceparent = h.get("traceparent");
+    const tracestate = h.get("tracestate");
+    const result: Record<string, string> = {};
+    if (traceparent) result["traceparent"] = traceparent;
+    if (tracestate) result["tracestate"] = tracestate;
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Get the Supabase URL for server operations.
  *
  * Priority: SUPABASE_POOLER_URL (Cloudflare Workers + connection pooling)
@@ -49,6 +67,7 @@ function getSupabaseUrl(): string {
 export async function createClient() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
+  const traceHeaders = await getTraceHeaders();
 
   return createServerClient<Database>(
     getSupabaseUrl(),
@@ -70,6 +89,9 @@ export async function createClient() {
             });
           }
         },
+      },
+      global: {
+        headers: traceHeaders,
       },
     },
   );
@@ -97,6 +119,7 @@ export async function createTenantClient(clinicId: string) {
 
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
+  const traceHeaders = await getTraceHeaders();
 
   const client = createServerClient<Database>(
     getSupabaseUrl(),
@@ -120,7 +143,7 @@ export async function createTenantClient(clinicId: string) {
         },
       },
       global: {
-        headers: { "x-clinic-id": clinicId },
+        headers: { "x-clinic-id": clinicId, ...traceHeaders },
       },
     },
   );
