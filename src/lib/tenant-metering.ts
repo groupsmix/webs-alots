@@ -83,7 +83,7 @@ export async function getMonthlyUsage(
   const { data, error } = await supabase
     .from("tenant_usage_log")
     .select("resource_type, unit_count, cost_usd")
-    .eq("clinic_id", clinicId)
+    .eq("clinic_id", clinicId) // tenant-scoped
     .gte("created_at", monthStart.toISOString());
 
   if (error) {
@@ -128,7 +128,7 @@ export async function getMonthlyUnitCount(
   const { data, error } = await supabase
     .from("tenant_usage_log")
     .select("unit_count")
-    .eq("clinic_id", clinicId)
+    .eq("clinic_id", clinicId) // tenant-scoped
     .eq("resource_type", resourceType)
     .gte("created_at", monthStart.toISOString());
 
@@ -158,6 +158,7 @@ export async function getAllClinicsMonthlyUsage(
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
 
+  // nosemgrep: tenant-scoping — intentional cross-tenant query for super-admin overview
   const { data, error } = await supabase
     .from("tenant_usage_log")
     .select("clinic_id, resource_type, unit_count, cost_usd")
