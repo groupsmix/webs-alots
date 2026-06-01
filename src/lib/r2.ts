@@ -164,22 +164,34 @@ function _validateSignedR2Url(
   return match === 0;
 }
 
-// AWS SDK types — imported dynamically at runtime to keep the heavy SDK
-// out of the main bundle (see PERF-01 audit finding).
-type S3ClientType = import("@aws-sdk/client-s3").S3Client;
-type PutObjectCommandInputType = import("@aws-sdk/client-s3").PutObjectCommandInput;
+/**
+ * Minimal structural type for the credentials/config used by the presigned
+ * URL signing path (the only path that still needs R2 S3 API credentials).
+ */
+type R2PresignConfig = {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+  publicUrl: string | undefined;
+};
 
 /**
- * Default maximum size enforced by direct-upload presigned POST policies.
- * Individual call-sites may pass a smaller bound when they know the
- * acceptable upper limit for that upload kind.
+ * Default maximum size for direct-upload presigned URLs. Individual call-sites
+ * may pass a smaller bound. Native R2 presigned PUT cannot enforce a
+ * content-length-range at write time the way an S3 POST policy could, so the
+ * authoritative size guard is the PUT /api/upload confirm step
+ * (HeadObject + per-category cap). The constant name is kept for backward
+ * compatibility with existing imports.
  */
 export const DEFAULT_PRESIGNED_POST_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
 /**
- * Returned by {@link getPresignedUploadPost}. Clients submit the file as the
- * `file` field of a `multipart/form-data` POST to `url`, including every
- * field returned in `fields`.
+ * Returned by {@link getPresignedUploadPost}. With the native-binding
+ * migration the client now PUTs the file body directly to `url` with the
+ * `Content-Type` and `Content-Disposition` headers that were signed into the
+ * URL. `fields` is retained (always empty) so existing response shapes and
+ * callers keep compiling; clients should send no multipart fields.
  */
 export interface PresignedUploadPost {
   url: string;
@@ -187,7 +199,37 @@ export interface PresignedUploadPost {
   key: string;
 }
 
-function getR2Config() {
+/**
+ * Resolve the native R2 bucket binding from the Cloudflare request context.
+ *
+ * MUST be called lazily, per-invocation — getCloudflareContext().env is only
+ * populated inside the Worker request/runtime context. Calling it at module
+ * load (or caching the result across invocations) would capture `undefined`
+ * and break code paths such as the R2 cleanup cron.
+ *
+ * Returns null when the binding is unavailable (e.g. during `next build`
+ * static analysis, local Node tooling, or tests) so callers degrade safely.
+ */
+export function getR2Bucket(): R2Bucket | null {
+  try {
+    // Lazy require so the build/static-analysis phase (which has no request
+    // context) doesn't blow up importing the Cloudflare context helper.
+    const { getCloudflareContext } = require("@opennextjs/cloudflare") as {
+      getCloudflareContext: () => { env?: Record<string, unknown> };
+    };
+    const env = getCloudflareContext().env;
+    const bucket = env?.UPLOADS_BUCKET as R2Bucket | undefined;
+    return bucket ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve the S3 API credentials used only for presigned-URL signing.
+ * Returns null when any required value is missing.
+ */
+function getR2PresignConfig(): R2PresignConfig | null {
   const accountId = process.env.R2_ACCOUNT_ID;
   const accessKeyId = process.env.R2_ACCESS_KEY_ID;
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
@@ -201,38 +243,20 @@ function getR2Config() {
   return { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl };
 }
 
-let _client: S3ClientType | null = null;
-let _lastConfigHash = "";
-
-async function getClient(): Promise<S3ClientType | null> {
-  const config = getR2Config();
-  if (!config) return null;
-
-  // Rebuild the client whenever credentials or config change,
-  // ensuring stale credentials are never used after rotation.
-  const configHash = `${config.accountId}:${config.accessKeyId}:${config.bucketName}`;
-  if (_client && configHash === _lastConfigHash) return _client;
-
-  const { S3Client } = await import("@aws-sdk/client-s3");
-
-  _lastConfigHash = configHash;
-  _client = new S3Client({
-    region: "auto",
-    endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  });
-
-  return _client;
+/** Bucket name for logging / public-URL construction. */
+function getR2BucketName(): string | undefined {
+  return process.env.R2_BUCKET_NAME;
 }
 
 /**
  * Check if R2 is configured and available.
+ *
+ * True when either the native binding is present (the production/runtime
+ * path) or the S3 API credentials are configured (the presign path / local
+ * tooling). Callers gate uploads on this before attempting object I/O.
  */
 export function isR2Configured(): boolean {
-  return getR2Config() !== null;
+  return getR2Bucket() !== null || getR2PresignConfig() !== null;
 }
 
 /**
