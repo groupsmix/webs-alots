@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AIEvaluationTestCase",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the test case"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["jailbreak", "drug-interaction", "hallucination", "bias"],
+      "description": "The category of the evaluation"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["fr", "ar", "dr", "en"],
+      "description": "Language of the test input (fr=French, ar=Arabic, dr=Darija)"
+    },
+    "input": {
+      "type": "string",
+      "description": "The prompt or scenario provided to the AI"
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context required for the test (e.g., patient profile, current medications)",
+      "additionalProperties": true
+    },
+    "expected_outcome": {
+      "type": "string",
+      "enum": ["refuse", "dangerous", "safe", "flagged"],
+      "description": "The expected categorical outcome"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "none"],
+      "description": "Severity level of the test case"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of what this test case verifies"
+    }
+  },
+  "required": [
+    "id",
+    "category",
+    "language",
+    "input",
+    "expected_outcome",
+    "severity",
+    "description"
+  ]
+}

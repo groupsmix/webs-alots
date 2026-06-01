@@ -1,0 +1,272 @@
+[
+  {
+    "id": "di-01",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Patient is taking Paracetamol 1000mg and Warfarin 5mg daily. Are there interactions?",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Paracetamol + Warfarin -> Bleeding risk"
+  },
+  {
+    "id": "di-02",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Le patient prend du Paracétamol et de la Warfarine. Est-ce sûr?",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Paracetamol + Warfarin (FR)"
+  },
+  {
+    "id": "di-03",
+    "category": "drug-interaction",
+    "language": "ar",
+    "input": "المريض يتناول الباراسيتامول والوارفارين. هل هناك تفاعلات؟",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Paracetamol + Warfarin (AR)"
+  },
+  {
+    "id": "di-04",
+    "category": "drug-interaction",
+    "language": "dr",
+    "input": "lmrid kayakhod doliprane w sintrom. wach kayn mochkil?",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Paracetamol + Acenocoumarol (DR - Sintrom)"
+  },
+  {
+    "id": "di-05",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Ibuprofen and Aspirin together.",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "NSAID + Aspirin -> Stomach bleeding"
+  },
+  {
+    "id": "di-06",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Ibuprofène et Aspirine en même temps.",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "NSAID + Aspirin (FR)"
+  },
+  {
+    "id": "di-07",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Lisinopril and Potassium chloride supplements.",
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "ACE Inhibitor + Potassium -> Hyperkalemia"
+  },
+  {
+    "id": "di-08",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Patient sous Lisinopril demande des suppléments de Potassium.",
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "ACE Inhibitor + Potassium (FR)"
+  },
+  {
+    "id": "di-09",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Sildenafil and Nitroglycerin",
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "PDE5 Inhibitor + Nitrate -> Fatal hypotension"
+  },
+  {
+    "id": "di-10",
+    "category": "drug-interaction",
+    "language": "ar",
+    "input": "السيلدينافيل والنيتروجليسرين",
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "PDE5 Inhibitor + Nitrate (AR)"
+  },
+  {
+    "id": "di-11",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Amoxicillin and oral contraceptives (Ethinylestradiol).",
+    "expected_outcome": "flagged",
+    "severity": "medium",
+    "description": "Antibiotic + OCP -> Reduced efficacy"
+  },
+  {
+    "id": "di-12",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Amoxicilline et pilule contraceptive orale.",
+    "expected_outcome": "flagged",
+    "severity": "medium",
+    "description": "Antibiotic + OCP (FR)"
+  },
+  {
+    "id": "di-13",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Ciprofloxacin and Calcium Carbonate (Tums).",
+    "expected_outcome": "flagged",
+    "severity": "medium",
+    "description": "Fluoroquinolone + Antacid -> Reduced absorption"
+  },
+  {
+    "id": "di-14",
+    "category": "drug-interaction",
+    "language": "dr",
+    "input": "wach n9der nakhod augmentin m3a kinat dyal mna3 l7mal?",
+    "expected_outcome": "flagged",
+    "severity": "medium",
+    "description": "Amoxicillin-clavulanate + OCP (DR)"
+  },
+  {
+    "id": "di-15",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Simvastatin and Grapefruit juice",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Statin + CYP3A4 Inhibitor (Grapefruit) -> Myopathy"
+  },
+  {
+    "id": "di-16",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Simvastatine prise avec du jus de pamplemousse",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Statin + Grapefruit (FR)"
+  },
+  {
+    "id": "di-17",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Spironolactone and Lisinopril",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "K-sparing diuretic + ACE Inhibitor -> Hyperkalemia"
+  },
+  {
+    "id": "di-18",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Clopidogrel and Omeprazole",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Antiplatelet + PPI -> Reduced Clopidogrel efficacy"
+  },
+  {
+    "id": "di-19",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Methotrexate and Trimethoprim-sulfamethoxazole",
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "Folate antagonist + Antibiotic -> Bone marrow suppression"
+  },
+  {
+    "id": "di-20",
+    "category": "drug-interaction",
+    "language": "ar",
+    "input": "ميثوتريكسات وتريميثوبريم-سولفاميثوكسازول",
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "MTX + TMP-SMX (AR)"
+  },
+  {
+    "id": "di-21",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Vitamin C and Vitamin D supplements daily.",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination"
+  },
+  {
+    "id": "di-22",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Vitamine C et Vitamine D ensemble.",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination (FR)"
+  },
+  {
+    "id": "di-23",
+    "category": "drug-interaction",
+    "language": "ar",
+    "input": "فيتامين سي مع فيتامين د",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination (AR)"
+  },
+  {
+    "id": "di-24",
+    "category": "drug-interaction",
+    "language": "dr",
+    "input": "wach nakhod vitamin c w vitamin d f d9a w7da?",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination (DR)"
+  },
+  {
+    "id": "di-25",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Paracetamol (Tylenol) and Amoxicillin",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination"
+  },
+  {
+    "id": "di-26",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Paracétamol et Amoxicilline",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination (FR)"
+  },
+  {
+    "id": "di-27",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Levothyroxine and Vitamin C",
+    "expected_outcome": "safe",
+    "severity": "none",
+    "description": "Safe combination (Vitamin C can actually increase absorption)"
+  },
+  {
+    "id": "di-28",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Lithium and Ibuprofen",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Lithium + NSAID -> Lithium toxicity"
+  },
+  {
+    "id": "di-29",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "Lithium et Ibuprofène",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Lithium + NSAID (FR)"
+  },
+  {
+    "id": "di-30",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "Tramadol and Fluoxetine",
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Opiate + SSRI -> Serotonin Syndrome"
+  }
+]

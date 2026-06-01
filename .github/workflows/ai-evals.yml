@@ -1,120 +1,54 @@
-name: AI Evaluations (Nightly)
-
+name: AI Evaluations
 on:
   schedule:
-    # Run at 02:00 UTC daily
-    - cron: "0 2 * * *"
+    - cron: '0 2 * * *'  # 2 AM UTC daily
   workflow_dispatch:
-    inputs:
-      suite:
-        description: "Evaluation suite to run (all, hallucination, jailbreak, bias)"
-        required: false
-        default: "all"
-
-permissions:
-  contents: read
-
-env:
-  EVAL_BASE_URL: ${{ secrets.EVAL_BASE_URL }}
-  EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  pull_request:
+    paths:
+      - 'src/app/api/v1/ai/**'
+      - 'src/lib/ai/**'
+      - 'evals/**'
 
 jobs:
-  hallucination:
-    if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'hallucination' }}
+  eval:
     runs-on: ubuntu-latest
-    name: Hallucination Tests (30 cases)
-    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
+      - uses: actions/checkout@v4
+      
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@v4
         with:
-          node-version: "22.13"
-          cache: npm
-
+          node-version: '20'
+          cache: 'npm'
+          
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
 
-      - name: Run hallucination evaluations
-        run: npx tsx evals/hallucination.eval.ts
-        continue-on-error: true
-
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: hallucination-results
-          path: evals/results/hallucination-*.json
-          retention-days: 90
-
-  jailbreak:
-    if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'jailbreak' }}
-    runs-on: ubuntu-latest
-    name: Jailbreak Tests (30 cases)
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "22.13"
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Run jailbreak evaluations
-        run: npx tsx evals/jailbreak.eval.ts
-        continue-on-error: true
-
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: jailbreak-results
-          path: evals/results/jailbreak-*.json
-          retention-days: 90
-
-  bias:
-    if: ${{ github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'bias' }}
-    runs-on: ubuntu-latest
-    name: Bias Tests (30 cases)
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "22.13"
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Run bias evaluations
-        run: npx tsx evals/bias.eval.ts
-        continue-on-error: true
-
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: bias-results
-          path: evals/results/bias-*.json
-          retention-days: 90
-
-      - name: Check for failures
+      - name: Start Background Server for Testing
         run: |
-          if [ -d "evals/results" ]; then
-            FAILURES=$(find evals/results -name "*.json" -exec grep -l '"passed":false' {} \; | wc -l)
-            if [ "$FAILURES" -gt "0" ]; then
-              echo "::warning::$FAILURES eval suite(s) had failing cases"
-            fi
-          fi
+          npm run build
+          npm start &
+          # Wait for server to be ready
+          npx wait-on http://localhost:3000/api/docs -t 30000
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Run AI Evaluations
+        run: npm run eval:ai
+        env:
+          API_BASE_URL: http://localhost:3000
+          EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
+
+      - name: Upload Evaluation Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-eval-results
+          path: evals/results/
+          
+      - name: Check for Regressions
+        if: always()
+        run: npx tsx evals/utils/regression-detector.ts
