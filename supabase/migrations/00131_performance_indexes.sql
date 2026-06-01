@@ -34,5 +34,5 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_clinic_timestamp
 
 -- Notification queue: dequeue performance (claim_notification_batch RPC).
 CREATE INDEX IF NOT EXISTS idx_notification_queue_dequeue
-  ON notification_queue (status, next_attempt_at ASC)
+  ON notification_queue (status, next_retry_at ASC)
   WHERE status IN ('pending', 'failed');
