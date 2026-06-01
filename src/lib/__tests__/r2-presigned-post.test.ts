@@ -10,23 +10,12 @@
  *   - signs a PUT request carrying the locked Content-Type / Content-Disposition,
  *   - returns the signed URL, an empty `fields` map, and the key.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-const signMock = vi.fn(async (_url: string, _init: unknown) => ({
-  url: "https://test-account.r2.cloudflarestorage.com/test-bucket/clinics/abc/logos/file.png?X-Amz-Signature=deadbeef",
-}));
-
-vi.mock("aws4fetch", () => ({
-  AwsClient: class {
-    sign = signMock;
-  },
-}));
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 describe("getPresignedUploadPost", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    signMock.mockClear();
     process.env.R2_ACCOUNT_ID = "test-account";
     process.env.R2_ACCESS_KEY_ID = "test-key";
     process.env.R2_SECRET_ACCESS_KEY = "test-secret";
@@ -42,7 +31,6 @@ describe("getPresignedUploadPost", () => {
     const { getPresignedUploadPost } = await import("../r2");
     const result = await getPresignedUploadPost("clinics/abc/logos/file.png", "image/png");
     expect(result).toBeNull();
-    expect(signMock).not.toHaveBeenCalled();
   });
 
   it("keeps DEFAULT_PRESIGNED_POST_MAX_SIZE at 2 MB for backward compatibility", async () => {
@@ -50,28 +38,34 @@ describe("getPresignedUploadPost", () => {
     expect(DEFAULT_PRESIGNED_POST_MAX_SIZE).toBe(2 * 1024 * 1024);
   });
 
-  it("signs a PUT request with the locked Content-Type and Content-Disposition", async () => {
+  it("signs a presigned PUT URL against the R2 S3 endpoint", async () => {
     const { getPresignedUploadPost } = await import("../r2");
 
-    await getPresignedUploadPost("clinics/abc/photos/file.jpg", "image/jpeg");
+    const result = await getPresignedUploadPost("clinics/abc/photos/file.jpg", "image/jpeg");
 
-    expect(signMock).toHaveBeenCalledTimes(1);
-    const [, init] = signMock.mock.calls[0] as unknown as [
-      string,
-      { method: string; headers: Record<string, string> },
-    ];
-    expect(init.method).toBe("PUT");
-    expect(init.headers["Content-Type"]).toBe("image/jpeg");
-    expect(init.headers["Content-Disposition"]).toBe("attachment");
+    expect(result).not.toBeNull();
+    const u = new URL(result!.url);
+    expect(u.host).toBe("test-account.r2.cloudflarestorage.com");
+    expect(u.pathname).toBe("/test-bucket/clinics/abc/photos/file.jpg");
+    // SigV4 query parameters must all be present.
+    expect(u.searchParams.get("X-Amz-Algorithm")).toBe("AWS4-HMAC-SHA256");
+    expect(u.searchParams.get("X-Amz-Credential")).toContain("test-key/");
+    expect(u.searchParams.get("X-Amz-Date")).toMatch(/^\d{8}T\d{6}Z$/);
+    expect(u.searchParams.get("X-Amz-Expires")).toBe("600");
+    expect(u.searchParams.get("X-Amz-Signature")).toMatch(/^[0-9a-f]{64}$/);
+    // Content-Type + Content-Disposition are locked into the signature.
+    const signedHeaders = u.searchParams.get("X-Amz-SignedHeaders") ?? "";
+    expect(signedHeaders).toContain("content-type");
+    expect(signedHeaders).toContain("content-disposition");
+    expect(signedHeaders).toContain("host");
   });
 
-  it("returns the signed URL, an empty fields map, and the key", async () => {
+  it("returns an empty fields map and the key", async () => {
     const { getPresignedUploadPost } = await import("../r2");
 
     const result = await getPresignedUploadPost("clinics/abc/logos/file.png", "image/png");
 
     expect(result).not.toBeNull();
-    expect(result!.url).toContain("r2.cloudflarestorage.com");
     expect(result!.key).toBe("clinics/abc/logos/file.png");
     expect(result!.fields).toEqual({});
   });
