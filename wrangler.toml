@@ -203,10 +203,15 @@ crons = [
   "*/15 * * * *",
   "*/30 * * * *",
   "0 * * * *",
+  "0 */4 * * *",
+  "0 1 * * *",
   "0 2 * * *",
   "0 3 * * *",
   "0 4 * * *",
   "0 5 * * *",
+  "0 6 * * *",
+  "0 7 * * *",
+  "0 10 * * *",
 ]
 
 # W8-A31-01: Observability (was missing — Workers Logs disabled per-env)
@@ -336,10 +341,15 @@ crons = [
   "*/15 * * * *",
   "*/30 * * * *",
   "0 * * * *",
+  "0 */4 * * *",
+  "0 1 * * *",
   "0 2 * * *",
   "0 3 * * *",
   "0 4 * * *",
   "0 5 * * *",
+  "0 6 * * *",
+  "0 7 * * *",
+  "0 10 * * *",
 ]
 
 # W8-A31-01: Observability for staging
@@ -378,11 +388,16 @@ crons = [
   "*/5 * * * *",  # every 5 min — uptime monitor + WhatsApp alerts
   "*/15 * * * *", # every 15 min — notification queue flush
   "*/30 * * * *", # every 30 min — appointment reminders
-  "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders
+  "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders + lab triage
+  "0 */4 * * *", # every 4 hours — MVA appointment confirmation sweep
+  "0 1 * * *",    # 01:00 UTC daily — MVA compliance checks (Law 09-08)
   "0 2 * * *",    # 02:00 UTC daily — subscription billing
   "0 3 * * *",    # 03:00 UTC daily — GDPR patient data purge
   "0 4 * * *",    # 04:00 UTC daily — M-03/M-04 dedup table TTL purge
   "0 5 * * *",    # 05:00 UTC daily — BL-002 Stripe payment reconciliation
+  "0 6 * * *",    # 06:00 UTC daily — MVA daily backup verification
+  "0 7 * * *",    # 07:00 UTC daily — MVA doctor license-expiry warnings
+  "0 10 * * *",   # 10:00 UTC daily — MVA patient health-tip follow-ups
 ]
 
 # ── Build ─────────────────────────────────────────────────────────────

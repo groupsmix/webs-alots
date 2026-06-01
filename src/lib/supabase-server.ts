@@ -197,6 +197,12 @@ export type AdminPurpose =
   | "ai-feature-toggle"
   | "ai-route"
   | "ai-config-resolve"
+  | "cron-lab-triage"
+  | "cron-license-check"
+  | "cron-health-tips"
+  | "cron-confirm-appointments"
+  | "cron-compliance-check"
+  | "cron-backup-verify"
   | "subscription-billing";
 
 /**

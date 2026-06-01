@@ -6,6 +6,7 @@
  */
 
 export { checkInteractions, INTERACTION_PAIRS, CROSS_REACTIVITY } from "./drug-interactions";
+export { suggestAlternatives, suggestAllAlternatives } from "./drug-alternatives";
 export { validateDose } from "./dose-validation";
 export { calculateNEWS2 } from "./news2";
 export { checkAllergies } from "./allergy-checker";
@@ -24,6 +25,7 @@ export type {
   AlertUIBehavior,
   ClinicalAlertDisplay,
 } from "./types";
+export type { DrugAlternative, AlternativeSuggestion } from "./drug-alternatives";
 export { ALERT_DISPLAY_MAP } from "./types";
 export type { PatientAllergy, AllergyAlert, AllergyCheckResult } from "./allergy-checker";
 export type { DoseCheckInput, PatientFactors, DoseAlert, DoseCheckResult } from "./dose-checker";

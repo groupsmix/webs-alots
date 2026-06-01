@@ -8,6 +8,7 @@
  * and submission guide, see {@link ../../../docs/whatsapp-template-approval.md}.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 
 // ---- Notification Trigger Types ----
@@ -610,4 +611,167 @@ export async function dispatchNotification(
   }
 
   return results;
+}
+
+// ---- Template-Based Enqueue (PR #950 cron handlers) ----
+
+/**
+ * Cron-handler-friendly notification templates.
+ *
+ * The MVA cron handlers (lab-triage, license-check, health-tips, and the
+ * automation/appointment-confirmation helper) enqueue notifications by
+ * `templateName` + `templateData` rather than by NotificationTrigger.
+ * These templates are intentionally narrower than `defaultNotificationTemplates`:
+ * they encode just the message body and a generic trigger mapping for the
+ * queue, so the existing notification-queue infrastructure can deliver them
+ * unchanged.
+ *
+ * Bodies use the same `{{variable}}` substitution as the main template
+ * engine. Add new entries here when a new templateName is introduced.
+ */
+const CRON_NOTIFICATION_TEMPLATES: Record<string, { body: string; trigger: NotificationTrigger }> =
+  {
+    critical_lab_alert: {
+      body: "Alerte critique: résultat de laboratoire {{lab_id}} — {{alerts}}",
+      trigger: "follow_up",
+    },
+    license_expiry_warning: {
+      body:
+        "Dr. {{doctor_name}}, votre licence {{license_number}} expire dans " +
+        "{{days_remaining}} jour(s) ({{expiry_date}}). Merci de la renouveler.",
+      trigger: "follow_up",
+    },
+    health_tip_darija: {
+      body: "Salam {{patient_name}}, conseil santé du jour: {{tip_content}}",
+      trigger: "follow_up",
+    },
+    appointment_confirmation_darija: {
+      body:
+        "Salam {{patient_name}}, votre rendez-vous avec {{doctor_name}} est " +
+        "confirmé le {{date}} à {{time}}.",
+      trigger: "booking_confirmation",
+    },
+  };
+
+/**
+ * Channel name used by the cron handlers. They write the in-app channel as
+ * "in-app" (kebab-case) but the internal contract uses the underscored
+ * NotificationChannel ("in_app"). Accept both for ergonomics.
+ */
+export type CronNotificationChannel = NotificationChannel | "in-app";
+
+export interface EnqueueTemplateParams {
+  clinicId: string;
+  /** ID of the user (patient, doctor, or staff) the notification targets. */
+  patientId: string;
+  channel: CronNotificationChannel;
+  templateName: string;
+  templateData: Record<string, string | number | undefined | null>;
+  appointmentId?: string | null;
+  priority?: "low" | "normal" | "high" | "urgent";
+}
+
+/**
+ * Shape of the user-contact row we look up. Kept narrow so we don't have
+ * to thread the full Supabase row type through this helper.
+ */
+interface UserContactRow {
+  phone?: string | null;
+  email?: string | null;
+}
+
+/**
+ * Template-based enqueue: looks up the recipient's contact info, renders
+ * the message body from {@link CRON_NOTIFICATION_TEMPLATES}, and hands off
+ * to the underlying notification-queue helper.
+ *
+ * Returns the queue entry ID on success, or null if:
+ *   - The named template is not registered.
+ *   - The recipient has no usable contact for the requested channel.
+ *   - The queue insert itself failed (the underlying helper already logs).
+ *
+ * Used by the PR #950 MVA cron handlers; the lower-level
+ * `enqueueNotification` in `@/lib/notification-queue` remains the canonical
+ * API for callsites that already know the recipient + rendered body.
+ */
+export async function enqueueNotification(
+  supabase: SupabaseClient,
+  params: EnqueueTemplateParams,
+): Promise<string | null> {
+  const template = CRON_NOTIFICATION_TEMPLATES[params.templateName];
+  if (!template) {
+    logger.warn("enqueueNotification: unknown templateName — skipping", {
+      templateName: params.templateName,
+      clinicId: params.clinicId,
+      patientId: params.patientId,
+    });
+    return null;
+  }
+
+  // Normalize the cron handlers' "in-app" alias to the internal value.
+  const channel: NotificationChannel = params.channel === "in-app" ? "in_app" : params.channel;
+
+  // Resolve the recipient. For channels that need an external address
+  // (whatsapp/sms/email) we look up the user row; for in_app we use the
+  // user ID itself as the recipient identifier.
+  let recipient = params.patientId;
+  if (channel === "whatsapp" || channel === "sms" || channel === "email") {
+    // The Supabase client returns `unknown` for the row when the schema
+    // generic isn't supplied. We've explicitly selected `phone, email`
+    // above so the cast to UserContactRow is safe.
+    const { data: rawUser, error: lookupError } = await supabase
+      .from("users")
+      .select("phone, email")
+      .eq("id", params.patientId)
+      .maybeSingle();
+    const user = rawUser as UserContactRow | null;
+    if (lookupError) {
+      logger.warn("enqueueNotification: recipient lookup failed", {
+        templateName: params.templateName,
+        patientId: params.patientId,
+        error: String(lookupError),
+      });
+      return null;
+    }
+    const candidate = channel === "email" ? user?.email : user?.phone;
+    if (!candidate) {
+      logger.warn("enqueueNotification: recipient has no contact for channel — skipping", {
+        templateName: params.templateName,
+        patientId: params.patientId,
+        channel,
+      });
+      return null;
+    }
+    recipient = candidate;
+  }
+
+  // Render the body. `substituteVariables` falls back to the literal
+  // placeholder if a key is missing, so we stringify everything up front
+  // and drop nullish values to keep the rendered body clean.
+  const stringified: TemplateVariables = {};
+  for (const [k, v] of Object.entries(params.templateData)) {
+    if (v !== null && v !== undefined) stringified[k] = String(v);
+  }
+  const body = substituteVariables(template.body, stringified);
+
+  // Defer to the existing queue infra. Dynamic import keeps the cyclic
+  // notifications ↔ notification-queue dependency module-graph-safe at
+  // build time (same pattern used by `dispatchNotification` above).
+  const { enqueueNotification: enqueueQueue } = await import("./notification-queue");
+
+  const metadata: Record<string, string> = {
+    template_name: params.templateName,
+    patient_id: params.patientId,
+  };
+  if (params.appointmentId) metadata.appointment_id = params.appointmentId;
+  if (params.priority) metadata.priority = params.priority;
+
+  return enqueueQueue({
+    clinicId: params.clinicId,
+    channel,
+    recipient,
+    body,
+    trigger: template.trigger,
+    metadata,
+  });
 }

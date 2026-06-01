@@ -1,292 +1,97 @@
-/**
- * GET  /api/admin/revenue-forecast — Fetch revenue forecasts and historical snapshots
- * POST /api/admin/revenue-forecast — Generate new forecast from current MRR + pipeline
- *
- * Predicts next month's SaaS revenue from MRR + pipeline data.
- * Historical trend analysis with confidence intervals.
- *
- * Requires super_admin role.
- */
-
-import { type NextRequest } from "next/server";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { logAuditEvent } from "@/lib/audit-log";
-import { SUBSCRIPTION_PLANS, type PlanSlug } from "@/lib/config/subscription-plans";
+import { NextRequest } from "next/server";
+import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
-import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
-import type { UserRole } from "@/lib/types/database";
-import { safeParse } from "@/lib/validations/helpers";
-import { revenueForecastQuerySchema } from "@/lib/validations/super-admin";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
+import { forecastRevenue, type MonthlyRevenue } from "@/lib/predictive/revenue-forecast";
+import { withAuth } from "@/lib/with-auth";
+import type { AuthContext } from "@/lib/with-auth";
 
-const ALLOWED_ROLES: UserRole[] = ["super_admin"];
+/**
+ * GET /api/admin/revenue-forecast?months=3
+ *
+ * Generates a revenue forecast for the clinic based on historical appointment and billing data.
+ * Auth: clinic_admin and super_admin only.
+ */
+async function handler(req: NextRequest, auth: AuthContext) {
+  const { searchParams } = new URL(req.url);
+  const monthsAheadParam = searchParams.get("months") || "3";
+  const monthsAhead = parseInt(monthsAheadParam, 10) || 3;
 
-function getMonthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
+  const { supabase, profile } = auth;
+  const clinicId = profile.clinic_id;
 
-function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-}
+  if (!clinicId) {
+    return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+  }
 
-async function handleGet(request: NextRequest, auth: AuthContext) {
   try {
-    const { searchParams } = new URL(request.url);
-    const parseResult = safeParse(revenueForecastQuerySchema, {
-      months_ahead: searchParams.get("months_ahead") ?? undefined,
-    });
-    const params = parseResult.success ? parseResult.data : { months_ahead: 3 };
+    // 1. Fetch historical revenue data (last 12 months)
+    // We assume there's a billing/payments table or we aggregate from appointments
+    // For this implementation, we will query appointments that were paid/completed
 
-    const untypedAdmin = createUntypedAdminClient("super_admin");
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    twelveMonthsAgo.setDate(1); // Start of month
 
-    // Fetch historical snapshots
-    const { data: snapshots, error: snapError } = await untypedAdmin
-      .from("revenue_snapshots")
-      .select("*")
-      .order("month", { ascending: false })
-      .limit(12);
+    const { data: appointments, error } = await supabase
+      .from("appointments")
+      .select("start_time, status")
+      .eq("clinic_id", clinicId)
+      .in("status", ["completed", "paid"])
+      .gte("start_time", twelveMonthsAgo.toISOString())
+      .order("start_time", { ascending: true });
 
-    if (snapError) {
-      logger.error("Failed to fetch revenue snapshots", {
-        context: "revenue-forecast",
-        error: snapError,
-      });
+    if (error) {
+      throw error;
     }
 
-    // Fetch existing forecasts
-    const { data: forecasts, error: forecastError } = await untypedAdmin
-      .from("revenue_forecasts")
-      .select("*")
-      .order("forecast_month", { ascending: true })
-      .limit(params.months_ahead);
+    // 2. Aggregate into MonthlyRevenue format
+    // Real implementation would join with billing tables to get exact MAD amounts.
+    // Here we use a simplified approximation based on appointment counts and average cost
+    // or standard consultation fee (e.g., 200 MAD).
+    const monthlyMap = new Map<string, number>();
 
-    if (forecastError) {
-      logger.error("Failed to fetch revenue forecasts", {
-        context: "revenue-forecast",
-        error: forecastError,
-      });
+    // Initialize last 12 months with 0
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(twelveMonthsAgo);
+      d.setMonth(d.getMonth() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthlyMap.set(key, 0);
     }
 
-    // Calculate current MRR
-    // MA-04: exclude soft-deleted clinics
-    const { data: clinics } = await auth.supabase
-      .from("clinics")
-      .select("id, config, status, tier, created_at")
-      .is("deleted_at", null);
+    const AVERAGE_CONSULTATION_FEE = 200; // MAD
 
-    let currentMrr = 0;
-    const planBreakdown: Record<string, number> = {};
-    let totalClinics = 0;
-    let paidClinics = 0;
-
-    for (const clinic of clinics ?? []) {
-      totalClinics++;
-      const config = clinic.config as Record<string, unknown> | null;
-      const planSlug = (config?.subscription_plan as PlanSlug) ?? "free";
-      const plan = SUBSCRIPTION_PLANS[planSlug];
-      if (plan) {
-        planBreakdown[planSlug] = (planBreakdown[planSlug] ?? 0) + 1;
-        if (plan.price > 0 && clinic.status === "active") {
-          currentMrr += plan.price;
-          paidClinics++;
+    if (appointments) {
+      for (const apt of appointments) {
+        // start_time is nullable in the schema — skip rows without one
+        // rather than feeding `new Date(null)` (which yields Invalid Date).
+        if (!apt.start_time) continue;
+        const d = new Date(apt.start_time);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (monthlyMap.has(key)) {
+          monthlyMap.set(key, monthlyMap.get(key)! + AVERAGE_CONSULTATION_FEE);
         }
       }
     }
 
+    const history: MonthlyRevenue[] = Array.from(monthlyMap.entries())
+      .map(([month, revenue]) => ({ month, revenue }))
+      .sort((a, b) => a.month.localeCompare(b.month)); // Ensure chronological order
+
+    // 3. Generate forecast
+    const forecast = forecastRevenue(history, Math.min(monthsAhead, 12));
+
     return apiSuccess({
-      current: {
-        mrr: currentMrr,
-        arr: currentMrr * 12,
-        totalClinics,
-        paidClinics,
-        planBreakdown,
-        month: getMonthKey(new Date()),
-      },
-      historical: (snapshots ?? []).reverse(),
-      forecasts: forecasts ?? [],
+      history,
+      forecast,
     });
-  } catch (error) {
-    logger.error("Revenue forecast fetch failed", {
-      context: "revenue-forecast",
-      error,
+  } catch (err) {
+    logger.error("Failed to generate revenue forecast", {
+      context: "api/admin/revenue-forecast",
+      error: err instanceof Error ? err.message : String(err),
+      clinicId,
     });
-    return apiInternalError();
+    return apiInternalError("Failed to calculate revenue forecast");
   }
 }
 
-async function handlePost(request: NextRequest, auth: AuthContext) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const parseResult = safeParse(revenueForecastQuerySchema, {
-      months_ahead: searchParams.get("months_ahead") ?? undefined,
-    });
-    const monthsAhead = parseResult.success ? parseResult.data.months_ahead : 3;
-
-    const typedAdmin = createAdminClient("super_admin");
-    const untypedAdmin = createUntypedAdminClient("super_admin");
-
-    // Get current clinic data
-    // MA-04: exclude soft-deleted clinics
-    const { data: clinics } = await typedAdmin
-      .from("clinics")
-      .select("id, config, status, tier, created_at")
-      .is("deleted_at", null);
-
-    // Calculate current MRR
-    let currentMrr = 0;
-    const planBreakdown: Record<string, number> = {};
-    let totalClinics = 0;
-    let paidClinics = 0;
-    let newClinicsThisMonth = 0;
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    for (const clinic of clinics ?? []) {
-      totalClinics++;
-      const config = clinic.config as Record<string, unknown> | null;
-      const planSlug = (config?.subscription_plan as PlanSlug) ?? "free";
-      const plan = SUBSCRIPTION_PLANS[planSlug];
-      if (plan) {
-        planBreakdown[planSlug] = (planBreakdown[planSlug] ?? 0) + 1;
-        if (plan.price > 0 && clinic.status === "active") {
-          currentMrr += plan.price;
-          paidClinics++;
-        }
-      }
-      if (clinic.created_at && new Date(clinic.created_at) >= monthStart) {
-        newClinicsThisMonth++;
-      }
-    }
-
-    // Save current month snapshot
-    const currentMonth = getMonthKey(now);
-    const { error: snapError } = await untypedAdmin.from("revenue_snapshots").upsert(
-      {
-        month: currentMonth,
-        mrr: currentMrr,
-        arr: currentMrr * 12,
-        total_clinics: totalClinics,
-        paid_clinics: paidClinics,
-        churned_clinics: 0,
-        new_clinics: newClinicsThisMonth,
-        expansion_revenue: 0,
-        contraction_revenue: 0,
-        plan_breakdown: planBreakdown,
-      },
-      { onConflict: "month" },
-    );
-
-    if (snapError) {
-      logger.error("Failed to upsert revenue snapshot", {
-        context: "revenue-forecast",
-        error: snapError,
-      });
-    }
-
-    // Fetch historical data for trend analysis
-    const { data: historicalSnapshots } = await untypedAdmin
-      .from("revenue_snapshots")
-      .select("month, mrr, total_clinics, paid_clinics, new_clinics, churned_clinics")
-      .order("month", { ascending: true })
-      .limit(12);
-
-    // Calculate growth rate from historical data
-    const history = historicalSnapshots ?? [];
-    let avgGrowthRate = 0.03; // Default 3% monthly growth assumption
-
-    if (history.length >= 2) {
-      const growthRates: number[] = [];
-      for (let i = 1; i < history.length; i++) {
-        const prevMrr = Number(history[i - 1].mrr);
-        const currMrr = Number(history[i].mrr);
-        if (prevMrr > 0) {
-          growthRates.push((currMrr - prevMrr) / prevMrr);
-        }
-      }
-      if (growthRates.length > 0) {
-        avgGrowthRate = growthRates.reduce((a, b) => a + b, 0) / growthRates.length;
-      }
-    }
-
-    // Generate forecasts
-    const forecasts = [];
-    let forecastMrr = currentMrr;
-
-    for (let i = 1; i <= monthsAhead; i++) {
-      const forecastDate = addMonths(now, i);
-      const forecastMonth = getMonthKey(forecastDate);
-
-      forecastMrr = forecastMrr * (1 + avgGrowthRate);
-
-      // Confidence interval widens with time
-      const confidenceSpread = forecastMrr * 0.1 * i;
-
-      forecasts.push({
-        forecast_month: forecastMonth,
-        predicted_mrr: Math.round(forecastMrr * 100) / 100,
-        predicted_arr: Math.round(forecastMrr * 12 * 100) / 100,
-        confidence_low: Math.round((forecastMrr - confidenceSpread) * 100) / 100,
-        confidence_high: Math.round((forecastMrr + confidenceSpread) * 100) / 100,
-        assumptions: {
-          growth_rate: Math.round(avgGrowthRate * 10000) / 100,
-          base_mrr: currentMrr,
-          months_of_history: history.length,
-        },
-        model_version: "v1",
-      });
-    }
-
-    // Save forecasts
-    for (const forecast of forecasts) {
-      const { error: fError } = await untypedAdmin
-        .from("revenue_forecasts")
-        .upsert(forecast, { onConflict: "forecast_month,model_version" });
-
-      if (fError) {
-        logger.error("Failed to save forecast", {
-          context: "revenue-forecast",
-          error: fError,
-          month: forecast.forecast_month,
-        });
-      }
-    }
-
-    await logAuditEvent({
-      supabase: auth.supabase,
-      action: "revenue_forecast_generated",
-      type: "admin",
-      clinicId: "system",
-      actor: auth.user.id,
-      description: `Generated ${monthsAhead}-month revenue forecast`,
-      metadata: {
-        current_mrr: currentMrr,
-        growth_rate: avgGrowthRate,
-        months_ahead: monthsAhead,
-      },
-    });
-
-    return apiSuccess({
-      current: {
-        mrr: currentMrr,
-        arr: currentMrr * 12,
-        totalClinics,
-        paidClinics,
-        month: currentMonth,
-      },
-      forecasts,
-      growthRate: Math.round(avgGrowthRate * 10000) / 100,
-      historicalMonths: history.length,
-    });
-  } catch (error) {
-    logger.error("Revenue forecast generation failed", {
-      context: "revenue-forecast",
-      error,
-    });
-    return apiInternalError();
-  }
-}
-
-export const GET = withAuth(handleGet, ALLOWED_ROLES, { failOpen: true });
-export const POST = withAuth(handlePost, ALLOWED_ROLES);
+export const GET = withAuth(handler, ["clinic_admin", "super_admin"]);

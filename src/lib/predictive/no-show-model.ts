@@ -22,8 +22,8 @@ export interface NoShowFeatures {
 export interface NoShowPrediction {
   probability: number;
   riskLevel: "low" | "medium" | "high";
-  topRiskFactors: string[];
-  recommendation: string;
+  topRiskFactors: { key: string; fr: string; ar: string }[];
+  recommendation: { fr: string; ar: string };
 }
 
 // ─── Feature Weights (calibrated on typical clinic data) ─────────────────────
@@ -45,46 +45,78 @@ const INTERCEPT = -2.0;
 
 export function predictNoShow(features: NoShowFeatures): NoShowPrediction {
   let logit = INTERCEPT;
-  const riskFactors: string[] = [];
+  const riskFactors: { key: string; fr: string; ar: string }[] = [];
 
   logit += features.previousNoShowRate * WEIGHTS.previousNoShowRate;
   if (features.previousNoShowRate > 0.3) {
-    riskFactors.push("High historical no-show rate");
+    riskFactors.push({
+      key: "high_historical_rate",
+      fr: "Taux historique d'absentéisme élevé",
+      ar: "معدل غياب تاريخي مرتفع",
+    });
   }
 
   if (features.leadTimeDays > 14) {
     logit += WEIGHTS.longLeadTime;
-    riskFactors.push("Appointment booked far in advance");
+    riskFactors.push({
+      key: "long_lead_time",
+      fr: "Rendez-vous pris longtemps à l'avance",
+      ar: "تم حجز الموعد مسبقاً بفترة طويلة",
+    });
   }
 
   if (features.isFirstVisit) {
     logit += WEIGHTS.firstVisit;
-    riskFactors.push("First-time patient");
+    riskFactors.push({
+      key: "first_visit",
+      fr: "Première visite",
+      ar: "الزيارة الأولى",
+    });
   }
 
   if (!features.hasInsurance) {
     logit += WEIGHTS.noInsurance;
-    riskFactors.push("No insurance coverage");
+    riskFactors.push({
+      key: "no_insurance",
+      fr: "Aucune couverture d'assurance",
+      ar: "لا توجد تغطية تأمينية",
+    });
   }
 
   if (features.appointmentDayOfWeek === 1 || features.appointmentDayOfWeek === 5) {
     logit += WEIGHTS.mondayOrFriday;
-    riskFactors.push("Monday/Friday appointment");
+    riskFactors.push({
+      key: "monday_or_friday",
+      fr: "Rendez-vous le lundi ou le vendredi",
+      ar: "موعد يوم الاثنين أو الجمعة",
+    });
   }
 
   if (features.appointmentHour < 9) {
     logit += WEIGHTS.earlyMorning;
-    riskFactors.push("Early morning slot");
+    riskFactors.push({
+      key: "early_morning",
+      fr: "Créneau tôt le matin",
+      ar: "موعد في الصباح الباكر",
+    });
   }
 
   if (features.previousCancellations >= 3) {
     logit += WEIGHTS.highCancellations;
-    riskFactors.push("Multiple previous cancellations");
+    riskFactors.push({
+      key: "multiple_cancellations",
+      fr: "Plusieurs annulations précédentes",
+      ar: "إلغاءات سابقة متعددة",
+    });
   }
 
   if (features.daysSinceLastVisit !== null && features.daysSinceLastVisit > 180) {
     logit += WEIGHTS.longAbsence;
-    riskFactors.push("Long absence since last visit");
+    riskFactors.push({
+      key: "long_absence",
+      fr: "Longue absence depuis la dernière visite",
+      ar: "غياب طويل منذ الزيارة الأخيرة",
+    });
   }
 
   const probability = sigmoid(logit);
@@ -106,13 +138,22 @@ function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
-function getRecommendation(riskLevel: "low" | "medium" | "high"): string {
+function getRecommendation(riskLevel: "low" | "medium" | "high"): { fr: string; ar: string } {
   switch (riskLevel) {
     case "high":
-      return "Send reminder 24h and 1h before. Consider overbooking this slot.";
+      return {
+        fr: "Envoyer un rappel 24h et 1h avant. Envisager de surréserver ce créneau.",
+        ar: "إرسال تذكير قبل 24 ساعة و 1 ساعة. فكر في الحجز الزائد لهذا الموعد.",
+      };
     case "medium":
-      return "Send reminder 24h before appointment.";
+      return {
+        fr: "Envoyer un rappel 24h avant le rendez-vous.",
+        ar: "إرسال تذكير قبل 24 ساعة من الموعد.",
+      };
     case "low":
-      return "Standard reminder scheduling sufficient.";
+      return {
+        fr: "Planification standard des rappels suffisante.",
+        ar: "جدولة التذكير القياسية كافية.",
+      };
   }
 }
