@@ -62,10 +62,11 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # Provision via:
 #   wrangler kv:namespace create APP_CACHE_KV
 #   wrangler kv:namespace create APP_CACHE_KV --preview
-[[kv_namespaces]]
-binding = "APP_CACHE_KV"
-id = "placeholder-provision-before-deploy"
-preview_id = "placeholder-provision-before-deploy"
+# Then uncomment the binding below and paste the returned IDs.
+# [[kv_namespaces]]
+# binding = "APP_CACHE_KV"
+# id = "<paste-namespace-id-here>"
+# preview_id = "<paste-preview-id-here>"
 
 # ── Durable Objects ───────────────────────────────────────────────────
 # H-03 (DEFERRED): Strongly consistent rate limiting via a RateLimiterDO
@@ -180,10 +181,11 @@ binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
-[[env.production.kv_namespaces]]
-binding = "APP_CACHE_KV"
-id = "placeholder-provision-before-deploy"
-preview_id = "placeholder-provision-before-deploy"
+# Uncomment after provisioning APP_CACHE_KV for production:
+# [[env.production.kv_namespaces]]
+# binding = "APP_CACHE_KV"
+# id = "<paste-namespace-id-here>"
+# preview_id = "<paste-preview-id-here>"
 
 # W8-A31-01: Routes (was missing — worker would not receive traffic)
 [[env.production.routes]]
@@ -312,10 +314,11 @@ binding = "RATE_LIMIT_KV"
 id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING
 preview_id = "4965f9300c924de3afc0407679ff775b"  # RATE_LIMIT_KV_STAGING_preview
 
-[[env.staging.kv_namespaces]]
-binding = "APP_CACHE_KV"
-id = "placeholder-provision-before-deploy"
-preview_id = "placeholder-provision-before-deploy"
+# Uncomment after provisioning APP_CACHE_KV for staging:
+# [[env.staging.kv_namespaces]]
+# binding = "APP_CACHE_KV"
+# id = "<paste-namespace-id-here>"
+# preview_id = "<paste-preview-id-here>"
 
 # W8-A31-01: Routes for staging (uses staging subdomain)
 [[env.staging.routes]]
