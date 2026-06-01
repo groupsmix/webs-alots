@@ -37,7 +37,7 @@
 
 import { createHash, createHmac } from "crypto";
 import { getWorkerBinding } from "@/lib/cf-bindings";
-import { getR2Config } from "@/lib/env";
+import { getR2Config, isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
