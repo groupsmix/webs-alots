@@ -325,11 +325,6 @@ function presignR2Url(
   return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
-/** Bucket name for logging / public-URL construction. */
-function getR2BucketName(): string | undefined {
-  return getR2Config().bucketName;
-}
-
 /**
  * Check if R2 is configured and available.
  *
