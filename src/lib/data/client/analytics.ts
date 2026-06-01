@@ -87,6 +87,20 @@ export interface AnalyticsData {
   period: AnalyticsPeriod;
 }
 
+const ANALYTICS_CACHE_TTL_MS = 5 * 60_000;
+
+const analyticsCache = new Map<
+  string,
+  {
+    expiresAt: number;
+    data: AnalyticsData;
+  }
+>();
+
+function getAnalyticsCacheKey(clinicId: string, period: AnalyticsPeriod): string {
+  return `analytics:${clinicId}:${period}`;
+}
+
 function getPeriodRange(period: AnalyticsPeriod): {
   start: Date;
   end: Date;
@@ -217,6 +231,17 @@ export async function fetchAnalytics(
   clinicId: string,
   period: AnalyticsPeriod = "month",
 ): Promise<AnalyticsData> {
+  const cacheKey = getAnalyticsCacheKey(clinicId, period);
+  const cached = analyticsCache.get(cacheKey);
+  const nowMs = Date.now();
+
+  if (cached && cached.expiresAt > nowMs) {
+    return cached.data;
+  }
+  if (cached) {
+    analyticsCache.delete(cacheKey);
+  }
+
   const supabase = createClient();
 
   const { prevStart, end } = getPeriodRange(period);
@@ -403,7 +428,7 @@ export async function fetchAnalytics(
     });
   }
 
-  return {
+  const data: AnalyticsData = {
     dailyAnalytics,
     weeklyRevenue,
     monthlyRevenue,
@@ -416,6 +441,13 @@ export async function fetchAnalytics(
     periodComparison,
     period,
   };
+
+  analyticsCache.set(cacheKey, {
+    expiresAt: nowMs + ANALYTICS_CACHE_TTL_MS,
+    data,
+  });
+
+  return data;
 }
 
 // ── Revenue Analytics (Feature 15) ──────────────────────

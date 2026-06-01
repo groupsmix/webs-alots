@@ -15,6 +15,7 @@ import type { CspHeaderValues } from "../security-headers";
 
 const h = vi.hoisted(() => ({
   apptCheck: vi.fn(),
+  analyticsCheck: vi.fn(),
   catchAllCheck: vi.fn(),
   globalCheck: vi.fn(),
   clinicCheck: vi.fn(),
@@ -24,6 +25,7 @@ const h = vi.hoisted(() => ({
 vi.mock("@/lib/rate-limit", () => ({
   rateLimitRules: [
     { prefix: "/api/appointments", limiter: { check: h.apptCheck }, windowMs: 60_000, max: 10 },
+    { prefix: "/api/analytics", limiter: { check: h.analyticsCheck }, windowMs: 60_000, max: 100 },
     { prefix: "/api/", limiter: { check: h.catchAllCheck }, windowMs: 60_000, max: 30 },
   ],
   extractClientIp: () => "1.2.3.4",
@@ -49,6 +51,7 @@ beforeEach(() => {
   // Disable the CI bypass so the real limiting logic runs.
   delete process.env.GITHUB_ACTIONS;
   h.apptCheck.mockResolvedValue(true);
+  h.analyticsCheck.mockResolvedValue(true);
   h.catchAllCheck.mockResolvedValue(true);
   h.globalCheck.mockResolvedValue(true);
   h.clinicCheck.mockResolvedValue(true);
@@ -114,6 +117,18 @@ describe("applyRateLimit — per-rule limiting", () => {
     );
     expect(h.catchAllCheck).toHaveBeenCalledWith("clinic.oltigo.com:1.2.3.4");
   });
+
+  it("uses the analytics-specific rule for analytics reads", async () => {
+    const { response, rateLimitInfo } = await applyRateLimit(
+      makeRequest("https://clinic.oltigo.com/api/analytics/clinic", "GET"),
+      csp,
+      withSecurityHeaders,
+    );
+
+    expect(response).toBeNull();
+    expect(h.analyticsCheck).toHaveBeenCalledWith("clinic.oltigo.com:1.2.3.4");
+    expect(rateLimitInfo).toEqual({ limit: 100, remaining: 99, reset: expect.any(Number) });
+  });
 });
 
 describe("applyRateLimit — global page limiter", () => {
@@ -169,5 +184,16 @@ describe("applyRateLimit — per-clinic cap", () => {
     expect(response?.status).toBe(429);
     const body = await response!.json();
     expect(body.code).toBe("CLINIC_RATE_LIMIT_EXCEEDED");
+  });
+
+  it("does not count analytics requests against the per-clinic cap", async () => {
+    await applyRateLimit(
+      makeRequest("https://clinic.oltigo.com/api/analytics/clinic", "GET"),
+      csp,
+      withSecurityHeaders,
+    );
+
+    expect(h.analyticsCheck).toHaveBeenCalled();
+    expect(h.clinicCheck).not.toHaveBeenCalled();
   });
 });

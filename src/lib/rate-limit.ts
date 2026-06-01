@@ -850,13 +850,20 @@ const cspReportLimiter = createRateLimiter({
 });
 
 /**
- * A39-04: Per-clinic global rate cap — 10 000 req / 60s per clinic_id.
+ * A39-04: Per-clinic global rate cap — 50 000 req / 60s per clinic_id.
  * Prevents a malicious clinic admin from accumulating API calls across
  * multiple authenticated sessions. Keyed by clinic_id, not IP.
  */
 export const perClinicLimiter = createRateLimiter({
   windowMs: 60_000,
-  max: 10_000,
+  max: 50_000,
+});
+
+/** Analytics reads: 100 req / 60s per IP. */
+const analyticsLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 100,
+  failClosed: false,
 });
 
 /**
@@ -945,6 +952,7 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/webhooks", limiter: webhookLimiter, windowMs: 60_000, max: 100 },
   { prefix: "/api/branding", limiter: brandingLimiter, windowMs: 60_000, max: 20 },
   { prefix: "/api/notifications", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
+  { prefix: "/api/analytics", limiter: analyticsLimiter, windowMs: 60_000, max: 100 },
   // Catch-all for other API mutations (applied in middleware only to POST/PUT/PATCH/DELETE)
   { prefix: "/api/", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
 ];

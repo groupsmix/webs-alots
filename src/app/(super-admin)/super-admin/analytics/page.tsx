@@ -48,8 +48,15 @@ interface AnalyticsData {
   clinics: ClinicAnalytics[];
 }
 
+interface RateLimitStatus {
+  limit: string | null;
+  remaining: string | null;
+  reset: string | null;
+}
+
 export default function MultiClinicAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [rateLimit, setRateLimit] = useState<RateLimitStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"revenue" | "appointments" | "churn">("revenue");
@@ -58,6 +65,11 @@ export default function MultiClinicAnalyticsPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/analytics/multi-clinic");
+      setRateLimit({
+        limit: res.headers.get("X-RateLimit-Limit"),
+        remaining: res.headers.get("X-RateLimit-Remaining"),
+        reset: res.headers.get("X-RateLimit-Reset"),
+      });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Failed to load analytics");
       setData(json.data);
@@ -109,7 +121,14 @@ export default function MultiClinicAnalyticsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <Breadcrumb items={[{ label: "Super Admin" }, { label: "Multi-Clinic Analytics" }]} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Breadcrumb items={[{ label: "Super Admin" }, { label: "Multi-Clinic Analytics" }]} />
+        {rateLimit?.remaining && rateLimit.limit && (
+          <Badge variant="outline">
+            {rateLimit.remaining}/{rateLimit.limit} requests
+          </Badge>
+        )}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
