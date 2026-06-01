@@ -19,6 +19,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { submitClaim, type MoroccanInsuranceType } from "@/lib/insurance/client";
+import { logger } from "@/lib/logger";
 
 const submitClaimSchema = z.object({
   appointment_id: z.string().uuid(),
@@ -124,7 +125,11 @@ export const POST = withAuthValidation(
 
     if (insertError) {
       // Log but don't fail — the claim WAS submitted to the insurer
-      console.error("Failed to persist insurance claim to DB", insertError);
+      logger.error("Failed to persist insurance claim to DB", {
+        context: "insurance/submit-claim",
+        error: insertError,
+        claim_number: claimResult.claimNumber,
+      });
     }
 
     await logAuditEvent({
