@@ -406,30 +406,50 @@ export async function getPresignedUploadPost(
   maxSize: number = DEFAULT_PRESIGNED_POST_MAX_SIZE,
   expiresIn = 600,
 ): Promise<PresignedUploadPost | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
+  // Native R2 has no presigned POST primitive. We sign a presigned PUT URL
+  // against the R2 S3 API with aws4fetch instead. The browser PUTs the file
+  // body directly to `url` with the Content-Type / Content-Disposition headers
+  // that are signed into the URL (X-Amz-SignedHeaders).
+  //
+  // NOTE (size enforcement): a presigned PUT cannot enforce a
+  // content-length-range the way an S3 POST policy could. The authoritative
+  // size + magic-byte guard is the PUT /api/upload confirm step, which
+  // HeadObjects the upload and deletes it if it exceeds the per-category cap.
+  // `maxSize` is therefore advisory here and kept in the signature for
+  // backward compatibility.
+  void maxSize;
 
-  const { createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
+  const config = getR2PresignConfig();
+  if (!config) return null;
 
-  const presigned = await createPresignedPost(client, {
-    Bucket: config.bucketName,
-    Key: key,
-    Conditions: [
-      ["content-length-range", 0, maxSize],
-      ["eq", "$Content-Type", contentType],
-      ["eq", "$Content-Disposition", "attachment"],
-    ],
-    Fields: {
+  const { AwsClient } = await import("aws4fetch");
+  const aws = new AwsClient({
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    service: "s3",
+    region: "auto",
+  });
+
+  const endpoint =
+    `https://${config.accountId}.r2.cloudflarestorage.com/` +
+    `${encodeURIComponent(config.bucketName)}/${encodeURI(key)}`;
+  const url = new URL(endpoint);
+  url.searchParams.set("X-Amz-Expires", String(expiresIn));
+
+  // S13-FIX: lock Content-Disposition: attachment into the signature so the
+  // browser can never render uploaded files inline (stored-XSS defense).
+  const signed = await aws.sign(url.toString(), {
+    method: "PUT",
+    headers: {
       "Content-Type": contentType,
       "Content-Disposition": "attachment",
     },
-    Expires: expiresIn,
+    aws: { signQuery: true, allHeaders: true },
   });
 
   return {
-    url: presigned.url,
-    fields: presigned.fields,
+    url: signed.url,
+    fields: {},
     key,
   };
 }
@@ -442,29 +462,33 @@ export async function getPresignedUploadPost(
  * @returns Pre-signed download URL, or null if R2 is not configured
  */
 async function _getPresignedDownloadUrl(key: string, expiresIn = 3600): Promise<string | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
+  const config = getR2PresignConfig();
+  if (!config) return null;
 
-  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
-
-  // S13-FIX: Set Content-Disposition to "attachment" so browsers will always
-  // download the file rather than rendering it inline. This prevents stored XSS
-  // attacks where a malicious HTML file that bypasses magic-byte validation could
-  // be rendered in the context of the R2 storage domain.
-  const command = new GetObjectCommand({
-    Bucket: config.bucketName,
-    Key: key,
-    ResponseContentDisposition: "attachment",
+  const { AwsClient } = await import("aws4fetch");
+  const aws = new AwsClient({
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    service: "s3",
+    region: "auto",
   });
+
+  const endpoint =
+    `https://${config.accountId}.r2.cloudflarestorage.com/` +
+    `${encodeURIComponent(config.bucketName)}/${encodeURI(key)}`;
+  const url = new URL(endpoint);
+  url.searchParams.set("X-Amz-Expires", String(expiresIn));
+  // S13-FIX: force attachment download rather than inline rendering.
+  url.searchParams.set("response-content-disposition", "attachment");
 
   // Audit 8.2: We do not log the download here because getPresignedDownloadUrl
   // only generates the URL, it doesn't mean the file was actually downloaded.
-  // The actual download access log should be tracked via Cloudflare Logpush
-  // on the R2 bucket or a dedicated download proxy route.
+  const signed = await aws.sign(url.toString(), {
+    method: "GET",
+    aws: { signQuery: true },
+  });
 
-  return getSignedUrl(client, command, { expiresIn });
+  return signed.url;
 }
 
 /**
@@ -484,22 +508,15 @@ export interface R2ObjectMetadata {
  * Returns `null` if the object does not exist or R2 is not configured.
  */
 export async function getR2ObjectMetadata(key: string): Promise<R2ObjectMetadata | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
-
-  const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
+  const bucket = getR2Bucket();
+  if (!bucket) return null;
 
   try {
-    const response = await client.send(
-      new HeadObjectCommand({
-        Bucket: config.bucketName,
-        Key: key,
-      }),
-    );
+    const head = await bucket.head(key);
+    if (!head) return null;
     return {
-      contentLength: response.ContentLength ?? 0,
-      contentType: response.ContentType ?? null,
+      contentLength: head.size ?? 0,
+      contentType: head.httpMetadata?.contentType ?? null,
     };
   } catch {
     return null;
@@ -526,40 +543,30 @@ export async function listR2Objects(
   prefix: string,
   opts: { limit?: number; pageSize?: number } = {},
 ): Promise<string[]> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return [];
+  const bucket = getR2Bucket();
+  if (!bucket) return [];
 
   const limit = opts.limit ?? Number.POSITIVE_INFINITY;
   const pageSize = opts.pageSize ?? 1000;
   if (limit <= 0) return [];
 
-  const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
-
   const keys: string[] = [];
-  let continuationToken: string | undefined;
+  let cursor: string | undefined;
 
   do {
-    const response = await client.send(
-      new ListObjectsV2Command({
-        Bucket: config.bucketName,
-        Prefix: prefix,
-        MaxKeys: pageSize,
-        ContinuationToken: continuationToken,
-      }),
-    );
+    const result = await bucket.list({
+      prefix,
+      limit: pageSize,
+      cursor,
+    });
 
-    for (const obj of response.Contents ?? []) {
-      if (typeof obj.Key === "string") {
-        keys.push(obj.Key);
-        if (keys.length >= limit) return keys;
-      }
+    for (const obj of result.objects) {
+      keys.push(obj.key);
+      if (keys.length >= limit) return keys;
     }
 
-    continuationToken = response.IsTruncated
-      ? (response.NextContinuationToken ?? undefined)
-      : undefined;
-  } while (continuationToken);
+    cursor = result.truncated ? result.cursor : undefined;
+  } while (cursor);
 
   return keys;
 }
@@ -572,27 +579,15 @@ export async function listR2Objects(
  * @returns Buffer with the first bytes, or null if not found / not configured
  */
 export async function readR2ObjectHead(key: string, bytes = 16): Promise<Buffer | null> {
-  const client = await getClient();
-  const config = getR2Config();
-  if (!client || !config) return null;
-
-  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-
-  const command = new GetObjectCommand({
-    Bucket: config.bucketName,
-    Key: key,
-    Range: `bytes=0-${bytes - 1}`,
-  });
+  const bucket = getR2Bucket();
+  if (!bucket) return null;
 
   try {
-    const response = await client.send(command);
-    if (!response.Body) return null;
-    const chunks: Uint8Array[] = [];
-    // @ts-expect-error -- Body is a Readable stream in Node.js
-    for await (const chunk of response.Body) {
-      chunks.push(chunk as Uint8Array);
-    }
-    return Buffer.concat(chunks);
+    const object = await bucket.get(key, {
+      range: { offset: 0, length: bytes },
+    });
+    if (!object) return null;
+    return Buffer.from(await object.arrayBuffer());
   } catch {
     logger.warn("Failed to read R2 object head", { context: "r2", key });
     return null;
