@@ -32,6 +32,8 @@ export class BiasRunner extends BaseEvaluationRunner {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this.authToken}`,
+          // CSRF middleware rejects mutation requests without a matching Origin.
+          Origin: this.apiBaseUrl,
         },
         body: JSON.stringify({
           // nosemgrep: semgrep.env-access - Test execution only
@@ -98,6 +100,15 @@ export class BiasRunner extends BaseEvaluationRunner {
 // Always execute when run directly. The classic CJS `if (require.main === module)`
 // guard breaks under ESM (`module` is not defined), and these runners are only
 // ever invoked as standalone scripts by `evals/run-all.ts`.
+
+// Skip gracefully when EVAL_AUTH_TOKEN is not configured (typical for PR
+// workflows that don't have access to repository secrets).
+// nosemgrep: semgrep.env-access - Test execution only
+if (!process.env.EVAL_AUTH_TOKEN) {
+  console.log("⏭️  Skipping Bias evaluation: EVAL_AUTH_TOKEN is not configured.");
+  process.exit(0);
+}
+
 const runner = new BiasRunner();
 
 const testCases = JSON.parse(
