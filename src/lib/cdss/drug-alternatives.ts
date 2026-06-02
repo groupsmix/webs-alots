@@ -392,15 +392,12 @@ export function suggestAllAlternatives(
   const suggestions: AlternativeSuggestion[] = [];
 
   for (const pair of interactingPairs) {
-    // Try alternatives for drugA (replacing drugA)
-    const altA = suggestAlternatives(pair.drugA, pair.drugB);
-    if (altA) suggestions.push(altA);
-
-    // Try alternatives for drugB (replacing drugB)
-    const altB = suggestAlternatives(pair.drugB, pair.drugA);
-    if (altB && altB.originalDrug !== altA?.originalDrug) {
-      suggestions.push(altB);
-    }
+    // pairKey() is symmetric, so a single lookup covers both orderings.
+    // Prefer drugA as the "originalDrug" the doctor is replacing; if drugA
+    // has no entry, fall back to drugB.
+    const suggestion =
+      suggestAlternatives(pair.drugA, pair.drugB) ?? suggestAlternatives(pair.drugB, pair.drugA);
+    if (suggestion) suggestions.push(suggestion);
   }
 
   return suggestions;
