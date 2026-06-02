@@ -66,7 +66,11 @@ export async function applyRateLimit(
   const isCatchAll = rule?.prefix === "/api/";
 
   if (rule && !(isCatchAll && !MUTATION_METHODS.has(request.method))) {
-    const allowed = await rule.limiter.check(rateLimitKey);
+    const checkResult = await rule.limiter.check(rateLimitKey);
+    const allowed = typeof checkResult === "boolean" ? checkResult : checkResult.allowed;
+    const remaining =
+      typeof checkResult === "boolean" ? Math.max(0, rule.max - 1) : checkResult.remaining;
+
     const retryAfterSec = Math.ceil(rule.windowMs / 1000);
     const reset = Math.ceil(Date.now() / 1000) + retryAfterSec;
 
@@ -81,11 +85,11 @@ export async function applyRateLimit(
       response.headers.set("Retry-After", String(retryAfterSec));
       return {
         response,
-        rateLimitInfo: { limit: rule.max, remaining: 0, reset },
+        rateLimitInfo: { limit: rule.max, remaining, reset },
       };
     }
 
-    rateLimitInfo = { limit: rule.max, remaining: Math.max(0, rule.max - 1), reset };
+    rateLimitInfo = { limit: rule.max, remaining, reset };
   } else if (
     !pathname.startsWith("/_next/") &&
     !pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?|ttf|eot)$/i)
@@ -95,7 +99,8 @@ export async function applyRateLimit(
     // Previously this depended on a lookup against the /api/ catch-all rule
     // in rateLimitRules, which silently disappeared if that rule was absent.
     // The dedicated `globalPageLimiter` is now independent of API rules.
-    const allowed = await globalPageLimiter.check(`global_${rateLimitKey}`);
+    const globalCheck = await globalPageLimiter.check(`global_${rateLimitKey}`);
+    const allowed = typeof globalCheck === "boolean" ? globalCheck : globalCheck.allowed;
     if (!allowed) {
       const response = withSecurityHeaders(
         NextResponse.json(
@@ -121,7 +126,8 @@ export async function applyRateLimit(
     if (cached && Date.now() - cached.cachedAt <= SUBDOMAIN_CACHE_TTL_MS) {
       clinicKey = cached.id;
     }
-    const clinicAllowed = await perClinicLimiter.check(`clinic:${clinicKey}`);
+    const clinicCheck = await perClinicLimiter.check(`clinic:${clinicKey}`);
+    const clinicAllowed = typeof clinicCheck === "boolean" ? clinicCheck : clinicCheck.allowed;
     if (!clinicAllowed) {
       const response = withSecurityHeaders(
         NextResponse.json(

@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { logger } from "../logger";
-import { extractClientIp, createRateLimiter } from "../rate-limit";
+import { extractClientIp, createRateLimiter, type RateLimitResult } from "../rate-limit";
+
+// The in-memory limiter is synchronous, but RateLimiter.check() returns a
+// union (sync or async). Narrow to the sync case for these tests.
+function allowed(r: RateLimitResult | Promise<RateLimitResult>): boolean {
+  if (r instanceof Promise) {
+    throw new Error("in-memory limiter unexpectedly returned a Promise");
+  }
+  return typeof r === "boolean" ? r : r.allowed;
+}
 
 // Mock NextRequest
 function createMockRequest(headers: Record<string, string> = {}): {
@@ -116,53 +125,53 @@ describe("createRateLimiter (in-memory)", () => {
   it("allows requests within the limit", () => {
     const limiter = createRateLimiter({ windowMs: 60_000, max: 5 });
     for (let i = 0; i < 5; i++) {
-      expect(limiter.check("ip-1")).toBe(true);
+      expect(allowed(limiter.check("ip-1"))).toBe(true);
     }
   });
 
   it("blocks requests exceeding the limit", () => {
     const limiter = createRateLimiter({ windowMs: 60_000, max: 3 });
-    expect(limiter.check("ip-2")).toBe(true);
-    expect(limiter.check("ip-2")).toBe(true);
-    expect(limiter.check("ip-2")).toBe(true);
-    expect(limiter.check("ip-2")).toBe(false);
+    expect(allowed(limiter.check("ip-2"))).toBe(true);
+    expect(allowed(limiter.check("ip-2"))).toBe(true);
+    expect(allowed(limiter.check("ip-2"))).toBe(true);
+    expect(allowed(limiter.check("ip-2"))).toBe(false);
   });
 
   it("tracks different keys independently", () => {
     const limiter = createRateLimiter({ windowMs: 60_000, max: 1 });
-    expect(limiter.check("ip-a")).toBe(true);
-    expect(limiter.check("ip-b")).toBe(true);
-    expect(limiter.check("ip-a")).toBe(false);
-    expect(limiter.check("ip-b")).toBe(false);
+    expect(allowed(limiter.check("ip-a"))).toBe(true);
+    expect(allowed(limiter.check("ip-b"))).toBe(true);
+    expect(allowed(limiter.check("ip-a"))).toBe(false);
+    expect(allowed(limiter.check("ip-b"))).toBe(false);
   });
 
   it("evicts oldest key when maxKeys is reached (LRU)", () => {
     // A78-01: Changed from reject-when-full to LRU eviction.
     // New keys now evict the oldest entry instead of being rejected.
     const limiter = createRateLimiter({ windowMs: 60_000, max: 10, maxKeys: 2 });
-    expect(limiter.check("ip-1")).toBe(true);
-    expect(limiter.check("ip-2")).toBe(true);
-    expect(limiter.check("ip-3")).toBe(true); // evicts ip-1, admits ip-3
+    expect(allowed(limiter.check("ip-1"))).toBe(true);
+    expect(allowed(limiter.check("ip-2"))).toBe(true);
+    expect(allowed(limiter.check("ip-3"))).toBe(true); // evicts ip-1, admits ip-3
   });
 
   it("allows existing keys even when maxKeys is reached", () => {
     const limiter = createRateLimiter({ windowMs: 60_000, max: 10, maxKeys: 2 });
     limiter.check("ip-1");
     limiter.check("ip-2");
-    expect(limiter.check("ip-1")).toBe(true); // existing key still works
+    expect(allowed(limiter.check("ip-1"))).toBe(true); // existing key still works
   });
 
   it("resets counter after window expires", () => {
     vi.useFakeTimers();
     try {
       const limiter = createRateLimiter({ windowMs: 1_000, max: 2 });
-      expect(limiter.check("ip-x")).toBe(true);
-      expect(limiter.check("ip-x")).toBe(true);
-      expect(limiter.check("ip-x")).toBe(false);
+      expect(allowed(limiter.check("ip-x"))).toBe(true);
+      expect(allowed(limiter.check("ip-x"))).toBe(true);
+      expect(allowed(limiter.check("ip-x"))).toBe(false);
 
       vi.advanceTimersByTime(1_001);
 
-      expect(limiter.check("ip-x")).toBe(true);
+      expect(allowed(limiter.check("ip-x"))).toBe(true);
     } finally {
       vi.useRealTimers();
     }
@@ -170,7 +179,7 @@ describe("createRateLimiter (in-memory)", () => {
 
   it("max: 1 allows exactly one request", () => {
     const limiter = createRateLimiter({ windowMs: 60_000, max: 1 });
-    expect(limiter.check("single")).toBe(true);
-    expect(limiter.check("single")).toBe(false);
+    expect(allowed(limiter.check("single"))).toBe(true);
+    expect(allowed(limiter.check("single"))).toBe(false);
   });
 });

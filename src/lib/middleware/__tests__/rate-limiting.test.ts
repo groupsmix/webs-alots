@@ -88,7 +88,7 @@ describe("applyRateLimit — per-rule limiting", () => {
   });
 
   it("returns 429 with Retry-After + rate-limit info when the rule denies", async () => {
-    h.apptCheck.mockResolvedValue(false);
+    h.apptCheck.mockResolvedValue({ allowed: false, remaining: 0 });
     const { response, rateLimitInfo } = await applyRateLimit(
       makeRequest("https://clinic.oltigo.com/api/appointments", "POST"),
       csp,
@@ -133,7 +133,7 @@ describe("applyRateLimit — per-rule limiting", () => {
 
 describe("applyRateLimit — global page limiter", () => {
   it("returns 429 for a non-API page when the global limiter denies", async () => {
-    h.globalCheck.mockResolvedValue(false);
+    h.globalCheck.mockResolvedValue({ allowed: false, remaining: 0 });
     const { response } = await applyRateLimit(
       makeRequest("https://clinic.oltigo.com/dashboard", "GET"),
       csp,
@@ -175,7 +175,7 @@ describe("applyRateLimit — per-clinic cap", () => {
   });
 
   it("returns 429 with the clinic-specific code when the clinic cap is exceeded", async () => {
-    h.clinicCheck.mockResolvedValue(false);
+    h.clinicCheck.mockResolvedValue({ allowed: false, remaining: 0 });
     const { response } = await applyRateLimit(
       makeRequest("https://clinic.oltigo.com/api/appointments", "POST"),
       csp,
