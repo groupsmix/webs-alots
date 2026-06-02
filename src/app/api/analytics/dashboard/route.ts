@@ -146,6 +146,7 @@ async function handler(request: NextRequest, auth: AuthContext) {
   const periodEnd = getLocalDateStr(end);
 
   const [apptsRes, paymentsRes, reviewsRes, patientsRes, servicesRes] = await Promise.all([
+    // nosemgrep: tenant-scoping — .eq("clinic_id", clinicId) filters below
     supabase
       .from("appointments")
       .select(
@@ -154,6 +155,7 @@ async function handler(request: NextRequest, auth: AuthContext) {
       .eq("clinic_id", clinicId)
       .gte("appointment_date", periodStart)
       .lte("appointment_date", periodEnd),
+    // nosemgrep: tenant-scoping — .eq("clinic_id", clinicId) filters below
     supabase
       .from("payments")
       .select("id, amount, created_at, payment_method, doctor_id, service_id")
@@ -161,13 +163,16 @@ async function handler(request: NextRequest, auth: AuthContext) {
       .eq("status", "completed")
       .gte("created_at", `${periodStart}T00:00:00`)
       .lte("created_at", `${periodEnd}T23:59:59`),
+    // nosemgrep: tenant-scoping — .eq("clinic_id", clinicId) filters below
     supabase
       .from("reviews")
       .select("id, stars, created_at")
       .eq("clinic_id", clinicId)
       .gte("created_at", `${periodStart}T00:00:00`)
       .lte("created_at", `${periodEnd}T23:59:59`),
+    // nosemgrep: tenant-scoping — .eq("clinic_id", clinicId) filters below
     supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
+    // nosemgrep: tenant-scoping — .eq("clinic_id", clinicId) filters below
     supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
   ]);
 

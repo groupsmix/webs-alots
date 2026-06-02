@@ -25,8 +25,8 @@ import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
-// eslint-disable-next-line import/order
 import { presetList, type TemplatePreset } from "@/lib/template-presets";
 import { templateList } from "@/lib/templates";
 
@@ -45,9 +45,6 @@ interface BrandingState {
   hero_image_url: string | null;
   template_id: string;
 }
-
-// eslint-disable-next-line import/order
-import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 
 const FONT_OPTIONS = [
   "Geist",
@@ -346,7 +343,9 @@ export default function BrandingPage() {
                     <Card
                       key={tmpl.id}
                       className={`cursor-pointer transition-all hover:shadow-md ${
-                        isSelected ? "ring-2 ring-primary shadow-md" : "hover:ring-1 hover:ring-border"
+                        isSelected
+                          ? "ring-2 ring-primary shadow-md"
+                          : "hover:ring-1 hover:ring-border"
                       }`}
                       onClick={() => setBranding((p) => ({ ...p, template_id: tmpl.id }))}
                     >
