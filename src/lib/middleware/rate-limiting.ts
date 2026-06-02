@@ -99,7 +99,8 @@ export async function applyRateLimit(
     // Previously this depended on a lookup against the /api/ catch-all rule
     // in rateLimitRules, which silently disappeared if that rule was absent.
     // The dedicated `globalPageLimiter` is now independent of API rules.
-    const allowed = await globalPageLimiter.check(`global_${rateLimitKey}`);
+    const globalCheck = await globalPageLimiter.check(`global_${rateLimitKey}`);
+    const allowed = typeof globalCheck === "boolean" ? globalCheck : globalCheck.allowed;
     if (!allowed) {
       const response = withSecurityHeaders(
         NextResponse.json(
@@ -125,7 +126,8 @@ export async function applyRateLimit(
     if (cached && Date.now() - cached.cachedAt <= SUBDOMAIN_CACHE_TTL_MS) {
       clinicKey = cached.id;
     }
-    const clinicAllowed = await perClinicLimiter.check(`clinic:${clinicKey}`);
+    const clinicCheck = await perClinicLimiter.check(`clinic:${clinicKey}`);
+    const clinicAllowed = typeof clinicCheck === "boolean" ? clinicCheck : clinicCheck.allowed;
     if (!clinicAllowed) {
       const response = withSecurityHeaders(
         NextResponse.json(

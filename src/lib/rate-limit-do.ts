@@ -22,7 +22,7 @@
 
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
-import type { RateLimiter, RateLimiterOptions } from "./rate-limit";
+import type { RateLimiter, RateLimiterOptions, RateLimitResult } from "./rate-limit";
 
 // ── Durable Object class (deployed as a separate Worker binding) ──
 
@@ -151,7 +151,7 @@ export function createDORateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max, failClosed = true } = options;
 
   return {
-    async check(key: string): Promise<boolean> {
+    async check(key: string): Promise<RateLimitResult> {
       try {
         // Bindings live on getCloudflareContext().env under
         // @opennextjs/cloudflare (v1.17+), NOT on globalThis — resolve at
