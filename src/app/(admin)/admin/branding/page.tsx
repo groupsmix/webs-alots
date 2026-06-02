@@ -14,8 +14,10 @@ import {
   Wand2,
   Check,
   Loader2,
+  Layout,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,9 +25,10 @@ import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
-// eslint-disable-next-line import/order
 import { presetList, type TemplatePreset } from "@/lib/template-presets";
+import { templateList } from "@/lib/templates";
 
 interface BrandingState {
   name: string;
@@ -40,10 +43,8 @@ interface BrandingState {
   heading_font: string;
   body_font: string;
   hero_image_url: string | null;
+  template_id: string;
 }
-
-// eslint-disable-next-line import/order
-import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 
 const FONT_OPTIONS = [
   "Geist",
@@ -71,6 +72,7 @@ const DEFAULT_BRANDING: BrandingState = {
   heading_font: "Geist",
   body_font: "Geist",
   hero_image_url: null,
+  template_id: "modern",
 };
 
 export default function BrandingPage() {
@@ -100,6 +102,7 @@ export default function BrandingPage() {
             heading_font: data.heading_font ?? "Geist",
             body_font: data.body_font ?? "Geist",
             hero_image_url: data.hero_image_url ?? null,
+            template_id: data.template_id ?? "modern",
           };
         }),
     DEFAULT_BRANDING,
@@ -147,6 +150,7 @@ export default function BrandingPage() {
           secondary_color: branding.secondary_color,
           heading_font: branding.heading_font,
           body_font: branding.body_font,
+          template_id: branding.template_id,
         }),
       });
       if (!res.ok) {
@@ -254,6 +258,10 @@ export default function BrandingPage() {
             <Wand2 className="h-4 w-4 mr-2" />
             Presets
           </TabsTrigger>
+          <TabsTrigger value="templates">
+            <Layout className="h-4 w-4 mr-2" />
+            Templates
+          </TabsTrigger>
           <TabsTrigger value="info">
             <Building2 className="h-4 w-4 mr-2" />
             Clinic Info
@@ -291,6 +299,7 @@ export default function BrandingPage() {
                     ...prev,
                     primary_color: preset.theme.primaryColor,
                     secondary_color: preset.theme.secondaryColor,
+                    template_id: preset.templateId,
                   }));
                   setTimeout(() => setAppliedPreset(null), 3000);
                 } else {
@@ -307,10 +316,63 @@ export default function BrandingPage() {
                 ...prev,
                 primary_color: preset.theme.primaryColor,
                 secondary_color: preset.theme.secondaryColor,
+                template_id: preset.templateId,
               }));
               setActiveTab("colors");
             }}
           />
+        </TabsContent>
+
+        {/* ── Templates Tab ── */}
+        <TabsContent value="templates">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Layout className="h-4 w-4" />
+                Base Layout Templates
+              </CardTitle>
+              <CardDescription>
+                Select a layout template to define the structural arrangement of your public site.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {templateList.map((tmpl) => {
+                  const isSelected = branding.template_id === tmpl.id;
+                  return (
+                    <Card
+                      key={tmpl.id}
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        isSelected
+                          ? "ring-2 ring-primary shadow-md"
+                          : "hover:ring-1 hover:ring-border"
+                      }`}
+                      onClick={() => setBranding((p) => ({ ...p, template_id: tmpl.id }))}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Layout className="h-4 w-4" />
+                            {tmpl.name}
+                          </CardTitle>
+                          {isSelected && (
+                            <Badge variant="default" className="gap-1">
+                              <Check className="h-3 w-3" />
+                              Selected
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription>{tmpl.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs text-muted-foreground">{tmpl.preview}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Clinic Info Tab ── */}
