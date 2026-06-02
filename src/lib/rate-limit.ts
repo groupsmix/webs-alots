@@ -143,15 +143,20 @@ export interface RateLimiterOptions {
   failClosed?: boolean;
 }
 
+/**
+ * Result returned by RateLimiter.check — either a bare allow/deny boolean
+ * (for backends that don't track exact quota) or an object with the
+ * remaining quota for accurate header reporting.
+ */
+export type RateLimitResult = boolean | { allowed: boolean; remaining: number };
+
 export interface RateLimiter {
   /**
    * Returns `true` if the request is allowed, `false` if rate-limited.
    * Or returns an object with `{ allowed: boolean, remaining: number }` for accurate quota tracking.
    * May be async when using a distributed backend.
    */
-  check(
-    key: string,
-  ): boolean | Promise<boolean> | { allowed: boolean; remaining: number } | Promise<{ allowed: boolean; remaining: number }>;
+  check(key: string): RateLimitResult | Promise<RateLimitResult>;
 }
 
 // ── Backend selection ──
@@ -288,11 +293,11 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey);
 
   return {
-    async check(key: string): Promise<boolean> {
+    async check(key: string): Promise<RateLimitResult> {
       // If circuit breaker is tripped, degrade to in-memory rate limiting.
       // This preserves rate-limit enforcement while keeping the site alive.
       if (isCircuitOpen(circuitBreaker)) {
-        if (circuitBreaker.fallback) return circuitBreaker.fallback.check(key);
+        if (circuitBreaker.fallback) return await circuitBreaker.fallback.check(key);
         return !failClosed;
       }
 
@@ -345,7 +350,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           void reportRateLimitBackendError("query", error);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
-            return circuitBreaker.fallback.check(key);
+            return await circuitBreaker.fallback.check(key);
           }
           return !failClosed;
         }
@@ -368,7 +373,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             void reportRateLimitBackendError("upsert", upsertError);
             if (circuitBreaker.failClosed) return false;
             if (circuitBreaker.fallback) {
-              return circuitBreaker.fallback.check(key);
+              return await circuitBreaker.fallback.check(key);
             }
             return !failClosed;
           }
@@ -394,7 +399,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           void reportRateLimitBackendError("update", updateError);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
-            return circuitBreaker.fallback.check(key);
+            return await circuitBreaker.fallback.check(key);
           }
           return !failClosed;
         }
@@ -419,7 +424,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         void reportRateLimitBackendError("network", err);
         if (circuitBreaker.failClosed) return false;
         if (circuitBreaker.fallback) {
-          return circuitBreaker.fallback.check(key);
+          return await circuitBreaker.fallback.check(key);
         }
         return !failClosed;
       }
@@ -468,7 +473,9 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
    * limiters (security-critical endpoints) may hard-deny, and only once the
    * grace period since the first failure has elapsed.
    */
-  const degradeOrFailClosed = async (key: string): Promise<{ allowed: boolean; remaining: number }> => {
+  const degradeOrFailClosed = async (
+    key: string,
+  ): Promise<{ allowed: boolean; remaining: number }> => {
     if (!circuitBreaker.fallback) {
       circuitBreaker.fallback = createMemoryRateLimiter(options);
     }
@@ -489,7 +496,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
   };
 
   return {
-    async check(key: string): Promise<boolean> {
+    async check(key: string): Promise<RateLimitResult> {
       // If circuit breaker is tripped, degrade to in-memory rate limiting.
       if (isCircuitOpen(circuitBreaker)) {
         return degradeOrFailClosed(key);
@@ -569,7 +576,7 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
   }
 
   return {
-    check(key: string): boolean {
+    check(key: string): RateLimitResult {
       const now = Date.now();
 
       // Log a warning on the first request after a cold start so operators

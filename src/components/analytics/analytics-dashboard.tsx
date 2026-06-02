@@ -252,7 +252,10 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
             Live Data
           </Badge>
           {rateLimit?.remaining && rateLimit?.limit && (
-            <Badge variant="outline" className="text-xs border-primary/50 text-primary bg-primary/5">
+            <Badge
+              variant="outline"
+              className="text-xs border-primary/50 text-primary bg-primary/5"
+            >
               {rateLimit.remaining}/{rateLimit.limit} API quota
             </Badge>
           )}

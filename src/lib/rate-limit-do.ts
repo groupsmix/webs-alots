@@ -79,9 +79,12 @@ export class RateLimiterDO {
       const alarmTime = now + windowMs + 1000;
       await this.state.storage.setAlarm(alarmTime);
 
-      return new Response(JSON.stringify({ allowed: true, remaining: Math.max(0, max - this.timestamps.length) }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ allowed: true, remaining: Math.max(0, max - this.timestamps.length) }),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     return new Response("Not found", { status: 404 });

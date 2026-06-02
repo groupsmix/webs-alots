@@ -68,8 +68,9 @@ export async function applyRateLimit(
   if (rule && !(isCatchAll && !MUTATION_METHODS.has(request.method))) {
     const checkResult = await rule.limiter.check(rateLimitKey);
     const allowed = typeof checkResult === "boolean" ? checkResult : checkResult.allowed;
-    const remaining = typeof checkResult === "boolean" ? Math.max(0, rule.max - 1) : checkResult.remaining;
-    
+    const remaining =
+      typeof checkResult === "boolean" ? Math.max(0, rule.max - 1) : checkResult.remaining;
+
     const retryAfterSec = Math.ceil(rule.windowMs / 1000);
     const reset = Math.ceil(Date.now() / 1000) + retryAfterSec;
 
