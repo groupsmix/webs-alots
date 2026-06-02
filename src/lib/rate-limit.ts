@@ -146,9 +146,12 @@ export interface RateLimiterOptions {
 export interface RateLimiter {
   /**
    * Returns `true` if the request is allowed, `false` if rate-limited.
+   * Or returns an object with `{ allowed: boolean, remaining: number }` for accurate quota tracking.
    * May be async when using a distributed backend.
    */
-  check(key: string): boolean | Promise<boolean>;
+  check(
+    key: string,
+  ): boolean | Promise<boolean> | { allowed: boolean; remaining: number } | Promise<{ allowed: boolean; remaining: number }>;
 }
 
 // ── Backend selection ──
@@ -316,7 +319,8 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (!rpcError && rpcResult != null) {
           // RPC succeeded — rpcResult is the new count
           recordSuccess(circuitBreaker);
-          return (rpcResult as number) <= max;
+          const count = rpcResult as number;
+          return { allowed: count <= max, remaining: Math.max(0, max - count) };
         }
 
         // RPC not available — fall back to upsert-based approach.
@@ -369,7 +373,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             return !failClosed;
           }
           recordSuccess(circuitBreaker);
-          return true;
+          return { allowed: true, remaining: Math.max(0, max - 1) };
         }
 
         // Window still active — increment atomically using a conditional update.
@@ -404,10 +408,11 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             .select("count")
             .eq("key", key)
             .maybeSingle();
-          return (reread?.count ?? 0) <= max;
+          const c = reread?.count ?? 0;
+          return { allowed: c <= max, remaining: Math.max(0, max - c) };
         }
 
-        return newCount <= max;
+        return { allowed: newCount <= max, remaining: Math.max(0, max - newCount) };
       } catch (err) {
         logger.error("Rate limiter network failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
@@ -463,7 +468,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
    * limiters (security-critical endpoints) may hard-deny, and only once the
    * grace period since the first failure has elapsed.
    */
-  const degradeOrFailClosed = (key: string): boolean | Promise<boolean> => {
+  const degradeOrFailClosed = async (key: string): Promise<{ allowed: boolean; remaining: number }> => {
     if (!circuitBreaker.fallback) {
       circuitBreaker.fallback = createMemoryRateLimiter(options);
     }
@@ -475,10 +480,12 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
           key,
           elapsedMs: elapsed,
         });
-        return false;
+        return { allowed: false, remaining: 0 };
       }
     }
-    return circuitBreaker.fallback.check(key);
+    const result = await circuitBreaker.fallback.check(key);
+    if (typeof result === "boolean") return { allowed: result, remaining: 0 };
+    return result;
   };
 
   return {
@@ -515,7 +522,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (validTimestamps.length >= max) {
           // Rate limit exceeded
           recordSuccess(circuitBreaker);
-          return false;
+          return { allowed: false, remaining: 0 };
         }
 
         // Add current request timestamp
@@ -529,7 +536,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
         });
 
         recordSuccess(circuitBreaker);
-        return true;
+        return { allowed: true, remaining: Math.max(0, max - validTimestamps.length) };
       } catch (err) {
         logger.error("Rate limiter KV failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
@@ -592,11 +599,11 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
 
       if (!entry || now >= entry.resetAt) {
         store.set(key, { count: 1, resetAt: now + windowMs });
-        return true;
+        return { allowed: true, remaining: Math.max(0, max - 1) };
       }
 
       entry.count += 1;
-      return entry.count <= max;
+      return { allowed: entry.count <= max, remaining: Math.max(0, max - entry.count) };
     },
   };
 }
