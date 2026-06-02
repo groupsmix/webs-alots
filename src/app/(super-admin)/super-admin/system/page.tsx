@@ -113,6 +113,9 @@ export default function SystemStatusPage() {
   const [activeUsers, setActiveUsers] = useState(0);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
+  const [readiness, setReadiness] = useState<any>(null);
+  const [backups, setBackups] = useState<any>(null);
+  const [jobs, setJobs] = useState<any>(null);
 
   const loadHealth = useCallback(async () => {
     try {
@@ -182,34 +185,48 @@ export default function SystemStatusPage() {
           lastChecked: now,
         },
         {
-          name: "Storage (R2)",
-          description: "Cloudflare R2 object storage",
-          status: "operational",
-          icon: HardDrive,
-          lastChecked: now,
-        },
-        {
           name: "Auth (Supabase Auth)",
           description: "Authentication service",
           status: authStatus,
           icon: Shield,
           lastChecked: now,
-        },
-        {
-          name: "WhatsApp API",
-          description: "Meta Cloud API for notifications",
-          status: "operational",
-          icon: MessageSquare,
-          lastChecked: now,
-        },
-        {
-          name: "Payment Gateway",
-          description: "CMI / Stripe payment processing",
-          status: "operational",
-          icon: CreditCard,
-          lastChecked: now,
-        },
+        }
       );
+
+      try {
+        const [readinessRes, backupsRes, jobsRes] = await Promise.all([
+            fetch("/api/admin/readiness"),
+            fetch("/api/admin/readiness/backups"),
+            fetch("/api/admin/readiness/jobs")
+        ]);
+        if (readinessRes.ok) {
+           const json = await readinessRes.json();
+           if (json.ok && json.data) {
+             setReadiness(json.data);
+             if (json.data.services) {
+               json.data.services.forEach((s: any) => {
+                 serviceResults.push({
+                   name: s.name,
+                   description: s.name === "WhatsApp API" ? "Meta Cloud API for notifications" : s.name === "Storage (R2)" ? "Cloudflare R2 object storage" : "CMI / Stripe payment processing",
+                   status: s.status,
+                   icon: s.name === "WhatsApp API" ? MessageSquare : s.name === "Storage (R2)" ? HardDrive : CreditCard,
+                   lastChecked: now,
+                 });
+               });
+             }
+           }
+        }
+        if (backupsRes.ok) {
+           const json = await backupsRes.json();
+           if (json.ok) setBackups(json.data);
+        }
+        if (jobsRes.ok) {
+           const json = await jobsRes.json();
+           if (json.ok) setJobs(json.data);
+        }
+      } catch (e) {
+         logger.warn("Failed to fetch readiness APIs", { error: e });
+      }
 
       setServices(serviceResults);
 
@@ -445,6 +462,108 @@ export default function SystemStatusPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Environment Validation */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Shield className="h-4 w-4" />
+              Environment Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {readiness?.envGroups ? (
+              <div className="space-y-4">
+                {readiness.envGroups.map((group: any) => (
+                  <div key={group.group} className="space-y-2">
+                    <h4 className="text-sm font-semibold capitalize">{group.group}</h4>
+                    <div className="space-y-1">
+                      {group.vars.map((v: any) => (
+                        <div key={v.name} className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground">{v.name}</span>
+                          <Badge variant={v.status === 'configured' ? 'success' : 'outline'} className={v.status === 'missing' ? 'text-red-500 border-red-200 bg-red-50' : ''}>
+                            {v.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+               <p className="text-sm text-muted-foreground">Loading environment details...</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          {/* Backups */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Database className="h-4 w-4" />
+                Backups & Recovery
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {backups ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Encryption Key</span>
+                    <Badge variant={backups.configured ? 'success' : 'destructive'}>
+                      {backups.configured ? 'Configured' : 'Missing'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Last Backup</span>
+                    <span className="font-medium text-xs">{backups.lastBackup}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Restore Drill</span>
+                    <span className="font-medium text-xs">{backups.lastRestoreDrill}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Loading backups data...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Background Jobs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Activity className="h-4 w-4" />
+                Background Jobs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {jobs ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">Webhooks Retry Queue</h4>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-amber-600">{jobs.webhooks.pending} Pending</span>
+                      <span className="text-red-600">{jobs.webhooks.failed} Failed</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">Notification Queue</h4>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-amber-600">{jobs.notifications.pending} Pending</span>
+                      <span className="text-red-600">{jobs.notifications.failed} Failed</span>
+                      <span className="text-red-800">{jobs.notifications.deadLettered} Dead-lettered</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Loading jobs data...</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       <p className="text-xs text-muted-foreground text-center">
         Last checked: {lastChecked.toLocaleString()}

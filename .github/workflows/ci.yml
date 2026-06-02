@@ -628,12 +628,37 @@ jobs:
           echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_DB_URL=$(supabase status --output json | jq -r '.DB_URL')" >> "$GITHUB_ENV"
+
+      # Phase 2.2: Run pgTAP SQL tests against the local Supabase DB.
+      # These pin database-side invariants (SECURITY DEFINER RPCs, trigger
+      # logic, grants) that RLS alone cannot guard. Each test file wraps
+      # assertions in a transaction that rolls back, so no fixtures leak.
+      - name: Run pgTAP database tests
+        run: |
+          echo "Running pgTAP tests from supabase/tests/..."
+          PGTAP_FAILED=0
+          for f in supabase/tests/*.test.sql; do
+            echo "── $(basename "$f") ──"
+            if ! psql "${{ env.SUPABASE_DB_URL }}" -f "$f"; then
+              echo "::error::pgTAP test failed: $(basename "$f")"
+              PGTAP_FAILED=1
+            fi
+          done
+          if [ "$PGTAP_FAILED" -eq 1 ]; then
+            echo "::error::One or more pgTAP tests failed"
+            exit 1
+          fi
+          echo "✓ All pgTAP tests passed"
 
       - name: Run RLS integration tests
-        # Run all three RLS test files:
-        #   rls-real-postgres.test.ts — generic table sweep (original)
-        #   rls-assertions.test.ts   — CRUD isolation assertions
-        #   rls-high-value-tables.test.ts — PHI tables + escalation (#629)
+        # Run all RLS + tenant isolation + booking emulator test files:
+        #   rls-real-postgres.test.ts      — generic table sweep (original)
+        #   rls-assertions.test.ts         — CRUD isolation assertions
+        #   rls-high-value-tables.test.ts  — PHI tables + escalation (#629)
+        #   cross-tenant-api.test.ts       — cross-tenant API smoke test (Phase 2.4)
+        #   booking-emulator.test.ts       — emulator-backed booking (Phase 3.3)
+        #   booking-race.test.ts           — concurrent booking race (Phase 3.4)
         # || true is intentional: the assertion step below reads the JSON
         # output and fails CI on test failures, giving a cleaner error message.
         run: |
@@ -641,6 +666,9 @@ jobs:
             src/lib/__tests__/integration/rls-real-postgres.test.ts \
             src/lib/__tests__/integration/rls-assertions.test.ts \
             src/lib/__tests__/integration/rls-high-value-tables.test.ts \
+            src/lib/__tests__/integration/cross-tenant-api.test.ts \
+            src/lib/__tests__/integration/booking-emulator.test.ts \
+            src/lib/__tests__/integration/booking-race.test.ts \
             --reporter=json --outputFile=rls-results.json 2>&1 || true
         env:
           SUPABASE_LOCAL_URL: ${{ env.SUPABASE_LOCAL_URL }}

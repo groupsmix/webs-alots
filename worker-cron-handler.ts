@@ -14,16 +14,10 @@
  *   - hourly         →  /api/cron/r2-cleanup    (abandoned R2 uploads)
  *                        /api/cron/feedback      (post-appointment feedback)
  *                        /api/cron/rebooking-reminders (rebooking prompts)
- *                        /api/cron/lab-triage    (MVA critical lab alerts)
- *   - every 4 hours  →  /api/cron/confirm-appointments (MVA confirmation sweep)
- *   - daily 01:00    →  /api/cron/compliance-check (MVA Law 09-08 checks)
  *   - daily 02:00    →  /api/cron/billing       (subscription renewals)
  *   - daily 03:00    →  /api/cron/gdpr-purge    (GDPR patient data purge)
  *   - daily 04:00    →  /api/cron/dedup-purge   (M-03/M-04 TTL purge)
  *   - daily 05:00    →  /api/cron/stripe-reconcile (BL-002 payment drift)
- *   - daily 06:00    →  /api/cron/backup-verify (MVA daily backup audit)
- *   - daily 07:00    →  /api/cron/license-check (MVA license-expiry warnings)
- *   - daily 10:00    →  /api/cron/health-tips   (MVA health-tip follow-ups)
  *
  * @see https://opennext.js.org/cloudflare/howtos/custom-worker
  */
@@ -44,21 +38,11 @@ export const CRON_ROUTES: Record<string, string[]> = {
   "*/5 * * * *": ["/api/cron/uptime-monitor"],
   "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
   "*/30 * * * *": ["/api/cron/reminders"],
-  "0 * * * *": [
-    "/api/cron/r2-cleanup",
-    "/api/cron/feedback",
-    "/api/cron/rebooking-reminders",
-    "/api/cron/lab-triage",
-  ],
-  "0 */4 * * *": ["/api/cron/confirm-appointments"],
-  "0 1 * * *": ["/api/cron/compliance-check"],
+  "0 * * * *": ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
   "0 2 * * *": ["/api/cron/billing"],
   "0 3 * * *": ["/api/cron/gdpr-purge"],
   "0 4 * * *": ["/api/cron/dedup-purge"],
   "0 5 * * *": ["/api/cron/stripe-reconcile"],
-  "0 6 * * *": ["/api/cron/backup-verify"],
-  "0 7 * * *": ["/api/cron/license-check"],
-  "0 10 * * *": ["/api/cron/health-tips"],
 };
 
 /**

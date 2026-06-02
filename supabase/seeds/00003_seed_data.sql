@@ -1,5 +1,5 @@
 -- ============================================================
--- SEED DATA for Health SaaS Platform
+-- SEED DATA for Oltigo Health
 -- 1 clinic, 1 doctor, 1 receptionist, 5 patients,
 -- sample services, time slots, and appointments
 -- ============================================================
@@ -33,7 +33,7 @@ INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
    'super_admin',
    'Admin Platform',
    '+212600000001',
-   'admin@health-saas.ma',
+   'super@oltigo.test',
    NULL);
 
 -- Clinic Admin
@@ -43,7 +43,7 @@ INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
    'clinic_admin',
    'Nadia Benali',
    '+212611000001',
-   'nadia@dr-benali.ma',
+   'admin@demo-clinic.com',
    'c1000000-0000-0000-0000-000000000001');
 
 -- Doctor
@@ -53,7 +53,7 @@ INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
    'doctor',
    'Dr. Ahmed Benali',
    '+212611000002',
-   'ahmed@dr-benali.ma',
+   'doctor@demo-clinic.com',
    'c1000000-0000-0000-0000-000000000001');
 
 -- Receptionist
@@ -63,7 +63,7 @@ INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
    'receptionist',
    'Amina Tazi',
    '+212611000003',
-   'amina@dr-benali.ma',
+   'reception@demo-clinic.com',
    'c1000000-0000-0000-0000-000000000001');
 
 -- Patient 1

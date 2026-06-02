@@ -89,7 +89,7 @@ async function seedClinics() {
     {
       id: CLINIC_IDS.drAhmed,
       name: "Cabinet Dr. Ahmed Benali",
-      subdomain: "dr-ahmed",
+      subdomain: "demo",
       clinic_type: "general_practitioner",
       tier: "pro",
       is_active: true,
@@ -186,38 +186,38 @@ async function seedUsers() {
       },
     },
     {
-      email: "admin@dr-ahmed.test",
+      email: "admin@demo-clinic.com",
       password: "ClinicAdmin123!",
       profile: {
         id: USER_IDS.clinicAdmin,
         role: "clinic_admin",
         name: "Amina El Fassi",
         phone: "+212661234567",
-        email: "admin@dr-ahmed.test",
+        email: "admin@demo-clinic.com",
         clinic_id: CLINIC_IDS.drAhmed,
       },
     },
     {
-      email: "doctor@dr-ahmed.test",
+      email: "doctor@demo-clinic.com",
       password: "Doctor123!",
       profile: {
         id: USER_IDS.doctor,
         role: "doctor",
         name: "Dr. Ahmed Benali",
         phone: "+212662345678",
-        email: "doctor@dr-ahmed.test",
+        email: "doctor@demo-clinic.com",
         clinic_id: CLINIC_IDS.drAhmed,
       },
     },
     {
-      email: "reception@dr-ahmed.test",
+      email: "reception@demo-clinic.com",
       password: "Reception123!",
       profile: {
         id: USER_IDS.receptionist,
         role: "receptionist",
         name: "Hanane Berrada",
         phone: "+212663456789",
-        email: "reception@dr-ahmed.test",
+        email: "reception@demo-clinic.com",
         clinic_id: CLINIC_IDS.drAhmed,
       },
     },
@@ -562,17 +562,16 @@ async function main() {
     console.log("═══════════════════════════════════════════════");
     console.log("\nTest accounts:");
     console.log("  super@oltigo.test        / SuperAdmin123!   → super_admin");
-    console.log("  admin@dr-ahmed.test      / ClinicAdmin123!  → clinic_admin (Dr. Ahmed)");
-    console.log("  doctor@dr-ahmed.test     / Doctor123!       → doctor (Dr. Ahmed)");
-    console.log("  reception@dr-ahmed.test  / Reception123!    → receptionist (Dr. Ahmed)");
+    console.log("  admin@demo-clinic.com      / ClinicAdmin123!  → clinic_admin (Dr. Ahmed)");
+    console.log("  doctor@demo-clinic.com     / Doctor123!       → doctor (Dr. Ahmed)");
+    console.log("  reception@demo-clinic.com  / Reception123!    → receptionist (Dr. Ahmed)");
     console.log("  patient1@test.test       / Patient123!      → patient");
     console.log("  patient2@test.test       / Patient123!      → patient");
     console.log("  doctor@sourire-dental.test / Dentist123!    → doctor (Sourire Dental)");
     console.log("  pharmacist@pharmacie-centrale.test / Pharmacist123! → clinic_admin (Pharmacie)");
     console.log("  doctor2@atlas.test       / Doctor123!       → doctor (Atlas Polyclinique)");
     console.log("  lab@bio-maroc.test       / LabTech123!      → clinic_admin (Bio Maroc Lab)");
-    console.log("\nSubdomains:");
-    console.log("  http://dr-ahmed.localhost:3000");
+    console.log("  http://demo.localhost:3000");
     console.log("  http://sourire-dental.localhost:3000");
     console.log("  http://pharmacie-centrale.localhost:3000");
     console.log("  http://atlas-polyclinique.localhost:3000");

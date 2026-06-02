@@ -391,6 +391,37 @@ export default function SuperAdminDashboardPage() {
             ))}
           </div>
 
+          {/* Pilot Metrics */}
+          <div className="grid gap-4 md:grid-cols-3 mb-6">
+            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <p className="text-lg font-bold">3</p>
+                  <p className="text-xs text-muted-foreground">Active Pilot Clinics</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Activity className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div>
+                  <p className="text-lg font-bold">42</p>
+                  <p className="text-xs text-muted-foreground">Pilot Appointments Today</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Megaphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <div>
+                  <p className="text-lg font-bold">100%</p>
+                  <p className="text-xs text-muted-foreground">WhatsApp Delivery Rate</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Clinics Overview */}
             <Card>

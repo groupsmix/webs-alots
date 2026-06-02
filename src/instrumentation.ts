@@ -208,22 +208,6 @@ export function register() {
         return breadcrumb;
       },
     });
-
-    // Initialize OpenTelemetry for distributed tracing.
-    // `@vercel/otel` is an optional runtime dependency: load it by string
-    // specifier so TypeScript doesn't bind to it at compile time and so it
-    // stays out of the Workers/edge bundle. Failures are swallowed: tracing
-    // is best-effort and must not block app startup.
-    {
-      const otelModuleId = "@vercel/otel";
-      void import(/* webpackIgnore: true */ otelModuleId)
-        .then((mod: { registerOTel?: (opts: { serviceName: string }) => void }) => {
-          mod.registerOTel?.({ serviceName: "oltigo-health-web" });
-        })
-        .catch(() => {
-          // OTel registration is best-effort; ignored.
-        });
-    }
   }
   // Validate all required environment variables at startup so missing
   // config is surfaced immediately rather than at runtime.
@@ -269,41 +253,12 @@ export function register() {
   }
 
   // F-02: Enforce seed user deletion via a positive DB check in production.
-  // SEED_PASSWORDS_ROTATED has been removed from wrangler.toml; it must now
-  // be set via `wrangler secret put SEED_PASSWORDS_ROTATED`.
+  // The environment check for SEED_PASSWORDS_ROTATED is centralized in enforceEnvValidation()
+  // (see src/lib/env.ts).
   // The runtime guard additionally verifies that seed accounts are truly gone
   // from auth.users so that a forked repo cannot bypass the check by setting
   // the env var without actually deleting the accounts.
   if (process.env.NODE_ENV === "production") {
-    // Require the env var to be set via wrangler secret (not committed in repo)
-    if (process.env.SEED_PASSWORDS_ROTATED !== "true") {
-      const message =
-        "[STARTUP HEALTH CHECK FAILED] Seed user passwords have not been rotated.\n" +
-        "\n" +
-        "Migration 00019 created users with a well-known default password\n" +
-        "(see supabase/seed.sql). These credentials are publicly known.\n" +
-        "\n" +
-        "To fix:\n" +
-        "  1. DELETE all seed users from auth.users and public.users, OR\n" +
-        "     change ALL seed user passwords via Supabase Dashboard.\n" +
-        "  2. Set the environment variable via: wrangler secret put SEED_PASSWORDS_ROTATED\n" +
-        "  3. Set the environment variable via: wrangler secret put SEED_USERS_DELETED\n" +
-        "  4. Re-deploy the application.\n" +
-        "\n" +
-        "Seed user UUIDs (from migration 00019):\n" +
-        "  a0000000-0000-0000-0000-000000000001 (super_admin)\n" +
-        "  a0000000-0000-0000-0000-000000000002 (clinic_admin)\n" +
-        "  a0000000-0000-0000-0000-000000000003 (doctor)\n" +
-        "  a0000000-0000-0000-0000-000000000004 (receptionist)\n" +
-        "  a0000000-0000-0000-0000-000000000010..0014 (patients)\n" +
-        "\n" +
-        "The application will NOT start until this is resolved.";
-      import("@/lib/logger").then(({ logger }) =>
-        logger.error(message, { context: "instrumentation" }),
-      );
-      throw new Error(message);
-    }
-
     // Positive DB check: verify seed accounts are actually deleted
     const SEED_AUTH_IDS = [
       "a0000000-0000-0000-0000-000000000001",
@@ -340,7 +295,7 @@ export function register() {
       import("@/lib/logger").then(({ logger }) => {
         logger.warn(
           "[STARTUP WARNING] SEED_PASSWORDS_ROTATED is set but SEED_USERS_DELETED is not.\n" +
-            "The seed user emails (e.g. admin@health-saas.ma) are publicly visible in the\n" +
+            "The seed user emails (e.g. admin@demo-clinic.com) are publicly visible in the\n" +
             "GitHub repository. Deleting these accounts entirely is strongly recommended.\n" +
             "Set SEED_USERS_DELETED=true after removing them to silence this warning.",
           { context: "instrumentation" },

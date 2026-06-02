@@ -44,6 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const h = await import("next/headers").then((m) => m.headers());
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const nonce = h.get("x-nonce") || undefined;
 
   if (!tenant) {
     const metaTitle = `Oltigo \u2014 ${t(locale, "public.meta.title")}`;
@@ -161,10 +162,12 @@ export default async function HomePage() {
       <>
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
         />
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
         />
         <LandingPage />
@@ -173,8 +176,9 @@ export default async function HomePage() {
   }
 
   const { headers } = await import("next/headers");
-  const h = await headers();
-  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const h2 = await headers();
+  // `locale` and `nonce` are already extracted at the top of the component.
+  // We can just rely on them.
 
   // Subdomain → show clinic homepage with tenant data
   let branding;
@@ -248,6 +252,7 @@ export default async function HomePage() {
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
       <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
       />
       {/* Hero — always visible */}

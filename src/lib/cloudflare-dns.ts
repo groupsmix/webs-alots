@@ -28,7 +28,7 @@ import { logger } from "@/lib/logger";
 interface CloudflareConfig {
   zoneId: string;
   zoneName: string;
-  auth: { mode: "token"; apiToken: string } | { mode: "global-key"; apiKey: string; email: string };
+  auth: { mode: "token"; apiToken: string };
 }
 
 export interface DnsRecord {
@@ -70,12 +70,6 @@ function getConfig(): CloudflareConfig | null {
     return { zoneId, zoneName, auth: { mode: "token", apiToken } };
   }
 
-  const apiKey = process.env.CLOUDFLARE_API_KEY;
-  const email = process.env.CLOUDFLARE_EMAIL;
-  if (apiKey && email) {
-    return { zoneId, zoneName, auth: { mode: "global-key", apiKey, email } };
-  }
-
   return null;
 }
 
@@ -90,15 +84,10 @@ async function cfFetch<T>(
 ): Promise<CloudflareApiResponse<T>> {
   const url = `${CF_API_BASE}/zones/${config.zoneId}${path}`;
 
-  const authHeaders: Record<string, string> =
-    config.auth.mode === "token"
-      ? { Authorization: `Bearer ${config.auth.apiToken}` }
-      : { "X-Auth-Key": config.auth.apiKey, "X-Auth-Email": config.auth.email };
-
   const response = await fetch(url, {
     ...options,
     headers: {
-      ...authHeaders,
+      Authorization: `Bearer ${config.auth.apiToken}`,
       "Content-Type": "application/json",
       ...((options.headers as Record<string, string>) ?? {}),
     },
@@ -130,7 +119,7 @@ export async function provisionSubdomain(slug: string): Promise<CloudflareResult
     return {
       success: false,
       error:
-        "Cloudflare DNS not configured. Set CLOUDFLARE_API_TOKEN (or CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL), CLOUDFLARE_ZONE_ID, CLOUDFLARE_ZONE_NAME.",
+        "Cloudflare DNS not configured. Set CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID, CLOUDFLARE_ZONE_NAME.",
     };
   }
 

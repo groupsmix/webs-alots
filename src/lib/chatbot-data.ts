@@ -197,23 +197,23 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
       : "";
 
   const contactParts: string[] = [];
-  if (clinic.phone) contactParts.push(`Téléphone: ${sanitizeUntrustedText(clinic.phone)}`);
-  if (clinic.email) contactParts.push(`Email: ${sanitizeUntrustedText(clinic.email)}`);
-  if (clinic.address) contactParts.push(`Adresse: ${sanitizeUntrustedText(clinic.address)}`);
-  if (clinic.city) contactParts.push(`Ville: ${sanitizeUntrustedText(clinic.city)}`);
-  if (clinic.domain) contactParts.push(`Site web: ${sanitizeUntrustedText(clinic.domain)}`);
+  if (clinic.phone) contactParts.push(`Téléphone: ${clinic.phone}`);
+  if (clinic.email) contactParts.push(`Email: ${clinic.email}`);
+  if (clinic.address) contactParts.push(`Adresse: ${clinic.address}`);
+  if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
+  if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
 
   // A101-03: Wrap retrieved data in <context> tags to clearly separate
   // untrusted clinic-supplied content from system instructions. This
   // prevents indirect prompt injection via FAQ answers or service names
   // from being interpreted as system-level directives by the LLM.
-  return `Tu es l'assistant virtuel de "${sanitizeUntrustedText(clinic.name)}", un(e) ${sanitizeUntrustedText(typeLabels[clinic.type] ?? clinic.type)}.
+  return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
 <context source="clinic-data" trust="low">
 INFORMATIONS DU CABINET:
-Nom: ${sanitizeUntrustedText(clinic.name)}
-Type: ${sanitizeUntrustedText(typeLabels[clinic.type] ?? clinic.type)}
+Nom: ${clinic.name}
+Type: ${typeLabels[clinic.type] ?? clinic.type}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 
 HORAIRES:

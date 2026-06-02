@@ -55,19 +55,6 @@ function getAuth(): { zoneId: string; headers: HeadersInit } | null {
     };
   }
 
-  const apiKey = process.env.CLOUDFLARE_API_KEY;
-  const email = process.env.CLOUDFLARE_EMAIL;
-  if (apiKey && email) {
-    return {
-      zoneId,
-      headers: {
-        "X-Auth-Key": apiKey,
-        "X-Auth-Email": email,
-        "Content-Type": "application/json",
-      },
-    };
-  }
-
   return null;
 }
 

@@ -1,8 +1,12 @@
-# Health SaaS Platform
+# Oltigo Health
 
-Multi-tenant health management platform for **doctors**, **dentists**, and **pharmacies** in Morocco.
+Multi-tenant SaaS platform built specifically for **healthcare clinics in Morocco**.
 
 Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Workers** (via [OpenNext](https://opennext.js.org/cloudflare)).
+
+## Scope & Features
+Oltigo focuses on the core clinic workflow: Online booking, Patient Records (PHI), Receptionist & Doctor Dashboards, WhatsApp Reminders, and CMI Payments.
+> **Note:** Non-MVP verticals (Restaurant, Veterinary, AI features, FHIR) are considered experimental and are gated behind feature flags (see `MVP_SCOPE.md` and `.env.example`).
 
 ## Stack
 
@@ -12,15 +16,15 @@ Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Workers** (
 | Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
 | Notifications | WhatsApp Business API (Meta Cloud API)             |
 | Hosting       | Cloudflare Workers (via OpenNext)                  |
-| Payments      | CMI Payment Gateway (optional)                     |
+| Payments      | CMI Payment Gateway                                |
 
 ## User Roles
 
-1. **Super Admin** - Controls everything across all clients
+1. **Super Admin** - Master control panel for tenant management
 2. **Clinic Admin** - Doctor or clinic owner
-3. **Receptionist** - Manages bookings and patients daily
-4. **Doctor** - Sees their own patients only
-5. **Patient** - Books, sees history, uploads files
+3. **Receptionist** - Manages bookings and patient flow daily
+4. **Doctor** - Sees their own patients, manages clinical encounters
+5. **Patient** - Books online, views history, uploads files
 
 ## Getting Started
 

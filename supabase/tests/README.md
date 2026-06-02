@@ -3,9 +3,9 @@
 SQL fixtures that pin database-side invariants which RLS alone cannot guard
 (SECURITY DEFINER RPCs, trigger logic, grants, etc.).
 
-These tests use [pgTAP](https://pgtap.org/). They are not yet wired into CI;
-they are intended to be run manually against a local Supabase instance and
-will be added to the `migration-check` workflow once a runner is in place.
+These tests use [pgTAP](https://pgtap.org/). They are run automatically in CI
+during the `rls` job to ensure the database layer behaves correctly before
+any TypeScript code even hits it.
 
 ## Running locally
 
@@ -13,13 +13,8 @@ will be added to the `migration-check` workflow once a runner is in place.
 # 1. Start a local Supabase stack
 supabase start
 
-# 2. Install the pgtap extension (one-time, on the local DB)
-psql "$(supabase status -o env | awk -F= '/DB_URL/ {print $2}' | tr -d '\"')" \
-  -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
-
-# 3. Run a test file
-psql "$(supabase status -o env | awk -F= '/DB_URL/ {print $2}' | tr -d '\"')" \
-  -f supabase/tests/booking_atomic_insert.test.sql
+# 2. Run all database tests
+npm run test:db
 ```
 
 Each test file wraps its assertions in a transaction that rolls back, so

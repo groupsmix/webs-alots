@@ -431,6 +431,14 @@ async function handler(request: NextRequest) {
         onConflict: "appointment_id,trigger,channel",
         ignoreDuplicates: true,
       });
+
+      // Update appointment statuses to 'reminded'
+      const apptIdsToUpdate = pendingLogInserts.map((i) => i.appointment_id);
+      await supabase
+        .from("appointments")
+        .update({ status: "reminded" })
+        .in("id", apptIdsToUpdate)
+        .in("status", ["confirmed", "pending"]);
     }
 
     // A77-F1: Persist the last processed appointment's slot_start to KV

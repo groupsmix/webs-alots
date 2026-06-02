@@ -143,20 +143,12 @@ export interface RateLimiterOptions {
   failClosed?: boolean;
 }
 
-/**
- * Result returned by RateLimiter.check — either a bare allow/deny boolean
- * (for backends that don't track exact quota) or an object with the
- * remaining quota for accurate header reporting.
- */
-export type RateLimitResult = boolean | { allowed: boolean; remaining: number };
-
 export interface RateLimiter {
   /**
    * Returns `true` if the request is allowed, `false` if rate-limited.
-   * Or returns an object with `{ allowed: boolean, remaining: number }` for accurate quota tracking.
    * May be async when using a distributed backend.
    */
-  check(key: string): RateLimitResult | Promise<RateLimitResult>;
+  check(key: string): boolean | Promise<boolean>;
 }
 
 // ── Backend selection ──
@@ -293,11 +285,11 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey);
 
   return {
-    async check(key: string): Promise<RateLimitResult> {
+    async check(key: string): Promise<boolean> {
       // If circuit breaker is tripped, degrade to in-memory rate limiting.
       // This preserves rate-limit enforcement while keeping the site alive.
       if (isCircuitOpen(circuitBreaker)) {
-        if (circuitBreaker.fallback) return await circuitBreaker.fallback.check(key);
+        if (circuitBreaker.fallback) return circuitBreaker.fallback.check(key);
         return !failClosed;
       }
 
@@ -324,8 +316,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (!rpcError && rpcResult != null) {
           // RPC succeeded — rpcResult is the new count
           recordSuccess(circuitBreaker);
-          const count = rpcResult as number;
-          return { allowed: count <= max, remaining: Math.max(0, max - count) };
+          return (rpcResult as number) <= max;
         }
 
         // RPC not available — fall back to upsert-based approach.
@@ -350,7 +341,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           void reportRateLimitBackendError("query", error);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
-            return await circuitBreaker.fallback.check(key);
+            return circuitBreaker.fallback.check(key);
           }
           return !failClosed;
         }
@@ -373,12 +364,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             void reportRateLimitBackendError("upsert", upsertError);
             if (circuitBreaker.failClosed) return false;
             if (circuitBreaker.fallback) {
-              return await circuitBreaker.fallback.check(key);
+              return circuitBreaker.fallback.check(key);
             }
             return !failClosed;
           }
           recordSuccess(circuitBreaker);
-          return { allowed: true, remaining: Math.max(0, max - 1) };
+          return true;
         }
 
         // Window still active — increment atomically using a conditional update.
@@ -399,7 +390,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           void reportRateLimitBackendError("update", updateError);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
-            return await circuitBreaker.fallback.check(key);
+            return circuitBreaker.fallback.check(key);
           }
           return !failClosed;
         }
@@ -413,18 +404,17 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             .select("count")
             .eq("key", key)
             .maybeSingle();
-          const c = reread?.count ?? 0;
-          return { allowed: c <= max, remaining: Math.max(0, max - c) };
+          return (reread?.count ?? 0) <= max;
         }
 
-        return { allowed: newCount <= max, remaining: Math.max(0, max - newCount) };
+        return newCount <= max;
       } catch (err) {
         logger.error("Rate limiter network failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
         void reportRateLimitBackendError("network", err);
         if (circuitBreaker.failClosed) return false;
         if (circuitBreaker.fallback) {
-          return await circuitBreaker.fallback.check(key);
+          return circuitBreaker.fallback.check(key);
         }
         return !failClosed;
       }
@@ -473,9 +463,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
    * limiters (security-critical endpoints) may hard-deny, and only once the
    * grace period since the first failure has elapsed.
    */
-  const degradeOrFailClosed = async (
-    key: string,
-  ): Promise<{ allowed: boolean; remaining: number }> => {
+  const degradeOrFailClosed = (key: string): boolean | Promise<boolean> => {
     if (!circuitBreaker.fallback) {
       circuitBreaker.fallback = createMemoryRateLimiter(options);
     }
@@ -487,16 +475,14 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
           key,
           elapsedMs: elapsed,
         });
-        return { allowed: false, remaining: 0 };
+        return false;
       }
     }
-    const result = await circuitBreaker.fallback.check(key);
-    if (typeof result === "boolean") return { allowed: result, remaining: 0 };
-    return result;
+    return circuitBreaker.fallback.check(key);
   };
 
   return {
-    async check(key: string): Promise<RateLimitResult> {
+    async check(key: string): Promise<boolean> {
       // If circuit breaker is tripped, degrade to in-memory rate limiting.
       if (isCircuitOpen(circuitBreaker)) {
         return degradeOrFailClosed(key);
@@ -529,7 +515,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (validTimestamps.length >= max) {
           // Rate limit exceeded
           recordSuccess(circuitBreaker);
-          return { allowed: false, remaining: 0 };
+          return false;
         }
 
         // Add current request timestamp
@@ -543,7 +529,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
         });
 
         recordSuccess(circuitBreaker);
-        return { allowed: true, remaining: Math.max(0, max - validTimestamps.length) };
+        return true;
       } catch (err) {
         logger.error("Rate limiter KV failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
@@ -576,7 +562,7 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
   }
 
   return {
-    check(key: string): RateLimitResult {
+    check(key: string): boolean {
       const now = Date.now();
 
       // Log a warning on the first request after a cold start so operators
@@ -606,11 +592,11 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
 
       if (!entry || now >= entry.resetAt) {
         store.set(key, { count: 1, resetAt: now + windowMs });
-        return { allowed: true, remaining: Math.max(0, max - 1) };
+        return true;
       }
 
       entry.count += 1;
-      return { allowed: entry.count <= max, remaining: Math.max(0, max - entry.count) };
+      return entry.count <= max;
     },
   };
 }

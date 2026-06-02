@@ -171,6 +171,56 @@ describe.skipIf(SKIP)("RLS Assertion Tests (S0-08-02)", () => {
         .limit(1);
       expect(data ?? []).toHaveLength(0);
     });
+
+    it("should prevent Clinic A from inserting appointments into Clinic B", async () => {
+      const clientA = createAnonClientForClinic(CLINIC_A_ID);
+      const { error } = await clientA.from("appointments").insert({
+        clinic_id: CLINIC_B_ID,
+        patient_id: "00000000-0000-0000-0000-000000000001",
+        doctor_id: "00000000-0000-0000-0000-000000000002",
+        service_id: SERVICE_B_ID,
+        appointment_date: "2099-01-01",
+        start_time: "10:00",
+        end_time: "10:30",
+        status: "pending",
+      });
+
+      if (error) {
+        expect(error.message).toMatch(/policy|permission|violates|denied/i);
+      }
+
+      const admin = createAdminClientLocal();
+      const { data } = await admin
+        .from("appointments")
+        .select("id")
+        .eq("clinic_id", CLINIC_B_ID)
+        .eq("appointment_date", "2099-01-01")
+        .limit(1);
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("should prevent Clinic A from inserting users into Clinic B", async () => {
+      const clientA = createAnonClientForClinic(CLINIC_A_ID);
+      const { error } = await clientA.from("users").insert({
+        id: "55555555-5555-5555-5555-555555555555",
+        clinic_id: CLINIC_B_ID,
+        role: "patient",
+        name: "RLS Hijack Patient",
+      });
+
+      if (error) {
+        expect(error.message).toMatch(/policy|permission|violates|denied/i);
+      }
+
+      const admin = createAdminClientLocal();
+      const { data } = await admin
+        .from("users")
+        .select("id")
+        .eq("clinic_id", CLINIC_B_ID)
+        .eq("name", "RLS Hijack Patient")
+        .limit(1);
+      expect(data ?? []).toHaveLength(0);
+    });
   });
 
   describe("Cross-tenant UPDATE assertions", () => {

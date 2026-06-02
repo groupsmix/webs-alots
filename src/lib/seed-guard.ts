@@ -39,6 +39,9 @@ function isProduction(): boolean {
  *
  * Returns `true` if the user should be blocked (seed user + production).
  * Returns `false` in development/test or for non-seed users.
+ *
+ * Note: Startup safety is additionally enforced by the boot guard
+ * `enforceSeedPasswordsRotated` in `src/lib/env.ts`.
  */
 export function isSeedUserBlocked(authId: string | null | undefined): boolean {
   if (!authId) return false;

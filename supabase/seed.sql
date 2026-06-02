@@ -83,7 +83,7 @@ VALUES
   -- Super Admin
   ('a0000000-0000-0000-0000-000000000001',
    '00000000-0000-0000-0000-000000000000',
-   'admin@health-saas.ma',
+   'super@oltigo.test',
    crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212600000001', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
@@ -92,7 +92,7 @@ VALUES
   -- Clinic Admin
   ('a0000000-0000-0000-0000-000000000002',
    '00000000-0000-0000-0000-000000000000',
-   'nadia@dr-benali.ma',
+   'admin@demo-clinic.com',
    crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212611000001', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
@@ -101,7 +101,7 @@ VALUES
   -- Doctor
   ('a0000000-0000-0000-0000-000000000003',
    '00000000-0000-0000-0000-000000000000',
-   'ahmed@dr-benali.ma',
+   'doctor@demo-clinic.com',
    crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212611000002', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
@@ -110,7 +110,7 @@ VALUES
   -- Receptionist
   ('a0000000-0000-0000-0000-000000000004',
    '00000000-0000-0000-0000-000000000000',
-   'amina@dr-benali.ma',
+   'reception@demo-clinic.com',
    crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212611000003', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,

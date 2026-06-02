@@ -12,6 +12,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { AppointmentCard } from "@/components/receptionist/appointment-card";
 import { CashRegister } from "@/components/receptionist/cash-register";
 import { EndOfDayReportButton } from "@/components/receptionist/end-of-day-report-button";
 import { ManualBookingDialog } from "@/components/receptionist/manual-booking-dialog";
@@ -24,10 +25,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
-  fetchTodayAppointments,
+  fetchAppointments,
   fetchInvoices,
   fetchPatients,
   type AppointmentView,
@@ -41,6 +44,7 @@ const statusVariant: Record<
 > = {
   scheduled: "outline",
   confirmed: "default",
+  reminded: "default",
   "in-progress": "warning",
   completed: "success",
   "no-show": "destructive",
@@ -67,7 +71,7 @@ export default function ReceptionistDashboardPage() {
       }
       setClinicId(user.clinic_id);
       const [appts, invoices, patients] = await Promise.all([
-        fetchTodayAppointments(user.clinic_id),
+        fetchAppointments(user.clinic_id),
         fetchInvoices(user.clinic_id),
         fetchPatients(user.clinic_id),
       ]);
@@ -91,7 +95,20 @@ export default function ReceptionistDashboardPage() {
     };
   }, []);
 
-  const checkedIn = todayAppts.filter(
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowDateStr = tomorrowDate.toISOString().split("T")[0];
+
+  const todayApptsFiltered = todayAppts.filter((a) => a.date === todayDateStr);
+  const tomorrowAppts = todayAppts.filter((a) => a.date === tomorrowDateStr);
+  const checkedInAppts = todayAppts.filter((a) => checkedInIds.has(a.id) || a.status === "in-progress");
+  const waitingAppts = todayApptsFiltered.filter((a) => checkedInIds.has(a.id) && a.status !== "completed");
+  const completedAppts = todayAppts.filter((a) => a.status === "completed");
+  const cancelledAppts = todayAppts.filter((a) => a.status === "cancelled");
+  const noShowAppts = todayAppts.filter((a) => a.status === "no-show");
+
+  const checkedInCount = todayApptsFiltered.filter(
     (a) => a.status === "confirmed" || a.status === "in-progress",
   ).length;
 
@@ -99,13 +116,13 @@ export default function ReceptionistDashboardPage() {
     {
       icon: Calendar,
       label: "Today's Bookings",
-      value: todayAppts.length.toString(),
+      value: todayApptsFiltered.length.toString(),
       color: "text-blue-600",
     },
     {
       icon: Users,
       label: "Checked In",
-      value: (checkedIn + checkedInIds.size).toString(),
+      value: (checkedInCount + checkedInIds.size).toString(),
       color: "text-green-600",
     },
     { icon: UserPlus, label: "Walk-ins Today", value: "0", color: "text-purple-600" },
@@ -121,13 +138,50 @@ export default function ReceptionistDashboardPage() {
     setCheckedInIds((prev) => new Set(prev).add(id));
   };
 
-  const handleCallPatient = (phone: string) => {
-    window.open(`tel:${phone.replace(/\s/g, "")}`, "_self");
+  const handleConfirm = (id: string) => {
+    setTodayAppts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "confirmed" } : a)));
   };
 
-  const handleWhatsApp = (phone: string) => {
-    const cleaned = phone.replace(/\s/g, "").replace("+", "");
-    window.open(`https://wa.me/${cleaned}`, "_blank");
+  const handleCancel = (id: string) => {
+    setTodayAppts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "cancelled" } : a)));
+  };
+
+  const handleNoShow = (id: string) => {
+    setTodayAppts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "no-show" } : a)));
+  };
+
+  const handleReschedule = (id: string) => {
+    // Basic stub for reschedule
+    console.log("Reschedule", id);
+  };
+
+  const renderApptList = (appointments: AppointmentView[], emptyMessage: string) => {
+    if (appointments.length === 0) {
+      return (
+        <EmptyState
+          icon={Calendar}
+          title={emptyMessage}
+          description="Click Manual Booking or Walk-in Registration to add an appointment."
+        />
+      );
+    }
+    return (
+      <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+        {appointments.map((apt) => (
+          <AppointmentCard
+            key={apt.id}
+            appointment={apt}
+            patient={patientMap.get(apt.patientId)}
+            isCheckedIn={checkedInIds.has(apt.id)}
+            onCheckIn={handleCheckIn}
+            onConfirm={handleConfirm}
+            onCancel={handleCancel}
+            onNoShow={handleNoShow}
+            onReschedule={handleReschedule}
+          />
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -181,89 +235,48 @@ export default function ReceptionistDashboardPage() {
 
       {/* Three-column layout: Schedule | Waiting Room | Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Column 1: Today's Schedule */}
+        {/* Column 1: Appointment Board */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Today&apos;s Schedule
+              Appointment Board
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {todayAppts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No appointments today.</p>
-            ) : (
-              <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {todayAppts.map((apt) => {
-                  const patient = patientMap.get(apt.patientId);
-                  const isCheckedIn = checkedInIds.has(apt.id);
-                  return (
-                    <div key={apt.id} className="flex items-center gap-2 rounded-lg border p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-[10px]">
-                          {apt.patientName
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{apt.patientName}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {apt.serviceName}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-medium">{apt.time}</p>
-                        <Badge
-                          variant={isCheckedIn ? "success" : statusVariant[apt.status]}
-                          className="text-[10px]"
-                        >
-                          {isCheckedIn ? "checked-in" : apt.status}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-col gap-0.5 shrink-0">
-                        {!isCheckedIn &&
-                          apt.status !== "completed" &&
-                          apt.status !== "cancelled" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => handleCheckIn(apt.id)}
-                              title="Check in"
-                            >
-                              <CheckCircle className="h-3 w-3 text-green-600" />
-                            </Button>
-                          )}
-                        {patient && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => handleCallPatient(patient.phone)}
-                              title="Call"
-                            >
-                              <Phone className="h-3 w-3 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => handleWhatsApp(patient.phone)}
-                              title="WhatsApp"
-                            >
-                              <MessageCircle className="h-3 w-3 text-green-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <Tabs defaultValue="today" className="w-full">
+              <TabsList className="w-full justify-start overflow-x-auto h-auto flex-wrap mb-4 bg-transparent p-0 gap-1">
+                <TabsTrigger value="today" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Today</TabsTrigger>
+                <TabsTrigger value="tomorrow" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Tomorrow</TabsTrigger>
+                <TabsTrigger value="checked-in" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Checked In</TabsTrigger>
+                <TabsTrigger value="waiting" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Waiting</TabsTrigger>
+                <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Completed</TabsTrigger>
+                <TabsTrigger value="cancelled" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Cancelled</TabsTrigger>
+                <TabsTrigger value="no-show" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">No-show</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="today" className="m-0">
+                {renderApptList(todayApptsFiltered, "No appointments scheduled for today.")}
+              </TabsContent>
+              <TabsContent value="tomorrow" className="m-0">
+                {renderApptList(tomorrowAppts, "No appointments scheduled for tomorrow.")}
+              </TabsContent>
+              <TabsContent value="checked-in" className="m-0">
+                {renderApptList(checkedInAppts, "No patients currently checked in.")}
+              </TabsContent>
+              <TabsContent value="waiting" className="m-0">
+                {renderApptList(waitingAppts, "No patients waiting.")}
+              </TabsContent>
+              <TabsContent value="completed" className="m-0">
+                {renderApptList(completedAppts, "No completed appointments yet.")}
+              </TabsContent>
+              <TabsContent value="cancelled" className="m-0">
+                {renderApptList(cancelledAppts, "No cancelled appointments.")}
+              </TabsContent>
+              <TabsContent value="no-show" className="m-0">
+                {renderApptList(noShowAppts, "No no-shows recorded.")}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
