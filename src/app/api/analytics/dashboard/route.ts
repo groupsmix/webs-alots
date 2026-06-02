@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { getLocalDateStr } from "@/lib/utils";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 type AnalyticsPeriod = "week" | "month" | "quarter" | "year";
 
@@ -76,11 +76,7 @@ type PaymentRow = {
 type ReviewRow = { id: string; stars: number; created_at: string };
 type PatientRow = { id: string; created_at: string };
 
-function computeComparison(
-  appts: ApptRow[],
-  payments: PaymentRow[],
-  period: AnalyticsPeriod,
-) {
+function computeComparison(appts: ApptRow[], payments: PaymentRow[], period: AnalyticsPeriod) {
   const { start, end, prevStart, prevEnd } = getPeriodRange(period);
   const startStr = getLocalDateStr(start);
   const endStr = getLocalDateStr(end);
@@ -186,9 +182,19 @@ async function handler(request: NextRequest, auth: AuthContext) {
 
   const periodComparison = computeComparison(appts, payments, period);
 
+  type DailyAnalyticsRow = {
+    date: string;
+    patientCount: number;
+    revenue: number;
+    appointments: number;
+    noShows: number;
+    walkIns: number;
+    onlineBookings: number;
+  };
+
   const periodDays =
     period === "week" ? 7 : period === "month" ? 30 : period === "quarter" ? 90 : 365;
-  const dailyMap = new Map<string, any>();
+  const dailyMap = new Map<string, DailyAnalyticsRow>();
   const now = new Date();
   for (let i = Math.min(periodDays, 30) - 1; i >= 0; i--) {
     const d = new Date(now);
@@ -220,7 +226,7 @@ async function handler(request: NextRequest, auth: AuthContext) {
   }
   const dailyAnalytics = [...dailyMap.values()];
 
-  const weeklyRevenue: any[] = [];
+  const weeklyRevenue: { week: string; revenue: number; patients: number }[] = [];
   for (let i = 0; i < dailyAnalytics.length; i += 7) {
     const chunk = dailyAnalytics.slice(i, i + 7);
     if (chunk.length === 0) break;
@@ -232,7 +238,12 @@ async function handler(request: NextRequest, auth: AuthContext) {
     });
   }
 
-  const monthlyRevenue: any[] = [];
+  const monthlyRevenue: {
+    month: string;
+    revenue: number;
+    patients: number;
+    appointments: number;
+  }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthStr = d.toISOString().slice(0, 7);
@@ -250,9 +261,7 @@ async function handler(request: NextRequest, auth: AuthContext) {
 
   const serviceCount = new Map<string, { count: number; revenue: number }>();
   for (const a of appts) {
-    const svcName = a.service_id
-      ? (serviceMap.get(a.service_id)?.name ?? "Other")
-      : "Consultation";
+    const svcName = a.service_id ? (serviceMap.get(a.service_id)?.name ?? "Other") : "Consultation";
     const entry = serviceCount.get(svcName) ?? { count: 0, revenue: 0 };
     entry.count++;
     if (a.service_id) {
@@ -288,7 +297,7 @@ async function handler(request: NextRequest, auth: AuthContext) {
     })),
   }));
 
-  const reviewTrends: any[] = [];
+  const reviewTrends: { month: string; averageScore: number; count: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthStr = d.toISOString().slice(0, 7);
@@ -305,7 +314,12 @@ async function handler(request: NextRequest, auth: AuthContext) {
     });
   }
 
-  const patientRetention: any[] = [];
+  const patientRetention: {
+    month: string;
+    newPatients: number;
+    returningPatients: number;
+    retentionRate: number;
+  }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthStr = d.toISOString().slice(0, 7);

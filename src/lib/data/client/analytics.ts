@@ -151,61 +151,6 @@ function getPeriodRange(period: AnalyticsPeriod): {
   return { start, end, prevStart, prevEnd };
 }
 
-function computeComparison(
-  appts: ApptRow[],
-  payments: PaymentRow[],
-  period: AnalyticsPeriod,
-): PeriodComparison {
-  const { start, end, prevStart, prevEnd } = getPeriodRange(period);
-  const startStr = getLocalDateStr(start);
-  const endStr = getLocalDateStr(end);
-  const prevStartStr = getLocalDateStr(prevStart);
-  const prevEndStr = getLocalDateStr(prevEnd);
-
-  const currentAppts = appts.filter(
-    (a) => a.appointment_date >= startStr && a.appointment_date <= endStr,
-  );
-  const prevAppts = appts.filter(
-    (a) => a.appointment_date >= prevStartStr && a.appointment_date <= prevEndStr,
-  );
-
-  const currentPayments = payments.filter((p) => {
-    const d = p.created_at?.split("T")[0];
-    return d && d >= startStr && d <= endStr;
-  });
-  const prevPayments = payments.filter((p) => {
-    const d = p.created_at?.split("T")[0];
-    return d && d >= prevStartStr && d <= prevEndStr;
-  });
-
-  const currentRevenue = currentPayments.reduce((s, p) => s + p.amount, 0);
-  const previousRevenue = prevPayments.reduce((s, p) => s + p.amount, 0);
-  const currentPatients = new Set(currentAppts.map((a) => a.patient_id)).size;
-  const previousPatients = new Set(prevAppts.map((a) => a.patient_id)).size;
-  const currentNoShows = currentAppts.filter((a) => a.status === "no_show").length;
-  const previousNoShows = prevAppts.filter((a) => a.status === "no_show").length;
-
-  function pctChange(current: number, previous: number): number {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return Math.round(((current - previous) / previous) * 100);
-  }
-
-  return {
-    currentRevenue,
-    previousRevenue,
-    revenueChange: pctChange(currentRevenue, previousRevenue),
-    currentPatients,
-    previousPatients,
-    patientChange: pctChange(currentPatients, previousPatients),
-    currentAppointments: currentAppts.length,
-    previousAppointments: prevAppts.length,
-    appointmentChange: pctChange(currentAppts.length, prevAppts.length),
-    currentNoShows,
-    previousNoShows,
-    noShowChange: pctChange(currentNoShows, previousNoShows),
-  };
-}
-
 type ApptRow = {
   id: string;
   appointment_date: string;
@@ -224,9 +169,6 @@ type PaymentRow = {
   doctor_id: string | null;
   service_id: string | null;
 };
-type ReviewRow = { id: string; stars: number; created_at: string };
-type PatientRow = { id: string; created_at: string };
-
 export interface RateLimitStatus {
   limit: string | null;
   remaining: string | null;
