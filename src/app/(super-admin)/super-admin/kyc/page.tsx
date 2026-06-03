@@ -23,11 +23,13 @@ interface KycEntry {
 
 export default async function KycReviewPage() {
   const supabase = await createClient();
-  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-  const { data } = await supabase
-    .from("clinic_kyc")
-    .select("id, ice_number, rc_number, review_status, created_at, clinics(name, subdomain, phone)")
-    .order("created_at", { ascending: false });
+  const { data } = await (
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+    supabase
+      .from("clinic_kyc")
+      .select("id, ice_number, rc_number, review_status, created_at, clinics(name, subdomain, phone)")
+      .order("created_at", { ascending: false })
+  );
   const kycs = (data ?? null) as KycEntry[] | null;
 
   return (
