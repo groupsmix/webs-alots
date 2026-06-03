@@ -1,5 +1,6 @@
 import { Star, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LandingPage } from "@/components/landing/landing-page";
@@ -25,6 +26,9 @@ import { getTenant } from "@/lib/tenant";
 
 /** Default timeout (ms) for Supabase data-fetching on public pages. */
 const DATA_FETCH_TIMEOUT_MS = 10_000;
+
+const linkBtnOutline =
+  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
 /**
  * Race a promise against a timeout. Rejects with a descriptive error
@@ -317,7 +321,7 @@ export default async function HomePage() {
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-yellow-400"
-                          data-width={Math.round(pct)}
+                          data-width={String(Math.round(pct))}
                         />
                       </div>
                       <span className="w-8 text-xs text-muted-foreground">{count}</span>
