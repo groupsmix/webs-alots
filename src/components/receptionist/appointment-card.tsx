@@ -27,6 +27,7 @@ const statusVariant: Record<
 > = {
   scheduled: "outline",
   confirmed: "default",
+  reminded: "default",
   "in-progress": "warning",
   completed: "success",
   "no-show": "destructive",

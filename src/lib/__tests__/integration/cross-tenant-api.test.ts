@@ -155,7 +155,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
       slot_start: futureDate,
       slot_end: new Date(Date.now() + 86400000 * 5 + 1800000).toISOString(),
       status: "pending",
-    } as any);
+    } as Record<string, unknown>);
 
     // RLS should deny insertion or block it
     if (error) {
@@ -199,7 +199,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
 
     const { error } = await clientX
       .from("users")
-      .update({ role: "clinic_admin" } as any)
+      .update({ role: "clinic_admin" } as Record<string, unknown>)
       .eq("id", DOCTOR_Y_ID);
 
     if (error) {

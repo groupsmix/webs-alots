@@ -1,6 +1,6 @@
 import { get } from "@/lib/api-client";
-import type { WhatsAppTemplate } from "@/lib/whatsapp";
 import type { NotificationLogEntry } from "@/lib/notifications";
+import type { WhatsAppTemplate } from "@/lib/whatsapp";
 
 export interface QueueItem {
   id: string;
@@ -11,7 +11,7 @@ export interface QueueItem {
   channel: string;
   recipient: string;
   created_at: string;
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 export interface QueueStatus {

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dispatchNotification } from "../notifications";
-import { enqueueNotification, processNotificationQueue } from "../notification-queue";
+import { enqueueNotification } from "../notification-queue";
 
-const createMockSupabaseClient = (mockData: any[] = []) => ({
+const createMockSupabaseClient = (mockData: Record<string, unknown>[] = []) => ({
   from: vi.fn().mockReturnThis(),
   select: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
@@ -32,7 +32,7 @@ describe("Notification Lifecycle", () => {
     
     // Provide user contact info mock
     const { createClient } = await import("@/lib/supabase-server");
-    (createClient as any).mockResolvedValue(
+    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       createMockSupabaseClient([
         { id: "user-1", phone: "+212600000000", email: "test@example.com" }
       ])
@@ -66,7 +66,7 @@ describe("Notification Lifecycle", () => {
   it("tenant isolation ensures notification queries use clinic_id", async () => {
     const mockSupabase = createMockSupabaseClient([]);
     const { createTenantClient } = await import("@/lib/supabase-server");
-    (createTenantClient as any).mockResolvedValue(mockSupabase);
+    (createTenantClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
     
     // Simulate fetching notifications
     const clinicId = "clinic-123";

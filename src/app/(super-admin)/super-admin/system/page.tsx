@@ -429,19 +429,7 @@ export default function SystemStatusPage() {
           </CardContent>
         </Card>
 
-        {/* Storage Usage */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <HardDrive className="h-4 w-4" />
-              Storage Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <StorageBar used="245 MB" total="500 MB" label="Database" />
-            <StorageBar used="1.2 GB" total="10 GB" label="R2 Storage" />
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Recent Incidents */}
