@@ -65,14 +65,17 @@ export function get<T>(path: string, options?: FetchOptions): Promise<T> {
 }
 
 export function post<T>(path: string, body: unknown, options?: FetchOptions): Promise<T> {
+  // @ts-expect-error -- body is intentionally unknown to match fetch semantics
   return request<T>("POST", path, { ...options, body });
 }
 
 export function put<T>(path: string, body: unknown, options?: FetchOptions): Promise<T> {
+  // @ts-expect-error -- body is intentionally unknown to match fetch semantics
   return request<T>("PUT", path, { ...options, body });
 }
 
 export function patch<T>(path: string, body: unknown, options?: FetchOptions): Promise<T> {
+  // @ts-expect-error -- body is intentionally unknown to match fetch semantics
   return request<T>("PATCH", path, { ...options, body });
 }
 
