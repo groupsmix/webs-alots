@@ -16,6 +16,7 @@ export const GET = withAuth(async () => {
     const supabase = await createClient();
 
     // 1. Webhooks
+    // prettier-ignore
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const webhooksResult = await supabase.from("webhook_retry_queue").select("status").in("status", ["pending", "failed"]);
     const webhooks = (webhooksResult.data ?? null) as WebhookRow[] | null;
@@ -31,6 +32,7 @@ export const GET = withAuth(async () => {
     }
 
     // 2. Notifications
+    // prettier-ignore
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const notificationsResult = await supabase.from("notification_queue").select("status, next_attempt_at").in("status", ["pending", "failed"]);
     const notifications = (notificationsResult.data ?? null) as NotificationRow[] | null;

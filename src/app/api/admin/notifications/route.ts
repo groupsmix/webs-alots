@@ -24,6 +24,7 @@ export const GET = withAuth(async () => {
     const supabase = await createTenantClient(clinicId);
 
     // 1. Fetch templates
+    // prettier-ignore
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const templatesResult = await supabase.from("whatsapp_templates").select("*").eq("clinic_id", clinicId).order("created_at", { ascending: false });
     const templates = templatesResult.data;
@@ -31,11 +32,13 @@ export const GET = withAuth(async () => {
     // 2. Fetch recent logs (last 7 days, up to 100)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // prettier-ignore
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const recentLogsResult = await supabase.from("notification_log").select("*").eq("clinic_id", clinicId).gte("created_at", sevenDaysAgo.toISOString()).order("created_at", { ascending: false }).limit(100);
     const recentLogs = recentLogsResult.data;
 
     // 3. Fetch queue status (pending, failed, dead-lettered)
+    // prettier-ignore
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const queueResult = await supabase.from("notification_queue").select("id, status, attempts, next_attempt_at, error_message, channel, recipient, created_at, payload").eq("clinic_id", clinicId).in("status", ["pending", "failed"]).order("created_at", { ascending: false }).limit(50);
     const queueItems = (queueResult.data ?? null) as QueueItem[] | null;
