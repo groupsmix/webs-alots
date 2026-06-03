@@ -1,24 +1,26 @@
 import { test, expect } from "@playwright/test";
 
+// SCAFFOLD-GAP (A87-F10): Requires the seed data in
+// supabase/seeds/00003_seed_data.sql (clinic + receptionist user with
+// `reception@demo-clinic.com / Reception123!`) which `supabase start`
+// does not apply. The `demo` subdomain in CI resolves to the
+// `Cabinet Demo Oltigo` tenant (migration 00046) which has no auth
+// user with that password.
+//
+// Env-guard contract: opt in by exporting E2E_DEMO_SEED=true when the
+// run environment has the full demo seed applied. See
+// e2e/demo-smoke.spec.ts for the same gap and switch. Lint rule
+// A87-F10 forbids `test.skip` on e2e specs, and Playwright's `test`
+// has no `skipIf` (that's Vitest), so we gate via conditional
+// registration at module top-level.
+const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
+
 test.describe("Receptionist Workflow Test", () => {
   // Use the demo subdomain for all requests in this block
   test.use({ baseURL: "http://demo.localhost:3000" });
 
-  // SCAFFOLD-GAP (A87-F10): Requires the seed data in
-  // supabase/seeds/00003_seed_data.sql (clinic + receptionist user with
-  // `reception@demo-clinic.com / Reception123!`) which `supabase start`
-  // does not apply. The `demo` subdomain in CI resolves to the
-  // `Cabinet Demo Oltigo` tenant (migration 00046) which has no auth
-  // user with that password.
-  //
-  // Env-guard contract: opt in by exporting E2E_DEMO_SEED=true when the
-  // run environment has the full demo seed applied. See
-  // e2e/demo-smoke.spec.ts for the same gap and switch.
-  const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
-
-  test.skipIf(!RUN_DEMO_SEED_TESTS)(
-    "Receptionist can check in a patient from the appointment board",
-    async ({ page }) => {
+  if (RUN_DEMO_SEED_TESTS) {
+    test("Receptionist can check in a patient from the appointment board", async ({ page }) => {
       // 1. Login as receptionist
       await page.goto("/login");
       await page.fill('input[name="email"]', "reception@demo-clinic.com");
@@ -48,6 +50,6 @@ test.describe("Receptionist Workflow Test", () => {
           "Checked In",
         );
       }
-    },
-  );
+    });
+  }
 });
