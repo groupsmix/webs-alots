@@ -23,9 +23,9 @@ import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { presetList, type TemplatePreset } from "@/lib/template-presets";
-import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 
 interface BrandingState {
   name: string;
