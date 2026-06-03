@@ -625,13 +625,58 @@ jobs:
           version: 2.101.0
 
       - name: Boot local Supabase
+        # IMPORTANT: do NOT run `supabase init --force` here. That command
+        # overwrites the project's supabase/config.toml with a default
+        # template, which since CLI v2.45 generates the new publishable/
+        # secret keys instead of (or in addition to) the legacy anon/
+        # service_role JWTs the integration tests still consume. The
+        # project's checked-in config.toml is already compatible with the
+        # pinned CLI version (v2.101.0) — we want supabase start to use it
+        # verbatim so legacy keys are emitted by `supabase status`.
+        #
+        # We also fail-fast on any empty value rather than silently
+        # exporting blanks: when the SKIP guard in each integration test
+        # reads a blank env var it short-circuits every describe block,
+        # producing the cryptic "RLS integration suite ran 0 tests"
+        # failure further down. Detecting the empty values *here*
+        # surfaces the real root cause (CLI / config drift) directly in
+        # the offending step.
         run: |
-          supabase init --force
           supabase start
-          echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
-          echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
-          echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
-          echo "SUPABASE_DB_URL=$(supabase status --output json | jq -r '.DB_URL')" >> "$GITHUB_ENV"
+          STATUS_JSON=$(supabase status --output json)
+
+          SUPABASE_LOCAL_URL=$(jq -r '.API_URL // empty' <<<"$STATUS_JSON")
+          SUPABASE_LOCAL_ANON_KEY=$(jq -r '.ANON_KEY // empty' <<<"$STATUS_JSON")
+          SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(jq -r '.SERVICE_ROLE_KEY // empty' <<<"$STATUS_JSON")
+          SUPABASE_DB_URL=$(jq -r '.DB_URL // empty' <<<"$STATUS_JSON")
+
+          # Diagnostics — which keys are present (mask values, never print secrets)
+          echo "supabase status keys present:"
+          jq -r 'keys[]' <<<"$STATUS_JSON" | sed 's/^/  - /'
+          echo "Value presence:"
+          echo "  API_URL          : ${SUPABASE_LOCAL_URL:-(empty)}"
+          echo "  ANON_KEY         : $([ -n "$SUPABASE_LOCAL_ANON_KEY" ] && echo "present (${#SUPABASE_LOCAL_ANON_KEY} chars)" || echo "(empty)")"
+          echo "  SERVICE_ROLE_KEY : $([ -n "$SUPABASE_LOCAL_SERVICE_ROLE_KEY" ] && echo "present (${#SUPABASE_LOCAL_SERVICE_ROLE_KEY} chars)" || echo "(empty)")"
+          echo "  DB_URL           : $([ -n "$SUPABASE_DB_URL" ] && echo "present" || echo "(empty)")"
+
+          MISSING=""
+          [ -z "$SUPABASE_LOCAL_URL" ]              && MISSING="$MISSING API_URL"
+          [ -z "$SUPABASE_LOCAL_ANON_KEY" ]         && MISSING="$MISSING ANON_KEY"
+          [ -z "$SUPABASE_LOCAL_SERVICE_ROLE_KEY" ] && MISSING="$MISSING SERVICE_ROLE_KEY"
+          [ -z "$SUPABASE_DB_URL" ]                 && MISSING="$MISSING DB_URL"
+          if [ -n "$MISSING" ]; then
+            echo "::error::supabase status is missing required value(s):$MISSING"
+            echo "::error::The RLS integration suite needs the legacy anon and service_role JWTs."
+            echo "::error::Verify supabase/config.toml has [auth] enabled = true and the pinned CLI emits legacy keys."
+            exit 1
+          fi
+
+          {
+            echo "SUPABASE_LOCAL_URL=$SUPABASE_LOCAL_URL"
+            echo "SUPABASE_LOCAL_ANON_KEY=$SUPABASE_LOCAL_ANON_KEY"
+            echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$SUPABASE_LOCAL_SERVICE_ROLE_KEY"
+            echo "SUPABASE_DB_URL=$SUPABASE_DB_URL"
+          } >> "$GITHUB_ENV"
 
       # Phase 2.2: Run pgTAP SQL tests against the local Supabase DB.
       # These pin database-side invariants (SECURITY DEFINER RPCs, trigger
