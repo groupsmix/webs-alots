@@ -26,14 +26,12 @@ export default async function AuditLogsPage() {
 
   // Just show recent events for now. The `activity_logs` table is the
   // application-level audit trail (see 00005_schema_gaps.sql).
-  const { data } = await (
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-    supabase
-      .from("activity_logs")
-      .select("id, timestamp, action, actor, type, description, clinic_name")
-      .order("timestamp", { ascending: false })
-      .limit(50)
-  );
+  const { data } = await // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+  supabase
+    .from("activity_logs")
+    .select("id, timestamp, action, actor, type, description, clinic_name")
+    .order("timestamp", { ascending: false })
+    .limit(50);
   const logs = (data ?? null) as AuditLogEntry[] | null;
 
   return (
