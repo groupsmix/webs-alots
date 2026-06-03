@@ -285,9 +285,17 @@ export const ENV_RULES: EnvRule[] = [
   // AV_SCAN_URL is required in production so malicious files (PDFs,
   // polyglots) cannot be uploaded into clinical categories and served
   // back to staff browsers via signed R2 URLs.
+  //
+  // CI exception: the upload route (src/app/api/upload/route.ts) already
+  // guards PHI uploads with `!isCi()` and lets non-PHI uploads through
+  // when AV_SCAN_URL is unset. Forcing the validator to require it in CI
+  // would prevent the Playwright suite from booting Next.js at all,
+  // because the E2E job intentionally omits AV_SCAN_URL to take the
+  // "skip scan" code path (configured scanner that's unreachable fails
+  // closed and breaks every upload-related test).
   {
     name: "AV_SCAN_URL",
-    required: process.env.NODE_ENV === "production",
+    required: process.env.NODE_ENV === "production" && process.env.CI !== "true",
     description:
       "AV scanner endpoint (e.g. ClamAV REST) for upload virus scanning (required in production)",
     group: "security",
