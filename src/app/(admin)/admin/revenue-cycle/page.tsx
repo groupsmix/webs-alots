@@ -315,7 +315,7 @@ export default function RevenueCyclePage() {
                       ? "bg-amber-500"
                       : "bg-red-500"
                 }`}
-                style={{ width: `${collectionRate}%` }}
+                data-width={Math.round(collectionRate)}
               />
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">

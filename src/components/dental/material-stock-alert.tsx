@@ -76,7 +76,7 @@ export function MaterialStockAlert({ stock }: MaterialStockAlertProps) {
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-green-500 rounded-full"
-                        style={{ width: `${fillPercentage}%` }}
+                        data-width={Math.round(fillPercentage)}
                       />
                     </div>
                   </div>

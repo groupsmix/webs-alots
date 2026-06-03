@@ -121,7 +121,7 @@ export function DepartmentDashboard({ stats }: DepartmentDashboardProps) {
                           <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${occupancy > 85 ? "bg-red-500" : occupancy > 60 ? "bg-yellow-500" : "bg-green-500"}`}
-                              style={{ width: `${occupancy}%` }}
+                              data-width={Math.round(occupancy)}
                             />
                           </div>
                           <span className="text-[10px] w-8">{occupancy}%</span>

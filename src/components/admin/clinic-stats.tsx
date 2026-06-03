@@ -164,7 +164,7 @@ export function ClinicStats() {
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${source.percentage}%` }}
+                      data-width={Math.round(source.percentage)}
                     />
                   </div>
                 </div>
@@ -188,7 +188,7 @@ export function ClinicStats() {
                   <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary/60 rounded-full transition-all"
-                      style={{ width: `${(hour.count / maxCount) * 100}%` }}
+                      data-width={Math.round((hour.count / maxCount) * 100)}
                     />
                   </div>
                   <span className="text-xs font-medium w-6 text-right">{hour.count}</span>

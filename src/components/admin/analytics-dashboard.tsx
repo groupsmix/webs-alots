@@ -644,9 +644,7 @@ export function AnalyticsDashboard({
                             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-primary rounded-full"
-                                style={{
-                                  width: `${topServicesTotal > 0 ? (svc.revenue / topServicesTotal) * 100 : 0}%`,
-                                }}
+                                data-width={Math.round(topServicesTotal > 0 ? (svc.revenue / topServicesTotal) * 100 : 0)}
                               />
                             </div>
                             <Badge variant="outline" className="text-[10px]">
@@ -685,7 +683,7 @@ export function AnalyticsDashboard({
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary/70 rounded-full transition-all"
-                            style={{ width: `${doc.rate}%` }}
+                            data-width={Math.round(doc.rate)}
                           />
                         </div>
                       </div>

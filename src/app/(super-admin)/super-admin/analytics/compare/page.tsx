@@ -438,7 +438,7 @@ export default function ClinicComparisonPage() {
                 <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${BAR_COLORS[idx % BAR_COLORS.length]}`}
-                    style={{ width: `${width}%` }}
+                    data-width={Math.round(width)}
                   />
                 </div>
                 <span className="text-sm font-medium w-24 text-right">

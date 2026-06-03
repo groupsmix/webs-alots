@@ -184,7 +184,7 @@ export function LabDashboardKPIsComponent() {
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: "100%" }}
+                  data-width={}
                 />
               </div>
               <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">

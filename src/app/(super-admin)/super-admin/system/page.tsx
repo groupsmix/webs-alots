@@ -98,7 +98,7 @@ function StorageBar({ used, total, label }: { used: string; total: string; label
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={`h-full rounded-full transition-all ${barColor}`}
-          style={{ width: `${Math.min(percentage, 100)}%` }}
+          data-width={Math.round(Math.min(percentage, 100))}
         />
       </div>
     </div>

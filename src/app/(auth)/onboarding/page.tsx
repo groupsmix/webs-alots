@@ -480,7 +480,7 @@ export default function OnboardingPage() {
       <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${progressPercent}%` }}
+          data-width={Math.round(progressPercent)}
         />
       </div>
       <div className="flex items-center justify-between">

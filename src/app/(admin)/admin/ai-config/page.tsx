@@ -107,7 +107,7 @@ function BudgetBar({ used, budget }: { used: number; budget: number }) {
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${pct}%` }}
+          data-width={Math.round(pct)}
         />
       </div>
       <p className="text-xs text-muted-foreground">Budget: {formatCentsToDirhams(budget)}/mois</p>

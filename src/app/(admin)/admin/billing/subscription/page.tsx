@@ -399,7 +399,7 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${isExceeded ? "bg-red-500" : isWarning ? "bg-yellow-500" : "bg-primary"}`}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
+            data-width={Math.round(Math.min(percentage, 100))}
           />
         </div>
       )}

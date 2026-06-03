@@ -629,7 +629,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary rounded-full"
-                          style={{ width: `${service.percentage}%` }}
+                          data-width={Math.round(service.percentage)}
                         />
                       </div>
                       <Badge variant="outline" className="text-[10px]">

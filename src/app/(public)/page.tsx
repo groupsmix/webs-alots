@@ -320,7 +320,7 @@ export default async function HomePage() {
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-yellow-400"
-                          style={{ width: `${pct}%` }}
+                          data-width={Math.round(pct)}
                         />
                       </div>
                       <span className="w-8 text-xs text-muted-foreground">{count}</span>

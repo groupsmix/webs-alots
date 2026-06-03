@@ -199,7 +199,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                   <div className="h-2 w-full rounded-full bg-muted">
                     <div
                       className="h-2 rounded-full bg-primary transition-all"
-                      style={{ width: `${progressPct}%` }}
+                      data-width={Math.round(progressPct)}
                     />
                   </div>
                 </div>

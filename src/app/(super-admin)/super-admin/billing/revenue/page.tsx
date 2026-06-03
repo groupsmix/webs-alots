@@ -141,7 +141,7 @@ export default function RevenueDashboardPage() {
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-2">
                         <div
                           className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${percentage}%` }}
+                          data-width={Math.round(percentage)}
                         />
                       </div>
                     </div>

@@ -44,6 +44,7 @@ async function mergeClinicConfig(
   supabase: ReturnType<typeof createAdminClient>,
   clinicId: string,
   patch: ClinicConfig,
+  newTier?: string,
 ): Promise<{ error: unknown }> {
   const { data: existing, error: readError } = await supabase
     .from("clinics")
@@ -64,7 +65,7 @@ async function mergeClinicConfig(
 
   const { error: updateError } = await supabase
     .from("clinics")
-    .update({ config: merged })
+    .update(newTier ? { config: merged, tier: newTier } : { config: merged })
     .eq("id", clinicId);
 
   return { error: updateError };
@@ -220,13 +221,18 @@ export async function POST(request: NextRequest) {
         // Q-01: merge subscription keys into existing config jsonb instead of
         // replacing the whole column (which would wipe `timezone`,
         // `workingHours`, `slotDuration`, etc.).
-        const { error: updateError } = await mergeClinicConfig(supabase, clinicId, {
-          subscription_plan: planId,
-          stripe_customer_id: stripeCustomerId,
-          stripe_subscription_id: stripeSubscriptionId,
-          subscription_status: "active",
-          subscription_updated_at: new Date().toISOString(),
-        });
+        const { error: updateError } = await mergeClinicConfig(
+          supabase,
+          clinicId,
+          {
+            subscription_plan: planId,
+            stripe_customer_id: stripeCustomerId,
+            stripe_subscription_id: stripeSubscriptionId,
+            subscription_status: "active",
+            subscription_updated_at: new Date().toISOString(),
+          },
+          planId
+        );
 
         if (updateError) {
           logger.error("Failed to update clinic subscription", {
@@ -292,16 +298,22 @@ export async function POST(request: NextRequest) {
         });
 
         // Q-01: merge — see mergeClinicConfig.
-        const { error: renewError } = await mergeClinicConfig(supabase, clinicId, {
-          subscription_plan: plan?.slug ?? subscription.metadata?.plan_id,
-          stripe_customer_id: subscription.customer,
-          stripe_subscription_id: subscriptionId,
-          subscription_status: "active",
-          subscription_period_end: subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : undefined,
-          subscription_updated_at: new Date().toISOString(),
-        });
+        const effectivePlan = plan?.slug ?? subscription.metadata?.plan_id;
+        const { error: renewError } = await mergeClinicConfig(
+          supabase,
+          clinicId,
+          {
+            subscription_plan: effectivePlan,
+            stripe_customer_id: subscription.customer,
+            stripe_subscription_id: subscriptionId,
+            subscription_status: "active",
+            subscription_period_end: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : undefined,
+            subscription_updated_at: new Date().toISOString(),
+          },
+          effectivePlan
+        );
 
         if (renewError) {
           logger.error("Failed to renew clinic subscription", {
@@ -390,13 +402,18 @@ export async function POST(request: NextRequest) {
 
         // Downgrade to free plan.
         // Q-01: merge — see mergeClinicConfig.
-        const { error: cancelError } = await mergeClinicConfig(supabase, clinicId, {
-          subscription_plan: "free",
-          stripe_customer_id: subscription.customer,
-          stripe_subscription_id: null,
-          subscription_status: "cancelled",
-          subscription_updated_at: new Date().toISOString(),
-        });
+        const { error: cancelError } = await mergeClinicConfig(
+          supabase,
+          clinicId,
+          {
+            subscription_plan: "free",
+            stripe_customer_id: subscription.customer,
+            stripe_subscription_id: null,
+            subscription_status: "cancelled",
+            subscription_updated_at: new Date().toISOString(),
+          },
+          "free"
+        );
 
         if (cancelError) {
           logger.error("Failed to downgrade clinic to free plan", {
