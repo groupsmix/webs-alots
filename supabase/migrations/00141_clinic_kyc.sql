@@ -1,5 +1,14 @@
 -- KYC / Business Verification Tracking
 -- Allows self-service clinics to submit their documentation for review.
+--
+-- NOTE on policy helpers: this app stores roles directly on the `users` table
+-- (see 00001_initial_schema.sql). The schema has NO `user_roles` table — that
+-- pattern is from a different app and would fail with
+-- "relation user_roles does not exist". All RLS policies on this database use
+-- the helper functions defined in 00002_auth_rls_roles.sql:
+--   is_super_admin()         — true when the caller is role='super_admin'
+--   is_clinic_admin(uuid)    — true when caller is clinic_admin for that clinic
+--   get_user_clinic_id()     — returns the caller's clinic for header/JWT auth
 
 CREATE TABLE IF NOT EXISTS clinic_kyc (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,36 +32,34 @@ ALTER TABLE clinic_kyc ENABLE ROW LEVEL SECURITY;
 -- Super admins can do anything
 CREATE POLICY superadmin_all_kyc ON clinic_kyc
   FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM auth.users
-      JOIN user_roles ON user_roles.user_id = auth.users.id
-      WHERE auth.users.id = auth.uid()
-      AND user_roles.role = 'super_admin'
-    )
-  );
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
 
--- Clinic admins can read their own KYC
+-- Clinic admins can read their own clinic's KYC
 CREATE POLICY admin_read_own_kyc ON clinic_kyc
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM auth.users
-      JOIN user_roles ON user_roles.user_id = auth.users.id
-      WHERE auth.users.id = auth.uid()
-      AND user_roles.role = 'clinic_admin'
-      AND user_roles.clinic_id = clinic_kyc.clinic_id
-    )
-  );
+  USING (is_clinic_admin(clinic_kyc.clinic_id));
 
--- Service role can do anything
+-- Clinic admins can insert/update their own clinic's KYC (submission flow)
+CREATE POLICY admin_write_own_kyc ON clinic_kyc
+  FOR INSERT
+  WITH CHECK (is_clinic_admin(clinic_kyc.clinic_id));
+
+CREATE POLICY admin_update_own_kyc ON clinic_kyc
+  FOR UPDATE
+  USING (is_clinic_admin(clinic_kyc.clinic_id))
+  WITH CHECK (is_clinic_admin(clinic_kyc.clinic_id));
+
+-- Service role bypass (background workers, webhook handlers)
 CREATE POLICY service_role_all_kyc ON clinic_kyc
   FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
--- Trigger for updated_at
+-- Trigger for updated_at — uses the canonical update_updated_at_column()
+-- helper defined in 00109_batch4a_doctor_ai.sql (which runs before this).
+DROP TRIGGER IF EXISTS clinic_kyc_updated_at ON clinic_kyc;
 CREATE TRIGGER clinic_kyc_updated_at
   BEFORE UPDATE ON clinic_kyc
   FOR EACH ROW
-  EXECUTE FUNCTION handle_updated_at();
+  EXECUTE FUNCTION update_updated_at_column();
