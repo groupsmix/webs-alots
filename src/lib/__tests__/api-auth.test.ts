@@ -171,7 +171,6 @@ describe("authenticateApiKey", () => {
         select: vi.fn().mockReturnValue({
           eq: mockEqPrefix,
         }),
-        }),
         insert: vi.fn().mockResolvedValue({ error: null }),
       }),
     };
