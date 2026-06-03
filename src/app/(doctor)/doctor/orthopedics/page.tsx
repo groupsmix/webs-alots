@@ -473,7 +473,7 @@ export default function OrthopedicsPage() {
                           <div className="h-2 rounded-full bg-muted">
                             <div
                               className="h-full rounded-full bg-primary transition-all"
-                              style={{ width: `${(completed / total) * 100}%` }}
+                              data-width={Math.round((completed / total) * 100)}
                             />
                           </div>
                         </div>

@@ -250,7 +250,7 @@ export function TreatmentPackages({
                       <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary rounded-full"
-                          style={{ width: `${progress}%` }}
+                          data-width={Math.round(progress)}
                         />
                       </div>
                       <Badge

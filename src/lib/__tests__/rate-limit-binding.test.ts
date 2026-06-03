@@ -51,16 +51,14 @@ describe("Rate limiter — KV binding unavailable (prod 429 outage regression)",
 
     // Trip the circuit breaker — every call finds the KV binding missing.
     for (let i = 0; i < 5; i++) {
-      const r = await globalPageLimiter.check(`warmup-${i}`);
-      expect(typeof r === "boolean" ? r : r.allowed).toBe(true);
+      expect(await globalPageLimiter.check(`warmup-${i}`)).toBe(true);
     }
 
     // Advance past the 1s grace period (circuit still open: reset is 60s).
     vi.advanceTimersByTime(5_000);
 
     // Regression: previously this returned false (HTTP 429) for EVERYONE.
-    const fresh = await globalPageLimiter.check("fresh-visitor");
-    expect(typeof fresh === "boolean" ? fresh : fresh.allowed).toBe(true);
+    expect(await globalPageLimiter.check("fresh-visitor")).toBe(true);
   });
 
   it("globalPageLimiter still limits by real count when degraded to in-memory", async () => {
@@ -70,11 +68,9 @@ describe("Rate limiter — KV binding unavailable (prod 429 outage regression)",
     // globalPageLimiter is 120 req / 60s. The in-memory fallback must enforce
     // the real count, not blanket-allow.
     for (let i = 0; i < 120; i++) {
-      const r = await globalPageLimiter.check(key);
-      expect(typeof r === "boolean" ? r : r.allowed).toBe(true);
+      expect(await globalPageLimiter.check(key)).toBe(true);
     }
-    const r = await globalPageLimiter.check(key);
-    expect(typeof r === "boolean" ? r : r.allowed).toBe(false);
+    expect(await globalPageLimiter.check(key)).toBe(false);
   });
 
   it("failClosed:true limiters still fail closed once the grace period expires with no KV", async () => {
@@ -88,7 +84,6 @@ describe("Rate limiter — KV binding unavailable (prod 429 outage regression)",
     vi.advanceTimersByTime(5_000);
 
     // Security-critical endpoints remain protected: deny after grace expiry.
-    const r = await limiter.check("attacker");
-    expect(typeof r === "boolean" ? r : r.allowed).toBe(false);
+    expect(await limiter.check("attacker")).toBe(false);
   });
 });

@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "coverage/**",
+    // Open-Next build artifacts (generated; must not be linted)
+    ".open-next/**",
   ]),
   {
     plugins: {

@@ -1171,7 +1171,7 @@ export default function AllClinicsPage() {
                                   ? "bg-yellow-500"
                                   : "bg-red-500"
                           }`}
-                          style={{ width: `${bd.total}%` }}
+                          data-width={Math.round(bd.total)}
                         />
                       </div>
                       <div className="grid grid-cols-5 gap-2 text-center text-xs">
@@ -1304,7 +1304,7 @@ export default function AllClinicsPage() {
                       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mb-3">
                         <div
                           className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${completionPct}%` }}
+                          data-width={Math.round(completionPct)}
                         />
                       </div>
                       <div className="space-y-1.5">

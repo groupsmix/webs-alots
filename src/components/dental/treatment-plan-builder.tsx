@@ -113,7 +113,7 @@ export function TreatmentPlanBuilder({
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${progress}%` }}
+                    data-width={Math.round(progress)}
                   />
                 </div>
               </div>

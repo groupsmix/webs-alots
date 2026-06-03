@@ -6,7 +6,6 @@ import { logAuthEvent } from "@/lib/audit-log";
 import { checkPasswordPwned } from "@/lib/hibp";
 import { logger } from "@/lib/logger";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
-import { checkSuspiciousLogin } from "@/lib/middleware/suspicious-login";
 import {
   loginLimiter,
   accountLockoutLimiter,
@@ -184,9 +183,6 @@ export async function signInWithPassword(
   }).catch((err) => {
     logger.warn("Failed to log auth event", { context: "auth/signIn", error: err });
   });
-
-  // Task 10: Check for suspicious login patterns
-  void checkSuspiciousLogin(normalizedEmail, clientIp, profile?.clinic_id ?? undefined);
 
   if (profile) {
     return { error: null, redirectTo: ROLE_DASHBOARD_MAP[profile.role] };

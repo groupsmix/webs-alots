@@ -55,6 +55,16 @@ export function EditorialHero() {
             <ArrowRight className="size-4 transition-transform duration-[var(--duration)] ease-[var(--easing)] group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180" />
           </Link>
 
+          {/* Demo CTA */}
+          <a
+            href="http://demo.localhost:3000"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium h-11 px-6 rounded-[var(--radius-landing)] border border-[var(--ink-20)] text-[var(--ink)] bg-transparent hover:bg-[var(--ink-5)] transition-colors"
+          >
+            Voir la démo
+          </a>
+
           {/* Ghost CTA */}
           <a
             href="#contact"
@@ -72,15 +82,7 @@ export function EditorialHero() {
 
         {/* Trust strip: 6 stat blocks */}
         <div className="py-[var(--space-5)]">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
-            <StatBlock
-              value={t("landing.trustCabinets")}
-              label={t("landing.editorial.hero-section.statCabinetsLabel")}
-            />
-            <StatBlock
-              value={t("landing.trustAppointments")}
-              label={t("landing.editorial.hero-section.statAppointmentsLabel")}
-            />
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
             <StatBlock
               value={t("landing.trustUptime")}
               label={t("landing.editorial.hero-section.statUptimeLabel")}

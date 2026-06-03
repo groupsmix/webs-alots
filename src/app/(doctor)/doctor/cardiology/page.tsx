@@ -386,14 +386,14 @@ export default function CardiologyPage() {
                         <div className="flex-1 flex items-center gap-2">
                           <div
                             className="h-2 rounded-full bg-red-200"
-                            style={{ width: `${(bp.systolic / 200) * 100}%` }}
+                            data-width={Math.round((bp.systolic / 200) * 100)}
                           />
                           <span className="font-medium">{bp.systolic}</span>
                         </div>
                         <div className="flex-1 flex items-center gap-2">
                           <div
                             className="h-2 rounded-full bg-blue-200"
-                            style={{ width: `${(bp.diastolic / 120) * 100}%` }}
+                            data-width={Math.round((bp.diastolic / 120) * 100)}
                           />
                           <span className="font-medium">{bp.diastolic}</span>
                         </div>

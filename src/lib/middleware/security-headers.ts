@@ -149,9 +149,10 @@ function buildCsp(nonce: string, _options?: BuildCspOptions): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
-    // H-01 / A55-2: 'unsafe-inline' removed for CSP hardening.
-    // Inline styles (e.g. style={{}}) will now require a nonce or be blocked.
-    `style-src 'self' 'nonce-${nonce}'`,
+    // H-01 / A55-2: 'unsafe-inline' removed.
+    // Dynamic inline styles using style={{}} that depend on runtime values
+    // must now be converted to CSS custom properties.
+    `style-src 'self'`,
     `img-src 'self' blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,

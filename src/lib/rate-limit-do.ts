@@ -22,7 +22,7 @@
 
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
-import type { RateLimiter, RateLimiterOptions, RateLimitResult } from "./rate-limit";
+import type { RateLimiter, RateLimiterOptions } from "./rate-limit";
 
 // ── Durable Object class (deployed as a separate Worker binding) ──
 
@@ -66,7 +66,7 @@ export class RateLimiterDO {
       this.timestamps = this.timestamps.filter((ts) => ts > windowStart);
 
       if (this.timestamps.length >= max) {
-        return new Response(JSON.stringify({ allowed: false, remaining: 0 }), {
+        return new Response(JSON.stringify({ allowed: false }), {
           headers: { "Content-Type": "application/json" },
         });
       }
@@ -79,12 +79,9 @@ export class RateLimiterDO {
       const alarmTime = now + windowMs + 1000;
       await this.state.storage.setAlarm(alarmTime);
 
-      return new Response(
-        JSON.stringify({ allowed: true, remaining: Math.max(0, max - this.timestamps.length) }),
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ allowed: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response("Not found", { status: 404 });
@@ -151,7 +148,7 @@ export function createDORateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max, failClosed = true } = options;
 
   return {
-    async check(key: string): Promise<RateLimitResult> {
+    async check(key: string): Promise<boolean> {
       try {
         // Bindings live on getCloudflareContext().env under
         // @opennextjs/cloudflare (v1.17+), NOT on globalThis — resolve at
@@ -170,11 +167,11 @@ export function createDORateLimiter(options: RateLimiterOptions): RateLimiter {
           `https://rate-limiter.internal/check?windowMs=${windowMs}&max=${max}`,
         );
 
-        const result = (await response.json()) as { allowed: boolean; remaining: number };
-        return result;
+        const result = (await response.json()) as { allowed: boolean };
+        return result.allowed;
       } catch (err) {
         logger.error("Rate limiter DO failure", { context: "rate-limit", error: err });
-        return { allowed: !failClosed, remaining: 0 };
+        return !failClosed;
       }
     },
   };

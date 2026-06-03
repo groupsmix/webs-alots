@@ -167,7 +167,7 @@ export function ClinicCenterDashboardKPIsComponent() {
                         ? "bg-[var(--signal-amber)]"
                         : "bg-[var(--signal-green)]"
                   }`}
-                  style={{ width: `${occupancyRate}%` }}
+                  data-width={Math.round(occupancyRate)}
                 />
               </div>
             </div>
@@ -228,7 +228,7 @@ export function ClinicCenterDashboardKPIsComponent() {
                               ? "bg-[var(--signal-amber)]"
                               : "bg-[var(--signal-green)]"
                         }`}
-                        style={{ width: `${dept.occupancyRate}%` }}
+                        data-width={Math.round(dept.occupancyRate)}
                       />
                     </div>
                     <div className="flex items-center justify-between mt-1">
@@ -287,7 +287,7 @@ export function ClinicCenterDashboardKPIsComponent() {
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${(dept.revenue / maxDeptRevenue) * 100}%` }}
+                          data-width={Math.round((dept.revenue / maxDeptRevenue) * 100)}
                         />
                       </div>
                       <Badge variant="outline" className="text-[10px]">

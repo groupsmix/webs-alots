@@ -107,7 +107,7 @@ export function OutcomeStatistics({ stats }: OutcomeStatisticsProps) {
                     <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${item.color}`}
-                        style={{ width: `${pct}%` }}
+                        data-width={Math.round(pct)}
                       />
                     </div>
                     <span className="text-xs font-medium w-8 text-right">{item.value}</span>
@@ -164,11 +164,11 @@ export function OutcomeStatistics({ stats }: OutcomeStatisticsProps) {
                   <div className="flex-1 flex items-center gap-1">
                     <div
                       className="h-4 bg-green-500 rounded"
-                      style={{ width: `${mo.total > 0 ? (mo.positive / mo.total) * 100 : 0}%` }}
+                      data-width={Math.round(mo.total > 0 ? (mo.positive / mo.total) * 100 : 0)}
                     />
                     <div
                       className="h-4 bg-red-400 rounded"
-                      style={{ width: `${mo.total > 0 ? (mo.negative / mo.total) * 100 : 0}%` }}
+                      data-width={Math.round(mo.total > 0 ? (mo.negative / mo.total) * 100 : 0)}
                     />
                   </div>
                   <span className="text-xs font-medium w-12 text-right">

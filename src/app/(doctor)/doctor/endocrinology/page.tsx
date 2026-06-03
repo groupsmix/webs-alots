@@ -327,7 +327,7 @@ export default function EndocrinologyPage() {
                         <div className="flex-1 flex items-center gap-2">
                           <div
                             className="h-2 rounded-full bg-blue-200"
-                            style={{ width: `${Math.min((s.glucoseLevel / 300) * 100, 100)}%` }}
+                            data-width={Math.round(Math.min((s.glucoseLevel / 300) * 100, 100))}
                           />
                           <span className="font-medium">
                             {s.glucoseLevel} {s.unit}

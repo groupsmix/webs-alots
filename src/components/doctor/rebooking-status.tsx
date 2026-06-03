@@ -129,7 +129,7 @@ export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-500 rounded-full transition-all"
-                style={{ width: `${(summary.rebooked / summary.total) * 100}%` }}
+                data-width={Math.round((summary.rebooked / summary.total) * 100)}
               />
             </div>
           </div>

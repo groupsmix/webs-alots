@@ -100,7 +100,7 @@ export function TherapyPlanView({
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-purple-500 rounded-full transition-all"
-                    style={{ width: `${progress}%` }}
+                    data-width={Math.round(progress)}
                   />
                 </div>
               </div>
@@ -144,7 +144,7 @@ export function TherapyPlanView({
                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-purple-400 rounded-full"
-                                  style={{ width: `${goal.progress_pct}%` }}
+                                  data-width={Math.round(goal.progress_pct)}
                                 />
                               </div>
                             </div>

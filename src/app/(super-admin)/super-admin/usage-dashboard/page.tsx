@@ -272,7 +272,7 @@ export default function UsageDashboardPage() {
                             <div className="bg-muted mt-1 h-2 w-full rounded-full">
                               <div
                                 className={`h-2 rounded-full ${pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
-                                style={{ width: `${pct}%` }}
+                                data-width={Math.round(pct)}
                               />
                             </div>
                           )}

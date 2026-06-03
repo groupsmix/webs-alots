@@ -182,10 +182,7 @@ export function LabDashboardKPIsComponent() {
                 <span className="font-medium">{completedWeek}</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: "100%" }}
-                />
+                <div className="h-full bg-primary rounded-full transition-all" data-width={100} />
               </div>
               <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                 <span className="text-muted-foreground">Average Turnaround Time</span>

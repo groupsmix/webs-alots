@@ -1,5 +1,6 @@
 import { Star, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LandingPage } from "@/components/landing/landing-page";
@@ -26,6 +27,9 @@ import { getTenant } from "@/lib/tenant";
 /** Default timeout (ms) for Supabase data-fetching on public pages. */
 const DATA_FETCH_TIMEOUT_MS = 10_000;
 
+const linkBtnOutline =
+  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
+
 /**
  * Race a promise against a timeout. Rejects with a descriptive error
  * if the promise does not settle within `ms` milliseconds.
@@ -42,7 +46,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
 
-  const h = await import("next/headers").then((m) => m.headers());
+  const h = await headers();
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   if (!tenant) {
@@ -119,11 +123,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const linkBtnOutline =
-  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
-
 export default async function HomePage() {
   const tenant = await getTenant();
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const nonce = h.get("x-nonce") || undefined;
 
   // Root domain (no subdomain) → show SaaS landing page
   if (!tenant) {
@@ -161,10 +165,12 @@ export default async function HomePage() {
       <>
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
         />
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
         />
         <LandingPage />
@@ -172,9 +178,8 @@ export default async function HomePage() {
     );
   }
 
-  const { headers } = await import("next/headers");
-  const h = await headers();
-  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  // `locale` and `nonce` are already extracted at the top of the component.
+  // We can just rely on them.
 
   // Subdomain → show clinic homepage with tenant data
   let branding;
@@ -248,6 +253,7 @@ export default async function HomePage() {
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
       <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
       />
       {/* Hero — always visible */}
@@ -315,7 +321,7 @@ export default async function HomePage() {
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-yellow-400"
-                          style={{ width: `${pct}%` }}
+                          data-width={String(Math.round(pct))}
                         />
                       </div>
                       <span className="w-8 text-xs text-muted-foreground">{count}</span>

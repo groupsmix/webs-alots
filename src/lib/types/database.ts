@@ -9789,6 +9789,7 @@ export type AppointmentStatus =
   | "pending"
   | "scheduled"
   | "confirmed"
+  | "reminded"
   | "checked_in"
   | "in_progress"
   | "completed"
@@ -9801,6 +9802,7 @@ export const APPOINTMENT_STATUS = {
   PENDING: "pending",
   SCHEDULED: "scheduled",
   CONFIRMED: "confirmed",
+  REMINDED: "reminded",
   CHECKED_IN: "checked_in",
   IN_PROGRESS: "in_progress",
   COMPLETED: "completed",

@@ -25,7 +25,7 @@ interface EnvRule {
   group: string;
 }
 
-const ENV_RULES: EnvRule[] = [
+export const ENV_RULES: EnvRule[] = [
   // ── Core (required for the app to function) ────────────────────────
   {
     name: "NEXT_PUBLIC_SUPABASE_URL",
@@ -41,6 +41,13 @@ const ENV_RULES: EnvRule[] = [
   },
 
   // ── Auth / Security ────────────────────────────────────────────────
+  {
+    name: "SEED_PASSWORDS_ROTATED",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "Must be set to 'true' in production to acknowledge that seed user passwords have been rotated",
+    group: "security",
+  },
   {
     name: "BOOKING_TOKEN_SECRET",
     required: process.env.NODE_ENV === "production",
@@ -278,9 +285,17 @@ const ENV_RULES: EnvRule[] = [
   // AV_SCAN_URL is required in production so malicious files (PDFs,
   // polyglots) cannot be uploaded into clinical categories and served
   // back to staff browsers via signed R2 URLs.
+  //
+  // CI exception: the upload route (src/app/api/upload/route.ts) already
+  // guards PHI uploads with `!isCi()` and lets non-PHI uploads through
+  // when AV_SCAN_URL is unset. Forcing the validator to require it in CI
+  // would prevent the Playwright suite from booting Next.js at all,
+  // because the E2E job intentionally omits AV_SCAN_URL to take the
+  // "skip scan" code path (configured scanner that's unreachable fails
+  // closed and breaks every upload-related test).
   {
     name: "AV_SCAN_URL",
-    required: process.env.NODE_ENV === "production",
+    required: process.env.NODE_ENV === "production" && process.env.CI !== "true",
     description:
       "AV scanner endpoint (e.g. ClamAV REST) for upload virus scanning (required in production)",
     group: "security",
@@ -338,25 +353,10 @@ const ENV_RULES: EnvRule[] = [
   // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
   // "true" they become required, so the app refuses to boot with a half-wired
   // custom-domain feature. See `isCustomDomainsEnabled()` below.
-  // Cloudflare auth: either CLOUDFLARE_API_TOKEN (scoped) or
-  // CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (global key). Both are optional
-  // here — the cross-field check runs inside validateEnv().
   {
     name: "CLOUDFLARE_API_TOKEN",
     required: false,
     description: "Cloudflare scoped API token for DNS management",
-    group: "domains",
-  },
-  {
-    name: "CLOUDFLARE_API_KEY",
-    required: false,
-    description: "Cloudflare Global API Key (alternative to API token)",
-    group: "domains",
-  },
-  {
-    name: "CLOUDFLARE_EMAIL",
-    required: false,
-    description: "Cloudflare account email (required with Global API Key)",
     group: "domains",
   },
   {
@@ -373,7 +373,42 @@ const ENV_RULES: EnvRule[] = [
       "Cloudflare zone (root domain) name for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)",
     group: "domains",
   },
+
+  // ── MVP Scope / Feature Flags ──────────────────────────────────────
+  {
+    name: "NEXT_PUBLIC_EXPERIMENTAL_VERTICALS_ENABLED",
+    required: false,
+    description: "Enable non-MVP verticals (e.g. Restaurant, Veterinary). Default: false.",
+    group: "feature-flags",
+  },
+  {
+    name: "NEXT_PUBLIC_AI_FEATURES_ENABLED",
+    required: false,
+    description: "Enable advanced AI features (CDSS, AI Dashboard). Default: false.",
+    group: "feature-flags",
+  },
+  {
+    name: "NEXT_PUBLIC_FHIR_ENABLED",
+    required: false,
+    description: "Enable FHIR and complex CRM integrations. Default: false.",
+    group: "feature-flags",
+  },
 ];
+
+/**
+ * Scope getters for feature flags (MVP / Non-MVP).
+ */
+export function isExperimentalVerticalsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_EXPERIMENTAL_VERTICALS_ENABLED === "true";
+}
+
+export function isAiFeaturesEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_AI_FEATURES_ENABLED === "true";
+}
+
+export function isFhirEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FHIR_ENABLED === "true";
+}
 
 /**
  * Whether the custom-domain / Cloudflare DNS feature is enabled.
@@ -464,15 +499,13 @@ export function validateEnv(): EnvValidationResult {
     });
   }
 
-  // Cross-field: when custom domains are enabled, require either
-  // CLOUDFLARE_API_TOKEN or (CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL).
+  // When custom domains are enabled, require CLOUDFLARE_API_TOKEN
   if (customDomainsEnabledFromEnv()) {
     const hasToken = !!process.env.CLOUDFLARE_API_TOKEN;
-    const hasGlobalKey = !!process.env.CLOUDFLARE_API_KEY && !!process.env.CLOUDFLARE_EMAIL;
-    if (!hasToken && !hasGlobalKey) {
+    if (!hasToken) {
       missing.push({
-        name: "CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL",
-        description: "Cloudflare auth required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
+        name: "CLOUDFLARE_API_TOKEN",
+        description: "Cloudflare API token required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
         group: "domains",
       });
     }
@@ -542,6 +575,9 @@ export function enforceEnvValidation(): void {
     logger.error(message, { context: "env-validation" });
     throw new Error(message);
   }
+
+  // Reject boot in production when seed passwords have not been rotated
+  enforceSeedPasswordsRotated();
 
   // C-08: Validate PHI_ENCRYPTION_KEY shape (64 hex chars = AES-256-GCM).
   // The ENV_RULES check above only ensures the key is set; this validates
@@ -622,6 +658,45 @@ export const SECURITY_FLAG_ACKNOWLEDGMENTS: ReadonlyArray<{
  *
  * Exported for unit tests.
  */
+/**
+ * Refuse to boot in production when seed user passwords have not been rotated.
+ *
+ * Exported for unit tests.
+ */
+export function enforceSeedPasswordsRotated(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const rotated = process.env.SEED_PASSWORDS_ROTATED;
+  if (rotated !== "true") {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] Seed user passwords have not been rotated.\n" +
+      "\n" +
+      "Migration 00019 created users with a well-known default password\n" +
+      "(see supabase/seed.sql). These credentials are publicly known.\n" +
+      "\n" +
+      "To fix:\n" +
+      "  1. DELETE all seed users from auth.users and public.users, OR\n" +
+      "     change ALL seed user passwords via Supabase Dashboard.\n" +
+      "  2. Set the environment variable via: wrangler secret put SEED_PASSWORDS_ROTATED true\n" +
+      "  3. Set the environment variable via: wrangler secret put SEED_USERS_DELETED true\n" +
+      "  4. Re-deploy the application.\n" +
+      "\n" +
+      "Seed user UUIDs (from migration 00019):\n" +
+      "  a0000000-0000-0000-0000-000000000001 (super_admin)\n" +
+      "  a0000000-0000-0000-0000-000000000002 (clinic_admin)\n" +
+      "  a0000000-0000-0000-0000-000000000003 (doctor)\n" +
+      "  a0000000-0000-0000-0000-000000000004 (receptionist)\n" +
+      "  a0000000-0000-0000-0000-000000000010..0014 (patients)\n" +
+      "\n" +
+      "The application will NOT start until this is resolved.";
+    logger.error(message, {
+      context: "env-validation",
+      check: "seed-passwords-rotated",
+    });
+    throw new Error(message);
+  }
+}
+
 export function enforceSecurityFlagAcknowledgments(): void {
   if (process.env.NODE_ENV !== "production") return;
 
@@ -1074,16 +1149,12 @@ export function getR2Config(): {
 /** Cloudflare API credentials for DNS / custom hostname management. */
 export function getCloudflareApiConfig(): {
   apiToken: string | undefined;
-  apiKey: string | undefined;
-  email: string | undefined;
   zoneId: string | undefined;
   zoneName: string | undefined;
   accountId: string | undefined;
 } {
   return {
     apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    apiKey: process.env.CLOUDFLARE_API_KEY,
-    email: process.env.CLOUDFLARE_EMAIL,
     zoneId: process.env.CLOUDFLARE_ZONE_ID,
     zoneName: process.env.CLOUDFLARE_ZONE_NAME,
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID,

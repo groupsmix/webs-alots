@@ -97,30 +97,12 @@ export interface AIConfig {
  * This bridge lets all existing routes transparently use admin-managed
  * keys from the superadmin settings UI without per-route rewrites.
  */
-export async function resolveAIConfig(
-  clinicId?: string,
-): Promise<{ ok: true; config: AIConfig } | { ok: false; reason: string; statusCode: number }> {
+export async function resolveAIConfig(): Promise<
+  { ok: true; config: AIConfig } | { ok: false; reason: string; statusCode: number }
+> {
   // F-AI-01: Kill switch
   if (!(await isAIEnabled())) {
     return { ok: false, reason: "AI features are disabled", statusCode: 503 };
-  }
-
-  // Budget check
-  if (clinicId) {
-    const budget = await checkClinicAIBudget(clinicId);
-    if (!budget.allowed) {
-      logger.warn("AI budget exceeded", {
-        context: "ai-config",
-        clinicId,
-        usage: budget.usage,
-        limit: budget.limit,
-      });
-      return {
-        ok: false,
-        reason: "Monthly AI usage limit exceeded (110%). Please upgrade your plan.",
-        statusCode: 429,
-      };
-    }
   }
 
   // ── Try database-backed config first ──
@@ -273,59 +255,4 @@ export function logMinorAIProcessing(patientId: string, clinicId: string, featur
     feature,
     note: "Clinical AI permitted under medical-necessity; no behavioural profiling applied",
   });
-}
-
-/**
- * Check if the clinic has exceeded its AI monthly budget.
- * Returns false if usage > 110% of the plan limit.
- */
-export async function checkClinicAIBudget(
-  clinicId: string,
-): Promise<{ allowed: boolean; usage: number; limit: number }> {
-  try {
-    const supabase = createUntypedAdminClient("ai-config-resolve");
-
-    // Default limit based on typical plan (e.g., 500 MAD)
-    let limit = 500;
-
-    const { data: clinicData } = await supabase
-      .from("clinics")
-      .select("config")
-      .eq("id", clinicId)
-      .single();
-
-    if (
-      clinicData?.config &&
-      typeof clinicData.config === "object" &&
-      "ai_monthly_budget" in clinicData.config
-    ) {
-      limit = Number(clinicData.config.ai_monthly_budget) || limit;
-    }
-
-    // Get current month's usage
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
-
-    const { data: usageData } = await supabase
-      .from("ai_usage_monthly")
-      .select("total_cost_mad")
-      .eq("clinic_id", clinicId)
-      .eq("month", currentMonth.toISOString())
-      .maybeSingle();
-
-    const usage = usageData?.total_cost_mad || 0;
-
-    // Block if usage exceeds 110% of the limit
-    const allowed = usage <= limit * 1.1;
-
-    return { allowed, usage, limit };
-  } catch (err) {
-    logger.warn("Failed to check AI budget, failing open", {
-      context: "ai-config",
-      clinicId,
-      error: err,
-    });
-    return { allowed: true, usage: 0, limit: 500 };
-  }
 }

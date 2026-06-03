@@ -105,7 +105,7 @@ export function GettingStartedChecklist({
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
+              data-width={Math.round(progressPercent)}
             />
           </div>
         </div>

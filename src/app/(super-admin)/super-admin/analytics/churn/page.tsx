@@ -721,7 +721,7 @@ export default function ChurnPredictionPage() {
                       <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${RISK_BAR_COLORS[score.risk_level]}`}
-                          style={{ width: `${score.score}%` }}
+                          data-width={Math.round(score.score)}
                         />
                       </div>
 

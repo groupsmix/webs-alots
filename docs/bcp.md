@@ -1,61 +1,128 @@
-# Business Continuity & Disaster Recovery Plan (BCP/DRP)
+# Business Continuity Plan (BCP)
 
-## 1. Objectives and Scope
+> **Audit finding:** A192 | **Last updated:** April 2026
 
-This document outlines the disaster recovery strategy for the Oltigo Health platform, ensuring compliance with Moroccan Law 09-08 regarding the security and availability of Personal Health Information (PHI).
+This plan addresses business-level continuity -- not just technical disaster
+recovery (covered in `backup-recovery-runbook.md`). It ensures Oltigo Health
+can continue operating if critical infrastructure, vendors, or team members
+become unavailable.
 
-- **Recovery Time Objective (RTO):** 4 hours
-- **Recovery Point Objective (RPO):** 1 hour
+---
 
-## 2. Infrastructure Backup Strategy
+## 1. Vendor Concentration Analysis
 
-### Database (Supabase / PostgreSQL)
+| Vendor         | Services Provided                                     | Concentration Risk                              | Mitigation                                                           |
+| -------------- | ----------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
+| **Cloudflare** | Workers (compute), R2 (storage), KV (cache), CDN, DNS | **HIGH** -- 5 critical services from one vendor | R2 replicated to secondary; DNS exportable; exit playbook documented |
+| **Supabase**   | PostgreSQL (DB), Auth, RLS                            | **HIGH** -- core data + auth from one vendor    | Nightly pg_dump to R2; exit playbook documented                      |
+| **Meta**       | WhatsApp Business API                                 | **MEDIUM** -- primary patient notification      | Twilio SMS fallback integrated                                       |
+| **Stripe**     | International payments                                | **MEDIUM** -- payment processing                | CMI (domestic) as partial fallback                                   |
+| **Resend**     | Transactional email                                   | **LOW** -- easily replaceable                   | AWS SES / Postmark as alternatives                                   |
+| **GitHub**     | Source code, CI/CD, secrets                           | **MEDIUM** -- all code + automation             | Local clones; secrets documented in SOP                              |
+| **Sentry**     | Error monitoring                                      | **LOW** -- non-critical                         | Degrade gracefully; app works without Sentry                         |
 
-- **Point-in-Time Recovery (PITR):** Enabled on Supabase Pro/Enterprise plans, allowing restoration to any point within the last 7 days.
-- **Daily Logical Backups:** Nightly `pg_dump` exported to Cloudflare R2 via cron job.
-- **Audit Logs:** Daily exports to an R2 bucket configured with Object Lock (WORM) for 7 years.
+---
 
-### Storage (Cloudflare R2)
+## 2. Business Function Continuity
 
-- R2 is distributed globally. We rely on Cloudflare's internal replication.
-- Bucket versioning is enabled to recover from accidental deletions or ransomware encryption.
+### 2.1 Patient Appointment Booking
 
-## 3. Incident Response & Communication
+| Scenario        | Impact                      | Fallback                                                        |
+| --------------- | --------------------------- | --------------------------------------------------------------- |
+| Supabase down   | Booking API unavailable     | Maintenance mode; clinics take phone bookings manually          |
+| Cloudflare down | Entire platform unreachable | Point DNS to a static "under maintenance" page hosted elsewhere |
+| Both down       | Complete outage             | Phone-based booking; clinics use paper records temporarily      |
 
-1. **Detection:** Alerts triggered via Sentry (SLO burn rate > 5) or Datadog.
-2. **Triage:** Engineering team investigates to determine the severity (P0, P1, P2).
-3. **Communication:**
-   - **Internal:** `#incident-response` Slack channel.
-   - **External:** Status page update within 30 minutes of a confirmed P0 incident.
-   - **Regulatory:** If a data breach occurs, notify the CNDP (Morocco) within 72 hours as per Law 09-08.
+**RTO:** < 2 hours | **RPO:** < 24 hours (nightly backup)
 
-## 4. Vendor Exit Playbooks
+> **A74-02 — PITR posture:** Supabase Pro includes Point-in-Time Recovery
+> (PITR) via WAL archiving, reducing effective RPO to minutes. Verify the
+> plan tier includes PITR and confirm WAL retention in the Supabase
+> dashboard. If the plan does not include PITR, the nightly `pg_dump`
+> backup (RPO 24 h) is the authoritative recovery point.
 
-### Supabase Exit
+### 2.2 Patient Notifications
 
-If Supabase experiences a catastrophic failure or we need to migrate:
+| Scenario                       | Impact                     | Fallback                                           |
+| ------------------------------ | -------------------------- | -------------------------------------------------- |
+| WhatsApp (Meta) down           | No WhatsApp reminders      | Auto-switch to Twilio SMS (`src/lib/sms.ts`)       |
+| Twilio down                    | No SMS fallback            | Email via Resend                                   |
+| Resend down                    | No email notifications     | In-app notifications only; WhatsApp/SMS still work |
+| All notification channels down | No automated notifications | Manual phone calls by clinic staff                 |
 
-1. Provision a managed PostgreSQL database (e.g., AWS RDS or DigitalOcean).
-2. Restore the latest `pg_dump` from R2.
-3. Update environment variables (`NEXT_PUBLIC_SUPABASE_URL`) in Cloudflare Workers.
+**RTO:** < 30 minutes (auto-failover for WhatsApp -> SMS)
 
-### Cloudflare Exit
+### 2.3 Payment Processing
 
-If Cloudflare is unavailable:
+| Scenario    | Impact                      | Fallback                                                               |
+| ----------- | --------------------------- | ---------------------------------------------------------------------- |
+| Stripe down | International payments fail | CMI (domestic) still operational; queue Stripe payments for retry      |
+| CMI down    | Domestic MAD payments fail  | Stripe as fallback (higher fees); manual bank transfer                 |
+| Both down   | No online payments          | Manual invoicing; record payment intent in DB for later reconciliation |
 
-1. Update DNS records at the registrar level to point to an alternative edge provider (e.g., Vercel, AWS CloudFront).
-2. Deploy the Next.js application to the alternative provider using OpenNext.
+**RTO:** < 1 hour (manual fallback)
 
-### Stripe Exit
+### 2.4 Team Operations
 
-1. Rely on Stripe's PCI-compliant card data portability process to migrate to CMI or another payment processor.
-2. Disable Stripe webhooks and activate the alternative processor in the application code.
+| Scenario                      | Impact                            | Fallback                                                           |
+| ----------------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| Slack / Google Workspace down | Team communication disrupted      | WhatsApp group (pre-established); personal phones                  |
+| GitHub down                   | No deploys, no CI                 | Local development continues; hotfix via `wrangler deploy` directly |
+| IdP (Google SSO) down         | Cannot log into vendor dashboards | Break-glass accounts (see `workforce-security.md` Section 3)       |
+| Key team member unavailable   | Knowledge gap                     | On-call rotation (`docs/oncall.md`); documented runbooks           |
 
-## 5. Quarterly DR Drill
+---
 
-A disaster recovery drill must be performed every quarter:
+## 3. Payroll & Financial Continuity
 
-- [ ] Attempt a full database restoration to a staging environment using PITR.
-- [ ] Verify that encrypted PHI can still be decrypted using the KMS keys.
-- [ ] Verify that audit logs in R2 are intact and cannot be deleted.
-- [ ] Document drill results and update this BCP if gaps are found.
+| Function   | Provider                          | Fallback                                  |
+| ---------- | --------------------------------- | ----------------------------------------- |
+| Payroll    | _TBD (document current provider)_ | Manual bank transfers                     |
+| Invoicing  | Stripe Billing / manual           | Manual invoices via email                 |
+| Accounting | _TBD_                             | Exported CSV from Stripe + CMI dashboards |
+
+---
+
+## 4. Communication Plan During BCP Activation
+
+| Audience            | Channel                    | Responsible                | Template                                           |
+| ------------------- | -------------------------- | -------------------------- | -------------------------------------------------- |
+| Team                | WhatsApp emergency group   | IC / Security Officer      | Verbal / ad-hoc                                    |
+| Clinics (customers) | Email + in-app banner      | Support lead               | `docs/comms-templates/README.md`                   |
+| Patients            | WhatsApp / SMS / email     | Automated (if channels up) | Existing notification templates                    |
+| Regulators (CNDP)   | Email to `contact@cndp.ma` | DPO                        | `docs/compliance/breach-notification-templates.md` |
+| Press (if needed)   | Prepared statement         | CEO / Legal                | _TBD -- prepare holding statement_                 |
+
+---
+
+## 5. BCP Activation Criteria
+
+| Trigger                              | Severity | Who Activates                  |
+| ------------------------------------ | -------- | ------------------------------ |
+| Platform fully down > 1 hour         | SEV-1    | IC (Incident Commander)        |
+| Tier-1 vendor down > 4 hours         | SEV-1    | IC + Engineering Lead          |
+| Data breach confirmed                | SEV-1    | Security Officer               |
+| Key person incapacitated + no backup | SEV-2    | Engineering Lead               |
+| Office / HQ inaccessible             | SEV-3    | Remote by default (low impact) |
+
+---
+
+## 6. Testing & Review
+
+| Activity                                   | Frequency   | Last Done              | Next Due |
+| ------------------------------------------ | ----------- | ---------------------- | -------- |
+| BCP document review                        | Semi-annual | _Not yet_              | Q3 2026  |
+| Tabletop exercise (vendor outage scenario) | Quarterly   | _Not yet_              | Q3 2026  |
+| Backup restore drill                       | Quarterly   | Via `restore-test.yml` | Ongoing  |
+| Communication channel test                 | Annual      | _Not yet_              | Q4 2026  |
+
+---
+
+## Related Documents
+
+- [Backup & Recovery Runbook](./backup-recovery-runbook.md)
+- [Incident Response Runbook](./incident-response.md)
+- [Vendor Exit Playbooks](./vendor-exit-playbooks.md)
+- [Workforce Security](./workforce-security.md)
+- [Communications Templates](./comms-templates/README.md)
+- [On-Call Rotation](./oncall.md)

@@ -1,10 +1,13 @@
 "use client";
 
-import { Users, Calendar, CreditCard, Star, Activity } from "lucide-react";
+import { Users, Calendar, CreditCard, Star, Activity, MessageSquare } from "lucide-react";
+import Link from "next/link";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
+import { SetupChecklistWidget } from "@/components/admin/setup-checklist-widget";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -71,7 +74,17 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{t(locale, "dashboard.admin")}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">{t(locale, "dashboard.admin")}</h1>
+        <Link href="/admin/notifications">
+          <Button variant="outline" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Notification Status
+          </Button>
+        </Link>
+      </div>
+
+      <SetupChecklistWidget stats={stats} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {statCards.map((stat) => (

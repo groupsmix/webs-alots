@@ -31,7 +31,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 
 const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_LOCAL_ANON_KEY ?? "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_LOCAL_SERVICE_KEY ?? "";
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_LOCAL_SERVICE_KEY ?? process.env.SUPABASE_LOCAL_SERVICE_ROLE_KEY ?? "";
 
 // AUDIT FINDING #3: Inverted the gate so tests run by default in CI.
 // Previously: skipped unless SUPABASE_LOCAL was explicitly set.

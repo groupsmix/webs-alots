@@ -1116,7 +1116,7 @@ export default function OnboardingPage() {
         <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${overallProgress}%` }}
+            data-width={Math.round(overallProgress)}
           />
         </div>
       </div>

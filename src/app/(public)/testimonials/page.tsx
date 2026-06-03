@@ -87,7 +87,7 @@ export default async function TestimonialsPage() {
                     <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
                       <div
                         className="h-full bg-yellow-400 rounded-full transition-all"
-                        style={{ width: `${dist.percentage}%` }}
+                        data-width={Math.round(dist.percentage)}
                       />
                     </div>
                     <span className="w-12 text-muted-foreground">{dist.count}</span>

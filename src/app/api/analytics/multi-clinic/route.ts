@@ -129,4 +129,4 @@ function computeChurnRisk(
   return "low";
 }
 
-export const GET = withAuth(handler, ALLOWED_ROLES, { failOpen: true });
+export const GET = withAuth(handler, ALLOWED_ROLES);

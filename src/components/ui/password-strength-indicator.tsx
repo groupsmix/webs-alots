@@ -39,7 +39,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${config.color}`}
-            style={{ width: `${percentage}%` }}
+            data-width={Math.round(percentage)}
           />
         </div>
         <span className={`text-xs font-medium ${config.text}`}>{LABELS[strength.label]}</span>

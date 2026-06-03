@@ -66,7 +66,7 @@ BEGIN
   -- clinic before acquiring the advisory lock. This replaces the RLS check
   -- that SECURITY DEFINER suppresses and keeps the RPC safe for `anon`.
   SELECT EXISTS (
-    SELECT 1 FROM doctors WHERE id = p_doctor_id AND clinic_id = p_clinic_id
+    SELECT 1 FROM users WHERE id = p_doctor_id AND clinic_id = p_clinic_id AND role = 'doctor'
   ) INTO v_doctor_ok;
   IF NOT v_doctor_ok THEN
     RAISE EXCEPTION 'INVALID_TENANT: doctor does not belong to clinic'

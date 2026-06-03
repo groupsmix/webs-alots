@@ -5,6 +5,8 @@ import { authenticateApiKey } from "../api-auth";
 
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
+  createUntypedAdminClient: vi.fn(),
 }));
 
 vi.mock("@/lib/crypto-utils", () => ({
@@ -91,10 +93,19 @@ describe("authenticateApiKey", () => {
             update: mockUpdateFn,
           };
         }
-        return { select: vi.fn(), update: mockUpdateFn };
+        return {
+          select: vi.fn(),
+          update: mockUpdateFn,
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        };
       }),
     };
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const { createAdminClient, createUntypedAdminClient } = await import("@/lib/supabase-server");
+    vi.mocked(createAdminClient).mockReturnValue(mockSupabase as never);
+    vi.mocked(createUntypedAdminClient).mockReturnValue(mockSupabase as never);
+
     vi.mocked(sha256Hex).mockResolvedValue("hashed_key");
     vi.mocked(timingSafeEqual).mockReturnValue(true);
 
@@ -164,9 +175,15 @@ describe("authenticateApiKey", () => {
         select: vi.fn().mockReturnValue({
           eq: mockEqPrefix,
         }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
       }),
     };
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const { createAdminClient, createUntypedAdminClient } = await import("@/lib/supabase-server");
+    vi.mocked(createAdminClient).mockReturnValue(mockSupabase as never);
+    vi.mocked(createUntypedAdminClient).mockReturnValue(mockSupabase as never);
+
     vi.mocked(sha256Hex).mockResolvedValue("hashed");
 
     const req = createMockRequest("Bearer abcdefgh-rest-of-key");

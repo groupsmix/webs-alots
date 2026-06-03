@@ -46,7 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getCurrentUser,
   fetchAnalytics,
-  type FetchAnalyticsResponse,
+  type AnalyticsData,
   type AnalyticsPeriod,
 } from "@/lib/data/client";
 import { exportToCSV } from "@/lib/export-data";
@@ -94,7 +94,7 @@ function ChangeIndicator({ value, inverted = false }: { value: number; inverted?
 export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "doctor" }) {
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [timePeriod, setTimePeriod] = useState<AnalyticsPeriod>("month");
-  const [analytics, setAnalytics] = useState<FetchAnalyticsResponse | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -158,7 +158,6 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
     totalPatients: _totalPatients,
     totalAppointments,
     periodComparison,
-    rateLimit,
   } = analytics;
 
   const noShowAppts = dailyAnalytics.reduce((sum, d) => sum + d.noShows, 0);
@@ -251,14 +250,6 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
             <RefreshCw className="h-3 w-3 mr-1" />
             Live Data
           </Badge>
-          {rateLimit?.remaining && rateLimit?.limit && (
-            <Badge
-              variant="outline"
-              className="text-xs border-primary/50 text-primary bg-primary/5"
-            >
-              {rateLimit.remaining}/{rateLimit.limit} API quota
-            </Badge>
-          )}
         </div>
       </div>
 
@@ -638,7 +629,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary rounded-full"
-                          style={{ width: `${service.percentage}%` }}
+                          data-width={Math.round(service.percentage)}
                         />
                       </div>
                       <Badge variant="outline" className="text-[10px]">
