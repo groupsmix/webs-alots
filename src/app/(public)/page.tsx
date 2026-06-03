@@ -174,7 +174,6 @@ export default async function HomePage() {
     );
   }
 
-
   // `locale` and `nonce` are already extracted at the top of the component.
   // We can just rely on them.
 

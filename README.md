@@ -5,7 +5,9 @@ Multi-tenant SaaS platform built specifically for **healthcare clinics in Morocc
 Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Workers** (via [OpenNext](https://opennext.js.org/cloudflare)).
 
 ## Scope & Features
+
 Oltigo focuses on the core clinic workflow: Online booking, Patient Records (PHI), Receptionist & Doctor Dashboards, WhatsApp Reminders, and CMI Payments.
+
 > **Note:** Non-MVP verticals (Restaurant, Veterinary, AI features, FHIR) are considered experimental and are gated behind feature flags (see `MVP_SCOPE.md` and `.env.example`).
 
 ## Stack

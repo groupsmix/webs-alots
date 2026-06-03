@@ -42,7 +42,6 @@ interface BrandingState {
   hero_image_url: string | null;
 }
 
-
 const FONT_OPTIONS = [
   "Geist",
   "Inter",

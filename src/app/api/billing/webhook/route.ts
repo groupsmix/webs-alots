@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
             subscription_status: "active",
             subscription_updated_at: new Date().toISOString(),
           },
-          planId
+          planId,
         );
 
         if (updateError) {
@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
               : undefined,
             subscription_updated_at: new Date().toISOString(),
           },
-          effectivePlan
+          effectivePlan,
         );
 
         if (renewError) {
@@ -412,7 +412,7 @@ export async function POST(request: NextRequest) {
             subscription_status: "cancelled",
             subscription_updated_at: new Date().toISOString(),
           },
-          "free"
+          "free",
         );
 
         if (cancelError) {

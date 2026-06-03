@@ -111,7 +111,6 @@ function StatusBadge({ status }: { status: ServiceStatus }) {
   );
 }
 
-
 export default function SystemStatusPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -197,42 +196,52 @@ export default function SystemStatusPage() {
           status: authStatus,
           icon: Shield,
           lastChecked: now,
-        }
+        },
       );
 
       try {
         const [readinessRes, backupsRes, jobsRes] = await Promise.all([
-            fetch("/api/admin/readiness"),
-            fetch("/api/admin/readiness/backups"),
-            fetch("/api/admin/readiness/jobs")
+          fetch("/api/admin/readiness"),
+          fetch("/api/admin/readiness/backups"),
+          fetch("/api/admin/readiness/jobs"),
         ]);
         if (readinessRes.ok) {
-           const json = await readinessRes.json();
-           if (json.ok && json.data) {
-             setReadiness(json.data);
-             if (json.data.services) {
-               json.data.services.forEach((s: ReadinessService) => {
-                 serviceResults.push({
-                   name: s.name,
-                   description: s.name === "WhatsApp API" ? "Meta Cloud API for notifications" : s.name === "Storage (R2)" ? "Cloudflare R2 object storage" : "CMI / Stripe payment processing",
-                   status: s.status,
-                   icon: s.name === "WhatsApp API" ? MessageSquare : s.name === "Storage (R2)" ? HardDrive : CreditCard,
-                   lastChecked: now,
-                 });
-               });
-             }
-           }
+          const json = await readinessRes.json();
+          if (json.ok && json.data) {
+            setReadiness(json.data);
+            if (json.data.services) {
+              json.data.services.forEach((s: ReadinessService) => {
+                serviceResults.push({
+                  name: s.name,
+                  description:
+                    s.name === "WhatsApp API"
+                      ? "Meta Cloud API for notifications"
+                      : s.name === "Storage (R2)"
+                        ? "Cloudflare R2 object storage"
+                        : "CMI / Stripe payment processing",
+                  status: s.status,
+                  icon:
+                    s.name === "WhatsApp API"
+                      ? MessageSquare
+                      : s.name === "Storage (R2)"
+                        ? HardDrive
+                        : CreditCard,
+                  lastChecked: now,
+                });
+              });
+            }
+          }
         }
         if (backupsRes.ok) {
-           const json = await backupsRes.json();
-           if (json.ok) setBackups(json.data);
+          const json = await backupsRes.json();
+          if (json.ok) setBackups(json.data);
         }
         if (jobsRes.ok) {
-           const json = await jobsRes.json();
-           if (json.ok) setJobs(json.data);
+          const json = await jobsRes.json();
+          if (json.ok) setJobs(json.data);
         }
       } catch (e) {
-         logger.warn("Failed to fetch readiness APIs", { error: e });
+        logger.warn("Failed to fetch readiness APIs", { error: e });
       }
 
       setServices(serviceResults);
@@ -435,8 +444,6 @@ export default function SystemStatusPage() {
             </dl>
           </CardContent>
         </Card>
-
-
       </div>
 
       {/* Recent Incidents */}
@@ -477,7 +484,12 @@ export default function SystemStatusPage() {
                       {group.vars.map((v: EnvVar) => (
                         <div key={v.name} className="flex justify-between items-center text-xs">
                           <span className="text-muted-foreground">{v.name}</span>
-                          <Badge variant={v.status === 'configured' ? 'success' : 'outline'} className={v.status === 'missing' ? 'text-red-500 border-red-200 bg-red-50' : ''}>
+                          <Badge
+                            variant={v.status === "configured" ? "success" : "outline"}
+                            className={
+                              v.status === "missing" ? "text-red-500 border-red-200 bg-red-50" : ""
+                            }
+                          >
                             {v.status}
                           </Badge>
                         </div>
@@ -487,7 +499,7 @@ export default function SystemStatusPage() {
                 ))}
               </div>
             ) : (
-               <p className="text-sm text-muted-foreground">Loading environment details...</p>
+              <p className="text-sm text-muted-foreground">Loading environment details...</p>
             )}
           </CardContent>
         </Card>
@@ -506,8 +518,8 @@ export default function SystemStatusPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Encryption Key</span>
-                    <Badge variant={backups.configured ? 'success' : 'destructive'}>
-                      {backups.configured ? 'Configured' : 'Missing'}
+                    <Badge variant={backups.configured ? "success" : "destructive"}>
+                      {backups.configured ? "Configured" : "Missing"}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center text-sm">
@@ -548,7 +560,9 @@ export default function SystemStatusPage() {
                     <div className="flex gap-4 text-sm">
                       <span className="text-amber-600">{jobs.notifications.pending} Pending</span>
                       <span className="text-red-600">{jobs.notifications.failed} Failed</span>
-                      <span className="text-red-800">{jobs.notifications.deadLettered} Dead-lettered</span>
+                      <span className="text-red-800">
+                        {jobs.notifications.deadLettered} Dead-lettered
+                      </span>
                     </div>
                   </div>
                 </div>

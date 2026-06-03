@@ -4,9 +4,10 @@ This document defines the active product scope for Oltigo Health. Features outsi
 
 ## Active Scope: Moroccan Clinic SaaS
 
-Oltigo is a multi-tenant SaaS platform built specifically for healthcare clinics in Morocco. 
+Oltigo is a multi-tenant SaaS platform built specifically for healthcare clinics in Morocco.
 
 ### Core Features
+
 - **Public Clinic Website**: SEO-friendly landing pages for each tenant clinic.
 - **Online Booking**: Patients can schedule appointments directly via the web.
 - **Patient Records (PHI)**: Encrypted medical records, compliant with Moroccan Law 09-08.

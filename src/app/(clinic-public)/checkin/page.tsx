@@ -303,10 +303,7 @@ export default function CheckInKioskPage() {
 
               {/* Auto-reset progress bar */}
               <div className="mt-6 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full animate-[shrink_10s_linear_forwards]"
-                  
-                />
+                <div className="h-full bg-green-500 rounded-full animate-[shrink_10s_linear_forwards]" />
               </div>
               <p className="text-xs text-muted-foreground mt-2">Screen resets automatically...</p>
             </CardContent>

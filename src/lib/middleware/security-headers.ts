@@ -51,7 +51,7 @@ const PERMISSIONS_POLICY = [
  * Falls back to the app's own /api/csp-report endpoint for self-hosted
  * collection when Sentry is not configured.
  */
- 
+
 const CSP_REPORT_URI = process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
 
 /**
@@ -69,7 +69,7 @@ function getSupabaseHost(): string {
   }
   // L-03: Placeholder weakens CSP connect-src — log so this surfaces in monitoring.
   // nosemgrep: semgrep.env-access — NODE_ENV is a standard runtime guard, not a secret
-   
+
   if (process.env.NODE_ENV === "production") {
     // Edge middleware — console.error is appropriate here since the
     // structured logger may not be available in the edge runtime.
@@ -86,10 +86,9 @@ function getSupabaseHost(): string {
  * Falls back to the Plausible Cloud default when not configured.
  */
 function getPlausibleHost(): string | null {
-   
   const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
   if (!domain) return null;
-   
+
   const host = process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
   try {
     return new URL(host).host;
@@ -126,7 +125,6 @@ interface BuildCspOptions {
  * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
  */
 function buildCsp(nonce: string, _options?: BuildCspOptions): string {
-   
   const isDev = process.env.NODE_ENV !== "production";
   const sbHost = getSupabaseHost();
   const plausibleHost = getPlausibleHost();
@@ -179,7 +177,6 @@ function buildCsp(nonce: string, _options?: BuildCspOptions): string {
  * regressions surface immediately.
  */
 function isCspReportOnly(): boolean {
-   
   return process.env.NODE_ENV === "production" && process.env.CSP_REPORT_ONLY === "true";
 }
 
@@ -297,7 +294,7 @@ export function applyAllSecurityHeaders(
   // by default in all major browsers and the header is deprecated, the audit
   // rubric explicitly requests it. max-age=86400 (1 day), enforce mode.
   // Once HSTS preload is confirmed, this can be safely removed.
-   
+
   if (process.env.NODE_ENV !== "development") {
     response.headers.set("Expect-CT", "max-age=86400, enforce");
   }
@@ -311,7 +308,7 @@ export function applyAllSecurityHeaders(
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
 
   // Report-To header for CSP violation reporting (Reporting API v1)
-   
+
   if (process.env.NODE_ENV !== "development") {
     response.headers.set(
       "Report-To",

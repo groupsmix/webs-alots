@@ -35,7 +35,7 @@ export function SetupChecklistWidget({ stats }: { stats: DashboardStats }) {
               Add your first doctor and services
             </span>
           </div>
-          
+
           <div className="pt-2">
             <Link href="/admin/onboarding">
               <Button size="sm">

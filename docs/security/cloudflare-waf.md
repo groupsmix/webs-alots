@@ -17,11 +17,12 @@ Create a new Rate Limiting rule to prevent brute force attacks on authentication
   - per **1 minute**
   - from the same **IP address**
 - **Action**: `Block`
-  - *Response*: `429 Too Many Requests`
+  - _Response_: `429 Too Many Requests`
 
 ## 2. Bot Fight Mode / Super Bot Fight Mode
 
 Navigate to **Security > Bots** and configure:
+
 - **Definitely automated**: `Block`
 - **Likely automated**: `Managed Challenge`
 - **Verified bots**: `Allow`

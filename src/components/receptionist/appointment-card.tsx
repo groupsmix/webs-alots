@@ -76,7 +76,7 @@ export function AppointmentCard({
             .join("")}
         </AvatarFallback>
       </Avatar>
-      
+
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold truncate">{apt.patientName}</p>
         <div className="flex flex-wrap items-center gap-2 mt-0.5">
@@ -92,7 +92,9 @@ export function AppointmentCard({
           variant={isCheckedIn ? "success" : statusVariant[apt.status]}
           className="text-[11px] px-2 py-0.5"
         >
-          {isCheckedIn ? "Checked In" : apt.status.charAt(0).toUpperCase() + apt.status.slice(1).replace("-", " ")}
+          {isCheckedIn
+            ? "Checked In"
+            : apt.status.charAt(0).toUpperCase() + apt.status.slice(1).replace("-", " ")}
         </Badge>
       </div>
 
@@ -108,7 +110,7 @@ export function AppointmentCard({
             <CheckCircle className="h-4 w-4" />
           </Button>
         )}
-        
+
         {patient && (
           <Button
             variant="ghost"
@@ -128,13 +130,18 @@ export function AppointmentCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => onConfirm(apt.id)} disabled={apt.status === "confirmed"}>
+            <DropdownMenuItem
+              onClick={() => onConfirm(apt.id)}
+              disabled={apt.status === "confirmed"}
+            >
               <CheckCircle className="h-4 w-4 mr-2 text-blue-600" /> Confirm
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onReschedule(apt.id)}>
               <Calendar className="h-4 w-4 mr-2" /> Reschedule
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.open(`/receptionist/patients/${apt.patientId}`, "_blank")}>
+            <DropdownMenuItem
+              onClick={() => window.open(`/receptionist/patients/${apt.patientId}`, "_blank")}
+            >
               <FileText className="h-4 w-4 mr-2" /> Open Patient File
             </DropdownMenuItem>
             {patient && (
@@ -143,10 +150,16 @@ export function AppointmentCard({
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onNoShow(apt.id)} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              onClick={() => onNoShow(apt.id)}
+              className="text-destructive focus:text-destructive"
+            >
               <UserX className="h-4 w-4 mr-2" /> Mark No-show
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onCancel(apt.id)} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              onClick={() => onCancel(apt.id)}
+              className="text-destructive focus:text-destructive"
+            >
               <XCircle className="h-4 w-4 mr-2" /> Cancel Booking
             </DropdownMenuItem>
           </DropdownMenuContent>

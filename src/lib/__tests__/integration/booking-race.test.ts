@@ -216,9 +216,7 @@ describe.skipIf(SKIP)("Booking Race Condition Tests (Phase 3.4)", () => {
       ),
     );
 
-    const succeeded = results.filter(
-      (r) => r.status === "fulfilled" && !r.value.error,
-    );
+    const succeeded = results.filter((r) => r.status === "fulfilled" && !r.value.error);
     const failed = results.filter(
       (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.error),
     );
@@ -265,9 +263,7 @@ describe.skipIf(SKIP)("Booking Race Condition Tests (Phase 3.4)", () => {
       ),
     );
 
-    const succeeded = results.filter(
-      (r) => r.status === "fulfilled" && !r.value.error,
-    );
+    const succeeded = results.filter((r) => r.status === "fulfilled" && !r.value.error);
     const failed = results.filter(
       (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.error),
     );

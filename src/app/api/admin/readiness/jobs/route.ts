@@ -54,7 +54,7 @@ export const GET = withAuth(async () => {
         pending: notificationsPending,
         failed: notificationsFailed,
         deadLettered: notificationsDeadLettered,
-      }
+      },
     });
   } catch (_error) {
     return apiInternalError("Failed to load jobs data");

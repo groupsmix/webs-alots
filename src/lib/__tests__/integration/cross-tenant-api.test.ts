@@ -17,7 +17,8 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_LOCAL_ANON_KEY ?? "";
 const SUPABASE_SERVICE_KEY =
   process.env.SUPABASE_LOCAL_SERVICE_KEY ?? process.env.SUPABASE_LOCAL_SERVICE_ROLE_KEY ?? "";
 
-const SKIP = process.env.SKIP_RLS === "true" || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_KEY;
+const SKIP =
+  process.env.SKIP_RLS === "true" || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_KEY;
 
 // Unique UUIDs for this test suite to avoid conflicts with others
 const CLINIC_X_ID = "11110000-1111-1111-1111-111100001111";
@@ -63,7 +64,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
           tier: "pro",
         },
       ],
-      { onConflict: "id" }
+      { onConflict: "id" },
     );
 
     // 2. Seed doctors and patients
@@ -98,7 +99,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
           email: "patient-y@oltigo-test.local",
         },
       ],
-      { onConflict: "id" }
+      { onConflict: "id" },
     );
 
     // 3. Seed services
@@ -117,7 +118,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
           duration_minutes: 30,
         },
       ],
-      { onConflict: "id" }
+      { onConflict: "id" },
     );
   });
 

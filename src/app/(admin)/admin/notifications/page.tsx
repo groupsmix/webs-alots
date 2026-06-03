@@ -7,7 +7,10 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser } from "@/lib/data/client";
-import { fetchNotificationDashboardData, type NotificationDashboardData } from "@/lib/data/client/notification-dashboard";
+import {
+  fetchNotificationDashboardData,
+  type NotificationDashboardData,
+} from "@/lib/data/client/notification-dashboard";
 
 export default function AdminNotificationsPage() {
   const [data, setData] = useState<NotificationDashboardData | null>(null);
@@ -32,8 +35,10 @@ export default function AdminNotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Admin Dashboard", href: "/admin/dashboard" }, { label: "Notifications" }]} />
-      
+      <Breadcrumb
+        items={[{ label: "Admin Dashboard", href: "/admin/dashboard" }, { label: "Notifications" }]}
+      />
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Notification Status</h1>
       </div>
@@ -68,7 +73,9 @@ export default function AdminNotificationsPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Failed / Dead-lettered</p>
-              <h3 className="text-2xl font-bold">{queueStatus.failed} / {queueStatus.deadLettered}</h3>
+              <h3 className="text-2xl font-bold">
+                {queueStatus.failed} / {queueStatus.deadLettered}
+              </h3>
             </div>
           </CardContent>
         </Card>
@@ -93,13 +100,22 @@ export default function AdminNotificationsPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {templates.map(tpl => (
-                    <div key={tpl.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
+                  {templates.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0"
+                    >
                       <div>
-                        <div className="font-medium">{tpl.template_name} ({tpl.language})</div>
-                        <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{tpl.body_template}</div>
+                        <div className="font-medium">
+                          {tpl.template_name} ({tpl.language})
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {tpl.body_template}
+                        </div>
                       </div>
-                      <Badge variant={tpl.status === 'approved' ? 'success' : 'outline'}>{tpl.status}</Badge>
+                      <Badge variant={tpl.status === "approved" ? "success" : "outline"}>
+                        {tpl.status}
+                      </Badge>
                     </div>
                   ))}
                 </div>
@@ -115,19 +131,32 @@ export default function AdminNotificationsPage() {
             </CardHeader>
             <CardContent>
               {recentLogs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No recent notifications sent.</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  No recent notifications sent.
+                </div>
               ) : (
                 <div className="space-y-4">
-                  {recentLogs.map(log => (
-                    <div key={log.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
+                  {recentLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0"
+                    >
                       <div>
-                        <div className="font-medium">{log.trigger} &rarr; {log.recipientName || 'Unknown'}</div>
+                        <div className="font-medium">
+                          {log.trigger} &rarr; {log.recipientName || "Unknown"}
+                        </div>
                         <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                          <span className="capitalize">{log.channel}</span> &bull; 
+                          <span className="capitalize">{log.channel}</span> &bull;
                           <span>{new Date(log.createdAt).toLocaleString()}</span>
                         </div>
                       </div>
-                      <Badge variant={log.status === 'sent' || log.status === 'delivered' ? 'success' : 'destructive'}>
+                      <Badge
+                        variant={
+                          log.status === "sent" || log.status === "delivered"
+                            ? "success"
+                            : "destructive"
+                        }
+                      >
                         {log.status}
                       </Badge>
                     </div>
@@ -148,15 +177,25 @@ export default function AdminNotificationsPage() {
                 <div className="text-center py-8 text-muted-foreground">Queue is empty.</div>
               ) : (
                 <div className="space-y-4">
-                  {queueStatus.items.map(item => {
+                  {queueStatus.items.map((item) => {
                     const isDeadLetter = item.next_attempt_at?.startsWith("9999");
                     return (
-                      <div key={item.id} className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0">
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0"
+                      >
                         <div>
-                          <div className="font-medium capitalize">{item.channel} to {item.recipient}</div>
-                          <div className="text-sm text-red-600 mt-1">{item.error_message || "Unknown error"}</div>
+                          <div className="font-medium capitalize">
+                            {item.channel} to {item.recipient}
+                          </div>
+                          <div className="text-sm text-red-600 mt-1">
+                            {item.error_message || "Unknown error"}
+                          </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            Attempts: {item.attempts} &bull; Next Retry: {isDeadLetter ? 'Never (Dead-lettered)' : new Date(item.next_attempt_at).toLocaleString()}
+                            Attempts: {item.attempts} &bull; Next Retry:{" "}
+                            {isDeadLetter
+                              ? "Never (Dead-lettered)"
+                              : new Date(item.next_attempt_at).toLocaleString()}
                           </div>
                         </div>
                         <Badge variant={isDeadLetter ? "destructive" : "warning"}>

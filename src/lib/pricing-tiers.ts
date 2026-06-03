@@ -40,7 +40,7 @@ export function canAccessFeature(tier: string, feature: keyof FeatureMatrix): bo
   const normalizedTier = (tier || "starter").toLowerCase() as PricingTier;
   const matrix = PRICING_TIERS[normalizedTier];
   if (!matrix) return false;
-  
+
   const value = matrix[feature];
   return typeof value === "boolean" ? value : true;
 }

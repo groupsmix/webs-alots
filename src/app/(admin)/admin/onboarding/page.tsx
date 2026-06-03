@@ -50,9 +50,11 @@ export default function AdminOnboardingWizard() {
   // Step 3: First Doctor & Schedule
   const [doctorName, setDoctorName] = useState("");
   const [doctorEmail, setDoctorEmail] = useState("");
-  
+
   // Step 4: Services
-  const [services, setServices] = useState<ServiceFormData[]>([{ name: "", price: "", duration_minutes: "30", category: "consultation" }]);
+  const [services, setServices] = useState<ServiceFormData[]>([
+    { name: "", price: "", duration_minutes: "30", category: "consultation" },
+  ]);
 
   // Save / Load Draft
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function AdminOnboardingWizard() {
           doctorName,
           doctorEmail,
           services,
-        })
+        }),
       );
     }, 1000);
     return () => {
@@ -96,7 +98,10 @@ export default function AdminOnboardingWizard() {
     if (currentStep === 1) {
       const step1Schema = z.object({
         clinicName: z.string().min(2, "Clinic name is required"),
-        subdomain: z.string().min(2, "Subdomain is required").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
+        subdomain: z
+          .string()
+          .min(2, "Subdomain is required")
+          .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
       });
       const res = step1Schema.safeParse({ clinicName, subdomain });
       if (!res.success) {
@@ -116,7 +121,7 @@ export default function AdminOnboardingWizard() {
       }
     }
     if (currentStep === 4) {
-      const validServices = services.filter(s => s.name.trim().length > 0);
+      const validServices = services.filter((s) => s.name.trim().length > 0);
       if (validServices.length === 0) {
         addToast("Please add at least one service", "error");
         return;
@@ -156,13 +161,19 @@ export default function AdminOnboardingWizard() {
                   s.key === currentStep
                     ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
                     : s.key < currentStep
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                 }`}
               >
-                {s.key < currentStep ? <Check className="h-5 w-5" /> : <s.icon className="h-5 w-5" />}
+                {s.key < currentStep ? (
+                  <Check className="h-5 w-5" />
+                ) : (
+                  <s.icon className="h-5 w-5" />
+                )}
               </div>
-              <span className={`text-xs font-medium ${s.key === currentStep ? "text-primary" : "text-muted-foreground"}`}>
+              <span
+                className={`text-xs font-medium ${s.key === currentStep ? "text-primary" : "text-muted-foreground"}`}
+              >
                 {s.label}
               </span>
             </div>
@@ -175,18 +186,32 @@ export default function AdminOnboardingWizard() {
         <Card>
           <CardHeader>
             <CardTitle>Clinic Details</CardTitle>
-            <CardDescription>We need some basic information to get your clinic set up. You can always change this later.</CardDescription>
+            <CardDescription>
+              We need some basic information to get your clinic set up. You can always change this
+              later.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clinicName">Clinic Name</Label>
-              <Input id="clinicName" value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
+              <Input
+                id="clinicName"
+                value={clinicName}
+                onChange={(e) => setClinicName(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="subdomain">Subdomain</Label>
               <div className="flex items-center">
-                <Input id="subdomain" value={subdomain} onChange={(e) => setSubdomain(e.target.value)} className="rounded-r-none" />
-                <span className="bg-muted px-3 py-2 border border-l-0 rounded-r-md text-sm text-muted-foreground">.oltigo.com</span>
+                <Input
+                  id="subdomain"
+                  value={subdomain}
+                  onChange={(e) => setSubdomain(e.target.value)}
+                  className="rounded-r-none"
+                />
+                <span className="bg-muted px-3 py-2 border border-l-0 rounded-r-md text-sm text-muted-foreground">
+                  .oltigo.com
+                </span>
               </div>
             </div>
           </CardContent>
@@ -204,8 +229,18 @@ export default function AdminOnboardingWizard() {
             <div className="space-y-2">
               <Label htmlFor="primaryColor">Primary Color</Label>
               <div className="flex gap-4 items-center">
-                <Input id="primaryColor" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-16 h-10 p-1" />
-                <Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-32" />
+                <Input
+                  id="primaryColor"
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-32"
+                />
               </div>
             </div>
           </CardContent>
@@ -222,11 +257,20 @@ export default function AdminOnboardingWizard() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="doctorName">Doctor Name</Label>
-              <Input id="doctorName" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} />
+              <Input
+                id="doctorName"
+                value={doctorName}
+                onChange={(e) => setDoctorName(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="doctorEmail">Email</Label>
-              <Input id="doctorEmail" type="email" value={doctorEmail} onChange={(e) => setDoctorEmail(e.target.value)} />
+              <Input
+                id="doctorEmail"
+                type="email"
+                value={doctorEmail}
+                onChange={(e) => setDoctorEmail(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -237,7 +281,9 @@ export default function AdminOnboardingWizard() {
         <Card>
           <CardHeader>
             <CardTitle>Services</CardTitle>
-            <CardDescription>Add doctors so they can be booked. You can add more later.</CardDescription>
+            <CardDescription>
+              Add doctors so they can be booked. You can add more later.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <OnboardingStepServices services={services} onChange={setServices} />
@@ -254,10 +300,18 @@ export default function AdminOnboardingWizard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted/30 rounded-lg flex flex-col gap-2">
-              <p><strong>Name:</strong> {clinicName}</p>
-              <p><strong>URL:</strong> {subdomain}.oltigo.com</p>
-              <p><strong>Doctor:</strong> {doctorName}</p>
-              <p><strong>Services:</strong> {services.filter(s => s.name).length} added</p>
+              <p>
+                <strong>Name:</strong> {clinicName}
+              </p>
+              <p>
+                <strong>URL:</strong> {subdomain}.oltigo.com
+              </p>
+              <p>
+                <strong>Doctor:</strong> {doctorName}
+              </p>
+              <p>
+                <strong>Services:</strong> {services.filter((s) => s.name).length} added
+              </p>
             </div>
           </CardContent>
         </Card>

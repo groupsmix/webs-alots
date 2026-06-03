@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Calendar,
-  Users,
-  UserPlus,
-  Clock,
-  CreditCard,
-  FileText,
-} from "lucide-react";
+import { Calendar, Users, UserPlus, Clock, CreditCard, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AppointmentCard } from "@/components/receptionist/appointment-card";
 import { CashRegister } from "@/components/receptionist/cash-register";
@@ -84,8 +77,12 @@ export default function ReceptionistDashboardPage() {
 
   const todayApptsFiltered = todayAppts.filter((a) => a.date === todayDateStr);
   const tomorrowAppts = todayAppts.filter((a) => a.date === tomorrowDateStr);
-  const checkedInAppts = todayAppts.filter((a) => checkedInIds.has(a.id) || a.status === "in-progress");
-  const waitingAppts = todayApptsFiltered.filter((a) => checkedInIds.has(a.id) && a.status !== "completed");
+  const checkedInAppts = todayAppts.filter(
+    (a) => checkedInIds.has(a.id) || a.status === "in-progress",
+  );
+  const waitingAppts = todayApptsFiltered.filter(
+    (a) => checkedInIds.has(a.id) && a.status !== "completed",
+  );
   const completedAppts = todayAppts.filter((a) => a.status === "completed");
   const cancelledAppts = todayAppts.filter((a) => a.status === "cancelled");
   const noShowAppts = todayAppts.filter((a) => a.status === "no-show");
@@ -228,15 +225,50 @@ export default function ReceptionistDashboardPage() {
           <CardContent>
             <Tabs defaultValue="today" className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto h-auto flex-wrap mb-4 bg-transparent p-0 gap-1">
-                <TabsTrigger value="today" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Today</TabsTrigger>
-                <TabsTrigger value="tomorrow" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Tomorrow</TabsTrigger>
-                <TabsTrigger value="checked-in" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Checked In</TabsTrigger>
-                <TabsTrigger value="waiting" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Waiting</TabsTrigger>
-                <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Completed</TabsTrigger>
-                <TabsTrigger value="cancelled" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">Cancelled</TabsTrigger>
-                <TabsTrigger value="no-show" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border">No-show</TabsTrigger>
+                <TabsTrigger
+                  value="today"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  Today
+                </TabsTrigger>
+                <TabsTrigger
+                  value="tomorrow"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  Tomorrow
+                </TabsTrigger>
+                <TabsTrigger
+                  value="checked-in"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  Checked In
+                </TabsTrigger>
+                <TabsTrigger
+                  value="waiting"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  Waiting
+                </TabsTrigger>
+                <TabsTrigger
+                  value="completed"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  Completed
+                </TabsTrigger>
+                <TabsTrigger
+                  value="cancelled"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  Cancelled
+                </TabsTrigger>
+                <TabsTrigger
+                  value="no-show"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
+                >
+                  No-show
+                </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="today" className="m-0">
                 {renderApptList(todayApptsFiltered, "No appointments scheduled for today.")}
               </TabsContent>

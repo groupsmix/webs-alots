@@ -28,13 +28,13 @@ describe("Notification Lifecycle", () => {
     vi.doMock("../notification-queue", () => ({
       enqueueNotification: enqueueSpy,
     }));
-    
+
     // Provide user contact info mock
     const { createClient } = await import("@/lib/supabase-server");
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       createMockSupabaseClient([
-        { id: "user-1", phone: "+212600000000", email: "test@example.com" }
-      ])
+        { id: "user-1", phone: "+212600000000", email: "test@example.com" },
+      ]),
     );
 
     // Call dispatch
@@ -50,7 +50,7 @@ describe("Notification Lifecycle", () => {
         clinic_id: "clinic-1",
       },
       "user-1",
-      ["whatsapp"]
+      ["whatsapp"],
     );
 
     // Results should show success via enqueueing
@@ -66,15 +66,15 @@ describe("Notification Lifecycle", () => {
     const mockSupabase = createMockSupabaseClient([]);
     const { createTenantClient } = await import("@/lib/supabase-server");
     (createTenantClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
-    
+
     // Simulate fetching notifications
     const clinicId = "clinic-123";
     const supabase = await createTenantClient(clinicId);
-    
+
     // The query builder will throw if we don't apply RLS or tenant scope
     // But since this is a mock, we verify `.eq('clinic_id', clinicId)` is called
     await supabase.from("notification_log").select("*").eq("clinic_id", clinicId);
-    
+
     // Verify the mock recorded the correct chain
     // (mock implementation details vary, but we assert conceptually)
     expect(supabase.from).toHaveBeenCalledWith("notification_log");

@@ -27,7 +27,9 @@ export interface NotificationDashboardData {
   queueStatus: QueueStatus;
 }
 
-export async function fetchNotificationDashboardData(clinicId: string): Promise<NotificationDashboardData> {
+export async function fetchNotificationDashboardData(
+  clinicId: string,
+): Promise<NotificationDashboardData> {
   return get<NotificationDashboardData>("/api/admin/notifications", {
     headers: {
       "x-clinic-id": clinicId,

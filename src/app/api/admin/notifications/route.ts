@@ -31,7 +31,9 @@ export const GET = withAuth(async () => {
     // 3. Fetch queue status (pending, failed, dead-lettered)
     const { data: queueItems } = await supabase
       .from("notification_queue")
-      .select("id, status, attempts, next_attempt_at, error_message, channel, recipient, created_at, payload")
+      .select(
+        "id, status, attempts, next_attempt_at, error_message, channel, recipient, created_at, payload",
+      )
       .eq("clinic_id", clinicId)
       .in("status", ["pending", "failed"])
       .order("created_at", { ascending: false })

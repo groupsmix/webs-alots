@@ -44,7 +44,8 @@ export const ENV_RULES: EnvRule[] = [
   {
     name: "SEED_PASSWORDS_ROTATED",
     required: process.env.NODE_ENV === "production",
-    description: "Must be set to 'true' in production to acknowledge that seed user passwords have been rotated",
+    description:
+      "Must be set to 'true' in production to acknowledge that seed user passwords have been rotated",
     group: "security",
   },
   {

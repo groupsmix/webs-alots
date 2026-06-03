@@ -115,3 +115,32 @@ BEGIN
   RETURN v_appt_id;
 END;
 $$;
+
+-- ── Grant hardening (test 7 in supabase/tests/booking_atomic_insert.test.sql)
+--
+-- The pgTAP security pin asserts EXECUTE is granted to exactly:
+--   postgres (owner), authenticated, anon
+-- Postgres defaults grant EXECUTE on new functions to PUBLIC, and Supabase
+-- grants the service_role broadly. Both must be revoked for this RPC because
+-- it is SECURITY DEFINER and bypasses RLS — wider grants would let unintended
+-- principals create appointments. 00074 set up authenticated/anon but never
+-- revoked PUBLIC/service_role, so the security pin has been failing. We make
+-- the migration match the pin now.
+REVOKE EXECUTE ON FUNCTION public.booking_atomic_insert(
+  uuid, uuid, uuid, uuid, date,
+  text, text, text, text, text,
+  boolean, boolean, text, text, boolean, integer
+) FROM PUBLIC;
+
+REVOKE EXECUTE ON FUNCTION public.booking_atomic_insert(
+  uuid, uuid, uuid, uuid, date,
+  text, text, text, text, text,
+  boolean, boolean, text, text, boolean, integer
+) FROM service_role;
+
+-- Re-assert the intended grants in case any earlier REVOKE swept them.
+GRANT EXECUTE ON FUNCTION public.booking_atomic_insert(
+  uuid, uuid, uuid, uuid, date,
+  text, text, text, text, text,
+  boolean, boolean, text, text, boolean, integer
+) TO authenticated, anon;

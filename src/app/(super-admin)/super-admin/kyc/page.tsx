@@ -2,7 +2,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { createClient } from "@/lib/supabase-server";
 
 interface KycEntry {
@@ -44,29 +51,41 @@ export default async function KycReviewPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {kycs && kycs.length > 0 ? kycs.map((k: KycEntry) => (
-                <TableRow key={k.id}>
-                  <TableCell>
-                    <div className="font-medium">{k.clinics?.name}</div>
-                    <div className="text-xs text-muted-foreground">{k.clinics?.phone} | {k.clinics?.subdomain}.oltigo.com</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">ICE: {k.ice_number || "N/A"}</div>
-                    <div className="text-sm">RC: {k.rc_number || "N/A"}</div>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(k.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={k.review_status === 'approved' ? 'success' : k.review_status === 'rejected' ? 'destructive' : 'outline'}>
-                      {k.review_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm">Review Docs</Button>
-                  </TableCell>
-                </TableRow>
-              )) : (
+              {kycs && kycs.length > 0 ? (
+                kycs.map((k: KycEntry) => (
+                  <TableRow key={k.id}>
+                    <TableCell>
+                      <div className="font-medium">{k.clinics?.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {k.clinics?.phone} | {k.clinics?.subdomain}.oltigo.com
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">ICE: {k.ice_number || "N/A"}</div>
+                      <div className="text-sm">RC: {k.rc_number || "N/A"}</div>
+                    </TableCell>
+                    <TableCell>{new Date(k.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          k.review_status === "approved"
+                            ? "success"
+                            : k.review_status === "rejected"
+                              ? "destructive"
+                              : "outline"
+                        }
+                      >
+                        {k.review_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm">
+                        Review Docs
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No KYC submissions found.
