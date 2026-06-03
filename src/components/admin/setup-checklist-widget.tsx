@@ -1,7 +1,7 @@
 import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { DashboardStats } from "@/lib/data/server";
 
 export function SetupChecklistWidget({ stats }: { stats: DashboardStats }) {

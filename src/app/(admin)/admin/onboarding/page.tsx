@@ -5,28 +5,22 @@ import {
   ArrowRight,
   Check,
   Building2,
-  Clock,
   UserPlus,
   Stethoscope,
   Palette,
   CheckCircle2,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { z } from "zod";
+import {
+  OnboardingStepServices,
+  type ServiceFormData,
+} from "@/components/super-admin/onboarding-step-services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
-import {
-  OnboardingStepTimeSlots,
-  type DoctorTimeSlots,
-  type TimeSlotFormData,
-} from "@/components/super-admin/onboarding-step-timeslots";
-import {
-  OnboardingStepServices,
-  type ServiceFormData,
-} from "@/components/super-admin/onboarding-step-services";
-import { z } from "zod";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -149,7 +143,7 @@ export default function AdminOnboardingWizard() {
     <div className="max-w-3xl mx-auto py-12 px-4">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Clinic Setup</h1>
-        <p className="text-muted-foreground">Complete your clinic's configuration.</p>
+        <p className="text-muted-foreground">Complete your clinic&apos;s configuration.</p>
       </div>
 
       {/* Progress */}
@@ -181,7 +175,7 @@ export default function AdminOnboardingWizard() {
         <Card>
           <CardHeader>
             <CardTitle>Clinic Details</CardTitle>
-            <CardDescription>Verify your clinic's name and public URL.</CardDescription>
+            <CardDescription>We need some basic information to get your clinic set up. You can always change this later.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -204,7 +198,7 @@ export default function AdminOnboardingWizard() {
         <Card>
           <CardHeader>
             <CardTitle>Branding</CardTitle>
-            <CardDescription>Set your clinic's brand colors.</CardDescription>
+            <CardDescription>Set your clinic&apos;s brand colors.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -243,7 +237,7 @@ export default function AdminOnboardingWizard() {
         <Card>
           <CardHeader>
             <CardTitle>Services</CardTitle>
-            <CardDescription>Add at least one service you provide.</CardDescription>
+            <CardDescription>Add doctors so they can be booked. You can add more later.</CardDescription>
           </CardHeader>
           <CardContent>
             <OnboardingStepServices services={services} onChange={setServices} />
@@ -255,7 +249,7 @@ export default function AdminOnboardingWizard() {
       {currentStep === 5 && (
         <Card>
           <CardHeader>
-            <CardTitle>You're all set!</CardTitle>
+            <CardTitle>You&apos;re all set!</CardTitle>
             <CardDescription>Preview your booking page and go live.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

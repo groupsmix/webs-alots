@@ -7,9 +7,6 @@ import {
   Clock,
   CreditCard,
   FileText,
-  Phone,
-  MessageCircle,
-  CheckCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AppointmentCard } from "@/components/receptionist/appointment-card";
@@ -21,13 +18,11 @@ import { QuickPatientRegistration } from "@/components/receptionist/quick-patien
 import { RealtimeWaitingRoom } from "@/components/receptionist/realtime-waiting-room";
 import { ReceptionistAIWidget } from "@/components/receptionist/receptionist-ai-widget";
 import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getCurrentUser,
   fetchAppointments,
@@ -37,19 +32,6 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { formatCurrency } from "@/lib/utils";
-
-const statusVariant: Record<
-  string,
-  "default" | "success" | "warning" | "destructive" | "secondary" | "outline"
-> = {
-  scheduled: "outline",
-  confirmed: "default",
-  reminded: "default",
-  "in-progress": "warning",
-  completed: "success",
-  "no-show": "destructive",
-  cancelled: "secondary",
-};
 
 export default function ReceptionistDashboardPage() {
   const [todayAppts, setTodayAppts] = useState<AppointmentView[]>([]);

@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 import { withAuth } from "@/lib/with-auth";
 
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async () => {
   const { clinicId } = await getTenant();
   if (!clinicId) return apiInternalError("Missing clinic context");
 
@@ -64,7 +63,7 @@ export const GET = withAuth(async (request) => {
       recentLogs: recentLogs || [],
       queueStatus,
     });
-  } catch (error) {
+  } catch (_error) {
     return apiInternalError("Failed to fetch notification data");
   }
 }, ["clinic_admin", "super_admin"]);
