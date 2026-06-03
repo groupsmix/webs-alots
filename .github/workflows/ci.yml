@@ -739,6 +739,14 @@ jobs:
       # the env vars are likely missing and we should fail loudly rather than
       # green-lighting a PR with zero RLS coverage.
       - name: Assert RLS tests actually ran
+        # HIGH-4: this step is the single source of truth for whether the
+        # RLS suite passed. The vitest run above uses `|| true` so a
+        # non-zero exit (compile error, runner crash, real failures)
+        # does not short-circuit the workflow before we inspect the JSON
+        # report. That means *this* step has to surface everything a
+        # reviewer needs: pass/fail counts, which tests failed, and the
+        # first line of each failure message so the cause is visible in
+        # the job log without having to download the artifact.
         run: |
           if [ ! -f rls-results.json ]; then
             echo "::error::RLS test results file not found — vitest may have crashed"
@@ -753,10 +761,45 @@ jobs:
             exit 1
           fi
           if [ "$FAILED" -gt 0 ]; then
-            echo "::error::$FAILED RLS test(s) failed"
+            echo "::group::Failed RLS tests"
+            node -e '
+              const r = require("./rls-results.json");
+              const failed = [];
+              for (const file of r.testResults || []) {
+                for (const a of file.assertionResults || []) {
+                  if (a.status === "failed") {
+                    failed.push({
+                      file: (file.name || "").split("/").slice(-2).join("/"),
+                      title: a.fullName || a.title,
+                      message: (a.failureMessages || [])[0] || "(no failure message)",
+                    });
+                  }
+                }
+              }
+              for (const f of failed) {
+                console.log("::error file=" + f.file + "::" + f.title);
+                console.log("  " + f.file + " › " + f.title);
+                const firstLine = f.message.split("\n").slice(0, 8).join("\n  ");
+                console.log("  " + firstLine);
+                console.log("");
+              }
+            '
+            echo "::endgroup::"
+            echo "::error::$FAILED RLS test(s) failed (see grouped output above; full JSON uploaded as rls-results artifact)"
             exit 1
           fi
           echo "✓ $PASSED RLS tests passed"
+
+      - name: Upload RLS test results
+        # Always upload so a flaky failure leaves a downloadable record.
+        # Vitest JSON for ~100 tests is small (~100 KB).
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rls-results
+          path: rls-results.json
+          if-no-files-found: warn
+          retention-days: 14
 
   e2e:
     runs-on: ubuntu-latest
@@ -796,12 +839,49 @@ jobs:
         # are inlined at build time, so building with the placeholder URL
         # would permanently pin client-side Supabase calls to a host that
         # doesn't exist.
+        #
+        # IMPORTANT: do NOT run `supabase init --force` here. That command
+        # overwrites the project's supabase/config.toml with a default
+        # template, which since CLI v2.45 generates the new publishable/
+        # secret keys instead of (or in addition to) the legacy anon/
+        # service_role JWTs the rest of the suite still consumes. The
+        # project's checked-in config.toml is already compatible with the
+        # pinned CLI version (v2.101.0) — supabase start uses it verbatim
+        # so legacy keys are emitted by `supabase status`. Mirror of the
+        # same fix in the `RLS Integration Tests` job above.
         run: |
-          supabase init --force
           supabase start
-          echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
-          echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
-          echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+          STATUS_JSON=$(supabase status --output json)
+
+          SUPABASE_LOCAL_URL=$(jq -r '.API_URL // empty' <<<"$STATUS_JSON")
+          SUPABASE_LOCAL_ANON_KEY=$(jq -r '.ANON_KEY // empty' <<<"$STATUS_JSON")
+          SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(jq -r '.SERVICE_ROLE_KEY // empty' <<<"$STATUS_JSON")
+
+          # Diagnostics — surface presence of each required value without
+          # ever printing a secret. Lengths only.
+          echo "supabase status keys present:"
+          jq -r 'keys[]' <<<"$STATUS_JSON" | sed 's/^/  - /'
+          echo "Value presence:"
+          echo "  API_URL          : ${SUPABASE_LOCAL_URL:-(empty)}"
+          echo "  ANON_KEY         : $([ -n "$SUPABASE_LOCAL_ANON_KEY" ] && echo "present (${#SUPABASE_LOCAL_ANON_KEY} chars)" || echo "(empty)")"
+          echo "  SERVICE_ROLE_KEY : $([ -n "$SUPABASE_LOCAL_SERVICE_ROLE_KEY" ] && echo "present (${#SUPABASE_LOCAL_SERVICE_ROLE_KEY} chars)" || echo "(empty)")"
+
+          MISSING=""
+          [ -z "$SUPABASE_LOCAL_URL" ]              && MISSING="$MISSING API_URL"
+          [ -z "$SUPABASE_LOCAL_ANON_KEY" ]         && MISSING="$MISSING ANON_KEY"
+          [ -z "$SUPABASE_LOCAL_SERVICE_ROLE_KEY" ] && MISSING="$MISSING SERVICE_ROLE_KEY"
+          if [ -n "$MISSING" ]; then
+            echo "::error::supabase status is missing required value(s):$MISSING"
+            echo "::error::E2E tests need the legacy anon and service_role JWTs."
+            echo "::error::Verify supabase/config.toml has [auth] enabled = true and the pinned CLI emits legacy keys."
+            exit 1
+          fi
+
+          {
+            echo "SUPABASE_LOCAL_URL=$SUPABASE_LOCAL_URL"
+            echo "SUPABASE_LOCAL_ANON_KEY=$SUPABASE_LOCAL_ANON_KEY"
+            echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$SUPABASE_LOCAL_SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
 
       # AUDIT FINDING #3: Run RLS integration tests against the local
       # Supabase instance. The SKIP gate was inverted so these tests run
