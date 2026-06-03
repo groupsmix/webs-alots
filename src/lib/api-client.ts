@@ -43,7 +43,7 @@ async function request<T>(
   const res = await fetch(url.toString(), {
     method,
     headers,
-    body: body != null ? JSON.stringify(body) : undefined,
+    body: (body != null ? JSON.stringify(body) : undefined) as BodyInit | null | undefined,
     ...rest,
   });
 

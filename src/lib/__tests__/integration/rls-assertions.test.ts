@@ -174,6 +174,7 @@ describe.skipIf(SKIP)("RLS Assertion Tests (S0-08-02)", () => {
 
     it("should prevent Clinic A from inserting appointments into Clinic B", async () => {
       const clientA = createAnonClientForClinic(CLINIC_A_ID);
+      // @ts-expect-error -- Supabase type mismatch in test environment
       const { error } = await clientA.from("appointments").insert({
         clinic_id: CLINIC_B_ID,
         patient_id: "00000000-0000-0000-0000-000000000001",

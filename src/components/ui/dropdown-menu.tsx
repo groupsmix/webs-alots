@@ -94,22 +94,27 @@ function DropdownMenuItem({
   children,
   onClick,
   onClose,
+  disabled,
   ...props
-}: React.ComponentProps<"div"> & { onClose?: () => void }) {
+}: React.ComponentProps<"div"> & { onClose?: () => void; disabled?: boolean }) {
   return (
     <div
       role="menuitem"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
       className={cn(
         "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+        disabled && "cursor-not-allowed opacity-50",
         className,
       )}
       onClick={(e) => {
-        onClick?.(e);
-        onClose?.();
+        if (!disabled) {
+          onClick?.(e);
+          onClose?.();
+        }
       }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (!disabled && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
           onClose?.();

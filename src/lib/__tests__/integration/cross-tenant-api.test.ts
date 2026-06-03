@@ -148,6 +148,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
     const clientX = clientForClinic(CLINIC_X_ID);
     const futureDate = new Date(Date.now() + 86400000 * 5).toISOString();
 
+    // @ts-expect-error -- Supabase type mismatch in test environment
     const { error } = await clientX.from("appointments").insert({
       id: "f8f8f8f8-f8f8-f8f8-f8f8-f8f8f8f8f8f8",
       clinic_id: CLINIC_Y_ID,
@@ -200,6 +201,7 @@ describe.skipIf(SKIP)("Cross-Tenant API Smoke Tests", () => {
 
     const { error } = await clientX
       .from("users")
+      // @ts-expect-error -- Supabase type mismatch in test environment
       .update({ role: "clinic_admin" } as Record<string, unknown>)
       .eq("id", DOCTOR_Y_ID);
 

@@ -7,10 +7,9 @@ export const GET = withAuth(async () => {
     const supabase = await createClient();
 
     // 1. Webhooks
-    const { data: webhooks } = await supabase
-      .from("webhook_retry_queue")
-      .select("status")
-      .in("status", ["pending", "failed"]);
+    const { data: webhooks } =
+      await // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      supabase.from("webhook_retry_queue").select("status").in("status", ["pending", "failed"]);
 
     let webhooksPending = 0;
     let webhooksFailed = 0;
@@ -23,10 +22,12 @@ export const GET = withAuth(async () => {
     }
 
     // 2. Notifications
-    const { data: notifications } = await supabase
-      .from("notification_queue")
-      .select("status, next_attempt_at")
-      .in("status", ["pending", "failed"]);
+    const { data: notifications } =
+      await // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      supabase
+        .from("notification_queue")
+        .select("status, next_attempt_at")
+        .in("status", ["pending", "failed"]);
 
     let notificationsPending = 0;
     let notificationsFailed = 0;
