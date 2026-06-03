@@ -15,20 +15,25 @@ interface AuditLogEntry {
   id: string;
   timestamp: string;
   action: string;
-  actor_id: string | null;
-  ip_address: string | null;
-  details: Record<string, unknown> | null;
+  actor: string | null;
+  type: string | null;
+  description: string | null;
+  clinic_name: string | null;
 }
 
 export default async function AuditLogsPage() {
   const supabase = await createClient();
 
-  // Just show recent events for now
-  const { data: logs } = await supabase
-    .from("audit_log")
-    .select("*")
+  // Just show recent events for now.
+  // Cast through `unknown` to a narrow row type — Supabase's generated types
+  // generate excessively deep instantiations on wide tables (TS2589) when the
+  // inferred Result type is then mapped over JSX. The shape here matches the
+  // `activity_logs` table created in 00005_schema_gaps.sql.
+  const { data: logs } = (await supabase
+    .from("activity_logs")
+    .select("id, timestamp, action, actor, type, description, clinic_name")
     .order("timestamp", { ascending: false })
-    .limit(50);
+    .limit(50)) as unknown as { data: AuditLogEntry[] | null };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -49,28 +54,33 @@ export default async function AuditLogsPage() {
               <TableRow>
                 <TableHead>Timestamp</TableHead>
                 <TableHead>Action</TableHead>
-                <TableHead>User / IP</TableHead>
+                <TableHead>Actor / Clinic</TableHead>
                 <TableHead>Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {logs && logs.length > 0 ? (
-                logs.map((log: AuditLogEntry) => (
+                logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap text-xs">
                       {new Date(log.timestamp).toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{log.action}</Badge>
+                      {log.type ? (
+                        <Badge variant="secondary" className="ml-1">
+                          {log.type}
+                        </Badge>
+                      ) : null}
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm font-medium">{log.actor_id || "System"}</div>
+                      <div className="text-sm font-medium">{log.actor || "System"}</div>
                       <div className="text-xs text-muted-foreground">
-                        {log.ip_address || "Unknown IP"}
+                        {log.clinic_name || "Platform-wide"}
                       </div>
                     </TableCell>
                     <TableCell className="max-w-md truncate text-xs font-mono bg-muted/50 p-2 rounded">
-                      {JSON.stringify(log.details)}
+                      {log.description ?? ""}
                     </TableCell>
                   </TableRow>
                 ))

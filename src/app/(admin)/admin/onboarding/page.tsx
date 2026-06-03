@@ -105,7 +105,7 @@ export default function AdminOnboardingWizard() {
       });
       const res = step1Schema.safeParse({ clinicName, subdomain });
       if (!res.success) {
-        addToast(res.error.errors[0].message, "error");
+        addToast(res.error.issues[0].message, "error");
         return;
       }
     }
@@ -116,7 +116,7 @@ export default function AdminOnboardingWizard() {
       });
       const res = step3Schema.safeParse({ doctorName, doctorEmail });
       if (!res.success) {
-        addToast(res.error.errors[0].message, "error");
+        addToast(res.error.issues[0].message, "error");
         return;
       }
     }
@@ -143,6 +143,22 @@ export default function AdminOnboardingWizard() {
     // Ideally this would POST to /api/onboarding/wizard
     window.location.href = "/admin/dashboard";
   };
+
+  // Services step handlers — match the OnboardingStepServices prop contract.
+  function addService() {
+    setServices((prev) => [
+      ...prev,
+      { name: "", price: "", duration_minutes: "30", category: "consultation" },
+    ]);
+  }
+
+  function removeService(index: number) {
+    setServices((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateService(index: number, field: keyof ServiceFormData, value: string) {
+    setServices((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
+  }
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
@@ -278,17 +294,15 @@ export default function AdminOnboardingWizard() {
 
       {/* Step 4 */}
       {currentStep === 4 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Services</CardTitle>
-            <CardDescription>
-              Add doctors so they can be booked. You can add more later.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <OnboardingStepServices services={services} onChange={setServices} />
-          </CardContent>
-        </Card>
+        <OnboardingStepServices
+          services={services}
+          loading={false}
+          onAddService={addService}
+          onRemoveService={removeService}
+          onUpdateService={updateService}
+          onBack={handleBack}
+          onSubmit={handleNext}
+        />
       )}
 
       {/* Step 5 */}

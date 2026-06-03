@@ -23,10 +23,13 @@ interface KycEntry {
 
 export default async function KycReviewPage() {
   const supabase = await createClient();
-  const { data: kycs } = await supabase
+  // Cast through `unknown` to a narrow row type — Supabase's generated types
+  // generate excessively deep instantiations (TS2589) on joined selects when
+  // the inferred Result is then mapped over JSX. Pin the shape we render.
+  const { data: kycs } = (await supabase
     .from("clinic_kyc")
-    .select("*, clinics(name, subdomain, phone)")
-    .order("created_at", { ascending: false });
+    .select("id, ice_number, rc_number, review_status, created_at, clinics(name, subdomain, phone)")
+    .order("created_at", { ascending: false })) as unknown as { data: KycEntry[] | null };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -52,7 +55,7 @@ export default async function KycReviewPage() {
             </TableHeader>
             <TableBody>
               {kycs && kycs.length > 0 ? (
-                kycs.map((k: KycEntry) => (
+                kycs.map((k) => (
                   <TableRow key={k.id}>
                     <TableCell>
                       <div className="font-medium">{k.clinics?.name}</div>

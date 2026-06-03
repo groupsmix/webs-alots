@@ -67,3 +67,4 @@ test-results/
 *storybook.log
 storybook-static
 secrets-template.env
+bun.lock
