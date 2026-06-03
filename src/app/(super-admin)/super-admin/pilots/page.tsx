@@ -25,8 +25,10 @@ export default async function PilotsDashboardPage() {
 
   // Fetch clinics that have 'pilot' in their notes or we can just fetch all and filter later.
   // For now, we simulate fetching the 3 designated pilot clinics.
-  const { data } = await // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-  supabase.from("clinics").select("*, auth_users:users(count), appointments(count)").limit(10); // Adjust this query based on how pilots are tagged in production
+  const { data } = await supabase
+    .from("clinics")
+    .select("*, auth_users:users(count), appointments(count)")
+    .limit(10); // Adjust this query based on how pilots are tagged in production
   const pilots = (data ?? null) as PilotClinic[] | null;
 
   return (
