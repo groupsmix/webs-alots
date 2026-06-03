@@ -16,8 +16,8 @@ interface PilotClinic {
   name: string;
   subdomain: string;
   type: string | null;
-  auth_users: { count: number }[] | null;
-  appointments: { count: number }[] | null;
+  auth_users: Array<{ count: number }> | null;
+  appointments: Array<{ count: number }> | null;
 }
 
 export default async function PilotsDashboardPage() {
@@ -27,7 +27,7 @@ export default async function PilotsDashboardPage() {
   // For now, we simulate fetching the 3 designated pilot clinics.
   const { data: pilots } = await supabase
     .from("clinics")
-    .select("*, auth_users:users(count), appointments(count)")
+    .select("id, name, subdomain, type, auth_users:users(count), appointments(count)", { count: "exact" })
     .limit(10); // Adjust this query based on how pilots are tagged in production
 
   return (

@@ -13,7 +13,7 @@ export const GET = withAuth(async () => {
     // 1. Fetch templates
     const { data: templates } = await supabase
       .from("whatsapp_templates")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
 
@@ -22,7 +22,7 @@ export const GET = withAuth(async () => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const { data: recentLogs } = await supabase
       .from("notification_log")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("clinic_id", clinicId)
       .gte("created_at", sevenDaysAgo.toISOString())
       .order("created_at", { ascending: false })
@@ -33,6 +33,7 @@ export const GET = withAuth(async () => {
       .from("notification_queue")
       .select(
         "id, status, attempts, next_attempt_at, error_message, channel, recipient, created_at, payload",
+        { count: "exact" },
       )
       .eq("clinic_id", clinicId)
       .in("status", ["pending", "failed"])
