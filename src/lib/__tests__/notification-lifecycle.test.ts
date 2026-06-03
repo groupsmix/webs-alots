@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dispatchNotification } from "../notifications";
-import { enqueueNotification } from "../notification-queue";
 
 const createMockSupabaseClient = (mockData: Record<string, unknown>[] = []) => ({
   from: vi.fn().mockReturnThis(),

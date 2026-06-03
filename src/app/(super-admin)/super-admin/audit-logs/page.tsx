@@ -1,9 +1,19 @@
-import { createClient } from "@/lib/supabase-server";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+/* eslint-disable i18next/no-literal-string */
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { createClient } from "@/lib/supabase-server";
 
-export default async function AuditLogsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  action: string;
+  actor_id: string | null;
+  ip_address: string | null;
+  details: Record<string, unknown> | null;
+}
+
+export default async function AuditLogsPage() {
   const supabase = await createClient();
   
   // Just show recent events for now
@@ -35,7 +45,7 @@ export default async function AuditLogsPage({ searchParams }: { searchParams: { 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs && logs.length > 0 ? logs.map((log: any) => (
+              {logs && logs.length > 0 ? logs.map((log: AuditLogEntry) => (
                 <TableRow key={log.id}>
                   <TableCell className="whitespace-nowrap text-xs">
                     {new Date(log.timestamp).toLocaleString()}

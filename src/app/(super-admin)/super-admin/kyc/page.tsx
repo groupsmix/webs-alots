@@ -1,9 +1,18 @@
-import { createClient } from "@/lib/supabase-server";
-import { withAuth } from "@/lib/with-auth";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+/* eslint-disable i18next/no-literal-string */
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { createClient } from "@/lib/supabase-server";
+
+interface KycEntry {
+  id: string;
+  ice_number: string | null;
+  rc_number: string | null;
+  review_status: string;
+  created_at: string;
+  clinics: { name: string; subdomain: string; phone: string } | null;
+}
 
 export default async function KycReviewPage() {
   const supabase = await createClient();
@@ -35,7 +44,7 @@ export default async function KycReviewPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {kycs && kycs.length > 0 ? kycs.map((k: any) => (
+              {kycs && kycs.length > 0 ? kycs.map((k: KycEntry) => (
                 <TableRow key={k.id}>
                   <TableCell>
                     <div className="font-medium">{k.clinics?.name}</div>

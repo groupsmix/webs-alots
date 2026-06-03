@@ -1,7 +1,17 @@
-import { createClient } from "@/lib/supabase-server";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+/* eslint-disable i18next/no-literal-string */
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { createClient } from "@/lib/supabase-server";
+
+interface PilotClinic {
+  id: string;
+  name: string;
+  subdomain: string;
+  type: string | null;
+  auth_users: { count: number }[] | null;
+  appointments: { count: number }[] | null;
+}
 
 export default async function PilotsDashboardPage() {
   const supabase = await createClient();
@@ -36,7 +46,7 @@ export default async function PilotsDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pilots && pilots.length > 0 ? pilots.map((p: any) => (
+              {pilots && pilots.length > 0 ? pilots.map((p: PilotClinic) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">
                     {p.name}

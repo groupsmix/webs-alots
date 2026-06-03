@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
-import { withAuth } from "@/lib/with-auth";
 import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
 
 export const GET = withAuth(async () => {
   try {
@@ -57,7 +56,7 @@ export const GET = withAuth(async () => {
         deadLettered: notificationsDeadLettered,
       }
     });
-  } catch (error) {
+  } catch (_error) {
     return apiInternalError("Failed to load jobs data");
   }
 }, ["super_admin"]);

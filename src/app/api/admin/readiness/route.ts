@@ -1,15 +1,19 @@
-import { NextResponse } from "next/server";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
-import { withAuth } from "@/lib/with-auth";
 import { validateEnv, ENV_RULES } from "@/lib/env";
-import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
+
+interface EnvVarStatus {
+  name: string;
+  description: string;
+  status: string;
+}
 
 export const GET = withAuth(async () => {
   try {
     const { missing, warnings } = validateEnv();
     
     // Group all rules
-    const grouped = new Map<string, any[]>();
+    const grouped = new Map<string, EnvVarStatus[]>();
     for (const rule of ENV_RULES) {
       const isMissing = missing.some(m => m.name === rule.name);
       const isWarning = warnings.some(w => w.name === rule.name);
@@ -61,7 +65,7 @@ export const GET = withAuth(async () => {
       envGroups,
       services
     });
-  } catch (error) {
+  } catch (_error) {
     return apiInternalError("Failed to load readiness data");
   }
 }, ["super_admin"]);

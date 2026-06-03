@@ -36,6 +36,37 @@ interface ServiceHealth {
   lastChecked: Date;
 }
 
+interface EnvVar {
+  name: string;
+  status: string;
+}
+
+interface EnvGroup {
+  group: string;
+  vars: EnvVar[];
+}
+
+interface ReadinessService {
+  name: string;
+  status: ServiceStatus;
+}
+
+interface ReadinessData {
+  envGroups?: EnvGroup[];
+  services?: ReadinessService[];
+}
+
+interface BackupsData {
+  configured: boolean;
+  lastBackup: string;
+  lastRestoreDrill: string;
+}
+
+interface JobsData {
+  webhooks: { pending: number; failed: number };
+  notifications: { pending: number; failed: number; deadLettered: number };
+}
+
 interface HealthApiResponse {
   status: string;
   database: string;
@@ -80,30 +111,6 @@ function StatusBadge({ status }: { status: ServiceStatus }) {
   );
 }
 
-function StorageBar({ used, total, label }: { used: string; total: string; label: string }) {
-  const usedNum = parseFloat(used);
-  const totalNum = parseFloat(total);
-  const percentage = totalNum > 0 ? (usedNum / totalNum) * 100 : 0;
-  const barColor =
-    percentage > 80 ? "bg-red-500" : percentage > 60 ? "bg-amber-500" : "bg-green-500";
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">
-          {used} / {total}
-        </span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={`h-full rounded-full transition-all ${barColor}`}
-          data-width={Math.round(Math.min(percentage, 100))}
-        />
-      </div>
-    </div>
-  );
-}
 
 export default function SystemStatusPage() {
   const [loading, setLoading] = useState(true);
@@ -113,9 +120,9 @@ export default function SystemStatusPage() {
   const [activeUsers, setActiveUsers] = useState(0);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
-  const [readiness, setReadiness] = useState<any>(null);
-  const [backups, setBackups] = useState<any>(null);
-  const [jobs, setJobs] = useState<any>(null);
+  const [readiness, setReadiness] = useState<ReadinessData | null>(null);
+  const [backups, setBackups] = useState<BackupsData | null>(null);
+  const [jobs, setJobs] = useState<JobsData | null>(null);
 
   const loadHealth = useCallback(async () => {
     try {
@@ -204,7 +211,7 @@ export default function SystemStatusPage() {
            if (json.ok && json.data) {
              setReadiness(json.data);
              if (json.data.services) {
-               json.data.services.forEach((s: any) => {
+               json.data.services.forEach((s: ReadinessService) => {
                  serviceResults.push({
                    name: s.name,
                    description: s.name === "WhatsApp API" ? "Meta Cloud API for notifications" : s.name === "Storage (R2)" ? "Cloudflare R2 object storage" : "CMI / Stripe payment processing",
@@ -463,11 +470,11 @@ export default function SystemStatusPage() {
           <CardContent>
             {readiness?.envGroups ? (
               <div className="space-y-4">
-                {readiness.envGroups.map((group: any) => (
+                {readiness.envGroups.map((group: EnvGroup) => (
                   <div key={group.group} className="space-y-2">
                     <h4 className="text-sm font-semibold capitalize">{group.group}</h4>
                     <div className="space-y-1">
-                      {group.vars.map((v: any) => (
+                      {group.vars.map((v: EnvVar) => (
                         <div key={v.name} className="flex justify-between items-center text-xs">
                           <span className="text-muted-foreground">{v.name}</span>
                           <Badge variant={v.status === 'configured' ? 'success' : 'outline'} className={v.status === 'missing' ? 'text-red-500 border-red-200 bg-red-50' : ''}>
