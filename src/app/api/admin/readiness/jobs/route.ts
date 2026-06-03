@@ -2,14 +2,27 @@ import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { createClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 
+interface WebhookRow {
+  status: string;
+}
+
+interface NotificationRow {
+  status: string;
+  next_attempt_at: string | null;
+}
+
 export const GET = withAuth(async () => {
   try {
     const supabase = await createClient();
 
     // 1. Webhooks
-    const { data: webhooks } =
-      await // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-      supabase.from("webhook_retry_queue").select("status").in("status", ["pending", "failed"]);
+    const webhooksResult = await supabase
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .from("webhook_retry_queue")
+      .select("status")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .in("status", ["pending", "failed"]);
+    const webhooks = (webhooksResult.data ?? null) as WebhookRow[] | null;
 
     let webhooksPending = 0;
     let webhooksFailed = 0;
@@ -22,12 +35,13 @@ export const GET = withAuth(async () => {
     }
 
     // 2. Notifications
-    const { data: notifications } =
-      await // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-      supabase
-        .from("notification_queue")
-        .select("status, next_attempt_at")
-        .in("status", ["pending", "failed"]);
+    const notificationsResult = await supabase
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .from("notification_queue")
+      .select("status, next_attempt_at")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .in("status", ["pending", "failed"]);
+    const notifications = (notificationsResult.data ?? null) as NotificationRow[] | null;
 
     let notificationsPending = 0;
     let notificationsFailed = 0;

@@ -24,10 +24,11 @@ export const GET = withAuth(async () => {
     const supabase = await createTenantClient(clinicId);
 
     // 1. Fetch templates
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const templatesResult = await supabase
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .from("whatsapp_templates")
       .select("*")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
     const templates = templatesResult.data;
@@ -44,12 +45,13 @@ export const GET = withAuth(async () => {
       .limit(100);
 
     // 3. Fetch queue status (pending, failed, dead-lettered)
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const queueResult = await supabase
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .from("notification_queue")
       .select(
         "id, status, attempts, next_attempt_at, error_message, channel, recipient, created_at, payload",
       )
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .eq("clinic_id", clinicId)
       .in("status", ["pending", "failed"])
       .order("created_at", { ascending: false })
