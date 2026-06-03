@@ -25,6 +25,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { presetList, type TemplatePreset } from "@/lib/template-presets";
+import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 
 interface BrandingState {
   name: string;
@@ -41,8 +42,6 @@ interface BrandingState {
   hero_image_url: string | null;
 }
 
-// eslint-disable-next-line import/order
-import { contrastRatio, meetsWCAG_AA, suggestAccessibleColor } from "@/lib/contrast";
 
 const FONT_OPTIONS = [
   "Geist",
