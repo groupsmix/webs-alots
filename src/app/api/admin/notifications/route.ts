@@ -4,36 +4,39 @@ import { getTenant } from "@/lib/tenant";
 import { withAuth } from "@/lib/with-auth";
 
 export const GET = withAuth(async () => {
-  const { clinicId } = await getTenant();
-  if (!clinicId) return apiInternalError("Missing clinic context");
+  const tenant = await getTenant();
+  if (!tenant?.clinicId) return apiInternalError("Missing clinic context");
+  const clinicId = tenant.clinicId;
 
   try {
     const supabase = await createTenantClient(clinicId);
 
     // 1. Fetch templates
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const { data: templates } = await supabase
       .from("whatsapp_templates")
-      .select("*", { count: "exact" })
+      .select("*")
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
 
     // 2. Fetch recent logs (last 7 days, up to 100)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const { data: recentLogs } = await supabase
       .from("notification_log")
-      .select("*", { count: "exact" })
+      .select("*")
       .eq("clinic_id", clinicId)
       .gte("created_at", sevenDaysAgo.toISOString())
       .order("created_at", { ascending: false })
       .limit(100);
 
     // 3. Fetch queue status (pending, failed, dead-lettered)
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     const { data: queueItems } = await supabase
       .from("notification_queue")
       .select(
         "id, status, attempts, next_attempt_at, error_message, channel, recipient, created_at, payload",
-        { count: "exact" },
       )
       .eq("clinic_id", clinicId)
       .in("status", ["pending", "failed"])

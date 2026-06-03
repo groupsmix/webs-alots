@@ -24,16 +24,15 @@ interface AuditLogEntry {
 export default async function AuditLogsPage() {
   const supabase = await createClient();
 
-  // Just show recent events for now.
-  // Cast through `unknown` to a narrow row type — Supabase's generated types
-  // generate excessively deep instantiations on wide tables (TS2589) when the
-  // inferred Result type is then mapped over JSX. The shape here matches the
-  // `activity_logs` table created in 00005_schema_gaps.sql.
-  const { data: logs } = (await supabase
+  // Just show recent events for now. The `activity_logs` table is the
+  // application-level audit trail (see 00005_schema_gaps.sql).
+  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+  const { data } = await supabase
     .from("activity_logs")
     .select("id, timestamp, action, actor, type, description, clinic_name")
     .order("timestamp", { ascending: false })
-    .limit(50)) as unknown as { data: AuditLogEntry[] | null };
+    .limit(50);
+  const logs = (data ?? null) as AuditLogEntry[] | null;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
