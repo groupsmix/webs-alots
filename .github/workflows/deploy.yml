@@ -60,6 +60,9 @@ jobs:
           # Supabase URL/key are baked into the client bundle at build time.
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Feature flag: show AI Agents / AI Team / Website Builder in super-admin.
+          # Baked into client bundle at build time (NEXT_PUBLIC_*).
+          NEXT_PUBLIC_AI_FEATURES_ENABLED: ${{ secrets.NEXT_PUBLIC_AI_FEATURES_ENABLED }}
 
       # Fail fast if the build silently produced no worker entry point.
       - name: Verify build output
