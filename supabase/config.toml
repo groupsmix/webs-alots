@@ -57,6 +57,16 @@ enabled = true
 pool_mode = "transaction"
 default_pool_size = 15
 
+# Edge Functions — declared here so `supabase functions deploy` picks them up
+# and the bundler resolves their entry points. JWT verification is enforced
+# inside each function (see auth header check) rather than relying on
+# `verify_jwt` so that we can additionally accept CRON_SECRET tokens.
+[functions.notify-booking]
+verify_jwt = false
+
+[functions.send-appointment-reminders]
+verify_jwt = false
+
 [storage]
 # Max file upload size: 50MB
 file_size_limit = "50MiB"

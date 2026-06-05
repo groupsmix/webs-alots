@@ -148,16 +148,29 @@ test.describe("Mobile — form interactions", () => {
     await expect(emailInput).toBeEditable();
     await expect(passwordInput).toBeEditable();
 
-    // Fill email — retry via toHaveValue's built-in polling which handles
-    // transient hydration races (React resetting controlled values).
-    await emailInput.click();
-    await emailInput.fill("test@example.com");
-    await expect(emailInput).toHaveValue("test@example.com", { timeout: 5000 });
+    // React 19 + Next.js 16 controlled inputs can race with Playwright's
+    // bulk fill() — the synthetic input event fires once and concurrent
+    // rendering occasionally re-mounts the component before React commits
+    // the onChange. Helper retries fill via toHaveValue's polling and
+    // falls back to pressSequentially (char-by-char, one onChange per
+    // char) when bulk fill fails to stick.
+    async function fillStable(locator: typeof emailInput, value: string) {
+      await locator.click();
+      await locator.fill(value);
+      try {
+        await expect(locator).toHaveValue(value, { timeout: 2000 });
+        return;
+      } catch {
+        // Fall through to char-by-char retry.
+      }
+      // Clear and retype slowly so React commits each onChange.
+      await locator.fill("");
+      await locator.pressSequentially(value, { delay: 30 });
+      await expect(locator).toHaveValue(value, { timeout: 5000 });
+    }
 
-    // Fill password
-    await passwordInput.click();
-    await passwordInput.fill("password123");
-    await expect(passwordInput).toHaveValue("password123", { timeout: 5000 });
+    await fillStable(emailInput, "test@example.com");
+    await fillStable(passwordInput, "password123");
 
     // Submit button should be tappable
     const submitBtn = page.locator('button[type="submit"]');

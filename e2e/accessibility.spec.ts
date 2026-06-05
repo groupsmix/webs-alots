@@ -127,7 +127,21 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
         await page.waitForTimeout(300);
       }
     }
-    await page.reload({ waitUntil: "load" });
+    // Reload can race with a late middleware/auth redirect that detaches
+    // the frame (ERR_ABORTED). Retry once after a brief settle so the
+    // redirect lands before we reload.
+    try {
+      await page.reload({ waitUntil: "load" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/ERR_ABORTED|frame was detached/i.test(msg)) {
+        await page.waitForLoadState("load").catch(() => {});
+        await page.waitForTimeout(500);
+        await page.reload({ waitUntil: "load" });
+      } else {
+        throw err;
+      }
+    }
     await page.waitForFunction(() => document.readyState === "complete");
 
     // Scope analysis to the consent banner

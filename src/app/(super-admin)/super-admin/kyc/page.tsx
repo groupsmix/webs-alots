@@ -1,6 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
+import { KycReviewCard } from "@/components/admin/kyc-review-card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -24,7 +24,6 @@ interface KycEntry {
 export default async function KycReviewPage() {
   const supabase = await createClient();
   // prettier-ignore
-  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const result = await supabase.from("clinic_kyc").select("id, ice_number, rc_number, review_status, created_at, clinics(name, subdomain, phone)").order("created_at", { ascending: false });
   const kycs = (result.data ?? null) as KycEntry[] | null;
 
@@ -79,9 +78,7 @@ export default async function KycReviewPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        Review Docs
-                      </Button>
+                      <KycReviewCard kyc={k} />
                     </TableCell>
                   </TableRow>
                 ))

@@ -1,7 +1,9 @@
 "use client";
 
 import { TrendingUp, DollarSign, Users, AlertTriangle, BarChart3, Loader2 } from "lucide-react";
+import type React from "react";
 import { useState, useEffect, useCallback } from "react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,17 +163,44 @@ export default function RevenueDashboardPage() {
             </CardHeader>
             <CardContent>
               {stats.revenueByMonth.length > 0 ? (
-                <div className="space-y-2">
-                  {stats.revenueByMonth.map((entry) => (
-                    <div
-                      key={entry.month}
-                      className="flex items-center justify-between rounded-lg border p-3"
-                    >
-                      <span className="text-sm font-medium">{entry.month}</span>
-                      <span className="text-sm font-bold">{formatCurrency(entry.revenue)}</span>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart
+                    data={stats.revenueByMonth}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+                  >
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                      width={40}
+                    />
+                    <Tooltip
+                      formatter={
+                        ((value: number) => [
+                          formatCurrency(value),
+                          "Revenus",
+                        ]) as unknown as React.ComponentProps<typeof Tooltip>["formatter"]
+                      }
+                      labelStyle={{ fontSize: 12 }}
+                      contentStyle={{ fontSize: 12 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               ) : (
                 <div className="text-center py-8">
                   <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 opacity-50" />

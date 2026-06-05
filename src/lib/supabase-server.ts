@@ -197,7 +197,8 @@ export type AdminPurpose =
   | "ai-feature-toggle"
   | "ai-route"
   | "ai-config-resolve"
-  | "subscription-billing";
+  | "subscription-billing"
+  | "whatsapp-credentials";
 
 /**
  * Create a Supabase admin client using the service role key.

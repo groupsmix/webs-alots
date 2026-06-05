@@ -32,7 +32,15 @@ export interface AuthContext {
   profile: { id: string; role: UserRole; clinic_id: string | null };
 }
 
-type AuthenticatedHandler = (request: NextRequest, auth: AuthContext) => Promise<NextResponse>;
+// Generic over an optional route-context arg (Next.js 15 dynamic routes
+// pass `{ params: Promise<...> }` as the third argument to the route
+// handler). RouteCtx defaults to `unknown` so handlers without dynamic
+// segments keep their original two-argument signature.
+type AuthenticatedHandler<RouteCtx = unknown> = (
+  request: NextRequest,
+  auth: AuthContext,
+  routeCtx?: RouteCtx,
+) => Promise<NextResponse>;
 
 /**
  * Options for the `withAuth` / `withAuthAnyRole` wrappers.
@@ -63,13 +71,13 @@ export interface WithAuthOptions {
  * R-04: Removed the null overload. Use withAuthAnyRole() instead for
  * allow-any-authenticated behavior. This enforces deny-by-default.
  */
-export function withAuth(
-  handler: AuthenticatedHandler,
+export function withAuth<RouteCtx = unknown>(
+  handler: AuthenticatedHandler<RouteCtx>,
   allowedRoles: UserRole[],
   options: WithAuthOptions = {},
 ) {
   const failOpen = options.failOpen === true;
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (request: NextRequest, routeCtx?: RouteCtx): Promise<NextResponse> => {
     try {
       const supabase = await createClient();
 
@@ -222,15 +230,19 @@ export function withAuth(
         }
       }
 
-      const response = await handler(request, {
-        supabase,
-        user,
-        profile: {
-          id: profile.id,
-          role: profile.role as UserRole,
-          clinic_id: profile.clinic_id ?? null,
+      const response = await handler(
+        request,
+        {
+          supabase,
+          user,
+          profile: {
+            id: profile.id,
+            role: profile.role as UserRole,
+            clinic_id: profile.clinic_id ?? null,
+          },
         },
-      });
+        routeCtx,
+      );
       // A53-02: Prevent Cloudflare / browser from caching PHI responses.
       if (!response.headers.has("Cache-Control")) {
         response.headers.set("Cache-Control", "private, no-store");
@@ -250,12 +262,15 @@ export function withAuth(
  * Usage:
  *   export const POST = withAuthAnyRole(handler);
  */
-export function withAuthAnyRole(handler: AuthenticatedHandler, options: WithAuthOptions = {}) {
+export function withAuthAnyRole<RouteCtx = unknown>(
+  handler: AuthenticatedHandler<RouteCtx>,
+  options: WithAuthOptions = {},
+) {
   const failOpen = options.failOpen === true;
   // Pass an empty array to withAuth, then check that the user is authenticated
   // without enforcing any specific role. This is a "deny-by-default with
   // explicit allowlist" pattern - every withAuth call must specify roles.
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (request: NextRequest, routeCtx?: RouteCtx): Promise<NextResponse> => {
     try {
       const supabase = await createClient();
 
@@ -354,15 +369,19 @@ export function withAuthAnyRole(handler: AuthenticatedHandler, options: WithAuth
         role: profile.role,
       });
 
-      const response = await handler(request, {
-        supabase,
-        user,
-        profile: {
-          id: profile.id,
-          role: profile.role as UserRole,
-          clinic_id: profile.clinic_id ?? null,
+      const response = await handler(
+        request,
+        {
+          supabase,
+          user,
+          profile: {
+            id: profile.id,
+            role: profile.role as UserRole,
+            clinic_id: profile.clinic_id ?? null,
+          },
         },
-      });
+        routeCtx,
+      );
       // A53-02: Prevent Cloudflare / browser from caching PHI responses.
       if (!response.headers.has("Cache-Control")) {
         response.headers.set("Cache-Control", "private, no-store");

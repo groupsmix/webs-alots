@@ -248,8 +248,13 @@ export async function verifyOTP(
     return { error: error.message };
   }
 
-  // Fetch user profile to determine redirect
-  const profile = await getUserProfile();
+  // Retry up to 3 times with 500ms delay (session propagation race)
+  let profile: UserProfile | null = null;
+  for (let i = 0; i < 3; i++) {
+    profile = await getUserProfile();
+    if (profile) break;
+    if (i < 2) await new Promise((r) => setTimeout(r, 500));
+  }
   if (profile) {
     return { error: null, redirectTo: ROLE_DASHBOARD_MAP[profile.role] };
   }
@@ -334,8 +339,13 @@ export async function verifyEmailOTP(
     return { error: "auth.invalidOtp" };
   }
 
-  // Fetch user profile to determine redirect
-  const profile = await getUserProfile();
+  // Retry up to 3 times with 500ms delay (session propagation race)
+  let profile: UserProfile | null = null;
+  for (let i = 0; i < 3; i++) {
+    profile = await getUserProfile();
+    if (profile) break;
+    if (i < 2) await new Promise((r) => setTimeout(r, 500));
+  }
 
   // Log successful email OTP login
   logAuthEvent({
