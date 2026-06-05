@@ -1,10 +1,10 @@
 /* eslint-disable i18next/no-literal-string */
 import { notFound } from "next/navigation";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase-server";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { requireRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase-server";
 import { SubscriptionTierForm } from "./subscription-tier-form";
 
 export default async function ClinicSubscriptionPage({

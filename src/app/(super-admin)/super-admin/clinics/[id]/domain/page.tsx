@@ -1,9 +1,9 @@
 /* eslint-disable i18next/no-literal-string */
 import { notFound } from "next/navigation";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase-server";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent } from "@/components/ui/card";
+import { requireRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase-server";
 import { CustomDomainForm } from "./custom-domain-form";
 
 export default async function ClinicDomainPage({ params }: { params: Promise<{ id: string }> }) {

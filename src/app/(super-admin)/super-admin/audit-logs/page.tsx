@@ -1,6 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
-import { Suspense } from "react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
