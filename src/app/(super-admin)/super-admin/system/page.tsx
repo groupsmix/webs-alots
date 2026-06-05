@@ -258,8 +258,13 @@ export default function SystemStatusPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadHealth();
+    // SA-014: Auto-refresh every 60 seconds as specified.
+    const interval = setInterval(() => {
+      loadHealth();
+    }, 60_000);
     return () => {
       controller.abort();
+      clearInterval(interval);
     };
   }, [loadHealth]);
 

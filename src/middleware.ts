@@ -36,6 +36,7 @@ import {
   applyAllSecurityHeaders,
 } from "@/lib/middleware/security-headers";
 import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";
@@ -106,9 +107,36 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  // --- Generate a per-request nonce for CSP ---
+  // Hoisted before early-exit checks (sanctions, bot management) so all
+  // rejection responses can carry the correct security headers.
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = btoa(String.fromCharCode(...nonceBytes));
+  // Task 2.2: Strict CSP is now enforced. Legacy broad policy removed.
+  const cspHeaders = buildCspHeaderValues(nonce);
+
   // --- F-A198 / F-A160: Sanctioned country block ---
   const sanctionBlock = checkSanctionedCountry(request);
   if (sanctionBlock) return sanctionBlock;
+
+  // BOT-01: Cloudflare Bot Management score check on auth/API routes.
+  // Score < 30 on a 0-100 scale indicates highly likely bot traffic.
+  // Only enforced on Cloudflare Workers (score is undefined in local dev).
+  // Note: routes live under the (auth) route-group which strips the prefix,
+  // so the actual URL paths are /login and /register, not /auth/*.
+  const AUTH_PATHS = ["/login", "/register", "/api/auth/"];
+  const isAuthPath = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  if (isAuthPath && process.env.BOT_MANAGEMENT_ENABLED === "true") {
+    // CF type: request.cf is available on Cloudflare Workers
+    const botScore = (request as unknown as { cf?: { botManagement?: { score?: number } } }).cf
+      ?.botManagement?.score;
+    if (botScore !== undefined && botScore < 30) {
+      return withSecurityHeaders(
+        NextResponse.json({ error: "Access denied" }, { status: 403 }),
+        cspHeaders,
+      );
+    }
+  }
 
   // --- WWW redirect (works on Cloudflare Workers unlike next.config redirects) ---
   const hostWithoutPort = hostname.split(":")[0];
@@ -117,12 +145,6 @@ export async function middleware(request: NextRequest) {
     url.host = rootDomain ?? hostname.replace(/^www\./, "");
     return secureRedirect(url, 301);
   }
-
-  // --- Generate a per-request nonce for CSP ---
-  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
-  const nonce = btoa(String.fromCharCode(...nonceBytes));
-  // Task 2.2: Strict CSP is now enforced. Legacy broad policy removed.
-  const cspHeaders = buildCspHeaderValues(nonce);
 
   // --- Generate a per-request trace ID for structured logging ---
   const traceId = generateTraceId();
@@ -299,9 +321,18 @@ export async function middleware(request: NextRequest) {
   });
 
   // --- Resolve clinic from subdomain (delegated to composable module) ---
+  // KV-01: pass the SUBDOMAIN_KV binding so the resolver can use CF KV as
+  // a second-tier cache before falling through to the Supabase DB.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subdomainKv = await getWorkerBinding<any>("SUBDOMAIN_KV");
   let resolvedClinic: CachedClinic | undefined;
   if (subdomain) {
-    const clinic = await resolveSubdomainClinic(subdomain, supabaseUrl, supabaseAnonKey);
+    const clinic = await resolveSubdomainClinic(
+      subdomain,
+      supabaseUrl,
+      supabaseAnonKey,
+      subdomainKv,
+    );
 
     if (!clinic) {
       // A146-F2: Unknown subdomain — return a hard 404 with X-Robots-Tag
