@@ -53,10 +53,7 @@ let mutated = false;
   const REPLACEMENT =
     "if(handleMissing)return undefined;throw new Error(`Unexpected loadManifest(${";
 
-  if (
-    content.includes(THROW_PATTERN) &&
-    !content.includes("if(handleMissing)return undefined;")
-  ) {
+  if (content.includes(THROW_PATTERN) && !content.includes("if(handleMissing)return undefined;")) {
     content = content.replaceAll(THROW_PATTERN, REPLACEMENT);
     mutated = true;
     console.log("✓ Patched handler.mjs — optional manifests now return undefined");
