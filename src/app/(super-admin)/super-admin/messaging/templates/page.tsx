@@ -2,8 +2,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table, TableBody, TableCell, TableHead,
-  TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase-server";
 
@@ -14,78 +18,78 @@ import { createClient } from "@/lib/supabase-server";
  */
 const EXPECTED_TEMPLATES = [
   {
-    name:       "appointment_reminder_24h",
-    label:      "Rappel — 24h avant",
-    category:   "reminder",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
+    name: "appointment_reminder_24h",
+    label: "Rappel — 24h avant",
+    category: "reminder",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
   },
   {
-    name:       "appointment_reminder_2h",
-    label:      "Rappel — 2h avant",
-    category:   "reminder",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
+    name: "appointment_reminder_2h",
+    label: "Rappel — 2h avant",
+    category: "reminder",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
   },
   {
-    name:       "appointment_reminder_15min",
-    label:      "Rappel — 15min avant",
-    category:   "reminder",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{time}}, {{clinic_name}}",
+    name: "appointment_reminder_15min",
+    label: "Rappel — 15min avant",
+    category: "reminder",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{time}}, {{clinic_name}}",
   },
   {
-    name:       "booking_confirmation",
-    label:      "Confirmation de réservation",
-    category:   "transactional",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
+    name: "booking_confirmation",
+    label: "Confirmation de réservation",
+    category: "transactional",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
   },
   {
-    name:       "cancellation",
-    label:      "Annulation de rendez-vous",
-    category:   "transactional",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{date}}, {{clinic_name}}",
+    name: "cancellation",
+    label: "Annulation de rendez-vous",
+    category: "transactional",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{date}}, {{clinic_name}}",
   },
   {
-    name:       "rescheduled",
-    label:      "Reprogrammation",
-    category:   "transactional",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
+    name: "rescheduled",
+    label: "Reprogrammation",
+    category: "transactional",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{date}}, {{time}}, {{clinic_name}}",
   },
   {
-    name:       "slot_available",
-    label:      "Créneau disponible (liste d'attente)",
-    category:   "marketing",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{slot_datetime}}, {{claim_url}}, {{expires_in}}",
+    name: "slot_available",
+    label: "Créneau disponible (liste d'attente)",
+    category: "marketing",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{slot_datetime}}, {{claim_url}}, {{expires_in}}",
   },
   {
-    name:       "prescription_ready",
-    label:      "Ordonnance disponible",
-    category:   "transactional",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{doctor_name}}, {{clinic_name}}",
+    name: "prescription_ready",
+    label: "Ordonnance disponible",
+    category: "transactional",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{doctor_name}}, {{clinic_name}}",
   },
   {
-    name:       "billing_receipt",
-    label:      "Reçu de paiement",
-    category:   "transactional",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{amount}}, {{clinic_name}}, {{order_id}}",
+    name: "billing_receipt",
+    label: "Reçu de paiement",
+    category: "transactional",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{amount}}, {{clinic_name}}, {{order_id}}",
   },
   {
-    name:       "welcome_patient",
-    label:      "Bienvenue (nouveau patient)",
-    category:   "marketing",
-    language:   "fr / Darija",
-    variables:  "{{patient_name}}, {{clinic_name}}",
+    name: "welcome_patient",
+    label: "Bienvenue (nouveau patient)",
+    category: "marketing",
+    language: "fr / Darija",
+    variables: "{{patient_name}}, {{clinic_name}}",
   },
 ] as const;
 
-type TemplateName = typeof EXPECTED_TEMPLATES[number]["name"];
+type TemplateName = (typeof EXPECTED_TEMPLATES)[number]["name"];
 
 interface DbTemplate {
   template_name: string;
@@ -95,11 +99,14 @@ interface DbTemplate {
   clinic_id: string;
 }
 
-const STATUS_BADGE: Record<string, { label: string; variant: "success" | "outline" | "destructive" | "secondary" }> = {
-  approved:      { label: "Approuvé",        variant: "success"     },
-  pending:       { label: "En attente",       variant: "outline"     },
-  rejected:      { label: "Rejeté",           variant: "destructive" },
-  not_submitted: { label: "Non soumis",       variant: "secondary"   },
+const STATUS_BADGE: Record<
+  string,
+  { label: string; variant: "success" | "outline" | "destructive" | "secondary" }
+> = {
+  approved: { label: "Approuvé", variant: "success" },
+  pending: { label: "En attente", variant: "outline" },
+  rejected: { label: "Rejeté", variant: "destructive" },
+  not_submitted: { label: "Non soumis", variant: "secondary" },
 };
 
 export default async function WhatsAppTemplatesPage() {
@@ -111,14 +118,20 @@ export default async function WhatsAppTemplatesPage() {
   const { data } = await (supabase as any)
     .from("whatsapp_templates")
     .select("template_name, status, meta_template_id, updated_at, clinic_id")
-    .in("template_name", EXPECTED_TEMPLATES.map((t) => t.name));
+    .in(
+      "template_name",
+      EXPECTED_TEMPLATES.map((t) => t.name),
+    );
 
   const rows = (data ?? []) as DbTemplate[];
 
   // Build a lookup: template_name → best status
   // Priority: approved > pending > rejected > not_submitted
   const STATUS_PRIORITY: Record<string, number> = {
-    approved: 3, pending: 2, rejected: 1, not_submitted: 0,
+    approved: 3,
+    pending: 2,
+    rejected: 1,
+    not_submitted: 0,
   };
   const bestStatus = new Map<TemplateName, string>();
   for (const row of rows) {
@@ -136,8 +149,9 @@ export default async function WhatsAppTemplatesPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Templates WhatsApp Darija</h1>
         <p className="text-muted-foreground mt-1">
-          Statut d&apos;approbation Meta des 10 templates requis.
-          Voir <code className="text-xs bg-muted px-1 rounded">docs/whatsapp-template-approval.md</code> pour la procédure de soumission.
+          Statut d&apos;approbation Meta des 10 templates requis. Voir{" "}
+          <code className="text-xs bg-muted px-1 rounded">docs/whatsapp-template-approval.md</code>{" "}
+          pour la procédure de soumission.
         </p>
       </div>
 
@@ -148,7 +162,8 @@ export default async function WhatsAppTemplatesPage() {
         </Badge>
         {approvedCount < 10 && (
           <span className="text-sm text-amber-600">
-            ⚠️ {10 - approvedCount} template{10 - approvedCount > 1 ? "s" : ""} non approuvé{10 - approvedCount > 1 ? "s" : ""}
+            ⚠️ {10 - approvedCount} template{10 - approvedCount > 1 ? "s" : ""} non approuvé
+            {10 - approvedCount > 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -171,7 +186,7 @@ export default async function WhatsAppTemplatesPage() {
             <TableBody>
               {EXPECTED_TEMPLATES.map((tpl) => {
                 const status = bestStatus.get(tpl.name) ?? "not_submitted";
-                const badge  = STATUS_BADGE[status] ?? STATUS_BADGE.not_submitted;
+                const badge = STATUS_BADGE[status] ?? STATUS_BADGE.not_submitted;
                 return (
                   <TableRow key={tpl.name}>
                     <TableCell>

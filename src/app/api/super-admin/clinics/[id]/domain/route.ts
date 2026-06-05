@@ -70,11 +70,7 @@ export const POST = withAuth(
     }
 
     if (!cnameVerified) {
-      return apiError(
-        "CNAME ne pointe pas vers clinics.oltigo.com",
-        400,
-        "CNAME_MISMATCH",
-      );
+      return apiError("CNAME ne pointe pas vers clinics.oltigo.com", 400, "CNAME_MISMATCH");
     }
 
     // Persist the verified domain

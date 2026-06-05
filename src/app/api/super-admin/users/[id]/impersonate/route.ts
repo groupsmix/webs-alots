@@ -12,10 +12,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
-export const POST = (
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) =>
+export const POST = (request: NextRequest, context: { params: Promise<{ id: string }> }) =>
   withAuth(
     async (req: NextRequest, { supabase, user, profile }: AuthContext) => {
       // nosemgrep: semgrep.env-access
@@ -51,7 +48,6 @@ export const POST = (
       const untypedClient = createUntypedAdminClient("impersonate");
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-       
       const { data: session, error: sessionError } = await untypedClient
         .from("impersonation_sessions")
         .insert({
@@ -77,7 +73,7 @@ export const POST = (
         metadata: {
           targetUserId: id,
           impersonatorId: user.id,
-           
+
           sessionId: (session as { id: string }).id,
         },
       });
@@ -95,7 +91,7 @@ export const POST = (
 
       return apiSuccess({
         message: "Impersonation session started",
-         
+
         redirectUrl: `/api/auth/impersonate-callback?session=${(session as { id: string }).id}`,
       });
     },

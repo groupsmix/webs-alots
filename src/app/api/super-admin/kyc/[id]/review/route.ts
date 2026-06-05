@@ -23,17 +23,15 @@ const reviewSchema = z
     reason: z.string().max(1000).optional(),
   })
   .refine(
-    (d) =>
-      d.action !== "reject" ||
-      (typeof d.reason === "string" && d.reason.trim().length > 0),
+    (d) => d.action !== "reject" || (typeof d.reason === "string" && d.reason.trim().length > 0),
     { message: "Reason is required for rejection", path: ["reason"] },
   );
 
 // clinic_kyc.review_status CHECK: ('pending','approved','rejected')
 // request_more_docs maps back to 'pending' with a note in rejection_reason
 const STATUS_MAP: Record<string, string> = {
-  approve:           "approved",
-  reject:            "rejected",
+  approve: "approved",
+  reject: "rejected",
   request_more_docs: "pending",
 };
 
@@ -86,22 +84,22 @@ export async function PATCH(
       return NextResponse.json({ ok: false, error: "KYC record not found" }, { status: 404 });
     }
 
-    const newStatus       = STATUS_MAP[action] ?? "pending";
+    const newStatus = STATUS_MAP[action] ?? "pending";
     const rejectionReason =
       action === "reject"
         ? (reason ?? null)
         : action === "request_more_docs"
-        ? `Docs supplémentaires requis${reason ? ` : ${reason}` : ""}`
-        : null;
+          ? `Docs supplémentaires requis${reason ? ` : ${reason}` : ""}`
+          : null;
 
     // nosemgrep: semgrep.tenant-scoping — super_admin cross-tenant update
     const { error: updateErr } = await supabase
       .from("clinic_kyc")
       .update({
-        review_status:    newStatus,
+        review_status: newStatus,
         rejection_reason: rejectionReason,
-        reviewed_at:      new Date().toISOString(),
-        reviewed_by:      profile.id,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: profile.id,
       })
       .eq("id", id);
 
@@ -117,19 +115,16 @@ export async function PATCH(
     // On approval → move clinic to trial tier
     if (action === "approve" && kyc.clinic_id) {
       // nosemgrep: semgrep.tenant-scoping — super_admin cross-tenant update
-      await supabase
-        .from("clinics")
-        .update({ status: "trial" })
-        .eq("id", kyc.clinic_id);
+      await supabase.from("clinics").update({ status: "trial" }).eq("id", kyc.clinic_id);
     }
 
     await logAuditEvent({
       supabase,
-      action:      `kyc_${action}`,
-      type:        "admin",
-      clinicId:    kyc.clinic_id,
+      action: `kyc_${action}`,
+      type: "admin",
+      clinicId: kyc.clinic_id,
       description: `KYC ${action} for clinic ${kyc.clinic_id} by super_admin ${profile.id}`,
-      metadata:    { kycId: id, action, reason },
+      metadata: { kycId: id, action, reason },
     });
 
     return NextResponse.json({ ok: true, data: { updated: true } });

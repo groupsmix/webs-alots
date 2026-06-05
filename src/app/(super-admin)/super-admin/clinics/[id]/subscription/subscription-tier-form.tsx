@@ -51,9 +51,7 @@ export function SubscriptionTierForm({
   const [loading, setLoading] = useState(false);
 
   const tierIndex = (t: Tier) => TIERS.indexOf(t);
-  const isDowngrade = pendingTier
-    ? tierIndex(pendingTier) < tierIndex(currentTier as Tier)
-    : false;
+  const isDowngrade = pendingTier ? tierIndex(pendingTier) < tierIndex(currentTier as Tier) : false;
 
   async function handleConfirm() {
     if (!pendingTier) return;
@@ -111,9 +109,7 @@ export function SubscriptionTierForm({
           <DialogContent onClose={() => setPendingTier(null)}>
             <DialogHeader>
               <DialogTitle>
-                {isDowngrade
-                  ? "⚠️ Confirmer la rétrogradation"
-                  : "Confirmer le changement de plan"}
+                {isDowngrade ? "⚠️ Confirmer la rétrogradation" : "Confirmer le changement de plan"}
               </DialogTitle>
               <DialogDescription>
                 {isDowngrade
