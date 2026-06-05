@@ -7,8 +7,8 @@
 
 import { type NextRequest } from "next/server";
 import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { logAuditEvent } from "@/lib/audit-log";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 export const PATCH = withAuth(
   async (

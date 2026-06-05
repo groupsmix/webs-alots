@@ -7,11 +7,11 @@
 
 import { type NextRequest } from "next/server";
 import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { logAuditEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 import { requireTenant } from "@/lib/tenant";
 import { promoteWaitlist } from "@/lib/waitlist";
-import { logger } from "@/lib/logger";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const CANCELLABLE = new Set(["confirmed", "pending", "scheduled"]);
 

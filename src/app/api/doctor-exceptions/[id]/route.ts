@@ -7,10 +7,10 @@
 
 import { type NextRequest } from "next/server";
 import { apiNotFound, apiSuccess, apiError } from "@/lib/api-response";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { requireTenant } from "@/lib/tenant";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 export const DELETE = withAuth(
   async (

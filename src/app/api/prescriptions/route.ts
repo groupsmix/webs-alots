@@ -14,35 +14,35 @@
 
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { apiError, apiNotFound, apiSuccess, apiInternalError } from "@/lib/api-response";
+import { apiNotFound, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { encryptBuffer } from "@/lib/encryption";
-import { uploadToR2, isR2Configured } from "@/lib/r2";
-import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
-import { requireTenant } from "@/lib/tenant";
 import { generatePrescriptionPDF } from "@/lib/prescription-pdf";
+import { uploadToR2, isR2Configured } from "@/lib/r2";
+import { requireTenant } from "@/lib/tenant";
+import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
 
 const prescriptionSchema = z.object({
-  patientId:   z.string().uuid("patientId must be a UUID"),
+  patientId: z.string().uuid("patientId must be a UUID"),
   medications: z
     .array(
       z.object({
-        name:         z.string().min(1),
-        dose:         z.string().min(1),
-        duration:     z.string().min(1),
+        name: z.string().min(1),
+        dose: z.string().min(1),
+        duration: z.string().min(1),
         instructions: z.string().min(1),
       }),
     )
     .min(1, "At least one medication is required"),
   notes: z.string().max(2000).optional(),
-  date:  z.string().datetime("date must be an ISO datetime"),
+  date: z.string().datetime("date must be an ISO datetime"),
 });
 
 export const POST = withAuthValidation(
   prescriptionSchema,
   async (body, _request, { supabase, profile }) => {
-    const tenant   = await requireTenant();
+    const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
     // ── Fetch patient ──────────────────────────────────────────────────
@@ -79,12 +79,12 @@ export const POST = withAuthValidation(
     let pdfBuffer: Buffer;
     try {
       pdfBuffer = await generatePrescriptionPDF({
-        doctor:      { name: doctor.name },
-        patient:     { name: patient.name },
-        clinic:      { name: clinic.name },
+        doctor: { name: doctor.name },
+        patient: { name: patient.name },
+        clinic: { name: clinic.name },
         medications: body.medications,
-        notes:       body.notes,
-        date:        body.date,
+        notes: body.notes,
+        date: body.date,
       });
     } catch (err) {
       return apiInternalError(
@@ -94,7 +94,7 @@ export const POST = withAuthValidation(
 
     // ── Encrypt (PHI) + upload ─────────────────────────────────────────
     const prescriptionId = randomUUID();
-    const r2Key          = `prescriptions/${clinicId}/${prescriptionId}.pdf.enc`;
+    const r2Key = `prescriptions/${clinicId}/${prescriptionId}.pdf.enc`;
 
     if (isR2Configured()) {
       const encrypted = await encryptBuffer(pdfBuffer);
@@ -106,14 +106,14 @@ export const POST = withAuthValidation(
     await (supabase as any)
       .from("prescriptions")
       .insert({
-        id:          prescriptionId,
-        clinic_id:   clinicId,
-        doctor_id:   profile.id,
-        patient_id:  body.patientId,
-        r2_key:      r2Key,
+        id: prescriptionId,
+        clinic_id: clinicId,
+        doctor_id: profile.id,
+        patient_id: body.patientId,
+        r2_key: r2Key,
         medications: body.medications,
-        notes:       body.notes ?? null,
-        issued_at:   body.date,
+        notes: body.notes ?? null,
+        issued_at: body.date,
       })
       .catch(() => {
         // prescriptions table may not exist — non-fatal for MVP
@@ -122,23 +122,23 @@ export const POST = withAuthValidation(
     // ── Notify patient via WhatsApp ────────────────────────────────────
     if (clinic.whatsapp_phone_id && clinic.whatsapp_access_token && patient.phone) {
       await sendWhatsAppTemplateMessage({
-        to:             patient.phone,
-        templateName:   "prescription_ready",
-        languageCode:   "fr",
+        to: patient.phone,
+        templateName: "prescription_ready",
+        languageCode: "fr",
         bodyParameters: [patient.name, doctor.name, clinic.name],
-        phoneNumberId:  clinic.whatsapp_phone_id,
-        accessToken:    clinic.whatsapp_access_token,
+        phoneNumberId: clinic.whatsapp_phone_id,
+        accessToken: clinic.whatsapp_access_token,
       });
     }
 
     // ── Audit ──────────────────────────────────────────────────────────
     await logAuditEvent({
       supabase,
-      action:      "prescription_created",
-      type:        "patient",
+      action: "prescription_created",
+      type: "patient",
       clinicId,
       description: `Prescription ${prescriptionId} created for patient ${body.patientId}`,
-      metadata:    { prescriptionId, patientId: body.patientId, r2Key },
+      metadata: { prescriptionId, patientId: body.patientId, r2Key },
     });
 
     return apiSuccess({ prescriptionId, r2Key }, 201);

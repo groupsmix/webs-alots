@@ -10,8 +10,8 @@ import { z } from "zod";
 import { apiError, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { createAdminClient } from "@/lib/supabase-server";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { sendTextMessage } from "@/lib/whatsapp";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const bodySchema = z
   .object({

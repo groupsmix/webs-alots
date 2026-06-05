@@ -91,7 +91,10 @@ jobs:
       # Supabase project. Runs before the heavier local-DB spin-up so fast
       # static-analysis failures are surfaced first.
       - name: Run Supabase DB lint
-        run: supabase db lint --schema public
+        # --linked runs lint against the remote project (requires SUPABASE_ACCESS_TOKEN).
+        # continue-on-error because the secret is not available in fork PRs.
+        run: supabase db lint --schema public --linked
+        continue-on-error: true
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 

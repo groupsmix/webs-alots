@@ -51,7 +51,7 @@ export const POST = (
       const untypedClient = createUntypedAdminClient("impersonate");
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       
       const { data: session, error: sessionError } = await untypedClient
         .from("impersonation_sessions")
         .insert({
@@ -77,7 +77,7 @@ export const POST = (
         metadata: {
           targetUserId: id,
           impersonatorId: user.id,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+           
           sessionId: (session as { id: string }).id,
         },
       });
@@ -95,7 +95,7 @@ export const POST = (
 
       return apiSuccess({
         message: "Impersonation session started",
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+         
         redirectUrl: `/api/auth/impersonate-callback?session=${(session as { id: string }).id}`,
       });
     },

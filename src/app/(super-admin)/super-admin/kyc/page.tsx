@@ -1,6 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
-import { Badge } from "@/components/ui/badge";
 import { KycReviewCard } from "@/components/admin/kyc-review-card";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,

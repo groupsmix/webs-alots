@@ -1,5 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
 import { Suspense } from "react";
+import { RefundActionsCell } from "@/components/admin/refund-actions-cell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase-server";
-import { RefundActionsCell } from "@/components/admin/refund-actions-cell";
 
 interface RefundRow {
   id: string;
