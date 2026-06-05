@@ -535,7 +535,7 @@ jobs:
             }
             // npm ls exits non-zero on ELSPROBLEMS (extraneous/missing peers)
             // even when the dependency tree itself is fine. The JSON output is
-            // still valid in that case, it's just on error.stdout. We only
+            // still valid in that case, it is just on error.stdout. We only
             // care about the tree for the license walk below, so tolerate it.
             let raw;
             try {

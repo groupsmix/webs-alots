@@ -1,4 +1,4 @@
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles } from "lucide-react";
 
 export default function BuilderLoading() {
   return (
@@ -11,5 +11,5 @@ export default function BuilderLoading() {
         <p className="text-sm">Loading AI Builder...</p>
       </div>
     </div>
-  )
+  );
 }
