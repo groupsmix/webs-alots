@@ -1,0 +1,32 @@
+/* CopilotKit overrides to match shadcn/ui design system */
+/* Import AFTER @copilotkit/react-ui/styles.css */
+
+.copilotkit-chat-window {
+  --copilot-kit-primary-color: hsl(var(--primary));
+  --copilot-kit-background-color: hsl(var(--background));
+  --copilot-kit-secondary-background-color: hsl(var(--muted));
+  --copilot-kit-text-color: hsl(var(--foreground));
+  --copilot-kit-muted-text-color: hsl(var(--muted-foreground));
+  --copilot-kit-border-color: hsl(var(--border));
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-sans);
+}
+
+.copilotkit-button {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.copilotkit-chat-toggle {
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 40;
+}
+
+.dark .copilotkit-chat-window {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+}

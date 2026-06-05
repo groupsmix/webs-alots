@@ -76,6 +76,16 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # id         = "<paste-namespace-id>"
 # preview_id = "<paste-preview-namespace-id>"
 
+# TASK-017: Tenant lookup cache — 5-minute TTL, reduces Supabase DB reads per subdomain.
+# Provision via:
+#   wrangler kv namespace create TENANT_CACHE
+#   wrangler kv namespace create TENANT_CACHE --preview
+# Then paste the returned IDs below and uncomment.
+[[kv_namespaces]]
+binding = "TENANT_CACHE"
+id = "<run: wrangler kv namespace create TENANT_CACHE>"
+preview_id = "<run: wrangler kv namespace create TENANT_CACHE --preview>"
+
 # ── Durable Objects ───────────────────────────────────────────────────
 # H-03 (DEFERRED): Strongly consistent rate limiting via a RateLimiterDO
 # Durable Object was scaffolded in src/lib/rate-limit-do.ts, but the
@@ -194,6 +204,12 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # binding = "APP_CACHE_KV"
 # id = "<paste-namespace-id-here>"
 # preview_id = "<paste-preview-id-here>"
+
+# TASK-017: Tenant cache for production — paste IDs after provisioning.
+[[env.production.kv_namespaces]]
+binding = "TENANT_CACHE"
+id = "<run: wrangler kv namespace create TENANT_CACHE>"
+preview_id = "<run: wrangler kv namespace create TENANT_CACHE --preview>"
 
 # W8-A31-01: Routes (was missing — worker would not receive traffic)
 [[env.production.routes]]

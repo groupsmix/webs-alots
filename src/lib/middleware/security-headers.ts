@@ -105,6 +105,12 @@ interface BuildCspOptions {
    * @default false
    */
   reportOnly?: boolean;
+  /**
+   * When true, relaxes frame-src and script-src for the /super-admin/builder
+   * route so the live preview iframe (blob:) and Babel/Tailwind CDN scripts
+   * can load. ALL other routes continue to use the strict policy.
+   */
+  isBuilderRoute?: boolean;
 }
 
 /**
@@ -124,8 +130,9 @@ interface BuildCspOptions {
  * (no inline/eval), so production is fail-closed against XSS via injected
  * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
  */
-function buildCsp(nonce: string, _options?: BuildCspOptions): string {
+function buildCsp(nonce: string, options?: BuildCspOptions): string {
   const isDev = process.env.NODE_ENV !== "production";
+  const isBuilderRoute = options?.isBuilderRoute ?? false;
   const sbHost = getSupabaseHost();
   const plausibleHost = getPlausibleHost();
 
@@ -142,21 +149,28 @@ function buildCsp(nonce: string, _options?: BuildCspOptions): string {
     ...(plausibleHost ? [`https://${plausibleHost}`] : []),
   ].join(" ");
 
-  const scriptSrc = isDev
-    ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "'unsafe-eval'"]
-    : ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
+  const scriptSrc = isBuilderRoute
+    ? "'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com"
+    : (isDev
+        ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "'unsafe-eval'"]
+        : ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"]
+      ).join(" ");
+
+  const frameSrc = isBuilderRoute
+    ? "'self' blob: https://*.e2b.app https://*.e2b.dev https://challenges.cloudflare.com"
+    : "'self' https://challenges.cloudflare.com";
 
   return [
     "default-src 'self'",
-    `script-src ${scriptSrc.join(" ")}`,
-    // H-01 / A55-2: 'unsafe-inline' removed.
+    `script-src ${scriptSrc}`,
+    // H-01 / A55-2: 'unsafe-inline' removed on non-builder routes.
     // Dynamic inline styles using style={{}} that depend on runtime values
     // must now be converted to CSS custom properties.
     `style-src 'self'`,
     `img-src 'self' blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,
-    "frame-src 'self' https://challenges.cloudflare.com",
+    `frame-src ${frameSrc}`,
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
@@ -203,8 +217,11 @@ export interface CspHeaderValues {
  * unless `CSP_REPORT_ONLY=true` is set in production, in which case the
  * same policy is emitted on the Report-Only header for staged rollout.
  */
-export function buildCspHeaderValues(nonce: string): CspHeaderValues {
-  const policy = buildCsp(nonce, { reportOnly: false });
+export function buildCspHeaderValues(
+  nonce: string,
+  options?: { isBuilderRoute?: boolean },
+): CspHeaderValues {
+  const policy = buildCsp(nonce, { reportOnly: false, isBuilderRoute: options?.isBuilderRoute });
   if (isCspReportOnly()) {
     return { enforce: "", reportOnly: policy };
   }

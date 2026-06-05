@@ -20,6 +20,8 @@ export interface TenantInfo {
   subdomain: string;
   clinicType: string;
   clinicTier: string;
+  /** Locale derived from patient_message_locale DB column (e.g. 'fr', 'ar', 'darija'). */
+  locale?: string;
 }
 
 /** Header names used to pass tenant info from middleware. */
@@ -29,6 +31,7 @@ export const TENANT_HEADERS = {
   subdomain: "x-tenant-subdomain",
   clinicType: "x-tenant-clinic-type",
   clinicTier: "x-tenant-clinic-tier",
+  locale: "x-tenant-locale",
 } as const;
 
 /**
@@ -49,6 +52,7 @@ export async function getTenant(): Promise<TenantInfo | null> {
     subdomain: h.get(TENANT_HEADERS.subdomain) ?? "",
     clinicType: h.get(TENANT_HEADERS.clinicType) ?? "",
     clinicTier: h.get(TENANT_HEADERS.clinicTier) ?? "",
+    locale: h.get(TENANT_HEADERS.locale) ?? undefined,
   };
 }
 
@@ -167,6 +171,34 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
  * Convenience: resolve tenant + load its clinic config in one call.
  * Returns both the TenantInfo and the TenantClinicConfig.
  */
+/**
+ * Derives the BCP 47 language tag from the tenant's locale field.
+ * Maps Darija to 'ar' (same RTL script). Defaults to French.
+ */
+export function getLocaleFromTenant(tenant: TenantInfo | null): string {
+  if (!tenant) return "fr";
+  switch (tenant.locale) {
+    case "ar":
+    case "ar-MA":
+      return "ar";
+    case "fr":
+    case "fr-MA":
+      return "fr";
+    case "en":
+      return "en";
+    default:
+      return "fr";
+  }
+}
+
+/**
+ * Returns the HTML dir attribute for a given locale.
+ * Arabic is RTL; everything else is LTR.
+ */
+export function getDirFromLocale(locale: string): "ltr" | "rtl" {
+  return locale === "ar" ? "rtl" : "ltr";
+}
+
 export async function requireTenantWithConfig(): Promise<{
   tenant: TenantInfo;
   config: TenantClinicConfig;
