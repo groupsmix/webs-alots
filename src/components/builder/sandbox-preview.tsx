@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, RefreshCw, ExternalLink, Code2, Eye } from "lucide-react";
+import { Loader2, RefreshCw, Code2, Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,16 +80,13 @@ export function SandboxPreview({ code, language, isStreaming, className }: Sandb
               <span className="ml-1">Build preview</span>
             </Button>
           )}
-          {previewUrl && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 w-6 p-0"
-              onClick={() => window.open(previewUrl, "_blank")}
-            >
-              <ExternalLink className="w-3 h-3" />
-            </Button>
-          )}
+          {/*
+            NOTE: an "open in new tab" button was intentionally removed. A blob URL
+            opened via window.open inherits this app's origin and runs unsandboxed,
+            which lets AI-generated code read cookies / call same-origin APIs as the
+            super_admin. The iframe path below renders the same content inside a
+            sandbox without `allow-same-origin`, giving it a unique opaque origin.
+          */}
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
@@ -113,7 +110,13 @@ export function SandboxPreview({ code, language, isStreaming, className }: Sandb
                 ref={iframeRef}
                 src={previewUrl}
                 className="w-full h-full border-0"
-                sandbox="allow-scripts allow-same-origin"
+                // Intentionally no `allow-same-origin`: the iframe loads a blob:
+                // URL containing AI-generated code. Without `allow-same-origin`
+                // the iframe gets a unique opaque origin, so the generated code
+                // cannot read this app's cookies, localStorage, or call our APIs
+                // with the user's session.
+                sandbox="allow-scripts"
+                referrerPolicy="no-referrer"
                 title="Code preview"
               />
             ) : (
