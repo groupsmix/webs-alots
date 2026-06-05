@@ -1,5 +1,9 @@
 "use client";
 
+/* eslint-disable i18next/no-literal-string -- Super-admin-only AI Builder
+   surface: this whole tool is gated to internal super_admin users and is
+   intentionally English-only. Adding it to the i18n keyset would inflate the
+   FR/AR translation backlog for a tool no end user ever sees. */
 import { Loader2, RefreshCw, Code2, Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";

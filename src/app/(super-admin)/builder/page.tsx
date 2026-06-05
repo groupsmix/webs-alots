@@ -1,3 +1,7 @@
+/* eslint-disable i18next/no-literal-string -- Super-admin-only AI Builder
+   surface: this whole tool is gated to internal super_admin users and is
+   intentionally English-only. Adding it to the i18n keyset would inflate the
+   FR/AR translation backlog for a tool no end user ever sees. */
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BuilderChat } from "@/components/builder/builder-chat";

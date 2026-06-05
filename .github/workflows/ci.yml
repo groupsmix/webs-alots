@@ -533,7 +533,17 @@ jobs:
               }
               return false;
             }
-            const raw = execSync("npm ls --all --json --production 2>/dev/null", { encoding: "utf8", maxBuffer: 50*1024*1024 });
+            // npm ls exits non-zero on ELSPROBLEMS (extraneous/missing peers)
+            // even when the dependency tree itself is fine. The JSON output is
+            // still valid in that case, it's just on error.stdout. We only
+            // care about the tree for the license walk below, so tolerate it.
+            let raw;
+            try {
+              raw = execSync("npm ls --all --json --production 2>/dev/null", { encoding: "utf8", maxBuffer: 50*1024*1024 });
+            } catch (e) {
+              if (!e.stdout) throw e;
+              raw = e.stdout;
+            }
             const tree = JSON.parse(raw);
             const violations = [];
             function walk(deps) {
@@ -543,7 +553,32 @@ jobs:
                 // Read license from node_modules
                 try {
                   const pkg = require(name + "/package.json");
-                  const lic = typeof pkg.license === "string" ? pkg.license : (pkg.license?.type || "UNKNOWN");
+                  let lic = typeof pkg.license === "string" ? pkg.license : (pkg.license?.type || null);
+                  // Deprecated npm 1.x format: { licenses: [{type, url}] }
+                  if (!lic && Array.isArray(pkg.licenses) && pkg.licenses[0]) {
+                    lic = typeof pkg.licenses[0] === "string" ? pkg.licenses[0] : pkg.licenses[0].type;
+                  }
+                  // Fallback: detect via LICENSE file preamble when package.json
+                  // omits the field (common in young OSS projects, e.g. ag-ui,
+                  // some CopilotKit subpackages). We only accept matches that
+                  // map to entries already in ALLOWED, so this widens detection,
+                  // not the allowlist itself.
+                  if (!lic) {
+                    const fs = require("fs");
+                    const path = require("path");
+                    const pkgDir = path.dirname(require.resolve(name + "/package.json"));
+                    for (const fname of ["LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md", "COPYING"]) {
+                      const fpath = path.join(pkgDir, fname);
+                      if (!fs.existsSync(fpath)) continue;
+                      const text = fs.readFileSync(fpath, "utf8").slice(0, 600);
+                      if (/MIT License/i.test(text)) { lic = "MIT"; break; }
+                      if (/Apache License,?\s+Version 2\.0/i.test(text)) { lic = "Apache-2.0"; break; }
+                      if (/BSD 3-Clause/i.test(text)) { lic = "BSD-3-Clause"; break; }
+                      if (/BSD 2-Clause/i.test(text)) { lic = "BSD-2-Clause"; break; }
+                      if (/ISC License/i.test(text)) { lic = "ISC"; break; }
+                    }
+                  }
+                  if (!lic) lic = "UNKNOWN";
                   if (!isAllowed(lic)) violations.push({ name, license: lic });
                 } catch { /* optional / peer dep not installed */ }
                 if (info.dependencies) walk(info.dependencies);
