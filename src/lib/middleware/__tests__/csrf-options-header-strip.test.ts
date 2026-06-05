@@ -118,12 +118,21 @@ describe("Tenant header stripping — method-independent (mutation gaps)", () =>
 });
 
 describe("TENANT_HEADERS completeness", () => {
-  it("covers all 5 required tenant header names", () => {
+  it("covers all required tenant header names", () => {
+    // PR #976 added `locale` for locale propagation through middleware.
+    // When adding new tenant headers, update this assertion to match.
     const headerKeys = Object.keys(TENANT_HEADERS);
     expect(headerKeys).toEqual(
-      expect.arrayContaining(["clinicId", "clinicName", "subdomain", "clinicType", "clinicTier"]),
+      expect.arrayContaining([
+        "clinicId",
+        "clinicName",
+        "subdomain",
+        "clinicType",
+        "clinicTier",
+        "locale",
+      ]),
     );
-    expect(headerKeys.length).toBe(5);
+    expect(headerKeys.length).toBe(6);
   });
 
   it("all tenant header names start with x-tenant-", () => {
