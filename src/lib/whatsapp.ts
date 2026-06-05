@@ -284,7 +284,8 @@ export interface WhatsAppTemplateParams {
   bodyParameters: string[];
   /** clinics.whatsapp_phone_id for this clinic */
   phoneNumberId: string;
-  /** clinics.whatsapp_access_token for this clinic */
+  /** clinic_whatsapp_credentials.whatsapp_access_token for this clinic
+   *  (server-only — fetched via createAdminClient). */
   accessToken: string;
 }
 

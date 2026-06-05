@@ -15,13 +15,9 @@ import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const CANCELLABLE = new Set(["confirmed", "pending", "scheduled"]);
 
-export const PATCH = withAuth(
-  async (
-    _request: NextRequest,
-    { supabase, profile }: AuthContext,
-    { params }: { params: Promise<{ id: string }> },
-  ) => {
-    const { id } = await params;
+export const PATCH = withAuth<{ params: Promise<{ id: string }> }>(
+  async (_request: NextRequest, { supabase, profile }: AuthContext, routeCtx) => {
+    const { id } = await routeCtx!.params;
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
@@ -29,7 +25,7 @@ export const PATCH = withAuth(
 
     const { data: appt, error: fetchErr } = await supabase
       .from("appointments")
-      .select("id, clinic_id, doctor_id, scheduled_at, status, patient_id")
+      .select("id, clinic_id, doctor_id, slot_start, status, patient_id")
       .eq("id", id)
       .eq("clinic_id", clinicId)
       .maybeSingle();
@@ -70,7 +66,7 @@ export const PATCH = withAuth(
     promoteWaitlist({
       doctorId: appt.doctor_id,
       clinicId,
-      cancelledSlot: appt.scheduled_at,
+      cancelledSlot: appt.slot_start,
     }).catch((err) =>
       logger.warn("promoteWaitlist failed after cancellation", {
         context: "appointments/cancel",

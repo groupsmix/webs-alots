@@ -303,6 +303,10 @@ export type Database = {
           is_walk_in: boolean | null
           notes: string | null
           patient_id: string
+          payment_amount: number | null
+          payment_order_id: string | null
+          payment_reference: string | null
+          payment_status: string
           recurrence_group_id: string | null
           recurrence_index: number | null
           recurrence_pattern: string | null
@@ -331,6 +335,10 @@ export type Database = {
           is_walk_in?: boolean | null
           notes?: string | null
           patient_id: string
+          payment_amount?: number | null
+          payment_order_id?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           recurrence_group_id?: string | null
           recurrence_index?: number | null
           recurrence_pattern?: string | null
@@ -359,6 +367,10 @@ export type Database = {
           is_walk_in?: boolean | null
           notes?: string | null
           patient_id?: string
+          payment_amount?: number | null
+          payment_order_id?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           recurrence_group_id?: string | null
           recurrence_index?: number | null
           recurrence_pattern?: string | null
@@ -1176,7 +1188,9 @@ export type Database = {
           config: Json | null
           cover_photo_url: string | null
           created_at: string | null
+          custom_domain: string | null
           domain: string | null
+          domain_status: string | null
           favicon_url: string | null
           features: Json | null
           heading_font: string | null
@@ -1200,6 +1214,7 @@ export type Database = {
           type: string
           updated_at: string | null
           website_config: Json | null
+          whatsapp_phone_id: string | null
         }
         Insert: {
           address?: string | null
@@ -1210,7 +1225,9 @@ export type Database = {
           config?: Json | null
           cover_photo_url?: string | null
           created_at?: string | null
+          custom_domain?: string | null
           domain?: string | null
+          domain_status?: string | null
           favicon_url?: string | null
           features?: Json | null
           heading_font?: string | null
@@ -1234,6 +1251,7 @@ export type Database = {
           type: string
           updated_at?: string | null
           website_config?: Json | null
+          whatsapp_phone_id?: string | null
         }
         Update: {
           address?: string | null
@@ -1244,7 +1262,9 @@ export type Database = {
           config?: Json | null
           cover_photo_url?: string | null
           created_at?: string | null
+          custom_domain?: string | null
           domain?: string | null
+          domain_status?: string | null
           favicon_url?: string | null
           features?: Json | null
           heading_font?: string | null
@@ -1268,6 +1288,7 @@ export type Database = {
           type?: string
           updated_at?: string | null
           website_config?: Json | null
+          whatsapp_phone_id?: string | null
         }
         Relationships: [
           {
@@ -9540,6 +9561,246 @@ export type Database = {
           {
             foreignKeyName: "insurance_claims_patient_id_fkey"
             columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinic_whatsapp_credentials: {
+        Row: {
+          clinic_id: string
+          whatsapp_access_token: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          whatsapp_access_token: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          whatsapp_access_token?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_whatsapp_credentials_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: true
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinic_kyc: {
+        Row: {
+          id: string
+          clinic_id: string
+          ice_number: string | null
+          rc_number: string | null
+          business_docs_url: string[] | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rejection_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          ice_number?: string | null
+          rc_number?: string | null
+          business_docs_url?: string[] | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rejection_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          ice_number?: string | null
+          rc_number?: string | null
+          business_docs_url?: string[] | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rejection_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_kyc_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_exceptions: {
+        Row: {
+          id: string
+          doctor_id: string
+          clinic_id: string
+          date: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          doctor_id: string
+          clinic_id: string
+          date: string
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          doctor_id?: string
+          clinic_id?: string
+          date?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_exceptions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_exceptions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waitlist: {
+        Row: {
+          id: string
+          clinic_id: string
+          doctor_id: string
+          patient_id: string
+          preferred_date: string | null
+          created_at: string
+          notified_at: string | null
+          claimed_at: string | null
+          expires_at: string | null
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          doctor_id: string
+          patient_id: string
+          preferred_date?: string | null
+          created_at?: string
+          notified_at?: string | null
+          claimed_at?: string | null
+          expires_at?: string | null
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          doctor_id?: string
+          patient_id?: string
+          preferred_date?: string | null
+          created_at?: string
+          notified_at?: string | null
+          claimed_at?: string | null
+          expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refund_approvals: {
+        Row: {
+          id: string
+          clinic_id: string
+          payment_order_id: string
+          amount_mad: number
+          initiator_id: string
+          approver_id: string | null
+          status: string
+          rejection_reason: string | null
+          initiated_at: string
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          payment_order_id: string
+          amount_mad: number
+          initiator_id: string
+          approver_id?: string | null
+          status?: string
+          rejection_reason?: string | null
+          initiated_at?: string
+          resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          payment_order_id?: string
+          amount_mad?: number
+          initiator_id?: string
+          approver_id?: string | null
+          status?: string
+          rejection_reason?: string | null
+          initiated_at?: string
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_approvals_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_approvals_initiator_id_fkey"
+            columns: ["initiator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_approvals_approver_id_fkey"
+            columns: ["approver_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

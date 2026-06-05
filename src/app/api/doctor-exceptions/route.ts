@@ -4,6 +4,12 @@
  *
  * POST /api/doctor-exceptions          — mark a date as unavailable
  *   Body: { doctorId: string; date: "YYYY-MM-DD"; reason?: string }
+ *
+ * Authorization:
+ *   • GET — any staff role within the tenant clinic.
+ *   • POST — clinic_admin (for any doctor in the clinic) or doctor (only
+ *     for themselves; doctorId from the body is ignored and replaced with
+ *     the authenticated profile.id to prevent cross-doctor writes).
  */
 
 import { type NextRequest } from "next/server";
@@ -57,15 +63,22 @@ export const GET = withAuth(async (request: NextRequest, { supabase }: AuthConte
 
 export const POST = withAuthValidation(
   createExceptionSchema,
-  async (body, _request, { supabase }) => {
+  async (body, _request, { supabase, profile }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
-    // Verify the doctor belongs to this clinic before inserting.
+    // SECURITY: ownership enforcement.
+    // • doctors can only mark their own exception days; the body value is
+    //   ignored to prevent a doctor from blocking another doctor's calendar.
+    // • clinic_admin can mark for any doctor — verified below to be in the
+    //   same clinic.
+    const effectiveDoctorId = profile.role === "doctor" ? profile.id : body.doctorId;
+
+    // Verify the (possibly overridden) doctor belongs to this clinic.
     const { data: doctor, error: doctorError } = await supabase
       .from("users")
       .select("id")
-      .eq("id", body.doctorId)
+      .eq("id", effectiveDoctorId)
       .eq("clinic_id", clinicId)
       .eq("role", "doctor")
       .maybeSingle();
@@ -77,7 +90,7 @@ export const POST = withAuthValidation(
     const { data: exception, error: insertError } = await supabase
       .from("doctor_exceptions")
       .insert({
-        doctor_id: body.doctorId,
+        doctor_id: effectiveDoctorId,
         clinic_id: clinicId,
         date: body.date,
         reason: body.reason ?? null,
@@ -98,11 +111,16 @@ export const POST = withAuthValidation(
       action: "doctor_exception_created",
       type: "admin",
       clinicId,
-      description: `Exception marked for doctor ${body.doctorId} on ${body.date}`,
-      metadata: { doctorId: body.doctorId, date: body.date, reason: body.reason },
+      description: `Exception marked for doctor ${effectiveDoctorId} on ${body.date}`,
+      metadata: {
+        doctorId: effectiveDoctorId,
+        date: body.date,
+        reason: body.reason,
+        actorRole: profile.role,
+      },
     });
 
     return apiSuccess({ exception }, 201);
   },
-  STAFF_ROLES,
+  ["clinic_admin", "doctor"],
 );

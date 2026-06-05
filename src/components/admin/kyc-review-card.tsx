@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string -- super-admin internal UI; translation tracked separately */
 
 /**
  * KycReviewCard
@@ -24,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { logger } from "@/lib/logger";
 
 interface KycEntry {
-  id:            string;
+  id: string;
   review_status: string;
 }
 
@@ -33,9 +34,9 @@ type Action = "approve" | "reject" | "request_more_docs";
 export function KycReviewCard({ kyc }: { kyc: KycEntry }) {
   const router = useRouter();
 
-  const [busy,        setBusy]        = useState<Action | null>(null);
-  const [rejectOpen,  setRejectOpen]  = useState(false);
-  const [reason,      setReason]      = useState("");
+  const [busy, setBusy] = useState<Action | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [reason, setReason] = useState("");
   const [reasonError, setReasonError] = useState("");
 
   // Already-approved records get a read-only badge instead of buttons
@@ -47,18 +48,18 @@ export function KycReviewCard({ kyc }: { kyc: KycEntry }) {
     setBusy(action);
     try {
       const res = await fetch(`/api/super-admin/kyc/${kyc.id}/review`, {
-        method:  "PATCH",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ action, reason: rejectionReason }),
+        body: JSON.stringify({ action, reason: rejectionReason }),
       });
       if (res.ok) {
         router.refresh();
       } else {
-        const data = await res.json().catch(() => ({})) as { error?: string };
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         logger.warn("KYC review failed", {
           context: "kyc-review-card",
           action,
-          error:   data.error,
+          error: data.error,
         });
       }
     } catch (err) {
@@ -96,7 +97,10 @@ export function KycReviewCard({ kyc }: { kyc: KycEntry }) {
         size="sm"
         variant="destructive"
         disabled={busy !== null}
-        onClick={() => { setRejectOpen(true); setReasonError(""); }}
+        onClick={() => {
+          setRejectOpen(true);
+          setReasonError("");
+        }}
       >
         Rejeter
       </Button>
@@ -114,7 +118,10 @@ export function KycReviewCard({ kyc }: { kyc: KycEntry }) {
       {/* Rejection reason dialog */}
       <Dialog
         open={rejectOpen}
-        onOpenChange={(o) => { setRejectOpen(o); setReasonError(""); }}
+        onOpenChange={(o) => {
+          setRejectOpen(o);
+          setReasonError("");
+        }}
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -123,26 +130,19 @@ export function KycReviewCard({ kyc }: { kyc: KycEntry }) {
           <Textarea
             placeholder="Motif du rejet (obligatoire)"
             value={reason}
-            onChange={(e) => { setReason(e.target.value); setReasonError(""); }}
+            onChange={(e) => {
+              setReason(e.target.value);
+              setReasonError("");
+            }}
             rows={3}
             className="resize-none"
           />
-          {reasonError && (
-            <p className="text-xs text-destructive mt-1">{reasonError}</p>
-          )}
+          {reasonError && <p className="text-xs text-destructive mt-1">{reasonError}</p>}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRejectOpen(false)}
-              disabled={busy !== null}
-            >
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={busy !== null}>
               Annuler
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRejectSubmit}
-              disabled={busy !== null}
-            >
+            <Button variant="destructive" onClick={handleRejectSubmit} disabled={busy !== null}>
               {busy === "reject" ? "…" : "Confirmer le rejet"}
             </Button>
           </DialogFooter>

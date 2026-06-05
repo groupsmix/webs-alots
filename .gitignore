@@ -68,3 +68,6 @@ test-results/
 storybook-static
 secrets-template.env
 bun.lock
+
+# Local working notes / task spec scratch (not committed)
+tasks to do *.txt

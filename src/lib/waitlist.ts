@@ -8,7 +8,7 @@
 
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
+import { createAdminClient, createClient } from "@/lib/supabase-server";
 import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
 
 export interface PromoteWaitlistParams {
@@ -30,7 +30,7 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
       patient_id,
       clinic_id,
       patient:users!patient_id ( name, phone ),
-      clinic:clinics ( name, whatsapp_phone_id, whatsapp_access_token )
+      clinic:clinics ( name, whatsapp_phone_id )
     `,
     )
     .eq("doctor_id", params.doctorId)
@@ -59,7 +59,6 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
   const clinic = (entry as any).clinic as {
     name: string;
     whatsapp_phone_id: string | null;
-    whatsapp_access_token: string | null;
   } | null;
 
   if (!patient?.phone) {
@@ -77,15 +76,31 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
     timeStyle: "short",
   });
 
-  if (clinic?.whatsapp_phone_id && clinic?.whatsapp_access_token) {
-    await sendWhatsAppTemplateMessage({
-      to: patient.phone,
-      templateName: "slot_available",
-      languageCode: "fr",
-      bodyParameters: [patient.name, slotLabel, claimUrl, "2 heures"],
-      phoneNumberId: clinic.whatsapp_phone_id,
-      accessToken: clinic.whatsapp_access_token,
-    });
+  if (clinic?.whatsapp_phone_id) {
+    // Token lives in the server-only clinic_whatsapp_credentials table
+    // (default-deny RLS). Use the admin client to read it.
+    const admin = createAdminClient("whatsapp-credentials", params.clinicId);
+    const { data: creds } = await admin
+      .from("clinic_whatsapp_credentials")
+      .select("whatsapp_access_token")
+      .eq("clinic_id", params.clinicId)
+      .maybeSingle();
+
+    if (creds?.whatsapp_access_token) {
+      await sendWhatsAppTemplateMessage({
+        to: patient.phone,
+        templateName: "slot_available",
+        languageCode: "fr",
+        bodyParameters: [patient.name, slotLabel, claimUrl, "2 heures"],
+        phoneNumberId: clinic.whatsapp_phone_id,
+        accessToken: creds.whatsapp_access_token,
+      });
+    } else {
+      logger.warn("promoteWaitlist: clinic has no WhatsApp credentials configured", {
+        context: "waitlist",
+        clinicId: params.clinicId,
+      });
+    }
   }
 
   await logAuditEvent({

@@ -35,7 +35,7 @@ export const POST = withAuth(
     const parsed = bodySchema.safeParse(body);
     if (!parsed.success) {
       return apiValidationError(
-        parsed.error.errors.map((e) => e.message).join(", "),
+        parsed.error.issues.map((e: { message: string }) => e.message).join(", "),
       );
     }
 

@@ -135,12 +135,12 @@ export async function getAvailableSlots(params: SlotParams): Promise<Date[]> {
 
   const { data: booked, error: bookError } = await supabase
     .from("appointments")
-    .select("scheduled_at")
+    .select("slot_start")
     .eq("doctor_id", params.doctorId)
     .eq("clinic_id", params.clinicId)
     .in("status", ["confirmed", "pending"])
-    .gte("scheduled_at", dayStart.toISOString())
-    .lte("scheduled_at", dayEnd.toISOString());
+    .gte("slot_start", dayStart.toISOString())
+    .lte("slot_start", dayEnd.toISOString());
 
   if (bookError) {
     logger.warn("getAvailableSlots: booked appointments fetch failed", {
@@ -153,8 +153,8 @@ export async function getAvailableSlots(params: SlotParams): Promise<Date[]> {
 
   // Build a Set of booked slot timestamps (rounded to the minute) for O(1) lookup.
   const bookedTimestamps = new Set(
-    (booked ?? []).map((b: { scheduled_at: string }) => {
-      const d = new Date(b.scheduled_at);
+    (booked ?? []).map((b: { slot_start: string }) => {
+      const d = new Date(b.slot_start);
       d.setSeconds(0, 0);
       return d.getTime();
     }),

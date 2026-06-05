@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase-server";
 
@@ -64,9 +65,9 @@ export default async function ClaimSlotPage({ params }: { params: Promise<{ id: 
             <p className="text-sm text-muted-foreground mt-3">
               Ce créneau a déjà été confirmé par un autre patient.
             </p>
-            <Button asChild className="mt-4" variant="outline">
-              <Link href="/">Retour à l&apos;accueil</Link>
-            </Button>
+            <Link href="/" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
+              Retour à l&apos;accueil
+            </Link>
           </CardContent>
         </Card>
       </main>
@@ -85,9 +86,9 @@ export default async function ClaimSlotPage({ params }: { params: Promise<{ id: 
             <p className="text-sm text-muted-foreground mt-3">
               Le délai de 2 heures pour confirmer ce créneau est dépassé.
             </p>
-            <Button asChild className="mt-4" variant="outline">
-              <Link href="/">Retour à l&apos;accueil</Link>
-            </Button>
+            <Link href="/" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
+              Retour à l&apos;accueil
+            </Link>
           </CardContent>
         </Card>
       </main>

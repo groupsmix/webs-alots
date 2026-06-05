@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string -- clinic-admin internal UI; translation tracked separately */
 
 /**
  * ExceptionDayPicker
@@ -31,7 +32,7 @@ import { logger } from "@/lib/logger";
 
 interface Exception {
   id: string;
-  date: string;      // "YYYY-MM-DD"
+  date: string; // "YYYY-MM-DD"
   reason: string | null;
 }
 
@@ -44,21 +45,30 @@ interface Props {
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 const MONTH_LABELS = [
-  "Janvier", "Février",  "Mars",     "Avril",
-  "Mai",     "Juin",     "Juillet",  "Août",
-  "Septembre", "Octobre", "Novembre", "Décembre",
+  "Janvier",
+  "Février",
+  "Mars",
+  "Avril",
+  "Mai",
+  "Juin",
+  "Juillet",
+  "Août",
+  "Septembre",
+  "Octobre",
+  "Novembre",
+  "Décembre",
 ];
 
 function toDateString(d: Date): string {
   const yyyy = d.getFullYear();
-  const mm   = String(d.getMonth() + 1).padStart(2, "0");
-  const dd   = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
 /** Return the Date objects for all cells in a 6-row × 7-col calendar grid. */
 function buildMonthGrid(year: number, month: number): Date[] {
-  const firstDay  = new Date(year, month, 1);
+  const firstDay = new Date(year, month, 1);
   const startCell = new Date(firstDay);
   startCell.setDate(1 - firstDay.getDay()); // rewind to the Sunday before month start
   const cells: Date[] = [];
@@ -71,25 +81,25 @@ function buildMonthGrid(year: number, month: number): Date[] {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
-  const today    = new Date();
-  const [year,  setYear]  = useState(today.getFullYear());
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
-  const [exceptions,  setExceptions]  = useState<Exception[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [dialogOpen,  setDialogOpen]  = useState(false);
+  const [exceptions, setExceptions] = useState<Exception[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [reason,      setReason]      = useState("");
-  const [saving,      setSaving]      = useState(false);
-  const [removing,    setRemoving]    = useState<string | null>(null); // exception id being removed
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null); // exception id being removed
 
   // ── Data loading ─────────────────────────────────────────────────────────
 
   const fetchExceptions = useCallback(async () => {
     setLoading(true);
     try {
-      const res  = await fetch(`/api/doctor-exceptions?doctorId=${doctorId}`);
-      const json = await res.json() as { ok: boolean; data?: { exceptions: Exception[] } };
+      const res = await fetch(`/api/doctor-exceptions?doctorId=${doctorId}`);
+      const json = (await res.json()) as { ok: boolean; data?: { exceptions: Exception[] } };
       if (json.ok) {
         setExceptions(json.data?.exceptions ?? []);
       }
@@ -117,7 +127,7 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
 
   const handleDayClick = (date: Date) => {
     if (date.getMonth() !== month) return; // ignore cells from adjacent months
-    const dateStr  = toDateString(date);
+    const dateStr = toDateString(date);
     const existing = exceptionMap.get(dateStr);
 
     if (existing) {
@@ -155,12 +165,12 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
     if (!selectedDate) return;
     setSaving(true);
     try {
-      const res  = await fetch("/api/doctor-exceptions", {
-        method:  "POST",
+      const res = await fetch("/api/doctor-exceptions", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ doctorId, date: selectedDate, reason: reason || undefined }),
+        body: JSON.stringify({ doctorId, date: selectedDate, reason: reason || undefined }),
       });
-      const json = await res.json() as { ok: boolean; data?: { exception: Exception } };
+      const json = (await res.json()) as { ok: boolean; data?: { exception: Exception } };
       if (json.ok && json.data?.exception) {
         setExceptions((prev) => [...prev, json.data!.exception]);
         setDialogOpen(false);
@@ -179,12 +189,20 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
   // ── Month navigation ───────────────────────────────────────────────────────
 
   const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear((y) => y - 1); }
-    else              { setMonth((m) => m - 1); }
+    if (month === 0) {
+      setMonth(11);
+      setYear((y) => y - 1);
+    } else {
+      setMonth((m) => m - 1);
+    }
   };
   const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear((y) => y + 1); }
-    else               { setMonth((m) => m + 1); }
+    if (month === 11) {
+      setMonth(0);
+      setYear((y) => y + 1);
+    } else {
+      setMonth((m) => m + 1);
+    }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -193,7 +211,7 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
     return <Skeleton className="h-72 w-full rounded-lg" />;
   }
 
-  const cells  = buildMonthGrid(year, month);
+  const cells = buildMonthGrid(year, month);
   const todayStr = toDateString(today);
 
   return (
@@ -223,9 +241,9 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
       {/* Date grid */}
       <div className="grid grid-cols-7 gap-px">
         {cells.map((cell, i) => {
-          const dateStr   = toDateString(cell);
+          const dateStr = toDateString(cell);
           const isException = exceptionMap.has(dateStr);
-          const isToday   = dateStr === todayStr;
+          const isToday = dateStr === todayStr;
           const isCurrentMonth = cell.getMonth() === month;
           const isRemoving = removing === exceptionMap.get(dateStr)?.id;
 
@@ -243,7 +261,9 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
                   : "hover:bg-accent hover:text-accent-foreground",
                 isToday && !isException && "ring-1 ring-primary font-semibold",
                 isRemoving && "opacity-50 cursor-wait",
-              ].filter(Boolean).join(" ")}
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               {cell.getDate()}
               {isException && (
@@ -258,7 +278,9 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
       {exceptions.length > 0 && (
         <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <span className="h-3 w-3 rounded-sm bg-red-100 border border-red-300 inline-block" />
-          <span>{exceptions.length} jour{exceptions.length > 1 ? "s" : ""} d&apos;exception</span>
+          <span>
+            {exceptions.length} jour{exceptions.length > 1 ? "s" : ""} d&apos;exception
+          </span>
         </div>
       )}
 

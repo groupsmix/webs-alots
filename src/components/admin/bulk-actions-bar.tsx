@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string -- super-admin internal UI; translation tracked separately */
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -167,10 +168,7 @@ export function BulkActionsBar({ selectedIds, onClearSelection }: BulkActionsBar
             >
               Annuler
             </Button>
-            <Button
-              onClick={() => void handleAnnounce()}
-              disabled={!message.trim() || loading}
-            >
+            <Button onClick={() => void handleAnnounce()} disabled={!message.trim() || loading}>
               {loading ? "Envoi…" : "Envoyer"}
             </Button>
           </DialogFooter>

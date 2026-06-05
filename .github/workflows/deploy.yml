@@ -10,9 +10,10 @@
 #   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (not a secret, but kept
 #                            out of wrangler.toml to avoid leaking it in forks)
 #
-# TODO: Pin cloudflare/wrangler-action to a full SHA once the team has
-#       verified the exact commit for the v3 tag:
-#         gh api repos/cloudflare/wrangler-action/git/ref/tags/v3 --jq '.object.sha'
+# All third-party Actions are pinned to a full 40-char commit SHA per
+# CICD-01 / AUDIT-16. Bumping a tag-floating reference (e.g. @v3) on a
+# compromised action would silently propagate to deployments; pinning to
+# a SHA prevents that. The version comment after the SHA is informational.
 # =============================================================================
 
 name: Deploy
@@ -70,7 +71,8 @@ jobs:
           echo "Worker entry: .open-next/worker.js ($(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js) bytes)"
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+        # CICD-01 / AUDIT-16: pinned to v3.15.0 SHA for supply-chain hardening.
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- PDF content is intentionally French-only (Moroccan medical regulatory format) */
 /**
  * Prescription PDF generation using @react-pdf/renderer.
  *
@@ -9,19 +10,19 @@
  */
 
 export interface PrescriptionMedication {
-  name:         string;
-  dose:         string;
-  duration:     string;
+  name: string;
+  dose: string;
+  duration: string;
   instructions: string;
 }
 
 export interface PrescriptionData {
-  doctor:      { name: string; speciality?: string };
-  patient:     { name: string; dateOfBirth?: string };
-  clinic:      { name: string; address?: string; phone?: string };
+  doctor: { name: string; speciality?: string };
+  patient: { name: string; dateOfBirth?: string };
+  clinic: { name: string; address?: string; phone?: string };
   medications: PrescriptionMedication[];
-  notes?:      string;
-  date:        string; // ISO timestamp
+  notes?: string;
+  date: string; // ISO timestamp
 }
 
 /**
@@ -34,7 +35,12 @@ export async function generatePrescriptionPDF(data: PrescriptionData): Promise<B
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let r: any;
   try {
-    r = await import("@react-pdf/renderer");
+    // Indirect import keeps TypeScript from resolving the module at compile
+    // time — the package is intentionally optional and only installed when
+    // PDF generation is needed in production.
+    const moduleName = "@react-pdf/renderer";
+
+    r = await (Function("m", "return import(m)") as (m: string) => Promise<unknown>)(moduleName);
   } catch {
     throw new Error(
       "generatePrescriptionPDF: @react-pdf/renderer is not installed.\n" +
@@ -45,13 +51,13 @@ export async function generatePrescriptionPDF(data: PrescriptionData): Promise<B
   const { Document, Page, Text, View, StyleSheet, pdf } = r;
 
   const styles = StyleSheet.create({
-    page:    { padding: 40, fontSize: 11, fontFamily: "Helvetica" },
-    header:  { marginBottom: 20, paddingBottom: 10, borderBottom: "1pt solid #cccccc" },
-    title:   { fontSize: 16, fontWeight: "bold", marginBottom: 4 },
+    page: { padding: 40, fontSize: 11, fontFamily: "Helvetica" },
+    header: { marginBottom: 20, paddingBottom: 10, borderBottom: "1pt solid #cccccc" },
+    title: { fontSize: 16, fontWeight: "bold", marginBottom: 4 },
     section: { marginTop: 16 },
-    row:     { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-    med:     { flexDirection: "row", marginBottom: 8, gap: 8 },
-    label:   { fontWeight: "bold", width: 120 },
+    row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+    med: { flexDirection: "row", marginBottom: 8, gap: 8 },
+    label: { fontWeight: "bold", width: 120 },
     sigLine: { marginTop: 40 },
     sigRule: { marginTop: 20, borderTop: "0.5pt solid #999999", width: 120 },
   });
@@ -67,7 +73,7 @@ export async function generatePrescriptionPDF(data: PrescriptionData): Promise<B
           {data.doctor.speciality ? <Text>{data.doctor.speciality}</Text> : null}
           <Text>{data.clinic.name}</Text>
           {data.clinic.address ? <Text>{data.clinic.address}</Text> : null}
-          {data.clinic.phone   ? <Text>Tél : {data.clinic.phone}</Text> : null}
+          {data.clinic.phone ? <Text>Tél : {data.clinic.phone}</Text> : null}
         </View>
 
         {/* Patient + date */}
@@ -76,9 +82,7 @@ export async function generatePrescriptionPDF(data: PrescriptionData): Promise<B
             <Text>Patient : {data.patient.name}</Text>
             <Text>Date : {formattedDate}</Text>
           </View>
-          {data.patient.dateOfBirth
-            ? <Text>Né(e) le : {data.patient.dateOfBirth}</Text>
-            : null}
+          {data.patient.dateOfBirth ? <Text>Né(e) le : {data.patient.dateOfBirth}</Text> : null}
         </View>
 
         {/* Medications */}
@@ -87,20 +91,20 @@ export async function generatePrescriptionPDF(data: PrescriptionData): Promise<B
           {data.medications.map((med, i) => (
             <View key={i} style={styles.med}>
               <Text style={styles.label}>{med.name}</Text>
-              <Text>{med.dose} — {med.duration} — {med.instructions}</Text>
+              <Text>
+                {med.dose} — {med.duration} — {med.instructions}
+              </Text>
             </View>
           ))}
         </View>
 
         {/* Notes */}
-        {data.notes
-          ? (
-            <View style={styles.section}>
-              <Text style={{ fontWeight: "bold", marginBottom: 4 }}>Notes</Text>
-              <Text>{data.notes}</Text>
-            </View>
-          )
-          : null}
+        {data.notes ? (
+          <View style={styles.section}>
+            <Text style={{ fontWeight: "bold", marginBottom: 4 }}>Notes</Text>
+            <Text>{data.notes}</Text>
+          </View>
+        ) : null}
 
         {/* Signature */}
         <View style={styles.sigLine}>

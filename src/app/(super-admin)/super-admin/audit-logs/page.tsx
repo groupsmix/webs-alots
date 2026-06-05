@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,17 +88,16 @@ async function AuditTable({
               ({total.toLocaleString()} entrées)
             </span>
           </CardTitle>
-          <Button asChild variant="outline" size="sm">
-            <Link
-              href={`/api/super-admin/audit-logs/export?${new URLSearchParams({
-                ...(event ? { event } : {}),
-                ...(from ? { from } : {}),
-                ...(to ? { to } : {}),
-              }).toString()}`}
-            >
-              Exporter CSV
-            </Link>
-          </Button>
+          <Link
+            href={`/api/super-admin/audit-logs/export?${new URLSearchParams({
+              ...(event ? { event } : {}),
+              ...(from ? { from } : {}),
+              ...(to ? { to } : {}),
+            }).toString()}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Exporter CSV
+          </Link>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -157,14 +157,20 @@ async function AuditTable({
         </span>
         <div className="flex gap-2">
           {hasPrev && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={buildHref(page - 1)}>← Précédent</Link>
-            </Button>
+            <Link
+              href={buildHref(page - 1)}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              ← Précédent
+            </Link>
           )}
           {hasNext && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={buildHref(page + 1)}>Suivant →</Link>
-            </Button>
+            <Link
+              href={buildHref(page + 1)}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Suivant →
+            </Link>
           )}
         </div>
       </div>
@@ -230,9 +236,12 @@ export default async function AuditLogsPage({ searchParams }: PageProps) {
           Filtrer
         </Button>
         {(event || from || to) && (
-          <Button asChild variant="ghost" size="sm" className="h-8">
-            <Link href="/super-admin/audit-logs">Réinitialiser</Link>
-          </Button>
+          <Link
+            href="/super-admin/audit-logs"
+            className={buttonVariants({ variant: "ghost", size: "sm", className: "h-8" })}
+          >
+            Réinitialiser
+          </Link>
         )}
       </form>
 

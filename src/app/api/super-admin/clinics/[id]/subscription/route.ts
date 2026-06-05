@@ -14,10 +14,7 @@ const schema = z.object({
   tier: z.enum(["trial", "starter", "pro", "enterprise"]),
 });
 
-export const PATCH = (
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) =>
+export const PATCH = (request: NextRequest, context: { params: Promise<{ id: string }> }) =>
   withAuth(
     async (req: NextRequest, { supabase, profile }: AuthContext) => {
       const { id } = await context.params;
@@ -32,7 +29,7 @@ export const PATCH = (
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
         return apiValidationError(
-          parsed.error.errors.map((e) => e.message).join(", "),
+          parsed.error.issues.map((e: { message: string }) => e.message).join(", "),
         );
       }
 

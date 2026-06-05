@@ -20,6 +20,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { encryptBuffer } from "@/lib/encryption";
 import { generatePrescriptionPDF } from "@/lib/prescription-pdf";
 import { uploadToR2, isR2Configured } from "@/lib/r2";
+import { createAdminClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
 
@@ -69,7 +70,7 @@ export const POST = withAuthValidation(
     // ── Fetch clinic ───────────────────────────────────────────────────
     const { data: clinic } = await supabase
       .from("clinics")
-      .select("id, name, whatsapp_phone_id, whatsapp_access_token")
+      .select("id, name, whatsapp_phone_id")
       .eq("id", clinicId)
       .maybeSingle();
 
@@ -120,15 +121,26 @@ export const POST = withAuthValidation(
       });
 
     // ── Notify patient via WhatsApp ────────────────────────────────────
-    if (clinic.whatsapp_phone_id && clinic.whatsapp_access_token && patient.phone) {
-      await sendWhatsAppTemplateMessage({
-        to: patient.phone,
-        templateName: "prescription_ready",
-        languageCode: "fr",
-        bodyParameters: [patient.name, doctor.name, clinic.name],
-        phoneNumberId: clinic.whatsapp_phone_id,
-        accessToken: clinic.whatsapp_access_token,
-      });
+    if (clinic.whatsapp_phone_id && patient.phone) {
+      // Token lives in the server-only clinic_whatsapp_credentials table
+      // (default-deny RLS). Read via service-role admin client.
+      const admin = createAdminClient("whatsapp-credentials", clinicId);
+      const { data: creds } = await admin
+        .from("clinic_whatsapp_credentials")
+        .select("whatsapp_access_token")
+        .eq("clinic_id", clinicId)
+        .maybeSingle();
+
+      if (creds?.whatsapp_access_token) {
+        await sendWhatsAppTemplateMessage({
+          to: patient.phone,
+          templateName: "prescription_ready",
+          languageCode: "fr",
+          bodyParameters: [patient.name, doctor.name, clinic.name],
+          phoneNumberId: clinic.whatsapp_phone_id,
+          accessToken: creds.whatsapp_access_token,
+        });
+      }
     }
 
     // ── Audit ──────────────────────────────────────────────────────────

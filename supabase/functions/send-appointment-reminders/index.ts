@@ -7,26 +7,24 @@
  *   2. Skips appointments that already have a reminder_type entry in
  *      appointment_reminders (deduplication via unique constraint).
  *   3. Sends a WhatsApp template message using the clinic's own phone number
- *      ID and access token (per-tenant credentials from clinics table).
+ *      ID and access token (per-tenant credentials from the server-only
+ *      clinic_whatsapp_credentials table — never exposed to user-scoped queries).
  *   4. Inserts a row into appointment_reminders to prevent re-sending.
- *
- * Required Supabase Vault secrets (set via Dashboard → Settings → Vault):
- *   edge_function_url   — https://<project>.supabase.co/functions/v1
- *   service_role_key    — Supabase service role key
  *
  * Required env vars on the Edge Function (Dashboard → Edge Functions → Secrets):
  *   SUPABASE_URL              — auto-injected by Supabase
  *   SUPABASE_SERVICE_ROLE_KEY — auto-injected by Supabase
+ *   CRON_SECRET               — shared secret for pg_cron / external trigger
+ *                               (set via `supabase secrets set CRON_SECRET=...`)
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.107.0";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface Clinic {
   name: string;
   whatsapp_phone_id: string | null;
-  whatsapp_access_token: string | null;
 }
 
 interface Appointment {
@@ -52,9 +50,9 @@ const META_API_BASE = "https://graph.facebook.com/v21.0";
 const WINDOW_TOLERANCE_MS = 7 * 60 * 1_000;
 
 const REMINDER_WINDOWS: ReminderWindow[] = [
-  { type: "24h",   minutesBefore: 24 * 60, template: "appointment_reminder_24h"   },
-  { type: "2h",    minutesBefore: 2  * 60, template: "appointment_reminder_2h"    },
-  { type: "15min", minutesBefore: 15,       template: "appointment_reminder_15min" },
+  { type: "24h", minutesBefore: 24 * 60, template: "appointment_reminder_24h" },
+  { type: "2h", minutesBefore: 2 * 60, template: "appointment_reminder_2h" },
+  { type: "15min", minutesBefore: 15, template: "appointment_reminder_15min" },
 ];
 
 // ── Supabase Client ────────────────────────────────────────────────────────
@@ -86,12 +84,15 @@ async function sendTemplateMessage(
       template: {
         name: templateName,
         language: { code: "fr" },
-        components: bodyParams.length > 0
-          ? [{
-              type: "body",
-              parameters: bodyParams.map((text) => ({ type: "text", text })),
-            }]
-          : [],
+        components:
+          bodyParams.length > 0
+            ? [
+                {
+                  type: "body",
+                  parameters: bodyParams.map((text) => ({ type: "text", text })),
+                },
+              ]
+            : [],
       },
     }),
     signal: AbortSignal.timeout(10_000),
@@ -107,22 +108,69 @@ async function sendTemplateMessage(
   return data.messages?.[0]?.id ?? null;
 }
 
+// ── Token cache (per-invocation) ───────────────────────────────────────────
+
+/** Fetches the WhatsApp access token for a clinic from the server-only
+ *  `clinic_whatsapp_credentials` table. Returns null if no creds exist. */
+async function getClinicWhatsAppToken(clinicId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("clinic_whatsapp_credentials")
+    .select("whatsapp_access_token")
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to fetch clinic whatsapp credentials", { clinicId, error });
+    return null;
+  }
+  return data?.whatsapp_access_token ?? null;
+}
+
 // ── Main handler ───────────────────────────────────────────────────────────
 
-Deno.serve(async () => {
+Deno.serve(async (req: Request) => {
+  // ── Authentication (EDGE-01) ──────────────────────────────────────
+  // Verify the request carries a valid Authorization header.
+  // Accepts either:
+  //   1. The Supabase service-role JWT (for DB webhook triggers)
+  //   2. A shared CRON_SECRET bearer token (for pg_cron / manual calls)
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+
+  const isServiceRole = serviceRoleKey && token === serviceRoleKey;
+  const isCronSecret = cronSecret && token === cronSecret;
+
+  if (!isServiceRole && !isCronSecret) {
+    return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const now = new Date();
   let totalProcessed = 0;
 
   for (const window of REMINDER_WINDOWS) {
-    const targetMs     = now.getTime() + window.minutesBefore * 60_000;
-    const rangeStart   = new Date(targetMs - WINDOW_TOLERANCE_MS).toISOString();
-    const rangeEnd     = new Date(targetMs + WINDOW_TOLERANCE_MS).toISOString();
+    const targetMs = now.getTime() + window.minutesBefore * 60_000;
+    const rangeStart = new Date(targetMs - WINDOW_TOLERANCE_MS).toISOString();
+    const rangeEnd = new Date(targetMs + WINDOW_TOLERANCE_MS).toISOString();
 
     // Fetch confirmed appointments in the target window.
     // The inner NOT IN subquery deduplicates against already-sent reminders.
+    // Token is loaded separately from the server-only credentials table.
     const { data: appointments, error } = await supabase
       .from("appointments")
-      .select(`
+      .select(
+        `
         id,
         clinic_id,
         scheduled_at,
@@ -130,17 +178,18 @@ Deno.serve(async () => {
         doctor:users!doctor_id   ( name ),
         clinic:clinics (
           name,
-          whatsapp_phone_id,
-          whatsapp_access_token
+          whatsapp_phone_id
         )
-      `)
+      `,
+      )
       .eq("status", "confirmed")
       .gte("scheduled_at", rangeStart)
       .lte("scheduled_at", rangeEnd);
 
     if (error) {
       console.error("Failed to fetch appointments for reminder window", {
-        window: window.type, error,
+        window: window.type,
+        error,
       });
       continue;
     }
@@ -155,14 +204,34 @@ Deno.serve(async () => {
       .eq("reminder_type", window.type)
       .in("appointment_id", appointmentIds);
 
-    const alreadySentIds = new Set((alreadySent ?? []).map((r: { appointment_id: string }) => r.appointment_id));
+    const alreadySentIds = new Set(
+      (alreadySent ?? []).map((r: { appointment_id: string }) => r.appointment_id),
+    );
+
+    // Cache WhatsApp tokens per clinic for this invocation so we don't
+    // hit the credentials table once per appointment.
+    const tokenCache = new Map<string, string | null>();
 
     for (const appt of appointments as Appointment[]) {
       if (alreadySentIds.has(appt.id)) continue;
 
       const clinic = appt.clinic;
-      if (!clinic?.whatsapp_phone_id || !clinic?.whatsapp_access_token) {
-        console.warn("Clinic has no WhatsApp credentials — skipping reminder", {
+      if (!clinic?.whatsapp_phone_id) {
+        console.warn("Clinic has no WhatsApp phone number — skipping reminder", {
+          clinicId: appt.clinic_id,
+          appointmentId: appt.id,
+        });
+        continue;
+      }
+
+      let accessToken = tokenCache.get(appt.clinic_id);
+      if (accessToken === undefined) {
+        accessToken = await getClinicWhatsAppToken(appt.clinic_id);
+        tokenCache.set(appt.clinic_id, accessToken);
+      }
+
+      if (!accessToken) {
+        console.warn("Clinic has no WhatsApp access token — skipping reminder", {
           clinicId: appt.clinic_id,
           appointmentId: appt.id,
         });
@@ -178,37 +247,29 @@ Deno.serve(async () => {
       }
 
       const scheduled = new Date(appt.scheduled_at);
-      const dateStr   = scheduled.toLocaleDateString("fr-MA");
-      const timeStr   = scheduled.toLocaleTimeString("fr-MA", {
-        hour:   "2-digit",
+      const dateStr = scheduled.toLocaleDateString("fr-MA");
+      const timeStr = scheduled.toLocaleTimeString("fr-MA", {
+        hour: "2-digit",
         minute: "2-digit",
         timeZone: "Africa/Casablanca",
       });
 
       const waMessageId = await sendTemplateMessage(
         clinic.whatsapp_phone_id,
-        clinic.whatsapp_access_token,
+        accessToken,
         patient.phone,
         window.template,
-        [
-          patient.name,
-          appt.doctor?.name ?? "",
-          dateStr,
-          timeStr,
-          clinic.name,
-        ],
+        [patient.name, appt.doctor?.name ?? "", dateStr, timeStr, clinic.name],
       );
 
       // Insert deduplication record — ignore if unique constraint fires
       // (e.g. two parallel invocations racing within the same window).
-      const { error: insertErr } = await supabase
-        .from("appointment_reminders")
-        .insert({
-          appointment_id: appt.id,
-          clinic_id:      appt.clinic_id,
-          reminder_type:  window.type,
-          wa_message_id:  waMessageId,
-        });
+      const { error: insertErr } = await supabase.from("appointment_reminders").insert({
+        appointment_id: appt.id,
+        clinic_id: appt.clinic_id,
+        reminder_type: window.type,
+        wa_message_id: waMessageId,
+      });
 
       if (insertErr && insertErr.code !== "23505") {
         console.error("Failed to insert reminder record", {
@@ -221,8 +282,7 @@ Deno.serve(async () => {
     }
   }
 
-  return new Response(
-    JSON.stringify({ ok: true, processed: totalProcessed }),
-    { headers: { "Content-Type": "application/json" } },
-  );
+  return new Response(JSON.stringify({ ok: true, processed: totalProcessed }), {
+    headers: { "Content-Type": "application/json" },
+  });
 });
