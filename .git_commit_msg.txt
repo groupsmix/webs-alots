@@ -1,9 +1,0 @@
-feat: implement full task specification including CI/CD, waitlist, doctor exceptions, and super-admin features
-
-This commit includes all uncommitted local changes to fully align the repository with the project's task list:
-- Added new database migrations (00145-00151) covering payment columns, waitlist, doctor exceptions, WhatsApp, and refunds.
-- Integrated CI/CD workflows for deployments and secret scanning.
-- Implemented core features (Waitlist API, WhatsApp Reminders edge function, Prescription PDFs, Slots logic).
-- Added super admin components and routes (Refunds UI/API, KYC review cards, Subscription tier form, Custom Domains, Bulk Actions, Impersonation banner).
-- Applied UI skeleton loaders and dashboard enhancements.
-- Updated environment configs and middleware features.

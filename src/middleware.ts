@@ -13,6 +13,7 @@
  */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
@@ -36,7 +37,6 @@ import {
   applyAllSecurityHeaders,
 } from "@/lib/middleware/security-headers";
 import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
-import { getWorkerBinding } from "@/lib/cf-bindings";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";

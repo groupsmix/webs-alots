@@ -6,10 +6,10 @@
  * and sends a WhatsApp template message with a 2-hour claim link.
  */
 
-import { createClient } from "@/lib/supabase-server";
 import { logAuditEvent } from "@/lib/audit-log";
-import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-server";
+import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
 
 export interface PromoteWaitlistParams {
   doctorId: string;

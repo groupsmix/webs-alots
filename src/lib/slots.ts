@@ -9,9 +9,9 @@
  *   5. Returning the remaining free slots as Date objects (Africa/Casablanca).
  */
 
-import { createClient } from "@/lib/supabase-server";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-server";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ export async function getAvailableSlots(params: SlotParams): Promise<Date[]> {
   assertClinicId(params.clinicId, "getAvailableSlots");
 
   const supabase = await createClient();
-  const dateStr  = toDateString(params.date);
+  const dateStr = toDateString(params.date);
 
   // ── 1. Exception check ────────────────────────────────────────────────
   const { data: exception, error: excError } = await supabase
@@ -106,16 +106,16 @@ export async function getAvailableSlots(params: SlotParams): Promise<Date[]> {
 
   if (!availability) return [];
 
-  const start       = parseTime(availability.start_time);
-  const end         = parseTime(availability.end_time);
-  const slotMins    = availability.slot_duration ?? 30;
-  const bufferMins  = availability.buffer_time   ?? 0;
-  const stepMins    = slotMins + bufferMins;
+  const start = parseTime(availability.start_time);
+  const end = parseTime(availability.end_time);
+  const slotMins = availability.slot_duration ?? 30;
+  const bufferMins = availability.buffer_time ?? 0;
+  const stepMins = slotMins + bufferMins;
 
   // ── 3. Generate all theoretical slots ────────────────────────────────
   const allSlots: Date[] = [];
   let currentMins = start.hours * 60 + start.minutes;
-  const endMins   = end.hours   * 60 + end.minutes;
+  const endMins = end.hours * 60 + end.minutes;
 
   while (currentMins + slotMins <= endMins) {
     const h = Math.floor(currentMins / 60);

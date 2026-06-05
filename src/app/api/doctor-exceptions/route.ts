@@ -9,7 +9,8 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
-import { withAuth, withAuthValidation, type AuthContext } from "@/lib/with-auth";
+import { withAuthValidation } from "@/lib/api-validate";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { requireTenant } from "@/lib/tenant";
@@ -18,49 +19,46 @@ import { requireTenant } from "@/lib/tenant";
 
 const createExceptionSchema = z.object({
   doctorId: z.string().uuid("doctorId must be a valid UUID"),
-  date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
-  reason:   z.string().max(500).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+  reason: z.string().max(500).optional(),
 });
 
 // ── GET — list exceptions ──────────────────────────────────────────────────
 
-export const GET = withAuth(
-  async (request: NextRequest, { supabase }: AuthContext) => {
-    const tenant    = await requireTenant();
-    const clinicId  = tenant.clinicId;
-    const doctorId  = request.nextUrl.searchParams.get("doctorId");
+export const GET = withAuth(async (request: NextRequest, { supabase }: AuthContext) => {
+  const tenant = await requireTenant();
+  const clinicId = tenant.clinicId;
+  const doctorId = request.nextUrl.searchParams.get("doctorId");
 
-    let query = supabase
-      .from("doctor_exceptions")
-      .select("id, doctor_id, date, reason, created_at")
-      .eq("clinic_id", clinicId)
-      .order("date", { ascending: true });
+  let query = supabase
+    .from("doctor_exceptions")
+    .select("id, doctor_id, date, reason, created_at")
+    .eq("clinic_id", clinicId)
+    .order("date", { ascending: true });
 
-    if (doctorId) {
-      // Basic UUID format guard before hitting the DB
-      if (!/^[0-9a-f-]{36}$/i.test(doctorId)) {
-        return apiError("doctorId must be a valid UUID", 400);
-      }
-      query = query.eq("doctor_id", doctorId);
+  if (doctorId) {
+    // Basic UUID format guard before hitting the DB
+    if (!/^[0-9a-f-]{36}$/i.test(doctorId)) {
+      return apiError("doctorId must be a valid UUID", 400);
     }
+    query = query.eq("doctor_id", doctorId);
+  }
 
-    const { data: exceptions, error } = await query;
+  const { data: exceptions, error } = await query;
 
-    if (error) {
-      return apiError("Failed to fetch doctor exceptions", 500);
-    }
+  if (error) {
+    return apiError("Failed to fetch doctor exceptions", 500);
+  }
 
-    return apiSuccess({ exceptions: exceptions ?? [] });
-  },
-  STAFF_ROLES,
-);
+  return apiSuccess({ exceptions: exceptions ?? [] });
+}, STAFF_ROLES);
 
 // ── POST — create exception ────────────────────────────────────────────────
 
 export const POST = withAuthValidation(
   createExceptionSchema,
   async (body, _request, { supabase }) => {
-    const tenant   = await requireTenant();
+    const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
     // Verify the doctor belongs to this clinic before inserting.
@@ -81,8 +79,8 @@ export const POST = withAuthValidation(
       .insert({
         doctor_id: body.doctorId,
         clinic_id: clinicId,
-        date:      body.date,
-        reason:    body.reason ?? null,
+        date: body.date,
+        reason: body.reason ?? null,
       })
       .select("id, doctor_id, date, reason, created_at")
       .single();
@@ -97,11 +95,11 @@ export const POST = withAuthValidation(
 
     await logAuditEvent({
       supabase,
-      action:      "doctor_exception_created",
-      type:        "admin",
+      action: "doctor_exception_created",
+      type: "admin",
       clinicId,
       description: `Exception marked for doctor ${body.doctorId} on ${body.date}`,
-      metadata:    { doctorId: body.doctorId, date: body.date, reason: body.reason },
+      metadata: { doctorId: body.doctorId, date: body.date, reason: body.reason },
     });
 
     return apiSuccess({ exception }, 201);
