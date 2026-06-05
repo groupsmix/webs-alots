@@ -3,6 +3,13 @@
  *
  * Extracted from middleware.ts to keep the orchestrator under ~300 lines.
  */
+
+// Type-only import — available in CF Workers environment
+type KVNamespace = {
+  get<T>(key: string, type: "json"): Promise<T | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+};
+
 import { createServerClient } from "@supabase/ssr";
 import {
   subdomainCache,
@@ -33,12 +40,26 @@ export async function resolveSubdomainClinic(
   subdomain: string,
   supabaseUrl: string,
   supabaseAnonKey: string,
+  kvNamespace?: KVNamespace,
 ): Promise<CachedClinic | undefined> {
   const cached = subdomainCache.get(subdomain);
   const negativeCached = negativeSubdomainCache.get(subdomain);
 
   if (cached && Date.now() - cached.cachedAt < SUBDOMAIN_CACHE_TTL_MS) {
     return cached;
+  }
+
+  // KV-01: Check Cloudflare KV before hitting Supabase DB
+  if (kvNamespace) {
+    try {
+      const kvVal = await kvNamespace.get<CachedClinic>(`subdomain:${subdomain}`, "json");
+      if (kvVal && Date.now() - kvVal.cachedAt < SUBDOMAIN_CACHE_TTL_MS) {
+        setSubdomainCache(subdomain, kvVal); // warm in-memory too
+        return kvVal;
+      }
+    } catch {
+      // KV unavailable — fall through to DB
+    }
   }
 
   if (negativeCached && Date.now() - negativeCached.cachedAt < NEGATIVE_CACHE_TTL_MS) {
@@ -75,6 +96,18 @@ export async function resolveSubdomainClinic(
       cachedAt: Date.now(),
     };
     setSubdomainCache(subdomain, clinic);
+
+    // Write to KV for cross-isolate sharing
+    if (kvNamespace) {
+      try {
+        await kvNamespace.put(`subdomain:${subdomain}`, JSON.stringify(clinic), {
+          expirationTtl: 300, // 5 minutes
+        });
+      } catch {
+        // KV write failure is non-fatal
+      }
+    }
+
     return clinic;
   }
 

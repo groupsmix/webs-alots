@@ -68,6 +68,14 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # id = "<paste-namespace-id-here>"
 # preview_id = "<paste-preview-id-here>"
 
+# Subdomain → clinic KV cache (KV-01).
+# Provision before deploying: wrangler kv:namespace create SUBDOMAIN_KV
+# Then paste the returned IDs here.
+# [[kv_namespaces]]
+# binding    = "SUBDOMAIN_KV"
+# id         = "<paste-namespace-id>"
+# preview_id = "<paste-preview-namespace-id>"
+
 # ── Durable Objects ───────────────────────────────────────────────────
 # H-03 (DEFERRED): Strongly consistent rate limiting via a RateLimiterDO
 # Durable Object was scaffolded in src/lib/rate-limit-do.ts, but the

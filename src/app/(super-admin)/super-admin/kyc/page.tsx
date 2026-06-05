@@ -1,6 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { KycReviewCard } from "@/components/admin/kyc-review-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -79,9 +79,7 @@ export default async function KycReviewPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        Review Docs
-                      </Button>
+                      <KycReviewCard kyc={k} />
                     </TableCell>
                   </TableRow>
                 ))

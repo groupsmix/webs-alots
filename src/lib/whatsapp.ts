@@ -266,6 +266,91 @@ const DEFAULT_TEMPLATES: Record<string, string> = {
   cancellation: "تم إلغاء موعدك مع {{doctor_name}} يوم {{date}}. {{clinic_name}}",
 };
 
+// ---- Per-Clinic Template Message Sender ----
+
+/**
+ * Per-clinic WhatsApp template message parameters.
+ * Uses the clinic's own phone number ID and access token instead of
+ * the global env-var credentials, enabling true per-tenant messaging.
+ */
+export interface WhatsAppTemplateParams {
+  /** E.164 recipient phone number, e.g. +212661234567 */
+  to: string;
+  /** Approved Meta template name, e.g. 'appointment_reminder_24h' */
+  templateName: string;
+  /** BCP-47 language code, e.g. 'fr', 'ar' */
+  languageCode: string;
+  /** Positional text substitutions for the template body component */
+  bodyParameters: string[];
+  /** clinics.whatsapp_phone_id for this clinic */
+  phoneNumberId: string;
+  /** clinics.whatsapp_access_token for this clinic */
+  accessToken: string;
+}
+
+/**
+ * Send a WhatsApp template message using per-clinic credentials.
+ * Bypasses the global env-var config so each tenant uses its own
+ * approved phone number and access token.
+ *
+ * Returns success=false (non-throwing) if phoneNumberId or accessToken
+ * are absent so callers can handle misconfigured clinics gracefully.
+ */
+export async function sendWhatsAppTemplateMessage(
+  params: WhatsAppTemplateParams,
+): Promise<WhatsAppSendResult> {
+  if (!params.phoneNumberId || !params.accessToken) {
+    return {
+      success: false,
+      error: "WhatsApp not configured for this clinic (missing phone_id or token)",
+      provider: "meta",
+    };
+  }
+
+  const bodyComponents =
+    params.bodyParameters.length > 0
+      ? [
+          {
+            type: "body",
+            parameters: params.bodyParameters.map((text) => ({ type: "text", text })),
+          },
+        ]
+      : [];
+
+  const response = await fetch(`${META_API_URL}/${params.phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${params.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: params.to,
+      type: "template",
+      template: {
+        name: params.templateName,
+        language: { code: params.languageCode },
+        components: bodyComponents,
+      },
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  const data = await response.json();
+  if (response.ok) {
+    return {
+      success: true,
+      messageId: data.messages?.[0]?.id,
+      provider: "meta",
+    };
+  }
+  return {
+    success: false,
+    error: data.error?.message || "Failed to send template message via Meta API",
+    provider: "meta",
+  };
+}
+
 /**
  * Load a WhatsApp template for a specific clinic, falling back to
  * hardcoded defaults if no custom template exists in the database.

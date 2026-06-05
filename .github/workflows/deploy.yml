@@ -1,0 +1,78 @@
+# =============================================================================
+# Deploy — Cloudflare Workers production / staging deploy
+# =============================================================================
+#
+# Triggers on push to `main` (→ production) or `staging` (→ staging).
+# Builds the OpenNext bundle then deploys via Wrangler.
+#
+# Required GitHub secrets:
+#   CLOUDFLARE_API_TOKEN   — scoped to Workers:Edit on the webs-alots script
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (not a secret, but kept
+#                            out of wrangler.toml to avoid leaking it in forks)
+#
+# TODO: Pin cloudflare/wrangler-action to a full SHA once the team has
+#       verified the exact commit for the v3 tag:
+#         gh api repos/cloudflare/wrangler-action/git/ref/tags/v3 --jq '.object.sha'
+# =============================================================================
+
+name: Deploy
+
+on:
+  push:
+    branches: [main, staging]
+
+# Cancel any in-progress deploy for the same branch so a rapid force-push
+# does not leave two deployments racing.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+# Least-privilege permissions — deploy only needs to read the repo.
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Workers
+    steps:
+      # CICD-01 / AUDIT-16: Pin GH Actions to SHA for supply-chain hardening.
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      # C-04: --ignore-scripts prevents malicious postinstall on CI.
+      # The project's legitimate postinstall (patch-opennext.mjs) is
+      # invoked explicitly in build:cf.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # build:cf = patch-opennext.mjs → opennextjs-cloudflare build → post-build-patch.mjs
+      - name: Build for Cloudflare Workers
+        run: npm run build:cf
+        env:
+          # Supabase URL/key are baked into the client bundle at build time.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      # Fail fast if the build silently produced no worker entry point.
+      - name: Verify build output
+        run: |
+          if [ ! -f .open-next/worker.js ]; then
+            echo "::error::.open-next/worker.js is missing — build may have silently failed."
+            exit 1
+          fi
+          echo "Worker entry: .open-next/worker.js ($(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js) bytes)"
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Deploy to `production` on main, `staging` on the staging branch.
+          command: deploy --env ${{ github.ref_name == 'main' && 'production' || 'staging' }}
