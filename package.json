@@ -72,7 +72,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
     "@chromatic-com/storybook": "^5.2.1",
-    "@next/bundle-analyzer": "^16.2.6",
+    "@next/bundle-analyzer": "^16.2.7",
     "@opennextjs/cloudflare": "^1.17.1",
     "@playwright/test": "^1.60.0",
     "@storybook/addon-a11y": "^10.4.1",
