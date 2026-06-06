@@ -1,8 +1,8 @@
 /**
  * Helper for accessing new tables not yet in the generated Supabase types.
  *
- * The voice_notes, prescription_drafts, and drug_interaction_alerts tables
- * are created by migration 00109_batch4a_doctor_ai.sql but the Supabase
+ * The voice_notes, prescription_drafts, drug_interaction_alerts, and
+ * Site Team Agent tables are created by recent migrations but the Supabase
  * type generator has not yet been run. Once types are regenerated, callers
  * should switch to the typed `.from()` calls.
  */
@@ -18,7 +18,14 @@ type UntypedFrom = SupabaseClient<any, any, any>["from"];
  */
 export function fromUntyped(
   supabase: SupabaseClient,
-  table: "voice_notes" | "prescription_drafts" | "drug_interaction_alerts",
+  table:
+    | "voice_notes"
+    | "prescription_drafts"
+    | "drug_interaction_alerts"
+    | "agent_conversations"
+    | "agent_messages"
+    | "clinic_agent_configs"
+    | "agent_token_usage",
 ): ReturnType<UntypedFrom> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase as SupabaseClient<any, any, any>).from(table);

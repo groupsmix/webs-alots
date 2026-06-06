@@ -9,6 +9,7 @@ import {
   AlertCircle,
   MessageSquare,
   Send,
+  Sparkles,
   ChevronDown,
   ChevronUp,
   ArrowUpCircle,
@@ -35,6 +36,14 @@ interface SupportTicket {
   category: string;
   created_by: string | null;
   assigned_to: string | null;
+  assigned_team_member_id: string | null;
+  assigned_team_member_name: string | null;
+  assigned_team_member_role: string | null;
+  ai_priority: "critical" | "high" | "medium" | "low" | null;
+  ai_category: string | null;
+  sentiment: "frustrated" | "neutral" | "satisfied" | null;
+  ai_draft_response: string | null;
+  triaged_at: string | null;
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
@@ -124,6 +133,7 @@ export default function SupportPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
+  const [triageLoadingId, setTriageLoadingId] = useState<string | null>(null);
 
   const loadTickets = useCallback(async () => {
     try {
@@ -242,6 +252,28 @@ export default function SupportPage() {
       }
     } catch {
       addToast("Failed to update priority", "error");
+    }
+  }
+
+  async function handleTriage(ticketId: string) {
+    setTriageLoadingId(ticketId);
+    try {
+      const res = await fetch("/api/admin/support/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket_id: ticketId }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        addToast("AI triage completed", "success");
+        await loadTickets();
+      } else {
+        addToast(json.error ?? "Failed to triage ticket", "error");
+      }
+    } catch {
+      addToast("Failed to triage ticket", "error");
+    } finally {
+      setTriageLoadingId(null);
     }
   }
 
@@ -403,6 +435,11 @@ export default function SupportPage() {
                       >
                         {PRIORITY_LABELS[ticket.priority] ?? ticket.priority}
                       </Badge>
+                      {ticket.ai_priority ? (
+                        <Badge variant="outline" className="text-[10px] capitalize">
+                          AI {ticket.ai_priority}
+                        </Badge>
+                      ) : null}
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-1">
                       {ticket.description}
@@ -413,6 +450,9 @@ export default function SupportPage() {
                       {ticket.updated_at !== ticket.created_at && (
                         <span>Updated {formatDate(ticket.updated_at)}</span>
                       )}
+                      {ticket.assigned_team_member_name ? (
+                        <span>Assignee: {ticket.assigned_team_member_name}</span>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -452,6 +492,19 @@ export default function SupportPage() {
                         <ArrowUpCircle className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTriage(ticket.id)}
+                      disabled={triageLoadingId === ticket.id}
+                      title="Run AI triage"
+                    >
+                      {triageLoadingId === ticket.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                    </Button>
                     {ticket.priority !== "low" && (
                       <Button
                         variant="ghost"
@@ -485,6 +538,60 @@ export default function SupportPage() {
                       <p className="text-sm font-medium mb-1">Description</p>
                       <p className="text-sm text-muted-foreground">{ticket.description}</p>
                     </div>
+
+                    {(ticket.ai_priority ||
+                      ticket.ai_draft_response ||
+                      ticket.assigned_team_member_name) && (
+                      <div className="mb-4 rounded-lg border bg-muted/30 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-medium">AI triage</p>
+                          {ticket.triaged_at ? (
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(ticket.triaged_at)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-2 text-xs">
+                          {ticket.ai_priority ? (
+                            <Badge variant="outline" className="capitalize">
+                              Priority: {ticket.ai_priority}
+                            </Badge>
+                          ) : null}
+                          {ticket.ai_category ? (
+                            <Badge variant="outline" className="capitalize">
+                              Category: {ticket.ai_category}
+                            </Badge>
+                          ) : null}
+                          {ticket.sentiment ? (
+                            <Badge variant="outline" className="capitalize">
+                              Sentiment: {ticket.sentiment}
+                            </Badge>
+                          ) : null}
+                          {ticket.assigned_team_member_name ? (
+                            <Badge variant="outline">
+                              Assigned: {ticket.assigned_team_member_name}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        {ticket.ai_draft_response ? (
+                          <div>
+                            <p className="text-xs font-medium mb-1">Suggested reply</p>
+                            <p className="text-sm text-muted-foreground whitespace-pre-line">
+                              {ticket.ai_draft_response}
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => setReplyText(ticket.ai_draft_response ?? "")}
+                            >
+                              Use draft response
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
 
                     <div className="mb-3">
                       <p className="text-sm font-medium mb-2">Conversation</p>

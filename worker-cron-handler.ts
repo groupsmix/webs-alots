@@ -43,6 +43,7 @@ export const CRON_ROUTES: Record<string, string[]> = {
   "0 3 * * *": ["/api/cron/gdpr-purge"],
   "0 4 * * *": ["/api/cron/dedup-purge"],
   "0 5 * * *": ["/api/cron/stripe-reconcile"],
+  "0 8 * * *": ["/api/cron/onboarding-nudges"],
 };
 
 /**

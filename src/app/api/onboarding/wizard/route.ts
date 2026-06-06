@@ -5,6 +5,7 @@ import { getDefaultServices } from "@/lib/config/default-services";
 import { sendEmail } from "@/lib/email";
 import { onboardingWelcomeEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
+import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { TEMPLATE_PRESETS } from "@/lib/template-presets";
 import { sendTextMessage } from "@/lib/whatsapp";
@@ -62,6 +63,8 @@ const wizardSchema = z.object({
 export const POST = withAuthValidation(
   wizardSchema,
   async (body, request, { supabase, profile }) => {
+    let goLiveSummary: string | null = null;
+
     // Verify the authenticated user owns the clinic
     if (profile.clinic_id !== body.clinic_id) {
       return apiForbidden("You are not authorised for this clinic");
@@ -266,6 +269,7 @@ export const POST = withAuthValidation(
         : "https://oltigo.com";
       const dashboardUrl = `${siteUrl}/admin`;
       const name = clinic?.owner_name || clinic?.name || "Docteur";
+      goLiveSummary = `Clinic live at ${siteUrl}`;
 
       // 4a. WhatsApp welcome message
       if (clinic?.phone) {
@@ -316,6 +320,47 @@ export const POST = withAuthValidation(
         }
       }
     }
+
+    const { data: clinicForOnboarding } = await supabase
+      .from("clinics")
+      .select("name, phone, owner_email, owner_name")
+      .eq("id", body.clinic_id)
+      .single();
+
+    const completedSteps = body.go_live
+      ? [
+          "clinic_info",
+          "specialty",
+          "legal_docs",
+          "team_setup",
+          "insurance_setup",
+          "schedule_setup",
+          "go_live",
+        ]
+      : [
+          "clinic_info",
+          "specialty",
+          ...(servicesToInsert.length > 0 ? ["team_setup"] : []),
+          ...(scheduleToInsert.length > 0 ? ["schedule_setup"] : []),
+        ];
+
+    await syncClinicOnboardingState({
+      supabase,
+      clinicId: body.clinic_id,
+      clinicName: clinicForOnboarding?.name ?? "Clinique",
+      contactName: clinicForOnboarding?.owner_name ?? null,
+      contactPhone: clinicForOnboarding?.phone ?? null,
+      contactEmail: clinicForOnboarding?.owner_email ?? null,
+      completedSteps,
+      currentStep: body.go_live
+        ? "go_live"
+        : scheduleToInsert.length > 0
+          ? "whatsapp_setup"
+          : "schedule_setup",
+      status: body.go_live ? "completed" : "in_progress",
+      completionPercentage: body.go_live ? 100 : undefined,
+      goLiveMessage: goLiveSummary,
+    });
 
     return apiSuccess({
       status: "ok",

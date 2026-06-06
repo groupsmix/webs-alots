@@ -106,17 +106,86 @@ type SortDirection = "asc" | "desc";
 
 // --------------- Health Score ---------------
 
-interface HealthBreakdown {
-  profileCompleteness: number;
-  activeSubscription: number;
-  recentActivity: number;
-  featureAdoption: number;
-  paymentStatus: number;
-  total: number;
+interface HealthCategory {
+  label: string;
+  value: number;
+  max: number;
 }
 
-function calculateHealthScore(clinic: ClinicDetail): HealthBreakdown {
-  let profileCompleteness = 0;
+interface HealthBreakdown {
+  categories: HealthCategory[];
+  total: number;
+  source: "live" | "fallback";
+  trend?: string;
+  topRiskSignal?: string;
+  topStrengthSignal?: string;
+  churnRisk?: string;
+}
+
+interface ClinicHealthScoreRow {
+  clinicId: string;
+  clinicName: string;
+  score: number;
+  grade: string;
+  topRiskSignal: string;
+  topStrengthSignal: string;
+  trend: string;
+  churnRisk: string;
+  computedAt: string;
+  signalsSnapshot: Record<string, unknown>;
+}
+
+interface PlatformHealthSummary {
+  totalClinics: number;
+  averageScore: number;
+  countsByGrade: Record<string, number>;
+  countsByRisk: Record<string, number>;
+  improvingCount: number;
+  decliningCount: number;
+  topAtRisk: Array<{
+    clinicId: string;
+    clinicName: string;
+    score: number;
+    churnRisk: string;
+    trend: string;
+    topRiskSignal: string;
+  }>;
+  topPerformers: Array<{
+    clinicId: string;
+    clinicName: string;
+    score: number;
+    grade: string;
+    topStrengthSignal: string;
+  }>;
+}
+
+interface PlatformAlertRow {
+  id: string;
+  clinic_id: string | null;
+  alert_type: string;
+  severity: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+interface ClinicsQueryResponse {
+  template: { id: string; title: string; description: string };
+  rows: Array<Record<string, unknown>>;
+  availableQueries: Array<{ id: string; title: string }>;
+}
+
+function clamp20(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(20, Math.round(value)));
+}
+
+function toScore20(value: unknown): number {
+  const numeric = typeof value === "number" ? value : Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return 0;
+  return clamp20(numeric * 20);
+}
+
+function buildFallbackHealthScore(clinic: ClinicDetail): HealthBreakdown {
   const profileFields = [
     clinic.name,
     clinic.ownerPhone,
@@ -125,7 +194,7 @@ function calculateHealthScore(clinic: ClinicDetail): HealthBreakdown {
     clinic.type,
   ];
   const filled = profileFields.filter((f) => f && f.length > 0).length;
-  profileCompleteness = Math.round((filled / profileFields.length) * 20);
+  const profileCompleteness = Math.round((filled / profileFields.length) * 20);
 
   const activeSubscription = clinic.status !== "suspended" ? 20 : 0;
 
@@ -152,17 +221,47 @@ function calculateHealthScore(clinic: ClinicDetail): HealthBreakdown {
 
   const paymentStatus = clinic.status === "suspended" ? 5 : clinic.status === "trial" ? 15 : 20;
 
-  const total =
-    profileCompleteness + activeSubscription + recentActivity + featureAdoption + paymentStatus;
+  const categories = [
+    { label: "Profile", value: profileCompleteness, max: 20 },
+    { label: "Subscription", value: activeSubscription, max: 20 },
+    { label: "Activity", value: recentActivity, max: 20 },
+    { label: "Features", value: featureAdoption, max: 20 },
+    { label: "Payment", value: paymentStatus, max: 20 },
+  ];
 
   return {
-    profileCompleteness,
-    activeSubscription,
-    recentActivity,
-    featureAdoption,
-    paymentStatus,
-    total,
+    categories,
+    total: categories.reduce((sum, item) => sum + item.value, 0),
+    source: "fallback",
   };
+}
+
+function buildLiveHealthScore(health: ClinicHealthScoreRow): HealthBreakdown {
+  const snapshot = health.signalsSnapshot ?? {};
+  const paymentHealthy = snapshot.paymentHealthy === true ? 1 : 0;
+  const negativeSupportRate =
+    typeof snapshot.negativeSupportRate === "number" ? snapshot.negativeSupportRate : 0;
+  const paymentSupport = clamp20(((paymentHealthy + (1 - negativeSupportRate)) / 2) * 20);
+
+  return {
+    categories: [
+      { label: "Logins", value: toScore20(snapshot.loginFrequency), max: 20 },
+      { label: "Bookings", value: toScore20(snapshot.appointmentBookingRate), max: 20 },
+      { label: "Attendance", value: toScore20(1 - Number(snapshot.noShowRate ?? 0)), max: 20 },
+      { label: "Features", value: toScore20(snapshot.featureAdoption), max: 20 },
+      { label: "Pay/Support", value: paymentSupport, max: 20 },
+    ],
+    total: health.score,
+    source: "live",
+    trend: health.trend,
+    topRiskSignal: health.topRiskSignal,
+    topStrengthSignal: health.topStrengthSignal,
+    churnRisk: health.churnRisk,
+  };
+}
+
+function getHealthBreakdown(clinic: ClinicDetail, health?: ClinicHealthScoreRow): HealthBreakdown {
+  return health ? buildLiveHealthScore(health) : buildFallbackHealthScore(clinic);
 }
 
 type HealthLabel = "Excellent" | "Good" | "Fair" | "At Risk";
@@ -184,6 +283,40 @@ function getHealthBadgeClasses(label: HealthLabel): string {
       return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
     case "At Risk":
       return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+  }
+}
+
+function formatSignalName(signal?: string): string {
+  switch (signal) {
+    case "loginFrequency":
+      return "Login frequency";
+    case "appointmentBookingRate":
+      return "Booking rate";
+    case "noShowRateInverted":
+    case "noShowRate":
+      return "Attendance";
+    case "featureAdoption":
+      return "Feature adoption";
+    case "paymentHealthy":
+      return "Payments";
+    case "negativeSupportRateInverted":
+    case "negativeSupportRate":
+      return "Support quality";
+    default:
+      return signal ? signal.replace(/_/g, " ") : "Unknown";
+  }
+}
+
+function formatTrendLabel(trend?: string): string {
+  switch (trend) {
+    case "improving":
+      return "Improving";
+    case "declining":
+      return "Declining";
+    case "stable":
+      return "Stable";
+    default:
+      return "Unknown";
   }
 }
 
@@ -237,20 +370,13 @@ function HealthScoreTooltip({
   visible: boolean;
 }) {
   if (!visible) return null;
-  const rows: { label: string; value: number; max: number }[] = [
-    { label: "Profile", value: breakdown.profileCompleteness, max: 20 },
-    { label: "Subscription", value: breakdown.activeSubscription, max: 20 },
-    { label: "Activity", value: breakdown.recentActivity, max: 20 },
-    { label: "Features", value: breakdown.featureAdoption, max: 20 },
-    { label: "Payment", value: breakdown.paymentStatus, max: 20 },
-  ];
   return (
     <div
       role="tooltip"
       className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-md border bg-popover p-3 text-xs text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 motion-reduce:animate-none"
     >
       <p className="font-semibold mb-2">Health Score Breakdown</p>
-      {rows.map((r) => (
+      {breakdown.categories.map((r) => (
         <div key={r.label} className="flex justify-between py-0.5">
           <span className="text-muted-foreground">{r.label}</span>
           <span className="font-medium">
@@ -263,6 +389,13 @@ function HealthScoreTooltip({
         <span>Total</span>
         <span>{breakdown.total}/100</span>
       </div>
+      {breakdown.source === "live" && (breakdown.trend || breakdown.churnRisk) ? (
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          {breakdown.trend ? `Trend: ${breakdown.trend}` : ""}
+          {breakdown.trend && breakdown.churnRisk ? " · " : ""}
+          {breakdown.churnRisk ? `Risk: ${breakdown.churnRisk}` : ""}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -393,6 +526,21 @@ export default function AllClinicsPage() {
 
   // Health score tooltip
   const [hoveredHealthId, setHoveredHealthId] = useState<string | null>(null);
+  const [healthRowsByClinicId, setHealthRowsByClinicId] = useState<
+    Map<string, ClinicHealthScoreRow>
+  >(new Map());
+  const [platformHealthSummary, setPlatformHealthSummary] = useState<PlatformHealthSummary | null>(
+    null,
+  );
+  const [platformAlerts, setPlatformAlerts] = useState<PlatformAlertRow[]>([]);
+  const [platformNarrative, setPlatformNarrative] = useState<string | null>(null);
+  const [platformNarrativeLoading, setPlatformNarrativeLoading] = useState(false);
+  const [refreshingHealth, setRefreshingHealth] = useState(false);
+  const [detailNarrative, setDetailNarrative] = useState<string | null>(null);
+  const [detailNarrativeLoading, setDetailNarrativeLoading] = useState(false);
+  const [queryInput, setQueryInput] = useState("Show top at-risk clinics");
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [queryResult, setQueryResult] = useState<ClinicsQueryResponse | null>(null);
 
   const loadClinics = useCallback(async () => {
     try {
@@ -430,22 +578,178 @@ export default function AllClinicsPage() {
     }
   }, []);
 
+  const loadHealthScores = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/clinic-health?limit=500&include_alerts=true");
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: {
+          scores?: ClinicHealthScoreRow[];
+          summary?: PlatformHealthSummary;
+          alerts?: PlatformAlertRow[];
+        };
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "Failed to load clinic health scores");
+      }
+
+      const next = new Map<string, ClinicHealthScoreRow>();
+      for (const row of json.data?.scores ?? []) {
+        next.set(row.clinicId, row);
+      }
+      setHealthRowsByClinicId(next);
+      setPlatformHealthSummary(json.data?.summary ?? null);
+      setPlatformAlerts(json.data?.alerts ?? []);
+    } catch (err) {
+      logger.warn("Failed to load live clinic health scores", {
+        context: "clinics-page",
+        error: err,
+      });
+      setHealthRowsByClinicId(new Map());
+      setPlatformHealthSummary(null);
+      setPlatformAlerts([]);
+    }
+  }, []);
+
+  const loadPlatformNarrative = useCallback(async () => {
+    try {
+      setPlatformNarrativeLoading(true);
+      const res = await fetch("/api/admin/clinic-narrative", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: { narrative?: string };
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "Failed to load platform narrative");
+      }
+
+      setPlatformNarrative(json.data?.narrative ?? null);
+    } catch (err) {
+      logger.warn("Failed to load platform narrative", {
+        context: "clinics-page",
+        error: err,
+      });
+      setPlatformNarrative(null);
+    } finally {
+      setPlatformNarrativeLoading(false);
+    }
+  }, []);
+
+  const loadClinicNarrative = useCallback(async (clinicId: string) => {
+    const res = await fetch("/api/admin/clinic-narrative", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clinic_id: clinicId }),
+    });
+    const json = (await res.json()) as {
+      ok: boolean;
+      data?: { narrative?: string };
+      error?: string;
+    };
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json.error ?? "Failed to load clinic narrative");
+    }
+
+    return json.data?.narrative ?? null;
+  }, []);
+
+  const runApprovedQuery = useCallback(
+    async (question: string) => {
+      const trimmed = question.trim();
+      if (!trimmed) return;
+
+      try {
+        setQueryLoading(true);
+        const res = await fetch("/api/admin/clinics-query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: trimmed, limit: 8 }),
+        });
+        const json = (await res.json()) as {
+          ok: boolean;
+          data?: ClinicsQueryResponse;
+          error?: string;
+        };
+
+        if (!res.ok || !json.ok) {
+          throw new Error(json.error ?? "Failed to run approved clinics query");
+        }
+
+        setQueryResult(json.data ?? null);
+      } catch (err) {
+        logger.warn("Failed to run approved clinics query", {
+          context: "clinics-page",
+          error: err,
+        });
+        addToast("Failed to run clinics query", "error");
+        setQueryResult(null);
+      } finally {
+        setQueryLoading(false);
+      }
+    },
+    [addToast],
+  );
+
   useEffect(() => {
     const controller = new AbortController();
-    loadClinics();
+    void loadClinics();
+    void loadHealthScores();
+    void loadPlatformNarrative();
     return () => {
       controller.abort();
     };
-  }, [loadClinics]);
+  }, [loadClinics, loadHealthScores, loadPlatformNarrative]);
+
+  useEffect(() => {
+    if (!detail) {
+      setDetailNarrative(null);
+      setDetailNarrativeLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailNarrativeLoading(true);
+    setDetailNarrative(null);
+
+    void loadClinicNarrative(detail.id)
+      .then((narrative) => {
+        if (cancelled) return;
+        setDetailNarrative(narrative);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        logger.warn("Failed to load clinic narrative", {
+          context: "clinics-page",
+          clinicId: detail.id,
+          error: err,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setDetailNarrativeLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detail, loadClinicNarrative]);
 
   // Precompute health scores
   const healthScores = useMemo(() => {
     const map = new Map<string, HealthBreakdown>();
     for (const c of list) {
-      map.set(c.id, calculateHealthScore(c));
+      map.set(c.id, getHealthBreakdown(c, healthRowsByClinicId.get(c.id)));
     }
     return map;
-  }, [list]);
+  }, [list, healthRowsByClinicId]);
 
   const filtered = list.filter((c) => {
     const q = search.toLowerCase();
@@ -699,6 +1003,48 @@ export default function AllClinicsPage() {
     setSuspendOpen(false);
   }
 
+  async function refreshHealthAnalytics() {
+    try {
+      setRefreshingHealth(true);
+      const res = await fetch("/api/admin/clinic-health", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ create_alerts: true }),
+      });
+      const json = (await res.json()) as { ok: boolean; error?: string };
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error ?? "Failed to recompute clinic health");
+      }
+
+      await Promise.all([loadHealthScores(), loadPlatformNarrative()]);
+
+      if (detail) {
+        setDetailNarrativeLoading(true);
+        try {
+          const narrative = await loadClinicNarrative(detail.id);
+          setDetailNarrative(narrative);
+        } finally {
+          setDetailNarrativeLoading(false);
+        }
+      }
+
+      addToast("Clinic health analytics refreshed", "success");
+    } catch (err) {
+      logger.warn("Failed to refresh clinic health analytics", {
+        context: "clinics-page",
+        error: err,
+      });
+      addToast("Failed to refresh clinic health analytics", "error");
+    } finally {
+      setRefreshingHealth(false);
+    }
+  }
+
+  const criticalClinicCount = platformHealthSummary?.countsByRisk?.critical ?? 0;
+  const highRiskClinicCount = platformHealthSummary?.countsByRisk?.high ?? 0;
+  const topAtRiskClinic = platformHealthSummary?.topAtRisk?.[0] ?? null;
+  const topPerformerClinic = platformHealthSummary?.topPerformers?.[0] ?? null;
+
   return (
     <div>
       <Breadcrumb
@@ -712,6 +1058,18 @@ export default function AllClinicsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={refreshHealthAnalytics}
+            disabled={refreshingHealth || loadingData}
+          >
+            {refreshingHealth ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Refresh Health
+          </Button>
           <Button variant="outline" onClick={handleExportCSV} disabled={filtered.length === 0}>
             <Download className="h-4 w-4 mr-1" />
             Export CSV
@@ -723,6 +1081,209 @@ export default function AllClinicsPage() {
             </Button>
           </Link>
         </div>
+      </div>
+
+      <div className="mb-6 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Clinics analyzed</p>
+              <p className="mt-1 text-2xl font-bold">{platformHealthSummary?.totalClinics ?? 0}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {platformHealthSummary
+                  ? `${platformHealthSummary.improvingCount} improving · ${platformHealthSummary.decliningCount} declining`
+                  : "Owner analytics loading"}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Average health score</p>
+              <p className="mt-1 text-2xl font-bold">
+                {platformHealthSummary?.averageScore ?? 0}/100
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Top performer: {topPerformerClinic?.clinicName ?? "—"}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">At-risk clinics</p>
+              <p className="mt-1 text-2xl font-bold">{criticalClinicCount + highRiskClinicCount}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {criticalClinicCount} critical · {highRiskClinicCount} high risk
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Unread platform alerts</p>
+              <p className="mt-1 text-2xl font-bold">{platformAlerts.length}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Focus clinic: {topAtRiskClinic?.clinicName ?? "—"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold">Platform Health Narrative</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Aggregate-only owner summary across clinics, alerts, onboarding, and support.
+                </p>
+              </div>
+              {topAtRiskClinic ? (
+                <Badge className={getHealthBadgeClasses(getHealthLabel(topAtRiskClinic.score))}>
+                  {topAtRiskClinic.clinicName}: {topAtRiskClinic.score}/100
+                </Badge>
+              ) : null}
+            </div>
+
+            {platformNarrativeLoading ? (
+              <div className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading platform narrative…
+              </div>
+            ) : platformNarrative ? (
+              <p className="mt-4 whitespace-pre-line text-sm text-muted-foreground">
+                {platformNarrative}
+              </p>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">
+                No platform narrative available yet.
+              </p>
+            )}
+
+            <Separator className="my-4" />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Priority clinic
+                </h3>
+                <p className="mt-1 text-sm font-medium">{topAtRiskClinic?.clinicName ?? "—"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {topAtRiskClinic
+                    ? `${topAtRiskClinic.score}/100 · ${formatSignalName(topAtRiskClinic.topRiskSignal)}`
+                    : "No elevated risk clinic detected"}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Recent alerts
+                </h3>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {platformAlerts.length > 0 ? (
+                    platformAlerts.slice(0, 3).map((alert) => (
+                      <Badge key={alert.id} variant="outline" className="capitalize">
+                        {alert.severity} · {alert.alert_type.replace(/_/g, " ")}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No unread platform alerts</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold">Approved analytics query</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ask a supported owner question about risk, onboardings, alerts, or support
+                  backlog.
+                </p>
+              </div>
+              <Badge variant="outline">Owner AI</Badge>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Input value={queryInput} onChange={(e) => setQueryInput(e.target.value)} />
+              <Button onClick={() => runApprovedQuery(queryInput)} disabled={queryLoading}>
+                {queryLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                "Show top at-risk clinics",
+                "Which onboardings are stuck?",
+                "Show critical platform alerts",
+                "What's the support backlog?",
+              ].map((suggestion) => (
+                <Button
+                  key={suggestion}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    setQueryInput(suggestion);
+                    void runApprovedQuery(suggestion);
+                  }}
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold">Query results</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Latest approved analytics query output.
+                </p>
+              </div>
+              {queryResult?.template ? (
+                <Badge variant="outline">{queryResult.template.title}</Badge>
+              ) : null}
+            </div>
+
+            {queryLoading ? (
+              <div className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Running query…
+              </div>
+            ) : queryResult ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-xs text-muted-foreground">{queryResult.template.description}</p>
+                {queryResult.rows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No rows returned for this query.</p>
+                ) : (
+                  queryResult.rows.slice(0, 4).map((row, index) => (
+                    <div key={index} className="rounded-lg border p-3 text-xs">
+                      {Object.entries(row)
+                        .slice(0, 6)
+                        .map(([key, value]) => (
+                          <div key={key} className="flex justify-between gap-3 py-0.5">
+                            <span className="text-muted-foreground">{key.replace(/_/g, " ")}</span>
+                            <span className="text-right font-medium">{String(value ?? "—")}</span>
+                          </div>
+                        ))}
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Run an approved analytics query to inspect risk, alerts, onboarding, or support
+                backlog.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -907,7 +1468,8 @@ export default function AllClinicsPage() {
                 </thead>
                 <tbody>
                   {paginatedList.map((clinic) => {
-                    const breakdown = healthScores.get(clinic.id) ?? calculateHealthScore(clinic);
+                    const breakdown =
+                      healthScores.get(clinic.id) ?? buildFallbackHealthScore(clinic);
                     const healthLabel = getHealthLabel(breakdown.total);
                     const isSelected = selectedIds.has(clinic.id);
                     return (
@@ -1149,7 +1711,7 @@ export default function AllClinicsPage() {
               {/* eslint-disable i18next/no-literal-string -- admin-only health card labels */}
               {/* Health Score Card */}
               {(() => {
-                const bd = healthScores.get(detail.id) ?? calculateHealthScore(detail);
+                const bd = healthScores.get(detail.id) ?? buildFallbackHealthScore(detail);
                 const label = getHealthLabel(bd.total);
                 return (
                   <Card>
@@ -1175,18 +1737,55 @@ export default function AllClinicsPage() {
                         />
                       </div>
                       <div className="grid grid-cols-5 gap-2 text-center text-xs">
-                        {[
-                          { label: "Profile", val: bd.profileCompleteness },
-                          { label: "Subscription", val: bd.activeSubscription },
-                          { label: "Activity", val: bd.recentActivity },
-                          { label: "Features", val: bd.featureAdoption },
-                          { label: "Payment", val: bd.paymentStatus },
-                        ].map((item) => (
+                        {bd.categories.map((item) => (
                           <div key={item.label}>
-                            <p className="font-medium">{item.val}/20</p>
+                            <p className="font-medium">
+                              {item.value}/{item.max}
+                            </p>
                             <p className="text-muted-foreground text-[10px]">{item.label}</p>
                           </div>
                         ))}
+                      </div>
+                      {bd.source === "live" ? (
+                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                          <p>
+                            <span className="font-medium text-foreground">Trend:</span>{" "}
+                            {formatTrendLabel(bd.trend)}
+                          </p>
+                          <p>
+                            <span className="font-medium text-foreground">Risk:</span>{" "}
+                            {bd.churnRisk ?? "unknown"}
+                          </p>
+                          <p>
+                            <span className="font-medium text-foreground">Top risk:</span>{" "}
+                            {formatSignalName(bd.topRiskSignal)}
+                          </p>
+                          <p>
+                            <span className="font-medium text-foreground">Top strength:</span>{" "}
+                            {formatSignalName(bd.topStrengthSignal)}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Live owner analytics unavailable; showing fallback heuristic score.
+                        </p>
+                      )}
+                      <Separator className="my-4" />
+                      <div>
+                        <h4 className="text-sm font-semibold">Operational Narrative</h4>
+                        {detailNarrativeLoading ? (
+                          <div className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating narrative…
+                          </div>
+                        ) : detailNarrative ? (
+                          <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                            {detailNarrative}
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            No narrative available for this clinic yet.
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

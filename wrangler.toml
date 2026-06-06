@@ -242,6 +242,7 @@ crons = [
   "0 3 * * *",
   "0 4 * * *",
   "0 5 * * *",
+  "0 8 * * *",
 ]
 
 # W8-A31-01: Observability (was missing — Workers Logs disabled per-env)
@@ -375,6 +376,7 @@ crons = [
   "0 3 * * *",
   "0 4 * * *",
   "0 5 * * *",
+  "0 8 * * *",
 ]
 
 # W8-A31-01: Observability for staging
@@ -418,6 +420,7 @@ crons = [
   "0 3 * * *",    # 03:00 UTC daily — GDPR patient data purge
   "0 4 * * *",    # 04:00 UTC daily — M-03/M-04 dedup table TTL purge
   "0 5 * * *",    # 05:00 UTC daily — BL-002 Stripe payment reconciliation
+  "0 8 * * *",    # 08:00 UTC daily — onboarding nudges for stalled clinics
 ]
 
 # ── Build ─────────────────────────────────────────────────────────────

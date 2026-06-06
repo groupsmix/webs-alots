@@ -11,6 +11,8 @@ import {
   Eye,
   Trash2,
   Send,
+  Sparkles,
+  RefreshCw,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -60,6 +62,20 @@ interface AdminMember {
   created_at: string | null;
 }
 
+interface TeamBriefingEntry {
+  teamMemberId: string;
+  name: string;
+  role: string;
+  isAvailable: boolean;
+  currentTicketCount: number;
+  openTickets: number;
+  urgentTickets: number;
+  stalledOnboardings: number;
+  unreadAlerts: number;
+  briefing: string | null;
+  generatedAt: string | null;
+}
+
 // ---------- Helpers ----------
 
 const ROLE_LABELS: Record<AdminRole, string> = {
@@ -93,6 +109,9 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [briefings, setBriefings] = useState<TeamBriefingEntry[]>([]);
+  const [briefingsLoading, setBriefingsLoading] = useState(true);
+  const [briefingsGenerating, setBriefingsGenerating] = useState(false);
 
   // Invite dialog
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -126,9 +145,30 @@ export default function TeamPage() {
     }
   }, []);
 
+  const loadBriefings = useCallback(async () => {
+    setBriefingsLoading(true);
+    try {
+      const res = await fetch("/api/admin/team/briefings");
+      const json = await res.json();
+      if (json.ok) {
+        setBriefings(json.data.entries ?? []);
+      } else {
+        logger.warn("Failed to load team briefings", {
+          context: "team-page",
+          error: json.error,
+        });
+      }
+    } catch (err) {
+      logger.warn("Failed to load team briefings", { context: "team-page", error: err });
+    } finally {
+      setBriefingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadMembers();
-  }, [loadMembers]);
+    loadBriefings();
+  }, [loadMembers, loadBriefings]);
 
   const filtered = admins.filter((a) => {
     const q = search.toLowerCase();
@@ -257,6 +297,28 @@ export default function TeamPage() {
     }
   }
 
+  async function handleGenerateBriefings() {
+    setBriefingsGenerating(true);
+    try {
+      const res = await fetch("/api/admin/team/briefings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh: true }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setBriefings(json.data.entries ?? []);
+        addToast("Today's team briefings generated", "success");
+      } else {
+        addToast(json.error ?? "Failed to generate team briefings", "error");
+      }
+    } catch {
+      addToast("Failed to generate team briefings", "error");
+    } finally {
+      setBriefingsGenerating(false);
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto">
       <Breadcrumb
@@ -267,7 +329,7 @@ export default function TeamPage() {
         <div>
           <h1 className="text-2xl font-bold">Team Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage super admin users, roles, and permissions
+            Manage super admin users, roles, permissions, and morning briefings
           </p>
         </div>
         <Button onClick={() => setInviteOpen(true)}>
@@ -275,6 +337,77 @@ export default function TeamPage() {
           Invite Team Member
         </Button>
       </div>
+
+      <Card className="mb-6">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">Internal morning briefings</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Daily AI-assisted briefings for the internal Oltigo team based on support,
+                onboarding, and alerts.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateBriefings}
+              disabled={briefingsGenerating}
+            >
+              {briefingsGenerating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Generate today's briefings
+            </Button>
+          </div>
+
+          {briefingsLoading ? (
+            <div className="text-sm text-muted-foreground inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading team briefings…
+            </div>
+          ) : briefings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No internal briefings available yet. Generate today's briefings to populate this
+              workspace.
+            </p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {briefings.map((entry) => (
+                <div key={entry.teamMemberId} className="rounded-lg border p-3 bg-muted/20">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-sm">{entry.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {entry.role.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={entry.isAvailable ? "success" : "secondary"}
+                      className="text-[10px]"
+                    >
+                      {entry.isAvailable ? "Available" : "Unavailable"}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                    <Badge variant="outline">Open tickets: {entry.openTickets}</Badge>
+                    <Badge variant="outline">Urgent: {entry.urgentTickets}</Badge>
+                    <Badge variant="outline">Onboardings: {entry.stalledOnboardings}</Badge>
+                    <Badge variant="outline">Alerts: {entry.unreadAlerts}</Badge>
+                  </div>
+                  <p className="mt-3 whitespace-pre-line text-sm text-muted-foreground">
+                    {entry.briefing ?? "No briefing generated yet."}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Search */}
       <div className="relative mb-6">
