@@ -56,6 +56,13 @@ const ALLOWLIST = new Set([
   // AI router/feature-toggles helpers — cross-tenant reads of ai_* tables
   "src/lib/ai/router.ts",
   "src/lib/ai/feature-toggles.ts",
+  // AI Builder sandbox — super_admin-only route; builder_usage_logs has no
+  // clinic_id column (it is a platform-level audit log, not a tenant table).
+  // All access is gated behind a super_admin role check before any DB write.
+  "src/app/api/builder/sandbox/route.ts",
+  // CopilotKit runtime — super_admin-only endpoint; only performs a read
+  // (.select) on `users` to verify the caller's role; no mutations here.
+  "src/app/api/copilotkit/route.ts",
 ]);
 
 const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;

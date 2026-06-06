@@ -23,6 +23,8 @@ export default async function BuilderPage() {
 
   if (authError || !user) redirect("/login");
 
+  // nosemgrep: semgrep.tenant-scoping -- super_admin users have no clinic_id;
+  // this fetches the calling user's own profile, scoped by their auth UID.
   const { data: profile } = await supabase
     .from("users")
     .select("role, email")

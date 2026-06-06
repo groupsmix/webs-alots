@@ -4,6 +4,7 @@ import { streamText } from "ai";
 import type { ModelMessage } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getE2bApiKey } from "@/lib/env";
 import { createClient } from "@/lib/supabase-server";
 
 const requestSchema = z.object({
@@ -73,6 +74,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // nosemgrep: semgrep.tenant-scoping -- super_admin users have no clinic_id;
+    // this query fetches the calling user's own role, scoped by their auth UID.
     const { data: profile } = await supabase
       .from("users")
       .select("role")
@@ -108,11 +111,14 @@ export async function POST(req: Request) {
     const { messages, modelId } = parsed.data;
 
     const sandbox = await Sandbox.create("base", {
-      apiKey: process.env.E2B_API_KEY!,
+      // nosemgrep: semgrep.env-access -- read via centralized getter
+      apiKey: getE2bApiKey()!,
       timeoutMs: 120_000,
     });
 
-    // Fire-and-forget usage log — table added in migration 00154
+    // Fire-and-forget usage log — table added in migration 00154.
+    // nosemgrep: semgrep.tenant-scoping -- builder_usage_logs is a
+    // platform-level audit table with no clinic_id column (super_admin only).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     void (supabase as any).from("builder_usage_logs").insert({
       user_id: user.id,

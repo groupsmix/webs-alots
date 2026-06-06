@@ -205,6 +205,12 @@ export const ENV_RULES: EnvRule[] = [
     group: "ai",
   },
   {
+    name: "ANTHROPIC_API_KEY",
+    required: false,
+    description: "Anthropic API key for Claude AI (used by AI Builder and CopilotKit runtime)",
+    group: "ai",
+  },
+  {
     name: "CLOUDFLARE_ACCOUNT_ID",
     required: false,
     description: "Cloudflare account ID for Workers AI",
@@ -215,6 +221,13 @@ export const ENV_RULES: EnvRule[] = [
     required: false,
     description: "Cloudflare AI API token",
     group: "ai",
+  },
+  // ── AI Builder (E2B sandbox) ────────────────────────────────────────
+  {
+    name: "E2B_API_KEY",
+    required: false,
+    description: "E2B sandbox API key for AI Builder (get from https://e2b.dev — free tier: 100 sandbox-hours/month)",
+    group: "ai-builder",
   },
 
   // ── PHI Encryption (C-08) ──────────────────────────────────────────
@@ -1303,6 +1316,16 @@ export function getTwilioApiKey(): string | undefined {
 /** Twilio API Secret. */
 export function getTwilioApiSecret(): string | undefined {
   return process.env.TWILIO_API_SECRET;
+}
+
+/** Anthropic API key for Claude AI (AI Builder, CopilotKit runtime). */
+export function getAnthropicApiKey(): string | undefined {
+  return process.env.ANTHROPIC_API_KEY;
+}
+
+/** E2B sandbox API key for AI Builder code execution. */
+export function getE2bApiKey(): string | undefined {
+  return process.env.E2B_API_KEY;
 }
 
 /** Drug database provider. */
