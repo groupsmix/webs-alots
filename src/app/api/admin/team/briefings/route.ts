@@ -1,10 +1,6 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
-import {
-  loadProviderConfigs,
-  routeAIRequest,
-  AllProvidersFailedError,
-} from "@/lib/ai/router";
+import { loadProviderConfigs, routeAIRequest, AllProvidersFailedError } from "@/lib/ai/router";
 import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
@@ -20,11 +16,17 @@ import { withAuth, type AuthContext } from "@/lib/with-auth";
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
 const querySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 const mutationSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   team_member_id: z.string().uuid().optional(),
   refresh: z.boolean().optional().default(false),
 });
@@ -86,7 +88,11 @@ async function buildSnapshot(
   };
 }
 
-function buildFallbackBriefing(member: InternalTeamMember, date: string, snapshot: WorkloadSnapshot): string {
+function buildFallbackBriefing(
+  member: InternalTeamMember,
+  date: string,
+  snapshot: WorkloadSnapshot,
+): string {
   const lines = [
     `Bonjour ${member.name}, briefing du ${date}.`,
     `Vous avez ${snapshot.openTickets} ticket(s) ouverts ou en cours, dont ${snapshot.urgentTickets} urgent(s).`,
@@ -96,9 +102,13 @@ function buildFallbackBriefing(member: InternalTeamMember, date: string, snapsho
   if (snapshot.urgentTickets > 0) {
     lines.push("Priorité: traiter les tickets urgents avant toute autre tâche planifiée.");
   } else if (snapshot.stalledOnboardings > 0) {
-    lines.push("Priorité: suivre les onboardings en attente et sécuriser les cliniques proches du go-live.");
+    lines.push(
+      "Priorité: suivre les onboardings en attente et sécuriser les cliniques proches du go-live.",
+    );
   } else {
-    lines.push("Priorité: vérifier les tickets récents, les escalades et les signaux de risque plateforme.");
+    lines.push(
+      "Priorité: vérifier les tickets récents, les escalades et les signaux de risque plateforme.",
+    );
   }
 
   lines.push(`Rôle attendu aujourd'hui: ${labelInternalTeamRole(member.role)}.`);
@@ -159,7 +169,9 @@ async function loadEntries(
   teamMemberId?: string,
 ): Promise<BriefingEntry[]> {
   const members = await ensureInternalTeamMembers(admin);
-  const filteredMembers = teamMemberId ? members.filter((member) => member.id === teamMemberId) : members;
+  const filteredMembers = teamMemberId
+    ? members.filter((member) => member.id === teamMemberId)
+    : members;
 
   const { data: briefingRows } = await admin
     .from("team_briefings")
@@ -167,9 +179,13 @@ async function loadEntries(
     .eq("briefing_date", date);
 
   const briefingsByMemberId = new Map(
-    ((briefingRows ?? []) as Array<{ team_member_id: string; content: string; generated_at: string }>).map(
-      (row) => [row.team_member_id, row],
-    ),
+    (
+      (briefingRows ?? []) as Array<{
+        team_member_id: string;
+        content: string;
+        generated_at: string;
+      }>
+    ).map((row) => [row.team_member_id, row]),
   );
 
   const entries = await Promise.all(

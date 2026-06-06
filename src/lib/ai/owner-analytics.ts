@@ -63,8 +63,18 @@ export interface HealthScoreSummary {
   countsByRisk: Record<HealthRisk, number>;
   improvingCount: number;
   decliningCount: number;
-  topAtRisk: Array<Pick<BaseClinicHealthRecord, "clinicId" | "clinicName" | "score" | "churnRisk" | "trend" | "topRiskSignal">>;
-  topPerformers: Array<Pick<BaseClinicHealthRecord, "clinicId" | "clinicName" | "score" | "grade" | "topStrengthSignal">>;
+  topAtRisk: Array<
+    Pick<
+      BaseClinicHealthRecord,
+      "clinicId" | "clinicName" | "score" | "churnRisk" | "trend" | "topRiskSignal"
+    >
+  >;
+  topPerformers: Array<
+    Pick<
+      BaseClinicHealthRecord,
+      "clinicId" | "clinicName" | "score" | "grade" | "topStrengthSignal"
+    >
+  >;
 }
 
 export interface PlatformAlertDraft {
@@ -244,9 +254,7 @@ function clampScore(value: number | null | undefined): number {
 }
 
 function asGrade(value: string | null | undefined): HealthGrade {
-  return (HEALTH_GRADES as readonly string[]).includes(value ?? "")
-    ? (value as HealthGrade)
-    : "F";
+  return (HEALTH_GRADES as readonly string[]).includes(value ?? "") ? (value as HealthGrade) : "F";
 }
 
 function asTrend(value: string | null | undefined): HealthTrend {

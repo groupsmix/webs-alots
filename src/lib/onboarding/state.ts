@@ -1,9 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
-import {
-  getOnboardingProgress,
-  type ClinicSpecialty,
-} from "@/lib/onboarding/flows";
+import { getOnboardingProgress, type ClinicSpecialty } from "@/lib/onboarding/flows";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Intentional escape hatch: this helper writes to tables not in the generated Database type.
 type UntypedSupabase = SupabaseClient<any, any, any>;

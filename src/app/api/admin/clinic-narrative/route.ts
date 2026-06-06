@@ -27,7 +27,10 @@ function isMissingRelationError(error: { code?: string; message?: string } | nul
 }
 
 function isMissingFunctionError(error: { code?: string; message?: string } | null): boolean {
-  return !!error && (error.code === "42883" || error.message?.includes("get_latest_clinic_health_scores") === true);
+  return (
+    !!error &&
+    (error.code === "42883" || error.message?.includes("get_latest_clinic_health_scores") === true)
+  );
 }
 
 async function loadClinicNames(clinicIds: string[]): Promise<Map<string, string>> {
@@ -84,9 +87,12 @@ async function loadStoredHealthRecords(
   auth: AuthContext,
   clinicId?: string | null,
 ): Promise<PersistedClinicHealthRecord[]> {
-  const { data, error } = await auth.supabase.rpc("get_latest_clinic_health_scores" as never, {
-    p_clinic_id: clinicId ?? null,
-  } as never);
+  const { data, error } = await auth.supabase.rpc(
+    "get_latest_clinic_health_scores" as never,
+    {
+      p_clinic_id: clinicId ?? null,
+    } as never,
+  );
 
   if (isMissingFunctionError(error)) {
     return loadStoredHealthRecordsLegacy(clinicId);
@@ -100,7 +106,10 @@ async function loadStoredHealthRecords(
     throw new Error(`Failed to load stored health records: ${error.message}`);
   }
 
-  const latestRows = toLatestHealthRows((data ?? []) as unknown as LatestClinicHealthScoreRow[], clinicId);
+  const latestRows = toLatestHealthRows(
+    (data ?? []) as unknown as LatestClinicHealthScoreRow[],
+    clinicId,
+  );
   const clinicNames = await loadClinicNames([...new Set(latestRows.map((row) => row.clinic_id))]);
   return mapLatestHealthRowsToRecords(latestRows, clinicNames);
 }
@@ -213,7 +222,10 @@ async function loadSupportCounts(clinicId?: string | null) {
     .in("ai_priority", ["critical", "high"]);
 
   const [openResult, urgentResult] = clinicId
-    ? await Promise.all([openQuery.eq("clinic_id", clinicId), urgentQuery.eq("clinic_id", clinicId)])
+    ? await Promise.all([
+        openQuery.eq("clinic_id", clinicId),
+        urgentQuery.eq("clinic_id", clinicId),
+      ])
     : await Promise.all([openQuery, urgentQuery]);
 
   if (openResult.error || urgentResult.error) {
@@ -232,7 +244,10 @@ async function loadSupportCounts(clinicId?: string | null) {
   };
 }
 
-function buildNarrativePrompt(mode: "platform" | "clinic", payload: Record<string, unknown>): string {
+function buildNarrativePrompt(
+  mode: "platform" | "clinic",
+  payload: Record<string, unknown>,
+): string {
   return `Rédige un résumé opérationnel en français pour l'équipe super admin d'Oltigo.
 - Utilise uniquement les données agrégées ci-dessous.
 - N'invente rien.
@@ -267,7 +282,8 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       ? await loadLiveHealthRecords(auth, clinicId)
       : await loadStoredHealthRecords(auth, clinicId);
 
-    const usableRecords = records.length > 0 ? records : await loadLiveHealthRecords(auth, clinicId);
+    const usableRecords =
+      records.length > 0 ? records : await loadLiveHealthRecords(auth, clinicId);
 
     if (mode === "clinic") {
       const record = usableRecords[0];

@@ -66,22 +66,22 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
           | "image/webp"
           | "image/gif";
         const documentBlock = isPdf
-          ? ({
+          ? {
               type: "document" as const,
               source: {
                 type: "base64" as const,
                 media_type: "application/pdf" as const,
                 data: base64,
               },
-            })
-          : ({
+            }
+          : {
               type: "image" as const,
               source: {
                 type: "base64" as const,
                 media_type: imageMediaType,
                 data: base64,
               },
-            });
+            };
         const response = await client.messages.create({
           model: "claude-3-5-sonnet-latest",
           max_tokens: 500,

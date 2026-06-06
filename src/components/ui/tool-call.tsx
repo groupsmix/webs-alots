@@ -26,7 +26,10 @@ export function ToolCall({ name, state = "running", description, className }: To
       <div className="flex items-center gap-2">
         <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="font-medium">{name}</span>
-        <Badge variant={state === "error" ? "destructive" : "secondary"} className="ml-auto text-[10px]">
+        <Badge
+          variant={state === "error" ? "destructive" : "secondary"}
+          className="ml-auto text-[10px]"
+        >
           <span className="mr-1">{icon}</span>
           {state}
         </Badge>

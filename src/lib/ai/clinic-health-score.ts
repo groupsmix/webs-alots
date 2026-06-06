@@ -57,7 +57,8 @@ export function computeClinicHealthScore(signals: ClinicSignals): ClinicHealthSc
 
   const score = Math.round(rawScore * 100);
   const grade = score >= 85 ? "A" : score >= 70 ? "B" : score >= 55 ? "C" : score >= 40 ? "D" : "F";
-  const churnRisk = score >= 75 ? "low" : score >= 55 ? "medium" : score >= 35 ? "high" : "critical";
+  const churnRisk =
+    score >= 75 ? "low" : score >= 55 ? "medium" : score >= 35 ? "high" : "critical";
 
   const signalScores = Object.entries(normalized).map(([name, value]) => ({
     name,

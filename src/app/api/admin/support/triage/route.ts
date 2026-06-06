@@ -1,10 +1,6 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
-import {
-  loadProviderConfigs,
-  routeAIRequest,
-  AllProvidersFailedError,
-} from "@/lib/ai/router";
+import { loadProviderConfigs, routeAIRequest, AllProvidersFailedError } from "@/lib/ai/router";
 import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
@@ -88,13 +84,19 @@ function buildFallbackTriage(ticket: NormalizedTicket, conversationText: string)
   let sentiment: TriageDecision["sentiment"] = "neutral";
   let preferredRoles: InternalTeamRole[] = ["support_tech", "super_admin"];
 
-  if (/(paiement|payment|billing|invoice|refund|facture|subscription|abonnement)/.test(normalized)) {
+  if (
+    /(paiement|payment|billing|invoice|refund|facture|subscription|abonnement)/.test(normalized)
+  ) {
     category = "billing";
     preferredRoles = ["billing", "super_admin"];
-  } else if (/(onboarding|setup|domain|dns|whatsapp|launch|mise en ligne|subdomain)/.test(normalized)) {
+  } else if (
+    /(onboarding|setup|domain|dns|whatsapp|launch|mise en ligne|subdomain)/.test(normalized)
+  ) {
     category = "onboarding";
     preferredRoles = ["account_manager", "super_admin"];
-  } else if (/(bug|error|erreur|crash|login|api|sync|import|integration|panne|down)/.test(normalized)) {
+  } else if (
+    /(bug|error|erreur|crash|login|api|sync|import|integration|panne|down)/.test(normalized)
+  ) {
     category = "technical";
     preferredRoles = ["support_tech", "developer", "super_admin"];
   } else if (/(formation|training|how to|comment|workflow|staff)/.test(normalized)) {
@@ -102,7 +104,9 @@ function buildFallbackTriage(ticket: NormalizedTicket, conversationText: string)
     preferredRoles = ["account_manager", "support_tech", "super_admin"];
   }
 
-  if (/(urgent|asap|immediately|bloqu|can't|cannot|impossible|down|panne|critical)/.test(normalized)) {
+  if (
+    /(urgent|asap|immediately|bloqu|can't|cannot|impossible|down|panne|critical)/.test(normalized)
+  ) {
     priority = "critical";
   } else if (/(high|important|broken|échoue|failed|failure|refund)/.test(normalized)) {
     priority = "high";
@@ -280,11 +284,14 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       description:
         typeof ticketRecord.description === "string"
           ? ticketRecord.description
-          : typeof ticketRecord.metadata === "object" && ticketRecord.metadata && typeof (ticketRecord.metadata as Record<string, unknown>).last_message === "string"
+          : typeof ticketRecord.metadata === "object" &&
+              ticketRecord.metadata &&
+              typeof (ticketRecord.metadata as Record<string, unknown>).last_message === "string"
             ? ((ticketRecord.metadata as Record<string, unknown>).last_message as string)
             : "",
       currentPriority: typeof ticketRecord.priority === "string" ? ticketRecord.priority : "medium",
-      currentCategory: typeof ticketRecord.category === "string" ? ticketRecord.category : "general",
+      currentCategory:
+        typeof ticketRecord.category === "string" ? ticketRecord.category : "general",
       assignedTeamMemberId:
         typeof ticketRecord.assigned_team_member_id === "string"
           ? ticketRecord.assigned_team_member_id

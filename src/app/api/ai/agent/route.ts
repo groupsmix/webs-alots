@@ -1,9 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import {
-  incrementAgentTokenUsage,
-  saveAgentConversationTurn,
-} from "@/lib/ai/chat-history";
+import { incrementAgentTokenUsage, saveAgentConversationTurn } from "@/lib/ai/chat-history";
 import {
   getAgentSystemPrompt,
   SITE_TEAM_AGENT_TYPES,

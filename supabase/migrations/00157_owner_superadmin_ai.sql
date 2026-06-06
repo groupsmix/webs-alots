@@ -222,6 +222,10 @@ RETURNS TABLE (
   "planTier" text
 ) LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
+  IF NOT is_super_admin() THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
   RETURN QUERY
   SELECT
     c.id,

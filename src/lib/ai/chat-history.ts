@@ -139,9 +139,11 @@ export async function incrementAgentTokenUsage({
     .eq("date", today)
     .maybeSingle();
 
-  const current = existing as
-    | { tokens_in: number | null; tokens_out: number | null; request_count: number | null }
-    | null;
+  const current = existing as {
+    tokens_in: number | null;
+    tokens_out: number | null;
+    request_count: number | null;
+  } | null;
 
   if (current) {
     await fromUntyped(supabase, "agent_token_usage")

@@ -43,7 +43,12 @@ export function ChatInput({
           className="min-h-12 max-h-32 resize-none text-sm"
           disabled={isLoading}
         />
-        <Button type="submit" size="icon" disabled={!value.trim() || isLoading} className="self-end">
+        <Button
+          type="submit"
+          size="icon"
+          disabled={!value.trim() || isLoading}
+          className="self-end"
+        >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>

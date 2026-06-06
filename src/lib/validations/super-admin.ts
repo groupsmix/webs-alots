@@ -51,10 +51,7 @@ export const revenueForecastQuerySchema = z.object({
 
 export const clinicHealthQuerySchema = z.object({
   clinic_id: z.string().uuid().optional(),
-  churn_risk: z
-    .enum(["low", "medium", "high", "critical", "all"])
-    .optional()
-    .default("all"),
+  churn_risk: z.enum(["low", "medium", "high", "critical", "all"]).optional().default("all"),
   limit: z.coerce.number().int().min(1).max(500).optional().default(25),
   include_alerts: booleanish.optional().default(true),
 });

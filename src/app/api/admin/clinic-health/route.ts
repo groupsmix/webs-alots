@@ -13,10 +13,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
-import {
-  clinicHealthMutationSchema,
-  clinicHealthQuerySchema,
-} from "@/lib/validations/super-admin";
+import { clinicHealthMutationSchema, clinicHealthQuerySchema } from "@/lib/validations/super-admin";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
@@ -26,7 +23,10 @@ function isMissingRelationError(error: { code?: string; message?: string } | nul
 }
 
 function isMissingFunctionError(error: { code?: string; message?: string } | null): boolean {
-  return !!error && (error.code === "42883" || error.message?.includes("get_latest_clinic_health_scores") === true);
+  return (
+    !!error &&
+    (error.code === "42883" || error.message?.includes("get_latest_clinic_health_scores") === true)
+  );
 }
 
 async function loadLatestHealthRowsLegacy(
@@ -59,9 +59,12 @@ async function loadLatestHealthRows(
   auth: AuthContext,
   clinicId?: string | null,
 ): Promise<{ rows: LatestClinicHealthScoreRow[]; missingRelation: boolean }> {
-  const { data, error } = await auth.supabase.rpc("get_latest_clinic_health_scores" as never, {
-    p_clinic_id: clinicId ?? null,
-  } as never);
+  const { data, error } = await auth.supabase.rpc(
+    "get_latest_clinic_health_scores" as never,
+    {
+      p_clinic_id: clinicId ?? null,
+    } as never,
+  );
 
   if (isMissingFunctionError(error)) {
     return loadLatestHealthRowsLegacy(clinicId);
@@ -150,7 +153,12 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
   }
 
   try {
-    const { clinic_id: clinicId, churn_risk: churnRisk, limit, include_alerts: includeAlerts } = parsed.data;
+    const {
+      clinic_id: clinicId,
+      churn_risk: churnRisk,
+      limit,
+      include_alerts: includeAlerts,
+    } = parsed.data;
     const { rows, missingRelation } = await loadLatestHealthRows(_auth, clinicId ?? null);
 
     if (missingRelation) {
@@ -170,7 +178,9 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
     }
 
     const limited = records.slice(0, limit);
-    const alerts = includeAlerts ? await loadUnreadAlerts(clinicId ?? null, Math.min(limit, 20)) : [];
+    const alerts = includeAlerts
+      ? await loadUnreadAlerts(clinicId ?? null, Math.min(limit, 20))
+      : [];
 
     return apiSuccess({
       summary: summariseHealthScores(records),
@@ -204,7 +214,9 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
   const { clinic_id: clinicId, create_alerts: createAlerts } = parsed.data;
 
   try {
-    const { data: signalRows, error: signalError } = await auth.supabase.rpc("get_all_clinic_signals" as never);
+    const { data: signalRows, error: signalError } = await auth.supabase.rpc(
+      "get_all_clinic_signals" as never,
+    );
 
     if (signalError) {
       logger.error("Failed to execute get_all_clinic_signals", {

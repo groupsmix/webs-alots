@@ -74,10 +74,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
   }
 }
 
-async function inviteTeamMember(
-  parsed: Record<string, unknown>,
-  auth: AuthContext,
-) {
+async function inviteTeamMember(parsed: Record<string, unknown>, auth: AuthContext) {
   const name = typeof parsed.name === "string" ? parsed.name.trim() : "";
   const email = typeof parsed.email === "string" ? parsed.email.trim().toLowerCase() : "";
   const role = typeof parsed.role === "string" ? parsed.role : "";

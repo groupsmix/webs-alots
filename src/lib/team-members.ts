@@ -111,9 +111,11 @@ export function pickLeastBusyTeamMember(
       : available;
 
   const pool = roleMatched.length > 0 ? roleMatched : available;
-  return [...pool].sort(
-    (a, b) => a.current_ticket_count - b.current_ticket_count || a.name.localeCompare(b.name),
-  )[0] ?? null;
+  return (
+    [...pool].sort(
+      (a, b) => a.current_ticket_count - b.current_ticket_count || a.name.localeCompare(b.name),
+    )[0] ?? null
+  );
 }
 
 export async function adjustTeamMemberTicketCount(
@@ -138,7 +140,9 @@ export async function adjustTeamMemberTicketCount(
     return;
   }
 
-  const current = Number((data as { current_ticket_count?: number | null } | null)?.current_ticket_count ?? 0);
+  const current = Number(
+    (data as { current_ticket_count?: number | null } | null)?.current_ticket_count ?? 0,
+  );
   const next = Math.max(0, current + delta);
 
   const { error: updateError } = await table

@@ -1,9 +1,5 @@
 import { NextRequest } from "next/server";
-import {
-  loadProviderConfigs,
-  routeAIRequest,
-  AllProvidersFailedError,
-} from "@/lib/ai/router";
+import { loadProviderConfigs, routeAIRequest, AllProvidersFailedError } from "@/lib/ai/router";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { verifyCronSecret } from "@/lib/cron-auth";
@@ -91,7 +87,10 @@ async function generateNudge(
   }
 }
 
-async function sendNudge(row: StalledOnboarding, message: string): Promise<"whatsapp" | "email" | "skipped"> {
+async function sendNudge(
+  row: StalledOnboarding,
+  message: string,
+): Promise<"whatsapp" | "email" | "skipped"> {
   if (row.contact_phone) {
     await sendTextMessage(row.contact_phone, message);
     return "whatsapp";
@@ -124,7 +123,9 @@ async function handler(request: NextRequest) {
       )
       .in("status", ["pending", "in_progress"])
       .lt("step_entered_at", new Date(Date.now() - STALLED_AFTER_MS).toISOString())
-      .or(`last_nudge_at.is.null,last_nudge_at.lt.${new Date(Date.now() - MIN_GAP_BETWEEN_NUDGES_MS).toISOString()}`)
+      .or(
+        `last_nudge_at.is.null,last_nudge_at.lt.${new Date(Date.now() - MIN_GAP_BETWEEN_NUDGES_MS).toISOString()}`,
+      )
       .order("step_entered_at", { ascending: true })
       .limit(50);
 
