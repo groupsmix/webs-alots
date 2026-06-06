@@ -1,0 +1,115 @@
+# =============================================================================
+# Cloudflare Workers Configuration — webs-alots-ai
+# =============================================================================
+#
+# Second Cloudflare Worker for Oltigo Health. Handles the two AI routes
+# that pull in heavy server-side dependencies (CopilotKit runtime, Anthropic
+# SDK, ai SDK, @e2b SDK). Together those add ~1.1 MiB of compressed bundle
+# that previously pushed the main `webs-alots` Worker over Cloudflare's
+# 10 MiB Paid-plan limit.
+#
+# Architecture:
+#   browser → oltigo.com/api/copilotkit/*         → webs-alots-ai
+#   browser → oltigo.com/api/builder/sandbox/*    → webs-alots-ai
+#   browser → everything else                     → webs-alots
+#
+# Cloudflare zone routing prefers the more specific pattern, so the two
+# routes below win over the main Worker's `oltigo.com/*` catch-all.
+#
+# This Worker is intentionally NOT a Next.js app — it is a plain fetch
+# handler so the bundle stays small (Next.js + OpenNext shim are ~3 MiB
+# of dead weight for two route handlers).
+#
+# Secrets that must be set BEFORE first deploy:
+#   wrangler secret put ANTHROPIC_API_KEY
+#   wrangler secret put E2B_API_KEY
+#   wrangler secret put NEXT_PUBLIC_SUPABASE_URL
+#   wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
+#
+# Last key rotation: 2026-06-06 (initial)
+# =============================================================================
+
+name = "webs-alots-ai"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Bundle-time defines ───────────────────────────────────────────────
+# @copilotkit/runtime ships a rolldown-bundled internal runtime that does
+#   `var __require = createRequire(import.meta.url);`
+# at module top-level. Cloudflare's nodejs_compat polyfill of `node:module`
+# rejects `undefined` as the createRequire argument with validation error
+# 10021. Wrangler's esbuild pass leaves `import.meta.url` as the unresolved
+# identifier for code originating in node_modules, so at runtime it
+# evaluates to undefined.
+#
+# Substituting a hardcoded valid file URL string here makes esbuild emit
+# the literal in place of every `import.meta.url` reference in the bundle,
+# fixing the createRequire call site without monkey-patching node_modules.
+# The actual URL value is never resolved against a real file — it just
+# needs to be a syntactically valid file URL string.
+#
+# define is per-environment in wrangler — duplicated below in [env.*].
+define = { "import.meta.url" = "\"file:///worker.mjs\"" }
+
+# ── Account (set via CLOUDFLARE_ACCOUNT_ID env in CI) ─────────────────
+# account_id is intentionally omitted — injected by cloudflare/wrangler-action.
+
+# ── Routes ────────────────────────────────────────────────────────────
+# More-specific patterns win over the main Worker's catch-all.
+routes = [
+  { pattern = "oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
+  { pattern = "oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
+  { pattern = "oltigo.com/api/builder/sandbox", zone_name = "oltigo.com" },
+  { pattern = "oltigo.com/api/builder/sandbox/*", zone_name = "oltigo.com" },
+]
+
+# ── Limits ────────────────────────────────────────────────────────────
+# AI generation can run long; raise CPU cap from 30 s default to the
+# 5 min Workers Paid max. streamText holds the worker open until
+# generation finishes or the client disconnects.
+[limits]
+cpu_ms = 300_000
+
+# ── Observability ─────────────────────────────────────────────────────
+[observability]
+enabled = true
+head_sampling_rate = 1.0
+
+# =============================================================================
+# Environments
+# =============================================================================
+
+[env.staging]
+name = "webs-alots-ai-staging"
+define = { "import.meta.url" = "\"file:///worker.mjs\"" }
+routes = [
+  { pattern = "staging.oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
+  { pattern = "staging.oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
+  { pattern = "staging.oltigo.com/api/builder/sandbox", zone_name = "oltigo.com" },
+  { pattern = "staging.oltigo.com/api/builder/sandbox/*", zone_name = "oltigo.com" },
+]
+
+[env.staging.limits]
+cpu_ms = 300_000
+
+[env.staging.observability]
+enabled = true
+head_sampling_rate = 1.0
+
+[env.production]
+name = "webs-alots-ai"
+define = { "import.meta.url" = "\"file:///worker.mjs\"" }
+routes = [
+  { pattern = "oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
+  { pattern = "oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
+  { pattern = "oltigo.com/api/builder/sandbox", zone_name = "oltigo.com" },
+  { pattern = "oltigo.com/api/builder/sandbox/*", zone_name = "oltigo.com" },
+]
+
+[env.production.limits]
+cpu_ms = 300_000
+
+[env.production.observability]
+enabled = true
+head_sampling_rate = 1.0

@@ -1,150 +1,42 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { Sandbox } from "@e2b/code-interpreter";
-import { streamText } from "ai";
-import type { ModelMessage } from "ai";
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { getE2bApiKey } from "@/lib/env";
-import { createClient } from "@/lib/supabase-server";
+/**
+ * /api/builder/sandbox — STUB ONLY.
+ *
+ * The real handler lives in `workers/ai/src/handlers/builder-sandbox.ts`
+ * and is served by the separate Cloudflare Worker `webs-alots-ai`.
+ * Cloudflare zone routing sends `oltigo.com/api/builder/sandbox/*` to that
+ * Worker before the main `webs-alots` Worker ever sees the request.
+ *
+ * This stub exists so the route remains discoverable in the Next.js app
+ * and so `next dev` still responds to the path during local development.
+ *
+ * Why split? The @e2b sandbox + @ai-sdk/anthropic + ai SDK added ~1.1 MiB
+ * of compressed bundle that pushed the main Worker over Cloudflare's 10 MiB
+ * Workers Paid limit. See `workers/ai/README.md` for full context.
+ *
+ * If this stub ever runs IN PRODUCTION it means the Cloudflare Worker
+ * Routes for the AI Worker are missing or pointed at the wrong Worker.
+ */
 
-const requestSchema = z.object({
-  messages: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string(),
+function notServedHere(): Response {
+  return new Response(
+    JSON.stringify({
+      error: "Route moved",
+      message:
+        "/api/builder/sandbox is served by the webs-alots-ai Worker. " +
+        "In production this stub should never run — Cloudflare routes the URL " +
+        "to webs-alots-ai. If you are seeing this in production, check the " +
+        "Worker Routes config in workers/ai/wrangler.toml.",
     }),
-  ),
-  templateId: z.string().default("nextjs-report"),
-  modelId: z.string().default("claude-sonnet-4-20250514"),
-});
-
-// WARNING: This in-memory map does NOT survive across Cloudflare Worker isolates.
-// For soft rate limiting on a single super_admin user this is acceptable.
-// For true multi-isolate consistency, move to RATE_LIMIT_KV which already
-// exists in wrangler.toml.
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const windowMs = 60 * 60 * 1000;
-  const maxRequests = 20;
-
-  const record = rateLimitMap.get(userId);
-
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(userId, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: maxRequests - 1 };
-  }
-  if (record.count >= maxRequests) {
-    return { allowed: false, remaining: 0 };
-  }
-  record.count++;
-  return { allowed: true, remaining: maxRequests - record.count };
+    {
+      status: 501,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Route-Owner": "webs-alots-ai",
+      },
+    },
+  );
 }
 
-const SYSTEM_PROMPT = `You are an expert developer assistant embedded in a Moroccan health SaaS platform (doctors, dentists, pharmacies).
-You help the super admin build internal tools, reports, and utilities.
-
-RULES:
-- Always produce complete, runnable code. No placeholders, no TODOs.
-- For Next.js apps: use shadcn/ui components, Tailwind CSS, TypeScript.
-- For Python scripts: use standard library + pandas/matplotlib when needed.
-- When generating a Next.js component, always export it as default.
-- Add realistic mock data shaped like the real domain: clinics, appointments (in MAD currency), patients, doctors.
-- Keep output under 200 lines unless explicitly asked for more.
-- Never include secrets, API keys, or real credentials in generated code.
-- Always add error handling.
-
-DOMAIN CONTEXT:
-- Currency: MAD (Moroccan Dirham)
-- Languages in use: French, Arabic (Darija), sometimes English
-- User types: super_admin, clinic_admin, receptionist, doctor, patient
-- Payments: CMI gateway (Moroccan Interbank)
-- Notifications: WhatsApp Business API with Darija templates`;
-
-export async function POST(req: Request) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // nosemgrep: semgrep.tenant-scoping -- super_admin users have no clinic_id;
-    // this query fetches the calling user's own role, scoped by their auth UID.
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "super_admin") {
-      return NextResponse.json({ error: "Forbidden: super_admin only" }, { status: 403 });
-    }
-
-    const { allowed, remaining } = checkRateLimit(user.id);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded. Max 20 builder requests per hour." },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Remaining": "0",
-            "Retry-After": "3600",
-          },
-        },
-      );
-    }
-
-    const body = await req.json();
-    const parsed = requestSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid request", details: parsed.error.flatten() },
-        { status: 400 },
-      );
-    }
-    const { messages, modelId } = parsed.data;
-
-    const sandbox = await Sandbox.create("base", {
-      // nosemgrep: semgrep.env-access -- read via centralized getter
-      apiKey: getE2bApiKey()!,
-      timeoutMs: 120_000,
-    });
-
-    // Fire-and-forget usage log — table added in migration 00154.
-    // nosemgrep: semgrep.tenant-scoping -- builder_usage_logs is a
-    // platform-level audit table with no clinic_id column (super_admin only).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void (supabase as any).from("builder_usage_logs").insert({
-      user_id: user.id,
-      template_id: parsed.data.templateId,
-      model_id: modelId,
-      message_count: messages.length,
-      created_at: new Date().toISOString(),
-    });
-
-    void remaining; // available for response headers in future
-
-    const result = streamText({
-      model: anthropic(modelId as "claude-sonnet-4-20250514"),
-      system: SYSTEM_PROMPT,
-      messages: messages as ModelMessage[],
-      maxOutputTokens: 8192,
-      onFinish: async () => {
-        try {
-          await sandbox.kill();
-        } catch {}
-      },
-    });
-
-    return result.toTextStreamResponse();
-  } catch (error) {
-    console.error("[builder/sandbox] Error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+export async function POST() {
+  return notServedHere();
 }

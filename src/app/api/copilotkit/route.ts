@@ -1,62 +1,49 @@
-import {
-  CopilotRuntime,
-  AnthropicAdapter,
-  copilotRuntimeNextJSAppRouterEndpoint,
-} from "@copilotkit/runtime";
-import { NextRequest, NextResponse } from "next/server";
-import { getAnthropicApiKey } from "@/lib/env";
-import { createClient } from "@/lib/supabase-server";
+/**
+ * /api/copilotkit — STUB ONLY.
+ *
+ * The real handler lives in `workers/ai/src/handlers/copilotkit.ts` and
+ * is served by the separate Cloudflare Worker `webs-alots-ai`. Cloudflare
+ * zone routing sends `oltigo.com/api/copilotkit/*` to that Worker before
+ * the main `webs-alots` Worker ever sees the request.
+ *
+ * This stub exists so the route remains discoverable in the Next.js app
+ * (search results, file-tree, route table) and so `next dev` still
+ * responds to the path during local development with a clear message
+ * instead of a confusing 404.
+ *
+ * Why split? The CopilotKit runtime + Anthropic SDK + ai SDK added ~1.1 MiB
+ * of compressed bundle that pushed the main Worker over Cloudflare's 10 MiB
+ * Workers Paid limit. See `workers/ai/README.md` for full context.
+ *
+ * If this stub ever runs IN PRODUCTION (a 501 response from `oltigo.com`
+ * instead of from `webs-alots-ai`) it means the Cloudflare Worker Routes
+ * for the AI Worker are missing or pointed at the wrong Worker.
+ */
 
-// CF-BUNDLE-03: Do NOT statically `import Anthropic from "@anthropic-ai/sdk"`.
-// @copilotkit/runtime's AnthropicAdapter lazy-loads the SDK via __require()
-// inside ensureAnthropic(). A static import would bundle the entire 6 MB SDK
-// into the Worker. Letting the adapter construct its own client keeps it out
-// of the static graph; esbuild treats __require as a runtime call.
-//
-// Validate the env var at module init (fail fast on cold start) — the SDK
-// constructor will then read process.env.ANTHROPIC_API_KEY at request time.
-const apiKey = getAnthropicApiKey();
-if (!apiKey) {
-  throw new Error(
-    "ANTHROPIC_API_KEY is required for the CopilotKit route. " +
-      "Set it as a Cloudflare Worker secret before deploying.",
+function notServedHere(): Response {
+  return new Response(
+    JSON.stringify({
+      error: "Route moved",
+      message:
+        "/api/copilotkit is served by the webs-alots-ai Worker. " +
+        "In production this stub should never run — Cloudflare routes the URL " +
+        "to webs-alots-ai. If you are seeing this in production, check the " +
+        "Worker Routes config in workers/ai/wrangler.toml.",
+    }),
+    {
+      status: 501,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Route-Owner": "webs-alots-ai",
+      },
+    },
   );
 }
 
-const serviceAdapter = new AnthropicAdapter();
+export async function POST() {
+  return notServedHere();
+}
 
-export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // nosemgrep: semgrep.tenant-scoping -- super_admin users have no clinic_id;
-  // this verifies the calling user's own role, scoped by their auth UID.
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
-
-  if (profile?.role !== "super_admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const runtime = new CopilotRuntime({
-    middleware: {
-      onBeforeRequest: async ({ properties }) => {
-        return { ...properties, userId: user.id, userEmail: user.email };
-      },
-    },
-  });
-
-  const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
-    runtime,
-    serviceAdapter,
-    endpoint: "/api/copilotkit",
-  });
-
-  return handleRequest(req);
+export async function GET() {
+  return notServedHere();
 }
