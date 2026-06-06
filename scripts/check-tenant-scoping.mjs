@@ -47,6 +47,9 @@ const ALLOWLIST = new Set([
   "src/app/api/admin/revenue-forecast/route.ts",
   // Admin team — super_admin cross-tenant user management (role updates, member removal)
   "src/app/api/admin/team/route.ts",
+  // Admin team briefings — platform-level site-team briefings; the team_briefings
+  // table has no clinic_id column (FK is team_member_id → team_members)
+  "src/app/api/admin/team/briefings/route.ts",
   // Admin AI config — super_admin cross-tenant AI provider management
   "src/app/api/admin/ai-config/route.ts",
   // Admin AI connection test — super_admin only, no tenant-scoped tables touched

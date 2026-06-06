@@ -2,6 +2,7 @@ import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
+import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { onboardingSchema } from "@/lib/validations";
 import { withAuth as _withAuth } from "@/lib/with-auth";
 /**
@@ -177,6 +178,18 @@ export const POST = withAuthValidation(
 
       return apiInternalError("Failed to create admin user. Please try again.");
     }
+
+    await syncClinicOnboardingState({
+      supabase,
+      clinicId,
+      clinicName: body.clinic_name,
+      contactName: body.owner_name,
+      contactPhone: body.phone,
+      contactEmail: body.email ?? user.email ?? null,
+      completedSteps: ["clinic_info", "specialty"],
+      currentStep: "legal_docs",
+      status: "in_progress",
+    });
 
     // AUDIT: Log successful clinic creation. Clinic has no prior audit trail
     // so we write to pending_audit_logs with a sentinel system actor.

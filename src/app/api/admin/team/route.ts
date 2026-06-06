@@ -1,6 +1,6 @@
 /**
  * GET   /api/admin/team — List super-admin team members (users with admin roles)
- * PATCH /api/admin/team — Update a team member's role or status
+ * PATCH /api/admin/team — Invite, update a team member's role, or remove them
  *
  * All endpoints require super_admin role.
  */
@@ -9,22 +9,22 @@ import { type NextRequest } from "next/server";
 import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
-import { createUntypedAdminClient } from "@/lib/supabase-server";
+import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
+import { ensureInternalTeamMembers } from "@/lib/team-members";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
-
 const ADMIN_ROLES = ["super_admin", "clinic_admin"] as const;
+
+type AdminRole = (typeof ADMIN_ROLES)[number];
 
 async function handleGet(_request: NextRequest, _auth: AuthContext) {
   try {
-    // Super-admin views all admin-level users across the platform
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     const { data, error } = await supabase
-      .from("users") // nosemgrep: semgrep.tenant-scoping
+      .from("users")
       .select("id, auth_id, name, email, role, clinic_id, created_at")
       .in("role", ADMIN_ROLES)
       .order("created_at", { ascending: false });
@@ -37,25 +37,31 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
       return apiInternalError("Failed to fetch team members");
     }
 
-    // Fetch last sign-in from auth.users for each team member that has an auth_id
-    const members = data ?? [];
-    const authIds = members.map((m) => m.auth_id).filter(Boolean) as string[];
+    const members = (data ?? []) as Array<{
+      id: string;
+      auth_id: string | null;
+      name: string;
+      email: string | null;
+      role: AdminRole;
+      clinic_id: string | null;
+      created_at: string | null;
+    }>;
 
+    const authIds = members.map((member) => member.auth_id).filter(Boolean) as string[];
     const lastSignIns: Record<string, string | null> = {};
+
     if (authIds.length > 0) {
-      const { data: authUsers } = await supabase.auth.admin.listUsers({
-        perPage: 100,
-      });
+      const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 100 });
       if (authUsers?.users) {
-        for (const au of authUsers.users) {
-          lastSignIns[au.id] = au.last_sign_in_at ?? null;
+        for (const authUser of authUsers.users) {
+          lastSignIns[authUser.id] = authUser.last_sign_in_at ?? null;
         }
       }
     }
 
-    const enriched = members.map((m) => ({
-      ...m,
-      last_login: m.auth_id ? (lastSignIns[m.auth_id] ?? null) : null,
+    const enriched = members.map((member) => ({
+      ...member,
+      last_login: member.auth_id ? (lastSignIns[member.auth_id] ?? null) : null,
     }));
 
     return apiSuccess({ members: enriched });
@@ -68,6 +74,103 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
   }
 }
 
+async function inviteTeamMember(parsed: Record<string, unknown>, auth: AuthContext) {
+  const name = typeof parsed.name === "string" ? parsed.name.trim() : "";
+  const email = typeof parsed.email === "string" ? parsed.email.trim().toLowerCase() : "";
+  const role = typeof parsed.role === "string" ? parsed.role : "";
+
+  if (!name) return apiValidationError("name is required");
+  if (!email) return apiValidationError("email is required");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return apiValidationError("A valid email is required");
+  }
+  if (!ADMIN_ROLES.includes(role as AdminRole)) {
+    return apiValidationError(`role must be one of: ${ADMIN_ROLES.join(", ")}`);
+  }
+
+  const supabase = createUntypedAdminClient("super_admin");
+  const adminClient = createAdminClient("super_admin");
+
+  const { data: existingUser } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingUser) {
+    return apiError("A team member with this email already exists", 409, "TEAM_MEMBER_EXISTS");
+  }
+
+  let authId: string | null = null;
+  try {
+    const tempPassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
+    const { data: createdAuthUser, error: authError } = await adminClient.auth.admin.createUser({
+      email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        name,
+        role,
+        must_change_password: true,
+      },
+    });
+
+    if (authError) {
+      logger.warn("Failed to create auth user for invited team member", {
+        context: "team-api",
+        email,
+        error: authError.message,
+      });
+    } else {
+      authId = createdAuthUser.user?.id ?? null;
+    }
+  } catch (error) {
+    logger.warn("Unexpected auth error inviting team member", {
+      context: "team-api",
+      email,
+      error,
+    });
+  }
+
+  const { data: createdUser, error: insertError } = await supabase
+    .from("users")
+    .insert({
+      auth_id: authId,
+      clinic_id: null,
+      role,
+      name,
+      email,
+      phone: null,
+    })
+    .select("id, auth_id, name, email, role, clinic_id, created_at")
+    .single();
+
+  if (insertError) {
+    logger.error("Failed to create invited team member row", {
+      context: "team-api",
+      email,
+      error: insertError,
+    });
+    return apiInternalError("Failed to create team member");
+  }
+
+  if (role === "super_admin") {
+    await ensureInternalTeamMembers(supabase);
+  }
+
+  await logAuditEvent({
+    supabase: auth.supabase,
+    action: "team.member_invited",
+    type: "admin",
+    actor: auth.profile.id,
+    clinicId: "system",
+    description: `Invited team member ${email}`,
+    metadata: { userId: createdUser.id, email, role },
+  });
+
+  return apiSuccess({ member: createdUser }, 201);
+}
+
 async function handlePatch(request: NextRequest, auth: AuthContext) {
   try {
     let body: unknown;
@@ -78,28 +181,39 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
     }
 
     const parsed = body as Record<string, unknown>;
-    const userId = typeof parsed.user_id === "string" ? parsed.user_id.trim() : "";
     const action = typeof parsed.action === "string" ? parsed.action : "";
 
+    if (action === "invite") {
+      return inviteTeamMember(parsed, auth);
+    }
+
+    const userId = typeof parsed.user_id === "string" ? parsed.user_id.trim() : "";
     if (!userId) {
       return apiValidationError("user_id is required");
     }
 
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     if (action === "update_role") {
       const newRole = typeof parsed.role === "string" ? parsed.role : "";
-      if (!ADMIN_ROLES.includes(newRole as (typeof ADMIN_ROLES)[number])) {
+      if (!ADMIN_ROLES.includes(newRole as AdminRole)) {
         return apiValidationError(`role must be one of: ${ADMIN_ROLES.join(", ")}`);
       }
 
-      // nosemgrep: semgrep.tenant-scoping
-      const { error } = await supabase.from("users").update({ role: newRole }).eq("id", userId);
+      const { data: updatedUser, error } = await supabase
+        .from("users")
+        .update({ role: newRole })
+        .eq("id", userId)
+        .select("id, auth_id, role")
+        .single();
 
       if (error) {
         logger.error("Failed to update team member role", { context: "team-api", error });
         return apiInternalError("Failed to update role");
+      }
+
+      if (newRole === "super_admin") {
+        await ensureInternalTeamMembers(supabase);
       }
 
       await logAuditEvent({
@@ -109,15 +223,22 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
         actor: auth.profile.id,
         clinicId: "system",
         description: `Updated team member role to ${newRole}`,
-        metadata: { userId, newRole },
+        metadata: { userId, authId: updatedUser.auth_id ?? null, newRole },
       });
 
       return apiSuccess({ updated: true });
     }
 
     if (action === "remove") {
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("auth_id, role")
+        .eq("id", userId)
+        .in("role", ADMIN_ROLES)
+        .maybeSingle();
+
       const { error } = await supabase
-        .from("users") // nosemgrep: semgrep.tenant-scoping
+        .from("users")
         .delete()
         .eq("id", userId)
         .in("role", ADMIN_ROLES);
@@ -127,13 +248,17 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
         return apiInternalError("Failed to remove team member");
       }
 
+      if (existingUser?.auth_id) {
+        await supabase.from("team_members").delete().eq("user_id", existingUser.auth_id);
+      }
+
       await logAuditEvent({
         supabase: auth.supabase,
         action: "team.member_removed",
         type: "admin",
         actor: auth.profile.id,
         clinicId: "system",
-        description: `Removed team member`,
+        description: "Removed team member",
         metadata: { userId },
       });
 

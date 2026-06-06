@@ -13,6 +13,7 @@ import { type NextRequest } from "next/server";
 import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
+import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
 import { safeParse } from "@/lib/validations/helpers";
@@ -222,6 +223,38 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       .select("step_key, step_label, status, started_at, completed_at, error_message")
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: true });
+
+    const provisioningSteps = (steps ?? []) as Array<{ step_key: string; status: string }>;
+    const hasFailures = provisioningSteps.some((step) => step.status === "failed");
+    const completedSteps = hasFailures
+      ? ["clinic_info", "specialty"]
+      : [
+          "clinic_info",
+          "specialty",
+          "legal_docs",
+          "team_setup",
+          "insurance_setup",
+          "schedule_setup",
+          ...(whatsapp_number ? ["whatsapp_setup"] : []),
+          "go_live",
+        ];
+
+    if (clinicId) {
+      await syncClinicOnboardingState({
+        supabase: untypedAdmin,
+        clinicId,
+        clinicName: clinic_name,
+        specialty,
+        contactName: owner_name,
+        contactPhone: owner_phone ?? null,
+        contactEmail: owner_email,
+        completedSteps,
+        currentStep: hasFailures ? "schedule_setup" : "go_live",
+        status: hasFailures ? "in_progress" : "completed",
+        completionPercentage: hasFailures ? 60 : 100,
+        goLiveMessage: hasFailures ? null : `Provisioned clinic ${subdomain}.oltigo.com`,
+      });
+    }
 
     // Audit log
     await logAuditEvent({

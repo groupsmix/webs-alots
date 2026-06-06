@@ -18,6 +18,7 @@ import {
   clinicActivatedEmail,
 } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
+import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
@@ -154,6 +155,19 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
     .single();
 
   if (error) throw new Error(`Failed to create clinic: ${error.message}`);
+
+  await syncClinicOnboardingState({
+    supabase,
+    clinicId: data.id,
+    clinicName: input.name,
+    contactName: typeof cfg.owner_name === "string" ? cfg.owner_name : null,
+    contactPhone: typeof cfg.phone === "string" ? cfg.phone : null,
+    contactEmail: typeof cfg.email === "string" ? cfg.email : null,
+    completedSteps: ["clinic_info"],
+    currentStep: "team_setup",
+    status: "in_progress",
+  });
+
   return data as ClinicRow;
 }
 
