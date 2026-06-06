@@ -46,7 +46,7 @@
     "@e2b/code-interpreter": "^2.5.0",
     "@monaco-editor/react": "^4.7.0",
     "@scalar/api-reference-react": "^0.9.41",
-    "@sentry/nextjs": "^10.54.0",
+    "@sentry/nextjs": "^10.56.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.99.3",
     "ai": "^6.0.197",
