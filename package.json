@@ -39,7 +39,7 @@
     "@ai-sdk/anthropic": "^3.0.81",
     "@ai-sdk/react": "^3.0.199",
     "@anthropic-ai/sdk": "^0.101.0",
-    "@base-ui/react": "^1.4.1",
+    "@base-ui/react": "^1.5.0",
     "@copilotkit/react-core": "^1.59.5",
     "@copilotkit/react-ui": "^1.59.5",
     "@copilotkit/runtime": "^1.59.5",
