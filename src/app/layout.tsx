@@ -18,7 +18,7 @@ import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { getDirection, t, type Locale, type TranslationKey } from "@/lib/i18n";
-import { getTenant } from "@/lib/tenant";
+import { getTenant, getLocaleFromTenant, getDirFromLocale } from "@/lib/tenant";
 
 // Editorial typography: Inter for UI/body, JetBrains Mono for metadata/labels.
 const inter = Inter({
@@ -133,14 +133,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const tenant = await getTenant();
-  // Audit 7.1 — Resolve locale from request headers instead of hardcoding "fr".
-  // The middleware can set x-tenant-locale from the clinic's DB config JSONB.
-  // Falls back to "fr" (the Moroccan default) when no header is present.
-  const h = await headers();
+  // TASK-018: Derive locale + dir from tenant using canonical helpers.
+  // Cookie preference still takes priority (user preference > tenant default).
   const cookieStore = await import("next/headers").then((m) => m.cookies());
-  const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
-  const locale: Locale = preferredLocale || (h.get("x-tenant-locale") as Locale) || "fr";
-  const dir = getDirection(locale);
+  const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale | undefined;
+  const tenantLocale = getLocaleFromTenant(tenant) as Locale;
+  const locale: Locale = preferredLocale || tenantLocale;
+  const dir = getDirFromLocale(locale);
+  void getDirection; // retained for generateMetadata usage above
 
   return (
     <html

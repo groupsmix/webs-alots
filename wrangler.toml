@@ -76,6 +76,24 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # id         = "<paste-namespace-id>"
 # preview_id = "<paste-preview-namespace-id>"
 
+# TASK-017: Tenant lookup cache — 5-minute TTL, reduces Supabase DB reads per subdomain.
+# Provision via:
+#   wrangler kv namespace create TENANT_CACHE
+#   wrangler kv namespace create TENANT_CACHE --preview
+# Then paste the returned IDs below and uncomment.
+# Kept commented until provisioned, matching the SUBDOMAIN_KV / APP_CACHE_KV
+# convention above. The middleware falls back to SUBDOMAIN_KV and then direct
+# Supabase reads when the binding is absent (see getWorkerBinding in
+# src/lib/cf-bindings.ts + src/middleware.ts:329), so leaving it off only
+# costs the 5-min cache, not correctness. Placeholders like
+# "<run: wrangler ...>" are rejected by Cloudflare Workers Builds validation,
+# which is why this block has to be commented (not left with placeholders)
+# until real namespace IDs are pasted in.
+# [[kv_namespaces]]
+# binding = "TENANT_CACHE"
+# id = "<paste-namespace-id-here>"
+# preview_id = "<paste-preview-id-here>"
+
 # ── Durable Objects ───────────────────────────────────────────────────
 # H-03 (DEFERRED): Strongly consistent rate limiting via a RateLimiterDO
 # Durable Object was scaffolded in src/lib/rate-limit-do.ts, but the
@@ -192,6 +210,15 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # Uncomment after provisioning APP_CACHE_KV for production:
 # [[env.production.kv_namespaces]]
 # binding = "APP_CACHE_KV"
+# id = "<paste-namespace-id-here>"
+# preview_id = "<paste-preview-id-here>"
+
+# TASK-017: Tenant cache for production — paste IDs after provisioning.
+# Same reasoning as the top-level block: kept commented until real IDs are
+# pasted in, otherwise the placeholders fail Cloudflare Workers Builds
+# validation.
+# [[env.production.kv_namespaces]]
+# binding = "TENANT_CACHE"
 # id = "<paste-namespace-id-here>"
 # preview_id = "<paste-preview-id-here>"
 

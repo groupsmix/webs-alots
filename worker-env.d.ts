@@ -98,6 +98,34 @@ interface R2Bucket {
   list(options?: R2ListOptions): Promise<R2Objects>;
 }
 
+/**
+ * Cloudflare KV Namespace binding.
+ * Mirrors the subset of @cloudflare/workers-types used across the codebase.
+ */
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  get<T>(key: string, type: "json"): Promise<T | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
+/**
+ * Cloudflare Worker environment bindings for Oltigo.
+ * Add new KV / R2 / Queue bindings here as they are provisioned.
+ */
+interface CloudflareEnv {
+  /** In-memory-compatible distributed rate limiter — see rate-limit.ts */
+  RATE_LIMIT_KV: KVNamespace;
+  /** Subdomain → clinic lookup cache (5-min TTL). Used by middleware. */
+  SUBDOMAIN_KV?: KVNamespace;
+  /** TASK-017: Tenant lookup cache — 5-min TTL. Provision with wrangler kv namespace create TENANT_CACHE */
+  TENANT_CACHE: KVNamespace;
+  /** General-purpose app cache (feature flags, AI config) */
+  APP_CACHE_KV?: KVNamespace;
+  /** Cloudflare R2 bucket for PHI file storage */
+  PHI_BUCKET?: R2Bucket;
+}
+
 interface ExportedHandler<Env = Record<string, string>> {
   fetch?: (request: Request, env: Env, ctx: ExecutionContext) => Response | Promise<Response>;
   scheduled?: (

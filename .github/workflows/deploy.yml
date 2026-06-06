@@ -3,12 +3,25 @@
 # =============================================================================
 #
 # Triggers on push to `main` (→ production) or `staging` (→ staging).
-# Builds the OpenNext bundle then deploys via Wrangler.
+# Deploys TWO Workers from the same workflow run:
+#
+#   1. webs-alots     — main Next.js app (built via OpenNext)
+#   2. webs-alots-ai  — AI route Worker (plain fetch handler in workers/ai/)
+#
+# See workers/ai/README.md for why the split exists.
 #
 # Required GitHub secrets:
-#   CLOUDFLARE_API_TOKEN   — scoped to Workers:Edit on the webs-alots script
+#   CLOUDFLARE_API_TOKEN   — scoped to Workers Scripts:Edit on BOTH scripts,
+#                            Account Settings:Read, Workers KV Storage:Edit,
+#                            Workers Routes:Edit on the oltigo.com zone
 #   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (not a secret, but kept
 #                            out of wrangler.toml to avoid leaking it in forks)
+#
+# Required Cloudflare Worker secrets (set ONCE per worker via
+# `wrangler secret put`, or via the dashboard — NOT pushed by this workflow):
+#   webs-alots-ai needs: ANTHROPIC_API_KEY, E2B_API_KEY,
+#                        NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+#   webs-alots already has its own runtime secrets configured.
 #
 # All third-party Actions are pinned to a full 40-char commit SHA per
 # CICD-01 / AUDIT-16. Bumping a tag-floating reference (e.g. @v3) on a
@@ -73,7 +86,7 @@ jobs:
           fi
           echo "Worker entry: .open-next/worker.js ($(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js) bytes)"
 
-      - name: Deploy to Cloudflare Workers
+      - name: Deploy main Worker (webs-alots) to Cloudflare
         # CICD-01 / AUDIT-16: pinned to v3.15.0 SHA for supply-chain hardening.
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         env:
@@ -93,4 +106,33 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # Deploy to `production` on main, `staging` on the staging branch.
+          command: deploy --env ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+
+      # ─── Second Worker: webs-alots-ai (AI routes) ─────────────────────
+      # Lives in workers/ai/ as a separate npm package. Plain fetch handler
+      # (no Next.js / OpenNext) so the bundle stays small. Holds CopilotKit
+      # runtime + Anthropic SDK + ai SDK + @e2b SDK so the main Worker stays
+      # under Cloudflare's 10 MiB Workers Paid script size limit.
+      #
+      # See workers/ai/README.md for architecture rationale.
+      - name: Install AI Worker dependencies
+        working-directory: workers/ai
+        # C-04: --ignore-scripts to prevent malicious postinstall on CI.
+        run: npm ci --ignore-scripts
+
+      - name: Deploy AI Worker (webs-alots-ai) to Cloudflare
+        # CICD-01 / AUDIT-16: pinned to v3.15.0 SHA for supply-chain hardening.
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/ai
+          # Deploy to `production` on main, `staging` on the staging branch.
+          # webs-alots-ai runtime secrets (ANTHROPIC_API_KEY, E2B_API_KEY,
+          # NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) are
+          # configured directly on the Worker via `wrangler secret put` —
+          # not pushed by this workflow to avoid putting them in GH Actions.
           command: deploy --env ${{ github.ref_name == 'main' && 'production' || 'staging' }}

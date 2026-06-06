@@ -113,7 +113,11 @@ export async function middleware(request: NextRequest) {
   const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...nonceBytes));
   // Task 2.2: Strict CSP is now enforced. Legacy broad policy removed.
-  const cspHeaders = buildCspHeaderValues(nonce);
+  // TASK-009: Builder route gets a relaxed frame-src + script-src so the live
+  // preview iframe (blob:) and Babel/Tailwind CDN scripts can load.
+  // All other routes remain on the strict policy.
+  const isBuilderRoute = pathname.startsWith("/super-admin/builder");
+  const cspHeaders = buildCspHeaderValues(nonce, { isBuilderRoute });
 
   // --- F-A198 / F-A160: Sanctioned country block ---
   const sanctionBlock = checkSanctionedCountry(request);
@@ -321,10 +325,13 @@ export async function middleware(request: NextRequest) {
   });
 
   // --- Resolve clinic from subdomain (delegated to composable module) ---
-  // KV-01: pass the SUBDOMAIN_KV binding so the resolver can use CF KV as
+  // KV-01 / TASK-017: pass a KV binding so the resolver can use CF KV as
   // a second-tier cache before falling through to the Supabase DB.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subdomainKv = await getWorkerBinding<any>("SUBDOMAIN_KV");
+  // Prefer TENANT_CACHE (TASK-017); fall back to SUBDOMAIN_KV (legacy).
+  type KvBinding = Parameters<typeof resolveSubdomainClinic>[3];
+  const subdomainKv =
+    (await getWorkerBinding<KvBinding>("TENANT_CACHE")) ??
+    (await getWorkerBinding<KvBinding>("SUBDOMAIN_KV"));
   let resolvedClinic: CachedClinic | undefined;
   if (subdomain) {
     const clinic = await resolveSubdomainClinic(

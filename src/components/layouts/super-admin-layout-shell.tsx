@@ -34,6 +34,7 @@ import {
   Gauge,
   GitCompareArrows,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -138,6 +139,7 @@ const navGroups: NavGroup[] = [
     label: "Intelligence",
     icon: Bot,
     items: [
+      { href: "/super-admin/builder", label: "AI Builder", icon: Sparkles },
       { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
       { href: "/super-admin/ai-team", label: "AI Team", icon: MessageSquare },
       { href: "/super-admin/agent-builder", label: "Website Builder", icon: Wand2 },
