@@ -226,7 +226,8 @@ export const ENV_RULES: EnvRule[] = [
   {
     name: "E2B_API_KEY",
     required: false,
-    description: "E2B sandbox API key for AI Builder (get from https://e2b.dev — free tier: 100 sandbox-hours/month)",
+    description:
+      "E2B sandbox API key for AI Builder (get from https://e2b.dev — free tier: 100 sandbox-hours/month)",
     group: "ai-builder",
   },
 

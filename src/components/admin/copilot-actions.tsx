@@ -18,19 +18,19 @@ export function CopilotActions() {
       },
     ],
     handler: async ({ query }) => {
-        // Sanitize: allow only alphanumeric, whitespace, hyphens, dots, and
-        // common French/Arabic Latin characters. Strips PostgREST filter
-        // injection chars (commas, operators, parentheses, quotes, etc.)
-        // before interpolating into the .or() filter string (per SQL Injection
-        // guardrail in AGENTS.md). Capped at 100 chars to bound DB work.
-        const sanitizedQuery = query
-          .replace(/[^a-zA-Z0-9\s\-._àâäèéêëîïôùûüÿæœçÀÂÄÈÉÊËÎÏÔÙÛÜŸÆŒÇ]/g, "")
-          .slice(0, 100);
-        const { data, error } = await supabase
-          .from("clinics")
-          .select(`id, name, subdomain, status, tier, city, phone, created_at, users (count)`)
-          .or(`name.ilike.%${sanitizedQuery}%,subdomain.ilike.%${sanitizedQuery}%`)
-          .limit(5);
+      // Sanitize: allow only alphanumeric, whitespace, hyphens, dots, and
+      // common French/Arabic Latin characters. Strips PostgREST filter
+      // injection chars (commas, operators, parentheses, quotes, etc.)
+      // before interpolating into the .or() filter string (per SQL Injection
+      // guardrail in AGENTS.md). Capped at 100 chars to bound DB work.
+      const sanitizedQuery = query
+        .replace(/[^a-zA-Z0-9\s\-._àâäèéêëîïôùûüÿæœçÀÂÄÈÉÊËÎÏÔÙÛÜŸÆŒÇ]/g, "")
+        .slice(0, 100);
+      const { data, error } = await supabase
+        .from("clinics")
+        .select(`id, name, subdomain, status, tier, city, phone, created_at, users (count)`)
+        .or(`name.ilike.%${sanitizedQuery}%,subdomain.ilike.%${sanitizedQuery}%`)
+        .limit(5);
       if (error) return `Error looking up clinic: ${error.message}`;
       if (!data || data.length === 0) return `No clinic found matching "${query}"`;
       return JSON.stringify(data, null, 2);
