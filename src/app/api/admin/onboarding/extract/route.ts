@@ -60,7 +60,28 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
         const buffer = Buffer.from(await file.arrayBuffer());
         const base64 = buffer.toString("base64");
         const isPdf = file.type === "application/pdf";
-        const mediaType = isPdf ? "application/pdf" : file.type || "image/png";
+        const imageMediaType = (file.type || "image/png") as
+          | "image/png"
+          | "image/jpeg"
+          | "image/webp"
+          | "image/gif";
+        const documentBlock = isPdf
+          ? ({
+              type: "document" as const,
+              source: {
+                type: "base64" as const,
+                media_type: "application/pdf" as const,
+                data: base64,
+              },
+            })
+          : ({
+              type: "image" as const,
+              source: {
+                type: "base64" as const,
+                media_type: imageMediaType,
+                data: base64,
+              },
+            });
         const response = await client.messages.create({
           model: "claude-3-5-sonnet-latest",
           max_tokens: 500,
@@ -70,14 +91,7 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
             {
               role: "user",
               content: [
-                {
-                  type: isPdf ? "document" : "image",
-                  source: {
-                    type: "base64",
-                    media_type: mediaType,
-                    data: base64,
-                  },
-                },
+                documentBlock,
                 {
                   type: "text",
                   text: "Extract clinic onboarding details from this document and return strict JSON only.",

@@ -84,9 +84,9 @@ async function loadStoredHealthRecords(
   auth: AuthContext,
   clinicId?: string | null,
 ): Promise<PersistedClinicHealthRecord[]> {
-  const { data, error } = await auth.supabase.rpc("get_latest_clinic_health_scores", {
+  const { data, error } = await auth.supabase.rpc("get_latest_clinic_health_scores" as never, {
     p_clinic_id: clinicId ?? null,
-  });
+  } as never);
 
   if (isMissingFunctionError(error)) {
     return loadStoredHealthRecordsLegacy(clinicId);
@@ -100,7 +100,7 @@ async function loadStoredHealthRecords(
     throw new Error(`Failed to load stored health records: ${error.message}`);
   }
 
-  const latestRows = toLatestHealthRows((data ?? []) as LatestClinicHealthScoreRow[], clinicId);
+  const latestRows = toLatestHealthRows((data ?? []) as unknown as LatestClinicHealthScoreRow[], clinicId);
   const clinicNames = await loadClinicNames([...new Set(latestRows.map((row) => row.clinic_id))]);
   return mapLatestHealthRowsToRecords(latestRows, clinicNames);
 }
@@ -109,7 +109,7 @@ async function loadLiveHealthRecords(
   auth: AuthContext,
   clinicId?: string | null,
 ): Promise<PersistedClinicHealthRecord[]> {
-  const { data: signalRows, error } = await auth.supabase.rpc("get_all_clinic_signals");
+  const { data: signalRows, error } = await auth.supabase.rpc("get_all_clinic_signals" as never);
   if (error) {
     throw new Error(`Failed to compute live health records: ${error.message}`);
   }
@@ -117,7 +117,7 @@ async function loadLiveHealthRecords(
   const stored = await loadStoredHealthRecords(auth, clinicId);
   const previousByClinicId = new Map(stored.map((record) => [record.clinicId, record.score]));
 
-  const filteredSignals = ((signalRows ?? []) as OwnerClinicSignals[]).filter(
+  const filteredSignals = ((signalRows ?? []) as unknown as OwnerClinicSignals[]).filter(
     (row) => !clinicId || row.clinicId === clinicId,
   );
 
@@ -338,7 +338,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
         supabase: auth.supabase,
         action: "clinic_narrative_generated",
         type: "admin",
-        clinicId,
+        clinicId: clinicId ?? "system",
         actor: auth.profile.id,
         description: `Narrative generated for clinic ${clinicId}`,
         metadata: {

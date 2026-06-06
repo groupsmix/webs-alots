@@ -59,9 +59,9 @@ async function loadLatestHealthRows(
   auth: AuthContext,
   clinicId?: string | null,
 ): Promise<{ rows: LatestClinicHealthScoreRow[]; missingRelation: boolean }> {
-  const { data, error } = await auth.supabase.rpc("get_latest_clinic_health_scores", {
+  const { data, error } = await auth.supabase.rpc("get_latest_clinic_health_scores" as never, {
     p_clinic_id: clinicId ?? null,
-  });
+  } as never);
 
   if (isMissingFunctionError(error)) {
     return loadLatestHealthRowsLegacy(clinicId);
@@ -81,7 +81,7 @@ async function loadLatestHealthRows(
   }
 
   return {
-    rows: toLatestHealthRows((data ?? []) as LatestClinicHealthScoreRow[], clinicId),
+    rows: toLatestHealthRows((data ?? []) as unknown as LatestClinicHealthScoreRow[], clinicId),
     missingRelation: false,
   };
 }
@@ -204,7 +204,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
   const { clinic_id: clinicId, create_alerts: createAlerts } = parsed.data;
 
   try {
-    const { data: signalRows, error: signalError } = await auth.supabase.rpc("get_all_clinic_signals");
+    const { data: signalRows, error: signalError } = await auth.supabase.rpc("get_all_clinic_signals" as never);
 
     if (signalError) {
       logger.error("Failed to execute get_all_clinic_signals", {
@@ -214,7 +214,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       return apiInternalError("Owner AI migrations may not be applied yet");
     }
 
-    const typedSignals = (signalRows ?? []) as OwnerClinicSignals[];
+    const typedSignals = (signalRows ?? []) as unknown as OwnerClinicSignals[];
     const filteredSignals = clinicId
       ? typedSignals.filter((row) => row.clinicId === clinicId)
       : typedSignals;

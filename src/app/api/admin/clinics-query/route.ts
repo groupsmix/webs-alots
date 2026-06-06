@@ -48,7 +48,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
   });
 
   try {
-    const { data, error } = await auth.supabase.rpc("execute_admin_query", { p_sql: sql });
+    const { data, error } = await auth.supabase.rpc("execute_admin_query" as never, { p_sql: sql } as never);
 
     if (error) {
       logger.error("Approved admin query execution failed", {

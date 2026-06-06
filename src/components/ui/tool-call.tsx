@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable i18next/no-literal-string -- Shared beta AI tool state UI copy. */
 import { CheckCircle2, Loader2, Wrench, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

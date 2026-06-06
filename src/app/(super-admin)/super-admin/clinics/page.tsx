@@ -1050,6 +1050,7 @@ export default function AllClinicsPage() {
       <Breadcrumb
         items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Clinics" }]}
       />
+      {/* eslint-disable i18next/no-literal-string -- admin-only header and Owner AI / NL query panel labels */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">All Clinics</h1>
@@ -1285,6 +1286,7 @@ export default function AllClinicsPage() {
           </CardContent>
         </Card>
       </div>
+      {/* eslint-enable i18next/no-literal-string */}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -1608,6 +1610,7 @@ export default function AllClinicsPage() {
                       </tr>
                     );
                   })}
+                  {/* eslint-disable i18next/no-literal-string -- admin-only empty state, pagination, and detail dialog labels */}
                   {sorted.length === 0 && (
                     <tr>
                       <td colSpan={11} className="py-8 text-center text-muted-foreground">
@@ -1708,6 +1711,8 @@ export default function AllClinicsPage() {
                 </Card>
               </div>
 
+              {/* eslint-enable i18next/no-literal-string */}
+
               {/* eslint-disable i18next/no-literal-string -- admin-only health card labels */}
               {/* Health Score Card */}
               {(() => {
@@ -1793,6 +1798,7 @@ export default function AllClinicsPage() {
               })()}
               {/* eslint-enable i18next/no-literal-string */}
 
+              {/* eslint-disable i18next/no-literal-string -- admin-only owner / account / features info labels */}
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-2">Owner Information</h3>
@@ -1883,6 +1889,8 @@ export default function AllClinicsPage() {
                 </div>
               </div>
 
+              {/* eslint-enable i18next/no-literal-string */}
+
               {/* eslint-disable i18next/no-literal-string -- admin-only onboarding labels */}
               {/* Onboarding Checklist */}
               <Separator />
@@ -1932,6 +1940,7 @@ export default function AllClinicsPage() {
               </div>
               {/* eslint-enable i18next/no-literal-string */}
             </div>
+            {/* eslint-disable i18next/no-literal-string -- admin-only dialog footer, login-as-client, and suspend dialog labels */}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetail(null)}>
                 Close
@@ -2134,6 +2143,7 @@ export default function AllClinicsPage() {
           </DialogContent>
         )}
       </Dialog>
+      {/* eslint-enable i18next/no-literal-string */}
 
       {/* eslint-disable i18next/no-literal-string -- admin-only bulk action dialog labels */}
       {/* Bulk Action Confirmation Dialog */}

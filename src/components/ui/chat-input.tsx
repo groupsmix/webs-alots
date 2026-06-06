@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable i18next/no-literal-string -- Shared beta AI chat UI copy. */
 import { Loader2, Send } from "lucide-react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
