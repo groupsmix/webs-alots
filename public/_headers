@@ -1,0 +1,40 @@
+# Cloudflare Workers Static Assets - cache headers
+# https://developers.cloudflare.com/workers/static-assets/headers/
+#
+# PERF: Without this file Workers Static Assets defaults to
+# `cache-control: public, max-age=0, must-revalidate` which forces the
+# browser to re-validate every Next.js chunk on every navigation. The
+# headers() rules in next.config.ts only apply to requests that go
+# through the Worker, not to assets served directly from the [assets]
+# binding. This file is the source of truth for asset cache headers.
+
+# Next.js content-hashed chunks (JS, CSS, media). File names contain a
+# build hash so they can be cached forever.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Next.js image optimizer output — content keyed by URL params, safe to
+# cache long-term but allow revalidation in case of optimizer changes.
+/_next/image/*
+  Cache-Control: public, max-age=2592000, must-revalidate
+
+# Static media in /public (favicons, icons, og images). Filenames are
+# stable across deploys, so a 1-day cache + revalidation is reasonable.
+/*.ico
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.png
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.jpg
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.jpeg
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.svg
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.webp
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.avif
+  Cache-Control: public, max-age=86400, must-revalidate
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
