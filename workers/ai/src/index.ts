@@ -13,8 +13,8 @@
  * Why a separate Worker? See workers/ai/README.md.
  */
 
-import { handleCopilotKit } from "./handlers/copilotkit";
 import { handleBuilderSandbox } from "./handlers/builder-sandbox";
+import { handleCopilotKit } from "./handlers/copilotkit";
 import { jsonResponse, type Env } from "./lib/supabase";
 
 export default {
