@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import {
   CopilotRuntime,
   AnthropicAdapter,
@@ -8,9 +7,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAnthropicApiKey } from "@/lib/env";
 import { createClient } from "@/lib/supabase-server";
 
-// nosemgrep: semgrep.env-access -- read via centralized getter from @/lib/env
-const anthropicClient = new Anthropic({ apiKey: getAnthropicApiKey()! });
-const serviceAdapter = new AnthropicAdapter({ anthropic: anthropicClient });
+// CF-BUNDLE-03: Do NOT statically `import Anthropic from "@anthropic-ai/sdk"`.
+// @copilotkit/runtime's AnthropicAdapter lazy-loads the SDK via __require()
+// inside ensureAnthropic(). A static import would bundle the entire 6 MB SDK
+// into the Worker. Letting the adapter construct its own client keeps it out
+// of the static graph; esbuild treats __require as a runtime call.
+//
+// Validate the env var at module init (fail fast on cold start) — the SDK
+// constructor will then read process.env.ANTHROPIC_API_KEY at request time.
+const apiKey = getAnthropicApiKey();
+if (!apiKey) {
+  throw new Error(
+    "ANTHROPIC_API_KEY is required for the CopilotKit route. " +
+      "Set it as a Cloudflare Worker secret before deploying.",
+  );
+}
+
+const serviceAdapter = new AnthropicAdapter();
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();

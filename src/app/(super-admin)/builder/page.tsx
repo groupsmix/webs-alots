@@ -4,7 +4,7 @@
    FR/AR translation backlog for a tool no end user ever sees. */
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { BuilderChat } from "@/components/builder/builder-chat";
+import { BuilderChatClient } from "@/components/builder/builder-chat-client";
 import { createClient } from "@/lib/supabase-server";
 
 export const metadata: Metadata = {
@@ -47,7 +47,7 @@ export default async function BuilderPage() {
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
-        <BuilderChat userId={user.id} />
+        <BuilderChatClient userId={user.id} />
       </div>
     </div>
   );
