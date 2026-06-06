@@ -1,6 +1,4 @@
 import { type NextRequest } from "next/server";
-import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
-import { logAuditEvent } from "@/lib/audit-log";
 import {
   buildPlatformAlerts,
   computeHealthScoreRecords,
@@ -10,6 +8,8 @@ import {
   type LatestClinicHealthScoreRow,
   type OwnerClinicSignals,
 } from "@/lib/ai/owner-analytics";
+import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";

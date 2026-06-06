@@ -1,15 +1,14 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
-import { logAuditEvent } from "@/lib/audit-log";
 import {
   loadProviderConfigs,
   routeAIRequest,
   AllProvidersFailedError,
 } from "@/lib/ai/router";
+import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import {
   adjustTeamMemberTicketCount,
   ensureInternalTeamMembers,
@@ -18,6 +17,7 @@ import {
   type InternalTeamRole,
 } from "@/lib/team-members";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 

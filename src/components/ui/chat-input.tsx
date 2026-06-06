@@ -1,8 +1,8 @@
 "use client";
 
 /* eslint-disable i18next/no-literal-string -- Shared beta AI chat UI copy. */
-import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { Loader2, Send } from "lucide-react";
+import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 

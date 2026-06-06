@@ -1,8 +1,4 @@
 import { type NextRequest } from "next/server";
-import { apiInternalError, apiNotFound, apiSuccess, apiValidationError } from "@/lib/api-response";
-import { logAuditEvent } from "@/lib/audit-log";
-import { loadProviderConfigs, routeAIRequest, AllProvidersFailedError } from "@/lib/ai/router";
-import { validateAIOutput } from "@/lib/ai/validate-output";
 import {
   buildClinicNarrativeFallback,
   buildPlatformNarrativeFallback,
@@ -14,6 +10,10 @@ import {
   type OwnerClinicSignals,
   type PersistedClinicHealthRecord,
 } from "@/lib/ai/owner-analytics";
+import { loadProviderConfigs, routeAIRequest, AllProvidersFailedError } from "@/lib/ai/router";
+import { validateAIOutput } from "@/lib/ai/validate-output";
+import { apiInternalError, apiNotFound, apiSuccess, apiValidationError } from "@/lib/api-response";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";

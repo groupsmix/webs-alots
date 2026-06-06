@@ -19,8 +19,8 @@
 //        oltigo.com/api/builder/sandbox/* -> webs-alots-ai
 //   3. Re-enable the <CopilotShell> wrapper below.
 import { Suspense } from "react";
-import { AgentWidgetMount } from "@/components/ai/AgentWidgetMount";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+import { AgentWidgetMount } from "@/components/ai/AgentWidgetMount";
 import SuperAdminLayoutShell from "@/components/layouts/super-admin-layout-shell";
 import SuperAdminLoading from "./loading";
 

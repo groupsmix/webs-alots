@@ -362,7 +362,7 @@ export default function TeamPage() {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Generate today's briefings
+              Generate today&apos;s briefings
             </Button>
           </div>
 
@@ -372,7 +372,7 @@ export default function TeamPage() {
             </div>
           ) : briefings.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No internal briefings available yet. Generate today's briefings to populate this
+              No internal briefings available yet. Generate today&apos;s briefings to populate this
               workspace.
             </p>
           ) : (

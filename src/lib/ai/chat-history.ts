@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
-import { fromUntyped } from "@/lib/ai/untyped-tables";
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";
+import { fromUntyped } from "@/lib/ai/untyped-tables";
+import { logger } from "@/lib/logger";
 
 type UntypedSupabase = SupabaseClient;
 

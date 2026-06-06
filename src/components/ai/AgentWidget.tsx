@@ -4,13 +4,13 @@
 import { Bot, Maximize2, Minimize2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AgentDebugPanel } from "@/components/ai/AgentDebugPanel";
-import { Chat } from "@/components/ui/chat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Chat } from "@/components/ui/chat";
 import { PromptSuggestions } from "@/components/ui/prompt-suggestions";
 import { getAgentApiBodyConfig, getAgentRoleConfig } from "@/config/agent.config";
-import { cn } from "@/lib/utils";
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";
+import { cn } from "@/lib/utils";
 
 type ChatMessage = {
   id: string;

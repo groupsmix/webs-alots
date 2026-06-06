@@ -1,7 +1,7 @@
 import { AgentWidget } from "@/components/ai/AgentWidget";
+import type { SiteTeamAgentType } from "@/lib/ai/prompts";
 import { createClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
-import type { SiteTeamAgentType } from "@/lib/ai/prompts";
 import type { UserRole } from "@/lib/types/database";
 
 type AgentWidgetMountProps = {

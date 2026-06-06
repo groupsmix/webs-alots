@@ -18,6 +18,7 @@ export interface InternalTeamMember {
   created_at?: string | null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Intentional escape hatch: team_members / users tables read here are not part of the generated Database type.
 type UntypedSupabase = SupabaseClient<any, any, any>;
 
 function teamMembersTable(supabase: SupabaseClient) {

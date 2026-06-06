@@ -21,7 +21,7 @@ export type HealthGrade = (typeof HEALTH_GRADES)[number];
 export type HealthTrend = (typeof HEALTH_TRENDS)[number];
 export type HealthRisk = (typeof HEALTH_RISKS)[number];
 
-export interface OwnerClinicSignals extends ClinicSignals {}
+export type OwnerClinicSignals = ClinicSignals;
 
 export interface LatestClinicHealthScoreRow {
   clinic_id: string;
