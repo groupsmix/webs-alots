@@ -47,6 +47,64 @@ type ExtendedDatabase = GenDatabase & {
         Update: UsersUpdateExtended;
         Relationships: GenDatabase["public"]["Tables"]["users"]["Relationships"];
       };
+      // PR #980 follow-up: consent_records table (00160) — added here so
+      // the typed tenant client can target it via supabase.from(...) and
+      // RLS (policy user_inserts_own_consent_records, 00163) enforces
+      // ownership without needing a service-role client.
+      consent_records: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          clinic_id: string | null;
+          consent_type:
+            | "terms_of_service"
+            | "privacy_policy"
+            | "health_data_processing"
+            | "marketing_communications"
+            | "whatsapp_notifications"
+            | "data_sharing_with_clinic";
+          granted: boolean;
+          version: string;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          clinic_id?: string | null;
+          consent_type:
+            | "terms_of_service"
+            | "privacy_policy"
+            | "health_data_processing"
+            | "marketing_communications"
+            | "whatsapp_notifications"
+            | "data_sharing_with_clinic";
+          granted: boolean;
+          version: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          clinic_id?: string | null;
+          consent_type?:
+            | "terms_of_service"
+            | "privacy_policy"
+            | "health_data_processing"
+            | "marketing_communications"
+            | "whatsapp_notifications"
+            | "data_sharing_with_clinic";
+          granted?: boolean;
+          version?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       // X-1: consent_logs table (not in generated types)
       consent_logs: {
         Row: {

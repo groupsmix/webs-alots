@@ -83,9 +83,34 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
     return apiSuccess({ logged: false });
   }
 
-  // CMP-006: Also write to consent_records (structured 00160 table) when userId is known.
-  // This populates the new compliance-grade ledger without breaking the legacy consent_logs flow.
-  if (userId) {
+  // CMP-006 / PR #980 corridor-security follow-up:
+  //
+  // Also write to consent_records (structured 00160 table) when the
+  // caller is authenticated. This populates the compliance-grade ledger
+  // without breaking the legacy consent_logs flow used for pre-auth
+  // cookie consent.
+  //
+  // SECURITY MODEL
+  // --------------
+  // 1.  We refuse to write consent_records without an authenticated
+  //     Supabase session (`user` from supabase.auth.getUser()).
+  //     Pre-auth cookie consent stays on consent_logs only.
+  // 2.  We use the user's own tenant-scoped client — NOT a service-role
+  //     client — so RLS enforces ownership at the database level.
+  //     Migration 00163 adds:
+  //       CREATE POLICY user_inserts_own_consent_records
+  //         ON public.consent_records FOR INSERT TO authenticated
+  //         WITH CHECK (
+  //           user_id  = (SELECT id        FROM users WHERE auth_id = auth.uid())
+  //           AND clinic_id = (SELECT clinic_id FROM users WHERE auth_id = auth.uid())
+  //         );
+  //     Even if a future change accidentally takes user_id from the
+  //     request body, the database will reject the write.
+  // 3.  Defense in depth: we re-verify in code that the resolved
+  //     profile (`userId`) still maps back to the authenticated user
+  //     via auth_id, and that profile.clinic_id matches the resolved
+  //     tenant.clinicId, before issuing the insert.
+  if (user && userId) {
     const VALID_CONSENT_TYPES = [
       "terms_of_service",
       "privacy_policy",
@@ -101,32 +126,46 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
       : null;
 
     if (normalizedType) {
-      // SECURITY (corridor-security review): userId is NOT taken from the
-      // request body — it is server-resolved above from
-      // supabase.auth.getUser() and looked up in the users table via
-      // auth_id. The service-role insert is therefore safe; a caller
-      // cannot forge consent records for an arbitrary user UUID.
-      //
-      // We use createUntypedAdminClient (rather than createServiceClient)
-      // because consent_records was introduced by migration 00160 and is
-      // not yet in the generated Supabase types. It is the same service-
-      // role client under the hood with an untyped surface for new tables.
-      const { createUntypedAdminClient } = await import("@/lib/supabase-server");
-      const serviceSupabase = createUntypedAdminClient("super_admin", tenant.clinicId);
-      const { error: crError } = await serviceSupabase.from("consent_records").insert({
-        user_id: userId,
-        clinic_id: tenant.clinicId,
-        consent_type: normalizedType,
-        granted,
-        version: "1.0",
-        ip_address: ip,
-        user_agent: request.headers.get("user-agent") ?? null,
-      });
-      if (crError) {
-        logger.warn("Failed to write consent_records", {
+      // Defense-in-depth re-verification of ownership. The profile row
+      // must (a) belong to the authenticated auth user and (b) be
+      // attached to the resolved tenant. If either invariant fails we
+      // log and skip the structured write — never fall back to a
+      // service-role client.
+      const { data: profileCheck } = await supabase
+        .from("users")
+        .select("id, auth_id, clinic_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const ownsProfile =
+        profileCheck?.auth_id === user.id && profileCheck?.clinic_id === tenant.clinicId;
+
+      if (!ownsProfile) {
+        logger.warn("Skipping consent_records write: profile/tenant mismatch", {
           context: "consent",
-          error: crError.message,
+          authUser: user.id,
+          resolvedUserId: userId,
+          resolvedClinic: tenant.clinicId,
         });
+      } else {
+        // Use the user's own tenant client. RLS policy
+        // user_inserts_own_consent_records (00163) enforces ownership
+        // server-side as the final authorization barrier.
+        const { error: crError } = await supabase.from("consent_records").insert({
+          user_id: userId,
+          clinic_id: tenant.clinicId,
+          consent_type: normalizedType,
+          granted,
+          version: "1.0",
+          ip_address: ip,
+          user_agent: request.headers.get("user-agent") ?? null,
+        });
+        if (crError) {
+          logger.warn("Failed to write consent_records", {
+            context: "consent",
+            error: crError.message,
+          });
+        }
       }
     }
   }
