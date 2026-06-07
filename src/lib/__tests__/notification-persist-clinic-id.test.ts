@@ -31,6 +31,12 @@ const mockFrom = vi.fn((table: string) => {
 
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(() => ({ from: mockFrom })),
+  // CMP-007: notification-persist now uses createUntypedAdminClient (service
+  // role) for both the user lookup + notification insert, and
+  // notification-preferences-server calls it to read user preferences. Route
+  // both through the same `mockFrom` so the existing assertions on
+  // mockInsert / mockUserSingle continue to work.
+  createUntypedAdminClient: vi.fn(() => ({ from: mockFrom })),
 }));
 
 vi.mock("@/lib/logger", () => ({

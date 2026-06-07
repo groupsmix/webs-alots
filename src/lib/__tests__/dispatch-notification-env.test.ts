@@ -45,6 +45,32 @@ vi.mock("@/lib/supabase-server", () => ({
       })),
     })),
   })),
+  // CMP-007: notification-preferences-server (transitively imported via
+  // notifications + notification-persist) calls createUntypedAdminClient to
+  // read user preferences. The mock returns a chain whose `maybeSingle()`
+  // resolves to `{ data: null }`, which makes `getNotificationPreferences`
+  // fall back to DEFAULT_NOTIFICATION_PREFERENCES (all channels enabled) —
+  // preserving the existing test semantics where in_app notifications dispatch
+  // regardless of stored preferences.
+  createUntypedAdminClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+          single: vi.fn(async () => ({
+            data: { clinic_id: "clinic-test", phone: "+212600000000", email: "test@example.com" },
+            error: null,
+          })),
+        })),
+      })),
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(async () => ({ data: { id: "notif-test" }, error: null })),
+        })),
+      })),
+      upsert: vi.fn(async () => ({ error: null })),
+    })),
+  })),
 }));
 
 vi.mock("@/lib/logger", () => ({
