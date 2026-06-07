@@ -78,11 +78,7 @@ function MessageBubble({ message }: { message: Message }) {
     <div className={`flex gap-3 ${isStaff || isBot ? "flex-row-reverse" : ""}`}>
       <div
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-          isStaff
-            ? "bg-green-100"
-            : isBot
-              ? "bg-violet-100"
-              : "bg-blue-100"
+          isStaff ? "bg-green-100" : isBot ? "bg-violet-100" : "bg-blue-100"
         }`}
       >
         <SenderIcon senderType={message.sender_type} />
@@ -214,12 +210,7 @@ export default function TicketDetailPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Breadcrumb
-          items={[
-            { label: "Support", href: "/admin/support" },
-            { label: "Ticket" },
-          ]}
-        />
+        <Breadcrumb items={[{ label: "Support", href: "/admin/support" }, { label: "Ticket" }]} />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
@@ -244,9 +235,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  const hoursOpen = Math.floor(
-    (Date.now() - new Date(ticket.created_at).getTime()) / 3_600_000,
-  );
+  const hoursOpen = Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 3_600_000);
 
   return (
     <div className="space-y-4">
@@ -288,21 +277,12 @@ export default function TicketDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTriage}
-            disabled={triaging}
-          >
+          <Button variant="outline" size="sm" onClick={handleTriage} disabled={triaging}>
             <Sparkles className={`h-4 w-4 mr-1 ${triaging ? "animate-spin" : ""}`} />
             {triaging ? "Triaging..." : "AI Triage"}
           </Button>
           {ticket.status !== "resolved" && ticket.status !== "closed" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleStatusUpdate("resolved")}
-            >
+            <Button variant="outline" size="sm" onClick={() => handleStatusUpdate("resolved")}>
               <CheckCircle2 className="h-4 w-4 mr-1" />
               Resolve
             </Button>
@@ -412,7 +392,9 @@ export default function TicketDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Open</span>
-                <span className={`flex items-center gap-1 ${ticket.sla_breached ? "text-destructive" : ""}`}>
+                <span
+                  className={`flex items-center gap-1 ${ticket.sla_breached ? "text-destructive" : ""}`}
+                >
                   <Clock className="h-3.5 w-3.5" />
                   {hoursOpen}h
                 </span>
@@ -440,9 +422,7 @@ export default function TicketDetailPage() {
           {ticket.triaged_at && (
             <Card className="border-violet-200">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-violet-700">
-                  AI Triage
-                </CardTitle>
+                <CardTitle className="text-sm font-medium text-violet-700">AI Triage</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">

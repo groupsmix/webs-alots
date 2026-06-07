@@ -15,11 +15,15 @@ export default async function ComplianceDsarPage() {
   const supabase = createServiceClient();
   const { data: requests } = await supabase
     .from("dsar_requests")
-    .select("id, dsar_number, requester_name, requester_email, request_type, status, response_due_at, created_at")
+    .select(
+      "id, dsar_number, requester_name, requester_email, request_type, status, response_due_at, created_at",
+    )
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const overdue = (requests ?? []).filter((request) => new Date(request.response_due_at) < new Date());
+  const overdue = (requests ?? []).filter(
+    (request) => new Date(request.response_due_at) < new Date(),
+  );
 
   return (
     <div className="space-y-6">
@@ -50,7 +54,11 @@ export default async function ComplianceDsarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(requests ?? []).filter((request) => request.status === "received" || request.status === "in_progress").length}
+              {
+                (requests ?? []).filter(
+                  (request) => request.status === "received" || request.status === "in_progress",
+                ).length
+              }
             </div>
           </CardContent>
         </Card>
@@ -100,21 +108,37 @@ export default async function ComplianceDsarPage() {
                       <td className="p-3 font-medium">#{request.dsar_number}</td>
                       <td className="p-3">
                         <div>{request.requester_name}</div>
-                        <div className="text-xs text-muted-foreground">{request.requester_email}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {request.requester_email}
+                        </div>
                       </td>
                       <td className="p-3 capitalize">{request.request_type}</td>
                       <td className="p-3">
-                        <Badge variant={request.status === "completed" ? "success" : isOverdue ? "destructive" : "warning"}>
+                        <Badge
+                          variant={
+                            request.status === "completed"
+                              ? "success"
+                              : isOverdue
+                                ? "destructive"
+                                : "warning"
+                          }
+                        >
                           {request.status}
                         </Badge>
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{new Date(request.response_due_at).toLocaleDateString("fr-MA")}</span>
+                          <span>
+                            {new Date(request.response_due_at).toLocaleDateString("fr-MA")}
+                          </span>
                         </div>
-                        <div className={`text-xs ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}>
-                          {isOverdue ? `${Math.abs(daysRemaining)} jour(s) de retard` : `${daysRemaining} jour(s) restants`}
+                        <div
+                          className={`text-xs ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}
+                        >
+                          {isOverdue
+                            ? `${Math.abs(daysRemaining)} jour(s) de retard`
+                            : `${daysRemaining} jour(s) restants`}
                         </div>
                       </td>
                     </tr>

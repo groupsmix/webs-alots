@@ -45,14 +45,57 @@ const URGENT_KEYWORDS = [
   "incident",
 ];
 
-const CATEGORY_KEYWORDS: Array<{ category: z.infer<typeof supportTriageSchema>["category"]; terms: string[] }> = [
-  { category: "billing_payment", terms: ["invoice", "facture", "payment", "paiement", "refund", "remboursement", "stripe", "cmi"] },
-  { category: "technical_bug", terms: ["bug", "error", "erreur", "crash", "broken", "timeout", "500", "slow"] },
-  { category: "kyc_onboarding", terms: ["onboarding", "kyc", "verification", "documents", "setup"] },
-  { category: "whatsapp_notifications", terms: ["whatsapp", "message", "template", "delivery", "notification"] },
-  { category: "account_access", terms: ["login", "password", "access", "account", "connexion", "otp", "mfa"] },
-  { category: "feature_request", terms: ["feature", "request", "suggest", "would like", "amélioration", "wishlist"] },
-  { category: "data_privacy", terms: ["privacy", "gdpr", "09-08", "delete my data", "export my data", "personal data", "portability", "effacement", "données"] },
+const CATEGORY_KEYWORDS: Array<{
+  category: z.infer<typeof supportTriageSchema>["category"];
+  terms: string[];
+}> = [
+  {
+    category: "billing_payment",
+    terms: [
+      "invoice",
+      "facture",
+      "payment",
+      "paiement",
+      "refund",
+      "remboursement",
+      "stripe",
+      "cmi",
+    ],
+  },
+  {
+    category: "technical_bug",
+    terms: ["bug", "error", "erreur", "crash", "broken", "timeout", "500", "slow"],
+  },
+  {
+    category: "kyc_onboarding",
+    terms: ["onboarding", "kyc", "verification", "documents", "setup"],
+  },
+  {
+    category: "whatsapp_notifications",
+    terms: ["whatsapp", "message", "template", "delivery", "notification"],
+  },
+  {
+    category: "account_access",
+    terms: ["login", "password", "access", "account", "connexion", "otp", "mfa"],
+  },
+  {
+    category: "feature_request",
+    terms: ["feature", "request", "suggest", "would like", "amélioration", "wishlist"],
+  },
+  {
+    category: "data_privacy",
+    terms: [
+      "privacy",
+      "gdpr",
+      "09-08",
+      "delete my data",
+      "export my data",
+      "personal data",
+      "portability",
+      "effacement",
+      "données",
+    ],
+  },
 ];
 
 function safeJsonSlice(text: string): string {
@@ -134,9 +177,16 @@ export async function maybeGenerateSupportTriage(input: string) {
 export async function maybeGenerateSupportAssistAnswer(input: {
   subject: string;
   description: string;
-  faqContext: Array<{ question: string; answer: string; category?: string | null; language?: string | null }>;
+  faqContext: Array<{
+    question: string;
+    answer: string;
+    category?: string | null;
+    language?: string | null;
+  }>;
 }) {
-  const fallbackAnswer = input.faqContext[0]?.answer ?? "Merci pour votre message. Notre équipe support reviendra vers vous rapidement.";
+  const fallbackAnswer =
+    input.faqContext[0]?.answer ??
+    "Merci pour votre message. Notre équipe support reviendra vers vous rapidement.";
 
   if (!(await isAIEnabled())) {
     return supportAssistSchema.parse({

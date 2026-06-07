@@ -28,40 +28,43 @@ async function fetchSentryMetrics() {
   return { available: true, errorCount24h: data.length };
 }
 
-export const GET = withAuth(async (_request, auth) => {
-  if (auth.profile.role !== "super_admin") {
-    return apiError("Forbidden", 403, "FORBIDDEN");
-  }
+export const GET = withAuth(
+  async (_request, auth) => {
+    if (auth.profile.role !== "super_admin") {
+      return apiError("Forbidden", 403, "FORBIDDEN");
+    }
 
-  const supabase = createServiceClient();
-  const [sentry, uptimeEvents, dbProbe] = await Promise.allSettled([
-    fetchSentryMetrics(),
-    supabase
-      .from("uptime_events")
-      .select("monitor_name, event_type, occurred_at, response_time_ms")
-      .gte("occurred_at", new Date(Date.now() - 86_400_000).toISOString())
-      .order("occurred_at", { ascending: false })
-      .limit(50),
-    auth.supabase.from("users").select("id", { count: "exact", head: true }),
-  ]);
+    const supabase = createServiceClient();
+    const [sentry, uptimeEvents, dbProbe] = await Promise.allSettled([
+      fetchSentryMetrics(),
+      supabase
+        .from("uptime_events")
+        .select("monitor_name, event_type, occurred_at, response_time_ms")
+        .gte("occurred_at", new Date(Date.now() - 86_400_000).toISOString())
+        .order("occurred_at", { ascending: false })
+        .limit(50),
+      auth.supabase.from("users").select("id", { count: "exact", head: true }),
+    ]);
 
-  const database =
-    dbProbe.status === "fulfilled"
-      ? {
-          available: !dbProbe.value.error,
-          userCount: dbProbe.value.count ?? 0,
-        }
-      : { available: false };
-
-  return apiSuccess({
-    sentry: sentry.status === "fulfilled" ? sentry.value : { available: false },
-    database,
-    uptime:
-      uptimeEvents.status === "fulfilled"
+    const database =
+      dbProbe.status === "fulfilled"
         ? {
-            events: uptimeEvents.value.data ?? [],
+            available: !dbProbe.value.error,
+            userCount: dbProbe.value.count ?? 0,
           }
-        : { events: [] },
-    fetchedAt: new Date().toISOString(),
-  });
-}, ["super_admin"]);
+        : { available: false };
+
+    return apiSuccess({
+      sentry: sentry.status === "fulfilled" ? sentry.value : { available: false },
+      database,
+      uptime:
+        uptimeEvents.status === "fulfilled"
+          ? {
+              events: uptimeEvents.value.data ?? [],
+            }
+          : { events: [] },
+      fetchedAt: new Date().toISOString(),
+    });
+  },
+  ["super_admin"],
+);

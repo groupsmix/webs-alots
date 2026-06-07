@@ -5,7 +5,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 const REQUEST_TYPES = [
@@ -84,7 +90,10 @@ export function DSARRequestForm() {
 
           <Select value={requestType} onValueChange={setRequestType}>
             <SelectTrigger>
-              <SelectValue placeholder="Choisir le type de demande" value={REQUEST_TYPES.find((t) => t.value === requestType)?.label} />
+              <SelectValue
+                placeholder="Choisir le type de demande"
+                value={REQUEST_TYPES.find((t) => t.value === requestType)?.label}
+              />
             </SelectTrigger>
             <SelectContent>
               {REQUEST_TYPES.map((option) => (

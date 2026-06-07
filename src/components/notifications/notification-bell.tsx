@@ -128,9 +128,7 @@ export function NotificationBell({ userId }: { userId?: string }): ReactNode {
 
   async function markOneRead(id: string) {
     // Optimistic update
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n)),
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
     // Persist to local storage for client-side persistence
     const readIds = getReadIds();
     readIds.add(id);
@@ -198,7 +196,9 @@ export function NotificationBell({ userId }: { userId?: string }): ReactNode {
               className="flex items-start gap-2 py-2 cursor-pointer"
               onClick={() => void markOneRead(notif.id)}
             >
-              <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${TYPE_COLORS[notif.type] ?? "text-muted-foreground"}`} />
+              <Icon
+                className={`h-4 w-4 mt-0.5 shrink-0 ${TYPE_COLORS[notif.type] ?? "text-muted-foreground"}`}
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium truncate">{notif.title}</p>

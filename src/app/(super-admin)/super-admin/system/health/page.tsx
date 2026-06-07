@@ -8,16 +8,8 @@ async function getMetrics() {
   const supabase = createServiceClient();
 
   const [uptime, events] = await Promise.all([
-    supabase
-      .from("uptime_sla_monthly")
-      .select("*")
-      .order("month", { ascending: false })
-      .limit(12),
-    supabase
-      .from("uptime_events")
-      .select("*")
-      .order("occurred_at", { ascending: false })
-      .limit(20),
+    supabase.from("uptime_sla_monthly").select("*").order("month", { ascending: false }).limit(12),
+    supabase.from("uptime_events").select("*").order("occurred_at", { ascending: false }).limit(20),
   ]);
 
   return {
@@ -105,7 +97,12 @@ export default async function SystemHealthPage() {
                 {metrics.uptime.map((row) => (
                   <tr key={`${row.monitor_name}-${row.month}`} className="border-b">
                     <td className="p-3">{row.monitor_name}</td>
-                    <td className="p-3">{new Date(row.month).toLocaleDateString("fr-MA", { year: "numeric", month: "long" })}</td>
+                    <td className="p-3">
+                      {new Date(row.month).toLocaleDateString("fr-MA", {
+                        year: "numeric",
+                        month: "long",
+                      })}
+                    </td>
                     <td className="p-3">{row.uptime_pct}%</td>
                     <td className="p-3">{row.downtime_events}</td>
                   </tr>
@@ -133,7 +130,9 @@ export default async function SystemHealthPage() {
                   </div>
                   <div className="text-sm capitalize">{event.event_type}</div>
                 </div>
-                {event.message ? <p className="mt-2 text-sm text-muted-foreground">{event.message}</p> : null}
+                {event.message ? (
+                  <p className="mt-2 text-sm text-muted-foreground">{event.message}</p>
+                ) : null}
               </div>
             ))}
           </div>
