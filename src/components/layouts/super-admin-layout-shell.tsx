@@ -59,11 +59,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
 import { fetchClinics } from "@/lib/super-admin-actions";
-import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 
 interface NavItem {
   href: string;

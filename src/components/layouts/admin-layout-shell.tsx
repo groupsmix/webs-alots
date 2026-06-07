@@ -32,6 +32,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
+import {
+  AdminHeaderBar,
+  AdminSupportBadge,
+} from "@/components/layouts/admin-layout-shell-with-bell";
 import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
@@ -41,10 +45,6 @@ import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboa
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
-import {
-  AdminHeaderBar,
-  AdminSupportBadge,
-} from "@/components/layouts/admin-layout-shell-with-bell";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";

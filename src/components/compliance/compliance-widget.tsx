@@ -1,10 +1,10 @@
 "use client";
 
 import { AlertTriangle, Clock, ShieldAlert, Shield } from "lucide-react";
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ComplianceSnapshot {
   cndpStatus: string | null;

@@ -1,5 +1,5 @@
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { NotificationPreferencesForm } from "@/components/notifications/notification-preferences-form";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientNotificationPreferencesPage() {
   return (

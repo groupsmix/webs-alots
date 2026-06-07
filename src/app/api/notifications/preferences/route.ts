@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -9,9 +10,8 @@ import {
   getNotificationPreferences,
   saveNotificationPreferences,
 } from "@/lib/notification-preferences-server";
-import { withAuthValidation } from "@/lib/api-validate";
-import { withAuth } from "@/lib/with-auth";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 const ALL_AUTHENTICATED_ROLES: UserRole[] = [
   "super_admin",

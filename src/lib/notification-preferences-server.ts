@@ -1,11 +1,11 @@
 import "server-only";
 
-import type { NotificationChannel, NotificationTrigger } from "@/lib/notifications";
 import {
   canSendNotification,
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationPreferenceSettings,
 } from "@/lib/notification-preferences";
+import type { NotificationChannel, NotificationTrigger } from "@/lib/notifications";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 interface NotificationPreferenceRow extends NotificationPreferenceSettings {

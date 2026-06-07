@@ -2,8 +2,8 @@ import { z } from "zod";
 import { apiSuccess } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { sanitizeIlike } from "@/lib/sanitize-ilike";
-import { maybeGenerateSupportAssistAnswer } from "@/lib/support/ai";
 import { createClient } from "@/lib/supabase-server";
+import { maybeGenerateSupportAssistAnswer } from "@/lib/support/ai";
 import { requireTenant } from "@/lib/tenant";
 
 const assistSchema = z.object({

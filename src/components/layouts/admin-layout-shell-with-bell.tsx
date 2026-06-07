@@ -11,8 +11,8 @@
  */
 
 import { Bell } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useEffect, useState, useRef } from "react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase-client";

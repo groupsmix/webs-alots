@@ -8,9 +8,9 @@
  * and submission guide, see {@link ../../../docs/whatsapp-template-approval.md}.
  */
 
+import { logger } from "@/lib/logger";
 import { canSendNotification } from "@/lib/notification-preferences";
 import { getNotificationPreferences } from "@/lib/notification-preferences-server";
-import { logger } from "@/lib/logger";
 
 // ---- Notification Trigger Types ----
 

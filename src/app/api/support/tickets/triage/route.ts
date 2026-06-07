@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { logAuditEvent } from "@/lib/audit-log";
-import { mapSupportPriorityToAiPriority, maybeGenerateSupportTriage } from "@/lib/support/ai";
-import { createUntypedAdminClient } from "@/lib/supabase-server";
-import { requireTenant } from "@/lib/tenant";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
+import { mapSupportPriorityToAiPriority, maybeGenerateSupportTriage } from "@/lib/support/ai";
+import { requireTenant } from "@/lib/tenant";
 
 const triageRequestSchema = z.object({
   ticketId: z.string().uuid(),

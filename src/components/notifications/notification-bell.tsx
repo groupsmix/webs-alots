@@ -2,6 +2,7 @@
 
 import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle } from "lucide-react";
 import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase-client";
 
 interface Notification {

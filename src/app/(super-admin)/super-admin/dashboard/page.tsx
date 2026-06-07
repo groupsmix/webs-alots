@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
+import { ComplianceWidget } from "@/components/compliance/compliance-widget";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
-import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
-import { ComplianceWidget } from "@/components/compliance/compliance-widget";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { exportToPDF } from "@/lib/export-utils";
