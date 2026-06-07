@@ -55,6 +55,14 @@ function getSupabaseImageHostname(): string {
 // consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
+  // E2E suite (login-flow / registration-flow / pricing / mobile-flows specs)
+  // asserts `<Link>` hrefs in their canonical form (e.g. href="/login/").
+  // Removing this flag drops the trailing slash from rendered hrefs and breaks
+  // those assertions. Several middleware paths (CSRF exempt list, sitemap, the
+  // CSP-via-headers rewrite map) also assume canonical-with-slash URLs.
+  // Keep enabled until those paths and the E2E selectors are migrated.
+  trailingSlash: true,
+
   // MEDIUM-9: Suppress X-Powered-By header (information disclosure).
   poweredByHeader: false,
 
