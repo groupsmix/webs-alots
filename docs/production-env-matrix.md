@@ -83,7 +83,8 @@
 
 | Variable                 | Req   | Where to Set           | Description                     | Generation                          |
 | ------------------------ | ----- | ---------------------- | ------------------------------- | ----------------------------------- |
-| `NEXT_PUBLIC_SENTRY_DSN` | **P** | Cloudflare Workers env | Sentry DSN for error monitoring | Sentry dashboard → Project Settings |
+| `NEXT_PUBLIC_SENTRY_DSN` | **P** | Cloudflare Workers env | Sentry DSN for app/client/server/edge error monitoring | Sentry dashboard → Project Settings |
+| `SENTRY_DSN` | **O** | Cloudflare Workers secret | Runtime-only DSN for cron/queue worker error reporting | Sentry dashboard → Project Settings |
 
 ## Custom Domains (Conditional)
 

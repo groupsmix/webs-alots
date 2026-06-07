@@ -41,6 +41,10 @@ import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboa
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
+import {
+  AdminHeaderBar,
+  AdminSupportBadge,
+} from "@/components/layouts/admin-layout-shell-with-bell";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
@@ -79,6 +83,8 @@ const navItems: NavItem[] = [
   { href: "/admin/receptionists", label: "Receptionists", icon: UserCheck },
   { href: "/admin/patients", label: "Patient Database", icon: Users },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin/support", label: "Support", icon: FileText },
+  { href: "/admin/status", label: "System Status", icon: Activity },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/branding", label: "Branding", icon: Paintbrush },
@@ -176,6 +182,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
       <nav className="space-y-1 flex-1">
         {visibleItems.map((item) => {
           const isActive = isNavActive(pathname, item.href);
+          const isSupport = item.href === "/admin/support";
           return (
             <Link
               key={item.href}
@@ -189,7 +196,8 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
               }`}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {isSupport && <AdminSupportBadge />}
             </Link>
           );
         })}
@@ -265,7 +273,8 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
           <SidebarContent pathname={pathname} />
         </aside>
 
-        <main id="main-content" className="flex-1 p-4 pt-16 pb-20 md:p-6 md:pb-6">
+        <AdminHeaderBar />
+        <main id="main-content" className="flex-1 p-4 pt-16 pb-20 md:p-6 md:pb-6 md:pt-18">
           <AutoBreadcrumb />
           {children}
         </main>

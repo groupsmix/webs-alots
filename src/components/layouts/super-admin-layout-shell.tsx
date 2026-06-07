@@ -35,6 +35,7 @@ import {
   GitCompareArrows,
   MessageSquare,
   Sparkles,
+  HeartPulse,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -62,6 +63,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
 import { fetchClinics } from "@/lib/super-admin-actions";
+import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 
 interface NavItem {
   href: string;
@@ -153,6 +155,7 @@ const navGroups: NavGroup[] = [
     icon: Activity,
     items: [
       { href: "/super-admin/system", label: "System Status", icon: Activity },
+      { href: "/super-admin/system/health", label: "Health Metrics", icon: HeartPulse },
       { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
       { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
       { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
@@ -332,6 +335,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                     );
                   }
 
+                  const isSupport = item.href === "/super-admin/support";
                   return (
                     <Link
                       key={item.href}
@@ -344,7 +348,8 @@ function SidebarNav({ pathname }: { pathname: string }) {
                       }`}
                     >
                       <item.icon className="h-4 w-4" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {isSupport && <SuperAdminSupportBadge />}
                     </Link>
                   );
                 })}

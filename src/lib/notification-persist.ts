@@ -6,7 +6,8 @@
  */
 
 import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
+import { shouldDeliverNotification } from "@/lib/notification-preferences-server";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 import type { NotificationTrigger } from "./notifications";
 
 interface InsertNotificationParams {
@@ -30,7 +31,12 @@ export async function insertInAppNotification(
   params: InsertNotificationParams,
 ): Promise<InsertResult> {
   try {
-    const supabase = await createClient();
+    const supabase = createUntypedAdminClient("notification");
+
+    const allowed = await shouldDeliverNotification(params.userId, "in_app", params.trigger);
+    if (!allowed) {
+      return { success: true };
+    }
 
     // Look up the user to get their clinic_id
     const { data: user } = await supabase

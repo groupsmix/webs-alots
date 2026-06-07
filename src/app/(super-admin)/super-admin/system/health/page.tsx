@@ -1,0 +1,143 @@
+import { AlertTriangle, Database, ShieldAlert } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createServiceClient } from "@/lib/supabase-server";
+
+async function getMetrics() {
+  const supabase = createServiceClient();
+
+  const [uptime, events] = await Promise.all([
+    supabase
+      .from("uptime_sla_monthly")
+      .select("*")
+      .order("month", { ascending: false })
+      .limit(12),
+    supabase
+      .from("uptime_events")
+      .select("*")
+      .order("occurred_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  return {
+    uptime: uptime.data ?? [],
+    events: events.data ?? [],
+  };
+}
+
+export default async function SystemHealthPage() {
+  const metrics = await getMetrics();
+  const latestMonth = metrics.uptime[0]?.month;
+  const latestMonthRows = metrics.uptime.filter((row) => row.month === latestMonth);
+
+  return (
+    <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "System", href: "/super-admin/system" },
+          { label: "Health" },
+        ]}
+      />
+
+      <div>
+        <h1 className="text-2xl font-bold">System Health</h1>
+        <p className="text-sm text-muted-foreground">
+          Vue consolidée des incidents, de la disponibilité et des signaux opérationnels.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Database className="h-4 w-4" />
+              Services suivis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{latestMonthRows.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <ShieldAlert className="h-4 w-4" />
+              Incidents récents
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.events.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Downtime (mois)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {latestMonthRows.reduce((sum, row) => sum + (row.downtime_events ?? 0), 0)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Disponibilité mensuelle</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="p-3">Service</th>
+                  <th className="p-3">Mois</th>
+                  <th className="p-3">Uptime</th>
+                  <th className="p-3">Incidents</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.uptime.map((row) => (
+                  <tr key={`${row.monitor_name}-${row.month}`} className="border-b">
+                    <td className="p-3">{row.monitor_name}</td>
+                    <td className="p-3">{new Date(row.month).toLocaleDateString("fr-MA", { year: "numeric", month: "long" })}</td>
+                    <td className="p-3">{row.uptime_pct}%</td>
+                    <td className="p-3">{row.downtime_events}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Événements récents</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {metrics.events.map((event) => (
+              <div key={event.id} className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{event.monitor_name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(event.occurred_at).toLocaleString("fr-MA")}
+                    </div>
+                  </div>
+                  <div className="text-sm capitalize">{event.event_type}</div>
+                </div>
+                {event.message ? <p className="mt-2 text-sm text-muted-foreground">{event.message}</p> : null}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

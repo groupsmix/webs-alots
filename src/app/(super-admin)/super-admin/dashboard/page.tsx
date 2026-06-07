@@ -25,6 +25,8 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
+import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
+import { ComplianceWidget } from "@/components/compliance/compliance-widget";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { exportToPDF } from "@/lib/export-utils";
@@ -236,6 +238,7 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
+      <OpsSummaryStrip />
       <Breadcrumb items={[{ label: "Super Admin" }, { label: t(locale, "nav.dashboard") }]} />
       <div className="flex items-center justify-between mb-2">
         <div>
@@ -420,6 +423,11 @@ export default function SuperAdminDashboardPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Compliance + System snapshot */}
+          <div className="mb-6 max-w-xs">
+            <ComplianceWidget />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

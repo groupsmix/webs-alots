@@ -83,5 +83,44 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
     return apiSuccess({ logged: false });
   }
 
+  // CMP-006: Also write to consent_records (structured 00160 table) when userId is known.
+  // This populates the new compliance-grade ledger without breaking the legacy consent_logs flow.
+  if (userId) {
+    const VALID_CONSENT_TYPES = [
+      "terms_of_service",
+      "privacy_policy",
+      "health_data_processing",
+      "marketing_communications",
+      "whatsapp_notifications",
+      "data_sharing_with_clinic",
+    ] as const;
+    const normalizedType = VALID_CONSENT_TYPES.includes(
+      consentType as (typeof VALID_CONSENT_TYPES)[number],
+    )
+      ? (consentType as (typeof VALID_CONSENT_TYPES)[number])
+      : null;
+
+    if (normalizedType) {
+      // Use service-role client since consent_records has a service_role INSERT policy
+      const { createServiceClient } = await import("@/lib/supabase-server");
+      const serviceSupabase = createServiceClient();
+      const { error: crError } = await serviceSupabase.from("consent_records").insert({
+        user_id: userId,
+        clinic_id: tenant.clinicId,
+        consent_type: normalizedType,
+        granted,
+        version: "1.0",
+        ip_address: ip,
+        user_agent: request.headers.get("user-agent") ?? null,
+      });
+      if (crError) {
+        logger.warn("Failed to write consent_records", {
+          context: "consent",
+          error: crError.message,
+        });
+      }
+    }
+  }
+
   return apiSuccess({ logged: true });
 });
