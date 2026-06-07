@@ -12,7 +12,7 @@
 
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase-client";
@@ -21,17 +21,7 @@ export function AdminHeaderBar() {
   const [openTickets, setOpenTickets] = useState<number | null>(null);
   const mountedRef = useRef(true);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    void loadTicketCount();
-    const interval = setInterval(() => void loadTicketCount(), 120_000);
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  async function loadTicketCount() {
+  const loadTicketCount = useCallback(async () => {
     try {
       const supabase = createClient();
       const {
@@ -57,7 +47,17 @@ export function AdminHeaderBar() {
     } catch {
       // non-critical
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void loadTicketCount();
+    const interval = setInterval(() => void loadTicketCount(), 120_000);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [loadTicketCount]);
 
   return (
     <div className="fixed top-0 right-0 left-64 z-30 hidden h-12 items-center justify-end gap-2 border-b bg-background px-4 md:flex">
@@ -81,17 +81,7 @@ export function AdminSupportBadge() {
   const [count, setCount] = useState<number | null>(null);
   const mountedRef = useRef(true);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    void load();
-    const interval = setInterval(() => void load(), 120_000);
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const supabase = createClient();
       const {
@@ -113,7 +103,17 @@ export function AdminSupportBadge() {
     } catch {
       // ignore
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void load();
+    const interval = setInterval(() => void load(), 120_000);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [load]);
 
   if (!count || count === 0) return null;
   return (

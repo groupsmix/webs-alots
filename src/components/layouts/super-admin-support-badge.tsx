@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase-client";
 
@@ -13,17 +13,7 @@ export function SuperAdminSupportBadge() {
   const [count, setCount] = useState<number | null>(null);
   const mountedRef = useRef(true);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    void load();
-    const interval = setInterval(() => void load(), 120_000);
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const supabase = createClient();
       // Super-admin intentionally queries across all tenants for cross-clinic view.
@@ -36,7 +26,17 @@ export function SuperAdminSupportBadge() {
     } catch {
       // ignore
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void load();
+    const interval = setInterval(() => void load(), 120_000);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [load]);
 
   if (!count || count === 0) return null;
   return (
