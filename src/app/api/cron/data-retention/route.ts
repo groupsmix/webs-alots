@@ -7,6 +7,8 @@
  * 1. Identifies records older than the legal retention period (default: 5 years).
  * 2. Archives eligible records into the `archived_records` ledger.
  * 3. Flags records approaching expiry (within the notify_before_days window).
+ * 4. (CMP-005) Updates `data_retention_schedule.next_purge_at` + `records_purged_last_run`
+ *    so the compliance dashboard shows accurate purge status.
  *
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
@@ -247,6 +249,29 @@ async function handler(request: NextRequest) {
         // Audit log failure handled internally by logAuditEvent
       }
     }
+  }
+
+  // CMP-005: Update data_retention_schedule.next_purge_at and records_purged_last_run
+  // so the compliance dashboard shows accurate last/next purge timestamps.
+  const retentionScheduleUpdates = [
+    { data_type: "appointment_logs", purgeable: "appointments" },
+    { data_type: "patient_records", purgeable: null },
+    { data_type: "audit_logs", purgeable: null },
+    { data_type: "notification_logs", purgeable: null },
+    { data_type: "support_ticket_messages", purgeable: null },
+    { data_type: "payment_records", purgeable: null },
+  ];
+
+  const nextPurgeAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  for (const entry of retentionScheduleUpdates) {
+    await (supabase as UntypedClient)
+      .from("data_retention_schedule")
+      .update({
+        last_purge_at: new Date().toISOString(),
+        next_purge_at: nextPurgeAt,
+        records_purged_last_run: totalArchived,
+      })
+      .eq("data_type", entry.data_type);
   }
 
   logger.info("Data retention sweep complete", {

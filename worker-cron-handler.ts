@@ -14,6 +14,7 @@
  *   - hourly         →  /api/cron/r2-cleanup    (abandoned R2 uploads)
  *                        /api/cron/feedback      (post-appointment feedback)
  *                        /api/cron/rebooking-reminders (rebooking prompts)
+ *                        /api/cron/support-sla-check (SLA breach detection + notification)
  *   - daily 02:00    →  /api/cron/billing       (subscription renewals)
  *   - daily 03:00    →  /api/cron/gdpr-purge    (GDPR patient data purge)
  *   - daily 04:00    →  /api/cron/dedup-purge   (M-03/M-04 TTL purge)
@@ -38,7 +39,12 @@ export const CRON_ROUTES: Record<string, string[]> = {
   "*/5 * * * *": ["/api/cron/uptime-monitor"],
   "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
   "*/30 * * * *": ["/api/cron/reminders"],
-  "0 * * * *": ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
+  "0 * * * *": [
+    "/api/cron/r2-cleanup",
+    "/api/cron/feedback",
+    "/api/cron/rebooking-reminders",
+    "/api/cron/support-sla-check",
+  ],
   "0 2 * * *": ["/api/cron/billing"],
   "0 3 * * *": ["/api/cron/gdpr-purge"],
   "0 4 * * *": ["/api/cron/dedup-purge"],
@@ -62,14 +68,15 @@ async function reportCronError(
 ): Promise<void> {
   console.error(`[Cron] ${message}`, extra);
 
-  const dsn = env.NEXT_PUBLIC_SENTRY_DSN;
+  const dsn = env.SENTRY_DSN || env.NEXT_PUBLIC_SENTRY_DSN;
   if (!dsn) return;
 
   try {
     const dsnUrl = new URL(dsn);
-    const projectId = dsnUrl.pathname.replace("/", "");
+    const projectId = dsnUrl.pathname.replace(/^\/+/, "");
     const sentryHost = dsnUrl.hostname;
     const publicKey = dsnUrl.username;
+    if (!projectId || !publicKey || !sentryHost) return;
 
     const eventId = crypto.randomUUID().replace(/-/g, "");
     // I-02: Use JSON.stringify for every Sentry envelope line to prevent
@@ -102,6 +109,27 @@ async function reportCronError(
     });
   } catch {
     // Sentry reporting is best-effort; error already logged to console
+  }
+}
+
+function resolveCronBaseUrl(env: Record<string, string>): string | null {
+  const rawBaseUrl =
+    env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
+  if (!rawBaseUrl) return null;
+
+  try {
+    const url = new URL(rawBaseUrl);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return null;
+    }
+    const rootDomain = env.ROOT_DOMAIN?.toLowerCase();
+    const hostname = url.hostname.toLowerCase();
+    if (rootDomain && hostname !== rootDomain && !hostname.endsWith(`.${rootDomain}`)) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
   }
 }
 
@@ -146,10 +174,11 @@ export default {
       return;
     }
 
-    const baseUrl =
-      env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
+    const baseUrl = resolveCronBaseUrl(env);
     if (!baseUrl) {
-      console.error("[Queue] No CRON_SELF_BASE_URL or ROOT_DOMAIN — cannot route internal request");
+      console.error(
+        "[Queue] Invalid or missing CRON_SELF_BASE_URL/ROOT_DOMAIN — cannot route internal request",
+      );
       batch.retryAll();
       return;
     }
@@ -217,12 +246,11 @@ export default {
       return;
     }
 
-    const cronBaseUrl =
-      env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
+    const cronBaseUrl = resolveCronBaseUrl(env);
     if (!cronBaseUrl) {
       void reportCronError(
         env,
-        `Neither CRON_SELF_BASE_URL nor ROOT_DOMAIN is set — refusing to fire ${controller.cron}`,
+        `CRON_SELF_BASE_URL/ROOT_DOMAIN is missing or invalid — refusing to fire ${controller.cron}`,
         { cron: controller.cron },
       );
       return;

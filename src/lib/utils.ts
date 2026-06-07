@@ -1,5 +1,4 @@
 import { clsx, type ClassValue } from "clsx";
-import { formatInTimeZone } from "date-fns-tz";
 import { twMerge } from "tailwind-merge";
 import { DEFAULT_TIMEZONE } from "@/lib/constants";
 import type { Locale } from "@/lib/i18n";
@@ -12,12 +11,24 @@ export function cn(...inputs: ClassValue[]) {
  * Return a YYYY-MM-DD string in the given IANA timezone (defaults to
  * Africa/Casablanca — the primary deployment locale).
  *
- * Uses date-fns-tz to correctly handle DST transitions that
- * `.toISOString().split("T")[0]` gets wrong (e.g. 23:30 local on
- * March 15 → March 16 in UTC).
+ * Uses the Intl API so the formatted date respects the requested timezone
+ * instead of the runtime's local timezone or raw UTC boundaries.
  */
 export function getLocalDateStr(date: Date = new Date(), timezone = DEFAULT_TIMEZONE): string {
-  return formatInTimeZone(date, timezone, "yyyy-MM-dd");
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) return "";
+  return `${year}-${month}-${day}`;
 }
 
 // ── Consistent date formatting (Issue 30) ──

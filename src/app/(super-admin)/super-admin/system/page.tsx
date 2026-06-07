@@ -18,6 +18,7 @@ import {
   Users,
   Info,
 } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -339,12 +340,22 @@ export default function SystemStatusPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Breadcrumb
-          items={[
-            { label: "Super Admin", href: "/super-admin/dashboard" },
-            { label: "System Status" },
-          ]}
-        />
+        <div className="space-y-2">
+          <Breadcrumb
+            items={[
+              { label: "Super Admin", href: "/super-admin/dashboard" },
+              { label: "System Status" },
+            ]}
+          />
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/super-admin/system/health" className="text-primary underline">
+              Health
+            </Link>
+            <Link href="/super-admin/system/sla" className="text-primary underline">
+              SLA
+            </Link>
+          </div>
+        </div>
         <button
           type="button"
           onClick={handleRefresh}

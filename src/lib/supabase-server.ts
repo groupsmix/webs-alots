@@ -266,6 +266,21 @@ export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string)
 }
 
 /**
+ * Create a cookie-free service-role client for server-only background work.
+ *
+ * Use this from webhook handlers, public intake endpoints, or system metrics
+ * routes that cannot rely on a browser session but still need privileged
+ * access. Prefer `createScopedAdminClient()` when the operation is scoped to
+ * one clinic; use this raw variant only for cross-tenant/system tasks.
+ */
+export function createServiceClient() {
+  logger.debug("Service client created", { context: "supabase-server" });
+  return createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+/**
  * Create a cookie-free anon Supabase client with x-clinic-id header set.
  *
  * F-03: Replacement for createAdminClient() in `use cache` blocks

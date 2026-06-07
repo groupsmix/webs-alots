@@ -23,7 +23,7 @@
 - [ ] **Auth secrets:** `BOOKING_TOKEN_SECRET`, `PROFILE_HEADER_HMAC_KEY`, `CRON_SECRET` set
 - [ ] **PHI encryption:** `PHI_ENCRYPTION_KEY` set (64 hex chars)
 - [ ] **R2 storage:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_SIGNED_URL_SECRET` set
-- [ ] **Observability:** `NEXT_PUBLIC_SENTRY_DSN` set
+- [ ] **Observability:** `NEXT_PUBLIC_SENTRY_DSN` set, `SENTRY_DSN` set for cron runtime reporting
 - [ ] **CI secrets:** `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` set in GitHub environment secrets (deploy will hard-fail without these)
 
 ### Database
@@ -39,7 +39,7 @@
 - [ ] KV namespace binding `RATE_LIMIT_KV` has a valid production namespace ID (not placeholder)
 - [ ] R2 bucket binding `UPLOADS_BUCKET` points to correct production bucket
 - [ ] Cron triggers defined: `0 2 * * *`, `0 8 * * *`, `*/15 * * * *`
-- [ ] `cpu_ms = 50` matches production Workers plan
+- [ ] `cpu_ms = 30000` matches the active Workers Unbound plan (or is adjusted intentionally)
 - [ ] Production environment variables in `[env.production.vars]` are correct
 
 ### DNS & SSL

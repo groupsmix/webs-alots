@@ -5,7 +5,54 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { requireTenant } from "@/lib/tenant";
 import { ticketMessageSchema } from "@/lib/validations/support";
-import { type AuthContext } from "@/lib/with-auth";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
+
+/**
+ * GET /api/support/tickets/message?ticket_id=<uuid>
+ * List all messages for a specific support ticket.
+ */
+export const GET = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+    const ticketId = new URL(request.url).searchParams.get("ticket_id");
+
+    if (!ticketId) {
+      return apiError("ticket_id query parameter is required", 400, "VALIDATION_ERROR");
+    }
+
+    // Verify ticket belongs to this clinic
+    const { data: ticket, error: ticketError } = await auth.supabase
+      .from("support_tickets")
+      .select("id")
+      .eq("id", ticketId)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+
+    if (ticketError || !ticket) {
+      return apiError("Ticket not found", 404, "NOT_FOUND");
+    }
+
+    const { data: messages, error } = await auth.supabase
+      .from("support_messages")
+      .select("id, ticket_id, sender_type, sender_id, content, created_at")
+      .eq("ticket_id", ticketId)
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      logger.error("Failed to fetch messages", {
+        context: "support/tickets/message",
+        error,
+        clinicId,
+      });
+      return apiError("Failed to fetch messages", 500, "INTERNAL_ERROR");
+    }
+
+    return apiSuccess({ messages: messages ?? [] });
+  },
+  ["super_admin", "clinic_admin", "receptionist"],
+);
 
 /**
  * POST /api/support/tickets/message

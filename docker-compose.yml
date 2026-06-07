@@ -161,12 +161,41 @@ services:
       - ALL
     restart: unless-stopped
 
+  # ---------- Uptime Kuma (TASK-UPT-001) ----------
+  # Lightweight uptime monitoring with Heartbeat webhook to /api/webhooks/uptime-kuma.
+  # Web UI: http://localhost:3001
+  # Set UPTIME_KUMA_WEBHOOK_SECRET in .env.local to match the webhook secret below.
+  # After first start: create monitors + notification channel in the UI, then
+  # configure a webhook notification to http://host.docker.internal:3000/api/webhooks/uptime-kuma
+  # with header x-webhook-secret: <your-secret>.
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    ports:
+      # Bind to localhost only — internal monitoring tool
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - uptime-kuma-data:/app/data
+    environment:
+      - UPTIME_KUMA_PORT=3001
+      - UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
 volumes:
   supabase-db:
     driver: local
   minio-data:
     driver: local
   redis-data:
+    driver: local
+  uptime-kuma-data:
     driver: local
 
 networks:

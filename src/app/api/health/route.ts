@@ -14,6 +14,7 @@ export interface HealthCheckResult {
 
 export interface HealthResponse {
   status: HealthStatus;
+  version: string;
   checks: {
     supabase: HealthCheckResult;
     r2: HealthCheckResult;
@@ -84,8 +85,17 @@ export async function GET() {
       ? "unhealthy"
       : "degraded";
 
+  let version = "0.1.0";
+  try {
+    const pkg = await import("../../../../package.json");
+    version = (pkg as { version?: string }).version ?? "0.1.0";
+  } catch {
+    // package.json not accessible in edge/worker runtime
+  }
+
   const payload: HealthResponse = {
     status: overallStatus,
+    version,
     checks: {
       supabase: supabaseCheck,
       r2: r2Check,

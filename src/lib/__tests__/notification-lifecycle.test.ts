@@ -14,6 +14,30 @@ vi.mock("@/lib/supabase-server", () => {
     createClient: vi.fn(),
     createAdminClient: vi.fn(),
     createTenantClient: vi.fn(),
+    // CMP-007: notification-preferences-server requires the untyped admin
+    // client to read preferences before dispatch. Provide a noop mock so
+    // `getNotificationPreferences` falls back to DEFAULT_NOTIFICATION_PREFERENCES.
+    createUntypedAdminClient: vi.fn(() => ({
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+            // dispatchNotification uses .single() to fetch the recipient's
+            // phone/email from the users table. Return a benign record so the
+            // dispatch path runs without throwing; channels still resolve to
+            // success because enqueueNotification is mocked.
+            single: vi.fn(async () => ({
+              data: { phone: "+212600000000", email: "test@example.com", clinic_id: "clinic-1" },
+              error: null,
+            })),
+          })),
+        })),
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({ single: vi.fn(async () => ({ data: null, error: null })) })),
+        })),
+        upsert: vi.fn(async () => ({ error: null })),
+      })),
+    })),
   };
 });
 

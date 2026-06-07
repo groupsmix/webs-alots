@@ -6,12 +6,61 @@ const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
+const PROTECTED_ROUTE_PREFIXES = [
+  "/patient",
+  "/patient/:path*",
+  "/doctor",
+  "/doctor/:path*",
+  "/receptionist",
+  "/receptionist/:path*",
+  "/admin",
+  "/admin/:path*",
+  "/super-admin",
+  "/super-admin/:path*",
+  "/pharmacist",
+  "/pharmacist/:path*",
+  "/nutritionist",
+  "/nutritionist/:path*",
+  "/optician",
+  "/optician/:path*",
+  "/parapharmacy",
+  "/parapharmacy/:path*",
+  "/physiotherapist",
+  "/physiotherapist/:path*",
+  "/psychologist",
+  "/psychologist/:path*",
+  "/radiology",
+  "/radiology/:path*",
+  "/speech-therapist",
+  "/speech-therapist/:path*",
+  "/equipment",
+  "/equipment/:path*",
+  "/lab-panel",
+  "/lab-panel/:path*",
+] as const;
+
+function getSupabaseImageHostname(): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return "supabase-url-not-configured.invalid";
+
+  try {
+    return new URL(supabaseUrl).hostname;
+  } catch {
+    return "supabase-url-not-configured.invalid";
+  }
+}
+
 // Security headers (X-Frame-Options, HSTS, X-Content-Type-Options, CSP, etc.)
 // are applied exclusively in middleware.ts to avoid duplication and ensure
 // consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
-  // Enable static generation for better performance
+  // E2E suite (login-flow / registration-flow / pricing / mobile-flows specs)
+  // asserts `<Link>` hrefs in their canonical form (e.g. href="/login/").
+  // Removing this flag drops the trailing slash from rendered hrefs and breaks
+  // those assertions. Several middleware paths (CSRF exempt list, sitemap, the
+  // CSP-via-headers rewrite map) also assume canonical-with-slash URLs.
+  // Keep enabled until those paths and the E2E selectors are migrated.
   trailingSlash: true,
 
   // MEDIUM-9: Suppress X-Powered-By header (information disclosure).
@@ -25,6 +74,11 @@ const nextConfig: NextConfig = {
   },
 
   // PERF-01: Enable the stable `use cache` directive (Next.js 16).
+  // Note: do NOT switch to `cacheComponents: true` until every route that
+  // currently sets `export const dynamic = "force-dynamic"` (or
+  // `runtime = "edge"`) is migrated. Cache Components rejects those route
+  // segment configs at compile time, which broke the Cloudflare build in PR
+  // #980. Keep using `experimental.useCache` until that migration lands.
   experimental: {
     useCache: true,
   },
@@ -66,30 +120,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        // A36.8: Prevent shared caches (CDN, ISP proxies) from storing
-        // authenticated dashboard pages. Without this, Next.js may emit a
-        // default Cache-Control that allows intermediate caches to store
-        // the rendered admin shell, potentially leaking PHI to the wrong
-        // tenant or an unauthenticated user.
-        source: "/dashboard/:path*",
+      ...PROTECTED_ROUTE_PREFIXES.map((source) => ({
+        source,
         headers: [
           {
             key: "Cache-Control",
             value: "private, no-store, no-cache, must-revalidate",
           },
         ],
-      },
-      {
-        // A36.8: Same treatment for admin pages.
-        source: "/admin/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "private, no-store, no-cache, must-revalidate",
-          },
-        ],
-      },
+      })),
       // [023]: Explicit CDN cache headers for public marketing pages.
       // s-maxage allows Cloudflare to cache for 5 minutes; stale-while-
       // revalidate serves the stale version for up to 24 hours while
@@ -136,9 +175,7 @@ const nextConfig: NextConfig = {
         // restrict to a non-matching placeholder so the build succeeds but
         // no external Supabase images are optimized. The env validation in
         // lib/env.ts will catch the missing URL at runtime.
-        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL
-          ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
-          : "supabase-url-not-configured.invalid",
+        hostname: getSupabaseImageHostname(),
         pathname: "/storage/v1/object/public/**",
       },
       {

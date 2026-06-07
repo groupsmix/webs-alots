@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 import {
   Building2,
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
+import { ComplianceWidget } from "@/components/compliance/compliance-widget";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -236,6 +239,7 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
+      <OpsSummaryStrip />
       <Breadcrumb items={[{ label: "Super Admin" }, { label: t(locale, "nav.dashboard") }]} />
       <div className="flex items-center justify-between mb-2">
         <div>
@@ -420,6 +424,11 @@ export default function SuperAdminDashboardPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Compliance + System snapshot */}
+          <div className="mb-6 max-w-xs">
+            <ComplianceWidget />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

@@ -39,6 +39,12 @@ const ALLOWLIST = new Set([
   "src/app/api/payments/webhook/route.ts",
   "src/app/api/payments/cmi/callback/route.ts",
   "src/app/api/webhooks/route.ts",
+  // Uptime-Kuma webhook — writes to `uptime_events`, a platform-wide
+  // monitoring table (no clinic_id column; migration 00160). Events describe
+  // health of shared infrastructure (DB, Cloudflare, uptime probes) and are
+  // intentionally cross-tenant: super_admins consume them via /super-admin
+  // dashboards. The endpoint is gated by UPTIME_KUMA_WEBHOOK_SECRET.
+  "src/app/api/webhooks/uptime-kuma/route.ts",
   // Onboarding — creates the clinic (pre-tenant context)
   "src/app/api/onboarding/route.ts",
   // Consent — uses user-scoped client, no direct clinic_id in insert

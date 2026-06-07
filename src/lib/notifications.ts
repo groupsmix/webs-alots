@@ -9,6 +9,8 @@
  */
 
 import { logger } from "@/lib/logger";
+import { canSendNotification } from "@/lib/notification-preferences";
+import { getNotificationPreferences } from "@/lib/notification-preferences-server";
 
 // ---- Notification Trigger Types ----
 
@@ -419,10 +421,11 @@ export async function dispatchNotification(
   );
   let recipientPhone: string | null = null;
   let recipientEmail: string | null = null;
+  const preferences = await getNotificationPreferences(recipientId);
 
   if (needsContactInfo) {
-    const { createClient } = await import("@/lib/supabase-server");
-    const supabase = await createClient();
+    const { createUntypedAdminClient } = await import("@/lib/supabase-server");
+    const supabase = createUntypedAdminClient("notification");
     const { data: recipientData } = await supabase
       .from("users")
       .select("phone, email")
@@ -434,6 +437,13 @@ export async function dispatchNotification(
 
   for (const channel of channels) {
     if (!template.channels.includes(channel)) continue;
+    if (!canSendNotification(preferences, channel, trigger)) {
+      results.push({
+        channel,
+        success: true,
+      });
+      continue;
+    }
 
     try {
       switch (channel) {

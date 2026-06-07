@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 import {
   LayoutDashboard,
@@ -35,6 +36,7 @@ import {
   GitCompareArrows,
   MessageSquare,
   Sparkles,
+  HeartPulse,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -44,6 +46,7 @@ import { CommandPalette, type CommandPaletteItem } from "@/components/command-pa
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -153,6 +156,7 @@ const navGroups: NavGroup[] = [
     icon: Activity,
     items: [
       { href: "/super-admin/system", label: "System Status", icon: Activity },
+      { href: "/super-admin/system/health", label: "Health Metrics", icon: HeartPulse },
       { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
       { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
       { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
@@ -332,6 +336,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                     );
                   }
 
+                  const isSupport = item.href === "/super-admin/support";
                   return (
                     <Link
                       key={item.href}
@@ -344,7 +349,8 @@ function SidebarNav({ pathname }: { pathname: string }) {
                       }`}
                     >
                       <item.icon className="h-4 w-4" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {isSupport && <SuperAdminSupportBadge />}
                     </Link>
                   );
                 })}
