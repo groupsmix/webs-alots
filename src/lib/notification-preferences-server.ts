@@ -104,10 +104,6 @@ export async function shouldDeliverNotification(
     const preferences = await getNotificationPreferences(userId);
     return canSendNotification(preferences, channel, trigger);
   } catch {
-    return canSendNotification(
-      { ...DEFAULT_NOTIFICATION_PREFERENCES },
-      channel,
-      trigger,
-    );
+    return canSendNotification({ ...DEFAULT_NOTIFICATION_PREFERENCES }, channel, trigger);
   }
 }

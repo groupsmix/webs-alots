@@ -31,9 +31,7 @@ describe("heuristicSupportTriage", () => {
   });
 
   it("classifies technical bugs", () => {
-    expect(heuristicSupportTriage("I got a 500 error when saving").category).toBe(
-      "technical_bug",
-    );
+    expect(heuristicSupportTriage("I got a 500 error when saving").category).toBe("technical_bug");
     expect(heuristicSupportTriage("App is slow and times out").category).toBe("technical_bug");
   });
 

@@ -129,9 +129,9 @@ describe("isTriggerEnabled", () => {
   });
 
   it("returns true for unknown triggers (fail-open)", () => {
-    expect(
-      isTriggerEnabled(allDisabled, "unknown_trigger" as unknown as NotificationTrigger),
-    ).toBe(true);
+    expect(isTriggerEnabled(allDisabled, "unknown_trigger" as unknown as NotificationTrigger)).toBe(
+      true,
+    );
   });
 });
 
@@ -157,9 +157,9 @@ describe("canSendNotification", () => {
   });
 
   it("respects defaults: marketing trigger (new_review) is off, others on", () => {
-    expect(
-      canSendNotification(DEFAULT_NOTIFICATION_PREFERENCES, "whatsapp", "new_review"),
-    ).toBe(false);
+    expect(canSendNotification(DEFAULT_NOTIFICATION_PREFERENCES, "whatsapp", "new_review")).toBe(
+      false,
+    );
     expect(
       canSendNotification(DEFAULT_NOTIFICATION_PREFERENCES, "in_app", "booking_confirmation"),
     ).toBe(true);
