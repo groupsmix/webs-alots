@@ -95,4 +95,8 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/waiting-queue",
   "/api/waiting-queue/update",
   "/api/webhooks",
+  // New Uptime Kuma webhook receiver added in PR #980. Public-by-prefix
+  // (inherits `/api/webhooks` allowlist), but self-authenticates via the
+  // `x-webhook-secret` header against UPTIME_KUMA_WEBHOOK_SECRET.
+  "/api/webhooks/uptime-kuma",
 ];
