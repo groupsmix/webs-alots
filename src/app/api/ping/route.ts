@@ -1,4 +1,6 @@
-export const runtime = "edge";
+// `runtime = "edge"` removed: incompatible with `experimental.useCache`
+// (Next.js 16) and unnecessary on @opennextjs/cloudflare, which deploys
+// every route to Workers regardless of this declaration.
 export const dynamic = "force-dynamic";
 
 export function GET() {
