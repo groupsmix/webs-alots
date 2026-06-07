@@ -161,26 +161,6 @@ export function logAndReturnInternalError(
 }
 
 /**
- * Handle a Supabase PostgREST error by logging it and returning a 500 response.
- *
- * Consolidates the repeated `if (error) { logger.warn(...); return apiInternalError(...); }`
- * pattern found across API routes.  Routes can adopt this incrementally:
- *
- * @example
- *   const { data, error } = await supabase.from("patients").select();
- *   if (error) return handleSupabaseError(error, "Failed to fetch patients", "patients");
- */
-// F-A93-03: Use logger.error for actual database failures, not logger.warn
-function _handleSupabaseError(
-  error: { message: string; code?: string; details?: string },
-  clientMessage: string,
-  context: string,
-): NextResponse<ApiErrorBody> {
-  logger.error(clientMessage, { context, error });
-  return apiInternalError(clientMessage);
-}
-
-/**
  * Map a Supabase PostgREST error to the appropriate HTTP status and return
  * a standardized API error response.
  *

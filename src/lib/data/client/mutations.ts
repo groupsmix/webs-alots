@@ -43,60 +43,6 @@ export async function updateAppointmentStatus(
   return { success: true, data: { id: updated.id, status: updated.status } };
 }
 
-async function _createPayment(data: {
-  clinic_id: string;
-  patient_id: string;
-  appointment_id?: string;
-  amount: number;
-  method?: string;
-  status?: string;
-}): Promise<MutationResult<{ id: string }>> {
-  const supabase = createClient();
-  const { data: created, error } = await supabase
-    .from("payments")
-    .insert({
-      ...data,
-      status: data.status ?? "completed",
-      payment_type: "full",
-      refunded_amount: 0,
-    })
-    .select("id")
-    .single();
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return { success: false, error: { code: error.code, message: error.message } };
-  }
-  clearLookupCache();
-  return { success: true, data: { id: created.id } };
-}
-
-async function _upsertReview(data: {
-  clinic_id: string;
-  patient_id: string;
-  stars: number;
-  comment?: string;
-}): Promise<MutationResult<{ id: string }>> {
-  const supabase = createClient();
-  const { data: created, error } = await supabase
-    .from("reviews")
-    .insert(data)
-    .select("id")
-    .single();
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return { success: false, error: { code: error.code, message: error.message } };
-  }
-  clearLookupCache();
-  return { success: true, data: { id: created.id } };
-}
-
-async function _updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
-  if (!error) clearLookupCache();
-  return !error;
-}
-
 export async function createPrescription(data: {
   clinic_id: string;
   doctor_id: string;
@@ -117,22 +63,6 @@ export async function createPrescription(data: {
     return { success: false, error: { code: error.code, message: error.message } };
   }
   return { success: true, data: { id: created.id } };
-}
-
-async function _updatePrescription(
-  id: string,
-  data: {
-    items?: { name: string; dosage: string; duration: string }[];
-    notes?: string;
-  },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from("prescriptions").update(data).eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
 }
 
 // ─────────────────────────────────────────────
@@ -186,16 +116,6 @@ export async function updateConsultationNote(
   return true;
 }
 
-async function _deleteConsultationNote(id: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from("consultation_notes").delete().eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
 // ─────────────────────────────────────────────
 // Odontogram Mutations
 // ─────────────────────────────────────────────
@@ -224,57 +144,9 @@ export async function upsertOdontogramEntry(data: {
   return { success: true, data: { id: created.id } };
 }
 
-async function _deleteOdontogramEntry(
-  clinicId: string,
-  patientId: string,
-  toothNumber: number,
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("odontogram")
-    .delete()
-    .eq("clinic_id", clinicId)
-    .eq("patient_id", patientId)
-    .eq("tooth_number", toothNumber);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
 // ─────────────────────────────────────────────
 // Treatment Plan Mutations
 // ─────────────────────────────────────────────
-
-async function _createTreatmentPlan(data: {
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  title: string;
-  steps: {
-    step: number;
-    description: string;
-    status: string;
-    date: string | null;
-    cost: number;
-    toothNumbers?: number[];
-  }[];
-  total_cost: number;
-  status?: string;
-}): Promise<string | null> {
-  const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("treatment_plans")
-    .insert({ ...data, status: data.status ?? "planned" })
-    .select("id")
-    .single();
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return null;
-  }
-  return result?.id ?? null;
-}
 
 export async function updateTreatmentPlan(
   id: string,
@@ -334,29 +206,6 @@ export async function createSterilizationEntry(data: {
   return result?.id ?? null;
 }
 
-async function _updateSterilizationEntry(
-  id: string,
-  data: {
-    tool_name?: string;
-    method?: string;
-    notes?: string;
-    next_due?: string;
-    batch_number?: string;
-    cycle_number?: number;
-  },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("sterilization_log")
-    .update(data as Database["public"]["Tables"]["sterilization_log"]["Update"])
-    .eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
 // ─────────────────────────────────────────────
 // Before/After Photo Mutations
 // ─────────────────────────────────────────────
@@ -383,36 +232,4 @@ export async function createBeforeAfterPhoto(data: {
     return null;
   }
   return result?.id ?? null;
-}
-
-async function _updateBeforeAfterPhoto(
-  id: string,
-  data: {
-    description?: string;
-    category?: string;
-    before_image_url?: string;
-    after_image_url?: string;
-    after_date?: string;
-  },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("before_after_photos")
-    .update({ ...data, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
-async function _deleteBeforeAfterPhoto(id: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from("before_after_photos").delete().eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
 }

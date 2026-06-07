@@ -86,96 +86,6 @@ function getR2SigningSecret(): string {
 // with a short expiration. This ensures files are only accessible to authorized users.
 
 /**
- * Generate a signed URL for R2 object access.
- * The URL includes HMAC signature for per-request authorization.
- *
- * @param key        Object key
- * @param expiresIn  URL validity in seconds (default: 3600 = 1 hour)
- * @returns Signed URL that validates against the secret
- */
-function _generateSignedR2Url(key: string, expiresIn = 3600): string {
-  const { accountId, bucketName, signedUrlBase } = getR2Config();
-
-  if (!accountId || !bucketName) {
-    // R2 is not configured — return a best-effort placeholder URL.
-    // Callers should check isR2Configured() before using signed URLs.
-    logger.warn("generateSignedR2Url called but R2 is not fully configured", {
-      context: "r2",
-      key,
-    });
-    return `https://r2-not-configured.invalid/${key}`;
-  }
-
-  const secret = getR2SigningSecret();
-
-  // R-16 Fix: Generate HMAC-signed URL for per-request authorization.
-  // The signature covers (bucket, key, expires) so an attacker who obtains a
-  // valid URL cannot tamper with the bucket parameter to access a different
-  // R2 bucket while keeping the signature valid.
-  const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
-  const signatureBase = `${bucketName}:${key}:${expiresAt}`;
-  const signature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
-
-  // URL format: https://{domain}/r2/{bucket}/{key}?expires={expires}&sig={signature}
-  const baseUrl = signedUrlBase || `https://oltigo.com/r2`;
-  const params = new URLSearchParams({
-    b: bucketName,
-    k: key,
-    e: expiresAt.toString(),
-    s: signature,
-  });
-
-  return `${baseUrl}?${params.toString()}`;
-}
-
-/**
- * Validate a signed URL's signature.
- * Used by the R2 proxy worker to authorize requests.
- *
- * The signature base includes the bucket so a valid URL for one bucket cannot
- * be replayed against another by tampering with the `b` query parameter.
- *
- * @param bucket     Bucket name from URL (`b` query parameter)
- * @param key        Object key from URL
- * @param expires    Expiration timestamp from URL
- * @param signature  HMAC signature from URL
- * @returns true if the signature is valid and not expired
- */
-function _validateSignedR2Url(
-  bucket: string,
-  key: string,
-  expires: number,
-  signature: string,
-): boolean {
-  // Check expiration
-  if (Math.floor(Date.now() / 1000) > expires) {
-    return false;
-  }
-
-  let secret: string;
-  try {
-    secret = getR2SigningSecret();
-  } catch {
-    // Misconfiguration — reject rather than accept unsigned URLs.
-    return false;
-  }
-
-  const signatureBase = `${bucket}:${key}:${expires}`;
-  const expectedSignature = createHmac("sha256", secret)
-    .update(signatureBase)
-    .digest("hex")
-    .slice(0, 32);
-
-  // Constant-time comparison to prevent timing attacks
-  if (signature.length !== expectedSignature.length) return false;
-  let match = 0;
-  for (let i = 0; i < signature.length; i++) {
-    match |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
-  }
-  return match === 0;
-}
-
-/**
  * Minimal structural type for the credentials/config used by the presigned
  * URL signing path (the only path that still needs R2 S3 API credentials).
  */
@@ -511,24 +421,6 @@ export async function getPresignedUploadPost(
     fields: {},
     key,
   };
-}
-
-/**
- * Generate a pre-signed URL for downloading a private file.
- *
- * @param key        Object key
- * @param expiresIn  URL validity in seconds (default: 3600 = 1 hour)
- * @returns Pre-signed download URL, or null if R2 is not configured
- */
-async function _getPresignedDownloadUrl(key: string, expiresIn = 3600): Promise<string | null> {
-  const config = getR2PresignConfig();
-  if (!config) return null;
-
-  // S13-FIX: force attachment download rather than inline rendering.
-  // Audit 8.2: we do not log here — generating a URL is not a download.
-  return presignR2Url(config, "GET", key, expiresIn, {
-    query: { "response-content-disposition": "attachment" },
-  });
 }
 
 /**

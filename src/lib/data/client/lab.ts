@@ -415,40 +415,4 @@ export async function saveLabTestResult(data: {
   return result?.id ?? null;
 }
 
-async function _updateLabTestResult(
-  resultId: string,
-  data: Partial<{
-    value: string;
-    unit: string;
-    reference_min: number | null;
-    reference_max: number | null;
-    flag: string;
-    notes: string | null;
-  }>,
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("lab_test_results")
-    .update(data as Database["public"]["Tables"]["lab_test_results"]["Update"])
-    .eq("id", resultId);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
-async function _updateLabOrderPdfUrl(orderId: string, pdfUrl: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("lab_test_orders")
-    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
-    .eq("id", orderId);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
 // ─────────────────────────────────────────────

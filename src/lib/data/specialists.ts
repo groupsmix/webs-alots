@@ -850,25 +850,6 @@ export async function createRehabPlan(data: {
   return result?.id ?? null;
 }
 
-async function _updateRehabPlan(
-  id: string,
-  data: { status?: string; milestones?: unknown[]; notes?: string; target_end_date?: string },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("rehab_plans")
-    .update({
-      ...data,
-      updated_at: new Date().toISOString(),
-    } as Database["public"]["Tables"]["rehab_plans"]["Update"])
-    .eq("id", id);
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/specialists", error });
-    return false;
-  }
-  return true;
-}
-
 // ═══════════════════════════════════════════════
 // TASK 13: PSYCHIATRIST
 // ═══════════════════════════════════════════════
@@ -1657,32 +1638,6 @@ export async function createDiabetesManagement(data: {
     return null;
   }
   return result?.id ?? null;
-}
-
-async function _updateDiabetesManagement(
-  id: string,
-  data: {
-    current_hba1c?: number;
-    medications?: unknown[];
-    diet_plan?: string;
-    exercise_plan?: string;
-    notes?: string;
-    last_review_date?: string;
-  },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("diabetes_management")
-    .update({
-      ...data,
-      updated_at: new Date().toISOString(),
-    } as Database["public"]["Tables"]["diabetes_management"]["Update"])
-    .eq("id", id);
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/specialists", error });
-    return false;
-  }
-  return true;
 }
 
 // -- Rheumatologist --

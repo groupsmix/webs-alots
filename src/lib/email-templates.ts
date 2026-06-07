@@ -5,8 +5,6 @@
  */
 
 import { escapeHtml } from "@/lib/escape-html";
-import type { Locale } from "@/lib/i18n";
-import { formatCurrency } from "@/lib/utils";
 
 /**
  * A150-F2: Build the notification preferences URL for email footers.
@@ -85,38 +83,6 @@ export function staffWelcomeEmail(params: {
       If you did not expect this email, please ignore it.
     </p>`;
   return wrap(clinicName, `Welcome to ${clinicName} — Set Up Your Account`, body);
-}
-
-// ---------- Clinic created notification ----------
-
-function _clinicCreatedEmail(params: {
-  clinicName: string;
-  adminName: string;
-  adminEmail: string;
-  loginUrl: string;
-}): { subject: string; html: string } {
-  const { clinicName, adminName, adminEmail, loginUrl } = params;
-  const body = `
-    <h2 style="margin:0 0 16px;font-size:18px;color:#1e293b;">Your Clinic Has Been Set Up</h2>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      Hello ${escapeHtml(adminName)},
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      Your clinic <strong>${escapeHtml(clinicName)}</strong> is now active on our platform.
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      <strong>Login Email:</strong> ${escapeHtml(adminEmail)}<br/>
-      Please set your password using the button below.
-    </p>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:12px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">
-        Set Up Your Account
-      </a>
-    </div>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      You can customize your clinic&apos;s branding, colors, and content from <strong>Admin &rarr; Branding</strong>.
-    </p>`;
-  return wrap("Oltigo", `Your Clinic "${clinicName}" Is Ready`, body);
 }
 
 // ---------- Clinic suspended notification ----------
@@ -198,29 +164,4 @@ export function onboardingWelcomeEmail(params: {
       Besoin d&apos;aide ? R&eacute;pondez &agrave; cet email ou contactez-nous sur WhatsApp.
     </p>`;
   return wrap("Oltigo", `Bienvenue ! Votre site "${clinicName}" est en ligne`, body);
-}
-
-// ---------- Payment failure notification ----------
-
-function _paymentFailedEmail(params: {
-  clinicName: string;
-  recipientName: string;
-  amount: number;
-  currency: string;
-  locale?: Locale;
-}): { subject: string; html: string } {
-  const { clinicName, recipientName, amount, currency, locale = "fr" } = params;
-  const body = `
-    <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">Payment Failed</h2>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      Hello ${escapeHtml(recipientName)},
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      A payment of <strong>${formatCurrency(amount, locale, currency)}</strong> for clinic
-      <strong>${escapeHtml(clinicName)}</strong> has failed.
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#475569;">
-      Please update the payment method or contact support.
-    </p>`;
-  return wrap("Oltigo", `Payment Failed for ${clinicName}`, body);
 }

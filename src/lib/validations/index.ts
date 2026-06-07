@@ -225,3 +225,9 @@ export {
 } from "./staff-invitations";
 
 export { insuranceClaimQuerySchema } from "./insurance-claims";
+
+export { structureNoteSchema } from "./ai-consultation";
+export type { StructureNoteInput, StructuredNote } from "./ai-consultation";
+
+export { prescriptionSafetySchema } from "./prescription-safety";
+export type { PrescriptionSafetyInput } from "./prescription-safety";

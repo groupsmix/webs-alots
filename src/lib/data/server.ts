@@ -10,7 +10,6 @@
  */
 
 import { logger } from "@/lib/logger";
-import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
@@ -112,66 +111,6 @@ async function query<T>(
   return (data ?? []) as T[];
 }
 
-/**
- * Paginated query helper. Returns a page of results along with total count
- * and a `hasMore` flag so callers can implement pagination UIs.
- */
-async function _queryPaginated<T>(
-  table: TableName,
-  opts?: {
-    select?: string;
-    eq?: [string, unknown][];
-    order?: [string, { ascending: boolean }];
-    page?: number;
-    pageSize?: number;
-    inFilter?: [string, unknown[]];
-  },
-): Promise<PaginatedResult<T>> {
-  const page = Math.max(1, opts?.page ?? 1);
-  const pageSize = Math.min(opts?.pageSize ?? 50, DEFAULT_QUERY_LIMIT);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-
-  const supabase = await createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*", { count: "exact" });
-
-  if (opts?.eq) {
-    for (const [col, val] of opts.eq) {
-      q = q.eq(col, val as string);
-    }
-  }
-  if (opts?.inFilter) {
-    q = q.in(opts.inFilter[0], opts.inFilter[1] as string[]);
-  }
-  if (opts?.order) {
-    // Q-03 / Q-42: Validate column name against allowlist before passing to PostgREST
-    if (ALLOWED_ORDER_COLUMNS.has(opts.order[0])) {
-      q = q.order(opts.order[0], opts.order[1]);
-    } else {
-      logger.warn("Rejected disallowed order column", {
-        context: "data/server/paginated",
-        table,
-        column: opts.order[0],
-      });
-    }
-  }
-  q = q.range(from, to);
-
-  const { data, error, count } = await q;
-  if (error) {
-    logger.error("Paginated query failed", { context: "data/server", table, error });
-    return { data: [], total: 0, hasMore: false, page, pageSize };
-  }
-  const total = count ?? 0;
-  return {
-    data: (data ?? []) as T[],
-    total,
-    hasMore: from + pageSize < total,
-    page,
-    pageSize,
-  };
-}
-
 async function queryOne<T>(
   table: TableName,
   opts?: {
@@ -191,10 +130,6 @@ async function queryOne<T>(
   return data as T | null;
 }
 
-// ────────────────────────────────────────────
-// Auth / current user
-// ────────────────────────────────────────────
-
 interface CurrentUser {
   id: string;
   auth_id: string;
@@ -204,26 +139,6 @@ interface CurrentUser {
   phone: string | null;
   email: string | null;
 }
-
-async function _getCurrentUser(): Promise<CurrentUser | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await supabase
-    .from("users")
-    .select("id, auth_id, clinic_id, role, name, phone, email")
-    .eq("auth_id", user.id)
-    .single();
-
-  return data as CurrentUser | null;
-}
-
-// ────────────────────────────────────────────
-// Clinics
-// ────────────────────────────────────────────
 
 interface ClinicRow {
   id: string;
@@ -245,20 +160,6 @@ interface ClinicRow {
   updated_at: string;
 }
 
-async function _getClinics(): Promise<ClinicRow[]> {
-  return query<ClinicRow>("clinics", {
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-async function _getClinicById(id: string): Promise<ClinicRow | null> {
-  return queryOne<ClinicRow>("clinics", { eq: [["id", id]] });
-}
-
-// ────────────────────────────────────────────
-// Clinic Branding
-// ────────────────────────────────────────────
-
 interface ClinicBrandingRow {
   logo_url: string | null;
   favicon_url: string | null;
@@ -267,46 +168,6 @@ interface ClinicBrandingRow {
   heading_font: string | null;
   body_font: string | null;
   hero_image_url: string | null;
-}
-
-async function _getClinicBranding(clinicId: string): Promise<ClinicBrandingRow | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("clinics")
-    .select(
-      "logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url",
-    )
-    .eq("id", clinicId)
-    .single();
-
-  if (error) return null;
-  return {
-    logo_url: data.logo_url ?? null,
-    favicon_url: data.favicon_url ?? null,
-    primary_color: data.primary_color ?? null,
-    secondary_color: data.secondary_color ?? null,
-    heading_font: data.heading_font ?? null,
-    body_font: data.body_font ?? null,
-    hero_image_url: data.hero_image_url ?? null,
-  };
-}
-
-async function _updateClinicBranding(
-  clinicId: string,
-  branding: Partial<ClinicBrandingRow>,
-): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("clinics").update(branding).eq("id", clinicId);
-
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/server", error });
-    return false;
-  }
-
-  // Invalidate subdomain cache so middleware picks up branding changes
-  invalidateAllSubdomainCaches();
-
-  return true;
 }
 
 // ────────────────────────────────────────────
@@ -337,26 +198,6 @@ async function getClinicUsers(clinicId: string, role?: string): Promise<UserRow[
   });
 }
 
-async function _getDoctors(clinicId: string): Promise<UserRow[]> {
-  return getClinicUsers(clinicId, "doctor");
-}
-
-async function _getPatients(clinicId: string): Promise<UserRow[]> {
-  return getClinicUsers(clinicId, "patient");
-}
-
-async function _getReceptionists(clinicId: string): Promise<UserRow[]> {
-  return getClinicUsers(clinicId, "receptionist");
-}
-
-async function _getUserById(userId: string): Promise<UserRow | null> {
-  return queryOne<UserRow>("users", { eq: [["id", userId]] });
-}
-
-// ────────────────────────────────────────────
-// Services
-// ────────────────────────────────────────────
-
 interface ServiceRow {
   id: string;
   clinic_id: string;
@@ -370,16 +211,6 @@ interface ServiceRow {
   is_active: boolean;
   created_at: string;
 }
-
-async function _getServices(clinicId: string): Promise<ServiceRow[]> {
-  return query<ServiceRow>("services", {
-    eq: [["clinic_id", clinicId]],
-  });
-}
-
-// ────────────────────────────────────────────
-// Appointments
-// ────────────────────────────────────────────
 
 interface AppointmentRow {
   id: string;
@@ -409,75 +240,6 @@ interface AppointmentRow {
   updated_at: string;
 }
 
-async function _getAppointments(clinicId: string): Promise<AppointmentRow[]> {
-  return query<AppointmentRow>("appointments", {
-    eq: [["clinic_id", clinicId]],
-    order: ["slot_start", { ascending: true }],
-  });
-}
-
-async function _getAppointmentsByDoctor(
-  clinicId: string,
-  doctorId: string,
-): Promise<AppointmentRow[]> {
-  return query<AppointmentRow>("appointments", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["doctor_id", doctorId],
-    ],
-    order: ["slot_start", { ascending: true }],
-  });
-}
-
-async function _getAppointmentsByPatient(
-  clinicId: string,
-  patientId: string,
-): Promise<AppointmentRow[]> {
-  return query<AppointmentRow>("appointments", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["slot_start", { ascending: true }],
-  });
-}
-
-async function _getTodayAppointments(
-  clinicId: string,
-  doctorId?: string,
-): Promise<AppointmentRow[]> {
-  const supabase = await createClient();
-  const today = getLocalDateStr();
-  const todayStart = `${today}T00:00:00`;
-  const todayEnd = `${today}T23:59:59`;
-
-  let q = supabase
-    .from("appointments")
-    .select(
-      "id, clinic_id, patient_id, doctor_id, service_id, slot_start, slot_end, appointment_date, start_time, end_time, status, booking_source, is_first_visit, insurance_flag, notes, cancellation_reason, cancelled_at, source, is_walk_in, is_emergency, rescheduled_from, recurrence_group_id, recurrence_index, recurrence_pattern, updated_at, created_at",
-    )
-    .eq("clinic_id", clinicId)
-    .gte("slot_start", todayStart)
-    .lte("slot_start", todayEnd)
-    .order("slot_start", { ascending: true })
-    .limit(DEFAULT_QUERY_LIMIT);
-
-  if (doctorId) {
-    q = q.eq("doctor_id", doctorId);
-  }
-
-  const { data, error } = await q;
-  if (error) {
-    logger.warn("Query failed", { context: "data/server", error });
-    return [];
-  }
-  return (data ?? []) as AppointmentRow[];
-}
-
-// ────────────────────────────────────────────
-// Time Slots
-// ────────────────────────────────────────────
-
 interface TimeSlotRow {
   id: string;
   clinic_id: string;
@@ -490,19 +252,6 @@ interface TimeSlotRow {
   buffer_min: number;
   is_active: boolean;
 }
-
-async function _getTimeSlots(clinicId: string, doctorId?: string): Promise<TimeSlotRow[]> {
-  const eq: [string, unknown][] = [["clinic_id", clinicId]];
-  if (doctorId) eq.push(["doctor_id", doctorId]);
-  return query<TimeSlotRow>("time_slots", {
-    eq,
-    order: ["day_of_week", { ascending: true }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Payments
-// ────────────────────────────────────────────
 
 interface PaymentRow {
   id: string;
@@ -519,27 +268,6 @@ interface PaymentRow {
   created_at: string;
 }
 
-async function _getPayments(clinicId: string): Promise<PaymentRow[]> {
-  return query<PaymentRow>("payments", {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-async function _getPaymentsByPatient(clinicId: string, patientId: string): Promise<PaymentRow[]> {
-  return query<PaymentRow>("payments", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Reviews
-// ────────────────────────────────────────────
-
 interface ReviewRow {
   id: string;
   clinic_id: string;
@@ -551,17 +279,6 @@ interface ReviewRow {
   is_visible: boolean;
   created_at: string;
 }
-
-async function _getReviews(clinicId: string): Promise<ReviewRow[]> {
-  return query<ReviewRow>("reviews", {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Notifications
-// ────────────────────────────────────────────
 
 interface NotificationRow {
   id: string;
@@ -575,20 +292,6 @@ interface NotificationRow {
   sent_at: string;
 }
 
-async function _getNotifications(clinicId: string, userId: string): Promise<NotificationRow[]> {
-  return query<NotificationRow>("notifications", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["user_id", userId],
-    ],
-    order: ["sent_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Documents
-// ────────────────────────────────────────────
-
 interface DocumentRow {
   id: string;
   clinic_id: string;
@@ -599,19 +302,6 @@ interface DocumentRow {
   file_size: number | null;
   created_at: string;
 }
-
-async function _getDocuments(clinicId: string, userId?: string): Promise<DocumentRow[]> {
-  const eq: [string, unknown][] = [["clinic_id", clinicId]];
-  if (userId) eq.push(["user_id", userId]);
-  return query<DocumentRow>("documents", {
-    eq,
-    order: ["uploaded_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Prescriptions
-// ────────────────────────────────────────────
 
 interface PrescriptionRow {
   id: string;
@@ -625,56 +315,6 @@ interface PrescriptionRow {
   created_at: string;
 }
 
-async function _getPrescriptions(clinicId: string, doctorId?: string): Promise<PrescriptionRow[]> {
-  const supabase = await createClient();
-  let q = supabase
-    .from("prescriptions")
-    .select(
-      "id, clinic_id, appointment_id, doctor_id, patient_id, items, notes, pdf_url, created_at",
-    )
-    .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false })
-    .limit(DEFAULT_QUERY_LIMIT);
-
-  if (doctorId) {
-    q = q.eq("doctor_id", doctorId);
-  }
-
-  const { data, error } = await q;
-  if (error) {
-    logger.warn("Query failed", { context: "data/server", error });
-    return [];
-  }
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    clinic_id: r.clinic_id ?? "",
-    appointment_id: r.appointment_id,
-    doctor_id: r.doctor_id,
-    patient_id: r.patient_id,
-    items: Array.isArray(r.items) ? (r.items as PrescriptionRow["items"]) : [],
-    notes: r.notes,
-    pdf_url: r.pdf_url,
-    created_at: r.created_at ?? "",
-  }));
-}
-
-async function _getPatientPrescriptions(
-  clinicId: string,
-  patientId: string,
-): Promise<PrescriptionRow[]> {
-  return query<PrescriptionRow>("prescriptions", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Consultation Notes
-// ────────────────────────────────────────────
-
 interface ConsultationNoteRow {
   id: string;
   clinic_id: string;
@@ -686,23 +326,6 @@ interface ConsultationNoteRow {
   created_at: string;
   updated_at: string;
 }
-
-async function _getConsultationNotes(
-  clinicId: string,
-  doctorId: string,
-): Promise<ConsultationNoteRow[]> {
-  return query<ConsultationNoteRow>("consultation_notes", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["doctor_id", doctorId],
-    ],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Waiting List
-// ────────────────────────────────────────────
 
 interface WaitingListRow {
   id: string;
@@ -717,17 +340,6 @@ interface WaitingListRow {
   created_at: string;
 }
 
-async function _getWaitingList(clinicId: string): Promise<WaitingListRow[]> {
-  return query<WaitingListRow>("waiting_list", {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at", { ascending: true }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Family Members
-// ────────────────────────────────────────────
-
 interface FamilyMemberRow {
   id: string;
   primary_user_id: string;
@@ -735,19 +347,6 @@ interface FamilyMemberRow {
   relationship: string;
   created_at: string;
 }
-
-async function _getFamilyMembers(clinicId: string, userId: string): Promise<FamilyMemberRow[]> {
-  return query<FamilyMemberRow>("family_members", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["primary_user_id", userId],
-    ],
-  });
-}
-
-// ────────────────────────────────────────────
-// Dental: Odontogram
-// ────────────────────────────────────────────
 
 interface OdontogramRow {
   id: string;
@@ -758,20 +357,6 @@ interface OdontogramRow {
   notes: string | null;
   updated_at: string;
 }
-
-async function _getOdontogram(clinicId: string, patientId: string): Promise<OdontogramRow[]> {
-  return query<OdontogramRow>("odontogram", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["tooth_number", { ascending: true }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Dental: Treatment Plans
-// ────────────────────────────────────────────
 
 interface TreatmentPlanRow {
   id: string;
@@ -786,35 +371,6 @@ interface TreatmentPlanRow {
   updated_at: string;
 }
 
-async function _getTreatmentPlans(
-  clinicId: string,
-  doctorId?: string,
-): Promise<TreatmentPlanRow[]> {
-  const eq: [string, unknown][] = [["clinic_id", clinicId]];
-  if (doctorId) eq.push(["doctor_id", doctorId]);
-  return query<TreatmentPlanRow>("treatment_plans", {
-    eq,
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-async function _getPatientTreatmentPlans(
-  clinicId: string,
-  patientId: string,
-): Promise<TreatmentPlanRow[]> {
-  return query<TreatmentPlanRow>("treatment_plans", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Dental: Lab Orders
-// ────────────────────────────────────────────
-
 interface LabOrderRow {
   id: string;
   clinic_id: string;
@@ -827,17 +383,6 @@ interface LabOrderRow {
   created_at: string;
   updated_at: string;
 }
-
-async function _getLabOrders(clinicId: string): Promise<LabOrderRow[]> {
-  return query<LabOrderRow>("lab_orders", {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Dental: Installments
-// ────────────────────────────────────────────
 
 interface InstallmentRow {
   id: string;
@@ -852,36 +397,6 @@ interface InstallmentRow {
   created_at: string;
 }
 
-async function _getInstallments(
-  clinicId: string,
-  treatmentPlanId: string,
-): Promise<InstallmentRow[]> {
-  return query<InstallmentRow>("installments", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["treatment_plan_id", treatmentPlanId],
-    ],
-    order: ["due_date", { ascending: true }],
-  });
-}
-
-async function _getPatientInstallments(
-  clinicId: string,
-  patientId: string,
-): Promise<InstallmentRow[]> {
-  return query<InstallmentRow>("installments", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["due_date", { ascending: true }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Dental: Sterilization Log
-// ────────────────────────────────────────────
-
 interface SterilizationLogRow {
   id: string;
   clinic_id: string;
@@ -893,17 +408,6 @@ interface SterilizationLogRow {
   notes: string | null;
   created_at: string;
 }
-
-async function _getSterilizationLog(clinicId: string): Promise<SterilizationLogRow[]> {
-  return query<SterilizationLogRow>("sterilization_log", {
-    eq: [["clinic_id", clinicId]],
-    order: ["sterilized_at", { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Pharmacy: Products
-// ────────────────────────────────────────────
 
 interface ProductRow {
   id: string;
@@ -924,16 +428,6 @@ interface ProductRow {
   created_at: string;
 }
 
-async function _getProducts(clinicId: string): Promise<ProductRow[]> {
-  return query<ProductRow>("products", {
-    eq: [["clinic_id", clinicId]],
-  });
-}
-
-// ────────────────────────────────────────────
-// Pharmacy: Stock
-// ────────────────────────────────────────────
-
 interface StockRow {
   id: string;
   clinic_id: string;
@@ -944,16 +438,6 @@ interface StockRow {
   batch_number: string | null;
   updated_at: string;
 }
-
-async function _getStock(clinicId: string): Promise<StockRow[]> {
-  return query<StockRow>("stock", {
-    eq: [["clinic_id", clinicId]],
-  });
-}
-
-// ────────────────────────────────────────────
-// Pharmacy: Suppliers
-// ────────────────────────────────────────────
 
 interface SupplierRow {
   id: string;
@@ -972,16 +456,6 @@ interface SupplierRow {
   created_at: string;
 }
 
-async function _getSuppliers(clinicId: string): Promise<SupplierRow[]> {
-  return query<SupplierRow>("suppliers", {
-    eq: [["clinic_id", clinicId]],
-  });
-}
-
-// ────────────────────────────────────────────
-// Pharmacy: Prescription Requests
-// ────────────────────────────────────────────
-
 interface PrescriptionRequestRow {
   id: string;
   clinic_id: string;
@@ -993,17 +467,6 @@ interface PrescriptionRequestRow {
   created_at: string;
   updated_at: string;
 }
-
-async function _getPrescriptionRequests(clinicId: string): Promise<PrescriptionRequestRow[]> {
-  return query<PrescriptionRequestRow>("prescription_requests", {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at" as string, { ascending: false }],
-  });
-}
-
-// ────────────────────────────────────────────
-// Pharmacy: Loyalty Points
-// ────────────────────────────────────────────
 
 interface LoyaltyPointsRow {
   id: string;
@@ -1022,12 +485,6 @@ interface LoyaltyPointsRow {
   last_earned: string | null;
   created_at: string;
   updated_at: string;
-}
-
-async function _getLoyaltyPoints(clinicId: string): Promise<LoyaltyPointsRow[]> {
-  return query<LoyaltyPointsRow>("loyalty_points", {
-    eq: [["clinic_id", clinicId]],
-  });
 }
 
 // ────────────────────────────────────────────
@@ -1106,10 +563,6 @@ async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardS
   };
 }
 
-// ────────────────────────────────────────────
-// Super Admin Stats
-// ────────────────────────────────────────────
-
 interface SuperAdminStats {
   clinics: ClinicRow[];
   totalClinics: number;
@@ -1117,164 +570,6 @@ interface SuperAdminStats {
   totalPatients: number;
   totalAppointments: number;
   totalRevenue: number;
-}
-
-async function _getSuperAdminStats(): Promise<SuperAdminStats> {
-  const supabase = await createClient();
-
-  // DAL-01 (HIGH): Verify the caller is a super_admin before returning
-  // platform-wide statistics. Without this guard, any authenticated user
-  // could call this function and see cross-tenant aggregated data.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Authentication required");
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("auth_id", user.id)
-    .single();
-
-  if (profile?.role !== "super_admin") {
-    throw new Error("Forbidden: super_admin role required");
-  }
-
-  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
-    supabase
-      .from("clinics")
-      .select("id, name, type, config, tier, status, subdomain, created_at")
-      .order("created_at", { ascending: false }),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "patient"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }),
-    supabase.from("payments").select("amount").eq("status", "completed"),
-  ]);
-
-  const clinics = (clinicsRes.data ?? []) as ClinicRow[];
-  const totalRevenue = (revenueRes.data ?? []).reduce(
-    (sum, p) => sum + ((p as { amount: number }).amount ?? 0),
-    0,
-  );
-
-  return {
-    clinics,
-    totalClinics: clinics.length,
-    activeClinics: clinics.filter((c) => c.status === "active").length,
-    totalPatients: patientCountRes.count ?? 0,
-    totalAppointments: appointmentCountRes.count ?? 0,
-    totalRevenue,
-  };
-}
-
-// ────────────────────────────────────────────
-// Mutations
-// ────────────────────────────────────────────
-
-async function _updateAppointmentStatus(
-  appointmentId: string,
-  status: string,
-  extra?: { cancellation_reason?: string },
-): Promise<boolean> {
-  const supabase = await createClient();
-  const updateData: Record<string, unknown> = { status };
-  if (status === "cancelled") {
-    updateData.cancelled_at = new Date().toISOString();
-    if (extra?.cancellation_reason) {
-      updateData.cancellation_reason = extra.cancellation_reason;
-    }
-  }
-  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-  const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/server", error });
-    return false;
-  }
-  return true;
-}
-
-async function _createAppointment(data: {
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  service_id?: string;
-  slot_start: string;
-  slot_end: string;
-  is_first_visit?: boolean;
-  insurance_flag?: boolean;
-  source?: string;
-  notes?: string;
-}): Promise<AppointmentRow | null> {
-  const supabase = await createClient();
-  // Also populate the normalised date/time columns
-  const startDate = new Date(data.slot_start);
-  const endDate = new Date(data.slot_end);
-  const enriched = {
-    ...data,
-    appointment_date: getLocalDateStr(startDate),
-    start_time: startDate.toISOString().split("T")[1]?.slice(0, 5),
-    end_time: endDate.toISOString().split("T")[1]?.slice(0, 5),
-  };
-  const { data: row, error } = await supabase
-    .from("appointments")
-    .insert(enriched)
-    .select()
-    .single();
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/server", error });
-    return null;
-  }
-  return row as AppointmentRow;
-}
-
-async function _createReview(data: {
-  clinic_id: string;
-  patient_id: string;
-  stars: number;
-  comment?: string;
-}): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("reviews").insert(data);
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/server", error });
-    return false;
-  }
-  return true;
-}
-
-async function _updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/server", error });
-    return false;
-  }
-  return true;
-}
-
-async function _addToWaitingList(data: {
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  service_id?: string;
-  preferred_date?: string;
-}): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("waiting_list").insert({ ...data, status: "waiting" });
-  if (error) {
-    logger.warn("Mutation failed", { context: "data/server", error });
-    return false;
-  }
-  return true;
-}
-
-async function _markNotificationRead(notificationId: string): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("notifications")
-    .update({ is_read: true })
-    .eq("id", notificationId);
-  if (error) return false;
-  return true;
 }
 
 // ────────────────────────────────────────────

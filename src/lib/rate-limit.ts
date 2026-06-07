@@ -705,7 +705,7 @@ const brandingLimiter = createRateLimiter({
 });
 
 /** General API mutations: 30 req / 60s per IP */
-const apiMutationLimiter = createRateLimiter({
+export const apiMutationLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 30,
   failClosed: true,

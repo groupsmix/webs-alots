@@ -147,48 +147,6 @@ function getKV(): KVNamespace | null {
   return (globalThis as unknown as { FEATURE_FLAGS_KV?: KVNamespace }).FEATURE_FLAGS_KV ?? null;
 }
 
-/**
- * F-07: Try to read a subdomain entry from KV cache.
- * Returns null on miss or if KV is not available.
- */
-async function _getSubdomainFromKV(subdomain: string): Promise<CachedClinic | null> {
-  const kv = getKV();
-  if (!kv) return null;
-  try {
-    return await kv.get(`${KV_PREFIX}${subdomain}`, { type: "json" });
-  } catch {
-    return null;
-  }
-}
-
-/**
- * F-07: Write a subdomain entry to KV cache.
- */
-async function _setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promise<void> {
-  const kv = getKV();
-  if (!kv) return;
-  try {
-    await kv.put(`${KV_PREFIX}${subdomain}`, JSON.stringify(clinic), {
-      expirationTtl: KV_TTL_SECONDS,
-    });
-  } catch {
-    // KV write failure is non-critical
-  }
-}
-
-/**
- * F-07: Delete a subdomain entry from KV cache.
- */
-async function _deleteSubdomainFromKV(subdomain: string): Promise<void> {
-  const kv = getKV();
-  if (!kv) return;
-  try {
-    await kv.delete(`${KV_PREFIX}${subdomain}`);
-  } catch {
-    // KV delete failure is non-critical
-  }
-}
-
 // ── A75-2: Single-flight / promise coalescing ──
 
 /**

@@ -17,8 +17,12 @@
  *                        /api/cron/support-sla-check (SLA breach detection + notification)
  *   - daily 02:00    →  /api/cron/billing       (subscription renewals)
  *   - daily 03:00    →  /api/cron/gdpr-purge    (GDPR patient data purge)
+ *                        /api/cron/data-retention (Moroccan Law 09-08 retention enforcement)
  *   - daily 04:00    →  /api/cron/dedup-purge   (M-03/M-04 TTL purge)
  *   - daily 05:00    →  /api/cron/stripe-reconcile (BL-002 payment drift)
+ *                        /api/cron/ai-clinic-briefings (AI executive briefings)
+ *   - daily 01:00    →  /api/cron/usage-snapshots (daily usage snapshots + overage alerts)
+ *   - daily 06:30    →  /api/cron/trial-lifecycle (trial expiry warnings + downgrades)
  *
  * @see https://opennext.js.org/cloudflare/howtos/custom-worker
  */
@@ -46,10 +50,12 @@ export const CRON_ROUTES: Record<string, string[]> = {
     "/api/cron/support-sla-check",
   ],
   "0 2 * * *": ["/api/cron/billing"],
-  "0 3 * * *": ["/api/cron/gdpr-purge"],
+  "0 3 * * *": ["/api/cron/gdpr-purge", "/api/cron/data-retention"],
   "0 4 * * *": ["/api/cron/dedup-purge"],
-  "0 5 * * *": ["/api/cron/stripe-reconcile"],
+  "0 5 * * *": ["/api/cron/stripe-reconcile", "/api/cron/ai-clinic-briefings"],
   "0 8 * * *": ["/api/cron/onboarding-nudges"],
+  "0 1 * * *": ["/api/cron/usage-snapshots"],
+  "30 6 * * *": ["/api/cron/trial-lifecycle"],
 };
 
 /**
@@ -195,12 +201,13 @@ export default {
         console.log(`[Queue] /api/cron/notifications responded ${res.status} — acking batch`);
         batch.ackAll();
       } else {
-        const body = await res.text();
-        const truncated = body.length > 200 ? body.slice(0, 200) + "…" : body;
-        // T-04: Strip newlines/CRLF before logging to prevent log injection
-        // via attacker-controlled response bodies with embedded log lines.
-        const sanitized = truncated.replace(/[\r\n\t]/g, " ");
-        console.error(`[Queue] /api/cron/notifications responded ${res.status}: ${sanitized}`);
+        // L-08: Never read or log the response body from cron/queue routes.
+        // The body may contain PHI (patient IDs, billing amounts, email
+        // addresses) from routes such as gdpr-purge and billing. Log only
+        // the status code — that is sufficient for alerting.
+        console.error(
+          `[Queue] /api/cron/notifications responded ${res.status} — body redacted (may contain PHI)`,
+        );
         batch.retryAll();
       }
     } catch (err) {

@@ -525,6 +525,19 @@ export function validateEnv(): EnvValidationResult {
     }
   }
 
+  // Audit Finding #4: When AV_SCAN_REQUIRED is true in production, AV_SCAN_URL must be set.
+  // This prevents a configuration where AV scanning is required but no scanner is available,
+  // which would either cause all uploads to fail or silently skip scanning (security risk).
+  const isProduction = process.env.NODE_ENV === "production";
+  const avScanRequired = process.env.AV_SCAN_REQUIRED === "true";
+  if (isProduction && avScanRequired && !process.env.AV_SCAN_URL) {
+    missing.push({
+      name: "AV_SCAN_URL",
+      description: "AV scanner endpoint required when AV_SCAN_REQUIRED=true in production",
+      group: "security",
+    });
+  }
+
   return { valid: missing.length === 0, missing, warnings };
 }
 

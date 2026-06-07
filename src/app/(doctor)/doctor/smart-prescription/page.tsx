@@ -11,7 +11,9 @@ import {
   Search,
   ShieldAlert,
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { usePrescriptionSafety } from "@/lib/hooks/use-prescription-safety";
+import { PrescriptionSafetyBanner } from "@/components/doctor/prescription-safety-banner";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -69,6 +71,28 @@ export default function SmartPrescriptionPage() {
     Array<{ drugs: string[]; severity: string; title: string; description: string }>
   >([]);
   const [isCheckingInteractions, setIsCheckingInteractions] = useState(false);
+
+  // AI prescription safety check (debounced, runs whenever medications list changes)
+  const {
+    result: safetyResult,
+    isChecking: isSafetyChecking,
+    error: safetyError,
+    checkSafety,
+  } = usePrescriptionSafety({ patientId });
+
+  useEffect(() => {
+    if (medications.length > 0 && patientId.trim()) {
+      checkSafety(
+        medications.map((m) => ({
+          name: m.name,
+          dosage: m.dosage,
+          frequency: m.frequency,
+          duration: m.duration,
+        })),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [medications, patientId]);
 
   const searchDrug = useCallback(async () => {
     if (!drugSearch.trim() || !patientId.trim() || !diagnosis.trim()) {
@@ -304,6 +328,13 @@ export default function SmartPrescriptionPage() {
       </div>
 
       {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      {/* AI Prescription Safety Banner */}
+      <PrescriptionSafetyBanner
+        result={safetyResult}
+        isChecking={isSafetyChecking}
+        error={safetyError}
+      />
 
       {/* Interaction Alerts */}
       {interactionAlerts.length > 0 && (

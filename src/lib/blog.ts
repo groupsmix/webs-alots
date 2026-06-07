@@ -67,20 +67,3 @@ export function getCategories(): BlogCategory[] {
   const cats = new Set(ALL_POSTS.map((p) => p.category));
   return Array.from(cats);
 }
-
-/** Filter posts by category. */
-function _getPostsByCategory(category: BlogCategory): BlogPost[] {
-  return getAllPosts().filter((p) => p.category === category);
-}
-
-/** Simple search across title, excerpt, tags. */
-function _searchPosts(query: string): BlogPost[] {
-  const q = query.toLowerCase().trim();
-  if (!q) return getAllPosts();
-  return getAllPosts().filter(
-    (p) =>
-      p.title.toLowerCase().includes(q) ||
-      p.excerpt.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.toLowerCase().includes(q)),
-  );
-}

@@ -93,11 +93,6 @@ export async function getCurrentUser(): Promise<ClinicUser | null> {
   return _cachedUser;
 }
 
-function _clearUserCache() {
-  _cachedUser = undefined;
-  _cachedUserAt = 0;
-}
-
 // ── Generic fetch helper ──
 
 export async function fetchRows<T>(

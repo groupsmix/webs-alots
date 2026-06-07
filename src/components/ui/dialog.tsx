@@ -28,10 +28,6 @@ function DialogTrigger({
   );
 }
 
-function _DialogPortal({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
 function DialogOverlay({ className, onClick, ...props }: React.ComponentProps<"div">) {
   return (
     <div
