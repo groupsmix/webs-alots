@@ -65,8 +65,15 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Next.js 16: Cache Components powers the stable `use cache` directive.
-  cacheComponents: true,
+  // PERF-01: Enable the stable `use cache` directive (Next.js 16).
+  // Note: do NOT switch to `cacheComponents: true` until every route that
+  // currently sets `export const dynamic = "force-dynamic"` (or
+  // `runtime = "edge"`) is migrated. Cache Components rejects those route
+  // segment configs at compile time, which broke the Cloudflare build in PR
+  // #980. Keep using `experimental.useCache` until that migration lands.
+  experimental: {
+    useCache: true,
+  },
 
   async headers() {
     return [
