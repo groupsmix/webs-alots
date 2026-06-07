@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 import { AlertTriangle, FileText, Lock, Scale, Shield, Users } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";

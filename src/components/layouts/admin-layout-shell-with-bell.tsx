@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 /**
  * Thin header overlay for the admin layout that provides:
