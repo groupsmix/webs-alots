@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { insertInAppNotification } from "@/lib/notification-persist";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createServiceClient, createUntypedAdminClient } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-webhook-secret");
@@ -25,8 +25,12 @@ export async function POST(request: NextRequest) {
   const eventType =
     body.heartbeat?.status === 0 ? "down" : body.heartbeat?.status === 1 ? "up" : "degraded";
 
+  // uptime_events is introduced by migration 00160 and not yet in the
+  // generated Supabase types — use the untyped admin client for that insert.
+  // The typed client is kept for the users lookup below.
   const supabase = createServiceClient();
-  await supabase.from("uptime_events").insert({
+  const untypedSupabase = createUntypedAdminClient("super_admin");
+  await untypedSupabase.from("uptime_events").insert({
     monitor_name: body.monitor?.name ?? "unknown",
     monitor_url: body.monitor?.url ?? null,
     event_type: eventType,

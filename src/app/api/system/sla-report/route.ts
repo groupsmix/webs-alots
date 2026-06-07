@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-response";
 import { buildSlaReportHtml, getSlaReportSnapshot } from "@/lib/system-status";
 import { withAuth } from "@/lib/with-auth";
@@ -17,7 +18,9 @@ export const GET = withAuth(
       parseMonth(request.nextUrl.searchParams.get("month")) ?? new Date().toISOString().slice(0, 7);
     const report = await getSlaReportSnapshot(month);
 
-    return new Response(buildSlaReportHtml(report), {
+    // withAuth expects NextResponse — use the Next.js wrapper rather than
+    // a bare Response for type compatibility with the handler signature.
+    return new NextResponse(buildSlaReportHtml(report), {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",

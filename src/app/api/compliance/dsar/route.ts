@@ -2,7 +2,7 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { insertInAppNotification } from "@/lib/notification-persist";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createServiceClient, createUntypedAdminClient } from "@/lib/supabase-server";
 
 const dsarSchema = z.object({
   requesterName: z.string().min(2).max(200),
@@ -26,7 +26,11 @@ export async function POST(request: NextRequest) {
     return apiError("Invalid DSAR payload", 400, "VALIDATION_ERROR");
   }
 
+  // Typed client for tables present in the generated types (clinics, users).
   const supabase = createServiceClient();
+  // dsar_requests was introduced by migration 00160 and is not yet in the
+  // generated Supabase types — use the untyped admin client for that insert.
+  const untypedSupabase = createUntypedAdminClient("super_admin");
   const responseDueAt = new Date();
   responseDueAt.setDate(responseDueAt.getDate() + 30);
 
@@ -41,7 +45,7 @@ export async function POST(request: NextRequest) {
     clinicId = clinic?.id ?? null;
   }
 
-  const { data: dsar, error } = await supabase
+  const { data: dsarRaw, error } = await untypedSupabase
     .from("dsar_requests")
     .insert({
       requester_type: "external",
@@ -55,6 +59,7 @@ export async function POST(request: NextRequest) {
     })
     .select("dsar_number")
     .single();
+  const dsar = dsarRaw as { dsar_number: number | string } | null;
 
   if (error || !dsar) {
     return apiError("Failed to create DSAR request", 500, "INTERNAL_ERROR");

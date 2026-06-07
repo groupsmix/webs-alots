@@ -1,8 +1,13 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 
 export const dynamic = "force-dynamic";
+
+// compliance_cndp, dsar_requests, data_breach_incidents, and uptime_events
+// are all introduced by migration 00160 and not yet in the generated
+// Supabase types — use the untyped admin client (same pattern as the
+// sibling /super-admin/compliance page and /api/super-admin/compliance-snapshot).
 
 export const GET = withAuth(
   async (_request, auth) => {
@@ -10,7 +15,7 @@ export const GET = withAuth(
       return apiError("Forbidden", 403, "FORBIDDEN");
     }
 
-    const supabase = createServiceClient();
+    const supabase = createUntypedAdminClient("super_admin");
     const nowIso = new Date().toISOString();
     const tenMinutesAgo = new Date(Date.now() - 10 * 60_000).toISOString();
 
@@ -32,8 +37,15 @@ export const GET = withAuth(
         .order("occurred_at", { ascending: false }),
     ]);
 
+    const cndpRow = (cndp.data ?? null) as { status: string } | null;
+    const uptimeRows = (uptimeEvents.data ?? []) as Array<{
+      monitor_name: string;
+      event_type: string;
+      occurred_at: string;
+    }>;
+
     const latestByMonitor = new Map<string, string>();
-    for (const row of uptimeEvents.data ?? []) {
+    for (const row of uptimeRows) {
       if (!latestByMonitor.has(row.monitor_name)) {
         latestByMonitor.set(row.monitor_name, row.event_type);
       }
@@ -45,7 +57,7 @@ export const GET = withAuth(
 
     return apiSuccess({
       compliance: {
-        cndpApproved: cndp.data?.status === "approved",
+        cndpApproved: cndpRow?.status === "approved",
         overdueDsarCount: overdueDsar.count ?? 0,
         activeBreachCount: activeBreach.count ?? 0,
       },

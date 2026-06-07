@@ -2,10 +2,32 @@
 import { AlertTriangle, Database, ShieldAlert } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 
-async function getMetrics() {
-  const supabase = createServiceClient();
+// uptime_sla_monthly (view) and uptime_events are introduced by migration
+// 00160 and are not yet in the generated Supabase types. Use the untyped
+// admin client and declare row shapes locally — same pattern as the
+// sibling /super-admin/compliance page and /api/super-admin/compliance-snapshot.
+type UptimeSlaMonthlyRow = {
+  month: string;
+  monitor_name: string;
+  uptime_pct: number | null;
+  downtime_events: number | null;
+};
+
+type UptimeEventRow = {
+  id: string;
+  monitor_name: string;
+  occurred_at: string;
+  event_type: string;
+  message: string | null;
+};
+
+async function getMetrics(): Promise<{
+  uptime: UptimeSlaMonthlyRow[];
+  events: UptimeEventRow[];
+}> {
+  const supabase = createUntypedAdminClient("super_admin");
 
   const [uptime, events] = await Promise.all([
     supabase.from("uptime_sla_monthly").select("*").order("month", { ascending: false }).limit(12),
@@ -13,8 +35,8 @@ async function getMetrics() {
   ]);
 
   return {
-    uptime: uptime.data ?? [],
-    events: events.data ?? [],
+    uptime: (uptime.data ?? []) as UptimeSlaMonthlyRow[],
+    events: (events.data ?? []) as UptimeEventRow[],
   };
 }
 

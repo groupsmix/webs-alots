@@ -1,5 +1,5 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +34,9 @@ export const GET = withAuth(
       return apiError("Forbidden", 403, "FORBIDDEN");
     }
 
-    const supabase = createServiceClient();
+    // uptime_events is introduced by migration 00160 and not yet in the
+    // generated Supabase types — use the untyped admin client.
+    const supabase = createUntypedAdminClient("super_admin");
     const [sentry, uptimeEvents, dbProbe] = await Promise.allSettled([
       fetchSentryMetrics(),
       supabase

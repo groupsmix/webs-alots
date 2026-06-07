@@ -101,9 +101,18 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
       : null;
 
     if (normalizedType) {
-      // Use service-role client since consent_records has a service_role INSERT policy
-      const { createServiceClient } = await import("@/lib/supabase-server");
-      const serviceSupabase = createServiceClient();
+      // SECURITY (corridor-security review): userId is NOT taken from the
+      // request body — it is server-resolved above from
+      // supabase.auth.getUser() and looked up in the users table via
+      // auth_id. The service-role insert is therefore safe; a caller
+      // cannot forge consent records for an arbitrary user UUID.
+      //
+      // We use createUntypedAdminClient (rather than createServiceClient)
+      // because consent_records was introduced by migration 00160 and is
+      // not yet in the generated Supabase types. It is the same service-
+      // role client under the hood with an untyped surface for new tables.
+      const { createUntypedAdminClient } = await import("@/lib/supabase-server");
+      const serviceSupabase = createUntypedAdminClient("super_admin", tenant.clinicId);
       const { error: crError } = await serviceSupabase.from("consent_records").insert({
         user_id: userId,
         clinic_id: tenant.clinicId,

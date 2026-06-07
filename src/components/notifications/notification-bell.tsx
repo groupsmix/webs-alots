@@ -56,7 +56,6 @@ const TYPE_COLORS: Record<string, string> = {
 
 export function NotificationBell({ userId }: { userId?: string }): ReactNode {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [open, setOpen] = useState(false);
   const mountedRef = useRef(true);
 
   const loadNotifications = useCallback(async () => {
@@ -153,7 +152,7 @@ export function NotificationBell({ userId }: { userId?: string }): ReactNode {
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

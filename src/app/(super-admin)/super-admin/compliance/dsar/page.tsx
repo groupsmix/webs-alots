@@ -4,7 +4,22 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
+
+// dsar_requests was introduced by migration 00160 and is not yet in the
+// generated Supabase types. Use the untyped admin client and a narrow
+// row shape declared here, matching the pattern in the sibling
+// /super-admin/compliance page and /api/super-admin/compliance-snapshot.
+type DsarRow = {
+  id: string;
+  dsar_number: string;
+  requester_name: string;
+  requester_email: string;
+  request_type: string;
+  status: string;
+  response_due_at: string;
+  created_at: string;
+};
 
 function formatDaysRemaining(dueAt: string) {
   const diff = new Date(dueAt).getTime() - Date.now();
@@ -12,8 +27,8 @@ function formatDaysRemaining(dueAt: string) {
 }
 
 export default async function ComplianceDsarPage() {
-  const supabase = createServiceClient();
-  const { data: requests } = await supabase
+  const supabase = createUntypedAdminClient("super_admin");
+  const { data } = await supabase
     .from("dsar_requests")
     .select(
       "id, dsar_number, requester_name, requester_email, request_type, status, response_due_at, created_at",
@@ -21,9 +36,9 @@ export default async function ComplianceDsarPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const overdue = (requests ?? []).filter(
-    (request) => new Date(request.response_due_at) < new Date(),
-  );
+  const requests = (data ?? []) as DsarRow[];
+
+  const overdue = requests.filter((request) => new Date(request.response_due_at) < new Date());
 
   return (
     <div className="space-y-6">
@@ -55,7 +70,7 @@ export default async function ComplianceDsarPage() {
           <CardContent>
             <div className="text-2xl font-bold">
               {
-                (requests ?? []).filter(
+                requests.filter(
                   (request) => request.status === "received" || request.status === "in_progress",
                 ).length
               }
@@ -100,7 +115,7 @@ export default async function ComplianceDsarPage() {
                 </tr>
               </thead>
               <tbody>
-                {(requests ?? []).map((request) => {
+                {requests.map((request) => {
                   const daysRemaining = formatDaysRemaining(request.response_due_at);
                   const isOverdue = daysRemaining < 0;
                   return (

@@ -49,16 +49,24 @@ export function DSARRequestForm() {
         body: JSON.stringify(payload),
       });
 
-      const json = (await response.json()) as
-        | { ok?: boolean; dsarNumber?: number; error?: string }
-        | { data?: { dsarNumber?: number }; error?: string };
+      // API may return either the legacy `{ dsarNumber }` shape or the
+      // wrapped `{ data: { dsarNumber } }` shape from apiSuccess(). Accept
+      // both and pick whichever is present — the `"data" in json` check
+      // does not narrow correctly here because both variants list `data`
+      // as optional.
+      const json = (await response.json()) as {
+        ok?: boolean;
+        dsarNumber?: number;
+        data?: { dsarNumber?: number };
+        error?: string;
+      };
 
       if (!response.ok) {
         setError("Impossible d'envoyer votre demande pour le moment.");
         return;
       }
 
-      const dsarNumber = "data" in json ? json.data?.dsarNumber : json.dsarNumber;
+      const dsarNumber = json.data?.dsarNumber ?? json.dsarNumber;
       setResult(
         dsarNumber
           ? `Votre demande a été enregistrée sous le numéro #${dsarNumber}.`
