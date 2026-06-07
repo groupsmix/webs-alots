@@ -129,8 +129,12 @@ SELECT
       ) / NULLIF(
         extract(
           epoch FROM (
-            (date_trunc('month', occurred_at) + interval '1 month')
-            - date_trunc('month', occurred_at)
+            -- Both halves reference the same expression used in GROUP BY
+            -- (date_trunc('month', occurred_at)::date). Using the bare
+            -- timestamptz form here trips SQLSTATE 42803 because Postgres
+            -- doesn't unify `date_trunc(...)` with `date_trunc(...)::date`.
+            (date_trunc('month', occurred_at)::date + interval '1 month')
+            - date_trunc('month', occurred_at)::date
           )
         ),
         0

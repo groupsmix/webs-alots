@@ -45,6 +45,7 @@ import { CommandPalette, type CommandPaletteItem } from "@/components/command-pa
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -59,7 +60,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
