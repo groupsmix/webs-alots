@@ -138,8 +138,7 @@ export default function ReferralProgramPage() {
     .filter((c) => c.status === "pending")
     .reduce((sum, c) => sum + c.amount_centimes, 0);
 
-  const formatMAD = (centimes: number) =>
-    `${(centimes / 100).toFixed(2)} MAD`;
+  const formatMAD = (centimes: number) => `${(centimes / 100).toFixed(2)} MAD`;
 
   if (loading) {
     return (
@@ -174,10 +173,7 @@ export default function ReferralProgramPage() {
   return (
     <div className="space-y-6">
       <Breadcrumb
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Programme de parrainage" },
-        ]}
+        items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Programme de parrainage" }]}
       />
 
       <div>
@@ -227,11 +223,7 @@ export default function ReferralProgramPage() {
           <div>
             <p className="text-sm font-medium mb-2">Lien de parrainage</p>
             <div className="flex items-center gap-2">
-              <Input
-                value={data.referralUrl}
-                readOnly
-                className="font-mono text-sm"
-              />
+              <Input value={data.referralUrl} readOnly className="font-mono text-sm" />
               <Button
                 variant="outline"
                 size="icon"

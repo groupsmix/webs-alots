@@ -99,7 +99,11 @@ export async function assertPlanLimit(
   const tier = normalizePlanSlug(clinic.tier ?? "free");
 
   // 2. Boolean feature checks (no count required)
-  if (limitKey === "ai_features" || limitKey === "custom_domain" || limitKey === "advanced_analytics") {
+  if (
+    limitKey === "ai_features" ||
+    limitKey === "custom_domain" ||
+    limitKey === "advanced_analytics"
+  ) {
     const featureMap: Record<string, keyof FeatureMatrix> = {
       ai_features: "aiFeatures",
       custom_domain: "customDomain",
@@ -207,10 +211,7 @@ export async function requireFeature(
 
 // ── Route wrapper ────────────────────────────────────────────────────────────
 
-type AuthenticatedHandler = (
-  request: NextRequest,
-  auth: AuthContext,
-) => Promise<NextResponse>;
+type AuthenticatedHandler = (request: NextRequest, auth: AuthContext) => Promise<NextResponse>;
 
 /**
  * Higher-order route wrapper that gate-checks a plan limit before the handler runs.

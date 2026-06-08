@@ -10,14 +10,7 @@
  * UI updates automatically once the background edge function completes.
  */
 
-import {
-  AlertTriangle,
-  CheckCircle,
-  FlaskConical,
-  Loader2,
-  Pill,
-  Stethoscope,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle, FlaskConical, Loader2, Pill, Stethoscope } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -58,10 +51,7 @@ interface Props {
 
 // ── Flag display config ───────────────────────────────────────────────────────
 
-const FLAG_CONFIG: Record<
-  NonNullable<LabResult["flag"]>,
-  { label: string; className: string }
-> = {
+const FLAG_CONFIG: Record<NonNullable<LabResult["flag"]>, { label: string; className: string }> = {
   H: { label: "↑", className: "text-orange-600 font-bold" },
   L: { label: "↓", className: "text-blue-600 font-bold" },
   critical: { label: "⚠", className: "text-red-600 font-bold" },
@@ -153,8 +143,7 @@ export function ExtractedDataCard({ extractedData, extractionStatus, className }
     date,
   } = extractedData;
 
-  const docTypeLabel =
-    DOCUMENT_TYPE_LABELS[documentType] ?? documentType ?? "Document médical";
+  const docTypeLabel = DOCUMENT_TYPE_LABELS[documentType] ?? documentType ?? "Document médical";
 
   return (
     <Card className={cn(className)}>
@@ -164,11 +153,7 @@ export function ExtractedDataCard({ extractedData, extractionStatus, className }
             <Stethoscope className="h-5 w-5 text-primary" />
             Données extraites par IA
           </span>
-          {date && (
-            <span className="text-xs font-normal text-muted-foreground">
-              {date}
-            </span>
-          )}
+          {date && <span className="text-xs font-normal text-muted-foreground">{date}</span>}
         </CardTitle>
       </CardHeader>
 
@@ -219,9 +204,7 @@ export function ExtractedDataCard({ extractedData, extractionStatus, className }
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                      Test
-                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">Test</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                       Valeur
                     </th>
@@ -297,16 +280,11 @@ export function ExtractedDataCard({ extractedData, extractionStatus, className }
             </h3>
             <ul className="space-y-2">
               {medications.map((med, i) => (
-                <li
-                  key={i}
-                  className="rounded-md border bg-muted/30 px-3 py-2 text-sm"
-                >
+                <li key={i} className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
                   <span className="font-medium">{med.name}</span>
                   {(med.dosage ?? med.frequency ?? med.duration) && (
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {[med.dosage, med.frequency, med.duration]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
                     </p>
                   )}
                 </li>

@@ -76,8 +76,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
         leaderboardMap[cid] = {
           clinicId: cid,
           clinicName:
-            (event.clinics as unknown as { name: string } | null)?.name ??
-            "Unknown Clinic",
+            (event.clinics as unknown as { name: string } | null)?.name ?? "Unknown Clinic",
           signups: 0,
         };
       }
@@ -104,8 +103,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     const creditTotals: Record<string, number> = {};
     for (const credit of credits ?? []) {
       const cid = credit.beneficiary_clinic_id as string;
-      creditTotals[cid] =
-        (creditTotals[cid] ?? 0) + (credit.amount_centimes as number);
+      creditTotals[cid] = (creditTotals[cid] ?? 0) + (credit.amount_centimes as number);
     }
 
     const leaderboardRows = Object.values(leaderboardMap)
@@ -130,9 +128,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
       return apiInternalError("Failed to fetch funnel stats");
     }
 
-    const { data: allCodes } = await supabase
-      .from("referral_codes")
-      .select("id"); // nosemgrep: semgrep.tenant-scoping
+    const { data: allCodes } = await supabase.from("referral_codes").select("id"); // nosemgrep: semgrep.tenant-scoping
 
     const totalCodesIssued = (allCodes ?? []).length;
     const totalSignups = (allEvents ?? []).filter(

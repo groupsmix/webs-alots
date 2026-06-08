@@ -35,10 +35,7 @@ export const GET = withAuth(
 
     try {
       // nosemgrep: semgrep.tenant-scoping — super_admin intentional cross-tenant read
-      const { data: history, error } = await fromUntyped(
-        supabase,
-        "subscription_history",
-      )
+      const { data: history, error } = await fromUntyped(supabase, "subscription_history")
         .select(
           "id, event_type, from_plan_slug, to_plan_slug, amount_centimes, currency, notes, created_at",
         )

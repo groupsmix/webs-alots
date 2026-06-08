@@ -71,7 +71,10 @@ const EVENT_LABELS: Record<string, string> = {
   billing_cycle_renewed: "Cycle renouvelé",
 };
 
-const EVENT_VARIANTS: Record<string, "default" | "success" | "destructive" | "warning" | "secondary"> = {
+const EVENT_VARIANTS: Record<
+  string,
+  "default" | "success" | "destructive" | "warning" | "secondary"
+> = {
   trial_started: "default",
   trial_expired: "warning",
   plan_upgraded: "success",
@@ -208,9 +211,7 @@ export default function ClinicUsageDetailPage() {
                 <span>
                   Essai{" "}
                   {new Date(clinic.trial_ends_at) > new Date() ? "actif jusqu'au" : "expiré le"}{" "}
-                  <strong>
-                    {new Date(clinic.trial_ends_at).toLocaleDateString("fr-FR")}
-                  </strong>
+                  <strong>{new Date(clinic.trial_ends_at).toLocaleDateString("fr-FR")}</strong>
                 </span>
               </CardContent>
             </Card>
@@ -285,7 +286,10 @@ export default function ClinicUsageDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {history.map((entry) => (
-                    <div key={entry.id} className="flex items-start justify-between gap-4 rounded-md border p-3">
+                    <div
+                      key={entry.id}
+                      className="flex items-start justify-between gap-4 rounded-md border p-3"
+                    >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <Badge

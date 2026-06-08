@@ -55,7 +55,7 @@ async function insertCodeWithRetry(
 ): Promise<{ code: string; id: string; discountPct: number; discountMonths: number }> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateReferralCode(clinicName);
-     
+
     const { data, error } = await supabase
       .from("referral_codes")
       .insert({

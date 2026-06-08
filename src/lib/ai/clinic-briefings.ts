@@ -194,10 +194,7 @@ export async function fetchClinicMetrics(
       .lt("paid_at", `${todayStr}T00:00:00`);
 
     if (invoices) {
-      revenue = (invoices as { amount: number }[]).reduce(
-        (sum, inv) => sum + (inv.amount ?? 0),
-        0,
-      );
+      revenue = (invoices as { amount: number }[]).reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
     }
   } catch {
     /* metric failed */
@@ -270,14 +267,10 @@ export async function fetchClinicMetrics(
 
   // Compute % changes (safe division)
   const appointmentsChange =
-    lastWeekTotal > 0
-      ? Math.round(((totalAppointments - lastWeekTotal) / lastWeekTotal) * 100)
-      : 0;
+    lastWeekTotal > 0 ? Math.round(((totalAppointments - lastWeekTotal) / lastWeekTotal) * 100) : 0;
 
   const revenueChange =
-    lastWeekRevenue > 0
-      ? Math.round(((revenue - lastWeekRevenue) / lastWeekRevenue) * 100)
-      : 0;
+    lastWeekRevenue > 0 ? Math.round(((revenue - lastWeekRevenue) / lastWeekRevenue) * 100) : 0;
 
   const yesterdayNoShowRate = totalAppointments > 0 ? noShows / totalAppointments : 0;
   const lastWeekNoShowRate = lastWeekTotal > 0 ? lastWeekNoShows / lastWeekTotal : 0;
@@ -508,17 +501,15 @@ export async function generateDailyClinicBriefings(
       }
 
       // Store briefing
-      const { error: insertError } = await supabase
-        .from("clinic_ai_briefings")
-        .insert({
-          clinic_id: clinicId,
-          briefing_date: todayStr,
-          content: briefing.content,
-          metrics_snapshot: briefing.metricsSnapshot,
-          overall_sentiment: briefing.overallSentiment,
-          ai_model: model,
-          generated_at: new Date().toISOString(),
-        });
+      const { error: insertError } = await supabase.from("clinic_ai_briefings").insert({
+        clinic_id: clinicId,
+        briefing_date: todayStr,
+        content: briefing.content,
+        metrics_snapshot: briefing.metricsSnapshot,
+        overall_sentiment: briefing.overallSentiment,
+        ai_model: model,
+        generated_at: new Date().toISOString(),
+      });
 
       if (insertError) {
         logger.error("Failed to persist AI briefing", {

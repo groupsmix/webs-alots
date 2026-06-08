@@ -31,9 +31,20 @@ export const POST = withAuthValidation(
 
     // Verify target clinic exists
     // nosemgrep: semgrep.tenant-scoping — super_admin cross-tenant write is intentional
-    const { data: clinic, error: clinicError } = await (supabase as unknown as {
-      from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => { single: () => Promise<{ data: { id: string; name: string } | null; error: unknown }> } } };
-    })
+    const { data: clinic, error: clinicError } = await (
+      supabase as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            eq: (
+              k: string,
+              v: string,
+            ) => {
+              single: () => Promise<{ data: { id: string; name: string } | null; error: unknown }>;
+            };
+          };
+        };
+      }
+    )
       .from("clinics")
       .select("id, name")
       .eq("id", data.clinicId)
@@ -77,16 +88,14 @@ export const POST = withAuthValidation(
       }
 
       // Log to subscription_history
-      const { error: historyError } = await adminSupa
-        .from("subscription_history")
-        .insert({
-          clinic_id: data.clinicId,
-          event_type: "trial_started",
-          from_plan_slug: "free",
-          to_plan_slug: data.planSlug,
-          notes: `${data.trialDays}-day trial started by super_admin`,
-          changed_by: auth.profile.id,
-        });
+      const { error: historyError } = await adminSupa.from("subscription_history").insert({
+        clinic_id: data.clinicId,
+        event_type: "trial_started",
+        from_plan_slug: "free",
+        to_plan_slug: data.planSlug,
+        notes: `${data.trialDays}-day trial started by super_admin`,
+        changed_by: auth.profile.id,
+      });
 
       if (historyError) {
         logger.warn("Failed to log trial start to subscription_history", {

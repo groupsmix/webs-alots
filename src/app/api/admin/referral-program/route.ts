@@ -10,10 +10,7 @@ import { z } from "zod";
 import { apiSuccess, apiError, apiInternalError, apiRateLimited } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { apiMutationLimiter, extractClientIp } from "@/lib/rate-limit";
-import {
-  getOrCreateReferralCode,
-  applyReferralCode,
-} from "@/lib/referral-program";
+import { getOrCreateReferralCode, applyReferralCode } from "@/lib/referral-program";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
@@ -57,8 +54,9 @@ async function handleGet(_request: NextRequest, auth: AuthContext) {
       return apiInternalError("Failed to fetch referral stats");
     }
 
-    const signups = (events ?? []).filter((e: { event_type: string }) => e.event_type === "signup")
-      .length;
+    const signups = (events ?? []).filter(
+      (e: { event_type: string }) => e.event_type === "signup",
+    ).length;
     const firstPayments = (events ?? []).filter(
       (e: { event_type: string }) => e.event_type === "first_payment",
     ).length;
@@ -132,7 +130,11 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
 
   const parsed = applyCodeSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? "Invalid request body", 422, "VALIDATION_ERROR");
+    return apiError(
+      parsed.error.issues[0]?.message ?? "Invalid request body",
+      422,
+      "VALIDATION_ERROR",
+    );
   }
 
   const { code } = parsed.data;

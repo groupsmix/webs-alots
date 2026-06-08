@@ -93,16 +93,18 @@ async function handler(request: NextRequest) {
     const body = `${clinic.name ?? clinic.id}: Your Oltigo Health trial ends on ${new Date(clinic.trial_ends_at as string).toLocaleDateString("fr-MA")}. Upgrade now to keep your data and continue using all features.`;
 
     for (const admin of admins) {
-      await untyped(supabase).from("notifications").insert({
-        clinic_id: clinic.id,
-        user_id: admin.id,
-        type: `trial_expiry_warning:${clinic.id}:${new Date(clinic.trial_ends_at as string).toISOString().slice(0, 10)}`,
-        channel: "in_app",
-        title,
-        body,
-        is_read: false,
-        sent_at: nowIso,
-      });
+      await untyped(supabase)
+        .from("notifications")
+        .insert({
+          clinic_id: clinic.id,
+          user_id: admin.id,
+          type: `trial_expiry_warning:${clinic.id}:${new Date(clinic.trial_ends_at as string).toISOString().slice(0, 10)}`,
+          channel: "in_app",
+          title,
+          body,
+          is_read: false,
+          sent_at: nowIso,
+        });
     }
 
     logger.info("cron/trial-lifecycle: trial expiry warning sent", {
@@ -163,17 +165,19 @@ async function handler(request: NextRequest) {
       }
 
       // Log to subscription_history — always explicit fields, never spread body
-      await untyped(supabase).from("subscription_history").insert({
-        clinic_id: clinic.id,
-        event_type: "trial_expired",
-        from_plan_slug: "trial",
-        to_plan_slug: "free",
-        billing_period: null,
-        amount_centimes: 0,
-        currency: "MAD",
-        notes: `Trial expired on ${nowIso}. Automatically downgraded to free plan.`,
-        changed_by: null,
-      });
+      await untyped(supabase)
+        .from("subscription_history")
+        .insert({
+          clinic_id: clinic.id,
+          event_type: "trial_expired",
+          from_plan_slug: "trial",
+          to_plan_slug: "free",
+          billing_period: null,
+          amount_centimes: 0,
+          currency: "MAD",
+          notes: `Trial expired on ${nowIso}. Automatically downgraded to free plan.`,
+          changed_by: null,
+        });
 
       // Audit log for compliance
       await logAuditEvent({
@@ -197,16 +201,18 @@ async function handler(request: NextRequest) {
       const body = `${clinic.name ?? clinic.id}: Your Oltigo Health trial has expired. Your account has been moved to the free plan. Upgrade to restore full access.`;
 
       for (const admin of admins ?? []) {
-        await untyped(supabase).from("notifications").insert({
-          clinic_id: clinic.id,
-          user_id: admin.id,
-          type: `trial_expired:${clinic.id}`,
-          channel: "in_app",
-          title,
-          body,
-          is_read: false,
-          sent_at: nowIso,
-        });
+        await untyped(supabase)
+          .from("notifications")
+          .insert({
+            clinic_id: clinic.id,
+            user_id: admin.id,
+            type: `trial_expired:${clinic.id}`,
+            channel: "in_app",
+            title,
+            body,
+            is_read: false,
+            sent_at: nowIso,
+          });
       }
 
       logger.info("cron/trial-lifecycle: trial expired and downgraded", {

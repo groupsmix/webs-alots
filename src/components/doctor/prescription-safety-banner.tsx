@@ -8,7 +8,15 @@
  * color-coded cards. Hidden when there are no flags or the check hasn't run.
  */
 
-import { AlertTriangle, AlertCircle, Info, Loader2, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  Loader2,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,27 +68,25 @@ const SEVERITY_CONFIG = {
   },
 } as const;
 
-const RISK_BADGE_CONFIG: Record<
-  SafetyResult["overallRisk"],
-  { label: string; className: string }
-> = {
-  safe: {
-    label: "Aucun risque détecté",
-    className: "bg-green-100 text-green-800 border-green-300",
-  },
-  caution: {
-    label: "Précautions recommandées",
-    className: "bg-amber-100 text-amber-800 border-amber-300",
-  },
-  warning: {
-    label: "Avertissements détectés",
-    className: "bg-orange-100 text-orange-800 border-orange-300",
-  },
-  danger: {
-    label: "DANGER — Vérification requise",
-    className: "bg-red-100 text-red-800 border-red-300",
-  },
-};
+const RISK_BADGE_CONFIG: Record<SafetyResult["overallRisk"], { label: string; className: string }> =
+  {
+    safe: {
+      label: "Aucun risque détecté",
+      className: "bg-green-100 text-green-800 border-green-300",
+    },
+    caution: {
+      label: "Précautions recommandées",
+      className: "bg-amber-100 text-amber-800 border-amber-300",
+    },
+    warning: {
+      label: "Avertissements détectés",
+      className: "bg-orange-100 text-orange-800 border-orange-300",
+    },
+    danger: {
+      label: "DANGER — Vérification requise",
+      className: "bg-red-100 text-red-800 border-red-300",
+    },
+  };
 
 const SEVERITY_ORDER: SafetyFlag["severity"][] = ["critical", "major", "moderate", "minor"];
 
@@ -116,9 +122,7 @@ function FlagCard({ flag }: { flag: SafetyFlag }) {
         <div className="mt-2 space-y-1 text-sm">
           <p className={`${config.headerClass}`}>{flag.message}</p>
           {flag.recommendation && (
-            <p className="font-medium text-gray-700">
-              Recommandation: {flag.recommendation}
-            </p>
+            <p className="font-medium text-gray-700">Recommandation: {flag.recommendation}</p>
           )}
         </div>
       )}
@@ -132,7 +136,9 @@ export function PrescriptionSafetyBanner({ result, isChecking, error, className 
   // Loading state
   if (isChecking) {
     return (
-      <div className={`flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 ${className ?? ""}`}>
+      <div
+        className={`flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 ${className ?? ""}`}
+      >
         <Loader2 className="h-4 w-4 animate-spin" />
         Vérification de sécurité médicamenteuse en cours…
       </div>
@@ -142,7 +148,9 @@ export function PrescriptionSafetyBanner({ result, isChecking, error, className 
   // Error state (non-blocking)
   if (error) {
     return (
-      <div className={`flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 ${className ?? ""}`}>
+      <div
+        className={`flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 ${className ?? ""}`}
+      >
         <Info className="h-4 w-4 shrink-0" />
         Vérification de sécurité non disponible. Vérifiez manuellement les interactions.
       </div>
@@ -155,7 +163,9 @@ export function PrescriptionSafetyBanner({ result, isChecking, error, className 
   // Safe — no flags
   if (result.flags.length === 0) {
     return (
-      <div className={`flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700 ${className ?? ""}`}>
+      <div
+        className={`flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700 ${className ?? ""}`}
+      >
         <ShieldCheck className="h-4 w-4 shrink-0" />
         Aucune interaction ou contre-indication détectée.
       </div>
@@ -174,20 +184,18 @@ export function PrescriptionSafetyBanner({ result, isChecking, error, className 
   );
 
   return (
-    <Card className={`border-2 ${result.overallRisk === "danger" ? "border-red-400" : result.overallRisk === "warning" ? "border-orange-400" : "border-amber-300"} ${className ?? ""}`}>
+    <Card
+      className={`border-2 ${result.overallRisk === "danger" ? "border-red-400" : result.overallRisk === "warning" ? "border-orange-400" : "border-amber-300"} ${className ?? ""}`}
+    >
       <CardHeader className="pb-2 pt-4">
         <CardTitle className="flex items-center justify-between gap-2 text-base">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             Analyse de sécurité médicamenteuse IA
           </div>
-          <Badge className={`text-xs ${riskConfig.className}`}>
-            {riskConfig.label}
-          </Badge>
+          <Badge className={`text-xs ${riskConfig.className}`}>{riskConfig.label}</Badge>
         </CardTitle>
-        {result.summary && (
-          <p className="mt-1 text-sm text-muted-foreground">{result.summary}</p>
-        )}
+        {result.summary && <p className="mt-1 text-sm text-muted-foreground">{result.summary}</p>}
       </CardHeader>
 
       <CardContent className="space-y-3 pb-4">
@@ -209,9 +217,7 @@ export function PrescriptionSafetyBanner({ result, isChecking, error, className 
           );
         })}
 
-        {result.disclaimer && (
-          <p className="mt-2 text-xs text-gray-400">{result.disclaimer}</p>
-        )}
+        {result.disclaimer && <p className="mt-2 text-xs text-gray-400">{result.disclaimer}</p>}
       </CardContent>
     </Card>
   );

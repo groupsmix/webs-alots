@@ -12,7 +12,10 @@ import { z } from "zod";
  */
 export const structureNoteSchema = z.object({
   /** Raw dictated or typed consultation note */
-  rawNote: z.string().min(1, "Note cannot be empty").max(10_000, "Note must be under 10,000 characters"),
+  rawNote: z
+    .string()
+    .min(1, "Note cannot be empty")
+    .max(10_000, "Note must be under 10,000 characters"),
   /** Patient UUID — must belong to the requesting doctor's clinic */
   patientId: z.string().uuid("Invalid patient ID"),
   /** Optional consultation record to update with structured data */

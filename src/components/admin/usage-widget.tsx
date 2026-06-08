@@ -71,7 +71,8 @@ function UsageMeter({ metric }: { metric: UsageMetric }) {
         ? "bg-amber-500"
         : "bg-[var(--oltigo-green,theme(colors.green.500))]";
 
-  const textColor = pct >= 100 ? "text-red-600" : pct >= 80 ? "text-amber-600" : "text-muted-foreground";
+  const textColor =
+    pct >= 100 ? "text-red-600" : pct >= 80 ? "text-amber-600" : "text-muted-foreground";
 
   return (
     <div className="space-y-1">

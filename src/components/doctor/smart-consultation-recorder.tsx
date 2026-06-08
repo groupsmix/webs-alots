@@ -72,7 +72,13 @@ const NOTE_MAX_CHARS = 10_000;
 
 // ── Structured Note Display ──
 
-function StructuredNoteDisplay({ note, disclaimer }: { note: StructuredNote; disclaimer?: string }) {
+function StructuredNoteDisplay({
+  note,
+  disclaimer,
+}: {
+  note: StructuredNote;
+  disclaimer?: string;
+}) {
   const sections = [
     { key: "chiefComplaint", label: "Motif de consultation", value: note.chiefComplaint },
     {
@@ -182,7 +188,9 @@ export function SmartConsultationRecorder({ patientId, consultationId, onNoteStr
         : null;
 
     if (!SpeechRecognitionAPI) {
-      setError("La reconnaissance vocale n'est pas supportée par ce navigateur. Saisissez le texte manuellement.");
+      setError(
+        "La reconnaissance vocale n'est pas supportée par ce navigateur. Saisissez le texte manuellement.",
+      );
       return;
     }
 
@@ -292,9 +300,7 @@ export function SmartConsultationRecorder({ patientId, consultationId, onNoteStr
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
-          )}
+          {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
           {/* Language selector */}
           <div className="space-y-1">
@@ -348,7 +354,9 @@ export function SmartConsultationRecorder({ patientId, consultationId, onNoteStr
           <div className="space-y-1">
             <Label className="text-xs">
               Note de consultation
-              <span className={`ml-2 text-xs ${charPercent > 90 ? "text-orange-500" : "text-muted-foreground"}`}>
+              <span
+                className={`ml-2 text-xs ${charPercent > 90 ? "text-orange-500" : "text-muted-foreground"}`}
+              >
                 {charCount.toLocaleString()} / {NOTE_MAX_CHARS.toLocaleString()} caractères
               </span>
             </Label>
@@ -356,9 +364,7 @@ export function SmartConsultationRecorder({ patientId, consultationId, onNoteStr
               rows={8}
               placeholder="La transcription apparaît ici au fil de la dictée, ou saisissez directement votre note…"
               value={transcript}
-              onChange={(e) =>
-                setTranscript(e.target.value.slice(0, NOTE_MAX_CHARS))
-              }
+              onChange={(e) => setTranscript(e.target.value.slice(0, NOTE_MAX_CHARS))}
               className="font-mono text-sm"
             />
           </div>
@@ -401,11 +407,7 @@ export function SmartConsultationRecorder({ patientId, consultationId, onNoteStr
                 onClick={() => setShowNote((v) => !v)}
                 className="h-7 w-7 p-0"
               >
-                {showNote ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
+                {showNote ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
             </CardTitle>
           </CardHeader>
