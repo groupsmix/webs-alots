@@ -302,18 +302,3 @@ export function getCityBySlug(slug: string): DirectoryCity | undefined {
 export function getSpecialtyBySlug(slug: string): DirectorySpecialty | undefined {
   return DIRECTORY_SPECIALTIES.find((s) => s.slug === slug);
 }
-
-/**
- * Generate a doctor slug from their name.
- * e.g. "Dr. Ahmed El Fassi" → "dr-ahmed-el-fassi"
- */
-function _doctorNameToSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/^(?!dr-)/, "dr-"); // ensure dr- prefix
-}

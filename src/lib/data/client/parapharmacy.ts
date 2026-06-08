@@ -150,29 +150,6 @@ export async function createParapharmacySale(data: {
   return result?.id ?? null;
 }
 
-async function _adjustParapharmacyStock(productId: string, newQuantity: number): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("stock")
-    .update({
-      quantity: newQuantity,
-      updated_at: new Date().toISOString(),
-    } as Database["public"]["Tables"]["stock"]["Update"])
-    .eq("product_id", productId);
-  if (error) {
-    // Try insert if no stock row exists
-    const { error: insertError } = await supabase.from("stock").insert({
-      product_id: productId,
-      quantity: newQuantity,
-    } as Database["public"]["Tables"]["stock"]["Insert"]);
-    if (insertError) {
-      void insertError;
-      return false;
-    }
-  }
-  return true;
-}
-
 // ─────────────────────────────────────────────
 // Parapharmacy — Categories
 // ─────────────────────────────────────────────

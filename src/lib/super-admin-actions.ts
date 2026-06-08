@@ -119,7 +119,7 @@ export interface CreateServiceInput {
   category?: string;
 }
 
-interface CreateTimeSlotInput {
+interface _CreateTimeSlotInput {
   doctor_id: string;
   clinic_id: string;
   day_of_week: number;
@@ -531,18 +531,6 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   return data as UserRow;
 }
 
-async function _fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, auth_id, role, name, phone, email, clinic_id, created_at")
-    .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`Failed to fetch users: ${error.message}`);
-  return (data ?? []) as UserRow[];
-}
-
 // ---------- Service CRUD ----------
 
 export async function createService(input: CreateServiceInput): Promise<ServiceRow> {
@@ -563,39 +551,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
   return data as ServiceRow;
 }
 
-async function _fetchClinicServices(clinicId: string): Promise<ServiceRow[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("services")
-    .select("id, clinic_id, name, price, duration_minutes, category")
-    .eq("clinic_id", clinicId);
-
-  if (error) throw new Error(`Failed to fetch services: ${error.message}`);
-  return (data ?? []) as ServiceRow[];
-}
-
 // ---------- Time Slot CRUD ----------
-
-async function _createTimeSlot(input: CreateTimeSlotInput): Promise<TimeSlotRow> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("time_slots")
-    .insert({
-      doctor_id: input.doctor_id,
-      clinic_id: input.clinic_id,
-      day_of_week: input.day_of_week,
-      start_time: input.start_time,
-      end_time: input.end_time,
-      is_available: input.is_available ?? true,
-      max_capacity: input.max_capacity ?? 1,
-      buffer_minutes: input.buffer_minutes ?? 10,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to create time slot: ${error.message}`);
-  return data as TimeSlotRow;
-}
 
 export async function createTimeSlotsForDoctor(
   doctorId: string,

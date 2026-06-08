@@ -82,27 +82,6 @@ export async function createMedicalCertificate(data: {
   return result?.id ?? null;
 }
 
-async function _updateMedicalCertificate(
-  id: string,
-  data: {
-    type?: string;
-    content?: Record<string, unknown>;
-    pdf_url?: string;
-    issued_date?: string;
-  },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("medical_certificates")
-    .update(data as Database["public"]["Tables"]["medical_certificates"]["Update"])
-    .eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
-
 // ─────────────────────────────────────────────
 // Dental: Odontogram
 // ─────────────────────────────────────────────
@@ -332,50 +311,6 @@ export async function fetchSterilizationLog(clinicId: string): Promise<Steriliza
     notes: r.notes ?? "",
     batchNumber: r.batch_number ?? undefined,
     cycleNumber: r.cycle_number ?? undefined,
-  }));
-}
-
-// ─────────────────────────────────────────────
-// Dental: Installments
-// ─────────────────────────────────────────────
-
-interface InstallmentView {
-  id: string;
-  treatmentPlanId: string;
-  patientId: string;
-  patientName: string;
-  amount: number;
-  dueDate: string;
-  paidDate?: string;
-  status: string;
-}
-
-interface InstallmentRaw {
-  id: string;
-  clinic_id: string;
-  treatment_plan_id: string;
-  patient_id: string;
-  amount: number;
-  due_date: string;
-  paid_date: string | null;
-  status: string;
-}
-
-async function _fetchInstallments(clinicId: string): Promise<InstallmentView[]> {
-  await ensureLookups(clinicId);
-  const rows = await fetchRows<InstallmentRaw>("installments", {
-    eq: [["clinic_id", clinicId]],
-    order: ["due_date", { ascending: true }],
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    treatmentPlanId: r.treatment_plan_id,
-    patientId: r.patient_id,
-    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    amount: r.amount,
-    dueDate: r.due_date,
-    paidDate: r.paid_date ?? undefined,
-    status: r.status,
   }));
 }
 

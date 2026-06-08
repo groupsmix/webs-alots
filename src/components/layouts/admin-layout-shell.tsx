@@ -28,6 +28,7 @@ import {
   Brain,
   ScrollText,
   DatabaseZap,
+  Gift,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -93,6 +94,7 @@ const navItems: NavItem[] = [
   { href: "/admin/sections", label: "Section Control", icon: ToggleRight },
   { href: "/admin/website-editor", label: "Website Editor", icon: Palette },
   { href: "/admin/billing", label: "Billing & Plan", icon: CreditCard },
+  { href: "/admin/referral-program", label: "Referral Program", icon: Gift },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   // Phase 6: Clinics & Centers
   {

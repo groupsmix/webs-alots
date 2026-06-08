@@ -10,54 +10,6 @@ import {
 import { fetchTodayAppointments } from "./appointments";
 
 // ─────────────────────────────────────────────
-// Clinic Holidays
-// ─────────────────────────────────────────────
-
-interface HolidayView {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-}
-
-async function _fetchHolidays(clinicId: string): Promise<HolidayView[]> {
-  const rows = await fetchRows<{
-    id: string;
-    title: string;
-    start_date: string;
-    end_date: string;
-  }>("clinic_holidays", {
-    eq: [["clinic_id", clinicId]],
-    order: ["start_date", { ascending: true }],
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    startDate: r.start_date,
-    endDate: r.end_date,
-  }));
-}
-
-// ─────────────────────────────────────────────
-// Blog Posts (stored in clinic config or static)
-// ─────────────────────────────────────────────
-
-interface BlogPostView {
-  id: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  readTime: string;
-  category: string;
-}
-
-// Blog posts aren't in the DB schema — they may be stored in clinic config
-// For now we return empty; pages will fall back to demo data if empty
-async function _fetchBlogPosts(_clinicId: string): Promise<BlogPostView[]> {
-  return [];
-}
-
-// ─────────────────────────────────────────────
 // Waiting Room (derived from today's appointments)
 // ─────────────────────────────────────────────
 

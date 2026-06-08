@@ -665,26 +665,6 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   });
 }
 
-function _getPublicStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
-  return product.stockStatus;
-}
-
-function _searchPublicProducts(
-  products: PublicPharmacyProduct[],
-  query: string,
-): PublicPharmacyProduct[] {
-  const q = query.toLowerCase();
-  return products.filter(
-    (p) =>
-      p.active &&
-      (p.name.toLowerCase().includes(q) ||
-        (p.genericName?.toLowerCase().includes(q) ?? false) ||
-        p.category.toLowerCase().includes(q) ||
-        (p.manufacturer?.toLowerCase().includes(q) ?? false) ||
-        p.description.toLowerCase().includes(q)),
-  );
-}
-
 // ── Pharmacy: Services ──
 
 export interface PublicPharmacyService {
@@ -787,7 +767,7 @@ export async function getPublicNextOnDuty(): Promise<PublicOnDutySchedule | null
 
 // ── Pharmacy: Prescription Requests (public view) ──
 
-interface PublicPharmacyPrescription {
+interface _PublicPharmacyPrescription {
   id: string;
   patientId: string;
   patientName: string;
@@ -819,21 +799,6 @@ interface PublicPharmacyPrescription {
   isChronic: boolean;
   refillReminderDate?: string;
   whatsappNotified: boolean;
-}
-
-/**
- * DATA-01 (CRITICAL): This function previously returned patient names, phone
- * numbers, prescription details, and delivery addresses on public-facing pages
- * — a direct PHI exposure violating HIPAA and Morocco's Law 09-08.
- *
- * Fix: Only return aggregate, non-identifying statistics (total count by
- * status) so the public pharmacy page can show queue status without
- * exposing any patient data.
- */
-async function _getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
-  // Return empty — prescription data must NEVER be served publicly.
-  // Authenticated pharmacy staff should use a separate, auth-gated endpoint.
-  return [];
 }
 
 // ── Blog Posts ──

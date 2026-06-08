@@ -48,7 +48,3 @@ export function isSeedUserBlocked(authId: string | null | undefined): boolean {
   if (!isProduction()) return false;
   return SEED_USER_AUTH_IDS.has(authId);
 }
-
-/**
- * The set of seed user auth IDs (exported for use in tests / migrations).
- */

@@ -1,11 +1,8 @@
 "use client";
 
-import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
-import type { Database } from "@/lib/types/database";
-import { clearLookupCache, type ClientBookingConfig } from "./_core";
+import { type ClientBookingConfig } from "./_core";
 import { fetchTimeSlots } from "./clinical";
-import { fetchServices } from "./services";
 
 // Booking Slot Helpers (client-side via Supabase)
 // ─────────────────────────────────────────────
@@ -96,99 +93,4 @@ export async function fetchAvailableSlots(
   // Falls back to a sensible default if bookingConfig is not provided.
   const maxPerSlot = bookingConfig?.maxPerSlot ?? 1;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
-}
-
-// ─────────────────────────────────────────────
-// Waiting List Mutations
-// ─────────────────────────────────────────────
-
-async function _addToWaitingList(data: {
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  preferred_date: string;
-  preferred_time?: string;
-  service_id?: string;
-}): Promise<{ success: boolean; entryId?: string; error?: string }> {
-  const supabase = createClient();
-  const { data: entry, error } = await supabase
-    .from("waiting_list")
-    .insert({
-      ...data,
-      status: "waiting",
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return { success: false, error: error.message };
-  }
-  clearLookupCache();
-  return { success: true, entryId: entry?.id };
-}
-
-// ─────────────────────────────────────────────
-// Appointment Creation
-// ─────────────────────────────────────────────
-
-async function _createAppointment(data: {
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  service_id?: string;
-  appointment_date: string;
-  start_time: string;
-  end_time?: string;
-  is_first_visit?: boolean;
-  insurance_flag?: boolean;
-  booking_source?: string;
-  notes?: string;
-  is_emergency?: boolean;
-}): Promise<{ success: boolean; id?: string; error?: string }> {
-  const supabase = createClient();
-  const { data: appt, error } = await supabase
-    .from("appointments")
-    .insert({
-      ...data,
-      status: "confirmed",
-    } as Database["public"]["Tables"]["appointments"]["Insert"])
-    .select("id")
-    .single();
-
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return { success: false, error: error.message };
-  }
-  clearLookupCache();
-  return { success: true, id: appt?.id };
-}
-
-// ─────────────────────────────────────────────
-// Dental: Treatment Types (from services with category)
-// ─────────────────────────────────────────────
-
-interface DentalTreatmentTypeView {
-  id: string;
-  name: string;
-  category: string;
-  durationMinutes: number;
-  price: number;
-  currency: string;
-  description: string;
-}
-
-async function _fetchDentalTreatmentTypes(clinicId: string): Promise<DentalTreatmentTypeView[]> {
-  const services = await fetchServices(clinicId);
-  return services
-    .filter((s) => s.active && s.category)
-    .map((s) => ({
-      id: s.id,
-      name: s.name,
-      category: s.category ?? "General",
-      durationMinutes: s.duration,
-      price: s.price,
-      currency: s.currency,
-      description: s.description,
-    }));
 }

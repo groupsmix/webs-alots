@@ -11,7 +11,7 @@
 
 import { encryptBuffer, decryptBuffer, isEncryptionConfigured } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
-import { uploadToR2, deleteFromR2, getR2Bucket } from "@/lib/r2";
+import { uploadToR2, getR2Bucket } from "@/lib/r2";
 
 /**
  * Diagnostic / audit metadata threaded through encrypted upload calls.
@@ -128,14 +128,4 @@ export async function downloadAndDecrypt(key: string): Promise<Buffer | null> {
     });
     return null;
   }
-}
-
-/**
- * Delete an encrypted file from R2.
- *
- * @param key  R2 object key (with or without `.enc` suffix)
- */
-async function _deleteEncrypted(key: string): Promise<void> {
-  const encKey = key.endsWith(".enc") ? key : `${key}.enc`;
-  return deleteFromR2(encKey);
 }

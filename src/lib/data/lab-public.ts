@@ -83,17 +83,6 @@ export function getLabTestCategories(tests: LabTest[]): string[] {
   return [...new Set(tests.filter((t) => t.active).map((t) => t.category))].sort();
 }
 
-function _searchLabTests(tests: LabTest[], query: string): LabTest[] {
-  const q = query.toLowerCase();
-  return tests.filter(
-    (t) =>
-      t.active &&
-      (t.name.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q)),
-  );
-}
-
 // ── Collection Points ──
 
 export async function getPublicCollectionPoints(): Promise<CollectionPoint[]> {

@@ -14,6 +14,8 @@ import {
   Printer,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { SmartConsultationRecorder } from "@/components/doctor/smart-consultation-recorder";
+import type { StructuredNote } from "@/components/doctor/smart-consultation-recorder";
 import { useTenant } from "@/components/tenant-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -538,6 +540,25 @@ export default function ConsultationNotesPage() {
                 className="border-yellow-200 dark:border-yellow-800"
               />
             </div>
+            {/* AI Consultation Recorder */}
+            {editingApptId &&
+              (() => {
+                const appt = apptList.find((a) => a.id === editingApptId);
+                return appt ? (
+                  <SmartConsultationRecorder
+                    patientId={appt.patientId}
+                    onNoteStructured={(note: StructuredNote) => {
+                      if (note.chiefComplaint)
+                        updateFormField("chiefComplaint", note.chiefComplaint);
+                      if (note.physicalExamination)
+                        updateFormField("examination", note.physicalExamination);
+                      if (note.assessment) updateFormField("diagnosis", note.assessment);
+                      if (note.plan) updateFormField("plan", note.plan);
+                    }}
+                  />
+                ) : null;
+              })()}
+
             {/* Draft restore banner */}
             {draftRestoreOffered && hasDraft && draft && !isSynced && (
               <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3">

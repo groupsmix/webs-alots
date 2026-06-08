@@ -261,24 +261,3 @@ export function getFeaturesByCategory(): Record<ComparisonCategory, ComparisonFe
   }
   return grouped;
 }
-
-/**
- * Count how many "full" or "partial" features each competitor supports.
- */
-function _getCompetitorScores(): Record<
-  CompetitorId,
-  { full: number; partial: number; total: number }
-> {
-  const scores = {} as Record<CompetitorId, { full: number; partial: number; total: number }>;
-  for (const competitor of COMPETITORS) {
-    scores[competitor.id] = { full: 0, partial: 0, total: COMPARISON_FEATURES.length };
-  }
-  for (const feature of COMPARISON_FEATURES) {
-    for (const competitor of COMPETITORS) {
-      const val = feature.values[competitor.id];
-      if (val === "full") scores[competitor.id].full++;
-      if (val === "partial") scores[competitor.id].partial++;
-    }
-  }
-  return scores;
-}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { ClinicBriefingWidget } from "@/components/admin/clinic-briefing-widget";
 import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
 import { ComplianceWidget } from "@/components/compliance/compliance-widget";
 import { useLocale } from "@/components/locale-switcher";
@@ -613,6 +614,9 @@ export default function SuperAdminDashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* AI Clinic Briefings Widget */}
+            <ClinicBriefingWidget />
           </div>
         </>
       )}

@@ -1,59 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase-client";
-import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap } from "./_core";
-
-// ─────────────────────────────────────────────
-// Waiting List
-// ─────────────────────────────────────────────
-
-interface WaitingListView {
-  id: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  preferredDate: string;
-  preferredTime?: string;
-  serviceId?: string;
-  serviceName?: string;
-  status: string;
-  createdAt: string;
-}
-
-interface WaitingListRaw {
-  id: string;
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  preferred_date: string | null;
-  preferred_time: string | null;
-  service_id: string | null;
-  status: string;
-  notified_at: string | null;
-  created_at: string;
-}
-
-async function _fetchWaitingList(clinicId: string): Promise<WaitingListView[]> {
-  await ensureLookups(clinicId);
-  const rows = await fetchRows<WaitingListRaw>("waiting_list", {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at", { ascending: true }],
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    patientId: r.patient_id,
-    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorId: r.doctor_id,
-    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
-    preferredDate: r.preferred_date ?? "",
-    preferredTime: r.preferred_time ?? undefined,
-    serviceId: r.service_id ?? undefined,
-    serviceName: r.service_id ? _activeServiceMap?.get(r.service_id)?.name : undefined,
-    status: r.status,
-    createdAt: r.created_at,
-  }));
-}
+import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
 
 // ─────────────────────────────────────────────
 // Consultation Notes
@@ -214,87 +162,6 @@ export async function fetchNotifications(userId: string): Promise<NotificationVi
     read: r.is_read ?? false,
     createdAt: r.sent_at ?? "",
     readAt: r.is_read ? r.sent_at : undefined,
-  }));
-}
-
-// ─────────────────────────────────────────────
-// Documents
-// ─────────────────────────────────────────────
-
-interface DocumentView {
-  id: string;
-  type: string;
-  fileName: string;
-  fileUrl: string;
-  uploadedAt: string;
-}
-
-interface DocumentRaw {
-  id: string;
-  clinic_id: string;
-  user_id: string;
-  type: string;
-  file_url: string;
-  file_name: string | null;
-  file_size: number | null;
-  created_at: string;
-}
-
-async function _fetchDocuments(clinicId: string, userId?: string): Promise<DocumentView[]> {
-  const eq: [string, unknown][] = [["clinic_id", clinicId]];
-  if (userId) eq.push(["user_id", userId]);
-  const rows = await fetchRows<DocumentRaw>("documents", {
-    eq,
-    order: ["created_at", { ascending: false }],
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    type: r.type,
-    fileName: r.file_name ?? "document",
-    fileUrl: r.file_url,
-    uploadedAt: r.created_at?.split("T")[0] ?? "",
-  }));
-}
-
-// ─────────────────────────────────────────────
-// Family Members
-// ─────────────────────────────────────────────
-
-interface FamilyMemberView {
-  id: string;
-  name: string;
-  relationship: string;
-  phone?: string;
-}
-
-interface FamilyMemberRaw {
-  id: string;
-  primary_user_id: string;
-  member_user_id: string;
-  relationship: string;
-  created_at: string;
-}
-
-async function _fetchFamilyMembers(userId: string): Promise<FamilyMemberView[]> {
-  const rows = await fetchRows<FamilyMemberRaw>("family_members", {
-    eq: [["primary_user_id", userId]],
-  });
-  // Look up the member user for each
-  const supabase = createClient();
-  const memberIds = rows.map((r) => r.member_user_id);
-  if (memberIds.length === 0) return [];
-  const { data: members } = await supabase
-    .from("users")
-    .select("id, name, phone")
-    .in("id", memberIds);
-  const memberMap = new Map(
-    ((members ?? []) as { id: string; name: string; phone: string | null }[]).map((m) => [m.id, m]),
-  );
-  return rows.map((r) => ({
-    id: r.id,
-    name: memberMap.get(r.member_user_id)?.name ?? "Family Member",
-    relationship: r.relationship,
-    phone: memberMap.get(r.member_user_id)?.phone ?? undefined,
   }));
 }
 

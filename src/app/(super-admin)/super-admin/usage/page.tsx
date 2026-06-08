@@ -9,7 +9,9 @@ import {
   ChevronDown,
   ArrowUpDown,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -222,6 +224,7 @@ export default function UsagePage() {
                     <SortIcon columnKey="users" />
                   </button>
                 </th>
+                <th className="p-3 font-medium">Detail</th>
               </tr>
             </thead>
             <tbody>
@@ -254,6 +257,15 @@ export default function UsagePage() {
                   </td>
                   <td className="p-3 text-right">{clinic.appointments}</td>
                   <td className="p-3 text-right">{clinic.users}</td>
+                  <td className="p-3">
+                    <Link
+                      href={`/super-admin/usage/clinic?id=${clinic.id}`}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Voir
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

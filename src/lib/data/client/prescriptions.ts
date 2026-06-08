@@ -49,26 +49,3 @@ export async function fetchPrescriptions(
     notes: r.notes ?? undefined,
   }));
 }
-
-async function _fetchPatientPrescriptions(
-  clinicId: string,
-  patientId: string,
-): Promise<PrescriptionView[]> {
-  await ensureLookups(clinicId);
-  const rows = await fetchRows<PrescriptionRaw>("prescriptions", {
-    eq: [
-      ["clinic_id", clinicId],
-      ["patient_id", patientId],
-    ],
-    order: ["created_at", { ascending: false }],
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    patientId: r.patient_id,
-    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
-    date: r.created_at?.split("T")[0] ?? "",
-    medications: r.items ?? [],
-    notes: r.notes ?? undefined,
-  }));
-}

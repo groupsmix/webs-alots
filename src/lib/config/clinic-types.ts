@@ -440,13 +440,3 @@ const CLINIC_TYPES: ClinicTypeEntry[] = [
 export function getTypesByCategory(category: ClinicTypeCategory): ClinicTypeEntry[] {
   return CLINIC_TYPES.filter((t) => t.category === category);
 }
-
-/** Find a single clinic type by its key */
-function _getClinicType(typeKey: string): ClinicTypeEntry | undefined {
-  return CLINIC_TYPES.find((t) => t.type_key === typeKey);
-}
-
-/** Find the category metadata for a given category key */
-function _getCategoryMeta(category: ClinicTypeCategory): ClinicCategory | undefined {
-  return CLINIC_CATEGORIES.find((c) => c.key === category);
-}

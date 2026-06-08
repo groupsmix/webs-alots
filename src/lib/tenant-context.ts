@@ -79,31 +79,6 @@ export async function setTenantContext(
 }
 
 /**
- * Assert that a tenant context exists and is valid.
- * Call this before any database operation that requires tenant isolation.
- *
- * @param clinicId - The clinic_id to validate
- * @param operation - Description of the operation (for error messages)
- * @throws Error if clinicId is missing or invalid
- */
-function _assertTenantContext(
-  clinicId: string | null | undefined,
-  operation: string,
-): asserts clinicId is string {
-  if (!clinicId) {
-    throw new Error(
-      `Tenant assertion failed: clinic_id is required for ${operation} but was ${clinicId === null ? "null" : "undefined"}`,
-    );
-  }
-
-  if (!isValidClinicId(clinicId)) {
-    throw new Error(
-      `Tenant assertion failed: invalid clinic_id format for ${operation}: ${clinicId}`,
-    );
-  }
-}
-
-/**
  * Log tenant context for audit trail.
  * Call this at the entry point of every request handler.
  */

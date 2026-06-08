@@ -121,7 +121,8 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
       { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
       { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
-      { href: "/super-admin/referrals", label: "Referrals", icon: Gift },
+      { href: "/super-admin/referrals", label: "Medical Referrals", icon: Gift },
+      { href: "/super-admin/referral-program", label: "Referral Program", icon: Gift },
       { href: "/super-admin/usage", label: "Usage Metrics", icon: Gauge },
       { href: "/super-admin/usage-dashboard", label: "Usage Dashboard", icon: BarChart3 },
     ],
@@ -621,7 +622,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80">
                 <div className="flex items-center justify-between px-2 py-1.5">
-                  {/* eslint-disable-next-line i18next/no-literal-string -- internal super-admin UI */}
+                  {}
                   <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
                   {unreadCount > 0 && (
                     <button

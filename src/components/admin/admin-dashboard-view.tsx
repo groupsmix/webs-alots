@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
 import { SetupChecklistWidget } from "@/components/admin/setup-checklist-widget";
+import { UsageWidget } from "@/components/admin/usage-widget";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -168,6 +169,11 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
           </CardContent>
         </Card>
       </div>
+      {/* Usage & Plan Widget */}
+      <div className="mt-6">
+        <UsageWidget />
+      </div>
+
       {/* Lab Dashboard KPIs (Task 36) */}
       <div className="mt-8">
         <ErrorBoundary section="Lab KPIs" compact>

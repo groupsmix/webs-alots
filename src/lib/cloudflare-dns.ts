@@ -223,64 +223,6 @@ export async function getDnsRecord(slug: string): Promise<CloudflareResult<DnsRe
 }
 
 /**
- * Update an existing DNS record (e.g. change target or proxy settings).
- */
-async function _updateDnsRecord(
-  slug: string,
-  updates: { content?: string; proxied?: boolean },
-): Promise<CloudflareResult<DnsRecord>> {
-  const config = getConfig();
-  if (!config) {
-    return { success: false, error: "Cloudflare DNS not configured" };
-  }
-
-  // First, find the existing record
-  const existing = await getDnsRecord(slug);
-  if (!existing.success || !existing.data) {
-    return {
-      success: false,
-      error: `DNS record not found for subdomain: ${slug}`,
-    };
-  }
-
-  const recordId = existing.data.id;
-  const fqdn = `${slug}.${config.zoneName}`;
-
-  try {
-    const result = await cfFetch<DnsRecord>(config, `/dns_records/${recordId}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        content: updates.content ?? existing.data.content,
-        proxied: updates.proxied ?? existing.data.proxied,
-      }),
-    });
-
-    if (!result.success) {
-      const errMsg = result.errors.map((e) => e.message).join("; ");
-      return { success: false, error: errMsg };
-    }
-
-    logger.info("DNS record updated", {
-      context: "cloudflare-dns",
-      subdomain: fqdn,
-      recordId,
-    });
-
-    return { success: true, data: result.result };
-  } catch (err) {
-    logger.error("Failed to update DNS record", {
-      context: "cloudflare-dns",
-      subdomain: fqdn,
-      error: err,
-    });
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
-  }
-}
-
-/**
  * Remove a clinic's subdomain DNS record.
  */
 export async function removeSubdomain(slug: string): Promise<CloudflareResult<void>> {
@@ -319,39 +261,6 @@ export async function removeSubdomain(slug: string): Promise<CloudflareResult<vo
     logger.error("Failed to remove DNS record", {
       context: "cloudflare-dns",
       subdomain: fqdn,
-      error: err,
-    });
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
-  }
-}
-
-/**
- * List all auto-provisioned subdomain records for the zone.
- */
-async function _listSubdomains(): Promise<CloudflareResult<DnsRecord[]>> {
-  const config = getConfig();
-  if (!config) {
-    return { success: false, error: "Cloudflare DNS not configured" };
-  }
-
-  try {
-    const result = await cfFetch<DnsRecord[]>(
-      config,
-      `/dns_records?type=CNAME&per_page=100&comment.contains=Auto-provisioned`,
-    );
-
-    if (!result.success) {
-      const errMsg = result.errors.map((e) => e.message).join("; ");
-      return { success: false, error: errMsg };
-    }
-
-    return { success: true, data: result.result };
-  } catch (err) {
-    logger.error("Failed to list DNS records", {
-      context: "cloudflare-dns",
       error: err,
     });
     return {
