@@ -28,6 +28,7 @@
     "tailwindcss",
     "eslint-plugin-react-hooks",
     "tw-animate-css",
-    "shadcn"
+    "shadcn",
+    "@anthropic-ai/sdk"
   ]
 }

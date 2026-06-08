@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { type NextRequest } from "next/server";
 import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { getAnthropicApiKey } from "@/lib/env";
@@ -56,7 +55,6 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
 
     if (anthropicApiKey) {
       try {
-        const client = new Anthropic({ apiKey: anthropicApiKey });
         const buffer = Buffer.from(await file.arrayBuffer());
         const base64 = buffer.toString("base64");
         const isPdf = file.type === "application/pdf";
@@ -82,26 +80,48 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
                 data: base64,
               },
             };
-        const response = await client.messages.create({
-          model: "claude-3-5-sonnet-latest",
-          max_tokens: 500,
-          system:
-            "Extract structured legal onboarding data for a Moroccan clinic. Return strict JSON only. Include keys: clinicName, contactName, contactEmail, contactPhone, documentType, identifiers, requiresReview, notes.",
-          messages: [
-            {
-              role: "user",
-              content: [
-                documentBlock,
-                {
-                  type: "text",
-                  text: "Extract clinic onboarding details from this document and return strict JSON only.",
-                },
-              ],
-            },
-          ],
+        // CF-BUNDLE: call the Anthropic Messages API directly via fetch instead
+        // of importing `@anthropic-ai/sdk`. The SDK added a large dependency to
+        // the main Worker bundle (pushing it toward Cloudflare's 10 MiB limit),
+        // and this route only needs a single, well-defined messages.create call.
+        // The request/response shapes below mirror the SDK 1:1.
+        const apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": anthropicApiKey,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-3-5-sonnet-latest",
+            max_tokens: 500,
+            system:
+              "Extract structured legal onboarding data for a Moroccan clinic. Return strict JSON only. Include keys: clinicName, contactName, contactEmail, contactPhone, documentType, identifiers, requiresReview, notes.",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  documentBlock,
+                  {
+                    type: "text",
+                    text: "Extract clinic onboarding details from this document and return strict JSON only.",
+                  },
+                ],
+              },
+            ],
+          }),
         });
 
-        const text = (response.content as Array<{ type: string; text?: string }>)
+        if (!apiResponse.ok) {
+          // Mirror the SDK's throw-on-error behavior so the catch below applies
+          // the metadata fallback. Body is not logged (may echo request content).
+          throw new Error(`Anthropic API responded ${apiResponse.status}`);
+        }
+
+        const response = (await apiResponse.json()) as {
+          content?: Array<{ type: string; text?: string }>;
+        };
+        const text = (response.content ?? [])
           .map((item) => (item.type === "text" ? (item.text ?? "") : ""))
           .join("\n");
         extracted = extractJsonObject(text) ?? fallbackExtraction;
