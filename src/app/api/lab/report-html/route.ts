@@ -293,7 +293,7 @@ export const POST = withAuthValidation(
     // re-checks and would leak PHI if the URL were ever shared.
     const downloadUrl = `/api/files/download?key=${encodeURIComponent(reportKey)}`;
 
-    await updateLabOrderPdfUrl(orderId, downloadUrl);
+    await updateLabOrderPdfUrl(orderId, downloadUrl, clinicId);
 
     await logAuditEvent({
       supabase,

@@ -16,10 +16,19 @@ export async function createRadiologyOrder(data: {
 }): Promise<{ id: string; order_number: string } | null> {
   const supabase = await createClient();
   const orderNumber = `RAD-${Date.now().toString(36).toUpperCase()}`;
+  // Explicit field mapping (no `...data` spread) to prevent mass-assignment of
+  // unintended columns — AGENTS.md rule #7. clinic_id is set from the validated
+  // tenant context passed in by the caller.
   const { data: row, error } = await supabase
     .from("radiology_orders")
     .insert({
-      ...data,
+      clinic_id: data.clinic_id,
+      patient_id: data.patient_id,
+      ordering_doctor_id: data.ordering_doctor_id,
+      modality: data.modality,
+      body_part: data.body_part,
+      clinical_indication: data.clinical_indication,
+      scheduled_at: data.scheduled_at,
       order_number: orderNumber,
       status: "pending",
       priority: data.priority ?? "normal",
@@ -36,6 +45,7 @@ export async function createRadiologyOrder(data: {
 export async function updateRadiologyOrderStatus(
   orderId: string,
   status: string,
+  clinicId: string,
 ): Promise<boolean> {
   const supabase = await createClient();
   const updateData: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
@@ -46,6 +56,7 @@ export async function updateRadiologyOrderStatus(
     .from("radiology_orders")
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(updateData)
+    .eq("clinic_id", clinicId)
     .eq("id", orderId);
   if (error) {
     logger.warn("Mutation failed", { context: "data/radiology", error });
@@ -63,6 +74,7 @@ export async function saveRadiologyReport(
     report_template_id?: string;
     radiologist_id?: string;
   },
+  clinicId: string,
 ): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
@@ -77,6 +89,7 @@ export async function saveRadiologyReport(
       status: "reported",
       updated_at: new Date().toISOString(),
     })
+    .eq("clinic_id", clinicId)
     .eq("id", orderId);
   if (error) {
     logger.warn("Mutation failed", { context: "data/radiology", error });
@@ -100,12 +113,24 @@ export async function createRadiologyImage(data: {
   uploaded_by?: string;
 }): Promise<{ id: string } | null> {
   const supabase = await createClient();
+  // Explicit field mapping (no `...data` spread) to prevent mass-assignment of
+  // unintended columns — AGENTS.md rule #7. clinic_id is included from the
+  // validated tenant context.
   const { data: row, error } = await supabase
     .from("radiology_images")
     .insert({
-      ...data,
+      order_id: data.order_id,
+      clinic_id: data.clinic_id,
+      file_url: data.file_url,
+      file_name: data.file_name,
+      file_size: data.file_size,
+      content_type: data.content_type,
+      modality: data.modality,
       is_dicom: data.is_dicom ?? false,
       dicom_metadata: data.dicom_metadata ?? {},
+      thumbnail_url: data.thumbnail_url,
+      description: data.description,
+      uploaded_by: data.uploaded_by,
     } as Database["public"]["Tables"]["radiology_images"]["Insert"])
     .select("id")
     .single();
@@ -119,11 +144,13 @@ export async function createRadiologyImage(data: {
 export async function updateRadiologyOrderPdfUrl(
   orderId: string,
   pdfUrl: string,
+  clinicId: string,
 ): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("radiology_orders")
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+    .eq("clinic_id", clinicId)
     .eq("id", orderId);
   if (error) {
     logger.warn("Mutation failed", { context: "data/radiology", error });

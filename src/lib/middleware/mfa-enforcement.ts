@@ -4,6 +4,7 @@
  * Extracted from middleware.ts to keep the orchestrator under ~300 lines.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isMfaEnabled } from "@/lib/env";
 import { secureRedirect } from "@/lib/middleware/security-headers";
 
 /**
@@ -21,8 +22,9 @@ export async function enforceMfa(
   pathname: string,
   requestUrl: string,
 ): Promise<Response | null> {
-  // Allow disabling via env var, defaults to true (enforced)
-  if (process.env.MFA_ENABLED === "false") return null;
+  // Allow disabling via env var, defaults to true (enforced). Read through the
+  // centralized env module (src/lib/env.ts) rather than reading the environment directly.
+  if (!isMfaEnabled()) return null;
 
   if (role === "super_admin" || role === "clinic_admin") {
     const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();

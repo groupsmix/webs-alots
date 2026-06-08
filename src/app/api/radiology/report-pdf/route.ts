@@ -119,7 +119,7 @@ export const POST = withAuthValidation(
     }
 
     // Update the order's pdf_url
-    await updateRadiologyOrderPdfUrl(orderId, url);
+    await updateRadiologyOrderPdfUrl(orderId, url, clinicId);
 
     return apiSuccess({ pdfUrl: url });
   },
