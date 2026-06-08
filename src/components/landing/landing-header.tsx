@@ -7,9 +7,9 @@ import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
 
 const navLinks: readonly { key: TranslationKey; href: string }[] = [
-  { key: "landing.navProduct" as TranslationKey, href: "/product" },
-  { key: "landing.navCustomers" as TranslationKey, href: "/customers" },
-  { key: "landing.navPricing", href: "/pricing" },
+  { key: "landing.navProduct" as TranslationKey, href: "/#product" },
+  { key: "landing.navCustomers" as TranslationKey, href: "/#clients" },
+  { key: "landing.navPricing", href: "/#pricing" },
   { key: "landing.navDocs" as TranslationKey, href: "/docs" },
   { key: "landing.navStatus" as TranslationKey, href: "/status" },
 ];

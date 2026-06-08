@@ -23,35 +23,32 @@ import { t } from "@/lib/i18n";
  */
 export function ConsentSummaryBanner(): ReactElement | null {
   const [locale] = useLocale();
-  const [prefs, setPrefs] = useState<CookiePreferences | null>(null);
-  const [replayEnabled, setReplayEnabled] = useState(false);
-  const [visible, setVisible] = useState(false);
+
+  const [prefs, setPrefs] = useState<CookiePreferences | null>(() => {
+    if (typeof window === "undefined") return null;
+    return getStoredCookiePreferences();
+  });
+
+  const [replayEnabled, setReplayEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const raw = localStorage.getItem("cookie-consent");
+    if (!raw) return false;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed === "object" && parsed !== null && "sentry_replay" in parsed) {
+        return (parsed as Record<string, unknown>).sentry_replay === true;
+      }
+    } catch {}
+    return false;
+  });
+
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !sessionStorage.getItem("consent-summary-dismissed");
+  });
 
   useEffect(() => {
-    // Read current consent state from localStorage
-    const cookiePrefs = getStoredCookiePreferences();
-    setPrefs(cookiePrefs);
-
-    // Read session replay consent from cookie-consent entry
-    const raw = localStorage.getItem("cookie-consent");
-    if (raw) {
-      try {
-        const parsed: unknown = JSON.parse(raw);
-        if (typeof parsed === "object" && parsed !== null && "sentry_replay" in parsed) {
-          setReplayEnabled((parsed as Record<string, unknown>).sentry_replay === true);
-        }
-      } catch {
-        // Failed to parse
-      }
-    }
-
-    // Show banner if not yet dismissed this session
-    const dismissed = sessionStorage.getItem("consent-summary-dismissed");
-    if (!dismissed) {
-      setVisible(true);
-    }
-
-    // Listen for consent changes
+    // Listen for consent changes — fires when the user updates settings in another tab or dialog
     const handleConsentChange = () => {
       const updated = getStoredCookiePreferences();
       setPrefs(updated);

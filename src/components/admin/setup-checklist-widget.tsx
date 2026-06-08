@@ -2,7 +2,7 @@ import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { DashboardStats } from "@/lib/data/server";
+import type { DashboardStats } from "@/lib/data/dashboard";
 
 export function SetupChecklistWidget({ stats }: { stats: DashboardStats }) {
   const hasDoctors = stats.doctorCount > 0;

@@ -244,6 +244,7 @@ crons = [
   "0 4 * * *",
   "0 5 * * *",
   "0 8 * * *",
+  "0 9 * * *",
   "30 6 * * *",
 ]
 
@@ -380,6 +381,7 @@ crons = [
   "0 4 * * *",
   "0 5 * * *",
   "0 8 * * *",
+  "0 9 * * *",
   "30 6 * * *",
 ]
 
@@ -425,6 +427,7 @@ crons = [
   "0 4 * * *",    # 04:00 UTC daily — M-03/M-04 dedup table TTL purge
   "0 5 * * *",    # 05:00 UTC daily — BL-002 Stripe payment reconciliation
   "0 8 * * *",    # 08:00 UTC daily — onboarding nudges for stalled clinics
+  "0 9 * * *",    # 09:00 UTC daily — payment reminders (overdue + upcoming)
   "0 1 * * *",    # 01:00 UTC daily — usage snapshots + overage alerts
   "30 6 * * *",   # 06:30 UTC daily — trial lifecycle (warnings + downgrades)
 ]

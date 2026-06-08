@@ -15,7 +15,7 @@ import {
   createRadiologyOrder,
   updateRadiologyOrderStatus,
   saveRadiologyReport,
-} from "@/lib/data/server";
+} from "@/lib/data/radiology";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
 
 export const POST = withAuthValidation(

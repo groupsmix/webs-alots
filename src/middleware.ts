@@ -230,7 +230,7 @@ export async function middleware(request: NextRequest) {
     const lightResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    applyAllSecurityHeaders(lightResponse, cspHeaders, nonce);
+    applyAllSecurityHeaders(lightResponse, cspHeaders);
     return lightResponse;
   }
 
@@ -266,9 +266,7 @@ export async function middleware(request: NextRequest) {
   // production safety.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
-
-  if (!supabaseUrl || !supabaseAnonKey || !isSupabaseConfigured) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     if (process.env.NODE_ENV === "production") {
       return withSecurityHeaders(
         new NextResponse("Server misconfigured", { status: 503 }),
@@ -285,14 +283,14 @@ export async function middleware(request: NextRequest) {
     const noSupabaseResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    applyAllSecurityHeaders(noSupabaseResponse, cspHeaders, nonce);
+    applyAllSecurityHeaders(noSupabaseResponse, cspHeaders);
     return noSupabaseResponse;
   }
 
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
+  applyAllSecurityHeaders(supabaseResponse, cspHeaders);
 
   // Set rate limit headers on every API response (not just 429) so
   // consumers can monitor their remaining quota proactively.
@@ -312,7 +310,7 @@ export async function middleware(request: NextRequest) {
         supabaseResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
-        applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
+        applyAllSecurityHeaders(supabaseResponse, cspHeaders);
         // Re-apply tenant headers so they survive token-refresh responses
         if (resolvedClinic) {
           setTenantHeaders(supabaseResponse, resolvedClinic);
@@ -469,7 +467,7 @@ export async function middleware(request: NextRequest) {
           // clinic id and HMAC signature to the browser and any
           // intermediaries. Re-apply security and tenant headers since the
           // response was just recreated.
-          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
+          applyAllSecurityHeaders(supabaseResponse, cspHeaders);
           if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
         }
       }

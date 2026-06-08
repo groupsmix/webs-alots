@@ -129,9 +129,8 @@ export default function ReceptionistDashboardPage() {
     setTodayAppts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "no-show" } : a)));
   };
 
-  const handleReschedule = (id: string) => {
-    // Basic stub for reschedule
-    console.log("Reschedule", id);
+  const handleReschedule = (_id: string) => {
+    // TODO: Implement reschedule flow (open reschedule dialog)
   };
 
   const renderApptList = (appointments: AppointmentView[], emptyMessage: string) => {

@@ -149,4 +149,4 @@ async function handler(request: NextRequest) {
   }
 }
 
-export const GET = withSentryCron("retry-webhooks", "*/5 * * * *", handler);
+export const GET = withSentryCron("retry-webhooks", "*/30 * * * *", handler);

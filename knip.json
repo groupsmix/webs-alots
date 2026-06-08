@@ -20,7 +20,7 @@
     "e2e/**/*.ts",
     "*.config.{ts,mjs}"
   ],
-  "ignore": ["src/lib/types/database.ts", "src/config/clinic.config.ts"],
+  "ignore": ["src/lib/types/database.ts"],
   "ignoreBinaries": ["supabase"],
   "ignoreUnresolved": [".open-next/worker.js"],
   "ignoreDependencies": [

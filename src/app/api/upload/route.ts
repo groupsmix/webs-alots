@@ -52,6 +52,7 @@ import {
 } from "@/lib/r2";
 import { encryptAndUpload } from "@/lib/r2-encrypted";
 import { canStripMetadata, stripJpegMetadata } from "@/lib/strip-exif";
+import { limitForClinicCategory, clinicIdFromKey } from "@/lib/upload-policy";
 import { uploadConfirmSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
@@ -220,7 +221,13 @@ export const POST = withAuth(
       return apiError("No file provided");
     }
 
-    const maxSize = limitForCategory(category);
+    // F-16: Resolve the effective cap from the DB (clinic override) before
+    // falling back to the hardcoded platform default for this category.
+    const maxSize = await limitForClinicCategory(
+      clinicId,
+      normalizePhiCategory(category),
+      limitForCategory(category),
+    );
     if (file.size > maxSize) {
       return apiError(
         `File too large (max ${formatLimit(maxSize)} for category "${category}")`,
@@ -436,10 +443,16 @@ export const PUT = withAuthValidation(
     }
 
     // Derive the per-category cap from the key the client confirmed.
-    // Unknown categories fall back to DEFAULT_UPLOAD_LIMIT, so the policy is
-    // never silently widened by an unrecognised category segment.
+    // F-16: Also look up any per-clinic DB override so the confirm step
+    // enforces the same limit that was advertised to the browser.
     const keyCategory = categoryFromKey(key);
-    const maxSize = keyCategory ? limitForCategory(keyCategory) : DEFAULT_UPLOAD_LIMIT;
+    const keyClinicId = clinicIdFromKey(key);
+    const platformDefault = keyCategory ? limitForCategory(keyCategory) : DEFAULT_UPLOAD_LIMIT;
+    const maxSize = await limitForClinicCategory(
+      keyClinicId ?? "",
+      keyCategory ?? "",
+      platformDefault,
+    );
 
     if (metadata.contentLength > maxSize) {
       logger.warn("Pre-signed upload exceeded max size, deleting", {
@@ -604,7 +617,13 @@ export const GET = withAuth(
     }
 
     const key = buildUploadKey(clinicId, category, filename);
-    const maxSize = limitForCategory(category);
+    // F-16: Use the DB-backed limit so the advertised maxSize reflects any
+    // clinic-level override, not just the platform default.
+    const maxSize = await limitForClinicCategory(
+      clinicId,
+      normalizePhiCategory(category),
+      limitForCategory(category),
+    );
     const presigned = await getPresignedUploadPost(key, contentType, maxSize);
 
     if (!presigned) {

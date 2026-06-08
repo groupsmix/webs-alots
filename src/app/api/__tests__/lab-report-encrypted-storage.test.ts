@@ -88,7 +88,7 @@ vi.mock("@/lib/r2", async () => {
 });
 
 const updateLabOrderPdfUrlMock = vi.fn<(...args: unknown[]) => Promise<boolean>>();
-vi.mock("@/lib/data/server", () => ({
+vi.mock("@/lib/data/lab", () => ({
   updateLabOrderPdfUrl: (...args: unknown[]) => updateLabOrderPdfUrlMock(...args),
 }));
 

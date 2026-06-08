@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { t, type TranslationKey } from "@/lib/i18n";
 import { evaluatePasswordStrength } from "@/lib/validations/password-policy";
 import type { PasswordStrength } from "@/lib/validations/password-policy";
 
@@ -26,6 +28,7 @@ interface PasswordStrengthIndicatorProps {
 }
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
+  const [locale] = useLocale();
   const strength = useMemo(() => evaluatePasswordStrength(password), [password]);
 
   if (!password) return null;
@@ -46,19 +49,24 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
       </div>
       <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
         <li className={strength.checks.minLength ? "text-green-600" : ""}>
-          {strength.checks.minLength ? "✓" : "○"} 8+ characters
+          {strength.checks.minLength ? "✓" : "○"}{" "}
+          {t(locale, "password.minLength" as TranslationKey)}
         </li>
         <li className={strength.checks.hasUppercase ? "text-green-600" : ""}>
-          {strength.checks.hasUppercase ? "✓" : "○"} Uppercase letter
+          {strength.checks.hasUppercase ? "✓" : "○"}{" "}
+          {t(locale, "password.hasUppercase" as TranslationKey)}
         </li>
         <li className={strength.checks.hasLowercase ? "text-green-600" : ""}>
-          {strength.checks.hasLowercase ? "✓" : "○"} Lowercase letter
+          {strength.checks.hasLowercase ? "✓" : "○"}{" "}
+          {t(locale, "password.hasLowercase" as TranslationKey)}
         </li>
         <li className={strength.checks.hasNumber ? "text-green-600" : ""}>
-          {strength.checks.hasNumber ? "✓" : "○"} Number
+          {strength.checks.hasNumber ? "✓" : "○"}{" "}
+          {t(locale, "password.hasNumber" as TranslationKey)}
         </li>
         <li className={strength.checks.hasSpecial ? "text-green-600" : ""}>
-          {strength.checks.hasSpecial ? "✓" : "○"} Special character
+          {strength.checks.hasSpecial ? "✓" : "○"}{" "}
+          {t(locale, "password.hasSpecial" as TranslationKey)}
         </li>
       </ul>
     </div>

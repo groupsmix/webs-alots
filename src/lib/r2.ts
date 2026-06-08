@@ -380,7 +380,7 @@ export async function deleteFromR2(key: string): Promise<void> {
  *
  * @param key          Object key
  * @param contentType  Expected MIME type (locked into the POST policy)
- * @param maxSize      Maximum bytes accepted (default: 2 MB)
+ * @param maxSize      @deprecated Advisory only. Maximum bytes accepted (enforced by the confirmation route, not the upload URL)
  * @param expiresIn    Policy validity in seconds (default: 600 = 10 min)
  * @returns Presigned POST URL + fields, or null if R2 is not configured
  */

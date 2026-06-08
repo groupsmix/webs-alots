@@ -99,13 +99,6 @@ function getPlausibleHost(): string | null {
 
 interface BuildCspOptions {
   /**
-   * When true, indicates the policy is intended for the Report-Only header.
-   * The directives are identical either way; this flag is used by callers
-   * to decide which HTTP header to set.
-   * @default false
-   */
-  reportOnly?: boolean;
-  /**
    * When true, relaxes frame-src and script-src for the /super-admin/builder
    * route so the live preview iframe (blob:) and Babel/Tailwind CDN scripts
    * can load. ALL other routes continue to use the strict policy.
@@ -221,7 +214,7 @@ export function buildCspHeaderValues(
   nonce: string,
   options?: { isBuilderRoute?: boolean },
 ): CspHeaderValues {
-  const policy = buildCsp(nonce, { reportOnly: false, isBuilderRoute: options?.isBuilderRoute });
+  const policy = buildCsp(nonce, { isBuilderRoute: options?.isBuilderRoute });
   if (isCspReportOnly()) {
     return { enforce: "", reportOnly: policy };
   }
@@ -282,11 +275,7 @@ export function secureRedirect(url: string | URL, init?: number | ResponseInit):
  * Task 2.2: The strict CSP is now the enforced policy. The legacy broad CSP
  * and Report-Only header have been removed.
  */
-export function applyAllSecurityHeaders(
-  response: NextResponse,
-  csp: CspHeaderValues,
-  _nonce: string, // Unused but kept for API compatibility
-): void {
+export function applyAllSecurityHeaders(response: NextResponse, csp: CspHeaderValues): void {
   if (csp.enforce) {
     response.headers.set("Content-Security-Policy", csp.enforce);
     response.headers.delete("Content-Security-Policy-Report-Only");

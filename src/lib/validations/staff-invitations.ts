@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { passwordPolicySchema } from "./password-policy";
 
 /** Invite a staff member — adapted from MediFlow onboarding flow. */
 export const staffInviteSchema = z.object({
@@ -10,7 +11,7 @@ export const staffInviteSchema = z.object({
 export const staffInviteAcceptSchema = z.object({
   token: z.string().min(1).max(256),
   full_name: z.string().min(1).max(200),
-  password: z.string().min(8).max(128),
+  password: passwordPolicySchema.max(128),
 });
 
 /** Revoke a pending invitation. */

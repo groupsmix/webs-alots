@@ -42,19 +42,22 @@ import { default as handler } from "./.open-next/worker.js";
 export const CRON_ROUTES: Record<string, string[]> = {
   "*/5 * * * *": ["/api/cron/uptime-monitor"],
   "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
-  "*/30 * * * *": ["/api/cron/reminders"],
+  "*/30 * * * *": ["/api/cron/reminders", "/api/cron/retry-webhooks"],
   "0 * * * *": [
     "/api/cron/r2-cleanup",
     "/api/cron/feedback",
     "/api/cron/rebooking-reminders",
     "/api/cron/support-sla-check",
+    "/api/cron/daily-briefing",
+    "/api/cron/nps-survey",
   ],
+  "0 1 * * *": ["/api/cron/usage-snapshots", "/api/cron/data-retention"],
   "0 2 * * *": ["/api/cron/billing"],
-  "0 3 * * *": ["/api/cron/gdpr-purge", "/api/cron/data-retention"],
+  "0 3 * * *": ["/api/cron/gdpr-purge"],
   "0 4 * * *": ["/api/cron/dedup-purge"],
   "0 5 * * *": ["/api/cron/stripe-reconcile", "/api/cron/ai-clinic-briefings"],
   "0 8 * * *": ["/api/cron/onboarding-nudges"],
-  "0 1 * * *": ["/api/cron/usage-snapshots"],
+  "0 9 * * *": ["/api/cron/payment-reminders"],
   "30 6 * * *": ["/api/cron/trial-lifecycle"],
 };
 

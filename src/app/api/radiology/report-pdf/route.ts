@@ -11,7 +11,7 @@
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
+import { updateRadiologyOrderPdfUrl } from "@/lib/data/radiology";
 import { escapeHtml } from "@/lib/escape-html";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { formatDisplayDate } from "@/lib/utils";

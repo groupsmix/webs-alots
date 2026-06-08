@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/public/contact-form";
 import { Card, CardContent } from "@/components/ui/card";
+import { getPublicBranding } from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
@@ -16,17 +18,36 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ContactPage() {
-  const cfg = defaultWebsiteConfig.contact;
+export default async function ContactPage() {
+  const tenant = await getTenant();
+  let branding = null;
+  if (tenant) {
+    branding = await getPublicBranding();
+  }
+
+  const defaultCfg = defaultWebsiteConfig.contact;
+
+  const title = branding?.clinicName ? `Contactez ${branding.clinicName}` : defaultCfg.title;
+  const subtitle = branding?.clinicName
+    ? "Prenez rendez-vous ou posez vos questions."
+    : defaultCfg.subtitle;
+  const phone = branding?.phone || defaultCfg.phone;
+  const email = branding?.email || defaultCfg.email;
+  const address = branding?.address || defaultCfg.address;
+  // ClinicBranding has no `whatsapp` field — read from the websiteConfig JSONB
+  // which mirrors WebsiteConfig.contact, or fall back to the default config.
+  const wsCfg = branding?.websiteConfig as { contact?: { whatsapp?: string } } | null;
+  const whatsapp = wsCfg?.contact?.whatsapp || defaultCfg.whatsapp;
+  const whatsappMessage = defaultCfg.whatsappMessage;
 
   const contactInfo = [
-    { icon: Phone, label: "Téléphone", value: cfg.phone },
-    { icon: MessageCircle, label: "WhatsApp", value: cfg.whatsapp },
-    { icon: Mail, label: "Email", value: cfg.email },
-    { icon: MapPin, label: "Adresse", value: cfg.address },
+    { icon: Phone, label: "Téléphone", value: phone },
+    { icon: MessageCircle, label: "WhatsApp", value: whatsapp },
+    { icon: Mail, label: "Email", value: email },
+    { icon: MapPin, label: "Adresse", value: address },
   ];
 
-  const whatsappLink = `https://wa.me/${cfg.whatsapp.replace(/\s+/g, "")}?text=${encodeURIComponent(cfg.whatsappMessage)}`;
+  const whatsappLink = `https://wa.me/${whatsapp.replace(/\s+/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
 
@@ -36,12 +57,12 @@ export default function ContactPage() {
     url: `${baseUrl}/contact`,
     mainEntity: {
       "@type": "MedicalBusiness",
-      name: cfg.title,
-      telephone: cfg.phone,
-      email: cfg.email,
+      name: branding?.clinicName || title,
+      telephone: phone,
+      email: email,
       address: {
         "@type": "PostalAddress",
-        streetAddress: cfg.address,
+        streetAddress: address,
       },
     },
   };
@@ -51,12 +72,12 @@ export default function ContactPage() {
       <script
         type="application/ld+json"
         // SAFETY: JSON.stringify of a server-controlled object built from static
-        // config values (defaultWebsiteConfig). No user-sourced content.
+        // config values (defaultWebsiteConfig) and tenant branding.
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(contactSchema) }}
       />
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">{cfg.subtitle}</p>
+        <h1 className="text-3xl font-bold mb-4">{title}</h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto">{subtitle}</p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">

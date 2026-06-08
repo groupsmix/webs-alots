@@ -20,7 +20,7 @@ import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { updateLabOrderPdfUrl } from "@/lib/data/server";
+import { updateLabOrderPdfUrl } from "@/lib/data/lab";
 import { isEncryptionConfigured } from "@/lib/encryption";
 import { escapeHtml } from "@/lib/escape-html";
 import { getDirection, isRTL, t, type Locale } from "@/lib/i18n";

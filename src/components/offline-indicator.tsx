@@ -8,11 +8,10 @@ import { cn } from "@/lib/utils";
 
 export function OfflineIndicator() {
   const [locale] = useLocale();
-  const [isOffline, setIsOffline] = useState(() =>
-    typeof navigator !== "undefined" ? !navigator.onLine : false,
-  );
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    setIsOffline(typeof navigator !== "undefined" ? !navigator.onLine : false);
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => setIsOffline(false);
 

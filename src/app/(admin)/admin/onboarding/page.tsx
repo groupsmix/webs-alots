@@ -36,42 +36,71 @@ const STORAGE_KEY = "oltigo_admin_onboarding_draft";
 
 export default function AdminOnboardingWizard() {
   const { addToast } = useToast();
-  const [currentStep, setCurrentStep] = useState<WizardStep>(1);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (p.currentStep) return p.currentStep as WizardStep;
+      }
+    } catch {}
+    return 1;
+  });
   const [completed, setCompleted] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Step 1: Details
-  const [clinicName, setClinicName] = useState("");
-  const [subdomain, setSubdomain] = useState("");
+  const [clinicName, setClinicName] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved) return (JSON.parse(saved) as { clinicName?: string }).clinicName ?? "";
+    } catch {}
+    return "";
+  });
+  const [subdomain, setSubdomain] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved) return (JSON.parse(saved) as { subdomain?: string }).subdomain ?? "";
+    } catch {}
+    return "";
+  });
 
   // Step 2: Branding
-  const [primaryColor, setPrimaryColor] = useState("#000000");
+  const [primaryColor, setPrimaryColor] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved) return (JSON.parse(saved) as { primaryColor?: string }).primaryColor ?? "#000000";
+    } catch {}
+    return "#000000";
+  });
 
   // Step 3: First Doctor & Schedule
-  const [doctorName, setDoctorName] = useState("");
-  const [doctorEmail, setDoctorEmail] = useState("");
+  const [doctorName, setDoctorName] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved) return (JSON.parse(saved) as { doctorName?: string }).doctorName ?? "";
+    } catch {}
+    return "";
+  });
+  const [doctorEmail, setDoctorEmail] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved) return (JSON.parse(saved) as { doctorEmail?: string }).doctorEmail ?? "";
+    } catch {}
+    return "";
+  });
 
   // Step 4: Services
-  const [services, setServices] = useState<ServiceFormData[]>([
-    { name: "", price: "", duration_minutes: "30", category: "consultation" },
-  ]);
-
-  // Save / Load Draft
-  useEffect(() => {
+  const [services, setServices] = useState<ServiceFormData[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
-        if (parsed.clinicName) setClinicName(parsed.clinicName);
-        if (parsed.subdomain) setSubdomain(parsed.subdomain);
-        if (parsed.primaryColor) setPrimaryColor(parsed.primaryColor);
-        if (parsed.doctorName) setDoctorName(parsed.doctorName);
-        if (parsed.doctorEmail) setDoctorEmail(parsed.doctorEmail);
-        if (parsed.services) setServices(parsed.services);
+        const p = JSON.parse(saved) as { services?: ServiceFormData[] };
+        if (p.services) return p.services;
       }
     } catch {}
-  }, []);
+    return [{ name: "", price: "", duration_minutes: "30", category: "consultation" }];
+  });
 
   useEffect(() => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);

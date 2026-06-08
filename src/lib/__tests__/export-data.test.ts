@@ -6,21 +6,7 @@
  * We test the formula injection defense and CSV escaping patterns.
  */
 import { describe, it, expect } from "vitest";
-
-// Re-implement the private helpers to test them directly
-const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
-
-function escapeCSV(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  let str = String(value);
-  if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
-    str = `'${str}`;
-  }
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
+import { escapeCSV } from "@/lib/csv-escape";
 
 function arrayToCSV<T extends Record<string, unknown>>(
   rows: T[],

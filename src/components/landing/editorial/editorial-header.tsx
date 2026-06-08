@@ -27,9 +27,9 @@ export function EditorialHeader({
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: t("landing.navProduct"), href: "#product" },
-    { label: t("landing.navCustomers"), href: "#clients" },
-    { label: t("landing.navPricing"), href: "#pricing" },
+    { label: t("landing.navProduct"), href: "/#product" },
+    { label: t("landing.navCustomers"), href: "/#clients" },
+    { label: t("landing.navPricing"), href: "/#pricing" },
   ];
 
   return (

@@ -20,6 +20,7 @@ const eslintConfig = defineConfig([
     // Open-Next build artifacts (generated; must not be linted)
     ".open-next/**",
   ]),
+  ...storybook.configs["flat/recommended"],
   {
     plugins: {
       "react-hooks": reactHooksPlugin,
@@ -222,7 +223,6 @@ const eslintConfig = defineConfig([
   // PR once the first-wave getters in env.ts have been rolled out more widely.
   // The getters added in this PR (getCronSecret, getPhiEncryptionKey, etc.)
   // are already in place and can be adopted incrementally.
-  ...storybook.configs["flat/recommended"],
 ]);
 
 export default eslintConfig;

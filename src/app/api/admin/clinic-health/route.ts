@@ -214,7 +214,8 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
   const { clinic_id: clinicId, create_alerts: createAlerts } = parsed.data;
 
   try {
-    const { data: signalRows, error: signalError } = await auth.supabase.rpc(
+    const admin = createUntypedAdminClient("super_admin");
+    const { data: signalRows, error: signalError } = await admin.rpc(
       "get_all_clinic_signals" as never,
     );
 
@@ -242,9 +243,6 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
         alertsCreated: 0,
       });
     }
-
-    const admin = createUntypedAdminClient("super_admin");
-
     const { error: insertError } = await admin.from("clinic_health_scores").insert(
       computed.map((record) => ({
         clinic_id: record.clinicId,

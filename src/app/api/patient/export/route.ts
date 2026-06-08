@@ -9,26 +9,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiNotFound } from "@/lib/api-response";
+import { escapeCSV } from "@/lib/csv-escape";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
 import { withAuth } from "@/lib/with-auth";
-
-/** Characters that trigger formula execution in Excel/Google Sheets. */
-const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
-
-function escapeCSV(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  let str = String(value);
-  // Neutralise formula injection: prefix with a single quote so the value
-  // is treated as plain text by spreadsheet applications.
-  if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
-    str = `'${str}`;
-  }
-  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\t")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
 
 function toCSV(rows: Record<string, unknown>[], columns: string[]): string {
   const header = columns.map(escapeCSV).join(",");

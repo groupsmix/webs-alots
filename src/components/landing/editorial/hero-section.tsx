@@ -57,7 +57,7 @@ export function EditorialHero() {
 
           {/* Demo CTA */}
           <a
-            href="http://demo.localhost:3000"
+            href={process.env.NEXT_PUBLIC_DEMO_URL || "https://demo.oltigo.com"}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium h-11 px-6 rounded-[var(--radius-landing)] border border-[var(--ink-20)] text-[var(--ink)] bg-transparent hover:bg-[var(--ink-5)] transition-colors"
