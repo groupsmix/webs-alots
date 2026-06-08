@@ -119,7 +119,7 @@ export interface CreateServiceInput {
   category?: string;
 }
 
-interface CreateTimeSlotInput {
+interface _CreateTimeSlotInput {
   doctor_id: string;
   clinic_id: string;
   day_of_week: number;

@@ -20,9 +20,9 @@
  *   - A05: tenant scoping via .eq("clinic_id", clinicId) on every query.
  */
 
-import { z } from "zod";
 import type { NextRequest } from "next/server";
 import { type NextResponse } from "next/server";
+import { z } from "zod";
 import { apiError, apiInternalError, apiRateLimited, apiSuccess } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";

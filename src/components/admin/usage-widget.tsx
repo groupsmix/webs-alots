@@ -12,7 +12,7 @@ import { BarChart3, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // ── Types ──
@@ -230,11 +230,16 @@ export function UsageWidget() {
             />
 
             {(hasOverage || hasWarning) && (
-              <Button asChild size="sm" className="w-full" variant={hasOverage ? "destructive" : "outline"}>
-                <Link href="/admin/billing">
-                  {hasOverage ? "Mettre à niveau — limite atteinte" : "Voir les options d'upgrade"}
-                </Link>
-              </Button>
+              <Link
+                href="/admin/billing"
+                className={buttonVariants({
+                  size: "sm",
+                  variant: hasOverage ? "destructive" : "outline",
+                  className: "w-full",
+                })}
+              >
+                {hasOverage ? "Mettre à niveau — limite atteinte" : "Voir les options d'upgrade"}
+              </Link>
             )}
           </>
         ) : null}

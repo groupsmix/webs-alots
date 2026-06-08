@@ -21,11 +21,11 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 
@@ -169,12 +169,13 @@ export default function ClinicUsageDetailPage() {
       />
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/super-admin/usage">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Retour
-          </Link>
-        </Button>
+        <Link
+          href="/super-admin/usage"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Retour
+        </Link>
         <div>
           <h1 className="text-2xl font-bold">{clinic?.name ?? "Détail d'utilisation"}</h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

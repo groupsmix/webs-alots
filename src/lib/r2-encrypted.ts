@@ -11,7 +11,7 @@
 
 import { encryptBuffer, decryptBuffer, isEncryptionConfigured } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
-import { uploadToR2, deleteFromR2, getR2Bucket } from "@/lib/r2";
+import { uploadToR2, getR2Bucket } from "@/lib/r2";
 
 /**
  * Diagnostic / audit metadata threaded through encrypted upload calls.

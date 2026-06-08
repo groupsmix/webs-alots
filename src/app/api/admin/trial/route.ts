@@ -9,13 +9,13 @@
  * OWASP A04: All DB writes scoped to clinicId.
  */
 
-import { z } from "zod";
 import { type NextRequest } from "next/server";
+import { z } from "zod";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
-import { createAdminClient } from "@/lib/supabase-server";
 import { logger } from "@/lib/logger";
+import { createAdminClient } from "@/lib/supabase-server";
 import type { AuthContext } from "@/lib/with-auth";
 
 const trialStartSchema = z.object({

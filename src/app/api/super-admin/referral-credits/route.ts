@@ -5,15 +5,15 @@
  * Requires super_admin role.
  */
 
-import { z } from "zod";
 import { type NextRequest } from "next/server";
+import { z } from "zod";
 import { apiSuccess, apiError, apiInternalError, apiRateLimited } from "@/lib/api-response";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { apiMutationLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
@@ -76,7 +76,8 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
         leaderboardMap[cid] = {
           clinicId: cid,
           clinicName:
-            (event.clinics as { name: string } | null)?.name ?? "Unknown Clinic",
+            (event.clinics as unknown as { name: string } | null)?.name ??
+            "Unknown Clinic",
           signups: 0,
         };
       }
@@ -85,7 +86,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
 
     // Fetch referral codes to enrich leaderboard with code strings
     const referrerIds = Object.keys(leaderboardMap);
-    let codeMap: Record<string, string> = {};
+    const codeMap: Record<string, string> = {};
 
     if (referrerIds.length > 0) {
       const { data: codes } = await supabase
@@ -183,7 +184,7 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
     return apiError(
-      parsed.error.errors[0]?.message ?? "Invalid request body",
+      parsed.error.issues[0]?.message ?? "Invalid request body",
       422,
       "VALIDATION_ERROR",
     );

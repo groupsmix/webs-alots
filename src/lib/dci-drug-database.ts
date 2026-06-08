@@ -1979,7 +1979,7 @@ interface DrugIndexEntry {
 
 const _drugIndex: Map<string, DrugIndexEntry[]> = new Map();
 
-function ensureDrugIndex(): Map<string, DrugIndexEntry[]> {
+function _ensureDrugIndex(): Map<string, DrugIndexEntry[]> {
   if (_drugIndex.size > 0) return _drugIndex;
 
   for (const drug of DCI_DRUG_DATABASE) {

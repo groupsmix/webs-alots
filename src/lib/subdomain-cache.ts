@@ -133,9 +133,9 @@ if (typeof setInterval !== "undefined") {
 // ── F-07: KV-backed subdomain cache helpers ──
 
 /** KV key prefix for subdomain cache entries */
-const KV_PREFIX = "subdomain:";
+const _KV_PREFIX = "subdomain:";
 /** KV TTL in seconds (5 minutes) */
-const KV_TTL_SECONDS = 300;
+const _KV_TTL_SECONDS = 300;
 
 interface KVNamespace {
   get(key: string, options?: { type: "json" }): Promise<CachedClinic | null>;
@@ -143,7 +143,7 @@ interface KVNamespace {
   delete(key: string): Promise<void>;
 }
 
-function getKV(): KVNamespace | null {
+function _getKV(): KVNamespace | null {
   return (globalThis as unknown as { FEATURE_FLAGS_KV?: KVNamespace }).FEATURE_FLAGS_KV ?? null;
 }
 

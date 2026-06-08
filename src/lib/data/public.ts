@@ -767,7 +767,7 @@ export async function getPublicNextOnDuty(): Promise<PublicOnDutySchedule | null
 
 // ── Pharmacy: Prescription Requests (public view) ──
 
-interface PublicPharmacyPrescription {
+interface _PublicPharmacyPrescription {
   id: string;
   patientId: string;
   patientName: string;

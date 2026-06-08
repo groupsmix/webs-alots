@@ -20,8 +20,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
 import { ClinicBriefingWidget } from "@/components/admin/clinic-briefing-widget";
+import { OpsSummaryStrip } from "@/components/admin/ops-summary-strip";
 import { ComplianceWidget } from "@/components/compliance/compliance-widget";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";

@@ -17,6 +17,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    // Zod 4 re-exports `z` via `import * as z; export { z }` which Vite's
+    // ESM module loader strips during transform unless the package is
+    // inlined. Without this, `import { z } from "zod"` resolves to
+    // `undefined` and every schema-using test explodes.
+    server: {
+      deps: {
+        inline: ["zod"],
+      },
+    },
     // DI-HIGH-04: Clear mocks globally to prevent inter-test state leakage.
     // Previously 10+ test files had incomplete beforeEach cleanup.
     clearMocks: true,

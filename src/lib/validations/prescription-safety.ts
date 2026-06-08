@@ -34,7 +34,7 @@ export const prescriptionSafetySchema = z.object({
       renalImpairment: z.boolean().optional(),
       hepaticImpairment: z.boolean().optional(),
     })
-    .default({}),
+    .default(() => ({ conditions: [], allergies: [] })),
 });
 
 export type PrescriptionSafetyInput = z.infer<typeof prescriptionSafetySchema>;

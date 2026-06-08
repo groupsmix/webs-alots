@@ -622,7 +622,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-80">
                 <div className="flex items-center justify-between px-2 py-1.5">
-                  {/* eslint-disable-next-line i18next/no-literal-string -- internal super-admin UI */}
+                  { }
                   <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
                   {unreadCount > 0 && (
                     <button

@@ -8,9 +8,11 @@
  * OWASP A03: Audio content type and size validated before forwarding.
  * OWASP A05: API key read from environment — never hardcoded.
  * OWASP A09: Structured logging via logger; audio content never logged.
+ *
+ * Note: route segment config "runtime" is not compatible with
+ * nextConfig.experimental.useCache (Next 16+) — this route runs on the
+ * default (Node) runtime under OpenNext/Cloudflare Workers.
  */
-
-export const runtime = "edge";
 
 import { type NextRequest } from "next/server";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";

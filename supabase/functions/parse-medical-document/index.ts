@@ -221,6 +221,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   // ── OWASP A03: Injection — validate payload shape ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let payload: any;
   try {
     payload = await req.json();
@@ -337,6 +338,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       throw new Error(`Anthropic API error: ${anthropicResp.status}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aiData = (await anthropicResp.json()) as any;
     const rawText: string = aiData?.content?.[0]?.text ?? "";
 
@@ -346,6 +348,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .replace(/```\s*/g, "")
       .trim();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let extracted: any;
     try {
       extracted = JSON.parse(cleanText);

@@ -28,7 +28,12 @@ export function fromUntyped(
     | "agent_token_usage"
     | "medical_alerts"
     | "consultation_notes"
-    | "clinic_ai_briefings",
+    | "clinic_ai_briefings"
+    | "usage_snapshots"
+    | "subscription_history"
+    | "referral_events"
+    | "referral_codes"
+    | "referral_credits",
 ): ReturnType<UntypedFrom> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase as SupabaseClient<any, any, any>).from(table);

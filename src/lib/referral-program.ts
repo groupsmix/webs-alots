@@ -7,8 +7,8 @@
  * when the referred clinic makes their first payment.
  */
 
-import { insertInAppNotification } from "@/lib/notification-persist";
 import { logger } from "@/lib/logger";
+import { insertInAppNotification } from "@/lib/notification-persist";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UntypedAdminClient = any;
@@ -55,7 +55,7 @@ async function insertCodeWithRetry(
 ): Promise<{ code: string; id: string; discountPct: number; discountMonths: number }> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateReferralCode(clinicName);
-    // eslint-disable-next-line no-await-in-loop
+     
     const { data, error } = await supabase
       .from("referral_codes")
       .insert({

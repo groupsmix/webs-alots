@@ -12,7 +12,6 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
-import { usePrescriptionSafety } from "@/lib/hooks/use-prescription-safety";
 import { PrescriptionSafetyBanner } from "@/components/doctor/prescription-safety-banner";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -21,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { usePrescriptionSafety } from "@/lib/hooks/use-prescription-safety";
 
 interface Medication {
   name: string;

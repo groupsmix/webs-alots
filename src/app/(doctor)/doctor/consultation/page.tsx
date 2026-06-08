@@ -14,6 +14,8 @@ import {
   Printer,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { SmartConsultationRecorder } from "@/components/doctor/smart-consultation-recorder";
+import type { StructuredNote } from "@/components/doctor/smart-consultation-recorder";
 import { useTenant } from "@/components/tenant-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -36,8 +38,6 @@ import {
   type ConsultationNoteView,
 } from "@/lib/data/client";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
-import { SmartConsultationRecorder } from "@/components/doctor/smart-consultation-recorder";
-import type { StructuredNote } from "@/components/doctor/smart-consultation-recorder";
 
 interface ConsultationNote {
   id: string;

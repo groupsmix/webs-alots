@@ -7,8 +7,9 @@
  * OWASP A03: clinicId validated as UUID before use.
  */
 
-import { z } from "zod";
 import { type NextRequest } from "next/server";
+import { z } from "zod";
+import { fromUntyped } from "@/lib/ai/untyped-tables";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
@@ -47,8 +48,10 @@ export const GET = withAuth(
         .slice(0, 10);
 
       // nosemgrep: semgrep.tenant-scoping — super_admin intentional cross-tenant read
-      const { data: snapshots, error: snapshotsError } = await supabase
-        .from("usage_snapshots")
+      const { data: snapshots, error: snapshotsError } = await fromUntyped(
+        supabase,
+        "usage_snapshots",
+      )
         .select(
           "snapshot_date, appointments_count, whatsapp_sent, ai_calls, storage_bytes, active_doctors",
         )

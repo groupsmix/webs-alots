@@ -4,6 +4,29 @@
 -- medical_alerts table for critical AI-detected findings.
 -- All operations are idempotent (IF NOT EXISTS / IF EXISTS guards).
 
+-- ── Ensure patient_files base table exists ─────────────────────────────────
+-- The patient_files table is the system of record for PHI uploads to R2.
+-- It was historically created out-of-band on staging/production; this guard
+-- ensures fresh environments (CI, local supabase) provision the schema
+-- before we extend it below.
+CREATE TABLE IF NOT EXISTS patient_files (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id       UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+  patient_id      UUID        NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+  file_name       TEXT        NOT NULL,
+  file_type       TEXT        NOT NULL,
+  file_size       BIGINT      NOT NULL,
+  r2_key          TEXT        NOT NULL,
+  encryption_iv   TEXT,
+  uploaded_by     UUID        REFERENCES users(id) ON DELETE SET NULL,
+  metadata        JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_patient_files_clinic_patient
+  ON patient_files(clinic_id, patient_id);
+
 -- ── Extraction columns on patient_files ────────────────────────────────────
 
 ALTER TABLE patient_files

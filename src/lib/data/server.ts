@@ -57,7 +57,7 @@ const ALLOWED_ORDER_COLUMNS = new Set([
 ]);
 
 /** Paginated result envelope returned by `queryPaginated`. */
-interface PaginatedResult<T> {
+interface _PaginatedResult<T> {
   data: T[];
   total: number;
   hasMore: boolean;
@@ -111,7 +111,7 @@ async function query<T>(
   return (data ?? []) as T[];
 }
 
-async function queryOne<T>(
+async function _queryOne<T>(
   table: TableName,
   opts?: {
     select?: string;
@@ -130,7 +130,7 @@ async function queryOne<T>(
   return data as T | null;
 }
 
-interface CurrentUser {
+interface _CurrentUser {
   id: string;
   auth_id: string;
   clinic_id: string | null;
@@ -160,7 +160,7 @@ interface ClinicRow {
   updated_at: string;
 }
 
-interface ClinicBrandingRow {
+interface _ClinicBrandingRow {
   logo_url: string | null;
   favicon_url: string | null;
   primary_color: string | null;
@@ -189,7 +189,7 @@ interface UserRow {
   updated_at: string;
 }
 
-async function getClinicUsers(clinicId: string, role?: string): Promise<UserRow[]> {
+async function _getClinicUsers(clinicId: string, role?: string): Promise<UserRow[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (role) eq.push(["role", role]);
   return query<UserRow>("users", {
@@ -198,7 +198,7 @@ async function getClinicUsers(clinicId: string, role?: string): Promise<UserRow[
   });
 }
 
-interface ServiceRow {
+interface _ServiceRow {
   id: string;
   clinic_id: string;
   name: string;
@@ -212,7 +212,7 @@ interface ServiceRow {
   created_at: string;
 }
 
-interface AppointmentRow {
+interface _AppointmentRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -240,7 +240,7 @@ interface AppointmentRow {
   updated_at: string;
 }
 
-interface TimeSlotRow {
+interface _TimeSlotRow {
   id: string;
   clinic_id: string;
   doctor_id: string;
@@ -253,7 +253,7 @@ interface TimeSlotRow {
   is_active: boolean;
 }
 
-interface PaymentRow {
+interface _PaymentRow {
   id: string;
   clinic_id: string;
   appointment_id: string | null;
@@ -268,7 +268,7 @@ interface PaymentRow {
   created_at: string;
 }
 
-interface ReviewRow {
+interface _ReviewRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -280,7 +280,7 @@ interface ReviewRow {
   created_at: string;
 }
 
-interface NotificationRow {
+interface _NotificationRow {
   id: string;
   clinic_id: string;
   user_id: string;
@@ -292,7 +292,7 @@ interface NotificationRow {
   sent_at: string;
 }
 
-interface DocumentRow {
+interface _DocumentRow {
   id: string;
   clinic_id: string;
   user_id: string;
@@ -303,7 +303,7 @@ interface DocumentRow {
   created_at: string;
 }
 
-interface PrescriptionRow {
+interface _PrescriptionRow {
   id: string;
   clinic_id: string;
   appointment_id: string | null;
@@ -315,7 +315,7 @@ interface PrescriptionRow {
   created_at: string;
 }
 
-interface ConsultationNoteRow {
+interface _ConsultationNoteRow {
   id: string;
   clinic_id: string;
   appointment_id: string;
@@ -327,7 +327,7 @@ interface ConsultationNoteRow {
   updated_at: string;
 }
 
-interface WaitingListRow {
+interface _WaitingListRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -340,7 +340,7 @@ interface WaitingListRow {
   created_at: string;
 }
 
-interface FamilyMemberRow {
+interface _FamilyMemberRow {
   id: string;
   primary_user_id: string;
   member_user_id: string;
@@ -348,7 +348,7 @@ interface FamilyMemberRow {
   created_at: string;
 }
 
-interface OdontogramRow {
+interface _OdontogramRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -358,7 +358,7 @@ interface OdontogramRow {
   updated_at: string;
 }
 
-interface TreatmentPlanRow {
+interface _TreatmentPlanRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -371,7 +371,7 @@ interface TreatmentPlanRow {
   updated_at: string;
 }
 
-interface LabOrderRow {
+interface _LabOrderRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -384,7 +384,7 @@ interface LabOrderRow {
   updated_at: string;
 }
 
-interface InstallmentRow {
+interface _InstallmentRow {
   id: string;
   clinic_id: string;
   treatment_plan_id: string;
@@ -397,7 +397,7 @@ interface InstallmentRow {
   created_at: string;
 }
 
-interface SterilizationLogRow {
+interface _SterilizationLogRow {
   id: string;
   clinic_id: string;
   tool_name: string;
@@ -409,7 +409,7 @@ interface SterilizationLogRow {
   created_at: string;
 }
 
-interface ProductRow {
+interface _ProductRow {
   id: string;
   clinic_id: string;
   name: string;
@@ -428,7 +428,7 @@ interface ProductRow {
   created_at: string;
 }
 
-interface StockRow {
+interface _StockRow {
   id: string;
   clinic_id: string;
   product_id: string;
@@ -439,7 +439,7 @@ interface StockRow {
   updated_at: string;
 }
 
-interface SupplierRow {
+interface _SupplierRow {
   id: string;
   clinic_id: string;
   name: string;
@@ -456,7 +456,7 @@ interface SupplierRow {
   created_at: string;
 }
 
-interface PrescriptionRequestRow {
+interface _PrescriptionRequestRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -468,7 +468,7 @@ interface PrescriptionRequestRow {
   updated_at: string;
 }
 
-interface LoyaltyPointsRow {
+interface _LoyaltyPointsRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -563,7 +563,7 @@ async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardS
   };
 }
 
-interface SuperAdminStats {
+interface _SuperAdminStats {
   clinics: ClinicRow[];
   totalClinics: number;
   activeClinics: number;
