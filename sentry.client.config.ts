@@ -1,8 +1,19 @@
 import * as Sentry from "@sentry/nextjs";
 
-if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+// Audit F-1: never initialise Sentry with a placeholder DSN. A value such as
+// `https://placeholder@o0.ingest.sentry.io/0` is truthy, so the previous bare
+// presence check still shipped `sentry-public_key=placeholder` to the browser
+// and silently dropped every client-side exception. Treat any DSN containing
+// "placeholder" as unset so misconfiguration fails closed (no Sentry) rather
+// than failing open (a dead Sentry client). The hard runtime gate lives in
+// src/lib/env.ts (enforceEnvValidation), which refuses to boot production with
+// a placeholder DSN; this guard is the matching client-side defense.
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const hasValidDsn = !!dsn && !/placeholder/i.test(dsn);
+
+if (hasValidDsn) {
   Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    dsn,
 
     // AUDIT F-07: Per-route client-side sampling (mirrors sentry.server.config.ts).
     // Critical user flows (booking, payment, auth) get 100% sampling in production;
@@ -53,7 +64,7 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     ],
 
     // Don't send errors in development unless explicitly enabled.
-    enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+    enabled: hasValidDsn,
 
     // S-35: Strip request bodies and known PHI fields from breadcrumbs to
     // prevent accidental PHI capture in Sentry payloads.

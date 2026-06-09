@@ -8,6 +8,8 @@
 
 export { normalizeText, safeText, safeName } from "./primitives";
 
+export { looksLikeGibberish, GIBBERISH_NAME_MESSAGE } from "./name-quality";
+
 export {
   bookingCancelSchema,
   emergencySlotSchema,

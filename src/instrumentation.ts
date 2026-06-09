@@ -62,11 +62,18 @@ function getSampleRate(transactionContext: {
 }
 
 export function register() {
+  // Audit F-1: a placeholder DSN (e.g. "https://placeholder@…") is truthy but
+  // useless — it boots a dead Sentry client. Treat it as unset everywhere so
+  // misconfiguration fails closed. The hard production gate (throw on boot) is
+  // in src/lib/env.ts via enforceEnvValidation(), invoked below.
+  const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  const hasValidSentryDsn = !!sentryDsn && !/placeholder/i.test(sentryDsn);
+
   // Initialize Sentry for server-side error monitoring.
   // DSN is provided via NEXT_PUBLIC_SENTRY_DSN env var.
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  if (hasValidSentryDsn) {
     Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      dsn: sentryDsn,
 
       // R-20 Fix: Set sendDefaultPii to false explicitly
       // @sentry/nextjs@8 defaults this to true, which is a PII risk
@@ -75,7 +82,7 @@ export function register() {
       // Base tracesSampleRate; per-transaction sampling is handled via tracesSampler
       tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-      enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+      enabled: hasValidSentryDsn,
 
       // R-20 Fix: Per-transaction sampling for fine-grained control
       tracesSampler(samplingContext) {
@@ -223,7 +230,7 @@ export function register() {
       // M-26: Capture to Sentry before crashing so the failure is visible
       // in the dashboard, not buried in Workers Logs / console output.
       console.error("[FATAL] Environment validation failed:", err);
-      if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      if (hasValidSentryDsn) {
         Sentry.captureException(
           err instanceof Error ? err : new Error(`Environment validation failed: ${err}`),
           { tags: { component: "instrumentation", phase: "env-validation" }, level: "fatal" },
