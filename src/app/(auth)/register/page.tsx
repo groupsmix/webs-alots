@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { UserPlus, ShieldCheck, ArrowLeft, Eye, EyeOff, HeartPulse, Mail } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -97,6 +98,7 @@ export default function RegisterPage() {
       setLoading(false);
     } catch (err) {
       logger.warn("Registration failed", { context: "register", error: err });
+      Sentry.captureException(err, { tags: { flow: "register", method: "phone" } });
       setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
@@ -151,6 +153,11 @@ export default function RegisterPage() {
       setLoading(false);
     } catch (err) {
       logger.warn("Email registration failed", { context: "register", error: err });
+      // A thrown error here (vs. a returned result.error) means the browser
+      // Supabase client itself failed to initialise/call — most often because
+      // NEXT_PUBLIC_SUPABASE_* were not inlined into the client bundle at build
+      // time. That is invisible server-side, so capture it explicitly.
+      Sentry.captureException(err, { tags: { flow: "register", method: "email" } });
       setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
@@ -169,6 +176,7 @@ export default function RegisterPage() {
       }
     } catch (err) {
       logger.warn("OTP verification failed", { context: "register", error: err });
+      Sentry.captureException(err, { tags: { flow: "register", method: "otp" } });
       setError(t(locale, "error.unexpected"));
       setLoading(false);
     }

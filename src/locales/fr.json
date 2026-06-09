@@ -1120,6 +1120,8 @@
   "terms.toutePersonneAccedantA": "toute personne accédant à la Plateforme, qu&apos;il s&apos;agisse d&apos;un professionnel de santé (médecin, dentiste, pharmacien) ou d&apos;un patient.",
   "terms.toutePersonneUtilisantLa": "toute personne utilisant la Plateforme pour prendre rendez-vous ou consulter ses informations médicales.",
   "ui.data-mask.constMaskedMaskvalueType": "; } const masked = mask(value, type, effectiveLevel); const defaultLabel = type === \"phone\" ? \"Téléphone\" : type === \"email\" ? \"Email\" : \"CIN\"; const a11yLabel = label ?? defaultLabel; return (",
+  "unauthorized.description": "Vous n'avez pas les autorisations nécessaires pour accéder à cette page. Si vous pensez qu'il s'agit d'une erreur, contactez un administrateur.",
+  "unauthorized.title": "Accès non autorisé",
   "vet.addPet": "Ajouter un animal",
   "vet.appointment": "Consultation",
   "vet.breed": "Race",

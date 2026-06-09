@@ -108,6 +108,17 @@ jobs:
           # Deploy to `production` on main, `staging` on the staging branch.
           command: deploy --env ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
+      # Post-deploy smoke test against the LIVE site. Catches a broken deploy
+      # (e.g. signup failing because Supabase creds were not inlined into the
+      # client bundle) within ~30s instead of waiting for a user report.
+      # Allow a short propagation window before asserting.
+      - name: Post-deploy smoke test
+        env:
+          SMOKE_BASE_URL: ${{ github.ref_name == 'main' && 'https://oltigo.com' || 'https://staging.oltigo.com' }}
+        run: |
+          sleep 15
+          node scripts/smoke-post-deploy.mjs
+
       # ─── Second Worker: webs-alots-ai (AI routes) ─────────────────────
       # Lives in workers/ai/ as a separate npm package. Plain fetch handler
       # (no Next.js / OpenNext) so the bundle stays small. Holds CopilotKit

@@ -1120,6 +1120,8 @@
   "terms.toutePersonneAccedantA": "any person accessing the Platform, whether a healthcare professional (doctor, dentist, pharmacist) or a patient.",
   "terms.toutePersonneUtilisantLa": "any person using the Platform to book appointments or view their medical information.",
   "ui.data-mask.constMaskedMaskvalueType": "; } const masked = mask(value, type, effectiveLevel); const defaultLabel = type === \"phone\" ? \"Phone\" : type === \"email\" ? \"Email\" : \"CIN\"; const a11yLabel = label ?? defaultLabel; return (",
+  "unauthorized.description": "You do not have the necessary permissions to access this page. If you believe this is an error, contact an administrator.",
+  "unauthorized.title": "Access denied",
   "vet.addPet": "Add Pet",
   "vet.appointment": "Consultation",
   "vet.breed": "Breed",
