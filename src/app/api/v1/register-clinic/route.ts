@@ -24,6 +24,7 @@ import { generateSubdomain } from "@/lib/generate-subdomain";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
+import { isAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { createAdminClient } from "@/lib/supabase-server";
 import { normalizeText, safeParse } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
@@ -370,18 +371,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Generate subdomain and check uniqueness
-    let subdomain = generateSubdomain(data.clinic_name);
+    // 2. Generate subdomain — must be unique AND not reserved/malformed.
+    // F-2: generateSubdomain appends a random suffix so the result is
+    // effectively never a bare reserved word, but we validate explicitly as
+    // defense-in-depth (the same rule the DB trigger enforces) and retry on
+    // the rare collision or a pathological clinic name.
+    let subdomain = "";
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = generateSubdomain(data.clinic_name);
+      if (!isAllowedSubdomain(candidate)) continue;
 
-    const { data: existingClinic } = await supabase
-      .from("clinics")
-      .select("id")
-      .eq("subdomain", subdomain)
-      .maybeSingle();
+      const { data: existingClinic } = await supabase
+        .from("clinics")
+        .select("id")
+        .eq("subdomain", candidate)
+        .maybeSingle();
 
-    if (existingClinic) {
-      // Extremely unlikely with random suffix, but handle it
-      subdomain = generateSubdomain(data.clinic_name);
+      if (!existingClinic) {
+        subdomain = candidate;
+        break;
+      }
+    }
+
+    if (!subdomain) {
+      logger.error("Could not allocate a valid unique subdomain", {
+        context: "register-clinic",
+      });
+      return apiError(
+        "Impossible de générer une adresse pour votre clinique. Veuillez réessayer ou contacter le support.",
+        409,
+        "SUBDOMAIN_ALLOCATION_FAILED",
+      );
     }
 
     // 3. Create the auth user with a random password (user will reset via email)

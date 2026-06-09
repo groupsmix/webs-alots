@@ -555,6 +555,25 @@ export function validateEnv(): EnvValidationResult {
     });
   }
 
+  // Audit F-1: Frontend error monitoring must be live in production. The
+  // deployed app was shipping `sentry-public_key=placeholder`, silently
+  // dropping every client-side exception. The DSN is a deploy-time secret, so
+  // we enforce at runtime boot (via enforceEnvValidation in instrumentation)
+  // and deliberately skip during `next build` — NEXT_PHASE is
+  // "phase-production-build" there and the secret is legitimately absent in CI.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  if (isProduction && !isBuildPhase) {
+    const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+    if (!sentryDsn || /placeholder/i.test(sentryDsn)) {
+      missing.push({
+        name: "NEXT_PUBLIC_SENTRY_DSN",
+        description:
+          "Real Sentry DSN required in production (currently missing or set to a 'placeholder' value) — client-side error monitoring is dead without it",
+        group: "observability",
+      });
+    }
+  }
+
   return { valid: missing.length === 0, missing, warnings };
 }
 
