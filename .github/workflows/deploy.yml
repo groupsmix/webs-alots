@@ -111,13 +111,24 @@ jobs:
       # Post-deploy smoke test against the LIVE site. Catches a broken deploy
       # (e.g. signup failing because Supabase creds were not inlined into the
       # client bundle) within ~30s instead of waiting for a user report.
-      # Allow a short propagation window before asserting.
+      # Cloudflare global edge propagation can take >15s after `wrangler deploy`,
+      # so retry with backoff: a deploy that actually succeeded should not show
+      # red just because the first probe hit a not-yet-updated edge. Fails only
+      # if signup is still broken after the full propagation window (~120s).
       - name: Post-deploy smoke test
         env:
           SMOKE_BASE_URL: ${{ github.ref_name == 'main' && 'https://oltigo.com' || 'https://staging.oltigo.com' }}
         run: |
-          sleep 15
-          node scripts/smoke-post-deploy.mjs
+          for attempt in $(seq 1 8); do
+            sleep 15
+            if node scripts/smoke-post-deploy.mjs; then
+              echo "smoke passed on attempt $attempt"
+              exit 0
+            fi
+            echo "smoke attempt $attempt/8 failed; waiting for edge propagation..."
+          done
+          echo "smoke still failing after ~120s of edge-propagation retries"
+          exit 1
 
       # ─── Second Worker: webs-alots-ai (AI routes) ─────────────────────
       # Lives in workers/ai/ as a separate npm package. Plain fetch handler
