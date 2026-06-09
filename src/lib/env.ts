@@ -425,6 +425,23 @@ export function isFhirEnabled(): boolean {
 }
 
 /**
+ * Public URL for the landing-page "Demo" CTA. `NEXT_PUBLIC_*` so the value is
+ * inlined into the client bundle at build time. Falls back to the production
+ * demo host when unset.
+ */
+export function getDemoUrl(): string {
+  return process.env.NEXT_PUBLIC_DEMO_URL || "https://demo.oltigo.com";
+}
+
+/**
+ * MFA enforcement toggle. Enforced by default — only the explicit string
+ * "false" disables it (operational kill-switch for incident response).
+ */
+export function isMfaEnabled(): boolean {
+  return process.env.MFA_ENABLED !== "false";
+}
+
+/**
  * Whether the custom-domain / Cloudflare DNS feature is enabled.
  *
  * Toggled by `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`. When disabled, the

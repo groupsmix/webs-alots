@@ -48,6 +48,9 @@ export function CopilotDataProvider({ children }: CopilotDataProviderProps) {
           .single();
         if (statsData) setStats(statsData);
       } catch (err) {
+        // Client component — server-side logger is unavailable. Browser console
+        // is the only option for client-side error visibility.
+
         console.error("[CopilotDataProvider] Failed to load:", err);
       } finally {
         setLoading(false);

@@ -13,7 +13,7 @@
 
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { createRadiologyImage } from "@/lib/data/server";
+import { createRadiologyImage } from "@/lib/data/radiology";
 import { logger } from "@/lib/logger";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { withAuth } from "@/lib/with-auth";

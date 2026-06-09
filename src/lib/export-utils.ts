@@ -1,5 +1,6 @@
 "use client";
 
+import { escapeCSV } from "@/lib/csv-escape";
 import { getLocalDateStr } from "@/lib/utils";
 
 /**
@@ -13,20 +14,6 @@ import { getLocalDateStr } from "@/lib/utils";
 
 // ── CSV helpers ──────────────────────────────────────────────────────
 
-const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
-
-function escapeCSVValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  let str = String(value);
-  if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
-    str = `'${str}`;
-  }
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
-
 /**
  * Convert an array of objects to CSV and trigger a browser download.
  * Prepends UTF-8 BOM for proper French character handling in Excel.
@@ -35,8 +22,8 @@ export function exportToCSV(data: Record<string, unknown>[], filename: string): 
   if (data.length === 0) return;
 
   const keys = Object.keys(data[0]);
-  const header = keys.map((k) => escapeCSVValue(k)).join(",");
-  const rows = data.map((row) => keys.map((k) => escapeCSVValue(row[k])).join(","));
+  const header = keys.map((k) => escapeCSV(k)).join(",");
+  const rows = data.map((row) => keys.map((k) => escapeCSV(row[k])).join(","));
   const csv = [header, ...rows].join("\n");
 
   const blob = new Blob(["\uFEFF" + csv], {

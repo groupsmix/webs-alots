@@ -273,6 +273,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
         arr: currentMrr * 12,
         totalClinics,
         paidClinics,
+        planBreakdown,
         month: currentMonth,
       },
       forecasts,
@@ -288,5 +289,5 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
   }
 }
 
-export const GET = withAuth(handleGet, ALLOWED_ROLES, { failOpen: true });
+export const GET = withAuth(handleGet, ALLOWED_ROLES);
 export const POST = withAuth(handlePost, ALLOWED_ROLES);

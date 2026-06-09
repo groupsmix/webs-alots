@@ -15,7 +15,7 @@ import {
   createRadiologyOrder,
   updateRadiologyOrderStatus,
   saveRadiologyReport,
-} from "@/lib/data/server";
+} from "@/lib/data/radiology";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
 
 export const POST = withAuthValidation(
@@ -58,12 +58,17 @@ export const POST = withAuthValidation(
 
 export const PATCH = withAuthValidation(
   radiologyOrderPatchSchema,
-  async (body, _request) => {
+  async (body, _request, { profile }) => {
     const { orderId, action } = body;
+    // Derive clinic_id from the authenticated user's profile — never from the request body
+    const clinicId = profile.clinic_id;
+    if (!clinicId) {
+      return apiError("User must belong to a clinic");
+    }
 
     if (action === "status") {
       const { status } = body;
-      const success = await updateRadiologyOrderStatus(orderId, status);
+      const success = await updateRadiologyOrderStatus(orderId, status, clinicId);
       if (!success) {
         return apiInternalError("Failed to update status");
       }
@@ -75,13 +80,17 @@ export const PATCH = withAuthValidation(
       if (!findings && !impression && !reportText) {
         return apiError("At least one of findings, impression, or reportText is required");
       }
-      const success = await saveRadiologyReport(orderId, {
-        findings: findings ?? "",
-        impression: impression ?? "",
-        report_text: reportText ?? "",
-        report_template_id: templateId,
-        radiologist_id: radiologistId,
-      });
+      const success = await saveRadiologyReport(
+        orderId,
+        {
+          findings: findings ?? "",
+          impression: impression ?? "",
+          report_text: reportText ?? "",
+          report_template_id: templateId,
+          radiologist_id: radiologistId,
+        },
+        clinicId,
+      );
       if (!success) {
         return apiInternalError("Failed to save report");
       }

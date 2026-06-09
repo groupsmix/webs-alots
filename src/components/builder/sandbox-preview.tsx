@@ -8,6 +8,7 @@ import { Loader2, RefreshCw, Code2, Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
 interface SandboxPreviewProps {
@@ -35,7 +36,7 @@ export function SandboxPreview({ code, language, isStreaming, className }: Sandb
       setPreviewUrl(url);
       setView("preview");
     } catch (err) {
-      console.error("Preview build failed:", err);
+      logger.error("Preview build failed", { context: "sandbox-preview", error: err });
     } finally {
       setIsBuilding(false);
     }

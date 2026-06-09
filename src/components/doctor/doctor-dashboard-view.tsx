@@ -44,7 +44,7 @@ import type {
   DoctorPatientView,
   DoctorWaitingRoomEntry,
   DoctorInvoiceView,
-} from "@/lib/data/server";
+} from "@/lib/data/dashboard";
 import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
 import { t } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";

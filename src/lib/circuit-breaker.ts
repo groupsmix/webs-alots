@@ -186,6 +186,10 @@ export class CircuitOpenError extends Error {
     super(`Circuit breaker "${name}" is OPEN — request rejected`);
     this.breaker = name;
     this.name = "CircuitOpenError";
+    // Required for correct `instanceof` checks when targeting ES5 / CommonJS.
+    // TypeScript subclasses of built-ins (Error, Array …) lose their prototype
+    // chain after transpilation unless we restore it explicitly.
+    Object.setPrototypeOf(this, CircuitOpenError.prototype);
   }
 }
 

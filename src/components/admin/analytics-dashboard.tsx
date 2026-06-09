@@ -209,11 +209,6 @@ export function AnalyticsDashboard({
     () => parsedAppointments.filter((a) => isSameDay(a._date, today)),
     [parsedAppointments, today],
   );
-  const _yesterdayAppts = useMemo(
-    () => parsedAppointments.filter((a) => isSameDay(a._date, yesterday)),
-    [parsedAppointments, yesterday],
-  );
-  void _yesterdayAppts; // retained for future comparisons
 
   const todayPayments = useMemo(
     () => parsedPayments.filter((p) => isSameDay(p._date, today) && p.status === "completed"),

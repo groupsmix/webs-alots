@@ -149,4 +149,4 @@ async function handler(request: NextRequest) {
   }
 }
 
-export const GET = withSentryCron("nps-survey-daily", "0 */6 * * *", handler);
+export const GET = withSentryCron("nps-survey-daily", "0 * * * *", handler);

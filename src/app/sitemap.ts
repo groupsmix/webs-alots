@@ -103,7 +103,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from("clinics")
         .select("subdomain, updated_at")
         .eq("status", "active")
-        .not("subdomain", "is", null);
+        .not("subdomain", "is", null)
+        .not("subdomain", "in", '("demo","test","localhost")');
 
       if (clinics) {
         const clinicPublicPages = ["/", "/services", "/about", "/book", "/reviews", "/contact"];

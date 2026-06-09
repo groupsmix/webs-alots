@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 
 /**
@@ -9,6 +11,7 @@ import { logger } from "@/lib/logger";
  * Shows a toast when a new version is available (Issue 29).
  */
 export function ServiceWorkerRegister() {
+  const [locale] = useLocale();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
@@ -108,13 +111,13 @@ export function ServiceWorkerRegister() {
     <div className="fixed bottom-4 left-4 right-4 z-[90] flex justify-center pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
       <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 shadow-lg dark:border-blue-800 dark:bg-blue-950">
         <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-          Nouvelle version disponible
+          {t(locale, "sw.updateAvailable" as TranslationKey)}
         </p>
         <button
           onClick={handleUpdate}
           className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
         >
-          Mettre à jour
+          {t(locale, "sw.update" as TranslationKey)}
         </button>
       </div>
     </div>

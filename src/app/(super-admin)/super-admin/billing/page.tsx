@@ -180,7 +180,7 @@ export default function BillingPage() {
             Monitor revenue, subscriptions, and payment status
           </p>
         </div>
-        {/* eslint-disable i18next/no-literal-string */}
+        {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={filtered.length === 0}>

@@ -1,4 +1,8 @@
-import QRCode from "qrcode";
+// Import the browser entry (SVG/canvas renderers only) rather than the main
+// `qrcode` entry, which statically pulls in the PNG renderer + `pngjs` (~1 MiB)
+// and bloated the Cloudflare Worker past its 10 MiB limit. See
+// src/types/qrcode-browser.d.ts for the rationale and typing.
+import QRCode from "qrcode/lib/browser.js";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -66,11 +70,17 @@ export const POST = withAuthValidation(
       }
 
       const checkinUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkin/scan?token=${token}`;
-      const qrDataUrl = await QRCode.toDataURL(checkinUrl, {
+      // Render an SVG QR (no pngjs) and return it as an SVG data URL. The
+      // response contract is unchanged: `qrDataUrl` is still a data: URL that
+      // renders directly in an <img src> and scans identically (crisper, since
+      // SVG is vector). Buffer is available in the Workers nodejs_compat runtime.
+      const qrSvg = await QRCode.toString(checkinUrl, {
+        type: "svg",
         errorCorrectionLevel: "M",
         margin: 2,
         width: 300,
       });
+      const qrDataUrl = `data:image/svg+xml;base64,${Buffer.from(qrSvg).toString("base64")}`;
 
       await logAuditEvent({
         supabase,

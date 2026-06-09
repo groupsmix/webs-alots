@@ -118,7 +118,8 @@ async function loadLiveHealthRecords(
   auth: AuthContext,
   clinicId?: string | null,
 ): Promise<PersistedClinicHealthRecord[]> {
-  const { data: signalRows, error } = await auth.supabase.rpc("get_all_clinic_signals" as never);
+  const admin = createUntypedAdminClient("super_admin");
+  const { data: signalRows, error } = await admin.rpc("get_all_clinic_signals" as never);
   if (error) {
     throw new Error(`Failed to compute live health records: ${error.message}`);
   }

@@ -17,7 +17,7 @@ import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
-import { getDirection, t, type Locale, type TranslationKey } from "@/lib/i18n";
+import { t, type Locale, type TranslationKey } from "@/lib/i18n";
 import { getTenant, getLocaleFromTenant, getDirFromLocale } from "@/lib/tenant";
 
 // Editorial typography: Inter for UI/body, JetBrains Mono for metadata/labels.
@@ -57,7 +57,6 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
     { media: "(prefers-color-scheme: dark)", color: "#0b0f0e" },
@@ -108,6 +107,7 @@ export async function generateMetadata(): Promise<Metadata> {
     authors: [{ name: "Oltigo" }],
     alternates: {
       languages: {
+        "x-default": siteUrl,
         fr: siteUrl,
         ar: `${siteUrl}?lang=ar`,
       },
@@ -140,7 +140,6 @@ export default async function RootLayout({
   const tenantLocale = getLocaleFromTenant(tenant) as Locale;
   const locale: Locale = preferredLocale || tenantLocale;
   const dir = getDirFromLocale(locale);
-  void getDirection; // retained for generateMetadata usage above
 
   return (
     <html

@@ -289,4 +289,4 @@ async function handler(request: NextRequest) {
   });
 }
 
-export const GET = withSentryCron("data-retention", "0 3 * * *", handler);
+export const GET = withSentryCron("data-retention", "0 1 * * *", handler);

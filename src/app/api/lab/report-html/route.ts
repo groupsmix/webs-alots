@@ -20,7 +20,7 @@ import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { updateLabOrderPdfUrl } from "@/lib/data/server";
+import { updateLabOrderPdfUrl } from "@/lib/data/lab";
 import { isEncryptionConfigured } from "@/lib/encryption";
 import { escapeHtml } from "@/lib/escape-html";
 import { getDirection, isRTL, t, type Locale } from "@/lib/i18n";
@@ -293,7 +293,7 @@ export const POST = withAuthValidation(
     // re-checks and would leak PHI if the URL were ever shared.
     const downloadUrl = `/api/files/download?key=${encodeURIComponent(reportKey)}`;
 
-    await updateLabOrderPdfUrl(orderId, downloadUrl);
+    await updateLabOrderPdfUrl(orderId, downloadUrl, clinicId);
 
     await logAuditEvent({
       supabase,

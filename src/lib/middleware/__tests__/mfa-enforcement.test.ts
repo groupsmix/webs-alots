@@ -1,11 +1,8 @@
 /**
  * MFA enforcement tests (§3.5).
- *
- * MFA enforcement is currently disabled — enforceMfa always returns null.
- * These tests verify that behavior for all roles.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { enforceMfa } from "../mfa-enforcement";
 
 type Aal = { currentLevel: string | null; nextLevel: string | null };
@@ -22,10 +19,32 @@ function mockSupabase(aal: Aal): SupabaseClient {
 
 const URL_BASE = "https://clinic.oltigo.com";
 
-describe("enforceMfa — disabled", () => {
-  it("passes super_admin without MFA", async () => {
+describe("enforceMfa", () => {
+  const originalEnv = process.env.MFA_ENABLED;
+
+  beforeEach(() => {
+    process.env.MFA_ENABLED = "true";
+  });
+
+  afterEach(() => {
+    process.env.MFA_ENABLED = originalEnv;
+  });
+
+  it("redirects super_admin to MFA verification if AAL2 is required but not met", async () => {
     const result = await enforceMfa(
-      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
+      "super_admin",
+      "/admin",
+      `${URL_BASE}/admin`,
+    );
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe(307);
+    expect(result?.headers.get("Location")).toMatch(/\/mfa-verify\?next=%2Fadmin$/);
+  });
+
+  it("passes super_admin if AAL2 is already met", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal2", nextLevel: "aal2" }),
       "super_admin",
       "/admin",
       `${URL_BASE}/admin`,
@@ -33,19 +52,21 @@ describe("enforceMfa — disabled", () => {
     expect(result).toBeNull();
   });
 
-  it("passes doctor without MFA", async () => {
+  it("redirects clinic_admin to MFA verification if AAL2 is required but not met", async () => {
     const result = await enforceMfa(
-      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
-      "doctor",
-      "/dashboard",
-      `${URL_BASE}/dashboard`,
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
+      "clinic_admin",
+      "/admin/settings",
+      `${URL_BASE}/admin/settings`,
     );
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe(307);
+    expect(result?.headers.get("Location")).toMatch(/\/mfa-verify\?next=%2Fadmin%2Fsettings$/);
   });
 
-  it("passes clinic_admin without MFA", async () => {
+  it("passes clinic_admin if AAL2 is already met", async () => {
     const result = await enforceMfa(
-      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      mockSupabase({ currentLevel: "aal2", nextLevel: "aal2" }),
       "clinic_admin",
       "/admin/settings",
       `${URL_BASE}/admin/settings`,
@@ -53,7 +74,17 @@ describe("enforceMfa — disabled", () => {
     expect(result).toBeNull();
   });
 
-  it("passes patient without MFA", async () => {
+  it("passes doctor without MFA (not required for role)", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
+      "doctor",
+      "/dashboard",
+      `${URL_BASE}/dashboard`,
+    );
+    expect(result).toBeNull();
+  });
+
+  it("passes patient without MFA (not required for role)", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
       "patient",
@@ -63,13 +94,29 @@ describe("enforceMfa — disabled", () => {
     expect(result).toBeNull();
   });
 
-  it("passes receptionist without MFA", async () => {
+  it("passes receptionist without MFA (not required for role)", async () => {
     const result = await enforceMfa(
-      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
       "receptionist",
       "/reception",
       `${URL_BASE}/reception`,
     );
     expect(result).toBeNull();
+  });
+
+  describe("when MFA_ENABLED=false", () => {
+    beforeEach(() => {
+      process.env.MFA_ENABLED = "false";
+    });
+
+    it("passes super_admin even if AAL2 is required but not met", async () => {
+      const result = await enforceMfa(
+        mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
+        "super_admin",
+        "/admin",
+        `${URL_BASE}/admin`,
+      );
+      expect(result).toBeNull();
+    });
   });
 });

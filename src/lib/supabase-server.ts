@@ -206,7 +206,8 @@ export type AdminPurpose =
   | "cron-ai-briefings"
   | "cron-trial-lifecycle"
   | "cron-usage-snapshots"
-  | "referral-program";
+  | "referral-program"
+  | "upload-policy";
 
 /**
  * Create a Supabase admin client using the service role key.

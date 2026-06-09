@@ -50,7 +50,7 @@ describe("applyAllSecurityHeaders — CSP guard", () => {
     const response = NextResponse.json({ ok: true });
     const csp = buildCspHeaderValues("test-nonce");
 
-    applyAllSecurityHeaders(response, csp, "test-nonce");
+    applyAllSecurityHeaders(response, csp);
 
     expect(response.headers.get("Content-Security-Policy")).toBe(csp.enforce);
   });
@@ -60,7 +60,7 @@ describe("applyAllSecurityHeaders — CSP guard", () => {
     response.headers.set("Content-Security-Policy", "stale");
 
     const csp: CspHeaderValues = { enforce: "", reportOnly: "" };
-    applyAllSecurityHeaders(response, csp, "test-nonce");
+    applyAllSecurityHeaders(response, csp);
 
     expect(response.headers.has("Content-Security-Policy")).toBe(false);
     expect(response.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");

@@ -30,21 +30,8 @@ export const GET = withAuth(
     const { data } = await query;
     const rows = data ?? [];
 
-    // SECURITY: CSV formula injection. A cell whose first character is
-    // =, +, -, @, or a TAB/CR will be evaluated as a formula by Excel and
-    // Google Sheets. Prefix such values with a single quote so the value
-    // is rendered as plain text. Mirrors src/lib/export-data.ts.
-    const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
-    const esc = (v: string | null | undefined): string => {
-      let str = String(v ?? "");
-      if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
-        str = `'${str}`;
-      }
-      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return `"${str}"`;
-    };
+    // SECURITY: CSV formula injection is mitigated via escapeCSV.
+    const { escapeCSV: esc } = await import("@/lib/csv-escape");
 
     const header = "timestamp,actor,clinic,action,type,description\n";
     const body = rows
