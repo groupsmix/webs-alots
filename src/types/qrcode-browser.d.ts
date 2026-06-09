@@ -9,11 +9,7 @@
 // string without needing a DOM — perfect for generating a QR data URL on the
 // edge. See src/app/api/checkin/qr-generate/route.ts.
 declare module "qrcode/lib/browser.js" {
-  import type {
-    QRCodeToStringOptions,
-    QRCodeToDataURLOptions,
-    QRCodeSegment,
-  } from "qrcode";
+  import type { QRCodeToStringOptions, QRCodeToDataURLOptions, QRCodeSegment } from "qrcode";
 
   // SVG string output (DOM-free) — used server-side in the qr-generate route.
   export function toString(
