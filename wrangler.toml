@@ -20,6 +20,17 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
+# ── Bundle minification (CF-BUNDLE-02) ────────────────────────────────
+# Minify the Worker on upload. The OpenNext server bundle
+# (.open-next/worker.js → handler.mjs) ships unminified by default, which
+# left the gzipped Worker at ~10.22 MiB on main — within 0.2% of
+# Cloudflare's hard 10 MiB compressed limit. Normal build-to-build output
+# variance (~0.5%) is enough to push any commit over the limit and fail
+# `wrangler versions upload` (error 10027), as it did on the i18n branch.
+# esbuild minification reclaims meaningful headroom; keepNames defaults to
+# true, so Durable Object / class / function names are preserved.
+minify = true
+
 # ── Account (set via CLOUDFLARE_ACCOUNT_ID env in CI) ─────────────────
 # account_id is intentionally omitted — it is injected by the
 # cloudflare/wrangler-action in CI to avoid leaking it in the repo.
@@ -169,6 +180,9 @@ NEXT_PUBLIC_DATA_MASKING = "partial"
 # be explicitly redeclared per environment.
 [env.production]
 name = "webs-alots"
+# CF-BUNDLE-02: minify here too, so an explicit `--env production` deploy
+# gets the same headroom as the top-level (default) deploy path.
+minify = true
 [env.production.assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
@@ -267,6 +281,8 @@ cpu_ms = 30000
 # ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
 name = "webs-alots-staging"
+# CF-BUNDLE-02: keep staging in parity with production.
+minify = true
 [env.staging.assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
