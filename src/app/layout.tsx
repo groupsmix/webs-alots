@@ -17,7 +17,7 @@ import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
-import { t, type Locale, type TranslationKey } from "@/lib/i18n";
+import { t, isSupportedLocale, type Locale, type TranslationKey } from "@/lib/i18n";
 import { getTenant, getLocaleFromTenant, getDirFromLocale } from "@/lib/tenant";
 
 // Editorial typography: Inter for UI/body, JetBrains Mono for metadata/labels.
@@ -71,10 +71,17 @@ export const viewport: Viewport = {
  */
 export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
+  // An explicit ?lang override (set by middleware as x-locale) wins so the
+  // crawlable hreflang URL (?lang=ar) gets matching og:locale / canonical.
+  const explicitLocale = h.get("x-locale");
   const tenantLocale = h.get("x-tenant-locale") as Locale | null;
   const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
-  const locale = tenantLocale || preferredLocale || ("fr" as Locale);
+  const locale =
+    (isSupportedLocale(explicitLocale) ? explicitLocale : null) ||
+    tenantLocale ||
+    preferredLocale ||
+    ("fr" as Locale);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
   return {
@@ -134,11 +141,20 @@ export default async function RootLayout({
 }>) {
   const tenant = await getTenant();
   // TASK-018: Derive locale + dir from tenant using canonical helpers.
-  // Cookie preference still takes priority (user preference > tenant default).
+  // Priority: explicit ?lang override (x-locale, set by middleware) > cookie
+  // preference > tenant default. The ?lang override is what makes the
+  // hreflang-advertised Arabic URL (?lang=ar) actually render <html dir="rtl">
+  // — without it, the publicly-cached page can only ever serve the French
+  // default since the cache key does not vary on the preferred-locale cookie.
+  const headerStore = await headers();
+  const explicitLocale = headerStore.get("x-locale");
   const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale | undefined;
   const tenantLocale = getLocaleFromTenant(tenant) as Locale;
-  const locale: Locale = preferredLocale || tenantLocale;
+  const locale: Locale =
+    (isSupportedLocale(explicitLocale) ? explicitLocale : undefined) ||
+    preferredLocale ||
+    tenantLocale;
   const dir = getDirFromLocale(locale);
 
   return (

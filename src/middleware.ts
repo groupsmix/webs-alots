@@ -16,6 +16,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
+import { isSupportedLocale } from "@/lib/i18n";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { applyCors } from "@/lib/middleware/cors";
 import { validateCsrf } from "@/lib/middleware/csrf";
@@ -200,6 +201,24 @@ export async function middleware(request: NextRequest) {
   // Supabase clients (createTenantClient). An attacker could inject this
   // header to bypass RLS policies that read `request.headers->>'x-clinic-id'`.
   requestHeaders.delete("x-clinic-id");
+
+  // --- i18n: honor an explicit ?lang override for the SSR locale + dir ---
+  // The public marketing pages are edge-cached (Cache-Control: public,
+  // s-maxage) and the cache key does NOT vary on cookie or Accept-Language, so
+  // locale-by-cookie / locale-by-Accept-Language cannot be served reliably from
+  // cache. A distinct URL is the only cache-safe selector — and `?lang=ar` is
+  // exactly the Arabic URL our own hreflang tags advertise (hreflang-tags.tsx).
+  // Honoring it here makes that crawlable URL actually render
+  // `<html lang="ar" dir="rtl">` instead of falling back to French LTR.
+  //
+  // The choice is forwarded to Server Components via the `x-locale` request
+  // header (mirrors x-tenant-locale). We strip any inbound x-locale first so a
+  // client cannot forge it, then set only a validated, supported value.
+  requestHeaders.delete("x-locale");
+  const langParam = request.nextUrl.searchParams.get("lang");
+  if (isSupportedLocale(langParam)) {
+    requestHeaders.set("x-locale", langParam);
+  }
 
   // Strip incoming x-auth-profile-* headers. These are set later in this
   // middleware (after the user/profile lookup) with an HMAC signature so
