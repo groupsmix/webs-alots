@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
+// Use the browser entry (no pngjs) so this client component does not pull the
+// PNG renderer + pngjs (~1 MiB) into the SSR/Worker bundle. toDataURL still runs
+// client-side via the canvas renderer (browser DOM). See src/types/qrcode-browser.d.ts.
+import QRCode from "qrcode/lib/browser.js";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
