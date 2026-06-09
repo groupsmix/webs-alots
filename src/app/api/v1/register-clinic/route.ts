@@ -26,7 +26,7 @@ import { phoneToWhatsApp } from "@/lib/morocco";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { isAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { createAdminClient } from "@/lib/supabase-server";
-import { normalizeText, safeParse } from "@/lib/validations";
+import { normalizeText, safeParse, looksLikeGibberish, GIBBERISH_NAME_MESSAGE } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
 
 // ---------------------------------------------------------------------------
@@ -181,7 +181,11 @@ const registerClinicSchema = z
     clinic_name: z
       .string()
       .transform(normalizeText)
-      .pipe(z.string().min(2, "Le nom de la clinique est requis").max(200)),
+      .pipe(z.string().min(2, "Le nom de la clinique est requis").max(200))
+      // F-2 (2.3): reject keyboard-mash / placeholder names ("fffffff",
+      // "jgjjrjrj") that slugify into junk public tenants. Conservative — only
+      // unambiguous gibberish is blocked; see name-quality.ts.
+      .refine((v) => !looksLikeGibberish(v), GIBBERISH_NAME_MESSAGE),
     doctor_name: z
       .string()
       .transform(normalizeText)
