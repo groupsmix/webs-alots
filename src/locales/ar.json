@@ -1120,6 +1120,8 @@
   "terms.toutePersonneAccedantA": "أي شخص يصل إلى المنصة، سواء كان مهنيًا صحيًا (طبيب، طبيب أسنان، صيدلي) أو مريضًا.",
   "terms.toutePersonneUtilisantLa": "أي شخص يستخدم المنصة لحجز المواعيد أو الاطلاع على معلوماته الطبية.",
   "ui.data-mask.constMaskedMaskvalueType": "; } const masked = mask(value, type, effectiveLevel); const defaultLabel = type === \"phone\" ? \"هاتف\" : type === \"email\" ? \"بريد إلكتروني\" : \"بطاقة التعريف\"; const a11yLabel = label ?? defaultLabel; return (",
+  "unauthorized.description": "ليس لديك الأذونات اللازمة للوصول إلى هذه الصفحة. إذا كنت تعتقد أن هذا خطأ، فاتصل بالمسؤول.",
+  "unauthorized.title": "تم رفض الوصول",
   "vet.addPet": "إضافة حيوان",
   "vet.appointment": "استشارة",
   "vet.breed": "السلالة",

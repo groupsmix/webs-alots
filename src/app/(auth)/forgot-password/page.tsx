@@ -230,7 +230,7 @@ export default function ForgotPasswordPage() {
             {sent ? t(locale, "forgot.emailSent") : t(locale, "forgot.title")}
           </CardTitle>
           <CardDescription>
-            {sent ? `${t(locale, "forgot.emailSentDesc")} ${email}` : t(locale, "forgot.desc")}
+            {sent ? t(locale, "forgot.emailSentDesc", { email }) : t(locale, "forgot.desc")}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -106,6 +106,10 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          # PR previews build with placeholder Supabase creds (signup is not
+          # exercised here), so downgrade the build-env guard to a warning.
+          # Real deploys (deploy.yml) run the guard strictly with live secrets.
+          ALLOW_MISSING_PUBLIC_ENV: "1"
 
       # Verify the Worker entry point was actually emitted — catches
       # silent OpenNext misconfigurations where the build "succeeds"
