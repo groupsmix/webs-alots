@@ -38,8 +38,9 @@ import {
 } from "@/lib/middleware/security-headers";
 import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
+import { isReservedSubdomain } from "@/lib/reserved-subdomains";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
-import { extractSubdomain } from "@/lib/subdomain";
+import { extractRawSubdomain, extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 
 /**
@@ -212,6 +213,33 @@ export async function middleware(request: NextRequest) {
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
+
+  // --- F-2 / SEC: Reserved-subdomain hard block ---
+  // Reserved subdomains (api, admin, mail, auth, login, support, app, …) must
+  // NEVER fall through to the marketing site. extractSubdomain() returns null
+  // for them so they are not treated as tenants — but null *also* means "root
+  // domain", and without this gate the request would continue and serve the
+  // Oltigo homepage at e.g. admin.oltigo.com / paypal-verify-style infra hosts,
+  // a ready-made phishing surface under our own brand. Detect the reserved host
+  // explicitly via the RAW label and return the same hard 404 + noindex that an
+  // unknown subdomain already gets (see A146-F2 below). Notes:
+  //   • "www" is handled by its own redirect above and returns null from the
+  //     raw extractor, so it is never caught here.
+  //   • demo/test are OPERATIONAL_SUBDOMAINS (not reserved) and still resolve
+  //     as tenants.
+  //   • staging.* is served by a separate Worker (ROOT_DOMAIN=staging.oltigo.com,
+  //     routes in wrangler.toml), so "staging" is its root — never a subdomain
+  //     here — and is unaffected on the production Worker.
+  const rawSubdomain = extractRawSubdomain(hostname, rootDomain);
+  if (rawSubdomain && isReservedSubdomain(rawSubdomain)) {
+    const reservedBlockResponse = withSecurityHeaders(
+      new NextResponse("Not Found", { status: 404 }),
+      cspHeaders,
+    );
+    reservedBlockResponse.headers.set("X-Robots-Tag", "noindex, nofollow");
+    reservedBlockResponse.headers.set("Cache-Control", "no-store");
+    return reservedBlockResponse;
+  }
 
   // --- Sec-07: CORS preflight handling ---
   const corsResult = applyCors(request, null);
