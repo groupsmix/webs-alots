@@ -6,6 +6,8 @@
  * For local dev, subdomains work via "clinicname.localhost:3000".
  */
 
+import { isReservedSubdomain } from "@/lib/reserved-subdomains";
+
 /**
  * Extract the subdomain from a hostname.
  *
@@ -23,7 +25,7 @@ export function extractSubdomain(hostname: string, rootDomain?: string): string 
   // Local development: *.localhost
   if (host.endsWith(".localhost")) {
     const sub = host.replace(".localhost", "");
-    if (sub && sub !== "www") return sub;
+    if (sub && sub !== "www" && !sub.includes(".") && !isReservedSubdomain(sub)) return sub;
     return null;
   }
 
@@ -40,20 +42,13 @@ export function extractSubdomain(hostname: string, rootDomain?: string): string 
   // Ignore empty, "www", or multi-level subdomains (e.g., "a.b")
   if (!sub || sub === "www" || sub.includes(".")) return null;
 
-  // Audit 8.3 — Reserved subdomains that must not be resolved as tenant
-  // clinics. "staging" in particular would conflict with the staging
-  // environment route (staging.oltigo.com) defined in wrangler.toml.
-  const RESERVED_SUBDOMAINS = new Set([
-    "staging",
-    "api",
-    "admin",
-    "app",
-    "mail",
-    "ftp",
-    "ns1",
-    "ns2",
-  ]);
-  if (RESERVED_SUBDOMAINS.has(sub)) return null;
+  // Audit 8.3 / F-2 — Reserved subdomains must not resolve as tenant clinics.
+  // The blocklist (admin, api, www, staging, mail, …) lives in the shared
+  // `reserved-subdomains` module so resolution, the sitemap, the registration
+  // endpoint, and the DB trigger all enforce exactly the same set. "staging"
+  // in particular would otherwise collide with the staging environment route
+  // (staging.oltigo.com) defined in wrangler.toml.
+  if (isReservedSubdomain(sub)) return null;
 
   return sub;
 }

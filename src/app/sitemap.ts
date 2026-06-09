@@ -4,6 +4,7 @@ import { getAllPosts } from "@/lib/blog";
 import { getDirectoryDoctors } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
 import { logger } from "@/lib/logger";
+import { isAllowedSubdomain } from "@/lib/reserved-subdomains";
 import type { Database } from "@/lib/types/database";
 
 /**
@@ -111,6 +112,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         for (const clinic of clinics) {
           if (!clinic.subdomain) continue;
+          // F-2: Never emit reserved or malformed subdomains into the public
+          // sitemap, even if a stray row slipped past the DB guard. Keeps junk
+          // / reserved tenants (admin, api, www, …) out of Google's index.
+          if (!isAllowedSubdomain(clinic.subdomain)) continue;
           const clinicBase = `https://${clinic.subdomain}.${rootDomain}`;
           const modified = clinic.updated_at ? new Date(clinic.updated_at) : now;
 

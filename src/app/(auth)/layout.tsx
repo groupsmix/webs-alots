@@ -40,12 +40,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex min-h-screen bg-muted/50">
-      <a
-        href="#auth-form"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
-      >
-        {t(locale, "nav.skipToForm")}
-      </a>
+      {/* F-5: No skip link here. The root layout already renders the single
+          "skip to content" link, and on auth pages it targets #main-content
+          below (the form). A second skip link caused a WCAG 2.4.1 ambiguity
+          (two "Aller au…" targets) on /login/. */}
 
       {/* ── Left hero panel (hidden on mobile) ── */}
       <div className="relative hidden lg:flex lg:w-[480px] xl:w-[520px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#005a3b] via-[#00795a] to-[#009e74] text-white">
@@ -134,7 +132,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <div id="auth-form" className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div
+          id="main-content"
+          className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-8"
+        >
           <div className="w-full max-w-md">{children}</div>
         </div>
       </div>
