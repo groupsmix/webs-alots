@@ -1,5 +1,18 @@
 export type Locale = "fr" | "ar" | "en";
 
+/** All supported UI locales. */
+export const LOCALES = ["fr", "ar", "en"] as const;
+
+/**
+ * Type guard: true when `value` is a supported {@link Locale}.
+ *
+ * Used to validate untrusted input (e.g. a `?lang=` query param or an inbound
+ * header) before it is allowed to influence the rendered locale/direction.
+ */
+export function isSupportedLocale(value: unknown): value is Locale {
+  return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
+}
+
 // Instead of putting all translations in this file, we dynamically import them.
 // We'll provide a synchronous `t` function that relies on pre-loaded dictionaries in React Context,
 // or a simple cache that we load via a client component.

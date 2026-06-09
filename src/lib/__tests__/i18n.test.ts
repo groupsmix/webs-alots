@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { t } from "../i18n";
+import { t, isSupportedLocale, LOCALES } from "../i18n";
 
 // Mock en and ar locale modules so we have a synthetic empty key for
 // fallback tests. The real locale files now have 100% coverage.
@@ -50,5 +50,38 @@ describe("t() translation", () => {
   it("does not mark keys that are translated in the requested locale", () => {
     vi.stubEnv("NODE_ENV", "development");
     expect(t("en", TRANSLATED_KEY)).toBe("Expenses");
+  });
+});
+
+describe("isSupportedLocale", () => {
+  it("accepts every supported locale", () => {
+    for (const locale of LOCALES) {
+      expect(isSupportedLocale(locale)).toBe(true);
+    }
+  });
+
+  it("accepts fr, ar, en explicitly", () => {
+    expect(isSupportedLocale("fr")).toBe(true);
+    expect(isSupportedLocale("ar")).toBe(true);
+    expect(isSupportedLocale("en")).toBe(true);
+  });
+
+  // Guards the ?lang override path: untrusted query/header values that are not
+  // a known locale must be rejected so they cannot influence the rendered dir.
+  it.each([
+    "FR",
+    "ar-MA",
+    "de",
+    "",
+    " ar",
+    "javascript:alert(1)",
+    "fr,ar",
+    null,
+    undefined,
+    123,
+    {},
+    ["ar"],
+  ])("rejects unsupported / malformed value %p", (value) => {
+    expect(isSupportedLocale(value as unknown)).toBe(false);
   });
 });
