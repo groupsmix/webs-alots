@@ -26,7 +26,12 @@ import { phoneToWhatsApp } from "@/lib/morocco";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { isAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { createAdminClient } from "@/lib/supabase-server";
-import { normalizeText, safeParse, looksLikeGibberish, GIBBERISH_NAME_MESSAGE } from "@/lib/validations";
+import {
+  normalizeText,
+  safeParse,
+  looksLikeGibberish,
+  GIBBERISH_NAME_MESSAGE,
+} from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
 
 // ---------------------------------------------------------------------------

@@ -71,5 +71,4 @@ export function looksLikeGibberish(value: string): boolean {
 }
 
 /** User-facing rejection message (French — matches the rest of the schema). */
-export const GIBBERISH_NAME_MESSAGE =
-  "Veuillez saisir un nom d'établissement valide.";
+export const GIBBERISH_NAME_MESSAGE = "Veuillez saisir un nom d'établissement valide.";
