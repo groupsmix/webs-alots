@@ -30,9 +30,24 @@ export function ServiceWorkerRegister() {
       return;
     }
 
-    // Listen for controller changes (new SW activated) and reload
+    // Listen for controller changes (new SW activated) and reload.
+    //
+    // IMPORTANT: `controllerchange` also fires on the FIRST install —
+    // sw.js calls skipWaiting() + clients.claim(), so a brand-new SW
+    // claims the page moments after load. Reloading then forces every
+    // first-time visitor through a gratuitous page reload right after
+    // the page becomes interactive (and makes E2E tests racy: the
+    // reload blanks the DOM mid-test). Only reload when the page was
+    // already controlled by a previous SW — i.e. a genuine update.
     let refreshing = false;
+    let hadController = !!navigator.serviceWorker.controller;
     const onControllerChange = () => {
+      if (!hadController) {
+        // First install just claimed this page. The current page was
+        // served by the network anyway — no reload needed.
+        hadController = true;
+        return;
+      }
       if (refreshing) return;
       refreshing = true;
       window.location.reload();
