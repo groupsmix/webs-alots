@@ -94,3 +94,46 @@ export const PROVIDER_PRIORITY: AIProvider[] = [
 
 /** Rate limit window duration (ms) */
 export const RATE_LIMIT_WINDOW_MS = 60_000;
+
+// ── Single-registry model allowlist (Task A1) ──
+
+/**
+ * W8-S-03: Dated snapshot model IDs that operators may pin via `OPENAI_MODEL`
+ * in addition to the per-provider defaults above. Floating aliases
+ * (e.g. "gpt-4o-mini") are rejected to prevent silent safety regressions.
+ * (Registry refresh with current provider IDs is Task A2.)
+ */
+export const PINNED_SNAPSHOT_MODELS: readonly string[] = [
+  "gpt-4o-mini-2024-07-18",
+  "gpt-4o-2024-08-06",
+  "gpt-4o-2024-11-20",
+];
+
+/**
+ * F-AI-07 / W8-S-03: The model allowlist, generated from the single provider
+ * registry plus explicitly pinned snapshot IDs. Previously a hand-maintained
+ * duplicate set inside config.ts (the dual-config problem, Task A1).
+ */
+export const ALLOWED_MODELS: ReadonlySet<string> = new Set<string>([
+  ...Object.values(PROVIDER_MODELS).map((m) => m.model),
+  ...PINNED_SNAPSHOT_MODELS,
+]);
+
+/**
+ * Providers whose chat APIs are OpenAI-wire-compatible, with their base URLs.
+ *
+ * Legacy `resolveAIConfig()` consumers POST raw OpenAI-format JSON to
+ * `${baseUrl}/chat/completions` (including `response_format: json_object`),
+ * so the compatibility wrapper may only select these providers. `anthropic`
+ * and `google` use native adapters (providers.ts) and stay reachable through
+ * `routeAIRequest()` until the AI SDK migration (Task A3). `workers_ai` is
+ * also OpenAI-compatible but its base URL depends on the Cloudflare account
+ * ID, so it is assembled in config.ts.
+ */
+export const OPENAI_COMPAT_BASE_URLS: Partial<Record<AIProvider, string>> = {
+  openai: "https://api.openai.com/v1",
+  groq: "https://api.groq.com/openai/v1",
+  deepseek: "https://api.deepseek.com",
+  mistral: "https://api.mistral.ai/v1",
+  xai: "https://api.x.ai/v1",
+};
