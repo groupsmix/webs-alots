@@ -39,6 +39,13 @@ export interface ClinicMetrics {
     slotsAvailable: number;
   };
   openAlerts: number;
+  triageStats?: {
+    totalTriaged: number;
+    byUrgency: Record<string, number>;
+    byTag: Record<string, number>;
+    unansweredUrgent: number;
+    topTags: string[];
+  };
 }
 
 export interface GeneratedBriefing {
@@ -279,6 +286,58 @@ export async function fetchClinicMetrics(
       ? Math.round(((yesterdayNoShowRate - lastWeekNoShowRate) / lastWeekNoShowRate) * 100)
       : 0;
 
+  // D2: Fetch yesterday's triage stats from support_tickets
+  let triageStats: ClinicMetrics["triageStats"] | undefined;
+  try {
+    const { data: triagedTickets } = await supabase
+      .from("support_tickets")
+      .select("ai_urgency, ai_tags, status")
+      .eq("clinic_id", clinicId)
+      .not("ai_triage_at", "is", null)
+      .gte("ai_triage_at", `${yesterdayStr}T00:00:00`)
+      .lt("ai_triage_at", `${todayStr}T00:00:00`);
+
+    if (triagedTickets && triagedTickets.length > 0) {
+      const byUrgency: Record<string, number> = {};
+      const tagCounts: Record<string, number> = {};
+      let unansweredUrgent = 0;
+
+      for (const t of triagedTickets as Array<{
+        ai_urgency: string | null;
+        ai_tags: string[] | null;
+        status: string;
+      }>) {
+        const u = t.ai_urgency ?? "unknown";
+        byUrgency[u] = (byUrgency[u] ?? 0) + 1;
+
+        if (t.ai_tags) {
+          for (const tag of t.ai_tags) {
+            tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+          }
+        }
+
+        if (u === "urgent" && t.status !== "resolved" && t.status !== "closed") {
+          unansweredUrgent++;
+        }
+      }
+
+      const topTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([tag]) => tag);
+
+      triageStats = {
+        totalTriaged: triagedTickets.length,
+        byUrgency,
+        byTag: tagCounts,
+        unansweredUrgent,
+        topTags,
+      };
+    }
+  } catch {
+    /* triage stats metric failed — non-critical */
+  }
+
   return {
     clinicId,
     clinicName,
@@ -301,6 +360,7 @@ export async function fetchClinicMetrics(
       slotsAvailable: 0, // Would require slot calculation — set to 0 as not critical
     },
     openAlerts: 0,
+    triageStats,
   };
 }
 
@@ -346,7 +406,19 @@ COMPARAISON SEMAINE PRÉCÉDENTE:
 
 AUJOURD'HUI:
 - Rendez-vous prévus: ${metrics.upcomingToday.totalBooked}
-
+${
+  metrics.triageStats
+    ? `
+TRIAGE SUPPORT (HIER):
+- Tickets triés par AI: ${metrics.triageStats.totalTriaged}
+- Répartition urgence: ${Object.entries(metrics.triageStats.byUrgency)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ")}
+- Tickets urgents non résolus: ${metrics.triageStats.unansweredUrgent}
+- Top tags: ${metrics.triageStats.topTags.join(", ") || "aucun"}
+`
+    : ""
+}
 Génère le briefing exécutif.`;
 
   try {

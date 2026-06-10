@@ -13,6 +13,12 @@ interface BriefingSummary {
   waitlistCount: number;
   overduePayments: number;
   birthdays: string[];
+  triageStats?: {
+    totalTriaged: number;
+    byUrgency: Record<string, number>;
+    unansweredUrgent: number;
+    topTags: string[];
+  };
 }
 
 interface BriefingConfig {
@@ -45,6 +51,7 @@ interface SingleResult {
 
 interface QueryChain {
   eq(col: string, val: unknown): QueryChain;
+  not(col: string, op: string, val: unknown): QueryChain;
   is(col: string, val: null): QueryChain & Promise<QueryResult>;
   in(col: string, val: unknown[]): QueryChain & Promise<QueryResult> & Promise<CountResult>;
   gte(col: string, val: unknown): QueryChain;
@@ -89,6 +96,22 @@ function formatBriefingMessage(
   }
   if (config.include_birthdays && summary.birthdays.length > 0) {
     lines.push(`🎂 Anniversaires: ${summary.birthdays.join(", ")}`);
+  }
+
+  // D2: Triage stats section
+  if (summary.triageStats && summary.triageStats.totalTriaged > 0) {
+    lines.push("");
+    lines.push(`🤖 Triage AI: ${summary.triageStats.totalTriaged} ticket(s)`);
+    const urgencyParts = Object.entries(summary.triageStats.byUrgency)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+    lines.push(`   Répartition: ${urgencyParts}`);
+    if (summary.triageStats.unansweredUrgent > 0) {
+      lines.push(`   ⚠️ Urgents non résolus: ${summary.triageStats.unansweredUrgent}`);
+    }
+    if (summary.triageStats.topTags.length > 0) {
+      lines.push(`   Top sujets: ${summary.triageStats.topTags.join(", ")}`);
+    }
   }
 
   lines.push("");
@@ -192,7 +215,63 @@ async function gatherBriefingSummary(
     }
   }
 
-  return { totalAppointments, cancellations, waitlistCount, overduePayments, birthdays };
+  // D2: Gather yesterday's triage stats
+  let triageStats: BriefingSummary["triageStats"] | undefined;
+  try {
+    const { data: triagedTickets } = (await supabase
+      .from("support_tickets")
+      .select("ai_urgency, ai_tags, status")
+      .eq("clinic_id", clinicId)
+      .not("ai_triage_at", "is", null)
+      .gte("ai_triage_at", `${todayStr}T00:00:00`)
+      .lt("ai_triage_at", `${tomorrowStr}T00:00:00`)) as unknown as QueryResult;
+
+    if (triagedTickets && triagedTickets.length > 0) {
+      const byUrgency: Record<string, number> = {};
+      const tagCounts: Record<string, number> = {};
+      let unansweredUrgent = 0;
+
+      for (const t of triagedTickets as Array<{
+        ai_urgency: string | null;
+        ai_tags: string[] | null;
+        status: string;
+      }>) {
+        const u = t.ai_urgency ?? "unknown";
+        byUrgency[u] = (byUrgency[u] ?? 0) + 1;
+        if (t.ai_tags) {
+          for (const tag of t.ai_tags) {
+            tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+          }
+        }
+        if (u === "urgent" && t.status !== "resolved" && t.status !== "closed") {
+          unansweredUrgent++;
+        }
+      }
+
+      const topTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([tag]) => tag);
+
+      triageStats = {
+        totalTriaged: triagedTickets.length,
+        byUrgency,
+        unansweredUrgent,
+        topTags,
+      };
+    }
+  } catch {
+    /* triage stats non-critical */
+  }
+
+  return {
+    totalAppointments,
+    cancellations,
+    waitlistCount,
+    overduePayments,
+    birthdays,
+    triageStats,
+  };
 }
 
 /**

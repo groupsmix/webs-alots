@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { triageTicket, applyTriageToTicket, escalateUrgentTicket } from "@/lib/ai/triage";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -108,6 +109,24 @@ export const POST = withAuthValidation(
       description: `Ticket created: ${data.subject.slice(0, 100)}`,
       metadata: { ticketId: ticket?.id, channel: data.channel, priority: data.priority },
     });
+
+    // D1: Auto-triage in background (fail-open — never blocks ticket creation)
+    if (ticket?.id) {
+      const messages = data.message ? [{ senderType: "patient", content: data.message }] : [];
+      void (async () => {
+        try {
+          const triage = await triageTicket(data.subject, messages);
+          await applyTriageToTicket(ticket.id as string, clinicId, triage);
+          await escalateUrgentTicket(ticket.id as string, clinicId, triage);
+        } catch (err) {
+          logger.warn("Auto-triage failed for new ticket", {
+            context: "support/tickets",
+            ticketId: ticket.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      })();
+    }
 
     return apiSuccess({ ticket }, 201);
   },
