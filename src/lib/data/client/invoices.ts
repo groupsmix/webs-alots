@@ -32,10 +32,17 @@ interface PaymentRaw {
   created_at: string;
 }
 
-export async function fetchInvoices(clinicId: string): Promise<InvoiceView[]> {
+export async function fetchInvoices(
+  clinicId: string,
+  // PERF-LAT-05: optional ISO timestamp lower bound. Without it this query
+  // ships the clinic's entire payment history to the browser. Callers that
+  // only aggregate recent revenue should pass a sinceDate.
+  options?: { sinceDate?: string },
+): Promise<InvoiceView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<PaymentRaw>("payments", {
     eq: [["clinic_id", clinicId]],
+    ...(options?.sinceDate ? { gte: ["created_at", options.sinceDate] as [string, unknown] } : {}),
     order: ["created_at", { ascending: false }],
   });
   return rows.map((r) => ({

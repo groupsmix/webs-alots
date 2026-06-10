@@ -231,6 +231,19 @@ export async function getDoctorDashboardData(
 
   // Fetch doctor's appointments, patients, waiting room, invoices in parallel
   const today = getLocalDateStr();
+
+  // PERF-LAT-03: The dashboard view only renders current week/month stats,
+  // today's schedule, upcoming appointments and recent-history follow-ups.
+  // Previously this pulled the doctor's ENTIRE appointment history ordered
+  // ASCENDING with limit 1000 — so a busy clinic shipped its 1000 OLDEST
+  // rows over the wire (slow) and could miss today's schedule entirely
+  // once history exceeded the limit (wrong). Scope to a 90-day lookback
+  // (covers the week/month windows and follow-up detection) plus all
+  // future appointments.
+  const lookbackDate = new Date();
+  lookbackDate.setDate(lookbackDate.getDate() - 90);
+  const recentCutoff = getLocalDateStr(lookbackDate);
+
   const [apptsRes, patientsRes, waitingRes, invoicesRes] = await Promise.all([
     supabase
       .from("appointments")
@@ -239,6 +252,7 @@ export async function getDoctorDashboardData(
       )
       .eq("clinic_id", clinicId)
       .eq("doctor_id", doctorId)
+      .gte("appointment_date", recentCutoff)
       .order("appointment_date", { ascending: true })
       .limit(DEFAULT_QUERY_LIMIT),
     supabase
@@ -260,6 +274,9 @@ export async function getDoctorDashboardData(
       .from("payments")
       .select("id, appointment_id, amount, status, created_at")
       .eq("clinic_id", clinicId)
+      // PERF-LAT-03: the view only aggregates week/month revenue, so only
+      // payments within the lookback window can ever match.
+      .gte("created_at", lookbackDate.toISOString())
       .order("created_at", { ascending: false })
       .limit(DEFAULT_QUERY_LIMIT),
   ]);
@@ -445,8 +462,11 @@ export async function getPatientDashboardData(
   const supabase = await createClient();
 
   // Resolve clinic currency from DB config (DAL-04: was hardcoded to "MAD")
+  // PERF-LAT-04: kick off the config lookup without awaiting so it runs in
+  // parallel with the dashboard queries below instead of serially before
+  // them (saves one full DB round trip per patient dashboard render).
   const { getClinicConfig } = await import("@/lib/tenant");
-  const clinicCfg = await getClinicConfig(clinicId);
+  const clinicCfgPromise = getClinicConfig(clinicId);
 
   const [apptsRes, rxRes, invoicesRes, notifsRes] = await Promise.all([
     supabase
@@ -541,6 +561,8 @@ export async function getPatientDashboardData(
     date: r.created_at?.split("T")[0] ?? "",
     medications: Array.isArray(r.items) ? r.items : [],
   }));
+
+  const clinicCfg = await clinicCfgPromise;
 
   type InvRaw = { id: string; amount: number; status: string; created_at: string };
   const invoices: PatientInvoiceView[] = ((invoicesRes.data ?? []) as InvRaw[]).map((r) => ({

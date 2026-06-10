@@ -12,6 +12,7 @@
  * This file orchestrates the modules and handles Supabase auth.
  */
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { verifyCronSecret } from "@/lib/cron-auth";
@@ -435,11 +436,26 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set("x-tenant-locale", tenantLocale);
   }
 
-  // IMPORTANT: Do NOT use getSession() here — it reads from cookies and
-  // can be tampered with. Use getUser() which validates with Supabase.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // PERF-LAT-01: Anonymous fast path. supabase.auth.getUser() performs a
+  // network round trip to Supabase Auth on EVERY request that reaches this
+  // point — including all anonymous traffic on the public marketing site,
+  // crawlers and uptime probes. When the request carries no Supabase auth
+  // cookies there is no session to validate or refresh, so the call is pure
+  // added TTFB (typically 100–300ms from the edge). Skip it entirely and
+  // treat the request as unauthenticated; requests that DO carry
+  // sb-*-auth-token cookies still go through the authoritative getUser()
+  // validation below (never getSession() — cookies can be tampered with).
+  const hasSupabaseAuthCookies = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+
+  let user: User | null = null;
+  if (hasSupabaseAuthCookies) {
+    const {
+      data: { user: validatedUser },
+    } = await supabase.auth.getUser();
+    user = validatedUser;
+  }
 
   // SEED-01: Block seed users from accessing any route in production.
   // Sign them out and redirect to login with an error.

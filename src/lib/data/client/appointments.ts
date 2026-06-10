@@ -86,10 +86,21 @@ function mapAppointment(raw: AppointmentRaw): AppointmentView {
   };
 }
 
-export async function fetchAppointments(clinicId: string): Promise<AppointmentView[]> {
+export async function fetchAppointments(
+  clinicId: string,
+  // PERF-LAT-05: optional lower bound (YYYY-MM-DD). Without it this query
+  // ships the clinic's entire appointment history to the browser, oldest
+  // first — and the 1000-row cap means busy clinics could miss today's
+  // rows entirely. Callers that only render recent/upcoming data should
+  // pass a sinceDate to bound payload size and query time.
+  options?: { sinceDate?: string },
+): Promise<AppointmentView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<AppointmentRaw>("appointments", {
     eq: [["clinic_id", clinicId]],
+    ...(options?.sinceDate
+      ? { gte: ["appointment_date", options.sinceDate] as [string, unknown] }
+      : {}),
     order: ["appointment_date", { ascending: true }],
   });
   return rows.map(mapAppointment);
