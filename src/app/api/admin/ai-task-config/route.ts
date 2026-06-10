@@ -55,7 +55,7 @@ const PROVIDERS: readonly AIProvider[] = [
 async function handleGet(_req: NextRequest, _auth: AuthContext) {
   const supabase = createUntypedAdminClient("ai-task-config-list");
 
-  const { data, error } = await supabase // nosemgrep: semgrep.tenant-scoping
+  const { data, error } = await supabase
     .from("ai_task_configs")
     .select("id, task_type, pinned_provider, pinned_model, is_active, updated_at")
     .order("task_type");
@@ -150,10 +150,7 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
 
   const supabase = createUntypedAdminClient("ai-task-config-update");
 
-  const { error } = await supabase // nosemgrep: semgrep.tenant-scoping
-    .from("ai_task_configs")
-    .update(update)
-    .eq("task_type", taskType);
+  const { error } = await supabase.from("ai_task_configs").update(update).eq("task_type", taskType);
 
   if (error) {
     logger.error("Failed to update AI task config", {
