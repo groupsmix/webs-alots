@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { extractMemoryFacts } from "@/lib/ai/memory";
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";
 import { fromUntyped } from "@/lib/ai/untyped-tables";
 import { logger } from "@/lib/logger";
@@ -120,6 +121,21 @@ export async function saveAgentConversationTurn({
     .update({ updated_at: new Date().toISOString() })
     .eq("clinic_id", clinicId)
     .eq("id", resolvedConversationId);
+
+  // Phase B3: Inline memory extraction (fire-and-forget post-response)
+  void extractMemoryFacts(
+    supabase,
+    clinicId,
+    agentType,
+    `User: ${userMessage}\nAssistant: ${assistantMessage}`,
+    resolvedConversationId ?? undefined,
+  ).catch((err) => {
+    logger.warn("Memory extraction failed (non-blocking)", {
+      context: "site-team-agent/memory",
+      clinicId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  });
 
   return resolvedConversationId;
 }

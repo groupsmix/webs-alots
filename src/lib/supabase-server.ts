@@ -208,7 +208,11 @@ export type AdminPurpose =
   | "cron-usage-snapshots"
   | "referral-program"
   | "streaming-chat"
-  | "upload-policy";
+  | "upload-policy"
+  | "rag-chat"
+  | "ai-embed"
+  | "ai-memory"
+  | "ai-memory-consolidate";
 
 /**
  * Create a Supabase admin client using the service role key.

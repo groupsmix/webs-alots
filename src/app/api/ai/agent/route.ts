@@ -13,6 +13,7 @@ import { tool as aiTool, type ToolSet } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { incrementAgentTokenUsage, saveAgentConversationTurn } from "@/lib/ai/chat-history";
+import { retrieveMemories, formatMemoryBlock } from "@/lib/ai/memory";
 import {
   getAgentSystemPrompt,
   SITE_TEAM_AGENT_TYPES,
@@ -241,13 +242,27 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
       : Promise.resolve({ data: null }),
   ]);
 
-  const systemPrompt = getAgentSystemPrompt(agentType, {
+  let systemPrompt = getAgentSystemPrompt(agentType, {
     clinicId: clinicId ?? undefined,
     userId: auth.user.id,
     userName: profileRow?.name ?? undefined,
     userRole: role,
     clinicName: clinicResult.data?.name ?? tenant?.clinicName ?? undefined,
   });
+
+  // Phase B3: Inject relevant clinic memories into system prompt
+  if (clinicId) {
+    try {
+      const memClient = createUntypedAdminClient("ai-memory", clinicId);
+      const memories = await retrieveMemories(memClient, clinicId, agentType, latestUserMessage);
+      const memoryBlock = formatMemoryBlock(memories);
+      if (memoryBlock) {
+        systemPrompt = `${systemPrompt}\n\n${memoryBlock}`;
+      }
+    } catch {
+      // Memory retrieval failure is non-blocking
+    }
+  }
 
   const encoder = new TextEncoder();
   const planningClient =
