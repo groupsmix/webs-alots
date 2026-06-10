@@ -52,7 +52,7 @@ export async function loadTaskConfigs(supabase?: any): Promise<Map<AITaskType, T
 
   try {
     const client = supabase ?? createUntypedAdminClient("ai-task-config");
-    const { data, error } = await client // nosemgrep: semgrep.tenant-scoping
+    const { data, error } = await client
       .from("ai_task_configs")
       .select("task_type, pinned_provider, pinned_model, is_active");
 

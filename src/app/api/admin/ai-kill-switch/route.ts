@@ -20,6 +20,7 @@
 
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
+import { isAiDisabledByEnv } from "@/lib/env";
 import { getKVBinding, isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { withAuth } from "@/lib/with-auth";
@@ -30,7 +31,7 @@ const KILL_SWITCH_KEY = "ai.enabled";
 // ── GET: current state ──
 
 async function handleGet(_req: NextRequest, _auth: AuthContext) {
-  const envLocked = process.env.AI_DISABLED === "true"; // nosemgrep: semgrep.env-access — kill-switch status read
+  const envLocked = isAiDisabledByEnv();
 
   let kvAvailable = false;
   try {
@@ -67,8 +68,7 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     return apiValidationError("confirm: true is required to change the AI kill switch");
   }
 
-  if (enabled && process.env.AI_DISABLED === "true") {
-    // nosemgrep: semgrep.env-access — kill-switch guard
+  if (enabled && isAiDisabledByEnv()) {
     return apiError(
       "AI is disabled via the AI_DISABLED environment variable. Remove the env override to re-enable from the dashboard.",
       409,

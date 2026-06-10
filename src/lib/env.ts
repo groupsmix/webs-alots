@@ -407,6 +407,13 @@ export const ENV_RULES: EnvRule[] = [
     description: "Enable FHIR and complex CRM integrations. Default: false.",
     group: "feature-flags",
   },
+  {
+    name: "AI_DISABLED",
+    required: false,
+    description:
+      "Emergency AI kill switch override. When 'true', all AI features are disabled and the dashboard toggle is locked. Default: unset.",
+    group: "feature-flags",
+  },
 ];
 
 /**
@@ -422,6 +429,15 @@ export function isAiFeaturesEnabled(): boolean {
 
 export function isFhirEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FHIR_ENABLED === "true";
+}
+
+/**
+ * Emergency AI kill switch env override (AI-KS). When AI_DISABLED=true the
+ * environment always wins over the dashboard KV toggle: AI stays off and the
+ * super-admin UI shows the switch as env-locked.
+ */
+export function isAiDisabledByEnv(): boolean {
+  return process.env.AI_DISABLED === "true";
 }
 
 /**
