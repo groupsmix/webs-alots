@@ -1,7 +1,17 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
-import { Globe, Clock, Bell, RefreshCw, Info, Save, Loader2, Bot, ChevronRight } from "lucide-react";
+import {
+  Globe,
+  Clock,
+  Bell,
+  RefreshCw,
+  Info,
+  Save,
+  Loader2,
+  Bot,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
