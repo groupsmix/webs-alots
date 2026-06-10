@@ -21,6 +21,7 @@ import { getCachedConfigs, invalidateConfigCache, setCachedConfigs } from "./con
 import { PROVIDER_MODELS, PROVIDER_PRIORITY, RATE_LIMIT_WINDOW_MS } from "./models";
 import { callProvider, ProviderError, RateLimitError } from "./providers";
 import { decryptProviderKey } from "./secret-encryption";
+import { getTaskPin, type TaskPin } from "./task-config";
 import { checkFallbackAlert, recordAITrace, traceFromFailure, traceFromSuccess } from "./tracing";
 import type { AIProvider, AIRequest, AIResponse, ProviderConfig, RateLimitState } from "./types";
 
@@ -200,7 +201,30 @@ export async function routeAIRequest(
   const fallbackChain: Array<{ provider: string; error?: string }> = [];
   let fromFallback = false;
 
+  // Per-task pin (dashboard-managed, ai_task_configs): the pinned provider
+  // is tried FIRST, but the normal priority order stays as fallback — a pin
+  // must never reduce availability. Fail-open: any error here means auto.
+  let taskPin: TaskPin | null = null;
+  try {
+    taskPin = await getTaskPin(request.task, supabase);
+  } catch {
+    taskPin = null;
+  }
+
   const priority = buildPriorityList(configs);
+  if (taskPin?.provider) {
+    const idx = priority.indexOf(taskPin.provider);
+    if (idx > 0) {
+      priority.splice(idx, 1);
+      priority.unshift(taskPin.provider);
+    }
+    logger.debug("Task pin applied", {
+      context: "ai-router",
+      task: request.task,
+      pinnedProvider: taskPin.provider,
+      pinnedModel: taskPin.model ?? "(provider default)",
+    });
+  }
 
   for (const provider of priority) {
     const availability = checkProviderAvailable(provider, configs);
@@ -218,7 +242,11 @@ export async function routeAIRequest(
       const config = configs.get(provider);
       const apiKey = provider === "workers_ai" ? null : (config?.apiKey ?? null);
       const providerStart = Date.now();
-      const result = await callProvider(provider, request, apiKey);
+      // Apply the task's model pin only when calling the pinned provider —
+      // fallback providers always use their own registry default.
+      const modelOverride =
+        taskPin?.provider === provider && taskPin.model ? taskPin.model : undefined;
+      const result = await callProvider(provider, request, apiKey, modelOverride);
 
       incrementRequests(provider);
 

@@ -69,8 +69,14 @@ export class ProviderError extends Error {
 
 // ── SDK model factory ──
 
-export function createModel(provider: AIProvider, apiKey: string | null): LanguageModel {
-  const modelId = PROVIDER_MODELS[provider]?.model ?? "";
+export function createModel(
+  provider: AIProvider,
+  apiKey: string | null,
+  modelOverride?: string,
+): LanguageModel {
+  // modelOverride comes from per-task pins (task-config.ts) and is already
+  // validated against ALLOWED_MODELS before it reaches this point.
+  const modelId = modelOverride ?? PROVIDER_MODELS[provider]?.model ?? "";
 
   switch (provider) {
     case "openai":
@@ -153,16 +159,18 @@ export async function callProvider(
   provider: AIProvider,
   req: AIRequest,
   apiKey: string | null,
+  modelOverride?: string,
 ): Promise<ProviderResponse> {
   logger.debug("Calling AI provider", {
     context: "ai-provider",
     provider,
     task: req.task,
     complexity: req.complexity,
+    ...(modelOverride ? { modelOverride } : {}),
   });
 
   try {
-    const model = createModel(provider, apiKey);
+    const model = createModel(provider, apiKey, modelOverride);
 
     const messages: Array<{ role: "system" | "user"; content: string }> = [];
     if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
