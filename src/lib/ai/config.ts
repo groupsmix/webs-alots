@@ -29,7 +29,12 @@ import { AI_DISCLAIMER_FR } from "@/lib/ai-disclaimer";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
-import { ALLOWED_MODELS, OPENAI_COMPAT_BASE_URLS, PROVIDER_MODELS } from "./models";
+import {
+  ALLOWED_MODELS,
+  OPENAI_COMPAT_BASE_URLS,
+  PROVIDER_MODELS,
+  resolveModelAlias,
+} from "./models";
 import { loadProviderConfigs, selectAvailableProvider } from "./router";
 import type { AIProvider, ProviderConfig } from "./types";
 
@@ -72,11 +77,10 @@ function isAllowedBaseUrl(url: string): boolean {
 // ── Pinned Model Version (F-AI-07) ──
 
 /**
- * Default model for the legacy OpenAI path. Pinned to a dated snapshot to
- * prevent unexpected behaviour changes when OpenAI updates the alias.
- * (Reconciling this with the router's registry default is Task A2.)
+ * Default model for the legacy OpenAI path (Task A2: reconciled with the
+ * router's registry default — single source of truth in models.ts).
  */
-const DEFAULT_MODEL = "gpt-4o-mini-2024-07-18";
+const DEFAULT_MODEL = PROVIDER_MODELS.openai.model;
 
 const NOT_CONFIGURED_REASON =
   "AI service not configured. Set OPENAI_API_KEY or configure a provider in the admin dashboard.";
@@ -243,6 +247,21 @@ function buildProviderConfig(
   if (provider === "openai") {
     // nosemgrep: semgrep.env-access — operator-configurable model, validated below against allowlist
     model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
+  }
+  // Task A2: a stale-but-previously-valid operator pin auto-resolves to its
+  // current replacement (with a warning) instead of 404ing at the provider.
+  // Never-allowed floating aliases are not in the map and still fail below.
+  if (model) {
+    const resolution = resolveModelAlias(model);
+    if (resolution.deprecated) {
+      logger.warn("Deprecated AI model auto-resolved to its replacement", {
+        context: "ai-config",
+        provider,
+        original: resolution.original,
+        model: resolution.model,
+      });
+    }
+    model = resolution.model;
   }
   if (!model || !ALLOWED_MODELS.has(model)) {
     logger.error("AI model is not in the allowlist", {
