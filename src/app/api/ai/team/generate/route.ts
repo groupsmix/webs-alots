@@ -15,6 +15,7 @@ import {
   buildMarketingDataContext,
   buildSupportDataContext,
   buildReminderDataContext,
+  createTeamTask,
 } from "@/lib/ai/team-data";
 import {
   buildMarketingAgentPrompt,
@@ -218,7 +219,7 @@ export const POST = withAuthValidation(
 
       const untypedSupa = supabase as unknown as SupabaseUntyped;
 
-      // Save tasks to DB
+      // Save tasks to DB (legacy ai_agent_tasks + new ai_team_tasks)
       const savedTasks: { id: string; title: string }[] = [];
       for (const task of generated.tasks.slice(0, 10)) {
         const priority = VALID_PRIORITIES.has(task.priority) ? task.priority : "medium";
@@ -243,6 +244,22 @@ export const POST = withAuthValidation(
           logger.warn("Failed to save AI task", {
             context: "ai-team-generate",
             error: err,
+            clinicId,
+          });
+        }
+
+        // Also create durable team task (C1 state machine)
+        try {
+          await createTeamTask(untypedSupa, clinicId, {
+            title: task.title.slice(0, 255),
+            description: task.description.slice(0, 2000),
+            agentType,
+            createdBy: userId,
+          });
+        } catch (teamTaskErr) {
+          logger.warn("Failed to create durable team task", {
+            context: "ai-team-generate",
+            error: teamTaskErr,
             clinicId,
           });
         }

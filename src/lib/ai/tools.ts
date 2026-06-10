@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { logAuditEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
 import type { SiteTeamAgentType } from "./prompts";
+import { createTeamTask, buildHistoryEvent } from "./team-data";
 
 export interface AgentToolDefinition {
   name: string;
@@ -73,6 +76,41 @@ const doctorTools: AgentToolDefinition[] = [
     },
   },
 ];
+
+// ── C2: Handoff tool (admin + secretary only, never patient) ──
+
+const HANDOFF_ALLOWED_SOURCES: SiteTeamAgentType[] = ["clinic_admin", "secretary", "receptionist"];
+const HANDOFF_ALLOWED_TARGETS: SiteTeamAgentType[] = [
+  "doctor",
+  "secretary",
+  "clinic_admin",
+  "super_admin",
+];
+
+const handoffTool: AgentToolDefinition = {
+  name: "handoff_to_agent",
+  description:
+    "Delegate a subtask to another agent type. Creates a durable task in the queue — does NOT call the agent directly. Use when the question is outside your expertise.",
+  input_schema: {
+    type: "object",
+    properties: {
+      target_agent_type: {
+        type: "string",
+        enum: ["doctor", "secretary", "clinic_admin", "super_admin"],
+        description: "The agent type to hand off to",
+      },
+      task_summary: {
+        type: "string",
+        description: "Brief title/summary of what needs to be done",
+      },
+      context: {
+        type: "string",
+        description: "Relevant context for the target agent (do NOT include patient names or PHI)",
+      },
+    },
+    required: ["target_agent_type", "task_summary"],
+  },
+};
 
 const secretaryTools: AgentToolDefinition[] = [
   ...commonTools,
@@ -182,10 +220,10 @@ const patientTools: AgentToolDefinition[] = [
 export function getAgentTools(agentType: SiteTeamAgentType): AgentToolDefinition[] {
   const toolMap: Record<SiteTeamAgentType, AgentToolDefinition[]> = {
     doctor: doctorTools,
-    secretary: secretaryTools,
-    receptionist: secretaryTools,
+    secretary: [...secretaryTools, handoffTool],
+    receptionist: [...secretaryTools, handoffTool],
     super_admin: superAdminTools,
-    clinic_admin: [...doctorTools, ...secretaryTools, superAdminTools[1]],
+    clinic_admin: [...doctorTools, ...secretaryTools, superAdminTools[1], handoffTool],
     patient: patientTools,
   };
 
@@ -228,6 +266,8 @@ export async function executeAgentTool(
       return getMyAppointments(ctx);
     case "get_available_slots":
       return getAvailableSlots(input, ctx);
+    case "handoff_to_agent":
+      return handoffToAgent(input, ctx);
     default:
       return { ok: false, error: `Unknown tool: ${name}`, code: "UNKNOWN_TOOL" };
   }
@@ -683,6 +723,121 @@ async function getAvailableSlots(input: ToolInput, ctx: AgentToolContext): Promi
       recurringAvailability: data ?? [],
       notice:
         "Disponibilités indicatives basées sur le planning récurrent; vérifier les rendez-vous existants avant confirmation.",
+    },
+  };
+}
+
+// ── C2: Agent-to-agent handoff ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UntypedClient = { from(table: string): any };
+
+async function handoffToAgent(input: ToolInput, ctx: AgentToolContext): Promise<ToolResult> {
+  if (!ctx.clinicId) return { ok: false, error: "Clinic context is required", code: "NO_CLINIC" };
+
+  const targetType = stringInput(input, "target_agent_type") as SiteTeamAgentType | null;
+  const taskSummary = stringInput(input, "task_summary");
+  const context = stringInput(input, "context");
+
+  if (!targetType || !taskSummary) {
+    return {
+      ok: false,
+      error: "target_agent_type and task_summary are required",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  // Guard: only allowed sources
+  if (!HANDOFF_ALLOWED_SOURCES.includes(ctx.agentType)) {
+    return {
+      ok: false,
+      error: "This agent type cannot initiate handoffs",
+      code: "HANDOFF_FORBIDDEN",
+    };
+  }
+
+  // Guard: patient can never be target
+  if (!HANDOFF_ALLOWED_TARGETS.includes(targetType)) {
+    return {
+      ok: false,
+      error: `Cannot hand off to agent type: ${targetType}`,
+      code: "HANDOFF_TARGET_FORBIDDEN",
+    };
+  }
+
+  // Guard: no self-handoff
+  if (targetType === ctx.agentType) {
+    return { ok: false, error: "Cannot hand off to the same agent type", code: "HANDOFF_SELF" };
+  }
+
+  // Guard: depth max 1 — check if this was already a handoff (source_task_id would be set)
+  // We check by looking at the context for a handoff marker
+  const isChained = typeof input._source_task_id === "string";
+  if (isChained) {
+    return {
+      ok: false,
+      error: "Handoff depth max 1: cannot chain handoffs",
+      code: "HANDOFF_DEPTH_EXCEEDED",
+    };
+  }
+
+  const untypedSupa = ctx.supabase as unknown as UntypedClient;
+
+  const result = await createTeamTask(untypedSupa, ctx.clinicId, {
+    title: taskSummary.slice(0, 255),
+    description: context?.slice(0, 2000),
+    agentType: targetType,
+    createdBy: ctx.userId,
+  });
+
+  if (!result) {
+    return { ok: false, error: "Failed to create handoff task", code: "HANDOFF_CREATE_FAILED" };
+  }
+
+  // Append handoff history event
+  const event = buildHistoryEvent("handoff", ctx.userId, {
+    sourceAgentType: ctx.agentType,
+    targetAgentType: targetType,
+    taskSummary,
+  });
+
+  try {
+    await untypedSupa
+      .from("ai_team_tasks")
+      .update({
+        history_events: [event],
+      })
+      .eq("id", result.id)
+      .eq("clinic_id", ctx.clinicId);
+  } catch (err) {
+    logger.warn("Failed to add handoff event to task history", {
+      context: "ai-tools-handoff",
+      error: err,
+      taskId: result.id,
+    });
+  }
+
+  // Audit log
+  void logAuditEvent({
+    supabase: ctx.supabase,
+    action: "ai_agent_handoff",
+    type: "admin",
+    clinicId: ctx.clinicId,
+    actor: ctx.userId,
+    description: `${ctx.agentType} handed off to ${targetType}: ${taskSummary}`,
+    metadata: {
+      taskId: result.id,
+      sourceAgentType: ctx.agentType,
+      targetAgentType: targetType,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      taskId: result.id,
+      targetAgentType: targetType,
+      message: `Tâche déléguée à l'agent ${targetType}. Elle apparaîtra dans le tableau de bord.`,
     },
   };
 }

@@ -9,7 +9,12 @@
  */
 
 import { type NextRequest } from "next/server";
-import { fetchMarketingData, fetchSupportData, fetchReminderData } from "@/lib/ai/team-data";
+import {
+  fetchMarketingData,
+  fetchSupportData,
+  fetchReminderData,
+  type TaskStatus,
+} from "@/lib/ai/team-data";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
@@ -28,8 +33,8 @@ async function handler(_request: NextRequest, auth: AuthContext) {
   try {
     const untypedSupa = supabase as unknown as SupabaseUntyped;
 
-    const [marketingData, supportData, reminderData, recentTasks, unreadAlerts] = await Promise.all(
-      [
+    const [marketingData, supportData, reminderData, recentTasks, unreadAlerts, teamTasks] =
+      await Promise.all([
         fetchMarketingData(supabase, clinicId),
         fetchSupportData(supabase, clinicId),
         fetchReminderData(supabase, clinicId),
@@ -63,8 +68,23 @@ async function handler(_request: NextRequest, auth: AuthContext) {
             return [];
           }
         })(),
-      ],
-    );
+        // C3: Fetch durable team tasks for kanban board
+        (async () => {
+          try {
+            const { data } = await untypedSupa
+              .from("ai_team_tasks")
+              .select(
+                "id, clinic_id, title, description, agent_type, status, reviewer_agent_type, review_comments, review_cycles, history_events, created_by, created_at, updated_at",
+              )
+              .eq("clinic_id", clinicId)
+              .order("updated_at", { ascending: false })
+              .limit(50);
+            return data ?? [];
+          } catch {
+            return [];
+          }
+        })(),
+      ]);
 
     type TaskRow = {
       id: string;
@@ -97,6 +117,24 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     const marketingAlerts = alerts.filter((a) => a.agent_type === "marketing");
     const supportAlerts = alerts.filter((a) => a.agent_type === "support");
     const reminderAlerts = alerts.filter((a) => a.agent_type === "reminder");
+
+    type TeamTaskRow = {
+      id: string;
+      clinic_id: string;
+      title: string;
+      description: string | null;
+      agent_type: string;
+      status: TaskStatus;
+      reviewer_agent_type: string | null;
+      review_comments: string | null;
+      review_cycles: number;
+      history_events: Record<string, unknown>[];
+      created_by: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+
+    const typedTeamTasks = teamTasks as TeamTaskRow[];
 
     return apiSuccess({
       agents: {
@@ -138,6 +176,8 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         },
       },
       totalUnreadAlerts: alerts.length,
+      // C3: Kanban board data
+      teamTasks: typedTeamTasks,
     });
   } catch (err) {
     logger.error("Failed to fetch AI team dashboard", {

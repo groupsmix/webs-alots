@@ -212,7 +212,9 @@ export type AdminPurpose =
   | "rag-chat"
   | "ai-embed"
   | "ai-memory"
-  | "ai-memory-consolidate";
+  | "ai-memory-consolidate"
+  | "ai-team-tasks"
+  | "ai-team-review";
 
 /**
  * Create a Supabase admin client using the service role key.

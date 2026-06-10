@@ -286,3 +286,228 @@ export function buildReminderDataContext(
   parts.push(`- RDV en attente d'approbation: ${data.totalPendingAppointments}`);
   return parts.join("\n");
 }
+
+// ── Phase C1: AI Team Task State Machine ──
+
+export const TASK_STATUSES = [
+  "backlog",
+  "in_progress",
+  "review",
+  "changes_requested",
+  "done",
+  "cancelled",
+] as const;
+export type TaskStatus = (typeof TASK_STATUSES)[number];
+
+/** Legal transitions: from → allowed targets */
+const TRANSITION_MAP: Record<TaskStatus, readonly TaskStatus[]> = {
+  backlog: ["in_progress", "cancelled"],
+  in_progress: ["review", "cancelled"],
+  review: ["done", "changes_requested", "cancelled"],
+  changes_requested: ["in_progress", "cancelled"],
+  done: [],
+  cancelled: [],
+};
+
+/** Max review cycles before escalation to human */
+const MAX_REVIEW_CYCLES = 2;
+
+export interface TaskHistoryEvent {
+  type: "created" | "transitioned" | "review_submitted" | "escalated" | "handoff";
+  actor: string;
+  at: string;
+  payload: Record<string, unknown>;
+}
+
+export interface TransitionResult {
+  ok: true;
+  newStatus: TaskStatus;
+  escalated: boolean;
+}
+
+export interface TransitionError {
+  ok: false;
+  code: "ILLEGAL_TRANSITION" | "TASK_NOT_FOUND" | "OPTIMISTIC_CONFLICT" | "MAX_CYCLES_EXCEEDED";
+  message: string;
+}
+
+/**
+ * Validate a status transition is legal.
+ * Returns the target status or throws with a descriptive message.
+ */
+export function validateTransition(
+  from: TaskStatus,
+  to: TaskStatus,
+): { valid: true } | { valid: false; message: string } {
+  const allowed = TRANSITION_MAP[from];
+  if (!allowed || !allowed.includes(to)) {
+    return {
+      valid: false,
+      message: `Illegal transition: ${from} → ${to}. Allowed: ${(allowed ?? []).join(", ") || "none (terminal state)"}`,
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Build a history event object.
+ */
+export function buildHistoryEvent(
+  type: TaskHistoryEvent["type"],
+  actor: string,
+  payload: Record<string, unknown> = {},
+): TaskHistoryEvent {
+  return { type, actor, at: new Date().toISOString(), payload };
+}
+
+/**
+ * Transition an AI team task to a new status with optimistic concurrency.
+ * Appends a history event atomically.
+ *
+ * Returns the updated task or an error object.
+ */
+export async function transitionTask(
+  supabase: SupabaseUntyped,
+  taskId: string,
+  clinicId: string,
+  fromStatus: TaskStatus,
+  toStatus: TaskStatus,
+  actor: string,
+  opts: { reviewComments?: string; output?: Record<string, unknown> } = {},
+): Promise<TransitionResult | TransitionError> {
+  const validation = validateTransition(fromStatus, toStatus);
+  if (!validation.valid) {
+    return { ok: false, code: "ILLEGAL_TRANSITION", message: validation.message };
+  }
+
+  // Fetch current task for optimistic check
+  const { data: current, error: fetchErr } = await supabase
+    .from("ai_team_tasks")
+    .select("id, status, review_cycles, history_events")
+    .eq("id", taskId)
+    .eq("clinic_id", clinicId)
+    .single();
+
+  if (fetchErr || !current) {
+    return { ok: false, code: "TASK_NOT_FOUND", message: "Task not found or access denied" };
+  }
+
+  const task = current as {
+    id: string;
+    status: string;
+    review_cycles: number;
+    history_events: TaskHistoryEvent[];
+  };
+
+  if (task.status !== fromStatus) {
+    return {
+      ok: false,
+      code: "OPTIMISTIC_CONFLICT",
+      message: `Expected status '${fromStatus}' but found '${task.status}'`,
+    };
+  }
+
+  // Check max review cycles for changes_requested → in_progress
+  let escalated = false;
+  let effectiveStatus = toStatus;
+  const newCycles = toStatus === "review" ? task.review_cycles + 1 : task.review_cycles;
+
+  if (toStatus === "review" && newCycles > MAX_REVIEW_CYCLES) {
+    // Escalate: don't transition to review, keep in_progress for human intervention
+    escalated = true;
+    effectiveStatus = "review"; // Still goes to review but flagged as escalated
+  }
+
+  const event = buildHistoryEvent(
+    toStatus === "review" ? "review_submitted" : escalated ? "escalated" : "transitioned",
+    actor,
+    {
+      from: fromStatus,
+      to: effectiveStatus,
+      ...(opts.reviewComments ? { comments: opts.reviewComments } : {}),
+      ...(escalated ? { escalated: true, reason: "max_review_cycles_exceeded" } : {}),
+    },
+  );
+
+  const updatedEvents = [...(task.history_events ?? []), event];
+
+  const updateData: Record<string, unknown> = {
+    status: effectiveStatus,
+    review_cycles: newCycles,
+    history_events: updatedEvents,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (opts.reviewComments !== undefined) {
+    updateData.review_comments = opts.reviewComments;
+  }
+  if (opts.output !== undefined) {
+    updateData.output = opts.output;
+  }
+
+  // Optimistic concurrency: only update if status hasn't changed
+  const { error: updateErr } = await supabase
+    .from("ai_team_tasks")
+    .update(updateData)
+    .eq("id", taskId)
+    .eq("clinic_id", clinicId)
+    .eq("status", fromStatus);
+
+  if (updateErr) {
+    logger.error("Task transition update failed", {
+      context: "ai-team-tasks",
+      taskId,
+      error: updateErr,
+    });
+    return { ok: false, code: "OPTIMISTIC_CONFLICT", message: "Concurrent update detected" };
+  }
+
+  return { ok: true, newStatus: effectiveStatus, escalated };
+}
+
+/**
+ * Create a new AI team task.
+ */
+export async function createTeamTask(
+  supabase: SupabaseUntyped,
+  clinicId: string,
+  params: {
+    title: string;
+    description?: string;
+    agentType: string;
+    reviewerAgentType?: string;
+    createdBy?: string;
+    sourceTaskId?: string;
+  },
+): Promise<{ id: string } | null> {
+  const event = buildHistoryEvent("created", params.createdBy ?? "system", {
+    agentType: params.agentType,
+  });
+
+  const { data, error } = await supabase
+    .from("ai_team_tasks")
+    .insert({
+      clinic_id: clinicId,
+      title: params.title,
+      description: params.description ?? null,
+      agent_type: params.agentType,
+      status: "backlog",
+      reviewer_agent_type: params.reviewerAgentType ?? null,
+      created_by: params.createdBy ?? null,
+      source_task_id: params.sourceTaskId ?? null,
+      history_events: [event],
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    logger.error("Failed to create AI team task", {
+      context: "ai-team-tasks",
+      clinicId,
+      error,
+    });
+    return null;
+  }
+
+  return data as { id: string };
+}
