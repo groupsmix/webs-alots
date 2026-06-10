@@ -36,8 +36,8 @@ ALTER TABLE public.ai_traces ENABLE ROW LEVEL SECURITY;
 CREATE POLICY ai_traces_clinic_read ON public.ai_traces
   FOR SELECT
   USING (
-    clinic_id = (current_setting('app.clinic_id', true))::uuid
-    OR current_setting('app.role', true) = 'super_admin'
+    clinic_id = get_request_clinic_id()
+    OR is_super_admin()
   );
 
 CREATE POLICY ai_traces_insert_service ON public.ai_traces
