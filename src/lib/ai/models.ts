@@ -120,11 +120,7 @@ export const RATE_LIMIT_WINDOW_MS = 60_000;
  * published for this line). Floating aliases (e.g. "gpt-4o-mini",
  * "chat-latest") are still rejected to prevent silent safety regressions.
  */
-export const PINNED_SNAPSHOT_MODELS: readonly string[] = [
-  "gpt-5.5",
-  "gpt-5.4",
-  "gpt-5.4-nano",
-];
+export const PINNED_SNAPSHOT_MODELS: readonly string[] = ["gpt-5.5", "gpt-5.4", "gpt-5.4-nano"];
 
 /**
  * F-AI-07 / W8-S-03: The model allowlist, generated from the single provider
