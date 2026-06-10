@@ -68,7 +68,7 @@ export class ProviderError extends Error {
 
 // ── SDK model factory ──
 
-function createModel(provider: AIProvider, apiKey: string | null): LanguageModel {
+export function createModel(provider: AIProvider, apiKey: string | null): LanguageModel {
   const modelId = PROVIDER_MODELS[provider]?.model ?? "";
 
   switch (provider) {

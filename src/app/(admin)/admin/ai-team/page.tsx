@@ -31,6 +31,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { AITeamKanban, type TeamTask } from "@/components/admin/ai-team-kanban";
 import { FeatureGate } from "@/components/feature-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ interface DashboardData {
     reminder: AgentData;
   };
   totalUnreadAlerts: number;
+  teamTasks?: TeamTask[];
 }
 
 interface ChatMessage {
@@ -819,6 +821,25 @@ function AITeamDashboard() {
           />
         ))}
       </div>
+
+      {/* C3: Kanban board for durable team tasks */}
+      {(dashboardData.teamTasks ?? []).length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold">Tableau des tâches</h2>
+            <Badge variant="secondary" className="text-[10px]">
+              {(dashboardData.teamTasks ?? []).length}
+            </Badge>
+          </div>
+          <AITeamKanban
+            tasks={dashboardData.teamTasks ?? []}
+            onRefresh={() => {
+              setLoading(true);
+              void fetchDashboard();
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

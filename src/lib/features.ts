@@ -91,6 +91,8 @@ export type ClinicFeatureKey =
   | "ai_auto_suggest"
   | "ai_rag"
   | "ai_memory"
+  | "ai_team_tasks"
+  | "ai_triage"
   // Veterinary
   | "pet_profiles"
   | "website"

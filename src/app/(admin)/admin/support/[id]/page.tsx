@@ -36,6 +36,12 @@ interface Ticket {
   ai_priority: string | null;
   ai_draft_response: string | null;
   triaged_at: string | null;
+  ai_urgency: string | null;
+  ai_summary: string | null;
+  ai_draft_reply: string | null;
+  ai_tags: string[] | null;
+  ai_triage_at: string | null;
+  ai_confidence: number | null;
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
@@ -307,8 +313,64 @@ export default function TicketDetailPage() {
             </CardContent>
           </Card>
 
-          {/* AI Draft */}
-          {ticket.ai_draft_response && (
+          {/* D1: AI Auto-Triage Summary + Draft */}
+          {ticket.ai_draft_reply && (
+            <Card className="border-violet-200 bg-violet-50/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium text-violet-700">
+                  <Sparkles className="h-4 w-4" />
+                  AI Auto-Triage Draft
+                  {ticket.ai_urgency && (
+                    <Badge
+                      variant="outline"
+                      className={
+                        ticket.ai_urgency === "urgent"
+                          ? "bg-red-200 text-red-800 border-red-400"
+                          : ticket.ai_urgency === "high"
+                            ? "bg-orange-100 text-orange-700 border-orange-300"
+                            : "bg-blue-100 text-blue-700 border-blue-300"
+                      }
+                    >
+                      {ticket.ai_urgency}
+                    </Badge>
+                  )}
+                  {ticket.ai_confidence != null && (
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {Math.round(ticket.ai_confidence * 100)}% conf.
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ticket.ai_summary && (
+                  <p className="text-xs text-violet-700 mb-2 italic">{ticket.ai_summary}</p>
+                )}
+                {ticket.ai_tags && ticket.ai_tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {ticket.ai_tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm text-violet-900 whitespace-pre-wrap">
+                  {ticket.ai_draft_reply}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setReply(ticket.ai_draft_reply ?? "")}
+                >
+                  Use draft
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Legacy AI Draft (pre-D1) */}
+          {!ticket.ai_draft_reply && ticket.ai_draft_response && (
             <Card className="border-violet-200 bg-violet-50/50">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm font-medium text-violet-700">
