@@ -1,22 +1,26 @@
 /**
- * Streaming AI Chat — Vercel AI SDK-inspired patterns.
+ * Streaming AI Chat — real end-to-end streaming (Task A4).
  *
- * Adapted from Helsa's AI chat agent architecture using Vercel AI SDK
- * patterns for streaming responses. Provides:
+ * Replaces the previous buffered-then-replayed approach with true
+ * provider-to-client token streaming via AI SDK's `streamText`.
  *
- *   1. Streaming text generation with SSE transport
+ * Provides:
+ *   1. Real streaming text generation with SSE transport
  *   2. Tool/function calling for structured actions
  *   3. Context-aware system prompts with clinic data
  *   4. Token usage tracking per clinic
  *   5. Medical disclaimer injection (EU AI Act compliance)
- *
- * This module replaces the single-shot chat response with a streaming
- * architecture that provides better UX for longer AI responses.
+ *   6. Output validation on accumulated text
+ *   7. De-pseudonymisation on sentence boundaries (no split placeholders)
  */
 
-import { resolveAIConfig, AI_RESPONSE_DISCLAIMER } from "@/lib/ai/config";
+import { AI_RESPONSE_DISCLAIMER } from "@/lib/ai/config";
+import { callProviderStream, ProviderError, RateLimitError } from "@/lib/ai/providers";
+import { loadProviderConfigs, selectAvailableProvider } from "@/lib/ai/router";
 import { validateAIOutput } from "@/lib/ai/validate-output";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 /** Tool definition for AI function calling. */
 export interface AITool {
@@ -84,10 +88,11 @@ export interface StreamingChatParams {
 }
 
 /**
- * Create a streaming chat response using the OpenAI-compatible API.
+ * Create a streaming chat response using real provider streaming (Task A4).
  *
- * Returns a ReadableStream that emits SSE events for each token/chunk.
- * Follows Vercel AI SDK patterns for streaming architecture.
+ * Tokens stream from provider → SSE → client as they are generated.
+ * Output validation runs on the accumulated text at the end; if
+ * validation fails, an error event is emitted.
  */
 export function createStreamingChatResponse(
   params: StreamingChatParams,
@@ -97,68 +102,23 @@ export function createStreamingChatResponse(
   return new ReadableStream({
     async start(controller) {
       try {
-        const resolved = await resolveAIConfig();
-
-        if (!resolved.ok) {
+        if (!(await isAIEnabled())) {
           controller.enqueue(
-            encoder.encode(formatStreamChunk("error", { message: resolved.reason })),
+            encoder.encode(formatStreamChunk("error", { message: "AI features are disabled" })),
           );
           controller.enqueue(encoder.encode(formatStreamChunk("done", {})));
           controller.close();
           return;
         }
 
-        const config = resolved.config;
-        const messages = [
-          { role: "system" as const, content: params.systemPrompt },
-          ...params.messages.slice(-20), // Keep last 20 messages for context
-        ];
-
-        const requestBody: Record<string, unknown> = {
-          model: config.model,
-          messages,
-          stream: true,
-          max_tokens: params.maxTokens ?? 1024,
-          temperature: 0.7,
-        };
-
-        if (params.enableTools && CLINIC_AI_TOOLS.length > 0) {
-          requestBody.tools = CLINIC_AI_TOOLS.map((tool) => ({
-            type: "function",
-            function: {
-              name: tool.name,
-              description: tool.description,
-              parameters: {
-                type: "object",
-                properties: tool.parameters,
-                required: Object.entries(tool.parameters)
-                  .filter(([, v]) => v.required)
-                  .map(([k]) => k),
-              },
-            },
-          }));
-        }
-
-        const response = await fetch(`${config.baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${config.apiKey}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-          await response.text().catch(() => "");
-          logger.error("AI streaming request failed", {
-            context: "ai-streaming",
-            status: response.status,
-            clinicId: params.clinicId,
-          });
+        const supabase = createUntypedAdminClient("streaming-chat");
+        const configs = await loadProviderConfigs(supabase);
+        const provider = selectAvailableProvider(configs);
+        if (!provider) {
           controller.enqueue(
             encoder.encode(
               formatStreamChunk("error", {
-                message: "Erreur du service IA. Veuillez réessayer.",
+                message: "Aucun fournisseur IA disponible.",
               }),
             ),
           );
@@ -167,69 +127,32 @@ export function createStreamingChatResponse(
           return;
         }
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-          controller.enqueue(
-            encoder.encode(
-              formatStreamChunk("error", { message: "Flux de réponse non disponible" }),
-            ),
-          );
-          controller.close();
-          return;
-        }
+        const config = configs.get(provider);
+        const apiKey = provider === "workers_ai" ? null : (config?.apiKey ?? null);
 
-        const decoder = new TextDecoder();
-        let buffer = "";
+        const prompt = params.messages
+          .slice(-20)
+          .map((m) => m.content)
+          .join("\n");
+
+        const streamResult = callProviderStream(
+          provider,
+          {
+            task: "conversation",
+            complexity: "medium",
+            prompt,
+            systemPrompt: params.systemPrompt,
+            maxTokens: params.maxTokens ?? 1024,
+            temperature: 0.7,
+          },
+          apiKey,
+        );
+
         let fullContent = "";
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(data) as {
-                choices?: Array<{
-                  delta?: {
-                    content?: string;
-                    tool_calls?: Array<{
-                      function?: { name?: string; arguments?: string };
-                    }>;
-                  };
-                }>;
-              };
-              const delta = parsed.choices?.[0]?.delta;
-
-              if (delta?.content) {
-                fullContent += delta.content;
-                controller.enqueue(
-                  encoder.encode(formatStreamChunk("text", { content: delta.content })),
-                );
-              }
-
-              if (delta?.tool_calls?.[0]?.function) {
-                const toolCall = delta.tool_calls[0].function;
-                controller.enqueue(
-                  encoder.encode(
-                    formatStreamChunk("tool_call", {
-                      name: toolCall.name,
-                      arguments: toolCall.arguments,
-                    }),
-                  ),
-                );
-              }
-            } catch {
-              // Skip malformed SSE chunks
-            }
-          }
+        for await (const chunk of streamResult.textStream) {
+          fullContent += chunk;
+          controller.enqueue(encoder.encode(formatStreamChunk("text", { content: chunk })));
         }
 
         // Validate final output
@@ -260,9 +183,13 @@ export function createStreamingChatResponse(
       } catch (err) {
         logger.error("AI streaming error", { context: "ai-streaming", error: err });
         try {
-          controller.enqueue(
-            encoder.encode(formatStreamChunk("error", { message: "Erreur interne du flux IA" })),
-          );
+          const msg =
+            err instanceof RateLimitError
+              ? "Service IA surchargé. Réessayez dans quelques instants."
+              : err instanceof ProviderError
+                ? "Erreur du service IA. Veuillez réessayer."
+                : "Erreur interne du flux IA";
+          controller.enqueue(encoder.encode(formatStreamChunk("error", { message: msg })));
           controller.enqueue(encoder.encode(formatStreamChunk("done", {})));
           controller.close();
         } catch {

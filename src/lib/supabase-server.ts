@@ -207,6 +207,7 @@ export type AdminPurpose =
   | "cron-trial-lifecycle"
   | "cron-usage-snapshots"
   | "referral-program"
+  | "streaming-chat"
   | "upload-policy";
 
 /**

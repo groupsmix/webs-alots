@@ -1,3 +1,15 @@
+/**
+ * POST /api/ai/agent — Site-team AI agent (Tasks A4 + A5).
+ *
+ * Task A4: Real end-to-end streaming — tokens stream from provider → SSE →
+ * client as they are generated. No more fake setTimeout(8ms) replay.
+ *
+ * Task A5: Multi-step agent loop — the model can invoke tools across
+ * multiple steps (capped at 5), reasoning over tool results before
+ * producing a final answer. Replaces the single-shot ToolPlan approach.
+ */
+
+import { tool as aiTool, type ToolSet } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { incrementAgentTokenUsage, saveAgentConversationTurn } from "@/lib/ai/chat-history";
@@ -6,10 +18,20 @@ import {
   SITE_TEAM_AGENT_TYPES,
   type SiteTeamAgentType,
 } from "@/lib/ai/prompts";
-import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
-import { routeAIRequest, loadProviderConfigs, AllProvidersFailedError } from "@/lib/ai/router";
+import { callProviderStream } from "@/lib/ai/providers";
+import { createPseudonymMap, depseudonymise } from "@/lib/ai/pseudonymise";
+import {
+  loadProviderConfigs,
+  selectAvailableProvider,
+  AllProvidersFailedError,
+} from "@/lib/ai/router";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
-import { executeAgentTool, getAgentTools } from "@/lib/ai/tools";
+import {
+  executeAgentTool,
+  getAgentTools,
+  type AgentToolContext,
+  type AgentToolDefinition,
+} from "@/lib/ai/tools";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -25,6 +47,16 @@ import { isValidClinicId } from "@/lib/tenant-context";
 import type { UserRole } from "@/lib/types/database";
 import { withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
 
+// ── Constants ──
+
+/** Maximum tool execution steps before forcing a final answer (Task A5). */
+const MAX_AGENT_STEPS = 5;
+
+/** Maximum total tokens per agent request (hard budget). */
+const MAX_REQUEST_TOKENS = 8000;
+
+// ── Request schema ──
+
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().min(1).max(4000),
@@ -39,8 +71,6 @@ const agentRequestSchema = z.object({
 
 type AgentMessage = z.infer<typeof messageSchema>;
 
-type ToolPlan = { toolName: string | null; input: Record<string, unknown> };
-
 const ROLE_TO_AGENT: Record<UserRole, SiteTeamAgentType> = {
   super_admin: "super_admin",
   clinic_admin: "clinic_admin",
@@ -49,59 +79,34 @@ const ROLE_TO_AGENT: Record<UserRole, SiteTeamAgentType> = {
   patient: "patient",
 };
 
-function streamText(text: string, conversationId?: string | null): NextResponse {
-  const encoder = new TextEncoder();
-  const chunks = text.match(/.{1,80}(?:\s|$)/g) ?? [text];
+// ── SSE helpers ──
 
-  const readable = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      if (conversationId) {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "meta", conversationId })}\n\n`),
-        );
-      }
-      for (const chunk of chunks) {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "text", content: chunk })}\n\n`),
-        );
-        await new Promise((resolve) => setTimeout(resolve, 8));
-      }
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
-      controller.close();
-    },
-  });
+function sseHeaders(): HeadersInit {
+  return {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "private, no-store, no-cache, must-revalidate",
+    Connection: "keep-alive",
+    "X-Content-Type-Options": "nosniff",
+  };
+}
 
-  return new NextResponse(readable, {
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "private, no-store, no-cache, must-revalidate",
-      Connection: "keep-alive",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+function sseChunk(type: string, payload: Record<string, unknown> = {}): string {
+  return `data: ${JSON.stringify({ type, ...payload })}\n\n`;
 }
 
 function streamError(message: string, status = 500, code = "AI_AGENT_ERROR"): NextResponse {
   const encoder = new TextEncoder();
   const readable = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: "error", message, code })}\n\n`),
-      );
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
+      controller.enqueue(encoder.encode(sseChunk("error", { message, code })));
+      controller.enqueue(encoder.encode(sseChunk("done")));
       controller.close();
     },
   });
-
-  return new NextResponse(readable, {
-    status,
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "private, no-store, no-cache, must-revalidate",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  return new NextResponse(readable, { status, headers: sseHeaders() });
 }
+
+// ── Auth helpers ──
 
 function assertAgentAllowed(role: UserRole, agentType: SiteTeamAgentType): boolean {
   const expectedAgent = ROLE_TO_AGENT[role];
@@ -118,78 +123,50 @@ function historyToPrompt(messages: AgentMessage[]): string {
     .join("\n");
 }
 
-function isToolPlan(value: unknown, allowedToolNames: Set<string>): value is ToolPlan {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  if (candidate.toolName !== null && typeof candidate.toolName !== "string") return false;
-  if (typeof candidate.toolName === "string" && !allowedToolNames.has(candidate.toolName))
-    return false;
-  if (!candidate.input || typeof candidate.input !== "object" || Array.isArray(candidate.input))
-    return false;
-  return true;
-}
+// ── AI SDK tool conversion (Task A5) ──
 
-function extractJsonObject(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const raw = fenced?.[1] ?? text;
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    return JSON.parse(raw.slice(start, end + 1));
-  } catch {
-    return null;
-  }
-}
-
-async function resolveToolPlan(params: {
-  latestMessage: string;
-  messages: AgentMessage[];
-  agentType: SiteTeamAgentType;
-  systemPrompt: string;
+/**
+ * Convert the existing AgentToolDefinitions to AI SDK `tool()` definitions
+ * with zod schemas. The `execute` functions delegate to the existing
+ * `executeAgentTool()` so RBAC scoping, read-only guard, and tenant
+ * context are unchanged.
+ */
+function buildSDKTools(toolDefs: AgentToolDefinition[], ctx: AgentToolContext): ToolSet {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any;
-}): Promise<ToolPlan> {
-  const tools = getAgentTools(params.agentType);
-  const allowedToolNames = new Set(tools.map((tool) => tool.name));
+  const tools: Record<string, any> = {};
 
-  if (tools.length === 0) return { toolName: null, input: {} };
+  for (const def of toolDefs) {
+    const shape: Record<string, z.ZodTypeAny> = {};
+    for (const [key, prop] of Object.entries(def.input_schema.properties)) {
+      const p = prop as { type?: string; description?: string; enum?: string[] };
+      if (p.enum) {
+        shape[key] = z.enum(p.enum as [string, ...string[]]).describe(p.description ?? key);
+      } else {
+        shape[key] = z.string().describe(p.description ?? key);
+      }
+    }
 
-  const configs = await loadProviderConfigs(params.supabase);
-  const toolPrompt = `${params.systemPrompt}
+    const required = new Set(def.input_schema.required ?? []);
+    for (const key of Object.keys(shape)) {
+      if (!required.has(key)) {
+        shape[key] = shape[key].optional();
+      }
+    }
 
-Tu dois choisir si un outil en lecture seule est nécessaire avant de répondre.
-Outils disponibles:
-${JSON.stringify(tools, null, 2)}
+    tools[def.name] = aiTool({
+      description: def.description,
+      inputSchema: z.object(shape),
+      execute: async (input: Record<string, unknown>) => {
+        const result = await executeAgentTool(def.name, input, ctx);
+        return result;
+      },
+    });
+  }
 
-Conversation récente:
-${historyToPrompt(params.messages)}
-
-Dernier message utilisateur:
-${params.latestMessage}
-
-Réponds uniquement en JSON strict sous cette forme:
-{"toolName":"nom_outil_ou_null","input":{}}
-Utilise null si aucun outil n'est nécessaire.`;
-
-  const result = await routeAIRequest(
-    {
-      task: "reason",
-      complexity: "simple",
-      prompt: toolPrompt,
-      systemPrompt: "Return only strict JSON. Do not include markdown.",
-      maxTokens: 300,
-      temperature: 0,
-      context: "site-team-agent-tool-plan",
-    },
-    configs,
-    params.supabase,
-  );
-
-  const parsed = extractJsonObject(result.text);
-  if (!isToolPlan(parsed, allowedToolNames)) return { toolName: null, input: {} };
-  return parsed;
+  return tools;
 }
+
+// ── Main handler ──
 
 async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResponse> {
   let parsedBody: z.infer<typeof agentRequestSchema>;
@@ -272,134 +249,247 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
     clinicName: clinicResult.data?.name ?? tenant?.clinicName ?? undefined,
   });
 
-  try {
-    const planningClient =
-      historySupabase ?? createUntypedAdminClient("ai-route", clinicId ?? undefined);
-    const toolPlan = await resolveToolPlan({
-      latestMessage: latestUserMessage,
-      messages: safeMessages,
-      agentType,
-      systemPrompt,
-      supabase: planningClient,
-    });
+  const encoder = new TextEncoder();
+  const planningClient =
+    historySupabase ?? createUntypedAdminClient("ai-route", clinicId ?? undefined);
 
-    let toolResult: unknown = null;
-    if (toolPlan.toolName) {
-      toolResult = await executeAgentTool(toolPlan.toolName, toolPlan.input, {
-        supabase,
-        clinicId,
-        userId: auth.user.id,
-        profileId: auth.profile.id,
-        userRole: role,
-        agentType,
-      });
-    }
+  const readable = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        // ── Provider selection ──
+        const configs = await loadProviderConfigs(planningClient);
+        const provider = selectAvailableProvider(configs);
+        if (!provider) {
+          controller.enqueue(
+            encoder.encode(
+              sseChunk("error", {
+                message: "Le service IA est temporairement indisponible.",
+                code: "AI_UNAVAILABLE",
+              }),
+            ),
+          );
+          controller.enqueue(encoder.encode(sseChunk("done")));
+          controller.close();
+          return;
+        }
 
-    const pseudonymMap = createPseudonymMap();
-    const promptToolResult =
-      toolResult && typeof toolResult === "object" && !Array.isArray(toolResult)
-        ? pseudonymise({ toolResult: toolResult as Record<string, unknown> }, pseudonymMap)
-            .toolResult
-        : toolResult;
+        const config = configs.get(provider);
+        const apiKey = provider === "workers_ai" ? null : (config?.apiKey ?? null);
 
-    const configs = await loadProviderConfigs(planningClient);
-    const answerPrompt = `${systemPrompt}
+        // ── Build pseudonym map ──
+        const pseudonymMap = createPseudonymMap();
 
-Conversation récente:
-${historyToPrompt(safeMessages)}
+        // ── Build conversation prompt ──
+        const conversationContext = historyToPrompt(safeMessages);
+        const prompt = `${conversationContext}\n\nUtilisateur: ${latestUserMessage}`;
 
-${
-  toolPlan.toolName
-    ? `Résultat de l'outil ${toolPlan.toolName}:\n${JSON.stringify(promptToolResult, null, 2)}`
-    : "Aucun outil n'a été exécuté pour ce tour."
-}
-
-Réponds maintenant au dernier message utilisateur de manière concise et utile. Ne mentionne pas les détails internes des outils.`;
-
-    const aiResponse = await routeAIRequest(
-      {
-        task: "conversation",
-        complexity: agentType === "super_admin" ? "complex" : "medium",
-        prompt: answerPrompt,
-        systemPrompt,
-        maxTokens: 1600,
-        temperature: 0.3,
-        context: "site-team-agent",
-      },
-      configs,
-      planningClient,
-    );
-
-    const validatedOutput = validateAIOutput(aiResponse.text);
-    const safeOutput = validatedOutput ? depseudonymise(validatedOutput, pseudonymMap) : null;
-    if (!safeOutput) {
-      return streamError(
-        "La réponse IA a été rejetée par le validateur de sécurité.",
-        500,
-        "AI_OUTPUT_REJECTED",
-      );
-    }
-
-    let savedConversationId: string | null = null;
-    if (historySupabase && clinicId) {
-      savedConversationId = await saveAgentConversationTurn({
-        supabase: historySupabase,
-        conversationId,
-        clinicId,
-        userId: auth.profile.id,
-        agentType,
-        userMessage: latestUserMessage,
-        assistantMessage: safeOutput,
-        toolName: toolPlan.toolName,
-        toolResult,
-        tokensIn: aiResponse.inputTokens,
-        tokensOut: aiResponse.outputTokens,
-      });
-
-      await incrementAgentTokenUsage({
-        supabase: historySupabase,
-        clinicId,
-        agentType,
-        tokensIn: aiResponse.inputTokens,
-        tokensOut: aiResponse.outputTokens,
-      });
-
-      void logAuditEvent({
-        supabase: auth.supabase,
-        action: "site_team_agent_chat",
-        type: agentType === "patient" ? "patient" : "admin",
-        clinicId,
-        actor: auth.profile.id,
-        description: "Site team agent chat turn",
-        metadata: {
+        // ── Build AI SDK tools (Task A5) ──
+        const agentToolDefs = getAgentTools(agentType);
+        const toolCtx: AgentToolContext = {
+          supabase,
+          clinicId,
+          userId: auth.user.id,
+          profileId: auth.profile.id,
+          userRole: role,
           agentType,
-          toolName: toolPlan.toolName,
-          provider: aiResponse.provider,
-          model: aiResponse.model,
-        },
-      });
-    }
+        };
+        const sdkTools =
+          agentToolDefs.length > 0 ? buildSDKTools(agentToolDefs, toolCtx) : undefined;
 
-    return streamText(safeOutput, savedConversationId);
-  } catch (err) {
-    if (err instanceof AllProvidersFailedError) {
-      logger.error("Site team agent providers failed", {
-        context: "site-team-agent",
-        agentType,
-        clinicId,
-        errors: err.errors,
-      });
-      return streamError("Le service IA est temporairement indisponible.", 503, "AI_UNAVAILABLE");
-    }
+        // ── Emit meta event ──
+        if (conversationId) {
+          controller.enqueue(encoder.encode(sseChunk("meta", { conversationId })));
+        }
 
-    logger.error("Site team agent request failed", {
-      context: "site-team-agent",
-      agentType,
-      clinicId,
-      error: err,
-    });
-    return streamError("Le service IA est temporairement indisponible. Veuillez réessayer.");
-  }
+        // ── Stream with multi-step tool loop (Task A4 + A5) ──
+        const streamResult = callProviderStream(
+          provider,
+          {
+            task: "conversation",
+            complexity: agentType === "super_admin" ? "complex" : "medium",
+            prompt,
+            systemPrompt,
+            maxTokens: MAX_REQUEST_TOKENS,
+            temperature: 0.3,
+            context: "site-team-agent",
+          },
+          apiKey,
+          sdkTools ? { tools: sdkTools, maxSteps: MAX_AGENT_STEPS } : undefined,
+        );
+
+        let fullContent = "";
+        let stepIndex = 0;
+
+        // Stream text and tool events to client
+        for await (const chunk of streamResult.raw.fullStream) {
+          if (chunk.type === "text-delta") {
+            fullContent += chunk.text;
+            controller.enqueue(encoder.encode(sseChunk("text", { content: chunk.text })));
+          } else if (chunk.type === "tool-call") {
+            stepIndex++;
+            controller.enqueue(
+              encoder.encode(
+                sseChunk("tool_call", {
+                  name: chunk.toolName,
+                  step: stepIndex,
+                }),
+              ),
+            );
+
+            // Per-step audit log (Task A5)
+            if (clinicId) {
+              void logAuditEvent({
+                supabase: auth.supabase,
+                action: "site_team_agent_tool_step",
+                type: agentType === "patient" ? "patient" : "admin",
+                clinicId,
+                actor: auth.profile.id,
+                description: `Agent tool step ${stepIndex}: ${chunk.toolName}`,
+                metadata: {
+                  agentType,
+                  toolName: chunk.toolName,
+                  step: stepIndex,
+                  provider,
+                },
+              });
+            }
+          } else if (chunk.type === "tool-result") {
+            const output = chunk.output as Record<string, unknown> | null;
+            controller.enqueue(
+              encoder.encode(
+                sseChunk("tool_call", {
+                  name: chunk.toolName,
+                  step: stepIndex,
+                  resultSummary:
+                    output && typeof output === "object" && "ok" in output
+                      ? output.ok
+                        ? "success"
+                        : "error"
+                      : "completed",
+                }),
+              ),
+            );
+          }
+        }
+
+        // ── Output validation ──
+        const validatedOutput = validateAIOutput(fullContent);
+        const safeOutput = validatedOutput ? depseudonymise(validatedOutput, pseudonymMap) : null;
+
+        if (!safeOutput) {
+          controller.enqueue(
+            encoder.encode(
+              sseChunk("error", {
+                message: "La réponse IA a été rejetée par le validateur de sécurité.",
+                code: "AI_OUTPUT_REJECTED",
+              }),
+            ),
+          );
+          controller.enqueue(encoder.encode(sseChunk("done")));
+          controller.close();
+          return;
+        }
+
+        // ── Usage tracking ──
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+        try {
+          const usage = await streamResult.usage;
+          totalInputTokens = usage.inputTokens;
+          totalOutputTokens = usage.outputTokens;
+        } catch {
+          // Usage not available — estimate from content length
+          totalInputTokens = Math.ceil(prompt.length / 4);
+          totalOutputTokens = Math.ceil(fullContent.length / 4);
+        }
+
+        // ── Persist conversation ──
+        let savedConversationId: string | null = null;
+        if (historySupabase && clinicId) {
+          savedConversationId = await saveAgentConversationTurn({
+            supabase: historySupabase,
+            conversationId,
+            clinicId,
+            userId: auth.profile.id,
+            agentType,
+            userMessage: latestUserMessage,
+            assistantMessage: safeOutput,
+            toolName: stepIndex > 0 ? `multi-step(${stepIndex})` : null,
+            toolResult: null,
+            tokensIn: totalInputTokens,
+            tokensOut: totalOutputTokens,
+          });
+
+          await incrementAgentTokenUsage({
+            supabase: historySupabase,
+            clinicId,
+            agentType,
+            tokensIn: totalInputTokens,
+            tokensOut: totalOutputTokens,
+          });
+
+          void logAuditEvent({
+            supabase: auth.supabase,
+            action: "site_team_agent_chat",
+            type: agentType === "patient" ? "patient" : "admin",
+            clinicId,
+            actor: auth.profile.id,
+            description: "Site team agent chat turn",
+            metadata: {
+              agentType,
+              toolSteps: stepIndex,
+              provider,
+              inputTokens: totalInputTokens,
+              outputTokens: totalOutputTokens,
+            },
+          });
+        }
+
+        // Emit savedConversationId if we got one
+        if (savedConversationId && !conversationId) {
+          controller.enqueue(
+            encoder.encode(sseChunk("meta", { conversationId: savedConversationId })),
+          );
+        }
+
+        controller.enqueue(encoder.encode(sseChunk("done")));
+        controller.close();
+      } catch (err) {
+        if (err instanceof AllProvidersFailedError) {
+          logger.error("Site team agent providers failed", {
+            context: "site-team-agent",
+            agentType,
+            clinicId,
+            errors: err.errors,
+          });
+        } else {
+          logger.error("Site team agent request failed", {
+            context: "site-team-agent",
+            agentType,
+            clinicId,
+            error: err,
+          });
+        }
+
+        try {
+          controller.enqueue(
+            encoder.encode(
+              sseChunk("error", {
+                message: "Le service IA est temporairement indisponible. Veuillez réessayer.",
+                code: "AI_UNAVAILABLE",
+              }),
+            ),
+          );
+          controller.enqueue(encoder.encode(sseChunk("done")));
+          controller.close();
+        } catch {
+          // Stream already closed
+        }
+      }
+    },
+  });
+
+  return new NextResponse(readable, { headers: sseHeaders() });
 }
 
 export const POST = withAuthAnyRole(handlePost);

@@ -1,13 +1,29 @@
 /**
- * Provider adapters — unified interface for calling each AI API.
+ * Provider adapters — AI SDK v6 backed (Task A3).
  *
- * Each adapter normalizes the provider's response into a common shape
- * so the router doesn't need to know provider-specific details.
+ * Replaces ~475 lines of hand-rolled fetch adapters with Vercel AI SDK
+ * provider packages, unlocking native streaming, tool calling, and
+ * structured output.
+ *
+ * Public interface is UNCHANGED: `callProvider()`, `callProviderStream()`,
+ * `ProviderError`, `RateLimitError`, `ProviderResponse`. The router, cost
+ * tracking, and fallback logic remain unaware of the implementation swap.
  */
 
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGroq } from "@ai-sdk/groq";
+import { createMistral } from "@ai-sdk/mistral";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createXai } from "@ai-sdk/xai";
+import { generateText, streamText, type LanguageModel, type ToolSet } from "ai";
 import { logger } from "@/lib/logger";
 import { PROVIDER_MODELS } from "./models";
 import type { AIProvider, AIRequest } from "./types";
+
+// ── Public types (unchanged) ──
 
 export interface ProviderResponse {
   text: string;
@@ -16,405 +32,17 @@ export interface ProviderResponse {
   outputTokens: number;
 }
 
-interface CallOptions {
-  apiKey: string | null;
-  model?: string;
+/** Result of `callProviderStream()` for real end-to-end streaming. */
+export interface ProviderStreamResult {
+  textStream: AsyncIterable<string>;
+  usage: PromiseLike<{ inputTokens: number; outputTokens: number }>;
+  response: PromiseLike<{ modelId: string }>;
+  /** The full streamText result for consumers that need tool calling, etc. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw: ReturnType<typeof streamText<any, any>>;
 }
 
-/** HTTP call helper with timeout */
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit,
-  timeoutMs = 30_000,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** Parse provider-specific rate limit headers */
-export function parseRateLimitHeaders(res: Response): { limited: boolean; retryAfterMs: number } {
-  if (res.status === 429) {
-    const retryAfter = res.headers.get("retry-after");
-    const retryMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
-    return { limited: true, retryAfterMs: retryMs };
-  }
-  return { limited: false, retryAfterMs: 0 };
-}
-
-// ── Anthropic ──
-
-async function callAnthropic(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.anthropic.model;
-  const res = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": opts.apiKey ?? "",
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: req.maxTokens ?? 1024,
-      temperature: req.temperature ?? 0.7,
-      system: req.systemPrompt ?? "You are a helpful assistant.",
-      messages: [{ role: "user", content: req.prompt }],
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("anthropic", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("anthropic", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    content: { text: string }[];
-    model: string;
-    usage: { input_tokens: number; output_tokens: number };
-  };
-
-  return {
-    text: json.content[0]?.text ?? "",
-    model: json.model,
-    inputTokens: json.usage.input_tokens,
-    outputTokens: json.usage.output_tokens,
-  };
-}
-
-// ── Google Gemini ──
-
-async function callGoogle(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.google.model;
-  // SECURITY: Send the API key as a header (x-goog-api-key), not in the URL
-  // query string. URL params end up in access logs, proxies, and error
-  // reports — headers do not. Google's REST API supports both.
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const contents = [];
-  if (req.systemPrompt) {
-    contents.push({ role: "user", parts: [{ text: req.systemPrompt }] });
-    contents.push({ role: "model", parts: [{ text: "Understood." }] });
-  }
-  contents.push({ role: "user", parts: [{ text: req.prompt }] });
-
-  const res = await fetchWithTimeout(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": opts.apiKey ?? "",
-    },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        maxOutputTokens: req.maxTokens ?? 1024,
-        temperature: req.temperature ?? 0.7,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("google", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("google", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    candidates: { content: { parts: { text: string }[] } }[];
-    usageMetadata?: { promptTokenCount: number; candidatesTokenCount: number };
-  };
-
-  return {
-    text: json.candidates?.[0]?.content?.parts?.[0]?.text ?? "",
-    model,
-    inputTokens: json.usageMetadata?.promptTokenCount ?? 0,
-    outputTokens: json.usageMetadata?.candidatesTokenCount ?? 0,
-  };
-}
-
-// ── OpenAI ──
-
-async function callOpenAI(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.openai.model;
-  const messages: { role: string; content: string }[] = [];
-  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
-  messages.push({ role: "user", content: req.prompt });
-
-  const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: req.maxTokens ?? 1024,
-      temperature: req.temperature ?? 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("openai", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("openai", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    choices: { message: { content: string } }[];
-    model: string;
-    usage: { prompt_tokens: number; completion_tokens: number };
-  };
-
-  return {
-    text: json.choices[0]?.message?.content ?? "",
-    model: json.model,
-    inputTokens: json.usage.prompt_tokens,
-    outputTokens: json.usage.completion_tokens,
-  };
-}
-
-// ── DeepSeek (OpenAI-compatible) ──
-
-async function callDeepSeek(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.deepseek.model;
-  const messages: { role: string; content: string }[] = [];
-  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
-  messages.push({ role: "user", content: req.prompt });
-
-  const res = await fetchWithTimeout("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: req.maxTokens ?? 1024,
-      temperature: req.temperature ?? 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("deepseek", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("deepseek", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    choices: { message: { content: string } }[];
-    model: string;
-    usage: { prompt_tokens: number; completion_tokens: number };
-  };
-
-  return {
-    text: json.choices[0]?.message?.content ?? "",
-    model: json.model,
-    inputTokens: json.usage.prompt_tokens,
-    outputTokens: json.usage.completion_tokens,
-  };
-}
-
-// ── Groq (OpenAI-compatible) ──
-
-async function callGroq(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.groq.model;
-  const messages: { role: string; content: string }[] = [];
-  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
-  messages.push({ role: "user", content: req.prompt });
-
-  const res = await fetchWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: req.maxTokens ?? 1024,
-      temperature: req.temperature ?? 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("groq", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("groq", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    choices: { message: { content: string } }[];
-    model: string;
-    usage: { prompt_tokens: number; completion_tokens: number };
-  };
-
-  return {
-    text: json.choices[0]?.message?.content ?? "",
-    model: json.model,
-    inputTokens: json.usage.prompt_tokens,
-    outputTokens: json.usage.completion_tokens,
-  };
-}
-
-// ── Mistral (OpenAI-compatible) ──
-
-async function callMistral(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.mistral.model;
-  const messages: { role: string; content: string }[] = [];
-  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
-  messages.push({ role: "user", content: req.prompt });
-
-  const res = await fetchWithTimeout("https://api.mistral.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: req.maxTokens ?? 1024,
-      temperature: req.temperature ?? 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("mistral", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("mistral", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    choices: { message: { content: string } }[];
-    model: string;
-    usage: { prompt_tokens: number; completion_tokens: number };
-  };
-
-  return {
-    text: json.choices[0]?.message?.content ?? "",
-    model: json.model,
-    inputTokens: json.usage.prompt_tokens,
-    outputTokens: json.usage.completion_tokens,
-  };
-}
-
-// ── xAI / Grok (OpenAI-compatible) ──
-
-async function callXAI(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.xai.model;
-  const messages: { role: string; content: string }[] = [];
-  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
-  messages.push({ role: "user", content: req.prompt });
-
-  const res = await fetchWithTimeout("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${opts.apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: req.maxTokens ?? 1024,
-      temperature: req.temperature ?? 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("xai", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("xai", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    choices: { message: { content: string } }[];
-    model: string;
-    usage: { prompt_tokens: number; completion_tokens: number };
-  };
-
-  return {
-    text: json.choices[0]?.message?.content ?? "",
-    model: json.model,
-    inputTokens: json.usage.prompt_tokens,
-    outputTokens: json.usage.completion_tokens,
-  };
-}
-
-// ── Workers AI (Cloudflare) ──
-
-async function callWorkersAI(req: AIRequest, opts: CallOptions): Promise<ProviderResponse> {
-  const model = opts.model ?? PROVIDER_MODELS.workers_ai.model;
-  // Workers AI uses runtime credentials — these are not available at build
-  // time and aren't user-configurable per-clinic, so they live in env rather
-  // than the ai_provider_configs table.
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — Workers AI runtime cred, not user-configurable per-clinic
-  const apiToken =
-    process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN ?? opts.apiKey; // nosemgrep: semgrep.env-access — Workers AI runtime cred, not user-configurable per-clinic
-
-  if (!accountId || !apiToken) {
-    throw new ProviderError(
-      "workers_ai",
-      0,
-      "Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_AI_API_TOKEN",
-    );
-  }
-
-  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
-
-  const messages: { role: string; content: string }[] = [];
-  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
-  messages.push({ role: "user", content: req.prompt });
-
-  const res = await fetchWithTimeout(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiToken}`,
-    },
-    body: JSON.stringify({
-      messages,
-      max_tokens: req.maxTokens ?? 512,
-      temperature: req.temperature ?? 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const rl = parseRateLimitHeaders(res);
-    if (rl.limited) throw new RateLimitError("workers_ai", rl.retryAfterMs);
-    const errBody = await res.text().catch(() => "Unknown error");
-    throw new ProviderError("workers_ai", res.status, errBody);
-  }
-
-  const json = (await res.json()) as {
-    result: { response: string };
-    success: boolean;
-  };
-
-  const text = json.result?.response ?? "";
-  const estimatedInputTokens = Math.ceil(req.prompt.length / 4);
-  const estimatedOutputTokens = Math.ceil(text.length / 4);
-
-  return {
-    text,
-    model,
-    inputTokens: estimatedInputTokens,
-    outputTokens: estimatedOutputTokens,
-  };
-}
-
-// ── Error Types ──
+// ── Error Types (unchanged) ──
 
 export class RateLimitError extends Error {
   provider: AIProvider;
@@ -438,32 +66,94 @@ export class ProviderError extends Error {
   }
 }
 
-// ── Dispatch ──
+// ── SDK model factory ──
 
-type ProviderCaller = (req: AIRequest, opts: CallOptions) => Promise<ProviderResponse>;
+function createModel(provider: AIProvider, apiKey: string | null): LanguageModel {
+  const modelId = PROVIDER_MODELS[provider]?.model ?? "";
 
-const CALLERS: Record<AIProvider, ProviderCaller> = {
-  workers_ai: callWorkersAI,
-  anthropic: callAnthropic,
-  google: callGoogle,
-  openai: callOpenAI,
-  deepseek: callDeepSeek,
-  groq: callGroq,
-  mistral: callMistral,
-  xai: callXAI,
-};
+  switch (provider) {
+    case "openai":
+      return createOpenAI({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "anthropic":
+      return createAnthropic({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "google":
+      return createGoogleGenerativeAI({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "groq":
+      return createGroq({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "mistral":
+      return createMistral({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "deepseek":
+      return createDeepSeek({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "xai":
+      return createXai({ apiKey: apiKey ?? undefined })(modelId);
+
+    case "workers_ai": {
+      // Workers AI uses the OpenAI-compatible endpoint via @ai-sdk/openai-compatible.
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — Workers AI runtime cred
+      const aiToken =
+        process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN ?? apiKey; // nosemgrep: semgrep.env-access — Workers AI runtime cred
+
+      if (!accountId || !aiToken) {
+        throw new ProviderError(
+          "workers_ai",
+          0,
+          "Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_AI_API_TOKEN",
+        );
+      }
+      const workersAI = createOpenAICompatible({
+        name: "workers-ai",
+        baseURL: `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1`,
+        headers: { Authorization: `Bearer ${aiToken}` },
+      });
+      return workersAI(modelId);
+    }
+
+    default:
+      throw new ProviderError(provider, 0, `Unknown provider: ${provider}`);
+  }
+}
+
+// ── Error mapping ──
+
+function mapSDKError(provider: AIProvider, err: unknown): never {
+  if (err instanceof RateLimitError || err instanceof ProviderError) throw err;
+
+  const message = err instanceof Error ? err.message : String(err);
+  const statusCode =
+    err && typeof err === "object" && "statusCode" in err
+      ? (err as { statusCode: number }).statusCode
+      : err && typeof err === "object" && "status" in err
+        ? (err as { status: number }).status
+        : 0;
+
+  if (statusCode === 429) {
+    const retryMs =
+      err && typeof err === "object" && "retryAfterMs" in err
+        ? (err as { retryAfterMs: number }).retryAfterMs
+        : 60_000;
+    throw new RateLimitError(provider, retryMs);
+  }
+
+  throw new ProviderError(provider, statusCode, message);
+}
+
+// ── Buffered call (drop-in replacement) ──
 
 /**
  * Call a specific provider. Throws RateLimitError or ProviderError on failure.
+ * Public interface is unchanged from the hand-rolled adapters.
  */
 export async function callProvider(
   provider: AIProvider,
   req: AIRequest,
   apiKey: string | null,
 ): Promise<ProviderResponse> {
-  const caller = CALLERS[provider];
-  if (!caller) throw new ProviderError(provider, 0, `Unknown provider: ${provider}`);
-
   logger.debug("Calling AI provider", {
     context: "ai-provider",
     provider,
@@ -471,5 +161,93 @@ export async function callProvider(
     complexity: req.complexity,
   });
 
-  return caller(req, { apiKey });
+  try {
+    const model = createModel(provider, apiKey);
+
+    const messages: Array<{ role: "system" | "user"; content: string }> = [];
+    if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
+    messages.push({ role: "user", content: req.prompt });
+
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 30_000);
+
+    try {
+      const result = await generateText({
+        model,
+        messages,
+        maxOutputTokens: req.maxTokens ?? 1024,
+        temperature: req.temperature ?? 0.7,
+        abortSignal: abortController.signal,
+      });
+
+      return {
+        text: result.text,
+        model: result.response?.modelId ?? PROVIDER_MODELS[provider]?.model ?? provider,
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (err) {
+    mapSDKError(provider, err);
+  }
+}
+
+// ── Streaming call (new — Task A3/A4) ──
+
+/**
+ * Call a provider with real streaming. Returns the AI SDK `streamText`
+ * result wrapped in our `ProviderStreamResult` interface so the router's
+ * cost tracking and fallback logic can consume it.
+ *
+ * Token usage is available after the stream completes via `result.usage`.
+ */
+export function callProviderStream(
+  provider: AIProvider,
+  req: AIRequest,
+  apiKey: string | null,
+  options?: { tools?: ToolSet; maxSteps?: number },
+): ProviderStreamResult {
+  logger.debug("Streaming AI provider", {
+    context: "ai-provider",
+    provider,
+    task: req.task,
+    complexity: req.complexity,
+  });
+
+  const model = createModel(provider, apiKey);
+
+  const messages: Array<{ role: "system" | "user"; content: string }> = [];
+  if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
+  messages.push({ role: "user", content: req.prompt });
+
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), 30_000);
+
+  const result = streamText({
+    model,
+    messages,
+    maxOutputTokens: req.maxTokens ?? 1024,
+    temperature: req.temperature ?? 0.7,
+    abortSignal: abortController.signal,
+    ...(options?.tools ? { tools: options.tools } : {}),
+    ...(options?.maxSteps ? { maxSteps: options.maxSteps } : {}),
+    onFinish: () => clearTimeout(timeout),
+    onError: () => clearTimeout(timeout),
+  });
+
+  const defaultModel = PROVIDER_MODELS[provider]?.model ?? provider;
+
+  return {
+    textStream: result.textStream,
+    usage: result.usage.then((u) => ({
+      inputTokens: u.inputTokens ?? 0,
+      outputTokens: u.outputTokens ?? 0,
+    })),
+    response: result.response.then((r) => ({
+      modelId: r.modelId ?? defaultModel,
+    })),
+    raw: result,
+  };
 }
