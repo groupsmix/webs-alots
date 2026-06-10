@@ -160,6 +160,28 @@ function buildPriorityList(configs: Map<AIProvider, ProviderConfig>): AIProvider
   return [...sorted.filter((p) => p !== "workers_ai"), "workers_ai"];
 }
 
+/**
+ * Select the first available provider in routing-tier order — the exact
+ * ordering and availability rules `routeAIRequest()` applies (admin tier,
+ * active flag, API key presence, monthly budget ceiling, persisted and
+ * in-memory rate-limit cooldowns).
+ *
+ * Task A1: exported so the legacy `resolveAIConfig()` compatibility wrapper
+ * resolves through this single path instead of maintaining a parallel
+ * selection system. `isEligible` lets callers restrict candidates (e.g. to
+ * OpenAI-wire-compatible providers).
+ */
+export function selectAvailableProvider(
+  configs: Map<AIProvider, ProviderConfig>,
+  isEligible: (provider: AIProvider) => boolean = () => true,
+): AIProvider | null {
+  for (const provider of buildPriorityList(configs)) {
+    if (!isEligible(provider)) continue;
+    if (checkProviderAvailable(provider, configs).available) return provider;
+  }
+  return null;
+}
+
 // ── Router ──
 
 export async function routeAIRequest(
