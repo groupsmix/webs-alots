@@ -40,6 +40,10 @@ interface DashboardData {
     created_at: string;
     updated_at: string;
     resolved_at: string | null;
+    ai_urgency: string | null;
+    ai_summary: string | null;
+    ai_draft_reply: string | null;
+    ai_tags: string[] | null;
   }>;
 }
 
@@ -55,6 +59,13 @@ const PRIORITY_COLORS: Record<string, string> = {
   normal: "bg-blue-100 text-blue-700",
   high: "bg-orange-100 text-orange-700",
   urgent: "bg-red-100 text-red-700",
+};
+
+const AI_URGENCY_COLORS: Record<string, string> = {
+  low: "bg-gray-100 text-gray-700 border-gray-300",
+  normal: "bg-blue-100 text-blue-700 border-blue-300",
+  high: "bg-orange-100 text-orange-700 border-orange-300",
+  urgent: "bg-red-200 text-red-800 border-red-400 animate-pulse",
 };
 
 const CHANNEL_ICONS: Record<string, React.ReactNode> = {
@@ -263,6 +274,7 @@ export function SupportDashboardView() {
                   <th className="text-left py-2 px-2">Sujet</th>
                   <th className="text-left py-2 px-2">Statut</th>
                   <th className="text-left py-2 px-2">Priorité</th>
+                  <th className="text-left py-2 px-2">AI Urgence</th>
                   <th className="text-left py-2 px-2">Canal</th>
                   <th className="text-left py-2 px-2">Patient</th>
                   <th className="text-left py-2 px-2">Créé</th>
@@ -284,6 +296,30 @@ export function SupportDashboardView() {
                       </Badge>
                     </td>
                     <td className="py-2 px-2">
+                      {ticket.ai_urgency ? (
+                        <div className="flex flex-col gap-1">
+                          <Badge
+                            variant="outline"
+                            className={AI_URGENCY_COLORS[ticket.ai_urgency] ?? ""}
+                          >
+                            {}
+                            {"AI: "}
+                            {ticket.ai_urgency}
+                          </Badge>
+                          {ticket.ai_summary && (
+                            <span
+                              className="text-xs text-muted-foreground truncate max-w-[150px]"
+                              title={ticket.ai_summary}
+                            >
+                              {ticket.ai_summary}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{"—"}</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-2">
                       <div className="flex items-center gap-1">
                         {CHANNEL_ICONS[ticket.channel] ?? <Globe className="h-3 w-3" />}
                         <span className="capitalize">{ticket.channel}</span>
@@ -298,7 +334,7 @@ export function SupportDashboardView() {
                 {recent_tickets.length === 0 && (
                   <tr>
                     {/* eslint-disable-next-line i18next/no-literal-string */}
-                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
                       Aucun ticket
                     </td>
                   </tr>

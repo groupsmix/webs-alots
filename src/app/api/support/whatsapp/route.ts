@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
+import { triageTicket, applyTriageToTicket, escalateUrgentTicket } from "@/lib/ai/triage";
 import { apiSuccess } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 import { sanitizeIlike } from "@/lib/sanitize-ilike";
 import { createClient } from "@/lib/supabase-server";
 import { detectLanguage } from "@/lib/support/language-detect";
@@ -54,6 +56,25 @@ export const POST = withValidation(whatsappInboundSchema, async (data, _request:
       .single();
 
     ticketId = ticket?.id ?? null;
+
+    // D1: Auto-triage new WhatsApp ticket (fail-open)
+    if (ticketId) {
+      const subject = `WhatsApp: ${data.message.slice(0, 100)}`;
+      const msgs = [{ senderType: "patient", content: data.message }];
+      void (async () => {
+        try {
+          const triage = await triageTicket(subject, msgs);
+          await applyTriageToTicket(ticketId as string, clinicId, triage);
+          await escalateUrgentTicket(ticketId as string, clinicId, triage);
+        } catch (err) {
+          logger.warn("Auto-triage failed for WhatsApp ticket", {
+            context: "support/whatsapp",
+            ticketId,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      })();
+    }
 
     // Create a new WhatsApp session
     const { data: session } = await supabase
