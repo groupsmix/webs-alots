@@ -1,0 +1,19 @@
+element,class,size,weight,notes
+page-title,text-2xl font-bold,24px,700,Main page headings
+section-title,text-lg font-semibold,18px,600,Section headings within pages
+card-title,text-sm font-medium,14px,500,Card header titles (shadcn CardTitle)
+body,text-sm,14px,400,Default body text in dashboards
+small,text-xs,12px,400,Timestamps and secondary info
+label,text-sm font-medium,14px,500,Form labels
+badge,text-xs font-medium,12px,500,Status badges
+stat-number,text-2xl font-bold,24px,700,KPI/stat display numbers
+stat-label,text-sm text-muted-foreground,14px,400,KPI/stat labels
+arabic-body,font-family: 'Noto Sans Arabic',14px,400,Arabic text rendering
+arabic-heading,font-family: 'Noto Sans Arabic',24px,700,Arabic headings
+rtl-alignment,text-start,N/A,N/A,Use text-start instead of text-left for RTL compatibility
+rtl-direction,dir=rtl,N/A,N/A,Set on html element for Arabic locale
+darija-text,font-family: 'Noto Sans Arabic',14px,400,Darija uses Arabic script
+french-default,font-family: Inter,14px,400,Default French UI font
+number-format,Intl.NumberFormat('fr-MA'),N/A,N/A,Moroccan French number formatting
+currency,MAD with 2 decimals,N/A,N/A,Moroccan Dirham formatting
+date-format,fr-MA locale,N/A,N/A,DD/MM/YYYY format for Morocco

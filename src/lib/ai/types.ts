@@ -44,6 +44,8 @@ export interface AIRequest {
   featureKey?: string;
   /** Caller context for logging (also stored in ai_usage_logs.context) */
   context?: string;
+  /** Clinic ID for tracing (E1) — set by route handlers */
+  clinicId?: string;
 }
 
 /** Successful AI response */

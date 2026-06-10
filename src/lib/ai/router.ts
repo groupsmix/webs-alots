@@ -21,6 +21,7 @@ import { getCachedConfigs, invalidateConfigCache, setCachedConfigs } from "./con
 import { PROVIDER_MODELS, PROVIDER_PRIORITY, RATE_LIMIT_WINDOW_MS } from "./models";
 import { callProvider, ProviderError, RateLimitError } from "./providers";
 import { decryptProviderKey } from "./secret-encryption";
+import { checkFallbackAlert, recordAITrace, traceFromFailure, traceFromSuccess } from "./tracing";
 import type { AIProvider, AIRequest, AIResponse, ProviderConfig, RateLimitState } from "./types";
 
 // ── In-memory rate-limit window (request counting) ──
@@ -196,6 +197,7 @@ export async function routeAIRequest(
 
   const startTime = Date.now();
   const errors: string[] = [];
+  const fallbackChain: Array<{ provider: string; error?: string }> = [];
   let fromFallback = false;
 
   const priority = buildPriorityList(configs);
@@ -240,6 +242,23 @@ export async function routeAIRequest(
         task: request.task,
       });
 
+      // E1: Record successful trace
+      recordAITrace(
+        traceFromSuccess(request.task ?? "unknown", {
+          clinicId: request.clinicId,
+          provider,
+          model: result.model,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+          latencyMs,
+          costCents,
+          fromFallback,
+          fallbackChain: fallbackChain.length > 0 ? fallbackChain : undefined,
+        }),
+      );
+
+      checkFallbackAlert(provider, fromFallback, request.clinicId);
+
       return {
         text: result.text,
         provider,
@@ -257,6 +276,7 @@ export async function routeAIRequest(
         markRateLimitedInMemory(provider, err.retryAfterMs);
         if (supabase) await persistRateLimit(supabase, provider, err.retryAfterMs);
         errors.push(`${provider}: rate limited (${err.retryAfterMs}ms)`);
+        fallbackChain.push({ provider, error: `rate_limited (${err.retryAfterMs}ms)` });
         logger.warn("AI provider rate limited, falling back", {
           context: "ai-router",
           provider,
@@ -267,6 +287,7 @@ export async function routeAIRequest(
 
       if (err instanceof ProviderError) {
         errors.push(`${provider}: ${err.message}`);
+        fallbackChain.push({ provider, error: err.message });
         logger.warn("AI provider error, falling back", {
           context: "ai-router",
           provider,
@@ -278,6 +299,7 @@ export async function routeAIRequest(
 
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`${provider}: ${msg}`);
+      fallbackChain.push({ provider, error: msg });
       logger.error("AI provider unexpected error", {
         context: "ai-router",
         provider,
@@ -294,6 +316,15 @@ export async function routeAIRequest(
     totalMs,
     task: request.task,
   });
+
+  // E1: Record failure trace
+  recordAITrace(
+    traceFromFailure(request.task ?? "unknown", {
+      clinicId: request.clinicId,
+      latencyMs: totalMs,
+      fallbackChain,
+    }),
+  );
 
   throw new AllProvidersFailedError(errors);
 }

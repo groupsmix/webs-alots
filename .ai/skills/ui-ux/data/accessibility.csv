@@ -1,0 +1,19 @@
+rule,implementation,context,wcag_level
+color-contrast-text,Minimum 4.5:1 ratio for normal text,All text elements,AA
+color-contrast-large,Minimum 3:1 ratio for large text (≥18px or ≥14px bold),Headings and large labels,AA
+color-not-only,Never use color alone to convey information — add text or icons,Status badges must include text not just color,A
+keyboard-navigation,All interactive elements reachable via Tab key,Buttons and links and form controls,A
+focus-visible,Visible focus ring on keyboard focus,Use ring-2 ring-offset-2 Tailwind classes,AA
+medical-alerts,Use role=alert for critical medical notifications,Urgent triage alerts and red-flag warnings,A
+form-labels,Every input must have an associated label element,All form fields — not just placeholder,A
+error-messages,Errors announced via aria-live=assertive,Form validation errors,A
+loading-states,Announce loading with aria-busy=true,Data fetching states,AA
+table-headers,Use th elements with scope=col or scope=row,All data tables in dashboards,A
+image-alt,Descriptive alt text for all images,Patient photos get generic alt for PHI protection,A
+skip-link,Provide skip-to-content link for keyboard users,Main layout shell,A
+motion-reduce,Respect prefers-reduced-motion for animations,Pulsing badges and transitions,AAA
+rtl-semantics,Use logical CSS properties for RTL support,margin-inline-start not margin-left,AA
+screen-reader-only,Use sr-only class for screen-reader-only text,Icons with no visible text need sr-only labels,A
+touch-targets,Minimum 44x44px touch targets on mobile,All buttons and interactive elements,AAA
+dialog-trap,Modal dialogs must trap focus within,Confirmation modals and overlays,A
+patient-data-alt,Never put real patient names in alt text or aria-label,PHI protection in accessibility attributes,N/A

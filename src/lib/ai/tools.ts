@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
+import { lookupDrugByName, lookupDrugInteractions } from "./knowledge/loader";
 import type { SiteTeamAgentType } from "./prompts";
 import { createTeamTask, buildHistoryEvent } from "./team-data";
 
@@ -66,11 +67,15 @@ const doctorTools: AgentToolDefinition[] = [
   {
     name: "get_drug_info",
     description:
-      "Get general medication information and safety notes. Does not replace medical judgment.",
+      "Get medication information, known interactions, and safety notes from the clinical knowledge pack. Does not replace medical judgment.",
     input_schema: {
       type: "object",
       properties: {
-        drug_name: { type: "string", description: "Medication name" },
+        drug_name: { type: "string", description: "Primary medication name" },
+        second_drug: {
+          type: "string",
+          description: "Optional second drug to check for interaction pair",
+        },
       },
       required: ["drug_name"],
     },
@@ -409,10 +414,23 @@ function getDrugInfo(input: ToolInput): ToolResult {
     return { ok: false, error: "drug_name is required", code: "VALIDATION_ERROR" };
   }
 
+  const secondDrug = stringInput(input, "second_drug");
+  const { interactions, packVersion } = secondDrug
+    ? lookupDrugInteractions(drugName, secondDrug)
+    : lookupDrugByName(drugName);
+
   return {
     ok: true,
     data: {
       drugName,
+      packVersion,
+      knownInteractions: interactions.map((ix) => ({
+        drugA: ix.drugA,
+        drugB: ix.drugB,
+        severity: ix.severity,
+        mechanism: ix.mechanism,
+        recommendation: ix.recommendation,
+      })),
       guidance:
         "Je peux fournir des informations générales seulement. Vérifiez les doses, contre-indications et interactions dans une source pharmaceutique validée et selon le dossier patient.",
       safetyNotes: [

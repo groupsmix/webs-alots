@@ -1,0 +1,29 @@
+term_fr,term_ar,term_darija,term_en,category,version
+douleur,ألم,وجع,pain,symptom,1.0
+fièvre,حمى,سخانة,fever,symptom,1.0
+toux,سعال,كحة,cough,symptom,1.0
+maux de tête,صداع,راسي كيضرني,headache,symptom,1.0
+vomissement,تقيؤ,استفراغ,vomiting,symptom,1.0
+diarrhée,إسهال,إسهال,diarrhea,symptom,1.0
+tension artérielle,ضغط الدم,الضغط,blood pressure,vital,1.0
+diabète,سكري,السكر,diabetes,condition,1.0
+grossesse,حمل,حاملة,pregnancy,condition,1.0
+allergie,حساسية,حساسية,allergy,condition,1.0
+ordonnance,وصفة طبية,لوصفة,prescription,document,1.0
+rendez-vous,موعد,رونديفو,appointment,admin,1.0
+analyse de sang,تحليل الدم,تحليل الدم,blood test,procedure,1.0
+radiographie,أشعة سينية,الراديو,x-ray,procedure,1.0
+échographie,تصوير بالموجات فوق الصوتية,الإيكو,ultrasound,procedure,1.0
+médicament,دواء,دوا,medication,treatment,1.0
+comprimé,قرص,حبة,tablet,treatment,1.0
+sirop,شراب,سيرو,syrup,treatment,1.0
+injection,حقنة,بيقورة,injection,treatment,1.0
+urgence,طوارئ,أورجونس,emergency,admin,1.0
+cabinet médical,عيادة طبية,لكابيني,clinic,admin,1.0
+médecin,طبيب,طبيب,doctor,role,1.0
+infirmier,ممرض,أنفرميي,nurse,role,1.0
+pharmacie,صيدلية,فارماسيان,pharmacy,location,1.0
+assurance maladie,تأمين صحي,لاسورونس,health insurance,admin,1.0
+CNSS,الصندوق الوطني للضمان الاجتماعي,CNSS,CNSS,insurance,1.0
+CNOPS,الصندوق الوطني لمنظمات الاحتياط الاجتماعي,CNOPS,CNOPS,insurance,1.0
+RAMED,نظام المساعدة الطبية,راميد,RAMED,insurance,1.0

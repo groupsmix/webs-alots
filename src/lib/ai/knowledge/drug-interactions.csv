@@ -1,0 +1,21 @@
+drug_a,drug_b,severity,mechanism,recommendation,version
+Warfarin,Paracetamol,high,Inhibits CYP2C9 metabolism of warfarin increasing INR,Monitor INR closely; limit paracetamol to <2g/day,1.0
+Warfarin,Aspirin,critical,Dual anticoagulant/antiplatelet effect increases bleeding risk,Avoid combination unless cardiology-directed; monitor for bleeding signs,1.0
+Warfarin,Metronidazole,high,CYP2C9 inhibition increases warfarin effect,Reduce warfarin dose 25-50%; check INR day 3-5,1.0
+Warfarin,Fluconazole,critical,Strong CYP2C9 inhibition dramatically increases INR,Reduce warfarin dose 50%; daily INR monitoring,1.0
+Metformin,Ibuprofen,medium,NSAIDs may reduce renal function affecting metformin clearance,Monitor renal function; consider paracetamol alternative,1.0
+Metformin,Alcohol,high,Increased risk of lactic acidosis,Advise moderate alcohol only; monitor lactate if symptomatic,1.0
+ACE inhibitor,Potassium,high,Both increase serum potassium risk of hyperkalemia,Monitor K+ levels; avoid K+ supplements unless hypokalemic,1.0
+ACE inhibitor,Spironolactone,high,Dual potassium-sparing effect hyperkalemia risk,Check K+ within 1 week of starting; monitor regularly,1.0
+Simvastatin,Amlodipine,medium,Amlodipine increases simvastatin exposure via CYP3A4,Limit simvastatin to 20mg/day with amlodipine,1.0
+Digoxin,Amiodarone,critical,Amiodarone increases digoxin levels 70-100%,Halve digoxin dose when starting amiodarone; monitor levels,1.0
+Clopidogrel,Omeprazole,high,Omeprazole inhibits CYP2C19 reducing clopidogrel activation,Switch to pantoprazole or rabeprazole,1.0
+Methotrexate,Trimethoprim,critical,Both are folate antagonists; trimethoprim reduces methotrexate clearance,Avoid combination; if unavoidable increase folinic acid rescue,1.0
+Ciprofloxacin,Theophylline,high,Ciprofloxacin inhibits CYP1A2 increasing theophylline levels,Monitor theophylline level; consider dose reduction 30-50%,1.0
+Lithium,Ibuprofen,high,NSAIDs reduce lithium clearance causing toxicity,Monitor lithium level; use paracetamol instead,1.0
+SSRI,Tramadol,critical,Serotonin syndrome risk from dual serotonergic effect,Avoid combination; use alternative analgesic,1.0
+Insulin,Beta-blocker,medium,Beta-blockers mask hypoglycemia symptoms,Educate patient on alternative hypoglycemia signs; monitor glucose,1.0
+Amoxicillin,Methotrexate,high,Amoxicillin reduces renal tubular secretion of methotrexate,Monitor methotrexate levels and renal function,1.0
+Carbamazepine,Oral contraceptive,high,CYP3A4 induction reduces contraceptive efficacy,Use higher-dose OCP or alternative contraception,1.0
+Phenytoin,Valproate,high,Complex bidirectional interaction affecting both drug levels,Monitor levels of both drugs; clinical signs,1.0
+Rifampicin,Oral contraceptive,critical,Potent CYP3A4 inducer eliminates contraceptive efficacy,Use non-hormonal contraception during and 28 days after rifampicin,1.0
