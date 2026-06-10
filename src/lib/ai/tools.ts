@@ -503,8 +503,9 @@ async function getPlatformStats(input: ToolInput, ctx: AgentToolContext): Promis
       .from("clinics")
       .select("id", { count: "exact", head: true })
       .gte("created_at", since),
-    ctx.supabase.from("users").select("id", { count: "exact", head: true }),
-    ctx.supabase
+    // Platform-wide aggregates: super_admin-gated, count-only (head: true), no row data.
+    ctx.supabase.from("users").select("id", { count: "exact", head: true }), // nosemgrep: semgrep.tenant-scoping
+    ctx.supabase // nosemgrep: semgrep.tenant-scoping
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .gte("created_at", since),
@@ -600,7 +601,8 @@ async function runAnalyticsQuery(input: ToolInput, ctx: AgentToolContext): Promi
 
   if (queryType === "busiest_hours_today") {
     const today = getLocalDateStr();
-    const { data, error } = await ctx.supabase
+    // Platform-wide hour histogram: super_admin-gated, aggregatedOnly output.
+    const { data, error } = await ctx.supabase // nosemgrep: semgrep.tenant-scoping
       .from("appointments")
       .select("start_time")
       .eq("appointment_date", today)

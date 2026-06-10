@@ -1224,6 +1224,22 @@ export function getCloudflareApiConfig(): {
   };
 }
 
+/**
+ * Cloudflare Workers AI credentials (OpenAI-compatible endpoint used by
+ * src/lib/ai/providers.ts).
+ */
+export function getWorkersAiConfig(): {
+  accountId: string | undefined;
+  apiToken: string | undefined;
+} {
+  return {
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+    // CLOUDFLARE_AI_TOKEN is the legacy variable name — kept as a fallback
+    // for deployments configured before CLOUDFLARE_AI_API_TOKEN existed.
+    apiToken: process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN,
+  };
+}
+
 /** Booking token HMAC secret. */
 export function getBookingTokenSecret(): string | undefined {
   return process.env.BOOKING_TOKEN_SECRET;
