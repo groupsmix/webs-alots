@@ -60,6 +60,9 @@ const ALLOWLIST = new Set([
   "src/app/api/admin/ai-config/route.ts",
   // Admin AI connection test — super_admin only, no tenant-scoped tables touched
   "src/app/api/admin/ai-config/test/route.ts",
+  // Admin AI task routing — super_admin per-task model pins; ai_task_configs
+  // is a platform-global table with no clinic_id column (migration 00179)
+  "src/app/api/admin/ai-task-config/route.ts",
   // AI route — unified AI endpoint with cross-tenant usage logging
   "src/app/api/ai/route.ts",
   // AI router/feature-toggles helpers — cross-tenant reads of ai_* tables
