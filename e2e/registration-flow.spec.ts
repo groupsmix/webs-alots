@@ -56,10 +56,13 @@ test.describe("Registration flow", () => {
     const submitBtn = page.locator('button[type="submit"]');
     await submitBtn.click();
 
-    // At least one input should show validation (native or custom)
+    // At least one input should show validation (native or custom).
+    // Web-first assertion (auto-retrying) instead of a one-shot count():
+    // the old count() raced the service-worker first-install reload
+    // (sw-register.tsx) and intermittently observed an empty DOM while
+    // the page was reloading / re-hydrating.
     const invalidInputs = page.locator("input:invalid, [aria-invalid='true']");
-    const count = await invalidInputs.count();
-    expect(count).toBeGreaterThan(0);
+    await expect(invalidInputs.first()).toBeVisible();
   });
 
   test("has link to login page", async ({ page }) => {
