@@ -9,11 +9,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { retrieveRAGContext, formatRAGContextBlock } from "@/lib/ai/rag";
 import { createStreamingChatResponse } from "@/lib/ai/streaming-chat";
 import { apiError } from "@/lib/api-response";
 import { buildSystemPrompt, fetchChatbotContext } from "@/lib/chatbot-data";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
@@ -51,14 +53,41 @@ export const POST = withAuth(
       content: typeof msg.content === "string" ? msg.content.slice(0, MAX_MESSAGE_LENGTH) : "",
     }));
 
-    // Build clinic-aware system prompt
+    // Build clinic-aware system prompt with RAG context
     const chatContext = await fetchChatbotContext(tenant.clinicId);
-    const systemPrompt = buildSystemPrompt(chatContext);
+    let systemPrompt = buildSystemPrompt(chatContext);
+
+    // RAG: Retrieve grounded context for the user's latest message
+    const lastUserMsg = messages.filter((m) => m.role === "user").pop();
+    let ragSources: string[] = [];
+    if (lastUserMsg) {
+      try {
+        const adminClient = createUntypedAdminClient("rag-chat");
+        const ragContext = await retrieveRAGContext(
+          adminClient,
+          tenant.clinicId,
+          lastUserMsg.content,
+        );
+        const ragBlock = formatRAGContextBlock(ragContext);
+        if (ragBlock) {
+          systemPrompt = `${systemPrompt}\n\n${ragBlock}`;
+          ragSources = ragContext.sources;
+        }
+      } catch (err) {
+        // RAG failure must never block chat — fail open to non-RAG response
+        logger.warn("RAG context retrieval failed", {
+          context: "chat-stream",
+          clinicId: tenant.clinicId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     logger.info("Streaming chat request", {
       context: "chat-stream",
       clinicId: tenant.clinicId,
       messageCount: messages.length,
+      ragSources: ragSources.length,
     });
 
     const stream = createStreamingChatResponse({

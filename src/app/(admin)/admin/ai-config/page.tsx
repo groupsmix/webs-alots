@@ -24,6 +24,8 @@ import {
   CheckCircle,
   XCircle,
   Info,
+  Trash2,
+  Database,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +67,16 @@ interface AIConfigData {
   providers: ProviderConfig[];
   toggles: FeatureToggle[];
   usage: Record<string, UsageStat>;
+}
+
+interface AIMemoryRow {
+  id: string;
+  clinic_id: string;
+  agent_type: string;
+  content: string;
+  confidence: number;
+  last_used_at: string;
+  created_at: string;
 }
 
 const TIER_LABELS: Record<number, { label: string; color: string }> = {
@@ -120,6 +132,9 @@ export default function AIConfigAdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingFeature, setTogglingFeature] = useState<string | null>(null);
+  const [memories, setMemories] = useState<AIMemoryRow[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [deletingMemory, setDeletingMemory] = useState<string | null>(null);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -139,9 +154,44 @@ export default function AIConfigAdminPage() {
     }
   }, []);
 
+  const loadMemories = useCallback(async () => {
+    setMemoriesLoading(true);
+    try {
+      const res = await fetch("/api/admin/ai-memories", { credentials: "include" });
+      if (res.ok) {
+        const json = await res.json();
+        setMemories(json.data?.memories ?? []);
+      }
+    } catch {
+      // Non-critical — memories section is supplementary
+    } finally {
+      setMemoriesLoading(false);
+    }
+  }, []);
+
+  const handleDeleteMemory = async (id: string) => {
+    setDeletingMemory(id);
+    try {
+      const res = await fetch("/api/admin/ai-memories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        setMemories((prev) => prev.filter((m) => m.id !== id));
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setDeletingMemory(null);
+    }
+  };
+
   useEffect(() => {
     loadConfig();
-  }, [loadConfig]);
+    loadMemories();
+  }, [loadConfig, loadMemories]);
 
   const handleToggleFeature = async (featureKey: string, currentEnabled: boolean) => {
     setTogglingFeature(featureKey);
@@ -381,6 +431,70 @@ export default function AIConfigAdminPage() {
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* ── AI Memories (Phase B3) ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-violet-500" />
+            <h2 className="text-lg font-semibold">Mémoire IA</h2>
+            <Badge variant="outline" className="text-[10px]">
+              {memories.length} entrée(s)
+            </Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={loadMemories} disabled={memoriesLoading}>
+            {memoriesLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        {memories.length === 0 ? (
+          <Card>
+            <CardContent className="p-4 text-center text-sm text-muted-foreground">
+              Aucune mémoire enregistrée — les faits cliniques seront extraits automatiquement des
+              conversations.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {memories.map((mem) => (
+              <Card key={mem.id}>
+                <CardContent className="p-3 flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{mem.content}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-[10px]">
+                        {mem.agent_type}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">
+                        Confiance: {Math.round(mem.confidence * 100)}%
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(mem.created_at).toLocaleDateString("fr-FR")}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteMemory(mem.id)}
+                    disabled={deletingMemory === mem.id}
+                  >
+                    {deletingMemory === mem.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

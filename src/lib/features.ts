@@ -89,6 +89,8 @@ export type ClinicFeatureKey =
   // AI-powered features (Professional+ plan)
   | "ai_manager"
   | "ai_auto_suggest"
+  | "ai_rag"
+  | "ai_memory"
   // Veterinary
   | "pet_profiles"
   | "website"
