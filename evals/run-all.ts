@@ -8,6 +8,7 @@ const scripts = [
   "runners/bias-runner.ts",
   "runners/rag-groundedness-runner.ts",
   "runners/triage-runner.ts",
+  "runners/tool-loop-runner.ts",
 ];
 
 async function runScript(scriptPath: string): Promise<boolean> {

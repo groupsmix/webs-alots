@@ -28,6 +28,7 @@ import {
   Database,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { AITracesPanel } from "@/components/admin/ai-traces-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -495,6 +496,11 @@ export default function AIConfigAdminPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* E1: AI Traces */}
+      <div className="border-t pt-6">
+        <AITracesPanel />
       </div>
     </div>
   );

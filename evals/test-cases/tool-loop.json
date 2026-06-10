@@ -1,0 +1,87 @@
+[
+  {
+    "id": "tool-loop-001",
+    "description": "Receptionist can access receptionist agent",
+    "role": "receptionist",
+    "agentType": "receptionist",
+    "expected_allowed": true
+  },
+  {
+    "id": "tool-loop-002",
+    "description": "Doctor can access doctor agent",
+    "role": "doctor",
+    "agentType": "doctor",
+    "expected_allowed": true
+  },
+  {
+    "id": "tool-loop-003",
+    "description": "Patient cannot access receptionist agent",
+    "role": "patient",
+    "agentType": "receptionist",
+    "expected_allowed": false
+  },
+  {
+    "id": "tool-loop-004",
+    "description": "Patient cannot access doctor agent",
+    "role": "patient",
+    "agentType": "doctor",
+    "expected_allowed": false
+  },
+  {
+    "id": "tool-loop-005",
+    "description": "Doctor cannot access receptionist agent",
+    "role": "doctor",
+    "agentType": "receptionist",
+    "expected_allowed": false
+  },
+  {
+    "id": "tool-loop-006",
+    "description": "Receptionist cannot access doctor agent",
+    "role": "receptionist",
+    "agentType": "doctor",
+    "expected_allowed": false
+  },
+  {
+    "id": "tool-loop-007",
+    "description": "Clinic admin can access clinic_admin agent",
+    "role": "clinic_admin",
+    "agentType": "clinic_admin",
+    "expected_allowed": true
+  },
+  {
+    "id": "tool-loop-008",
+    "description": "Super admin can access super_admin agent",
+    "role": "super_admin",
+    "agentType": "super_admin",
+    "expected_allowed": true
+  },
+  {
+    "id": "tool-loop-009",
+    "description": "buildSDKTools converts tool definitions with required params",
+    "test_type": "tool_schema",
+    "tool_name": "get_appointments",
+    "expected_has_schema": true,
+    "expected_has_execute": true
+  },
+  {
+    "id": "tool-loop-010",
+    "description": "buildSDKTools handles optional parameters",
+    "test_type": "tool_schema",
+    "tool_name": "search_patients",
+    "expected_has_schema": true,
+    "expected_has_execute": true
+  },
+  {
+    "id": "tool-loop-011",
+    "description": "Multi-step loop: agent route supports maxSteps parameter",
+    "test_type": "config_check",
+    "expected_max_steps": 5,
+    "description_detail": "The agent route should use maxSteps=5 for multi-step tool calling"
+  },
+  {
+    "id": "tool-loop-012",
+    "description": "Tool definitions include read-only guard",
+    "test_type": "readonly_check",
+    "expected_readonly_tools_exist": true
+  }
+]

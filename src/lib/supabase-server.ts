@@ -218,7 +218,8 @@ export type AdminPurpose =
   | "ai-memory-consolidate"
   | "ai-team-tasks"
   | "ai-team-review"
-  | "ai-triage";
+  | "ai-triage"
+  | "ai-tracing";
 
 /**
  * Create a Supabase admin client using the service role key.

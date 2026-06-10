@@ -126,7 +126,8 @@ export async function extractMemoryFacts(
         confidence: 0.7,
       }));
 
-      const { error } = await supabase.from("ai_memories").insert(rows);
+      // Every row in `rows` carries clinic_id (built above).
+      const { error } = await supabase.from("ai_memories").insert(rows); // nosemgrep: semgrep.tenant-scoping
 
       if (error) {
         logger.error("Failed to store memory facts", {
@@ -193,6 +194,7 @@ export async function retrieveMemories(
             void supabase
               .from("ai_memories")
               .update({ last_used_at: new Date().toISOString() })
+              .eq("clinic_id", clinicId)
               .in("id", ids);
 
             return data.map(mapMemoryRow);
@@ -276,6 +278,7 @@ export async function consolidateMemories(
       const { error: delErr } = await supabase
         .from("ai_memories")
         .delete()
+        .eq("clinic_id", clinicId)
         .in(
           "id",
           stale.map((m) => m.id),
@@ -329,9 +332,14 @@ export async function consolidateMemories(
                 content: merged,
                 confidence: Math.max(remaining[idx1].confidence, remaining[idx2].confidence),
               })
-              .eq("id", remaining[idx1].id);
+              .eq("id", remaining[idx1].id)
+              .eq("clinic_id", clinicId);
 
-            await supabase.from("ai_memories").delete().eq("id", remaining[idx2].id);
+            await supabase
+              .from("ai_memories")
+              .delete()
+              .eq("id", remaining[idx2].id)
+              .eq("clinic_id", clinicId);
 
             stats.merged++;
           }
@@ -341,7 +349,11 @@ export async function consolidateMemories(
         if (match) {
           const idx = parseInt(match[1], 10) - 1;
           if (remaining[idx]) {
-            await supabase.from("ai_memories").delete().eq("id", remaining[idx].id);
+            await supabase
+              .from("ai_memories")
+              .delete()
+              .eq("id", remaining[idx].id)
+              .eq("clinic_id", clinicId);
             stats.deleted++;
           }
         }
@@ -354,7 +366,8 @@ export async function consolidateMemories(
             await supabase
               .from("ai_memories")
               .update({ content: rewritten })
-              .eq("id", remaining[idx].id);
+              .eq("id", remaining[idx].id)
+              .eq("clinic_id", clinicId);
             stats.rewritten++;
           }
         }

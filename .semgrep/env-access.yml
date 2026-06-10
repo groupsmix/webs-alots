@@ -11,6 +11,7 @@ rules:
   #   - next.config.ts (build-time config)
   #   - vitest.config.ts (test config)
   #   - scripts/ (CLI utilities)
+  #   - evals/ (eval runners — CLI/dev tooling, run outside the app)
   #   - *.test.ts / *.test.tsx (test files)
   #   - worker-cron-handler.ts (Workers entry)
   #
@@ -36,6 +37,7 @@ rules:
         - "**/*.test.tsx"
         - worker-cron-handler.ts
         - "e2e/*"
+        - "evals/**"
         - playwright.config.ts
     metadata:
       category: best-practice
