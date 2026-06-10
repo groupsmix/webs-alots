@@ -28,6 +28,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
+import { EmergencyStop } from "./emergency-stop";
+import { TaskRouting } from "./task-routing";
 
 // ── Types ──
 
@@ -354,6 +356,9 @@ export default function AISettingsPage() {
         </Button>
       </div>
 
+      {/* ── Emergency Kill Switch ── */}
+      <EmergencyStop />
+
       {/* ── Summary Cards ── */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -645,6 +650,9 @@ export default function AISettingsPage() {
           })}
         </div>
       </div>
+
+      {/* ── Per-Task Model Routing ── */}
+      <TaskRouting />
 
       {/* ── Feature Toggles ── */}
       <div>
