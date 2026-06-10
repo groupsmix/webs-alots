@@ -1,7 +1,18 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
-import { Globe, Clock, Bell, RefreshCw, Info, Save, Loader2 } from "lucide-react";
+import {
+  Globe,
+  Clock,
+  Bell,
+  RefreshCw,
+  Info,
+  Save,
+  Loader2,
+  Bot,
+  ChevronRight,
+} from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -80,6 +91,25 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* AI model management shortcut */}
+        <Link href="/super-admin/settings/ai" className="block group">
+          <Card className="transition-colors group-hover:border-violet-400">
+            <CardContent className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-3">
+                <Bot className="h-5 w-5 text-violet-600" />
+                <div>
+                  <p className="font-medium text-sm">AI Models &amp; Routing</p>
+                  <p className="text-xs text-muted-foreground">
+                    Provider API keys, working status, monthly spend, budgets, task routing
+                    (chatbot, summaries, translation…) and the emergency kill switch.
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
         {/* Language & Timezone */}
         <Card>
           <CardHeader>

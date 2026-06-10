@@ -5,7 +5,12 @@
  * PATCH — update a provider config (API key, active state, budget)
  * POST — update feature toggles
  *
- * Super admin only. API keys are encrypted with AES-256-GCM (PHI_ENCRYPTION_KEY)
+ * GET is readable by super_admin and clinic_admin (the clinic admin AI pages
+ * at /admin/ai-config and /admin/ai-routing render status, spend, and budget
+ * data from it). Writes (PATCH/POST) stay super_admin only because provider
+ * configs and feature toggles are platform-global, not per-clinic.
+ *
+ * API keys are encrypted with AES-256-GCM (PHI_ENCRYPTION_KEY)
  * before insert/update via `encryptProviderKey`. Keys are never returned in
  * the GET response — only a `has_api_key` boolean.
  *
@@ -245,7 +250,7 @@ async function handlePost(req: NextRequest, _auth: AuthContext) {
   return apiSuccess({ updated: true, feature_key: featureKey, is_enabled: isEnabled });
 }
 
-export const GET = withAuth((req, auth) => handleGet(req, auth), ["super_admin"]);
+export const GET = withAuth((req, auth) => handleGet(req, auth), ["super_admin", "clinic_admin"]);
 
 export const PATCH = withAuth((req, auth) => handlePatch(req, auth), ["super_admin"]);
 
