@@ -96,7 +96,9 @@ export function EmergencyStop() {
       <Card className={stopped ? "border-destructive bg-destructive/5" : "border-destructive/40"}>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
           <div className="flex items-center gap-3">
-            <div className={`rounded-lg p-2 ${stopped ? "bg-destructive/20" : "bg-destructive/10"}`}>
+            <div
+              className={`rounded-lg p-2 ${stopped ? "bg-destructive/20" : "bg-destructive/10"}`}
+            >
               <OctagonX className="h-6 w-6 text-destructive" />
             </div>
             <div>

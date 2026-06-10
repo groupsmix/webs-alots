@@ -1,4 +1,4 @@
--- 00178_ai_task_configs.sql
+-- 00179_ai_task_configs.sql
 -- Per-task AI model routing: lets super admins pin a specific provider/model
 -- for each AI task type (chatbot conversation, summarization, classification,
 -- etc.) instead of relying purely on the global provider priority order.

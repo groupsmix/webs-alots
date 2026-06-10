@@ -116,17 +116,16 @@ export function TaskRouting() {
         <Badge variant="outline">per-task model selection</Badge>
       </div>
       <p className="text-sm text-muted-foreground">
-        Pin a provider and model for each AI task, or leave on Auto to let the router pick by
-        tier. If a pinned provider is unavailable or over budget, normal fallback still applies.
+        Pin a provider and model for each AI task, or leave on Auto to let the router pick by tier.
+        If a pinned provider is unavailable or over budget, normal fallback still applies.
       </p>
 
       {!migrated && (
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">
-              The <span className="font-mono">ai_task_configs</span> migration has not been
-              applied yet. Run{" "}
-              <span className="font-mono">supabase db push</span> to enable task routing.
+              The <span className="font-mono">ai_task_configs</span> migration has not been applied
+              yet. Run <span className="font-mono">supabase db push</span> to enable task routing.
             </p>
           </CardContent>
         </Card>

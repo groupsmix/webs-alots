@@ -95,11 +95,14 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
   }
 
   // Audit trail — a platform-wide stop/start must always be attributable.
-  logger.warn(enabled ? "AI re-enabled platform-wide" : "EMERGENCY STOP: AI disabled platform-wide", {
-    context: "ai-kill-switch",
-    enabled,
-    actorUserId: auth.user.id,
-  });
+  logger.warn(
+    enabled ? "AI re-enabled platform-wide" : "EMERGENCY STOP: AI disabled platform-wide",
+    {
+      context: "ai-kill-switch",
+      enabled,
+      actorUserId: auth.user.id,
+    },
+  );
 
   return apiSuccess({ ai_enabled: enabled });
 }
