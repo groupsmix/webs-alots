@@ -19,6 +19,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createXai } from "@ai-sdk/xai";
 import { generateText, streamText, type LanguageModel, type ToolSet } from "ai";
+import { getWorkersAiConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { PROVIDER_MODELS } from "./models";
 import type { AIProvider, AIRequest } from "./types";
@@ -95,9 +96,8 @@ export function createModel(provider: AIProvider, apiKey: string | null): Langua
 
     case "workers_ai": {
       // Workers AI uses the OpenAI-compatible endpoint via @ai-sdk/openai-compatible.
-      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — Workers AI runtime cred
-      const aiToken =
-        process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN ?? apiKey; // nosemgrep: semgrep.env-access — Workers AI runtime cred
+      const { accountId, apiToken } = getWorkersAiConfig();
+      const aiToken = apiToken ?? apiKey;
 
       if (!accountId || !aiToken) {
         throw new ProviderError(
