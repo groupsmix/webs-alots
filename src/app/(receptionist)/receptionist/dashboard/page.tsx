@@ -45,9 +45,18 @@ export default function ReceptionistDashboardPage() {
         return;
       }
       setClinicId(user.clinic_id);
+      // PERF-LAT-05: this dashboard only renders today/tomorrow lists,
+      // recent status tabs and monthly revenue — fetch a 30-day lookback
+      // plus future rows instead of the clinic's full history (which was
+      // oldest-first and capped at 1000 rows, so busy clinics could even
+      // lose today's schedule).
+      const lookback = new Date();
+      lookback.setDate(lookback.getDate() - 30);
       const [appts, invoices, patients] = await Promise.all([
-        fetchAppointments(user.clinic_id),
-        fetchInvoices(user.clinic_id),
+        fetchAppointments(user.clinic_id, {
+          sinceDate: lookback.toISOString().split("T")[0],
+        }),
+        fetchInvoices(user.clinic_id, { sinceDate: lookback.toISOString() }),
         fetchPatients(user.clinic_id),
       ]);
       if (controller.signal.aborted) return;

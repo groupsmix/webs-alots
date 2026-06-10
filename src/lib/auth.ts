@@ -6,6 +6,7 @@ import { logAuthEvent } from "@/lib/audit-log";
 import { checkPasswordPwned } from "@/lib/hibp";
 import { logger } from "@/lib/logger";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
+import { verifyProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import {
   loginLimiter,
   accountLockoutLimiter,
@@ -504,6 +505,42 @@ export async function signOut(): Promise<void> {
  */
 export async function getUserProfile(): Promise<UserProfile | null> {
   const supabase = await createClient();
+
+  // PERF-LAT-02: The middleware has ALREADY validated this session with
+  // Supabase Auth (getUser) and looked up the user's row, forwarding
+  // (id, role, clinic_id) via HMAC-signed x-auth-profile-* request headers
+  // (see middleware.ts / profile-header-hmac.ts — inbound copies are
+  // stripped, signatures expire after 5 minutes, and verification fails
+  // closed when PROFILE_HEADER_HMAC_KEY is unset). Re-running getUser()
+  // here added a second Supabase Auth network round trip to every page
+  // render. When the signed headers verify, skip it and fetch the full
+  // profile row directly by primary key — same trust model `withAuth`
+  // already uses for API routes. RLS still applies: the Supabase client
+  // carries the session cookies, and users can only read their own row.
+  let verified: Awaited<ReturnType<typeof verifyProfileHeader>> = null;
+  try {
+    const hdrs = await headers();
+    verified = await verifyProfileHeader({
+      id: hdrs.get(PROFILE_HEADER_NAMES.id),
+      role: hdrs.get(PROFILE_HEADER_NAMES.role),
+      clinic_id: hdrs.get(PROFILE_HEADER_NAMES.clinic),
+      signature: hdrs.get(PROFILE_HEADER_NAMES.sig),
+      iat: hdrs.get(PROFILE_HEADER_NAMES.iat),
+    });
+  } catch {
+    // headers() is unavailable outside a request scope (background jobs,
+    // unit tests) — fall back to the authoritative lookup below.
+  }
+
+  if (verified) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id, auth_id, clinic_id, role, name, phone, email, avatar_url, is_active, metadata")
+      .eq("id", verified.id)
+      .single();
+    // Fall through to the authoritative path only if the row lookup failed.
+    if (profile) return profile as UserProfile;
+  }
 
   const {
     data: { user },
