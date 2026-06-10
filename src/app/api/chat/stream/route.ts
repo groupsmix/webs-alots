@@ -15,7 +15,7 @@ import { apiError } from "@/lib/api-response";
 import { buildSystemPrompt, fetchChatbotContext } from "@/lib/chatbot-data";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
-import { createAdminClient } from "@/lib/supabase-server";
+import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
@@ -62,10 +62,9 @@ export const POST = withAuth(
     let ragSources: string[] = [];
     if (lastUserMsg) {
       try {
-        const adminClient = createAdminClient("rag-chat");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const adminClient = createUntypedAdminClient("rag-chat");
         const ragContext = await retrieveRAGContext(
-          adminClient as any,
+          adminClient,
           tenant.clinicId,
           lastUserMsg.content,
         );
