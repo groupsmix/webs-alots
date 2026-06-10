@@ -289,7 +289,8 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = createAdminClient("cron") as unknown as UntypedClient;
+    // Cross-tenant by design: cron iterates all active clinics.
+    const supabase = createAdminClient("cron") as unknown as UntypedClient; // nosemgrep: semgrep.admin-client-guard
 
     // MA-04: filter soft-deleted clinics
     const { data: clinics } = await supabase
@@ -401,7 +402,8 @@ async function handler(request: NextRequest) {
           }
         }
 
-        const adminClient = createAdminClient("cron");
+        // Cross-tenant cron context; audit event itself carries the clinic id.
+        const adminClient = createAdminClient("cron"); // nosemgrep: semgrep.admin-client-guard
         await logAuditEvent({
           supabase: adminClient,
           action: "daily_briefing_sent",

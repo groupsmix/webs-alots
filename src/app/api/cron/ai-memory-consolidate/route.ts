@@ -29,7 +29,8 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = createAdminClient("ai-memory-consolidate");
+    // Cross-tenant by design: cron iterates all active clinics.
+    const supabase = createAdminClient("ai-memory-consolidate"); // nosemgrep: semgrep.admin-client-guard
 
     // Get all active clinics
     const { data: clinics, error: clinicsErr } = await supabase

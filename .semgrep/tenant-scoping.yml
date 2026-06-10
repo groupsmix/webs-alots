@@ -6,24 +6,24 @@ rules:
   # defense-in-depth — application-level scoping is required even with RLS.
   #
   # This rule rewrites the previous version so that .eq("clinic_id", ...) is
-  # recognised anywhere in the method chain (the previous pattern-not-regex
-  # approach silently failed because semgrep's matched range only spanned
-  # `from().method()` and the regex never saw subsequent .eq() calls).
+  # recognised anywhere in the method chain. The previous version combined
+  # `pattern-inside: $EXPR` with a `pattern-not-regex`, but the regex only
+  # ever evaluated against the `from().method()` sub-range, and the auxiliary
+  # `pattern-not` clauses only suppressed chains where .eq("clinic_id") was
+  # the terminal call (within at most two trailing calls). Both silently
+  # failed for real-world chains, producing false positives on queries that
+  # are correctly scoped, e.g.:
   #
-  # Two correctness changes vs the previous rule:
+  #   .from("t").select(...).eq("clinic_id", id).order(...).limit(n)
+  #   .from("t").update(data).eq("id", x).eq("clinic_id", id)
   #
-  #   1. Use a `pattern-inside` over the full expression statement, so the
-  #      pattern-not-regex evaluates against the entire chain text.
-  #
-  #   2. Whitelist a fixed list of service-level / non-clinic-keyed tables
-  #      that the project uses (see migrations 00092 processed_stripe_events,
-  #      00094 processed_whatsapp_messages, 00101 webhook_retry_queue,
-  #      notification_queue from monetization batch, and the `users` table
-  #      which is keyed by id rather than clinic_id). For these tables an
-  #      `.eq("id", ...)` filter is the tenant-equivalent scoping.
+  # The fix: `pattern-not-inside` with method-chain ellipsis. It is
+  # containment-based — any from().crud() match that sits inside a chain
+  # which eventually calls .eq("clinic_id", ...) is excluded, regardless of
+  # chain depth or calls following the .eq().
   #
   # False positives this rule deliberately allows:
-  #   - Queries on the whitelisted service tables above
+  #   - Queries on the whitelisted service tables below
   #   - Queries in cron jobs that intentionally iterate over all clinics
   #     (callers should still annotate these with `// nosemgrep: tenant-scoping`
   #     for documentation purposes — the rule cannot detect cron context)
@@ -32,17 +32,12 @@ rules:
   #
   - id: tenant-scoping
     patterns:
-      # Match any chain that starts with .from(<table>).<crud>(...) — the
-      # matched range is the full expression so subsequent .eq("clinic_id")
-      # calls show up to the pattern-not-regex below.
       - pattern: |
           $CLIENT.from($TABLE).$METHOD(...)
-      - pattern-inside: |
-          $EXPR
-      # Any .eq("clinic_id", ...) anywhere in the surrounding expression
-      # makes this query tenant-scoped.
-      - pattern-not-regex: |
-          \.eq\(\s*["']clinic_id["']
+      # CRUD methods only — ignore .from(...).rpc(...), etc.
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(select|insert|update|delete|upsert)$
       # Service-level / non-clinic-keyed tables.
       - metavariable-regex:
           metavariable: $TABLE
@@ -69,31 +64,20 @@ rules:
           # .from("users").select("*") still triggers a warning.
           regex: |-
             ^(?!["'](clinics|ai_provider_configs)["']).*$
-      # CRUD methods only — ignore .from(...).rpc(...), etc.
-      - metavariable-regex:
-          metavariable: $METHOD
-          regex: ^(select|insert|update|delete|upsert)$
-      # Belt-and-suspenders AST patterns for shallow chains where
-      # .eq("clinic_id") is the terminal call. Kept from the previous
-      # version so the rule does not regress on common shapes.
-      - pattern-not: |
-          $CLIENT.from($TABLE).$METHOD(...).eq("clinic_id", ...)
-      - pattern-not: |
-          $CLIENT.from($TABLE).$METHOD(...).eq('clinic_id', ...)
-      - pattern-not: |
-          $CLIENT.from($TABLE).$METHOD(...).$CHAIN1(...).eq("clinic_id", ...)
-      - pattern-not: |
-          $CLIENT.from($TABLE).$METHOD(...).$CHAIN1(...).eq('clinic_id', ...)
-      - pattern-not: |
-          $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq("clinic_id", ...)
-      - pattern-not: |
-          $CLIENT.from($TABLE).$METHOD(...).$C1(...).$C2(...).eq('clinic_id', ...)
+      # Any .eq("clinic_id", ...) anywhere in the surrounding method chain
+      # makes this query tenant-scoped. Semgrep normalises JS string quotes,
+      # but both variants are kept for belt-and-suspenders parity with the
+      # codebase's mixed quoting.
+      - pattern-not-inside: |
+          $CLIENT.from($TABLE).$METHOD(...). ... .eq("clinic_id", ...)
+      - pattern-not-inside: |
+          $CLIENT.from($TABLE).$METHOD(...). ... .eq('clinic_id', ...)
       # insert/upsert with clinic_id in the data object.
-      - pattern-not: |
+      - pattern-not-inside: |
           $CLIENT.from($TABLE).insert({clinic_id: ..., ...})
-      - pattern-not: |
+      - pattern-not-inside: |
           $CLIENT.from($TABLE).upsert({clinic_id: ..., ...})
-      - pattern-not: |
+      - pattern-not-inside: |
           $CLIENT.from($TABLE).insert([..., {clinic_id: ..., ...}, ...])
     message: >
       Supabase query on `$TABLE` missing `.eq("clinic_id", ...)` — every
