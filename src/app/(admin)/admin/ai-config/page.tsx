@@ -203,6 +203,11 @@ export default function AIConfigAdminPage() {
         credentials: "include",
         body: JSON.stringify({ feature_key: featureKey, is_enabled: !currentEnabled }),
       });
+      if (res.status === 403) {
+        throw new Error(
+          "Seul le super admin peut activer/désactiver les fonctionnalités IA (réglage global de la plateforme).",
+        );
+      }
       if (!res.ok) throw new Error("Échec de la mise à jour");
       await loadConfig();
     } catch (err) {

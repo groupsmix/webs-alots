@@ -26,6 +26,8 @@ import {
   Boxes,
   FileText,
   Brain,
+  Cpu,
+  Route,
   ScrollText,
   DatabaseZap,
   Gift,
@@ -129,6 +131,8 @@ const navItems: NavItem[] = [
   },
   // AI-powered features (Professional+ plan)
   { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
+  { href: "/admin/ai-config", label: "AI Models", icon: Cpu },
+  { href: "/admin/ai-routing", label: "AI Routing", icon: Route },
   // Security & Compliance
   { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
   { href: "/admin/data-retention", label: "Data Retention", icon: DatabaseZap },
