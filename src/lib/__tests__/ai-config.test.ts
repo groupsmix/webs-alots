@@ -114,7 +114,7 @@ describe("resolveAIConfig (unified path)", () => {
       expect(result.config.provider).toBe("openai");
       expect(result.config.apiKey).toBe("sk-db");
       expect(result.config.baseUrl).toBe("https://api.openai.com/v1");
-      expect(result.config.model).toBe("gpt-4o-mini-2024-07-18");
+      expect(result.config.model).toBe("gpt-5.4-mini");
       expect(typeof result.config.seed).toBe("number");
     }
   });
@@ -218,6 +218,25 @@ describe("resolveAIConfig (unified path)", () => {
     }
   });
 
+  it("auto-resolves a deprecated OPENAI_MODEL pin to its replacement (Task A2)", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-env");
+    // Previously-valid dated snapshot, superseded in the A2 registry refresh.
+    vi.stubEnv("OPENAI_MODEL", "gpt-4o-mini-2024-07-18");
+
+    const { resolveAIConfig } = await import("@/lib/ai/config");
+    const result = await resolveAIConfig();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.config.model).toBe("gpt-5.4-mini");
+    }
+    const { logger } = await import("@/lib/logger");
+    expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
+      "Deprecated AI model auto-resolved to its replacement",
+      expect.objectContaining({ original: "gpt-4o-mini-2024-07-18", model: "gpt-5.4-mini" }),
+    );
+  });
+
   it("rejects an OPENAI_MODEL override that is not in the allowlist (W8-S-03)", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-env");
     vi.stubEnv("OPENAI_MODEL", "gpt-4o-mini"); // floating alias — must be rejected
@@ -280,15 +299,17 @@ describe("ALLOWED_MODELS (single registry)", () => {
     }
   });
 
-  it("retains the legacy pinned snapshot IDs", async () => {
+  it("contains the explicitly pinned operator-selectable IDs", async () => {
     const { ALLOWED_MODELS } = await import("@/lib/ai/models");
-    for (const id of [
-      "gpt-4o-mini-2024-07-18",
-      "gpt-4o-2024-08-06",
-      "gpt-4o-2024-11-20",
-      "@cf/meta/llama-3.1-8b-instruct",
-    ]) {
+    for (const id of ["gpt-5.5", "gpt-5.4", "gpt-5.4-nano", "@cf/meta/llama-3.1-8b-instruct"]) {
       expect(ALLOWED_MODELS.has(id)).toBe(true);
+    }
+  });
+
+  it("no longer allowlists retired snapshot IDs directly (Task A2)", async () => {
+    const { ALLOWED_MODELS } = await import("@/lib/ai/models");
+    for (const id of ["gpt-4o-mini-2024-07-18", "gpt-4o-2024-08-06", "gpt-4o-2024-11-20"]) {
+      expect(ALLOWED_MODELS.has(id)).toBe(false);
     }
   });
 });
