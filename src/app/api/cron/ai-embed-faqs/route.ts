@@ -16,7 +16,11 @@ import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
-import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
+import {
+  createAdminClient,
+  createScopedAdminClient,
+  createUntypedAdminClient,
+} from "@/lib/supabase-server";
 
 const BATCH_SIZE = 20;
 
@@ -25,7 +29,8 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = createAdminClient("cron");
+    // Cross-tenant by design: cron iterates all active clinics.
+    const supabase = createAdminClient("cron"); // nosemgrep: semgrep.admin-client-guard
 
     // Get all active clinics
     const { data: clinics, error: clinicsErr } = await supabase
@@ -64,7 +69,7 @@ async function handler(request: NextRequest) {
 
     for (const clinic of clinics) {
       // Typed client for chatbot_faqs (exists in generated types)
-      const typedClinic = createAdminClient("cron");
+      const typedClinic = createScopedAdminClient("cron", clinic.id);
       // Untyped client for ai_documents (not in generated types)
       const untypedClinic = createUntypedAdminClient("ai-embed", clinic.id);
 
@@ -120,7 +125,8 @@ async function handler(request: NextRequest) {
             },
           }));
 
-          const { error: insertErr } = await untypedClinic.from("ai_documents").insert(docs);
+          // Every row in `docs` carries clinic_id (built above); client is clinic-scoped.
+          const { error: insertErr } = await untypedClinic.from("ai_documents").insert(docs); // nosemgrep: semgrep.tenant-scoping
 
           if (insertErr) {
             logger.error("Failed to insert FAQ embeddings", {

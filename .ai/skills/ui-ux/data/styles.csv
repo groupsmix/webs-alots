@@ -1,0 +1,17 @@
+token,value,usage,notes
+primary,hsl(var(--primary)),Main action buttons & links,Blue-based for trust in healthcare
+destructive,hsl(var(--destructive)),Delete actions & critical alerts,Red
+muted,hsl(var(--muted)),Backgrounds & disabled states,Light gray
+accent,hsl(var(--accent)),Hover states & secondary actions,Slightly darker than muted
+card,hsl(var(--card)),Card backgrounds,White in light mode
+border,hsl(var(--border)),All borders & dividers,Consistent border color
+urgent-red,bg-red-100 text-red-800,Urgent medical badges,Pulsing animation for critical
+high-orange,bg-orange-100 text-orange-800,High priority items,Warning level
+normal-blue,bg-blue-100 text-blue-800,Normal priority items,Default info level
+low-gray,bg-gray-100 text-gray-600,Low priority items,Subtle
+spacing-card,p-6,Card padding,Consistent across all cards
+spacing-section,space-y-6,Section gaps,Between major sections
+spacing-items,space-y-2,Item gaps,Between list items
+shadow-card,shadow-sm,Card shadows,Subtle depth
+radius-card,rounded-lg,Card border radius,8px equivalent
+radius-badge,rounded-full,Badge border radius,Pill shape
