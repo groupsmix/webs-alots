@@ -18,11 +18,28 @@ import { createMistral } from "@ai-sdk/mistral";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createXai } from "@ai-sdk/xai";
-import { generateText, streamText, type LanguageModel, type ToolSet } from "ai";
+import { generateText, stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai";
 import { getWorkersAiConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { PROVIDER_MODELS } from "./models";
-import type { AIProvider, AIRequest } from "./types";
+import type { AIProvider, AIRequest, TaskComplexity } from "./types";
+
+/**
+ * AUDIT P2-16: Request timeout scaled by task complexity. A flat 30s cap
+ * aborted long `critical` generations (e.g. referral letters at 1024+
+ * tokens on a slow provider) and burned a fallback hop while still paying
+ * for the aborted call.
+ */
+const TIMEOUT_MS_BY_COMPLEXITY: Record<TaskComplexity, number> = {
+  simple: 20_000,
+  medium: 30_000,
+  complex: 60_000,
+  critical: 90_000,
+};
+
+function timeoutFor(complexity: TaskComplexity): number {
+  return TIMEOUT_MS_BY_COMPLEXITY[complexity] ?? 30_000;
+}
 
 // ── Public types (unchanged) ──
 
@@ -177,7 +194,7 @@ export async function callProvider(
     messages.push({ role: "user", content: req.prompt });
 
     const abortController = new AbortController();
-    const timeout = setTimeout(() => abortController.abort(), 30_000);
+    const timeout = setTimeout(() => abortController.abort(), timeoutFor(req.complexity));
 
     try {
       const result = await generateText({
@@ -185,6 +202,8 @@ export async function callProvider(
         messages,
         maxOutputTokens: req.maxTokens ?? 1024,
         temperature: req.temperature ?? 0.7,
+        // F-AI-14 / AUDIT P1-11: reproducibility seed (logged in traces)
+        ...(req.seed !== undefined ? { seed: req.seed } : {}),
         abortSignal: abortController.signal,
       });
 
@@ -231,16 +250,21 @@ export function callProviderStream(
   messages.push({ role: "user", content: req.prompt });
 
   const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), 30_000);
+  const timeout = setTimeout(() => abortController.abort(), timeoutFor(req.complexity));
 
   const result = streamText({
     model,
     messages,
     maxOutputTokens: req.maxTokens ?? 1024,
     temperature: req.temperature ?? 0.7,
+    // F-AI-14 / AUDIT P1-11: reproducibility seed (logged in traces)
+    ...(req.seed !== undefined ? { seed: req.seed } : {}),
     abortSignal: abortController.signal,
     ...(options?.tools ? { tools: options.tools } : {}),
-    ...(options?.maxSteps ? { maxSteps: options.maxSteps } : {}),
+    // AUDIT P1-8: AI SDK v5+ replaced `maxSteps` with `stopWhen`. The old
+    // `maxSteps` property was silently IGNORED by streamText, so the agent
+    // tool loop ran with the SDK default instead of our configured cap.
+    ...(options?.maxSteps ? { stopWhen: stepCountIs(options.maxSteps) } : {}),
     onFinish: () => clearTimeout(timeout),
     onError: () => clearTimeout(timeout),
   });

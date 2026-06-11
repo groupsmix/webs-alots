@@ -192,6 +192,13 @@ export async function routeAIRequest(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase?: any,
 ): Promise<AIResponse> {
+  // F-AI-14 / AUDIT P1-11: default a reproducibility seed so every routed
+  // request is replayable. It is passed to the provider (providers.ts) and
+  // logged with the success log line below.
+  if (request.seed === undefined) {
+    request = { ...request, seed: Date.now() };
+  }
+
   if (request.forceProvider) {
     return tryProviderWithFallback(request, request.forceProvider, configs, supabase);
   }
@@ -268,6 +275,8 @@ export async function routeAIRequest(
         costCents: Math.round(costCents * 10000) / 10000,
         fromFallback,
         task: request.task,
+        // F-AI-14 / AUDIT P1-11: logged so outputs can be reproduced
+        seed: request.seed,
       });
 
       // E1: Record successful trace

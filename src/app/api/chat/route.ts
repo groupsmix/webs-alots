@@ -86,9 +86,13 @@ function sanitizeUserInput(text: string): string {
 }
 
 /**
- * AI-002: Increment monthly AI token usage for the clinic.
- * Uses upsert so the first call in a month creates the row.
- * Note: ai_usage table is created by migration 00083.
+ * AI-002 / AUDIT P0-2: Increment monthly AI token usage for the clinic.
+ *
+ * Uses the atomic `increment_clinic_ai_usage` RPC (migration 00181). The
+ * previous upsert OVERWROTE the monthly row with the latest request's token
+ * counts instead of incrementing, so usage never accumulated and the
+ * AI_MONTHLY_TOKEN_LIMIT budget check never triggered. Errors are now logged
+ * instead of silently swallowed so degraded tracking is observable.
  */
 async function trackAIUsage(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -96,23 +100,26 @@ async function trackAIUsage(
   tokensIn: number,
   tokensOut: number,
 ): Promise<void> {
-  const month = new Date().toISOString().slice(0, 7) + "-01";
-  await supabase
-    .from("ai_usage")
-    .upsert(
-      {
-        clinic_id: clinicId,
-        month,
-        tokens_in: tokensIn,
-        tokens_out: tokensOut,
-        request_count: 1,
-      },
-      { onConflict: "clinic_id,month" },
-    )
-    .then(
-      () => {},
-      () => {},
-    );
+  // The generated DB types may lag behind the migration; call the RPC
+  // through a narrow untyped signature.
+  const rpc = supabase.rpc.bind(supabase) as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ error: { message: string } | null }>;
+
+  const { error } = await rpc("increment_clinic_ai_usage", {
+    p_clinic_id: clinicId,
+    p_tokens_in: Math.max(0, Math.ceil(tokensIn)),
+    p_tokens_out: Math.max(0, Math.ceil(tokensOut)),
+  });
+
+  if (error) {
+    logger.warn("increment_clinic_ai_usage RPC failed — AI budget tracking degraded", {
+      context: "chat/usage-tracking",
+      clinicId,
+      error: error.message,
+    });
+  }
 }
 
 /**
@@ -317,26 +324,45 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       disclaimer: getAIDisclaimer(),
     });
   }
-  const { apiKey, baseUrl, model } = aiResult.config;
+  const { apiKey, baseUrl, model, seed } = aiResult.config;
 
   const systemPrompt = buildSystemPrompt(ctx);
   const apiMessages = [{ role: "system" as const, content: systemPrompt }, ...sanitizedMessages];
 
-  const apiResponse = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: apiMessages,
-      stream: true,
-      max_tokens: 500,
-      temperature: 0.7,
-    }),
-    signal: AbortSignal.timeout(30_000),
-  });
+  const doFetch = (withExtras: boolean) =>
+    fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: apiMessages,
+        stream: true,
+        max_tokens: 500,
+        temperature: 0.7,
+        ...(withExtras
+          ? {
+              // AUDIT P1-6: ask for exact token usage in the final SSE chunk
+              // instead of estimating (the old hardcoded estimate of 125
+              // output tokens undercounted by up to 4x).
+              stream_options: { include_usage: true },
+              // F-AI-14 / AUDIT P1-11: reproducibility seed — also logged in
+              // the audit event below so outputs can be reproduced.
+              seed,
+            }
+          : {}),
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+  // Some OpenAI-compatible servers reject unknown params (stream_options /
+  // seed). Retry once without the extras before degrading to basic tier.
+  let apiResponse = await doFetch(true);
+  if (!apiResponse.ok && apiResponse.status >= 400 && apiResponse.status < 500) {
+    apiResponse = await doFetch(false);
+  }
 
   if (!apiResponse.ok) {
     const reply = getBasicResponse(lastMessage.content, ctx);
@@ -354,73 +380,135 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     clinicId,
     actor: chatUser.id,
     description: "Chatbot AI response (advanced tier)",
-    metadata: { tier: "advanced", model },
+    metadata: { tier: "advanced", model, seed },
   }).catch(() => {});
-  // AI-002: Track estimated token usage for advanced tier.
-  // Streaming prevents exact counts; estimate from input length + max_tokens.
-  void trackAIUsage(
-    supabaseForAuth,
-    clinicId,
-    Math.ceil(sanitizedMessages.reduce((a, m) => a + m.content.length, 0) / 4),
-    125, // max_tokens=500 → ~125 estimated output tokens
-  );
 
-  // Stream the response back to the client
+  /**
+   * AUDIT P0-4: Stream the response back to the client WITH output
+   * validation. The previous implementation piped raw model deltas straight
+   * to the client — no PII redaction, no role-elevation check, no
+   * [AI-Generated] prefix — so the paid "advanced" tier had weaker
+   * guardrails than the free "smart" tier.
+   *
+   * Strategy: accumulate the raw text, run the shared validator over the
+   * full accumulated text on every delta, and only flush the validated
+   * prefix minus a holdback window. The redaction patterns match tokens
+   * < ~50 chars, so a 160-char holdback guarantees already-flushed text can
+   * never be retroactively affected by a match completing later.
+   *
+   * Also fixed here (AUDIT P1-6): SSE lines split across network chunks were
+   * previously dropped (chunk.split("\n") without cross-read buffering).
+   */
+  const HOLDBACK_CHARS = 160;
+  let rawContent = "";
+  let emittedLen = 0;
+  let rejected = false;
+  let streamUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
+
   const stream = new ReadableStream({
     async start(controller) {
       const reader = apiResponse.body?.getReader();
+      const encoder = new TextEncoder();
       if (!reader) {
         controller.close();
         return;
       }
 
       const decoder = new TextDecoder();
-      const encoder = new TextEncoder();
 
+      const flush = (final: boolean): void => {
+        const validated = validateAndPrefixAIOutput(rawContent);
+        if (validated === null) {
+          // Role-elevation language detected — stop and retract.
+          rejected = true;
+          logger.warn("AI output rejected by safety validator (advanced tier)", {
+            context: "chat/output-safety",
+            clinicId,
+          });
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                content: "\n\n[Réponse retirée — contenu rejeté par le validateur de sécurité]",
+              })}\n\n`,
+            ),
+          );
+          return;
+        }
+        const stableLen = final
+          ? validated.length
+          : Math.max(emittedLen, validated.length - HOLDBACK_CHARS);
+        if (stableLen > emittedLen) {
+          const delta = validated.slice(emittedLen, stableLen);
+          emittedLen = stableLen;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: delta })}\n\n`));
+        }
+      };
+
+      let lineBuffer = "";
       try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+          lineBuffer += decoder.decode(value, { stream: true });
+          const lines = lineBuffer.split("\n");
+          // Keep the (possibly partial) last line for the next read.
+          lineBuffer = lines.pop() ?? "";
 
           for (const line of lines) {
-            if (line === "data: [DONE]") {
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            const trimmed = line.trim();
+            if (!trimmed || trimmed === "data: [DONE]" || !trimmed.startsWith("data: ")) {
               continue;
             }
-            if (line.startsWith("data: ")) {
-              try {
-                const json = JSON.parse(line.slice(6));
-                const content = json.choices?.[0]?.delta?.content;
-                if (content) {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
-                }
-              } catch (parseErr) {
-                logger.warn("Malformed SSE chunk skipped", {
-                  context: "chat/stream",
-                  error: parseErr,
-                });
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              if (json.usage) streamUsage = json.usage;
+              const content = json.choices?.[0]?.delta?.content;
+              if (content && !rejected) {
+                rawContent += content;
+                flush(false);
               }
+            } catch (parseErr) {
+              logger.warn("Malformed SSE chunk skipped", {
+                context: "chat/stream",
+                error: parseErr,
+              });
             }
           }
+          if (rejected) break;
         }
+        if (!rejected) flush(true);
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } finally {
         reader.releaseLock();
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
+        // AUDIT P1-6: exact token accounting after the stream completes;
+        // falls back to a length-based estimate of the ACTUAL output.
+        const tokensIn =
+          streamUsage?.prompt_tokens ??
+          Math.ceil(apiMessages.reduce((a, m) => a + m.content.length, 0) / 4);
+        const tokensOut = streamUsage?.completion_tokens ?? Math.ceil(rawContent.length / 4);
+        void trackAIUsage(supabaseForAuth, clinicId, tokensIn, tokensOut);
       }
     },
   });
 
   // A109-01: Include AI disclaimer in streaming response header.
+  // AUDIT P2-12: HTTP header values must be ByteString (Latin-1). The French
+  // and Arabic disclaimers contain non-Latin-1 characters which throw a
+  // TypeError in the Workers runtime — URI-encode the header value. No
+  // client currently reads this header; clients should decodeURIComponent.
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
       "X-AI-Generated": "true",
-      "X-AI-Disclaimer": getAIDisclaimer(),
+      "X-AI-Disclaimer": encodeURIComponent(getAIDisclaimer()),
     },
   });
 });

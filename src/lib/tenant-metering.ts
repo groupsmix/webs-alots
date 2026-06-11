@@ -22,7 +22,7 @@ const RESOURCE_COSTS: Record<ResourceType, number> = {
   whatsapp: 0.005, // ~$0.005 per message (Meta utility template avg)
   sms: 0.01, // ~$0.01 per SMS (Morocco rates)
   r2_storage: 0.000000015, // $0.015 per GB-month ≈ $0.000000015 per byte-month
-  ai_tokens: 0, // tracked separately via ai-cost-tracker.ts
+  ai_tokens: 0, // tracked separately via the increment_ai_usage / increment_clinic_ai_usage RPCs
 };
 
 // ── Public API ──

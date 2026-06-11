@@ -13,11 +13,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
-import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiError, apiInternalError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { invoicesTable, paymentPlansTable } from "@/lib/billing-db";
 import { logger } from "@/lib/logger";
+import { aiGenerationLimiter } from "@/lib/rate-limit";
 import type { Database } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 import { revenueInsightsQuerySchema } from "@/lib/validations/billing";
@@ -125,6 +126,12 @@ export const POST = withAuthValidation(
   async (body, _request: NextRequest, { supabase, profile }) => {
     const clinicId = profile.clinic_id;
     if (!clinicId) return apiError("Clinic context required", 403);
+
+    // AUDIT P1-10: per-user daily cap — this route calls a paid LLM
+    const allowed = await aiGenerationLimiter.check(`ai-revenue-insights:${profile.id}`);
+    if (!allowed) {
+      return apiRateLimited("Limite quotidienne IA atteinte. Réessayez demain.");
+    }
 
     const { question } = body;
 

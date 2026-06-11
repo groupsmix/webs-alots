@@ -76,12 +76,33 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
 
   const featureKey = (body.feature_key as string) ?? undefined;
 
+  // AUDIT P2-17: cap caller-supplied max_tokens. Previously unbounded — a
+  // single request could demand an arbitrarily large (and expensive) output.
+  const MAX_TOKENS_CEILING = 8192;
+  const maxTokens =
+    typeof body.max_tokens === "number"
+      ? Math.min(Math.max(1, Math.floor(body.max_tokens)), MAX_TOKENS_CEILING)
+      : undefined;
+
+  const systemPromptOverride = (body.system_prompt as string) ?? undefined;
+  if (systemPromptOverride) {
+    // AUDIT P2-17: system_prompt overrides bypass the curated prompt
+    // library — record that it happened (length only, never content, since
+    // prompts may embed PHI) so prompt governance is auditable.
+    logger.info("AI route called with system_prompt override", {
+      context: "ai-route",
+      userId: auth.user.id,
+      task,
+      systemPromptLength: systemPromptOverride.length,
+    });
+  }
+
   const aiRequest: AIRequest = {
     task: task as AITaskType,
     complexity: complexity as TaskComplexity,
     prompt: prompt.trim(),
-    systemPrompt: (body.system_prompt as string) ?? undefined,
-    maxTokens: typeof body.max_tokens === "number" ? body.max_tokens : undefined,
+    systemPrompt: systemPromptOverride,
+    maxTokens,
     temperature: typeof body.temperature === "number" ? body.temperature : undefined,
     forceProvider: (body.force_provider as AIProvider) ?? undefined,
     featureKey,

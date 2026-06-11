@@ -15,6 +15,7 @@ import { apiError } from "@/lib/api-response";
 import { buildSystemPrompt, fetchChatbotContext } from "@/lib/chatbot-data";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
+import { aiChatStreamLimiter } from "@/lib/rate-limit";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
@@ -26,10 +27,16 @@ const MAX_HISTORY = 20;
 const MAX_MESSAGE_LENGTH = 2000;
 
 export const POST = withAuth(
-  async (request: NextRequest, _auth: AuthContext) => {
+  async (request: NextRequest, auth: AuthContext) => {
     // F-AI-01: Early kill switch (checks both env var AND KV flag)
     if (!(await isAIEnabled())) {
       return apiError("AI features are disabled", 503, "AI_DISABLED");
+    }
+
+    // AUDIT P1-10: per-user burst cap — this route streams from a paid LLM
+    const allowed = await aiChatStreamLimiter.check(`chat-stream:${auth.profile.id}`);
+    if (!allowed) {
+      return apiError("Trop de requêtes. Réessayez dans quelques minutes.", 429, "RATE_LIMITED");
     }
 
     const tenant = await requireTenant();
