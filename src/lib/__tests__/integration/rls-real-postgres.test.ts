@@ -89,6 +89,9 @@ const CORE_PHI_TABLES = [
   "family_members",
   "installments",
   "users",
+  // Audit 2026-06-09 Task 1: PHI uploads system of record.
+  // RLS enabled in migration 00180_patient_files_rls.sql.
+  "patient_files",
 ] as const;
 
 describe.skipIf(SKIP)("RLS Real Postgres Tests", () => {
@@ -180,6 +183,51 @@ describe.skipIf(SKIP)("RLS Real Postgres Tests", () => {
         }
       },
     );
+  });
+
+  describe("patient_files RLS (audit 2026-06-09 Task 1)", () => {
+    it("anon client for clinic A cannot read clinic B patient_files", async () => {
+      const clientA = createAnonClientForClinic(CLINIC_A_ID);
+
+      const { data, error } = await clientA
+        .from("patient_files")
+        .select("id, clinic_id, r2_key")
+        .eq("clinic_id", CLINIC_B_ID)
+        .limit(5);
+
+      // Either an empty array (RLS blocked) or a permission error is
+      // acceptable. What is NOT acceptable: clinic B PHI file records
+      // (R2 keys, encryption IVs) leaking through.
+      if (!error) {
+        expect(data ?? []).toHaveLength(0);
+      } else {
+        expect(error.message).toMatch(/does not exist|permission denied|relation/i);
+      }
+    });
+
+    it("anon client cannot insert a patient_files record for another clinic", async () => {
+      const clientA = createAnonClientForClinic(CLINIC_A_ID);
+      const marker = "rls-test/injected-patient-file";
+
+      const { error } = await clientA.from("patient_files").insert({
+        clinic_id: CLINIC_B_ID,
+        patient_id: "33333333-3333-3333-3333-333333333333",
+        file_name: "injected.pdf",
+        file_type: "application/pdf",
+        file_size: 1,
+        r2_key: marker,
+      });
+
+      // RLS should block this — either a policy/permission error or the
+      // insert silently affects 0 rows.
+      if (error) {
+        expect(error.message).toMatch(/policy|permission|violates|denied/i);
+      }
+      // Backstop: verify the row was NOT actually created.
+      const admin = createAdminClient();
+      const { data } = await admin.from("patient_files").select("id").eq("r2_key", marker).limit(1);
+      expect(data ?? []).toHaveLength(0);
+    });
   });
 
   describe("Cross-tenant INSERT isolation", () => {
