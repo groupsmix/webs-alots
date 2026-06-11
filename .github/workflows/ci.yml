@@ -190,6 +190,21 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # Audit Task 8: workers/ai is a self-contained package with its own
+      # package.json/tsconfig and previously type-checked only by accident,
+      # resolving its imports from the ROOT node_modules (hoisted copies of
+      # @copilotkit/runtime and @e2b/code-interpreter that are no longer
+      # root dependencies). Root tsconfig now excludes workers/ai; this
+      # step checks it against its OWN declared dependencies instead.
+      - name: Install AI Worker dependencies
+        working-directory: workers/ai
+        # C-04: --ignore-scripts to prevent malicious postinstall on CI.
+        run: npm ci --ignore-scripts
+
+      - name: Type check AI Worker
+        working-directory: workers/ai
+        run: npx tsc --noEmit
+
       # CI-08: Coverage thresholds are defined in vitest.config.ts and
       # enforced here. @vitest/coverage-v8 is a devDependency installed by
       # `npm ci` above; failing this step blocks the PR.
