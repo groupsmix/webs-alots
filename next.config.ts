@@ -55,6 +55,27 @@ function getSupabaseImageHostname(): string {
 // consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
+  // Audit 2026-06-09 Task 2 (P0) — follow-up to #1016.
+  // The build step in deploy.yml sets NEXT_PUBLIC_DATA_MASKING=partial, but
+  // SWC's automatic process.env.NEXT_PUBLIC_* inlining did not reach
+  // src/lib/mask.ts in the Cloudflare Workers build: the deployed chunk
+  // contained `t.default.env.NEXT_PUBLIC_DATA_MASKING || "unset"` (a runtime
+  // read against the Workers process polyfill) instead of the literal
+  // "partial". In the browser that polyfill carries no NEXT_PUBLIC_DATA_MASKING,
+  // so MASKING_BUILD_LEVEL evaluated to "unset" and getMaskLevel() returned
+  // "none" — exactly the audit failure mode. The post-deploy smoke test then
+  // also reported "none" (its regex picked up the nearest "none" literal,
+  // which lives inside mask.ts's own comparisons).
+  //
+  // The `env` config field forces a static, AST-level replacement of
+  // process.env.NEXT_PUBLIC_DATA_MASKING with the build-time value across
+  // BOTH client and server bundles, regardless of how SWC happens to treat
+  // the source file. Keep "partial" as the fallback so local builds without
+  // the env var still ship a safe default.
+  env: {
+    NEXT_PUBLIC_DATA_MASKING: process.env.NEXT_PUBLIC_DATA_MASKING || "partial",
+  },
+
   // E2E suite (login-flow / registration-flow / pricing / mobile-flows specs)
   // asserts `<Link>` hrefs in their canonical form (e.g. href="/login/").
   // Removing this flag drops the trailing slash from rendered hrefs and breaks

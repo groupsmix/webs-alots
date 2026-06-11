@@ -42,9 +42,31 @@ const SUPABASE_URL_RE = /https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)/i;
 const SUPABASE_KEY_RE = /eyJ[\w-]+\.[\w-]+\.[\w-]+|sb_publishable_[\w-]{20,}/;
 
 // Audit Task 2: marker emitted by src/components/masking-build-sentinel.tsx.
-// Matches both the minifier-folded form ("__OLTIGO_MASKING_BUILD__partial")
-// and the unfolded concatenation the bundler may leave behind.
-const MASKING_SENTINEL_RE = /__OLTIGO_MASKING_BUILD__[\s\S]{0,300}?(partial|full|none|unset)/;
+// Two recognised shapes:
+//   1. Minifier-folded literal:        "__OLTIGO_MASKING_BUILD__partial"
+//   2. Unfolded concat (variable):     "__OLTIGO_MASKING_BUILD__" + r   where
+//      r is a same-module export bound to MASKING_BUILD_LEVEL.
+//
+// The previous "[\s\S]{0,300}?(partial|full|none|unset)" form was a foot-gun:
+// when the build did NOT inline NEXT_PUBLIC_DATA_MASKING (the exact failure
+// mode this check exists to detect), mask.ts's own `=== "none"` / `=== "full"`
+// comparisons sit only a few dozen chars after the marker in the bundled
+// chunk, and the non-greedy match would lock onto one of those — reporting
+// e.g. "none" while the true MASKING_BUILD_LEVEL value at runtime was
+// "unset". The fix below requires the level to be either immediately glued
+// to the marker (folded case) or to appear in a sentinel-binding initializer
+// of the form `<var> = ... NEXT_PUBLIC_DATA_MASKING || "<level>"` within a
+// short window. Anything else returns null and the report stays honest.
+const MASKING_SENTINEL_RE_FOLDED = /__OLTIGO_MASKING_BUILD__(partial|full|none|unset)/;
+const MASKING_SENTINEL_RE_BINDING =
+  /NEXT_PUBLIC_DATA_MASKING\s*\|\|\s*["'](partial|full|none|unset)["']/;
+function extractMaskingLevel(text) {
+  return (
+    text.match(MASKING_SENTINEL_RE_FOLDED)?.[1] ??
+    text.match(MASKING_SENTINEL_RE_BINDING)?.[1] ??
+    null
+  );
+}
 const EXPECTED_MASKING = process.env.SMOKE_EXPECTED_MASKING || "partial";
 
 let failures = 0;
@@ -111,7 +133,7 @@ async function checkSignupIntegrity() {
       const { text } = await fetchText(BASE + chunk);
       if (!urlFound && SUPABASE_URL_RE.test(text)) urlFound = true;
       if (!keyFound && SUPABASE_KEY_RE.test(text)) keyFound = true;
-      if (!maskingLevel) maskingLevel = text.match(MASKING_SENTINEL_RE)?.[1] ?? null;
+      if (!maskingLevel) maskingLevel = extractMaskingLevel(text);
     } catch {
       // ignore individual chunk fetch errors; absence is what we test for
     }
