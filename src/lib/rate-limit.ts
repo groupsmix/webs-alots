@@ -812,6 +812,30 @@ export const aiSmartPrescriptionLimiter = createRateLimiter({
 });
 
 /**
+ * AUDIT P1-10: General per-user cap for AI generation routes that previously
+ * had NO rate limit (drug-interactions, lab-preread, referral-letter,
+ * revenue-insights). One scripted user could drain the monthly provider
+ * budget, which then trips the router's budget skip and degrades AI for
+ * EVERY tenant. 60 req / 24h per user; key format `{route}:{profileId}`.
+ */
+export const aiGenerationLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 60,
+  failClosed: true,
+});
+
+/**
+ * AUDIT P1-10: Streaming chat (/api/chat/stream) — burst-oriented window so
+ * a chat session stays fluid but scripted abuse is capped.
+ * 40 req / 10 min per user.
+ */
+export const aiChatStreamLimiter = createRateLimiter({
+  windowMs: 10 * 60_000,
+  max: 40,
+  failClosed: true,
+});
+
+/**
  * A80-01 / A114-01: Per-clinic AI cost ceiling.
  * Caps total AI API invocations per clinic per 24h to prevent any single
  * tenant from running up unbounded OpenAI/inference costs.

@@ -46,6 +46,8 @@ export interface AIRequest {
   context?: string;
   /** Clinic ID for tracing (E1) — set by route handlers */
   clinicId?: string;
+  /** F-AI-14 / AUDIT P1-11: reproducibility seed, passed to the provider and logged */
+  seed?: number;
 }
 
 /** Successful AI response */

@@ -304,9 +304,12 @@ export async function snapshotDailyUsage(
       .eq("role", "doctor"),
   ]);
 
-  // AI calls on this date — ai_cost_log is not in the Database type, use untyped cast
+  // AI calls on this date — counted from ai_traces (clinic-scoped, written by
+  // the AI router on every request). AUDIT P1-7: previously this counted
+  // ai_cost_log, a table that was NEVER written to (its logAICost helper had
+  // zero callers), so AI usage in snapshots was always zero.
   const aiResult = (await untyped(supabase)
-    .from("ai_cost_log")
+    .from("ai_traces")
     .select("*", { count: "exact", head: true })
     .eq("clinic_id", clinicId) // tenant-scoped
     .gte("created_at", dayStart)

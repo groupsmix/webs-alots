@@ -10,8 +10,8 @@
  * maintaining clinical coherence in the prompt/response.
  */
 
-/** Fields that contain PII/PHI and should be pseudonymised. */
-const PHI_FIELDS = new Set([
+/** Name-bearing fields — receive human-readable "Patient-X" pseudonyms. */
+const NAME_FIELDS = new Set([
   "name",
   "patient_name",
   "patientName",
@@ -21,6 +21,15 @@ const PHI_FIELDS = new Set([
   "firstName",
   "last_name",
   "lastName",
+]);
+
+/** Date-of-birth fields (AUDIT P0-3: DOB is PHI and was previously sent raw). */
+const DOB_FIELDS = new Set(["date_of_birth", "dateOfBirth", "dob", "birth_date", "birthDate"]);
+
+/** Fields that contain PII/PHI and should be pseudonymised. */
+const PHI_FIELDS = new Set([
+  ...NAME_FIELDS,
+  ...DOB_FIELDS,
   "email",
   "phone",
   "cin",
@@ -44,6 +53,17 @@ const PSEUDONYM_NAMES = [
 export interface PseudonymMap {
   forward: Map<string, string>;
   reverse: Map<string, string>;
+  /**
+   * AUDIT P0-3: Dedicated counter for name pseudonyms.
+   *
+   * Previously the name index was `forward.size % 8`, which (a) counted ALL
+   * pseudonymised fields (phones, emails, CINs), and (b) wrapped around after
+   * 8 entries. Two different patients could receive the SAME pseudonym, and
+   * the reverse map then overwrote the first patient's real name — so
+   * `depseudonymise()` substituted the WRONG patient's name into AI output.
+   * A monotonic name-only counter guarantees uniqueness.
+   */
+  nameCount: number;
 }
 
 /**
@@ -53,7 +73,28 @@ export function createPseudonymMap(): PseudonymMap {
   return {
     forward: new Map(),
     reverse: new Map(),
+    nameCount: 0,
   };
+}
+
+/**
+ * Defense-in-depth: ensure a candidate pseudonym is not already mapped to a
+ * different real value. Collisions would corrupt `depseudonymise()`.
+ */
+function ensureUnique(map: PseudonymMap, candidate: string): string {
+  let pseudonym = candidate;
+  while (map.reverse.has(pseudonym)) {
+    pseudonym = `${candidate}-${crypto.randomUUID().slice(0, 4)}`;
+  }
+  return pseudonym;
+}
+
+/** Compute age in whole years from a parseable date string, or null. */
+function ageFromDob(value: string): number | null {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const age = Math.floor((Date.now() - parsed.getTime()) / 31_557_600_000);
+  return age >= 0 && age <= 130 ? age : null;
 }
 
 function getOrCreatePseudonym(map: PseudonymMap, field: string, value: string): string {
@@ -62,19 +103,15 @@ function getOrCreatePseudonym(map: PseudonymMap, field: string, value: string): 
   if (existing) return existing;
 
   let pseudonym: string;
-  if (
-    field === "name" ||
-    field === "patient_name" ||
-    field === "patientName" ||
-    field === "full_name" ||
-    field === "fullName" ||
-    field === "first_name" ||
-    field === "firstName" ||
-    field === "last_name" ||
-    field === "lastName"
-  ) {
-    pseudonym =
-      PSEUDONYM_NAMES[map.forward.size % PSEUDONYM_NAMES.length] ?? `Patient-${map.forward.size}`;
+  if (NAME_FIELDS.has(field)) {
+    const idx = map.nameCount++;
+    pseudonym = PSEUDONYM_NAMES[idx] ?? `Patient-${idx + 1}`;
+  } else if (DOB_FIELDS.has(field)) {
+    // Keep clinical utility (age matters for dosing) without leaking the
+    // exact birth date. Random suffix keeps the token unique and reversible.
+    const age = ageFromDob(value);
+    const rnd = crypto.randomUUID().slice(0, 6);
+    pseudonym = age !== null ? `DOB-${age}ans-${rnd}` : `DOB-XXXX-${rnd}`;
   } else if (field === "phone") {
     // AI-004: Use random suffix instead of sequential counter to prevent
     // frequency-analysis reversal if pseudonymised transcripts are breached.
@@ -91,6 +128,9 @@ function getOrCreatePseudonym(map: PseudonymMap, field: string, value: string): 
   } else {
     pseudonym = `[${field}-redacted]`;
   }
+
+  // AUDIT P0-3: never allow two distinct real values to share a pseudonym.
+  pseudonym = ensureUnique(map, pseudonym);
 
   map.forward.set(key, pseudonym);
   map.reverse.set(pseudonym, value);

@@ -3,13 +3,18 @@
  *
  * Returns AI trace data for the admin dashboard.
  * Supports query params: feature, provider, status, days (default 7).
- * Clinic-scoped via requireTenant().
+ *
+ * AUDIT P0-5: Previously this route only called requireTenant() (resolved
+ * from the subdomain) and then queried with a service-role client — no user
+ * session or role check at all. It is now wrapped in withAuth and restricted
+ * to clinic_admin / super_admin, scoped to the caller's own clinic.
  */
 
 import type { NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
+import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 interface TraceRow {
   id: string;
@@ -28,12 +33,17 @@ interface TraceRow {
   created_at: string;
 }
 
-export async function GET(request: NextRequest) {
-  const tenant = await requireTenant();
-  if (!tenant) {
-    return apiError("Unauthorized", 401);
+async function handler(request: NextRequest, auth: AuthContext) {
+  // Clinic admins are scoped to their own clinic; super admins fall back to
+  // the tenant resolved from the subdomain they are inspecting.
+  let clinicId = auth.profile.clinic_id;
+  if (!clinicId) {
+    const tenant = await requireTenant();
+    if (!tenant) {
+      return apiError("Unauthorized", 401);
+    }
+    clinicId = tenant.clinicId;
   }
-  const clinicId = tenant.clinicId;
 
   const url = new URL(request.url);
   const feature = url.searchParams.get("feature");
@@ -103,3 +113,5 @@ export async function GET(request: NextRequest) {
     },
   });
 }
+
+export const GET = withAuth(handler, ["clinic_admin", "super_admin"]);

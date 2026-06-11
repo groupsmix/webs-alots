@@ -1,9 +1,16 @@
 import { NextRequest } from "next/server";
 import { routeAIRequest, loadProviderConfigs } from "@/lib/ai/router";
 import type { AIRequest } from "@/lib/ai/types";
-import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
+import {
+  apiSuccess,
+  apiError,
+  apiInternalError,
+  apiValidationError,
+  apiRateLimited,
+} from "@/lib/api-response";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
+import { aiGenerationLimiter } from "@/lib/rate-limit";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
@@ -29,6 +36,12 @@ async function handler(req: NextRequest, auth: AuthContext) {
   const clinicId = auth.profile.clinic_id;
   if (!clinicId) {
     return apiError("Clinic context required", 400);
+  }
+
+  // AUDIT P1-10: per-user daily cap — this route calls a paid LLM
+  const allowed = await aiGenerationLimiter.check(`ai-lab-preread:${auth.profile.id}`);
+  if (!allowed) {
+    return apiRateLimited("Limite quotidienne IA atteinte. Réessayez demain.");
   }
 
   let body: Record<string, unknown>;

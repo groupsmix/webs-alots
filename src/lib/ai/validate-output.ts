@@ -29,6 +29,47 @@ const IBAN_PATTERN = /\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}([A-Z0-9]?){0,16}\b/g;
 const MOROCCAN_PASSPORT = /\b[A-Z]{2}\d{7}\b/g;
 const CNSS_NUMBER = /\b\d{9}\b/g;
 
+/**
+ * AUDIT P2-13: Context window for ambiguous ID patterns.
+ *
+ * `\b\d{9}\b` (CNSS) matches ANY 9-digit number — lot numbers, lab accession
+ * IDs, large microgram dosages — and `[A-Z]{1,2}\d{5,7}` (CIN) matches lab
+ * codes like "HB123456". Blanket redaction silently replaced clinically
+ * meaningful numbers with [REDACTED_*], which can change medical meaning.
+ *
+ * These two patterns are now only redacted when an identity/insurance
+ * keyword appears within the preceding window. Unambiguous patterns
+ * (phone, email, IBAN, passport) remain blanket-redacted.
+ */
+const ID_CONTEXT_WINDOW = 48;
+const ID_CONTEXT_KEYWORDS =
+  /(cnss|cnops|s[ée]curit[ée]\s+sociale|assurance|immatricul|matricule|adh[ée]rent|affili|\bcin\b|c\.i\.n|carte\s+nationale|identit[ée]|رقم|بطاقة|الضمان|التأمين)/i;
+
+/**
+ * Redact matches of `pattern` only when identity context appears in the
+ * preceding window. Returns the cleaned text and the number of redactions.
+ */
+function redactWithContext(
+  text: string,
+  pattern: RegExp,
+  replacement: string,
+): { text: string; hits: number } {
+  let hits = 0;
+  const cleaned = text.replace(pattern, (...args) => {
+    const match = args[0] as string;
+    // Last two replacer args are (offset, fullString) — patterns here use
+    // no named capture groups, so this indexing is stable.
+    const offset = args[args.length - 2] as number;
+    const before = text.slice(Math.max(0, offset - ID_CONTEXT_WINDOW), offset);
+    if (ID_CONTEXT_KEYWORDS.test(before)) {
+      hits++;
+      return replacement;
+    }
+    return match;
+  });
+  return { text: cleaned, hits };
+}
+
 export function validateAIOutput(text: string): string | null {
   // W8-A26-01: NFKC-normalize to collapse Unicode tricks (e.g. fullwidth
   // Latin letters, combining characters) that could bypass the regex.
@@ -53,10 +94,10 @@ export function validateAIOutput(text: string): string | null {
     redactedTypes.push("phone");
   }
 
-  const hadCin = MOROCCAN_CIN.test(cleaned);
-  if (hadCin) {
-    MOROCCAN_CIN.lastIndex = 0;
-    cleaned = cleaned.replace(MOROCCAN_CIN, "[REDACTED_ID]");
+  // AUDIT P2-13: context-guarded — see redactWithContext above.
+  const cinResult = redactWithContext(cleaned, MOROCCAN_CIN, "[REDACTED_ID]");
+  if (cinResult.hits > 0) {
+    cleaned = cinResult.text;
     redactedTypes.push("cin");
   }
 
@@ -81,10 +122,10 @@ export function validateAIOutput(text: string): string | null {
     redactedTypes.push("passport");
   }
 
-  const hadCnss = CNSS_NUMBER.test(cleaned);
-  if (hadCnss) {
-    CNSS_NUMBER.lastIndex = 0;
-    cleaned = cleaned.replace(CNSS_NUMBER, "[REDACTED_INS]");
+  // AUDIT P2-13: context-guarded — see redactWithContext above.
+  const cnssResult = redactWithContext(cleaned, CNSS_NUMBER, "[REDACTED_INS]");
+  if (cnssResult.hits > 0) {
+    cleaned = cnssResult.text;
     redactedTypes.push("ins_number");
   }
 
