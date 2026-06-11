@@ -76,6 +76,17 @@ jobs:
           # Feature flag: show AI Agents / AI Team / Website Builder in super-admin.
           # Baked into client bundle at build time (NEXT_PUBLIC_*).
           NEXT_PUBLIC_AI_FEATURES_ENABLED: ${{ secrets.NEXT_PUBLIC_AI_FEATURES_ENABLED }}
+          # Audit 2026-06-09 Task 2 (P0): PHI masking level for client
+          # components. getMaskLevel() in src/lib/mask.ts defaults to "none"
+          # when this is absent, and NEXT_PUBLIC_* values are inlined at
+          # BUILD time — the runtime var in wrangler.toml does not reach
+          # client bundles. Without this line, production client components
+          # ship with masking compiled to "none" while the env.ts startup
+          # health check (which reads the runtime var) passes silently.
+          # Both production and staging use "partial" (matches wrangler.toml
+          # [env.*.vars] and .env.example). The post-deploy smoke test
+          # asserts this value made it into the shipped bundle.
+          NEXT_PUBLIC_DATA_MASKING: partial
 
       # Fail fast if the build silently produced no worker entry point.
       - name: Verify build output

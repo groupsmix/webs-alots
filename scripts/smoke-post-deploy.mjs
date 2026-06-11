@@ -7,11 +7,17 @@
  * the homepage and login rendered fine, but the /register client bundle had
  * no Supabase credentials inlined, so signup threw for every visitor.
  *
- * Two layers:
+ * Three layers:
  *   1. Route liveness — key public routes + /api/health respond < 400.
  *   2. Signup integrity — the deployed /register page's client JS bundle
  *      actually contains a Supabase URL and an anon/publishable key. This is
  *      the build-time-inlining failure mode that server-side checks miss.
+ *   3. PHI masking integrity (audit 2026-06-09 Task 2) — the bundle contains
+ *      the MaskingBuildSentinel marker with the expected masking level.
+ *      getMaskLevel() defaults to "none" when NEXT_PUBLIC_DATA_MASKING was
+ *      absent at build time, and the env.ts startup check reads the runtime
+ *      var — so a build without the variable fails silently everywhere
+ *      except here. Override the expectation with SMOKE_EXPECTED_MASKING.
  *
  * Usage:
  *   SMOKE_BASE_URL=https://oltigo.com node scripts/smoke-post-deploy.mjs
@@ -34,6 +40,12 @@ const ROUTES = [
 
 const SUPABASE_URL_RE = /https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)/i;
 const SUPABASE_KEY_RE = /eyJ[\w-]+\.[\w-]+\.[\w-]+|sb_publishable_[\w-]{20,}/;
+
+// Audit Task 2: marker emitted by src/components/masking-build-sentinel.tsx.
+// Matches both the minifier-folded form ("__OLTIGO_MASKING_BUILD__partial")
+// and the unfolded concatenation the bundler may leave behind.
+const MASKING_SENTINEL_RE = /__OLTIGO_MASKING_BUILD__[\s\S]{0,300}?(partial|full|none|unset)/;
+const EXPECTED_MASKING = process.env.SMOKE_EXPECTED_MASKING || "partial";
 
 let failures = 0;
 const log = (ok, msg) => {
@@ -87,13 +99,19 @@ async function checkSignupIntegrity() {
 
   let urlFound = SUPABASE_URL_RE.test(html);
   let keyFound = SUPABASE_KEY_RE.test(html);
+  // Deliberately NOT matched against the HTML: the SSR pass renders the
+  // sentinel with the Worker's RUNTIME env value, which is exactly the
+  // value that lies when the build-time variable is missing. Only the JS
+  // chunks carry the build-time inlined level.
+  let maskingLevel = null;
 
   for (const chunk of unique) {
-    if (urlFound && keyFound) break;
+    if (urlFound && keyFound && maskingLevel) break;
     try {
       const { text } = await fetchText(BASE + chunk);
       if (!urlFound && SUPABASE_URL_RE.test(text)) urlFound = true;
       if (!keyFound && SUPABASE_KEY_RE.test(text)) keyFound = true;
+      if (!maskingLevel) maskingLevel = text.match(MASKING_SENTINEL_RE)?.[1] ?? null;
     } catch {
       // ignore individual chunk fetch errors; absence is what we test for
     }
@@ -107,6 +125,27 @@ async function checkSignupIntegrity() {
       : "signup integrity: Supabase anon key MISSING from client bundle — signup will fail " +
           "(set NEXT_PUBLIC_SUPABASE_ANON_KEY as a GitHub Actions build secret)",
   );
+
+  // Audit Task 2: PHI masking must be baked into the client bundle.
+  if (maskingLevel === null) {
+    log(
+      false,
+      "masking integrity: MaskingBuildSentinel marker NOT found in client bundle — " +
+        "cannot verify NEXT_PUBLIC_DATA_MASKING was inlined at build time",
+    );
+  } else {
+    log(
+      maskingLevel === EXPECTED_MASKING,
+      maskingLevel === EXPECTED_MASKING
+        ? `masking integrity: client bundle masking level is "${maskingLevel}"`
+        : `masking integrity: client bundle masking level is "${maskingLevel}" but expected ` +
+            `"${EXPECTED_MASKING}" — PHI will render ${
+              maskingLevel === "none" || maskingLevel === "unset"
+                ? "UNMASKED"
+                : "incorrectly masked"
+            } in client components (set NEXT_PUBLIC_DATA_MASKING in the deploy build env)`,
+    );
+  }
 }
 
 (async () => {
