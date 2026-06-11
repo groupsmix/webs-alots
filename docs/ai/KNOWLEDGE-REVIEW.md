@@ -6,11 +6,11 @@
 
 ## Files covered
 
-| File                        | Used by                          | Risk if stale                       |
-| --------------------------- | -------------------------------- | ----------------------------------- |
-| `drug-interactions.csv`     | Drug interaction checks (CDSS)   | Missed dangerous interaction        |
-| `darija-medical-terms.csv`  | Triage / chat language handling  | Misunderstood symptoms              |
-| `triage-taxonomy.csv`       | AI triage classification         | Wrong urgency classification        |
+| File                       | Used by                         | Risk if stale                |
+| -------------------------- | ------------------------------- | ---------------------------- |
+| `drug-interactions.csv`    | Drug interaction checks (CDSS)  | Missed dangerous interaction |
+| `darija-medical-terms.csv` | Triage / chat language handling | Misunderstood symptoms       |
+| `triage-taxonomy.csv`      | AI triage classification        | Wrong urgency classification |
 
 ## Policy
 
@@ -26,8 +26,8 @@
 
 ## Review log
 
-| File                       | Owner        | Last reviewed | Notes                       |
-| -------------------------- | ------------ | ------------- | --------------------------- |
-| `drug-interactions.csv`    | _unassigned_ | _never_       | Initial policy established  |
-| `darija-medical-terms.csv` | _unassigned_ | _never_       | Initial policy established  |
-| `triage-taxonomy.csv`      | _unassigned_ | _never_       | Initial policy established  |
+| File                       | Owner        | Last reviewed | Notes                      |
+| -------------------------- | ------------ | ------------- | -------------------------- |
+| `drug-interactions.csv`    | _unassigned_ | _never_       | Initial policy established |
+| `darija-medical-terms.csv` | _unassigned_ | _never_       | Initial policy established |
+| `triage-taxonomy.csv`      | _unassigned_ | _never_       | Initial policy established |
