@@ -1,8 +1,13 @@
 "use server";
 
+import type { AppointmentView } from "@/lib/data/client/appointments";
+import type { PatientView } from "@/lib/data/client/users";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { getLocalDateStr } from "@/lib/utils";
+// Type-only imports from the client data layer (erased at compile time, so
+// no "use client" module is pulled into this server module). The receptionist
+// view components consume these exact shapes.
 
 /** Default upper-bound limit for list queries to prevent unbounded result sets. */
 const DEFAULT_QUERY_LIMIT = 1000;
@@ -106,11 +111,59 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStats(clinicId: string): Promise<DashboardStats> {
-  // Reuse shared base queries (audit DRY-02)
-  const [base, supabase] = await Promise.all([fetchBaseDashboardStats(clinicId), createClient()]);
+  const supabase = await createClient();
 
-  // Fetch dashboard-specific data in parallel
-  const [insurancePatientsRes, recentActivity] = await Promise.all([
+  // PERF-LAT-06: Single-round-trip aggregates via RPC (migration 00180).
+  // The legacy path below issues 9 queries — five head-only counts plus
+  // three UNBOUNDED row fetches (every completed payment, every review,
+  // every patient row) just to compute sums/averages the database can
+  // produce itself. The RPC returns one row of aggregates; RLS still
+  // applies (SECURITY INVOKER). Falls back to the legacy multi-query path
+  // until the migration is applied (same pattern as avg_clinic_rating).
+  try {
+    // get_clinic_dashboard_stats is a DB function not yet in the generated
+    // Supabase types. Use a targeted cast instead of blanket `as any`.
+    type UntypedRpc = (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => ReturnType<typeof supabase.rpc>;
+    const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc;
+    const [rpcRes, rpcRecentActivity] = await Promise.all([
+      rpc("get_clinic_dashboard_stats", { cid: clinicId }),
+      getRecentActivity(supabase, clinicId),
+    ]);
+    const row = (Array.isArray(rpcRes.data) ? rpcRes.data[0] : rpcRes.data) as Record<
+      string,
+      unknown
+    > | null;
+    if (!rpcRes.error && row) {
+      return {
+        totalPatients: Number(row.total_patients ?? 0),
+        totalAppointments: Number(row.total_appointments ?? 0),
+        completedAppointments: Number(row.completed_appointments ?? 0),
+        noShowCount: Number(row.no_show_count ?? 0),
+        totalRevenue: Number(row.total_revenue ?? 0),
+        averageRating: Number(row.average_rating ?? 0),
+        doctorCount: Number(row.doctor_count ?? 0),
+        insurancePatients: Number(row.insurance_patients ?? 0),
+        recentActivity: rpcRecentActivity,
+      };
+    }
+    logger.warn("get_clinic_dashboard_stats RPC unavailable, using fallback", {
+      context: "data/dashboard",
+      error: rpcRes.error,
+    });
+  } catch (err) {
+    logger.warn("get_clinic_dashboard_stats RPC failed, using fallback", {
+      context: "data/dashboard",
+      error: err,
+    });
+  }
+
+  // Fallback: legacy multi-query path (audit DRY-02). Remove once
+  // migration 00180 is deployed everywhere.
+  const [base, insurancePatientsRes, recentActivity] = await Promise.all([
+    fetchBaseDashboardStats(clinicId),
     supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
     getRecentActivity(supabase, clinicId),
   ]);
@@ -582,4 +635,168 @@ export async function getPatientDashboardData(
   );
 
   return { userName, appointments, prescriptions, invoices, notifications };
+}
+
+// ────────────────────────────────────────────
+// Receptionist Dashboard Data (server-side)
+// ────────────────────────────────────────────
+
+export interface ReceptionistDashboardData {
+  appointments: AppointmentView[];
+  patients: PatientView[];
+  /** Sum of completed payments within the lookback window ("Revenue (Month)"). */
+  totalRevenue: number;
+}
+
+/**
+ * PERF-LAT-07: Server-side loader for the receptionist dashboard.
+ *
+ * The page was previously a Client Component that rendered a spinner, then
+ * after hydration ran getCurrentUser() (a browser→Supabase auth round trip)
+ * followed by three more fetches — a full client-side waterfall on every
+ * visit. This loader runs during the server render (auth context already
+ * resolved by middleware/requireAuth), issues all queries in one parallel
+ * batch over the server's connection, and streams the finished HTML.
+ *
+ * Scoped to a 30-day lookback + future rows: the dashboard renders
+ * today/tomorrow lists, recent status tabs and monthly revenue — never
+ * deep history.
+ */
+export async function getReceptionistDashboardData(
+  clinicId: string,
+): Promise<ReceptionistDashboardData> {
+  const supabase = await createClient();
+
+  const lookbackDate = new Date();
+  lookbackDate.setDate(lookbackDate.getDate() - 30);
+  const sinceDate = getLocalDateStr(lookbackDate);
+
+  const [apptsRes, patientsRes, doctorsRes, servicesRes, paymentsRes] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select(
+        "id, patient_id, doctor_id, service_id, appointment_date, start_time, status, is_first_visit, insurance_flag, is_emergency, notes, cancelled_at, cancellation_reason, rescheduled_from, recurrence_group_id, recurrence_pattern",
+      )
+      .eq("clinic_id", clinicId)
+      .gte("appointment_date", sinceDate)
+      .order("appointment_date", { ascending: true })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase
+      .from("users")
+      .select("id, name, phone, email, metadata, created_at")
+      .eq("clinic_id", clinicId)
+      .eq("role", "patient")
+      .order("name", { ascending: true })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase
+      .from("users")
+      .select("id, name")
+      .eq("clinic_id", clinicId)
+      .eq("role", "doctor")
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase
+      .from("services")
+      .select("id, name")
+      .eq("clinic_id", clinicId)
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase
+      .from("payments")
+      .select("amount")
+      .eq("clinic_id", clinicId)
+      .eq("status", "completed")
+      .gte("created_at", lookbackDate.toISOString())
+      .limit(DEFAULT_QUERY_LIMIT),
+  ]);
+
+  type PatientRaw = {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string | null;
+  };
+  const patientRows = (patientsRes.data ?? []) as PatientRaw[];
+
+  // Mirrors mapPatient() in src/lib/data/client/users.ts so the client view
+  // receives identical shapes whether data came from server or browser.
+  const patients: PatientView[] = patientRows.map((raw) => {
+    const meta = raw.metadata ?? {};
+    const dob = (meta.date_of_birth as string) ?? "";
+    let age = 0;
+    if (dob) {
+      const diff = Date.now() - new Date(dob).getTime();
+      age = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+    }
+    return {
+      id: raw.id,
+      name: raw.name,
+      phone: raw.phone ?? "",
+      email: raw.email ?? "",
+      age: (meta.age as number) ?? age,
+      gender: ((meta.gender as string) ?? "M") as "M" | "F",
+      dateOfBirth: dob,
+      allergies: (meta.allergies as string[]) ?? undefined,
+      insurance: (meta.insurance as string) ?? undefined,
+      registeredAt: raw.created_at?.split("T")[0] ?? "",
+    };
+  });
+
+  const nameMap = new Map<string, { name: string; phone: string }>();
+  for (const p of patientRows) nameMap.set(p.id, { name: p.name, phone: p.phone ?? "" });
+  for (const d of (doctorsRes.data ?? []) as { id: string; name: string }[]) {
+    nameMap.set(d.id, { name: d.name, phone: "" });
+  }
+  const serviceMap = new Map(
+    ((servicesRes.data ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
+  );
+
+  type ApptRaw = {
+    id: string;
+    patient_id: string;
+    doctor_id: string;
+    service_id: string | null;
+    appointment_date: string;
+    start_time: string | null;
+    status: string | null;
+    is_first_visit: boolean | null;
+    insurance_flag: boolean | null;
+    is_emergency: boolean | null;
+    notes: string | null;
+    cancelled_at: string | null;
+    cancellation_reason: string | null;
+    rescheduled_from: string | null;
+    recurrence_group_id: string | null;
+    recurrence_pattern: string | null;
+  };
+  // Mirrors mapAppointment() in src/lib/data/client/appointments.ts.
+  const appointments: AppointmentView[] = ((apptsRes.data ?? []) as ApptRaw[]).map((raw) => ({
+    id: raw.id,
+    patientId: raw.patient_id,
+    patientName: nameMap.get(raw.patient_id)?.name ?? "Unknown",
+    patientPhone: nameMap.get(raw.patient_id)?.phone || undefined,
+    doctorId: raw.doctor_id,
+    doctorName: nameMap.get(raw.doctor_id)?.name ?? "Unknown",
+    serviceId: raw.service_id ?? "",
+    serviceName: (raw.service_id ? serviceMap.get(raw.service_id) : null) ?? "Consultation",
+    date: raw.appointment_date,
+    time: raw.start_time?.slice(0, 5) ?? "",
+    status: raw.status?.replaceAll("_", "-") ?? "scheduled",
+    isFirstVisit: raw.is_first_visit ?? false,
+    hasInsurance: raw.insurance_flag ?? false,
+    cancelledAt: raw.cancelled_at ?? undefined,
+    cancellationReason: raw.cancellation_reason ?? undefined,
+    rescheduledFrom: raw.rescheduled_from ?? undefined,
+    isEmergency: raw.is_emergency ?? false,
+    notes: raw.notes ?? undefined,
+    recurrenceGroupId: raw.recurrence_group_id ?? undefined,
+    recurrencePattern: raw.recurrence_pattern ?? undefined,
+  }));
+
+  const totalRevenue = ((paymentsRes.data ?? []) as { amount: number }[]).reduce(
+    (sum, p) => sum + (p.amount ?? 0),
+    0,
+  );
+
+  return { appointments, patients, totalRevenue };
 }
