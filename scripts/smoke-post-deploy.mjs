@@ -42,27 +42,39 @@ const SUPABASE_URL_RE = /https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)/i;
 const SUPABASE_KEY_RE = /eyJ[\w-]+\.[\w-]+\.[\w-]+|sb_publishable_[\w-]{20,}/;
 
 // Audit Task 2: marker emitted by src/components/masking-build-sentinel.tsx.
-// Two recognised shapes:
+// Three recognised shapes (chunk-source forms — NOT the rendered DOM, which
+// reflects the runtime sentinel and cannot be trusted for build-time checks):
+//
 //   1. Minifier-folded literal:        "__OLTIGO_MASKING_BUILD__partial"
-//   2. Unfolded concat (variable):     "__OLTIGO_MASKING_BUILD__" + r   where
-//      r is a same-module export bound to MASKING_BUILD_LEVEL.
+//      (when the minifier statically concatenates marker + level)
+//
+//   2. Webpack-style exports descriptor:
+//      ..."MASKING_BUILD_LEVEL", 0, "partial", ... "MASKING_BUILD_MARKER"...
+//      (turbopack/webpack `e.s([...])` exports — the level sits as a separate
+//      export entry adjacent to the binding name; the value is the literal
+//      result of inlining process.env.NEXT_PUBLIC_DATA_MASKING || "unset")
+//
+//   3. Unfolded binding initializer:
+//      NEXT_PUBLIC_DATA_MASKING || "<level>"
+//      (build kept the original `|| "unset"` fallback because inlining did
+//      not reach this file — same failure mode #1016 exists to detect, and
+//      the level captured is the FALLBACK, not the true build-time value)
 //
 // The previous "[\s\S]{0,300}?(partial|full|none|unset)" form was a foot-gun:
-// when the build did NOT inline NEXT_PUBLIC_DATA_MASKING (the exact failure
-// mode this check exists to detect), mask.ts's own `=== "none"` / `=== "full"`
-// comparisons sit only a few dozen chars after the marker in the bundled
-// chunk, and the non-greedy match would lock onto one of those — reporting
-// e.g. "none" while the true MASKING_BUILD_LEVEL value at runtime was
-// "unset". The fix below requires the level to be either immediately glued
-// to the marker (folded case) or to appear in a sentinel-binding initializer
-// of the form `<var> = ... NEXT_PUBLIC_DATA_MASKING || "<level>"` within a
-// short window. Anything else returns null and the report stays honest.
+// when inlining failed, mask.ts's own `=== "none"` / `=== "full"`
+// comparisons sit only a few dozen chars after the marker in the chunk, and
+// the non-greedy match would lock onto one of those — reporting e.g. "none"
+// while the true MASKING_BUILD_LEVEL at runtime was "unset". Each regex
+// below is anchored to a binding the level is provably associated with.
 const MASKING_SENTINEL_RE_FOLDED = /__OLTIGO_MASKING_BUILD__(partial|full|none|unset)/;
+const MASKING_SENTINEL_RE_EXPORT =
+  /["']MASKING_BUILD_LEVEL["']\s*,\s*\d+\s*,\s*["'](partial|full|none|unset)["']/;
 const MASKING_SENTINEL_RE_BINDING =
   /NEXT_PUBLIC_DATA_MASKING\s*\|\|\s*["'](partial|full|none|unset)["']/;
 function extractMaskingLevel(text) {
   return (
     text.match(MASKING_SENTINEL_RE_FOLDED)?.[1] ??
+    text.match(MASKING_SENTINEL_RE_EXPORT)?.[1] ??
     text.match(MASKING_SENTINEL_RE_BINDING)?.[1] ??
     null
   );
