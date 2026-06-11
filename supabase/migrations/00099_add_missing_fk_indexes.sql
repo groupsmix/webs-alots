@@ -17,13 +17,13 @@ BEGIN;
 
 -- Clinical tables ------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_admissions_doctor_id
-  ON admissions (doctor_id);
+  ON admissions (admitting_doctor_id);
 
-CREATE INDEX IF NOT EXISTS idx_beds_department_id
-  ON beds (department_id);
+CREATE INDEX IF NOT EXISTS idx_beds_room_id
+  ON beds (room_id);
 
-CREATE INDEX IF NOT EXISTS idx_beds_patient_id
-  ON beds (patient_id);
+CREATE INDEX IF NOT EXISTS idx_beds_current_patient_id
+  ON beds (current_patient_id);
 
 CREATE INDEX IF NOT EXISTS idx_ivf_cycles_partner_id
   ON ivf_cycles (partner_id);
