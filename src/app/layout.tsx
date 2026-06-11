@@ -10,6 +10,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { ConsentGatedReplay } from "@/components/consent-gated-replay";
 import { CookieConsent } from "@/components/cookie-consent";
+import { MaskingBuildSentinel } from "@/components/masking-build-sentinel";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { PlausibleScript } from "@/components/plausible-script";
@@ -207,6 +208,12 @@ export default async function RootLayout({
         <ConsentGatedReplay />
         <ServiceWorkerRegister />
         <PlausibleScript />
+        {/*
+          Audit 2026-06-09 Task 2: invisible sentinel that embeds the
+          build-time NEXT_PUBLIC_DATA_MASKING value in the client bundle so
+          the post-deploy smoke test can verify PHI masking was baked in.
+        */}
+        <MaskingBuildSentinel />
       </body>
     </html>
   );

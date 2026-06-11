@@ -11,6 +11,23 @@
 
 export type MaskLevel = "full" | "partial" | "none";
 
+/**
+ * Build-time sentinel (audit 2026-06-09 Task 2).
+ *
+ * NEXT_PUBLIC_* values are inlined into the client bundle at BUILD time;
+ * the startup health check in env.ts reads the RUNTIME var (wrangler.toml)
+ * and therefore cannot detect a build that was produced without
+ * NEXT_PUBLIC_DATA_MASKING — exactly the silent failure mode where client
+ * components ship with masking compiled to "none" while the server-side
+ * check passes.
+ *
+ * The MaskingBuildSentinel component embeds MARKER + LEVEL in the always-
+ * shipped root-layout chunk, and scripts/smoke-post-deploy.mjs greps the
+ * deployed bundle for it after every deploy.
+ */
+export const MASKING_BUILD_MARKER = "__OLTIGO_MASKING_BUILD__";
+export const MASKING_BUILD_LEVEL: string = process.env.NEXT_PUBLIC_DATA_MASKING || "unset";
+
 /** Read the masking level from the environment (defaults to "none"). */
 export function getMaskLevel(): MaskLevel {
   const raw = process.env.NEXT_PUBLIC_DATA_MASKING;
