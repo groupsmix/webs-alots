@@ -55,6 +55,17 @@ function getSupabaseImageHostname(): string {
 // consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
+  // Audit 2026-06-09 Task 2 follow-up: force build-time inlining of the PHI
+  // masking level. With the OpenNext build, the bare process.env reference in
+  // src/lib/mask.ts compiles to a runtime process-shim lookup in client
+  // chunks (always undefined in browsers, so masking degraded to "none" -
+  // caught by the post-deploy smoke test, failing every deploy since
+  // 2026-06-11). Declaring it in `env` guarantees static replacement in the
+  // client bundle. Defaults to "partial" (fail-closed) when absent.
+  env: {
+    NEXT_PUBLIC_DATA_MASKING: process.env.NEXT_PUBLIC_DATA_MASKING ?? "partial",
+  },
+
   // E2E suite (login-flow / registration-flow / pricing / mobile-flows specs)
   // asserts `<Link>` hrefs in their canonical form (e.g. href="/login/").
   // Removing this flag drops the trailing slash from rendered hrefs and breaks

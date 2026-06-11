@@ -71,8 +71,10 @@ jobs:
         run: npm run build:cf
         env:
           # Supabase URL/key are baked into the client bundle at build time.
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Per-branch credentials: staging must NOT ship with the production
+          # Supabase project baked into its client bundle (cross-env PHI risk).
+          NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref_name == 'main' && secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref_name == 'main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.STAGING_SUPABASE_ANON_KEY }}
           # Feature flag: show AI Agents / AI Team / Website Builder in super-admin.
           # Baked into client bundle at build time (NEXT_PUBLIC_*).
           NEXT_PUBLIC_AI_FEATURES_ENABLED: ${{ secrets.NEXT_PUBLIC_AI_FEATURES_ENABLED }}
