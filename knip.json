@@ -29,9 +29,7 @@
     "eslint-plugin-react-hooks",
     "tw-animate-css",
     "shadcn",
-    "@anthropic-ai/sdk",
-
-
+    "@anthropic-ai/sdk"
   ],
   "rules": {
     "files": "warn",
