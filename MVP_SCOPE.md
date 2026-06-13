@@ -21,11 +21,20 @@ Oltigo is a multi-tenant SaaS platform built specifically for healthcare clinics
 
 ## Experimental / Non-MVP Scope
 
-The following verticals and features exist in the codebase but are **NOT** part of the active MVP. They are gated by environment variables.
+The following verticals and features exist in the codebase but are **NOT** part of the active MVP. They are gated by the per-clinic `features_config` mechanism (see `src/lib/features.ts`) and the `isAIEnabled()` kill-switch for AI features.
 
-- **Restaurant / Hospitality Vertical**: Gated by `EXPERIMENTAL_VERTICALS_ENABLED`
-- **Veterinary / Pet Profiles**: Gated by `EXPERIMENTAL_VERTICALS_ENABLED`
-- **Advanced AI (CDSS, AI Team Dashboard, Copilots)**: Gated by `AI_FEATURES_ENABLED`
-- **FHIR / Complex CRM Integrations**: Gated by `FHIR_ENABLED`
+- **Restaurant / Hospitality Vertical**: Gated by `features_config` (clinic-type level)
+- **Veterinary / Pet Profiles**: Gated by `features_config` (clinic-type level)
+- **Advanced AI (CDSS, AI Team Dashboard, Copilots)**: Gated by `isAIEnabled()` (KV-backed kill-switch + `AI_DISABLED` env var)
+- **FHIR / Complex CRM Integrations**: Gated by `features_config` (clinic-type level)
 
 If a new PR introduces heavy analytics, alternate industry verticals, or advanced AI capabilities, ensure it is wrapped in the appropriate feature flag and does not impact the core booking and patient management flow.
+
+## Feature Flag Mechanism
+
+The canonical feature gating mechanism is:
+
+1. **Per-clinic `features_config`** (database-backed, in `clinic_types` table) — used for clinic-type-level feature enablement (e.g., restaurant features, veterinary features, etc.).
+2. **`isAIEnabled()`** (KV-backed kill-switch) — used for AI features. Reads `ai.enabled` from `FEATURE_FLAGS_KV` namespace. Falls back to enabled if KV is unavailable. Disabled by setting `AI_DISABLED=true` env var.
+
+The previously documented env-level flags (`EXPERIMENTAL_VERTICALS_ENABLED`, `AI_FEATURES_ENABLED`, `FHIR_ENABLED`) are not implemented. Do not add new code referencing them.

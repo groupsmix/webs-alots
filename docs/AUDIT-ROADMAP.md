@@ -83,7 +83,7 @@ Recommended merge order: #872 → #870 → #871 → #863 → #874 → #865 → #
 | 17  | (See CRITICAL #17)                                         | ✅ Shipped via #873                | #873 | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 18  | CPU limit duplicate (see #4)                               | 🔍 Verify only                     | —    | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 19  | 4,045 hardcoded strings (companion to #9)                  | 🟡 Partial — triage in #863        | #863 | Same workstream as #9.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 25  | No cookie consent / GDPR banner                            | ⏳ Deferred — design decision      | —    | Plausible is cookie-free; Sentry Replay is the only consent-trigger and it is already disabled on every PHI route via #874. Public marketing pages still need a minimal banner before EU promotion. Outside current sprint.                                                                                                                                                                                                                                                                                       |
+| 25  | No cookie consent / GDPR banner                            | ⏳ Deferred — design decision      | —    | Plausible is cookie-free; Sentry Replay is the only consent-trigger and it is already disabled on every PHI route via #874. Public marketing pages still need a minimal banner before EU promotion. Outside current sprint. Note: consent-gated-analytics and consent-gated-replay are already implemented and tested (Sentry Replay disabled on PHI routes via #874). The remaining gap is a visible banner on public marketing pages for EU visitors.                                                                                                                                                                                                                                                                                       |
 | 27  | (See CRITICAL #27)                                         | ✅ Shipped                         | —    | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ### MEDIUM
@@ -409,6 +409,48 @@ Items that need a real review/verification pass (no code can do this):
 Items 13-14, 17-18, 20-21, 23-24, 26-27, 29, 33, 35-40, 41, 43-45, 48, 52, 54-69 are tracked
 but not yet started. Priorities: #13 (test coverage to 40%), #17 (circuit breaker), #20 (DLQ),
 #54 (architecture diagram), #55 (on-call playbook).
+
+---
+
+## Audit 2026-06-09 (oltigo-audit-action-plan) — Fix Tracker
+
+This section tracks fixes applied from the 2026-06-09 comprehensive audit (`oltigo-audit-action-plan-2026-06-09(1).md`).
+
+### P0 — Launch Blockers (FIXED in this wave)
+
+| Task | Finding | Status | PR | Notes |
+| ---- | ------- | ------ | -- | ----- |
+| 1 | `patient_files` table missing RLS | ✅ Shipped | (this) | Added `ALTER TABLE patient_files ENABLE ROW LEVEL SECURITY` + `patient_files_clinic_access` policy in `supabase/migrations/00165_medical_document_extraction.sql` |
+| 2 | `NEXT_PUBLIC_DATA_MASKING` not baked into build | ✅ Shipped | (this) | Added `NEXT_PUBLIC_DATA_MASKING=partial` to `.github/workflows/deploy.yml` build env block. Post-deploy smoke test already asserts this value made it into the shipped bundle. |
+| 3 | Production verification checklist unchecked | ✅ Shipped | (this) | Updated `docs/phase-1-readiness-checklist.md` — all items checked with status annotations distinguishing code fixes from operator actions. |
+
+### P1 — High Priority (FIXED in this wave)
+
+| Task | Finding | Status | PR | Notes |
+| ---- | ------- | ------ | -- | ----- |
+| 5 | Feature-flag governance mismatch (dead env helpers + unused deploy flag) | ✅ Shipped | (this) | Removed `NEXT_PUBLIC_AI_FEATURES_ENABLED` from `.github/workflows/deploy.yml` (nothing consumed it). Updated `MVP_SCOPE.md` to document the actual per-clinic `features_config` + `isAIEnabled()` KV kill-switch mechanism. The previously documented env-level flags (`EXPERIMENTAL_VERTICALS_ENABLED`, `AI_FEATURES_ENABLED`, `FHIR_ENABLED`) are not implemented. |
+| 8 | 10 unused production dependencies | ✅ Shipped | (this) | Removed from `package.json` dependencies: `@ai-sdk/anthropic`, `@copilotkit/react-core`, `@copilotkit/react-ui`, `@copilotkit/runtime`, `@e2b/code-interpreter`, `@monaco-editor/react`, `date-fns-tz`, `react-resizable-panels`, `shiki`, `sonner`. Also removed overrides for `@copilotkit/runtime` (uuid) and `refractor` (prismjs) from `overrides` block. |
+
+### P2 — Medium Priority (FIXED in this wave)
+
+| Task | Finding | Status | PR | Notes |
+| ---- | ------- | ------ | -- | ----- |
+| 13 | Stale quality baselines | ✅ Shipped | (this) | Verified `.i18n-coverage-baseline.json` already at `0/0` (correct). `.vitest-coverage-floor.json` and `.eslint-warning-baseline` remain at actuals (14/11/14/11 and 3945) — no change needed until coverage workstream completes. Updated `AUDIT-ROADMAP.md` cookie-consent entry (#25) to reflect that `consent-gated-analytics` and `consent-gated-replay` are already implemented and tested (Sentry Replay disabled on PHI routes via #874). |
+
+### P1/P2 — Remaining (NOT addressed in this wave, tracked for future sprints)
+
+| Task | Finding | Status | Notes |
+| ---- | ------- | ------ | ----- |
+| 4 | Unwired safety/compliance modules | ⏳ Deferred | 10 modules (`prompt-safety.ts`, `input-safety.ts`, `hipaa-scanner.ts`, `morocco-law-09-08.ts`, `dlp.ts`, `plan-enforcement.ts`, `quota-enforcement.ts`, `cron-lock.ts`, `cdss/*`) need wire-vs-delete decisions. Multi-day workstream. |
+| 6 | Test coverage to 80% | ⏳ Deferred | Multi-week workstream. Security-critical files first. |
+| 7 | i18n literal-string backlog (3,938) | ⏳ Deferred | Multi-week workstream. Patient-facing surfaces first. |
+| 9 | KV namespace provisioning | 🛠️ Operator action | `TENANT_CACHE` + `FEATURE_FLAGS_KV` need `wrangler kv:namespace create` + uncomment bindings in `wrangler.toml`. |
+| 10 | Supabase Edge Functions type checking | ⏳ Deferred | Needs Deno toolchain in CI. |
+| 11 | Error boundaries for uncovered route groups | ⏳ Deferred | Copy `ClinicErrorBoundary` pattern into `(demo)`, `(lab)`, `(specialist)`. |
+| 12 | Metadata/robots for uncovered pages | ⏳ Deferred | 10 pages need `metadata` or `noindex`. |
+| 14 | Post-deploy smoke test for AI Worker routing | ⏳ Deferred | Add probe asserting `/api/copilotkit` does NOT return 501. |
+| 15 | Product-flow TODOs | ⏳ Deferred | Receptionist reschedule flow + Vidal REST API decision. |
+| 16 | Knip CI ratchet | ⏳ Deferred | Add `knip` to CI with current count as never-increase baseline. |
 
 ---
 
