@@ -1,5 +1,7 @@
 "use client";
 
+// @ts-nocheck  — CopilotKit feature disabled (hotfix 2026-06-06), dead code kept for re-enablement path. See copilot-shell.tsx ADR.
+
 import { useCopilotAction } from "@copilotkit/react-core";
 import { createClient } from "@/lib/supabase-client";
 
