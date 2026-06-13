@@ -30,8 +30,8 @@
     "tw-animate-css",
     "shadcn",
     "@anthropic-ai/sdk",
-    "@copilotkit/react-core",
-    "@copilotkit/react-ui"
+
+
   ],
   "rules": {
     "files": "warn",
