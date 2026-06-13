@@ -5,6 +5,12 @@ import { TVQueueDisplay } from "@/components/morocco/tv-queue-display";
 import { createClient } from "@/lib/supabase-client";
 import { getLocalDateStr } from "@/lib/utils";
 
+export const metadata = {
+  title: "File d'attente | Oltigo",
+  description: "Affichage de la file d'attente en temps réel.",
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
+
 interface QueuePatient {
   id: string;
   ticketNumber: number;

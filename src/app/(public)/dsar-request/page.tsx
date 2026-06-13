@@ -1,6 +1,13 @@
 /* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 import { DSARRequestForm } from "@/components/compliance/dsar-request-form";
 
+export const metadata = {
+  title: "Demande d'exercice de droits | Oltigo",
+  description:
+    "Demandez l'accès, la rectification, la suppression ou la portabilité de vos données personnelles. Réponse sous 30 jours conformément à la loi marocaine n°09-08.",
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
+
 export default function DSARRequestPage() {
   return (
     <div className="mx-auto max-w-xl px-6 py-12">

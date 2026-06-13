@@ -6,6 +6,12 @@ import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+export const metadata = {
+  title: "Check-in | Oltigo",
+  description: "Enregistrement de votre arrivée à la clinique.",
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
+
 type KioskStep = "phone" | "appointments" | "confirming" | "confirmed" | "not-found" | "disabled";
 
 interface AppointmentInfo {

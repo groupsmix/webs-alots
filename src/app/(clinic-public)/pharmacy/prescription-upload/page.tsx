@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+
+export const metadata = {
+  title: "Envoi d'ordonnance | Oltigo",
+  description: "Envoyez votre ordonnance par photo ou fichier pour préparation et livraison.",
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
