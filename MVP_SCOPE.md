@@ -21,11 +21,21 @@ Oltigo is a multi-tenant SaaS platform built specifically for healthcare clinics
 
 ## Experimental / Non-MVP Scope
 
-The following verticals and features exist in the codebase but are **NOT** part of the active MVP. They are gated by environment variables.
+The following verticals and features exist in the codebase but are **NOT** part of the active MVP. They are gated by per-clinic configuration.
 
-- **Restaurant / Hospitality Vertical**: Gated by `EXPERIMENTAL_VERTICALS_ENABLED`
-- **Veterinary / Pet Profiles**: Gated by `EXPERIMENTAL_VERTICALS_ENABLED`
-- **Advanced AI (CDSS, AI Team Dashboard, Copilots)**: Gated by `AI_FEATURES_ENABLED`
-- **FHIR / Complex CRM Integrations**: Gated by `FHIR_ENABLED`
+- **Restaurant / Hospitality Vertical**: Gated by `menu_management`, `table_management`, `qr_ordering`, `reservations` features in clinic type's `features_config`
+- **Veterinary / Pet Profiles**: Gated by `pet_profiles` feature in clinic type's `features_config`
+- **Advanced AI (CDSS, AI Team Dashboard, Copilots)**: Gated by per-clinic `ai_*` features in `features_config` AND global kill switch via `isAIEnabled()` (KV flag `ai.enabled` or `AI_DISABLED` env var)
+- **Specialist Verticals**: Optician, physiotherapy, radiology, speech therapy, equipment rental, parapharmacy, and other specialist features are gated by respective feature flags in clinic type's `features_config`
 
-If a new PR introduces heavy analytics, alternate industry verticals, or advanced AI capabilities, ensure it is wrapped in the appropriate feature flag and does not impact the core booking and patient management flow.
+### Feature Gating Mechanism
+
+Features are controlled at two levels:
+
+1. **Per-clinic configuration**: Each clinic type has a `features_config` JSONB column in the `clinic_types` table that determines which features are available for clinics of that type. See `src/lib/features.ts` for the full list of `ClinicFeatureKey` options.
+
+2. **Global AI kill switch**: AI features have an additional global kill switch via `isAIEnabled()` in `src/lib/features.ts`, which checks either:
+   - Cloudflare KV namespace `FEATURE_FLAGS_KV` with key `ai.enabled`
+   - Environment variable `AI_DISABLED=true` for immediate disable
+
+If a new PR introduces heavy analytics, alternate industry verticals, or advanced AI capabilities, ensure it is wrapped in the appropriate feature flag in `features_config` and does not impact the core booking and patient management flow.
