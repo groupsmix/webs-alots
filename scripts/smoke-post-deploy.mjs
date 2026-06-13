@@ -182,10 +182,107 @@ async function checkSignupIntegrity() {
   }
 }
 
+/**
+ * Audit Task 17 — Layer 4: Health endpoint JSON validation.
+ */
+async function checkHealthJson() {
+  try {
+    const { status, text } = await fetchText(BASE + "/api/health");
+    log(status < 503, `health JSON: HTTP ${status} (expected < 503)`);
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      log(false, "health JSON: response is not valid JSON");
+      return;
+    }
+    log(
+      typeof parsed.status === "string",
+      `health JSON: has "status" field (${JSON.stringify(parsed.status)})`,
+    );
+    log(
+      parsed.status !== "unhealthy",
+      parsed.status !== "unhealthy"
+        ? `health JSON: status is "${parsed.status}"`
+        : `health JSON: status is "unhealthy" — a dependency is DOWN`,
+    );
+  } catch (err) {
+    log(false, `health JSON: request failed (${err?.message || err})`);
+  }
+}
+
+/**
+ * Audit Task 17 — Layer 5: Security headers.
+ */
+async function checkSecurityHeaders() {
+  let resHeaders;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const res = await fetch(BASE + "/login", { signal: ctrl.signal, redirect: "follow" });
+    clearTimeout(timer);
+    resHeaders = res.headers;
+  } catch (err) {
+    log(false, `security headers: could not fetch /login (${err?.message || err})`);
+    return;
+  }
+  const REQUIRED = [
+    ["x-content-type-options", "nosniff"],
+    ["x-frame-options", "DENY"],
+    ["referrer-policy", null],
+  ];
+  for (const [name, expected] of REQUIRED) {
+    const val = resHeaders.get(name);
+    if (expected === null) {
+      log(val !== null, `security headers: ${name} is ${val !== null ? `"${val}"` : "MISSING"}`);
+    } else {
+      log(
+        val?.toLowerCase() === expected.toLowerCase(),
+        `security headers: ${name} = ${val ?? "MISSING"} (expected "${expected}")`,
+      );
+    }
+  }
+}
+
+/**
+ * Audit Task 17 — Layer 6: Auth page noindex regression guard.
+ */
+async function checkAuthNoindex() {
+  for (const path of ["/login", "/register"]) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+      const res = await fetch(BASE + path, { signal: ctrl.signal, redirect: "follow" });
+      clearTimeout(timer);
+      const robotsHeader = res.headers.get("x-robots-tag") || "";
+      const html = await res.text();
+      const metaNoindex = /<meta[^>]+name=["']robots["'][^>]+content=["'][^"'<>]*noindex/i.test(
+        html,
+      );
+      const headerNoindex = /noindex/i.test(robotsHeader);
+      log(
+        metaNoindex || headerNoindex,
+        `auth noindex: ${path} — ${
+          metaNoindex
+            ? "meta robots noindex present"
+            : headerNoindex
+              ? `X-Robots-Tag: ${robotsHeader}`
+              : "NO noindex found — page may be indexed by search engines"
+        }`,
+      );
+    } catch (err) {
+      log(false, `auth noindex: ${path} request failed (${err?.message || err})`);
+    }
+  }
+}
+
 (async () => {
   console.log(`Post-deploy smoke test → ${BASE}\n`);
   await checkRoutes();
   await checkSignupIntegrity();
+  await checkHealthJson();
+  await checkSecurityHeaders();
+  await checkAuthNoindex();
   console.log("");
   if (failures > 0) {
     console.error(`✗ smoke test FAILED with ${failures} problem(s).`);
