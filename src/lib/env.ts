@@ -390,21 +390,9 @@ export const ENV_RULES: EnvRule[] = [
 
   // ── MVP Scope / Feature Flags ──────────────────────────────────────
   {
-    name: "NEXT_PUBLIC_EXPERIMENTAL_VERTICALS_ENABLED",
+    name: "NEXT_PUBLIC_DEMO_ENABLED",
     required: false,
-    description: "Enable non-MVP verticals (e.g. Restaurant, Veterinary). Default: false.",
-    group: "feature-flags",
-  },
-  {
-    name: "NEXT_PUBLIC_AI_FEATURES_ENABLED",
-    required: false,
-    description: "Enable advanced AI features (CDSS, AI Dashboard). Default: false.",
-    group: "feature-flags",
-  },
-  {
-    name: "NEXT_PUBLIC_FHIR_ENABLED",
-    required: false,
-    description: "Enable FHIR and complex CRM integrations. Default: false.",
+    description: "Enable demo mode for landing-page CTA and demo tenant. Default: false.",
     group: "feature-flags",
   },
   {
@@ -415,21 +403,6 @@ export const ENV_RULES: EnvRule[] = [
     group: "feature-flags",
   },
 ];
-
-/**
- * Scope getters for feature flags (MVP / Non-MVP).
- */
-export function isExperimentalVerticalsEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_EXPERIMENTAL_VERTICALS_ENABLED === "true";
-}
-
-export function isAiFeaturesEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_AI_FEATURES_ENABLED === "true";
-}
-
-export function isFhirEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_FHIR_ENABLED === "true";
-}
 
 /**
  * Emergency AI kill switch env override (AI-KS). When AI_DISABLED=true the
