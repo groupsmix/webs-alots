@@ -6,6 +6,7 @@ import {
   Activity,
   HeartPulse,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { t, type Locale } from "@/lib/i18n";
@@ -34,6 +35,16 @@ const HERO_FEATURES = [
     desc: "Conforme à la Loi 09-08 et au RGPD pour la protection des données.",
   },
 ];
+
+// Auth pages (login/register/forgot-password/onboarding/setup-2fa) must not
+// be indexed by search engines. The post-deploy smoke test (Audit Task 17 —
+// Layer 6) asserts that /login and /register carry either an
+// `<meta name="robots" content="…noindex…">` tag or an `X-Robots-Tag` header.
+// Next.js's metadata.robots from this shared server layout is the cleanest
+// way to emit the meta tag for every auth route at once.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const locale: Locale = "fr";

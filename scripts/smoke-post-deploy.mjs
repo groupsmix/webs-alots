@@ -196,14 +196,25 @@ async function checkHealthJson() {
       log(false, "health JSON: response is not valid JSON");
       return;
     }
+    // /api/health is wrapped by apiSuccess() so the live response shape is
+    // { ok: true, data: HealthResponse }. Both the route's own tests and
+    // the admin /status page + cron uptime monitor read `body.data.status`,
+    // so the smoke test follows the same contract. Fall back to top-level
+    // `status` for safety against future shape changes.
+    const healthStatus =
+      typeof parsed?.data?.status === "string"
+        ? parsed.data.status
+        : typeof parsed?.status === "string"
+          ? parsed.status
+          : undefined;
     log(
-      typeof parsed.status === "string",
-      `health JSON: has "status" field (${JSON.stringify(parsed.status)})`,
+      typeof healthStatus === "string",
+      `health JSON: has "status" field (${JSON.stringify(healthStatus)})`,
     );
     log(
-      parsed.status !== "unhealthy",
-      parsed.status !== "unhealthy"
-        ? `health JSON: status is "${parsed.status}"`
+      healthStatus !== "unhealthy",
+      healthStatus !== "unhealthy"
+        ? `health JSON: status is "${healthStatus}"`
         : `health JSON: status is "unhealthy" — a dependency is DOWN`,
     );
   } catch (err) {
