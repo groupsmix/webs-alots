@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
   title: "Envoyer une Ordonnance",
   description:
     "Envoyez votre ordonnance en ligne. Nous préparons vos médicaments et vous notifions par WhatsApp quand ils sont prêts.",

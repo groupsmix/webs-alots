@@ -3,6 +3,12 @@ import { Activity, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicStatusSnapshot } from "@/lib/system-status";
 
+export const metadata = {
+  title: "État des services | Oltigo",
+  description: "Page d'état des services Oltigo — disponibilité en temps réel.",
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
+
 const STATUS_STYLES = {
   operational: "text-green-600 bg-green-50 border-green-200",
   degraded: "text-amber-600 bg-amber-50 border-amber-200",
