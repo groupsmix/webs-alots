@@ -7,12 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase-client";
 
-export const metadata = {
-  title: "Historique des ordonnances | Oltigo",
-  description: "Consultez l'historique de vos ordonnances et leur statut de livraison.",
-  robots: { index: false, follow: false, nocache: true, noarchive: true },
-};
-
 /** Default currency when tenant config is not yet loaded. */
 const DEFAULT_CURRENCY = "MAD";
 

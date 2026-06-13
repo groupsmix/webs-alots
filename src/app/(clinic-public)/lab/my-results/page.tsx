@@ -7,12 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-export const metadata = {
-  title: "Mes résultats | Oltigo",
-  description: "Consultez vos résultats d'analyses médicales en toute sécurité.",
-  robots: { index: false, follow: false, nocache: true, noarchive: true },
-};
-
 interface ResultEntry {
   id: string;
   testName: string;
