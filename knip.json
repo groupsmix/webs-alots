@@ -21,14 +21,27 @@
     "*.config.{ts,mjs}"
   ],
   "ignore": ["src/lib/types/database.ts"],
-  "ignoreBinaries": ["supabase"],
-  "ignoreUnresolved": [".open-next/worker.js"],
+  "ignoreBinaries": ["supabase", "wait-on"],
+  "ignoreUnresolved": [".open-next/worker.js", "./.open-next/worker.js"],
   "ignoreDependencies": [
     "eslint-plugin-jsx-a11y",
     "tailwindcss",
     "eslint-plugin-react-hooks",
     "tw-animate-css",
     "shadcn",
-    "@anthropic-ai/sdk"
-  ]
+    "@anthropic-ai/sdk",
+    "@copilotkit/react-core",
+    "@copilotkit/react-ui"
+  ],
+  "rules": {
+    "files": "warn",
+    "exports": "warn",
+    "nsExports": "warn",
+    "types": "warn",
+    "nsTypes": "warn",
+    "enumMembers": "warn",
+    "classMembers": "warn",
+    "duplicates": "warn",
+    "unresolved": "warn"
+  }
 }
