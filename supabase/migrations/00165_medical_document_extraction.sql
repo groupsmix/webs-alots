@@ -84,3 +84,23 @@ DO $$ BEGIN
       AND auth.role() = 'authenticated'
     );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ── Row-Level Security for patient_files ──────────────────────────────────
+-- patient_files is the system of record for PHI uploads (R2 object keys,
+-- encryption IVs, patient/clinic linkage).  It was historically created
+-- out-of-band and is the only table in the schema without RLS.  Enabling
+-- it now closes the cross-tenant PHI exposure path.
+
+ALTER TABLE patient_files ENABLE ROW LEVEL SECURITY;
+
+-- Authenticated clinic staff may access patient files for their own clinic only.
+-- The get_request_clinic_id() function is set by the middleware (see
+-- 00041_fix_rls_use_request_headers.sql) and prevents cross-tenant leakage.
+DO $$ BEGIN
+  CREATE POLICY "patient_files_clinic_access"
+    ON patient_files FOR ALL
+    USING (
+      clinic_id = get_request_clinic_id()
+      AND auth.role() = 'authenticated'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

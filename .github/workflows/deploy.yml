@@ -77,9 +77,13 @@ jobs:
           # uses STAGING_SUPABASE_*. Both pairs must be set in repo secrets.
           NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref_name == 'main' && secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.STAGING_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref_name == 'main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.STAGING_SUPABASE_ANON_KEY }}
-          # Feature flag: show AI Agents / AI Team / Website Builder in super-admin.
-          # Baked into client bundle at build time (NEXT_PUBLIC_*).
-          NEXT_PUBLIC_AI_FEATURES_ENABLED: ${{ secrets.NEXT_PUBLIC_AI_FEATURES_ENABLED }}
+          # Audit 2026-06-09 Task 5 (P1): Removed NEXT_PUBLIC_AI_FEATURES_ENABLED.
+          # The deploy workflow previously injected a build flag that nothing
+          # in the codebase consumed. Actual AI gating is via the per-clinic
+          # features_config mechanism (src/lib/features.ts isAIEnabled()) and
+          # the AI_DISABLED env kill-switch. The dead env helper
+          # isAiFeaturesEnabled() was never implemented.
+          # NEXT_PUBLIC_AI_FEATURES_ENABLED: ${{ secrets.NEXT_PUBLIC_AI_FEATURES_ENABLED }}
           # Audit 2026-06-09 Task 2 (P0): PHI masking level for client
           # components. getMaskLevel() in src/lib/mask.ts defaults to "none"
           # when this is absent, and NEXT_PUBLIC_* values are inlined at
