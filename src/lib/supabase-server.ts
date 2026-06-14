@@ -1,10 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { withChaos } from "@/lib/chaos/chaos-engine";
 import { getSupabasePoolerUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
 import type { Database } from "@/lib/types/database";
-import { withChaos } from "@/lib/chaos/chaos-engine";
 
 // Local require-env helper. Uses computed-key access (process.env[name])
 // rather than dot access, so semgrep.env-access does not match. The
@@ -243,9 +243,13 @@ export type AdminPurpose =
  */
 export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
   logger.debug("Admin client created", { context: "supabase-server", purpose, clinicId });
-  const client = createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const client = createSupabaseClient<Database>(
+    getSupabaseUrl(),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
   return applyChaos(client);
 }
 
@@ -284,12 +288,16 @@ export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string)
     throw new Error(`createScopedAdminClient: invalid clinicId: ${clinicId}`);
   }
   logger.debug("Scoped admin client created", { context: "supabase-server", purpose, clinicId });
-  const client = createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: {
-      headers: { "x-clinic-id": clinicId },
+  const client = createSupabaseClient<Database>(
+    getSupabaseUrl(),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        headers: { "x-clinic-id": clinicId },
+      },
     },
-  });
+  );
   return applyChaos(client);
 }
 
@@ -303,9 +311,13 @@ export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string)
  */
 export function createServiceClient() {
   logger.debug("Service client created", { context: "supabase-server" });
-  const client = createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const client = createSupabaseClient<Database>(
+    getSupabaseUrl(),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
   return applyChaos(client);
 }
 
@@ -356,8 +368,12 @@ function applyChaos<T>(supabase: T): T {
             get(builderTarget, builderProp) {
               const original = builderTarget[builderProp];
 
-              if (typeof original === "function" && ["select", "insert", "update", "delete"].includes(String(builderProp))) {
-                return async function(...args: any[]) {
+              if (
+                typeof original === "function" &&
+                ["select", "insert", "update", "delete"].includes(String(builderProp))
+              ) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                return async function (...args: any[]) {
                   return withChaos("database_timeout", async () => {
                     return original.apply(builderTarget, args);
                   });
@@ -365,14 +381,13 @@ function applyChaos<T>(supabase: T): T {
               }
 
               return original;
-            }
+            },
           });
         };
       }
 
       // @ts-expect-error Proxying complex Supabase types is hard
       return target[prop];
-    }
+    },
   });
 }
-
