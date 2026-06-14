@@ -1,0 +1,388 @@
+etap 2You are a principal engineer, security architect, cloud architect, SRE, platform engineer, data architect, AI architect, QA lead, privacy engineer, and product systems reviewer.
+
+I want a TRUE end-to-end technical audit of my project. Not a summary. Not a resume. Not generic advice. I want a deep inspection of the actual repository, actual code, actual configs, actual workflows, actual infrastructure clues, and actual risks.
+
+PROJECT:
+<PUT MY REPO URL HERE>
+
+YOUR JOB:
+Perform a ruthless end-to-end review of the entire project and tell me exactly what is good, what is broken, what is risky, what is missing, what will fail at scale, what will fail security review, what will fail compliance review, and what I should fix first.
+
+NON-NEGOTIABLE RULES:
+1. Use the repository itself as the source of truth.
+2. Inspect all relevant files, not just the README.
+3. Infer the real architecture from code, configs, workflows, env usage, migrations, tests, build files, package files, deployment files, infra files, scripts, and docs.
+4. Do not give me fluffy best practices without pointing to concrete repository evidence.
+5. Separate:
+   - Confirmed findings from repo evidence
+   - Likely risks inferred from patterns
+   - Missing evidence / blind spots
+6. Be blunt and opinionated.
+7. Do not stop at “looks fine”.
+8. Assume attacker mindset, scale mindset, operations mindset, and compliance mindset.
+9. If something is missing, say exactly what artifact/file/config I need to provide next.
+10. If you find an issue, explain why it matters in production, not just academically.
+
+PROCESS YOU MUST FOLLOW:
+
+PHASE 1 — REPO DISCOVERY
+- Map the full repo structure
+- Identify frontend, backend, database, infra, CI/CD, auth, tests, scripts, providers, secrets usage, configs, docs
+- Identify languages, frameworks, runtimes, build tools, package managers, deployment targets, cloud providers, third-party services
+- Identify trust boundaries and data flow
+- Identify where business logic lives
+- Identify where authorization is enforced
+- Identify where secrets enter the system
+- Identify where failures are likely to be silent
+
+PHASE 2 — ARCHITECTURE RECONSTRUCTION
+Reconstruct the actual system architecture from the repo:
+- frontend architecture
+- backend/API architecture
+- database architecture
+- auth/authz architecture
+- cloud/infrastructure architecture
+- CI/CD and deployment architecture
+- observability and ops model
+- AI/data/search architecture if present
+- eventing/workflow model if present
+- payments/provider integration model if present
+
+PHASE 3 — DEEP AUDIT
+Audit the project across ALL of these domains:
+
+1. FRONTEND
+- routing
+- rendering strategy
+- component structure
+- state management
+- styling system
+- responsiveness
+- accessibility
+- i18n
+- SEO
+- web vitals
+- browser caching
+- CDN behavior
+- edge middleware
+- hydration/islands if applicable
+- event tracking
+- onboarding UX
+- graceful degradation
+- environment leakage to client
+- service worker / PWA risks
+
+2. BACKEND / API
+- endpoint design
+- request validation
+- response consistency
+- error handling
+- global exception handling
+- rate limiting
+- retries
+- circuit breakers
+- API versioning
+- deprecation strategy
+- queue/event suitability
+- websocket scaling
+- N+1 problems
+- provider abstraction quality
+- builders/providers patterns
+- authn/authz checks
+- idempotency
+- webhook security
+- background job design
+- secrets handling
+- abuse prevention
+
+3. DATABASE / DATA
+- schema design
+- SQL quality
+- NoSQL usage
+- vector database readiness
+- indexing
+- constraints
+- migrations
+- rollback safety
+- ORM/query quality
+- replication and scaling readiness
+- backups and restore assumptions
+- data retention
+- deletion flows
+- right to be forgotten
+- data residency / sovereignty
+- analytics/event model
+- performance bottlenecks
+- connection usage
+- cache strategy
+- memory hotspots
+
+4. SERVERS / NETWORK / CLOUD INFRASTRUCTURE
+- server runtime assumptions
+- edge/origin boundaries
+- environment isolation
+- networking exposure
+- CDN usage
+- BGP / Anycast relevance if applicable
+- WAF assumptions
+- rate-limit edge controls
+- regional risks
+- cold start optimization
+- infrastructure as code
+- policy as code
+- GitOps
+- ephemeral environments
+- disaster recovery
+- data sovereignty
+- deployment blast radius
+- origin exposure
+- multi-region readiness
+
+5. CI/CD / SDLC
+- GitHub Actions / pipelines
+- build reproducibility
+- test gating
+- release safety
+- rollback strategy
+- branch protection assumptions
+- preview environments
+- secret handling in CI
+- dependency pinning
+- software supply chain security
+- SBOM
+- provenance
+- artifact trust
+- license audit issues
+- dependency drift
+- environment drift between local/CI/prod
+
+6. SECURITY
+- authentication
+- authorization
+- IAM / least privilege
+- secrets management
+- service role misuse
+- privilege escalation paths
+- XSS
+- CSRF
+- SSRF
+- injection
+- IDOR
+- open redirect
+- insecure direct access
+- misconfigured CORS/CSP
+- zero trust posture
+- prompt injection protection
+- AI safety/alignment controls
+- privacy by design
+- compliance evidence
+- supply chain security
+- SOC 2 / ISO readiness signals
+- audit logging
+- admin path hardening
+- secret rotation readiness
+
+7. ARCHITECTURE / DESIGN
+- monolith vs microservice suitability
+- modularity
+- coupling
+- separation of concerns
+- service boundaries
+- event-driven design
+- CQRS suitability
+- message queues
+- orchestration/workflows
+- communication patterns
+- maintainability
+- hidden complexity
+- failure isolation
+- extensibility
+- “AI-ready” architecture
+- deprecation strategy
+- builders/providers/auth abstraction quality
+
+8. PERFORMANCE / SCALE / FINOPS
+- bundle size
+- cold starts
+- caching
+- response times
+- DB query efficiency
+- memory management
+- edge vs origin tradeoffs
+- cost hotspots
+- rate-limit cost exposure
+- provider lock-in costs
+- vector search cost risk
+- replication/scale blockers
+- what breaks at 10x and 100x traffic
+- global caching opportunities
+- CDN optimization
+- websocket scale issues
+
+9. OBSERVABILITY / OPERATIONS
+- logging
+- monitoring
+- alerting
+- tracing
+- distributed tracing
+- observability gaps
+- dashboards
+- incident readiness
+- error budgets
+- SLO/SLA readiness
+- chaos engineering
+- AIOps opportunities
+- cron/ops
+- backup verification
+- restore testing
+- production debugging safety
+
+10. QA / TESTING
+- unit tests
+- integration tests
+- e2e tests
+- contract tests
+- load testing
+- accessibility testing
+- regression coverage
+- security testing
+- failure-path coverage
+- flaky test risk
+- missing critical scenarios
+
+11. BUSINESS LOGIC / PRODUCT INTEGRITY
+- business rules
+- user flow correctness
+- payment/business logic
+- onboarding flows
+- event tracking integrity
+- abuse cases
+- admin tooling
+- terms/policy implications
+- legal/compliance workflow gaps
+- right-to-delete operational correctness
+
+12. AI / DATA SCIENCE / SEARCH
+Only if there is evidence in the repo:
+- model provider abstraction
+- AI versioning
+- embeddings
+- vector search
+- retrieval design
+- evaluation readiness
+- data engineering foundations
+- prompt safety
+- prompt injection protection
+- model observability
+- AI governance / alignment
+- human-in-the-loop controls
+
+13. WEB3 / SMART CONTRACTS / DECENTRALIZED STORAGE
+Only if there is evidence in the repo:
+- wallet orchestration
+- smart contract integration
+- decentralized storage
+- auth implications
+- provider trust boundaries
+
+14. EMBEDDED / BLUETOOTH / OTA
+Only if there is evidence in the repo:
+- embedded/web integration
+- bluetooth flows
+- firmware update / OTA
+- device security model
+
+FOR EACH FINDING, USE THIS FORMAT:
+- ID
+- Title
+- Severity: Critical / High / Medium / Low
+- Confidence: High / Medium / Low
+- Domain
+- Evidence: exact file path, function, config, workflow, migration, code pattern, or missing file
+- Why this matters
+- Real production failure or attack scenario
+- Business impact
+- Technical root cause
+- Concrete remediation
+- Priority: P0 / P1 / P2 / P3
+- Estimated effort: S / M / L
+- Example code/config fix if useful
+
+ALSO PRODUCE THESE SECTIONS:
+
+1. EXECUTIVE SUMMARY
+- blunt, direct, no fluff
+
+2. RECONSTRUCTED ARCHITECTURE
+- actual architecture inferred from repo
+
+3. CONFIRMED STACK
+- frameworks, runtimes, DB, cloud, CI/CD, auth, providers, monitoring, etc.
+
+4. BLIND SPOTS
+- what cannot be verified from repo alone
+- what files or access are needed next
+
+5. TOP 25 RISKS
+- ranked by real-world impact
+
+6. FIX FIRST
+- the most important immediate fixes
+
+7. QUICK WINS IN 24 HOURS
+- high-impact, low-effort changes
+
+8. 30 / 60 / 90 DAY PLAN
+- realistic remediation roadmap
+
+9. WHAT BREAKS FIRST AT 10X TRAFFIC
+
+10. WHAT FAILS A SECURITY REVIEW
+
+11. WHAT FAILS A SOC 2 / ISO REVIEW
+
+12. WHAT FAILS A RELIABILITY REVIEW
+
+13. WHAT FAILS A SCALE REVIEW
+
+14. HARD TRUTHS ABOUT THIS ARCHITECTURE
+- be brutally honest
+
+15. IF I HAD TO REBUILD THIS CLEANLY
+- what you would keep
+- what you would redesign
+- what you would remove
+- what you would standardize
+
+16. MISSING ARTIFACTS I SHOULD PROVIDE NEXT
+Examples:
+- production architecture diagram
+- env var matrix
+- cloud config
+- IaC repo
+- DB schema dump
+- monitoring screenshots
+- deployment settings
+- CDN/WAF config
+- secret management approach
+- backup/restore docs
+- runbooks
+- DPA / retention / privacy docs
+- threat model
+- API spec
+- package lockfiles
+- branch protection settings
+- CI secrets mapping
+
+IMPORTANT OUTPUT RULES:
+- Do not give generic best practices without evidence.
+- Quote exact files/paths where possible.
+- If a domain has no evidence, say “No evidence found in repo” and explain the risk.
+- Call out contradictions between code, docs, CI, and configs.
+- Highlight dead code, fragile code, hidden coupling, and misleading docs.
+- Highlight missing controls, not just broken controls.
+- Focus on end-to-end system risk, not isolated code style issues.
+- Prioritize real production impact over cosmetic issues.
+
+FINAL INSTRUCTION:
+Act like you are doing due diligence for a high-stakes acquisition + security assessment + scale readiness review. I want a real end-to-end check.

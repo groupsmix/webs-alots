@@ -89,14 +89,14 @@ jobs:
           # asserts this value made it into the shipped bundle.
           NEXT_PUBLIC_DATA_MASKING: partial
 
-      # Fail fast if the build silently produced no worker entry point.
+      # Fail fast if the build silently produced no generated OpenNext fetch bundle.
       - name: Verify build output
         run: |
           if [ ! -f .open-next/worker.js ]; then
             echo "::error::.open-next/worker.js is missing — build may have silently failed."
             exit 1
           fi
-          echo "Worker entry: .open-next/worker.js ($(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js) bytes)"
+          echo "Generated OpenNext bundle: .open-next/worker.js ($(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js) bytes)"
 
       - name: Deploy main Worker (webs-alots) to Cloudflare
         # CICD-01 / AUDIT-16: pinned to v3.15.0 SHA for supply-chain hardening.
@@ -130,6 +130,14 @@ jobs:
       - name: Post-deploy smoke test
         env:
           SMOKE_BASE_URL: ${{ github.ref_name == 'main' && 'https://oltigo.com' || 'https://staging.oltigo.com' }}
+          # Optional authenticated AI smoke. Leave unset to skip.
+          # Recommended target: /api/ai/manager with a clinic_admin session cookie.
+          SMOKE_AI_PATH: ${{ vars.SMOKE_AI_PATH }}
+          SMOKE_AI_METHOD: ${{ vars.SMOKE_AI_METHOD }}
+          SMOKE_AI_BODY: ${{ vars.SMOKE_AI_BODY }}
+          SMOKE_AI_EXPECT_STATUS: ${{ vars.SMOKE_AI_EXPECT_STATUS }}
+          SMOKE_AI_COOKIE: ${{ github.ref_name == 'main' && secrets.SMOKE_AI_COOKIE_PROD || secrets.SMOKE_AI_COOKIE_STAGING }}
+          SMOKE_AI_AUTH_HEADER: ${{ github.ref_name == 'main' && secrets.SMOKE_AI_AUTH_HEADER_PROD || secrets.SMOKE_AI_AUTH_HEADER_STAGING }}
         run: |
           for attempt in $(seq 1 8); do
             sleep 15

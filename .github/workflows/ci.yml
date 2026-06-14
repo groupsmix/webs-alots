@@ -195,6 +195,9 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Build Storybook
+        run: npm run build-storybook
+
       # Audit Task 8: workers/ai is a self-contained package with its own
       # package.json/tsconfig and previously type-checked only by accident,
       # resolving its imports from the ROOT node_modules (hoisted copies of

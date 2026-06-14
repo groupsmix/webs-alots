@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { stripeCheckoutSchema } from "@/lib/validations";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
@@ -136,7 +137,7 @@ export const POST = withAuthValidation(
     // network retries, double-clicks, or redirect loops.
     const idempotencyKey = `checkout_${profile.clinic_id}_${user.id}_${appointmentId ?? "none"}_${Date.now()}`;
 
-    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    const stripeResponse = await safeFetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeSecretKey}`,

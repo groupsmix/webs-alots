@@ -54,7 +54,7 @@ vi.mock("@/lib/audit-log", () => ({
 }));
 
 vi.mock("@/lib/seed-guard", () => ({
-  isSeedUserBlocked: vi.fn().mockReturnValue(false),
+  isSeedUserBlocked: vi.fn().mockResolvedValue(false),
 }));
 
 function createMockHeaders(values: Record<string, string> = {}) {
@@ -197,7 +197,7 @@ describe("signInWithPassword", () => {
     vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
 
     const { isSeedUserBlocked } = await import("@/lib/seed-guard");
-    vi.mocked(isSeedUserBlocked).mockReturnValue(true);
+    vi.mocked(isSeedUserBlocked).mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 
     const mockSupabase = createMockSupabase({
       signInData: { user: { id: "a0000000-0000-0000-0000-000000000001" } },
@@ -211,12 +211,25 @@ describe("signInWithPassword", () => {
     expect(mockSupabase.auth.signOut).toHaveBeenCalled();
   });
 
+  it("blocks recreated seed accounts by email before password auth runs", async () => {
+    vi.mocked(loginLimiter.check).mockResolvedValue(true);
+    vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
+
+    const { isSeedUserBlocked } = await import("@/lib/seed-guard");
+    vi.mocked(isSeedUserBlocked).mockResolvedValueOnce(true);
+
+    const result = await signInWithPassword("seed@example.com", "password");
+
+    expect(result.error).toBe("auth.invalidCredentials");
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
   it("redirects to role dashboard on successful login", async () => {
     vi.mocked(loginLimiter.check).mockResolvedValue(true);
     vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
 
     const { isSeedUserBlocked } = await import("@/lib/seed-guard");
-    vi.mocked(isSeedUserBlocked).mockReturnValue(false);
+    vi.mocked(isSeedUserBlocked).mockResolvedValue(false);
 
     const mockProfile = {
       id: "user-1",
@@ -248,7 +261,7 @@ describe("signInWithPassword", () => {
     vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
 
     const { isSeedUserBlocked } = await import("@/lib/seed-guard");
-    vi.mocked(isSeedUserBlocked).mockReturnValue(false);
+    vi.mocked(isSeedUserBlocked).mockResolvedValue(false);
 
     const mockSupabase = createMockSupabase({
       signInData: { user: { id: "auth-1" } },

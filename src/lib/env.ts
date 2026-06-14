@@ -640,6 +640,11 @@ export function enforceEnvValidation(): void {
   // A6-05 / A22-01: Validate BACKUP_ENCRYPTION_KEY shape.
   enforceBackupEncryptionConfigured();
 
+  // RISK-001 / DB-01: Cloudflare Workers must use Supabase's transaction
+  // pooler in production. Direct database connections from ephemeral workers
+  // will exhaust connection slots under load.
+  enforceSupabasePoolerConfigured();
+
   // Audit Finding #7 — enforce safe PHI masking defaults in production.
   // Production must default to a masked view of PHI ("partial" or "full").
   // Explicitly disabling masking ("none") is only permitted when the operator
@@ -905,6 +910,31 @@ export function enforceBackupEncryptionConfigured(): void {
     });
     throw new Error(message);
   }
+}
+
+/**
+ * RISK-001 / DB-01: Require the Supabase transaction pooler in production.
+ *
+ * Cloudflare Workers do not hold persistent TCP connections, so direct DB
+ * connections from ephemeral isolates will exhaust Postgres slots under load.
+ * The app already prefers `SUPABASE_POOLER_URL`; this guard prevents silently
+ * shipping production without it.
+ */
+export function enforceSupabasePoolerConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const poolerUrl = getSupabasePoolerUrl();
+  if (poolerUrl) return;
+
+  const message =
+    "[STARTUP HEALTH CHECK FAILED] SUPABASE_POOLER_URL is required in production.\n" +
+    "Cloudflare Workers must use the Supabase transaction pooler (port 6543) to avoid\n" +
+    "connection exhaustion under load. Set the pooler URL via Worker secret before deploy.";
+  logger.error(message, {
+    context: "env-validation",
+    check: "supabase-pooler",
+  });
+  throw new Error(message);
 }
 
 /**
@@ -1271,7 +1301,8 @@ export function getBackupEncryptionKey(): string | undefined {
  * Consumed by `src/lib/supabase-server.ts`.
  */
 export function getSupabasePoolerUrl(): string | undefined {
-  return process.env.SUPABASE_POOLER_URL;
+  const value = process.env.SUPABASE_POOLER_URL?.trim();
+  return value ? value : undefined;
 }
 
 /**

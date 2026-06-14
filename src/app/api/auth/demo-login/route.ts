@@ -26,6 +26,7 @@ import { loginLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
 import { createClient } from "@/lib/supabase-server";
 import { safeParse } from "@/lib/validations";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 const demoLoginSchema = z.object({
   email: z.string().email(),
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
       return apiError("Turnstile verification is required", 400);
     }
     try {
-      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      const verifyRes = await safeFetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
@@ -145,7 +146,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    type DemoAuthAdmin = {
+      generateLink: (input: { type: "magiclink"; email: string }) => Promise<{
+        data: { properties: { action_link: string } } | null;
+        error: unknown;
+      }>;
+    };
+
+    function getDemoAuthAdmin(client: unknown): DemoAuthAdmin {
+      const auth = Reflect.get(client as object, "auth");
+      if (!auth || typeof auth !== "object") {
+        throw new Error("Supabase auth client unavailable for demo login");
+      }
+
+      const admin = Reflect.get(auth, "admin");
+      if (!admin || typeof admin !== "object") {
+        throw new Error("Supabase auth.admin API unavailable for demo login");
+      }
+
+      return admin as DemoAuthAdmin;
+    }
+
     const supabase = createAdminClient("auth_admin");
+    const demoAuthAdmin = getDemoAuthAdmin(supabase);
 
     // Ensure the demo auth user exists (idempotent)
     // We query the public "users" table by email to find the auth_id.
@@ -177,7 +200,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a magic link token for the demo user
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    const { data: linkData, error: linkError } = await demoAuthAdmin.generateLink({
       type: "magiclink",
       email,
     });

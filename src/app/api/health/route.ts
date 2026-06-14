@@ -1,7 +1,10 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { type NextRequest } from "next/server";
+import { getAIAvailabilityStatus } from "@/lib/ai/config";
 import { apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { isR2Configured } from "@/lib/r2";
+import { applyRequestScopedResponseHeaders } from "@/lib/request-context-response-headers";
 
 export type HealthStatus = "healthy" | "degraded" | "unhealthy";
 
@@ -10,6 +13,7 @@ export interface HealthCheckResult {
   latencyMs?: number;
   error?: string;
   backend?: string;
+  detail?: string;
 }
 
 export interface HealthResponse {
@@ -19,6 +23,7 @@ export interface HealthResponse {
     supabase: HealthCheckResult;
     r2: HealthCheckResult;
     rateLimiter: HealthCheckResult;
+    ai: HealthCheckResult;
   };
   timestamp: string;
 }
@@ -34,7 +39,7 @@ export interface HealthResponse {
  * checks are hit by load balancers and monitoring tools that don't
  * carry browser cookies.
  */
-export async function GET() {
+export async function GET(request?: NextRequest) {
   let supabaseCheck: HealthCheckResult;
 
   try {
@@ -78,7 +83,27 @@ export async function GET() {
       !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
   };
 
-  const allChecks = [supabaseCheck, r2Check, rateLimiterCheck];
+  const aiAvailability = await getAIAvailabilityStatus();
+  const aiCheck: HealthCheckResult = !aiAvailability.enabled
+    ? {
+        status: "down",
+        detail: "disabled",
+        error: "AI is disabled by the global kill switch",
+      }
+    : aiAvailability.circuit.state === "open"
+      ? {
+          status: "degraded",
+          backend: aiAvailability.circuit.backend,
+          detail: aiAvailability.circuit.state,
+          error: aiAvailability.circuit.lastFailureReason ?? "AI circuit breaker is open",
+        }
+      : {
+          status: "ok",
+          backend: aiAvailability.circuit.backend,
+          detail: aiAvailability.circuit.state,
+        };
+
+  const allChecks = [supabaseCheck, r2Check, rateLimiterCheck, aiCheck];
   const overallStatus: HealthStatus = allChecks.every((c) => c.status === "ok")
     ? "healthy"
     : allChecks.some((c) => c.status === "down")
@@ -100,11 +125,14 @@ export async function GET() {
       supabase: supabaseCheck,
       r2: r2Check,
       rateLimiter: rateLimiterCheck,
+      ai: aiCheck,
     },
     timestamp: new Date().toISOString(),
   };
 
-  return apiSuccess(payload, overallStatus === "unhealthy" ? 503 : 200, {
+  const response = apiSuccess(payload, overallStatus === "unhealthy" ? 503 : 200, {
     "Cache-Control": "public, max-age=30",
   });
+
+  return request ? applyRequestScopedResponseHeaders(request, response) : response;
 }

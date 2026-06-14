@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { subscriptionPortalSchema } from "@/lib/validations";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 /**
  * POST /api/billing/portal
@@ -81,7 +82,7 @@ export const POST = withAuthValidation(
     // MEDIUM-2: Idempotency-Key prevents duplicate portal sessions.
     const portalIdempotencyKey = `portal_${stripeCustomerId}_${Date.now()}`;
 
-    const stripeResponse = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+    const stripeResponse = await safeFetch("https://api.stripe.com/v1/billing_portal/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeSecretKey}`,

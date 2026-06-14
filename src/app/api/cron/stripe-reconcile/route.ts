@@ -19,6 +19,7 @@ import { assertCronAllowedInThisEnv } from "@/lib/cron-env-guard";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 interface StripeSession {
   id: string;
@@ -67,7 +68,7 @@ async function handler(request: NextRequest) {
       });
       if (startingAfter) params.set("starting_after", startingAfter);
 
-      const res = await fetch(`https://api.stripe.com/v1/checkout/sessions?${params.toString()}`, {
+      const res = await safeFetch(`https://api.stripe.com/v1/checkout/sessions?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${stripeKey}`,
           "Content-Type": "application/x-www-form-urlencoded",

@@ -1,0 +1,22 @@
+# Copy this file to terraform.tfvars and replace the placeholder values.
+# Do not commit real environment-specific identifiers you are not comfortable
+# treating as repository-visible metadata.
+
+cloudflare_account_id = "replace-with-cloudflare-account-id"
+cloudflare_zone_id    = "replace-with-oltigo-com-zone-id"
+
+# Optional overrides
+# production_worker_name                  = "webs-alots"
+# staging_worker_name                     = "webs-alots-staging"
+# production_rate_limit_namespace_title   = "RATE_LIMIT_KV"
+# staging_rate_limit_namespace_title      = "RATE_LIMIT_KV_STAGING"
+# production_uploads_bucket_name          = "webs-alots-uploads"
+# staging_uploads_bucket_name             = "webs-alots-uploads-staging"
+# production_notification_queue_name      = "notification-queue"
+# production_notification_dlq_name        = "notification-queue-dlq"
+# staging_notification_queue_name         = "notification-queue-staging"
+# staging_notification_dlq_name           = "notification-queue-staging-dlq"
+# manage_queue_consumers                  = true
+# r2_bucket_location                      = null
+# r2_bucket_jurisdiction                  = null
+# r2_storage_class                        = null

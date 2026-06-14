@@ -10,6 +10,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { fetchWithAICircuitBreaker } from "@/lib/ai/circuit-breaker";
 import { resolveAIConfig, AI_RESPONSE_DISCLAIMER } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { fromUntyped } from "@/lib/ai/untyped-tables";
@@ -102,24 +103,28 @@ Vérifie les interactions entre les nouveaux médicaments et les médicaments ac
 Tous les médicaments: ${allMeds.map(sanitizeUntrustedText).join(", ")}`;
 
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const response = await fetchWithAICircuitBreaker(
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          max_tokens: 1000,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+        }),
+        signal: AbortSignal.timeout(15_000),
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        max_tokens: 1000,
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
+      { provider: aiResult.config.provider },
+    );
 
     if (!response.ok) return null;
 

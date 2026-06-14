@@ -1,0 +1,2266 @@
+etap 3
+
+# ULTIMATE END-TO-END TECHNICAL AUDIT PROMPT
+
+```markdown
+You are a principal engineer, security architect, cloud architect, SRE, platform engineer, data architect, AI architect, QA lead, privacy engineer, compliance auditor, FinOps specialist, and product systems reviewer conducting a pre-acquisition due diligence review.
+
+I want a TRUE end-to-end technical audit of my project. Not a summary. Not a resume. Not generic advice. I want a deep inspection of the actual repository, actual code, actual configs, actual workflows, actual infrastructure clues, and actual risks.
+
+# PROJECT INFORMATION
+
+## REPOSITORY ACCESS
+**Primary Repository:** <PUT REPO URL HERE>
+**Infrastructure Repository:** <PUT INFRA REPO URL HERE OR "N/A">
+**Documentation Repository:** <PUT DOCS REPO URL HERE OR "N/A">
+**Is it public?** <YES/NO>
+**Access token provided?** <YES/NO/N/A>
+
+## PROJECT CONTEXT
+**Project Name:** <NAME>
+**What it does:** <1-2 sentence description>
+**Target users:** <who uses this?>
+**Current stage:** <MVP / Beta / Production / Enterprise>
+**Production URL:** <https://... OR "Not deployed yet">
+**Current scale:**
+  - Active users: <number or "none yet">
+  - Requests per day: <number or "unknown">
+  - Database size: <size or "minimal">
+  - Geographic distribution: <regions or "single region">
+
+**Team context:**
+  - Team size: <solo / 2-5 / 5-20 / 20+>
+  - Engineering maturity: <startup / growth / mature>
+  - DevOps capability: <none / basic / advanced>
+
+**Business context:**
+  - Funding stage: <bootstrapped / seed / Series A+ / enterprise>
+  - Monthly infrastructure budget: <$X or "unlimited" or "minimal">
+  - Revenue model: <SaaS / marketplace / ads / enterprise / other>
+  - Timeline pressure: <shipping in days / weeks / months / no rush>
+
+## COMPLIANCE & REGULATORY REQUIREMENTS
+**Required compliance:** <select all that apply>
+- [ ] GDPR (EU users)
+- [ ] CCPA (California users)
+- [ ] HIPAA (health data)
+- [ ] PCI DSS (payment cards)
+- [ ] SOC 2 (enterprise sales requirement)
+- [ ] ISO 27001
+- [ ] FERPA (education data)
+- [ ] FedRAMP (US government)
+- [ ] None currently required
+- [ ] Unknown/need guidance
+
+**Data sensitivity:**
+- [ ] Handles PII (names, emails, addresses)
+- [ ] Handles payment information
+- [ ] Handles health data
+- [ ] Handles financial data
+- [ ] Handles authentication credentials
+- [ ] Handles children's data (COPPA)
+- [ ] Handles biometric data
+- [ ] Handles location data
+- [ ] User-generated content
+- [ ] Only non-sensitive business data
+
+## DEPLOYMENT REALITY
+**Where is production deployed?**
+- [ ] Vercel
+- [ ] Netlify
+- [ ] AWS (specify services: _____________)
+- [ ] GCP (specify services: _____________)
+- [ ] Azure (specify services: _____________)
+- [ ] Cloudflare Pages/Workers
+- [ ] Self-hosted (specify: _____________)
+- [ ] Hybrid (explain: _____________)
+- [ ] Not deployed yet
+
+**Infrastructure details:**
+- **CDN:** <Cloudflare / Vercel Edge / AWS CloudFront / None / Unknown>
+- **Database:** <Postgres / MySQL / MongoDB / Supabase / PlanetScale / Neon / DynamoDB / Other>
+- **Cache:** <Redis / Memcached / Upstash / None>
+- **File storage:** <S3 / R2 / Cloudinary / Vercel Blob / Supabase Storage / None>
+- **Email service:** <SendGrid / AWS SES / Resend / Postmark / None>
+- **Auth provider:** <Clerk / Auth0 / Supabase / Firebase / Custom / NextAuth / None>
+- **Monitoring:** <Sentry / Datadog / New Relic / Vercel Analytics / None>
+- **Analytics:** <PostHog / Mixpanel / Amplitude / Google Analytics / None>
+
+**Environments:**
+- [ ] Production
+- [ ] Staging
+- [ ] Preview/PR environments
+- [ ] Development (local only)
+- [ ] CI/CD environment
+- [ ] Other: _____________
+
+**Environment configuration:**
+- [ ] Environment variables documented in .env.example
+- [ ] Secrets stored in: <Vercel / AWS Secrets Manager / 1Password / .env files / Other>
+- [ ] Different configs per environment: <YES/NO/PARTIAL>
+
+## THREAT MODEL & SECURITY CONTEXT
+**Attack surface:**
+- [ ] Public web application
+- [ ] Public API
+- [ ] Admin/internal dashboards
+- [ ] Mobile app
+- [ ] Chrome extension
+- [ ] Webhook endpoints
+- [ ] WebSocket connections
+- [ ] Third-party integrations
+
+**Authentication model:**
+- [ ] Email/password
+- [ ] OAuth (Google, GitHub, etc.)
+- [ ] Magic links
+- [ ] SAML/SSO
+- [ ] API keys
+- [ ] JWT tokens
+- [ ] Session cookies
+- [ ] No auth yet
+
+**Authorization model:**
+- [ ] Role-based (RBAC)
+- [ ] Attribute-based (ABAC)
+- [ ] Row-level security
+- [ ] Team/organization based
+- [ ] Simple user-owned resources
+- [ ] No authorization yet
+- [ ] Other: _____________
+
+**Known threat vectors:**
+- [ ] Credential stuffing risk (user accounts)
+- [ ] Scraping/abuse risk
+- [ ] API abuse potential
+- [ ] Admin privilege escalation paths
+- [ ] Third-party API key exposure
+- [ ] Payment fraud risk
+- [ ] User-generated content risks (XSS, malware)
+- [ ] Rate limit bypass potential
+- [ ] IDOR vulnerabilities possible
+- [ ] Prompt injection (if AI features)
+
+## KNOWN ISSUES & TECHNICAL DEBT
+**Things I know are wrong (be honest):**
+- <e.g., "Auth is too permissive">
+- <e.g., "Some secrets in code temporarily">
+- <e.g., "No tests yet">
+- <e.g., "Rate limiting not implemented">
+- <e.g., "Error handling is inconsistent">
+- <List everything you're aware of>
+
+**Recent incidents:**
+- <e.g., "Outage from DB connection pool exhaustion last month">
+- <e.g., "Users reported slow page loads">
+- <e.g., "Had to manually fix data corruption once">
+- <"None" or list what broke>
+
+**Performance pain points:**
+- <e.g., "Dashboard loads slowly with lots of data">
+- <e.g., "Search is slow">
+- <e.g., "Cold starts on serverless functions">
+- <"None noticed" or list issues>
+
+**Customer complaints:**
+- <e.g., "Users can't find X feature">
+- <e.g., "Mobile experience is poor">
+- <e.g., "Emails end up in spam">
+- <"None yet" or list top 3>
+
+## AUDIT PRIORITIES
+**Rank these from 1 (highest) to 5 (lowest) based on your needs:**
+- [ ] Security & vulnerability assessment (rank: ___)
+- [ ] Scale & performance readiness (rank: ___)
+- [ ] Cost optimization (rank: ___)
+- [ ] Compliance readiness (rank: ___)
+- [ ] Code quality & maintainability (rank: ___)
+- [ ] Reliability & incident readiness (rank: ___)
+- [ ] Developer experience (rank: ___)
+- [ ] Testing coverage (rank: ___)
+- [ ] Observability & debugging (rank: ___)
+- [ ] Architecture & design patterns (rank: ___)
+
+**Specific concerns:**
+<e.g., "We need to pass a security review for enterprise customer">
+<e.g., "We need to scale from 100 to 10,000 users in 3 months">
+<e.g., "We need to reduce infrastructure costs by 50%">
+<List your top 3 specific concerns>
+
+**What would make this audit most valuable to you?**
+<Tell me what you need most: preparing for fundraising? enterprise sales? scaling? cost reduction? team onboarding?>
+
+## ADDITIONAL ARTIFACTS I CAN PROVIDE
+**Check all that you can provide NOW or SOON:**
+- [ ] .env.example or environment variable list
+- [ ] Database schema export/dump
+- [ ] Architecture diagram (even if hand-drawn)
+- [ ] API documentation or OpenAPI spec
+- [ ] Recent deployment logs
+- [ ] Error monitoring screenshots (Sentry, etc.)
+- [ ] Performance monitoring data
+- [ ] Infrastructure-as-code files (Terraform, Pulumi, etc.)
+- [ ] CI/CD configuration details
+- [ ] Dependency graph or package lockfiles
+- [ ] Security scan results (if any)
+- [ ] Load testing results (if any)
+- [ ] Runbooks or operational documentation
+- [ ] Data flow diagram
+- [ ] Threat model document
+- [ ] Privacy policy / data retention policy
+- [ ] Backup & restore procedures
+- [ ] Incident response plan
+- [ ] Git branch protection rules screenshot
+- [ ] Production config exports (Vercel settings, AWS params, etc.)
+
+---
+
+# YOUR JOB
+
+Perform a ruthless end-to-end review of the entire project and tell me exactly what is good, what is broken, what is risky, what is missing, what will fail at scale, what will fail security review, what will fail compliance review, and what I should fix first.
+
+# NON-NEGOTIABLE RULES
+
+1. **Use the repository itself as the source of truth.**
+2. **Inspect all relevant files, not just the README.**
+3. **Infer the real architecture from code, configs, workflows, env usage, migrations, tests, build files, package files, deployment files, infra files, scripts, and docs.**
+4. **Do not give me fluffy best practices without pointing to concrete repository evidence.**
+5. **Separate:**
+   - Confirmed findings from repo evidence
+   - Likely risks inferred from patterns
+   - Missing evidence / blind spots
+6. **Be blunt and opinionated.**
+7. **Do not stop at "looks fine".**
+8. **Assume attacker mindset, scale mindset, operations mindset, and compliance mindset.**
+9. **If something is missing, say exactly what artifact/file/config I need to provide next.**
+10. **If you find an issue, explain why it matters in production, not just academically.**
+11. **Call out contradictions between what the code does and what docs/README claim.**
+12. **Identify silent failure modes that won't show up until production.**
+13. **Highlight vendor lock-in, cost traps, and scaling cliffs.**
+14. **Point out security issues that will fail penetration testing.**
+15. **Identify compliance gaps that will fail audits.**
+
+# AUDIT PROCESS
+
+## PHASE 1 — REPOSITORY DISCOVERY
+
+**Map the full repository structure:**
+- Identify all directories, config files, and entry points
+- List all languages, frameworks, and runtimes
+- Find all package.json, requirements.txt, go.mod, Cargo.toml, etc.
+- Locate all config files: tsconfig, .eslintrc, .prettierrc, vite.config, next.config, etc.
+- Find all CI/CD workflows: .github/workflows, .gitlab-ci.yml, etc.
+- Locate all infrastructure-as-code: terraform, pulumi, cloudformation, etc.
+- Find all database migrations and schema files
+- Locate all environment variable usage
+- Find all API route definitions
+- Locate all authentication/authorization code
+- Find all third-party integrations
+- Identify all script files
+- Map out test files and test configuration
+
+**Identify system boundaries:**
+- Frontend architecture and entry points
+- Backend/API architecture and entry points
+- Database layer and data models
+- External services and APIs
+- Authentication boundaries
+- Authorization checkpoints
+- Admin/privileged paths
+- Public vs. private endpoints
+- Client-side vs. server-side logic
+- Edge vs. origin logic
+
+**Identify where critical logic lives:**
+- Where is business logic implemented?
+- Where is authorization enforced (or not)?
+- Where do secrets enter the system?
+- Where is user input validated?
+- Where is data transformed?
+- Where are side effects performed?
+- Where are external calls made?
+- Where are payments processed?
+- Where is PII handled?
+- Where are errors caught (or not)?
+
+**Identify failure modes:**
+- Where are errors likely to be silent?
+- Where are race conditions possible?
+- Where are database locks likely?
+- Where are N+1 queries hiding?
+- Where are memory leaks possible?
+- Where are infinite loops possible?
+- Where are retry storms possible?
+- Where are cascading failures likely?
+
+## PHASE 2 — ARCHITECTURE RECONSTRUCTION
+
+Reconstruct the **actual** system architecture from evidence in the repo:
+
+### **Frontend Architecture**
+- Framework and version
+- Rendering strategy (SSR/SSG/CSR/ISR)
+- Routing approach
+- State management
+- Data fetching patterns
+- Component structure
+- Styling approach
+- Build system
+- Bundle splitting strategy
+- Client-side caching
+- Service worker usage
+- Environment variable handling
+- API client implementation
+
+### **Backend/API Architecture**
+- Framework and runtime
+- API design pattern (REST/GraphQL/tRPC/RPC)
+- Request/response flow
+- Middleware stack
+- Validation approach
+- Error handling pattern
+- Database access pattern
+- Background job handling
+- WebSocket handling
+- File upload handling
+- Authentication implementation
+- Authorization implementation
+- Rate limiting implementation
+- Caching strategy
+
+### **Database Architecture**
+- Database type and version
+- Schema design approach
+- Migration strategy
+- Query patterns
+- Indexing strategy
+- Connection pooling
+- Transaction handling
+- Replication readiness
+- Backup approach
+- Data retention approach
+
+### **Authentication & Authorization Architecture**
+- Auth provider/implementation
+- Session management
+- Token strategy (JWT/session/other)
+- Password handling
+- OAuth flows
+- API key management
+- Permission model
+- Role model
+- Row-level security
+- Multi-tenancy approach
+
+### **Cloud/Infrastructure Architecture**
+- Deployment platform
+- Edge/CDN strategy
+- Serverless vs. long-running
+- Container usage
+- Environment separation
+- Secret management
+- Networking topology
+- Regional distribution
+- Scaling approach
+- Cost structure
+
+### **CI/CD Architecture**
+- Build pipeline
+- Test pipeline
+- Deployment pipeline
+- Environment promotion
+- Rollback capability
+- Preview environments
+- Secret handling in CI
+- Dependency management
+- Artifact storage
+
+### **Observability Model**
+- Logging approach
+- Error tracking
+- Performance monitoring
+- Analytics
+- Alerting
+- Tracing
+- Debugging capabilities
+
+### **AI/Data/Search Architecture** (if applicable)
+- LLM provider and models
+- Prompt management
+- Vector database
+- Embedding strategy
+- RAG implementation
+- Model versioning
+- Cost controls
+- Fallback handling
+
+### **Event/Workflow Model** (if applicable)
+- Event bus/queue
+- Background jobs
+- Cron jobs
+- Workflow orchestration
+- Retry logic
+- Dead letter handling
+
+### **Payment/Integration Model** (if applicable)
+- Payment provider
+- Webhook handling
+- Idempotency
+- Subscription logic
+- Invoice generation
+- Refund handling
+
+## PHASE 3 — DEEP DOMAIN AUDIT
+
+Audit across ALL of these domains:
+
+### 1. FRONTEND AUDIT
+
+**Routing & Rendering:**
+- Route definition quality
+- Rendering strategy appropriateness
+- SSR/SSG implementation correctness
+- Hydration mismatch risks
+- Client-side navigation
+- Prefetching strategy
+- Route protection/guards
+- Dynamic routing security
+- Metadata/SEO implementation
+
+**Component Architecture:**
+- Component organization
+- Reusability
+- Prop drilling issues
+- State coupling
+- Render optimization
+- Memoization usage
+- Key prop correctness
+- Error boundaries
+- Suspense boundaries
+
+**State Management:**
+- State approach (context/redux/zustand/etc.)
+- Global state necessity
+- State synchronization
+- Optimistic updates
+- Cache invalidation
+- State persistence
+- State reset on auth changes
+
+**Data Fetching:**
+- Data fetching library/approach
+- Loading states
+- Error states
+- Empty states
+- Retry logic
+- Stale data handling
+- Pagination implementation
+- Infinite scroll implementation
+- Real-time updates
+
+**Styling:**
+- Styling approach
+- CSS architecture
+- Responsive design
+- Mobile support
+- Dark mode
+- RTL support
+- Print styles
+- Theme consistency
+- Tailwind/CSS-in-JS/module usage
+
+**Performance:**
+- Bundle size analysis
+- Code splitting
+- Lazy loading
+- Image optimization
+- Font loading
+- Third-party script loading
+- Web vitals (CLS, LCP, FID, INP, TTFB)
+- Lighthouse score implications
+- Client-side caching
+
+**Accessibility:**
+- Semantic HTML
+- ARIA attributes
+- Keyboard navigation
+- Screen reader support
+- Focus management
+- Color contrast
+- Alt text
+- Form labels
+- Skip links
+
+**Security:**
+- XSS vulnerabilities
+- CSRF protection
+- Content Security Policy
+- Subresource Integrity
+- iframe sandboxing
+- postMessage usage
+- localStorage/sessionStorage security
+- Cookie security (httpOnly, secure, sameSite)
+- Environment variable leakage to client
+- API key exposure
+- Open redirect vulnerabilities
+
+**User Experience:**
+- Loading indicators
+- Error messages
+- Form validation
+- Onboarding flow
+- Empty states
+- Success feedback
+- Progressive enhancement
+- Graceful degradation
+- Offline support
+
+**Internationalization:**
+- i18n implementation
+- Translation management
+- Locale switching
+- Date/time formatting
+- Number formatting
+- RTL support
+
+**SEO:**
+- Title tags
+- Meta descriptions
+- Open Graph tags
+- Twitter cards
+- Structured data
+- Canonical URLs
+- Sitemap
+- Robots.txt
+
+### 2. BACKEND/API AUDIT
+
+**API Design:**
+- Endpoint naming conventions
+- HTTP method usage
+- Status code correctness
+- REST/GraphQL best practices
+- API versioning
+- Deprecation strategy
+- Pagination approach
+- Filtering/sorting
+- Request size limits
+- Response size management
+
+**Request Validation:**
+- Input validation completeness
+- Schema validation (Zod, Joi, etc.)
+- Type safety
+- Sanitization
+- File upload validation
+- Content-Type validation
+- Request size validation
+- Malformed request handling
+
+**Response Consistency:**
+- Response format standardization
+- Error response format
+- Success response format
+- Null vs. undefined handling
+- Date/time formatting
+- Enum value consistency
+
+**Error Handling:**
+- Global error handler
+- Custom error types
+- Error logging
+- Error response sanitization
+- Stack trace leakage
+- User-facing error messages
+- Retry guidance
+- Error codes/types
+- Validation error details
+
+**Authentication:**
+- Authentication implementation
+- Password hashing (bcrypt, argon2)
+- Password complexity requirements
+- Account lockout
+- Brute force protection
+- Session management
+- Token generation
+- Token validation
+- Token expiration
+- Refresh token flow
+- Logout implementation
+- Concurrent session handling
+
+**Authorization:**
+- Authorization implementation
+- Permission checks completeness
+- Role checks
+- Resource ownership validation
+- IDOR prevention
+- Privilege escalation prevention
+- Admin route protection
+- API key scoping
+- Tenant isolation
+
+**Rate Limiting:**
+- Rate limit implementation
+- Rate limit scope (global/per-user/per-IP)
+- Rate limit headers
+- Rate limit storage (memory/Redis)
+- Rate limit bypass risks
+- DDoS protection
+- Cost-based rate limiting
+
+**Idempotency:**
+- Idempotent operations identification
+- Idempotency key support
+- Duplicate request handling
+- Webhook idempotency
+
+**Background Jobs:**
+- Job queue implementation
+- Job retry logic
+- Job failure handling
+- Dead letter queue
+- Job monitoring
+- Job timeout handling
+- Job priority
+- Concurrent job limits
+
+**Webhooks:**
+- Webhook signature verification
+- Webhook retry logic
+- Webhook timeout handling
+- Webhook logging
+- Webhook replay protection
+- Webhook failure notifications
+
+**Database Access:**
+- ORM/query builder usage
+- Query efficiency
+- N+1 query problems
+- Missing indexes
+- Full table scans
+- Connection pooling
+- Transaction usage
+- Deadlock prevention
+- Query timeout handling
+- Prepared statements
+- SQL injection prevention
+
+**Caching:**
+- Cache strategy
+- Cache invalidation
+- Cache key design
+- Cache TTL
+- Cache stampede prevention
+- Cache poisoning prevention
+- Edge caching
+- CDN caching headers
+
+**Circuit Breakers:**
+- Circuit breaker implementation
+- Fallback handling
+- Third-party API resilience
+- Timeout configuration
+- Cascading failure prevention
+
+**API Versioning:**
+- Versioning strategy
+- Backward compatibility
+- Deprecation process
+- Sunset headers
+- Migration documentation
+
+**Abuse Prevention:**
+- Spam prevention
+- Bot detection
+- CAPTCHA usage
+- Honeypot fields
+- Request fingerprinting
+- Suspicious activity detection
+
+### 3. DATABASE/DATA AUDIT
+
+**Schema Design:**
+- Table design quality
+- Normalization level
+- Denormalization rationale
+- Foreign key usage
+- Constraint usage (NOT NULL, UNIQUE, CHECK)
+- Default values
+- Enum vs. lookup tables
+- JSON/JSONB usage appropriateness
+- Column types appropriateness
+- UUID vs. sequential IDs
+
+**Indexing:**
+- Index coverage
+- Composite index design
+- Index usage analysis
+- Missing indexes
+- Unnecessary indexes
+- Partial indexes
+- Expression indexes
+- Full-text search indexes
+
+**Migrations:**
+- Migration file organization
+- Migration safety (reversible)
+- Migration testing
+- Production migration strategy
+- Zero-downtime migration support
+- Data migration safety
+- Schema lock awareness
+- Migration versioning
+
+**Query Quality:**
+- Query efficiency
+- N+1 problems
+- SELECT * usage
+- Subquery efficiency
+- JOIN efficiency
+- Aggregation efficiency
+- Window function usage
+- CTE usage
+- Query planning awareness
+
+**Transactions:**
+- Transaction usage
+- Transaction isolation level
+- Deadlock prevention
+- Long-running transaction risks
+- Nested transaction handling
+- Savepoint usage
+
+**Data Integrity:**
+- Foreign key constraints
+- Cascading deletes appropriateness
+- Orphan record prevention
+- Data validation at DB level
+- Trigger usage and risks
+- Stored procedure usage
+
+**Performance:**
+- Connection pool configuration
+- Query timeout configuration
+- Slow query identification
+- Database size growth projection
+- Partition strategy (if needed)
+- Archive strategy
+- Read replica usage
+
+**Backup & Recovery:**
+- Backup strategy evidence
+- Backup frequency
+- Backup testing
+- Point-in-time recovery capability
+- Disaster recovery plan
+- RTO/RPO definition
+
+**Data Retention:**
+- Retention policy definition
+- Automated deletion
+- Archive strategy
+- Legal hold capability
+
+**Privacy & Compliance:**
+- PII identification
+- Data encryption at rest
+- Data encryption in transit
+- Data deletion capability (GDPR)
+- Data export capability
+- Audit logging
+- Data residency considerations
+
+**Scaling:**
+- Sharding readiness
+- Replication readiness
+- Read/write split readiness
+- Connection limit awareness
+- Query performance at scale
+- Database size limits awareness
+
+### 4. INFRASTRUCTURE/CLOUD AUDIT
+
+**Server Runtime:**
+- Runtime version pinning
+- Runtime security updates
+- Resource limits (memory, CPU)
+- Timeout configuration
+- Cold start optimization
+- Warm-up strategy
+- Health checks
+- Readiness probes
+- Liveness probes
+
+**Networking:**
+- VPC/network configuration
+- Security group configuration
+- Firewall rules
+- Public vs. private endpoints
+- Internal service communication
+- Service mesh usage
+- Load balancer configuration
+- DNS configuration
+
+**Edge/CDN:**
+- CDN configuration
+- Cache headers
+- Cache invalidation strategy
+- Edge middleware usage
+- Geographic distribution
+- Origin protection
+- DDoS protection at edge
+- WAF configuration
+
+**Environment Isolation:**
+- Environment separation
+- Network isolation
+- Data isolation
+- Secret isolation
+- Cross-environment access prevention
+
+**Secret Management:**
+- Secret storage approach
+- Secret rotation capability
+- Secret access logging
+- Secret encryption
+- Secret sprawl
+- Hardcoded secret detection
+
+**Infrastructure as Code:**
+- IaC usage (Terraform, Pulumi, etc.)
+- IaC versioning
+- IaC testing
+- State management
+- Drift detection
+- Manual change prevention
+
+**Scaling:**
+- Auto-scaling configuration
+- Scaling triggers
+- Scale-up speed
+- Scale-down safety
+- Resource limits
+- Cost protection
+
+**Disaster Recovery:**
+- Multi-region capability
+- Failover strategy
+- Backup regions
+- Data replication
+- RTO/RPO targets
+- DR testing
+
+**Cost Management:**
+- Cost monitoring
+- Budget alerts
+- Resource tagging
+- Unused resource detection
+- Right-sizing
+- Reserved instance usage
+- Spot instance usage
+- Cost optimization opportunities
+
+### 5. CI/CD/SDLC AUDIT
+
+**Build Pipeline:**
+- Build reproducibility
+- Build caching
+- Build parallelization
+- Build artifact storage
+- Build artifact signing
+- SBOM generation
+- Dependency caching
+- Build performance
+
+**Test Pipeline:**
+- Test execution
+- Test parallelization
+- Test result reporting
+- Test coverage reporting
+- Test flakiness detection
+- Failed test handling
+- Test environments
+
+**Deployment Pipeline:**
+- Deployment automation level
+- Deployment gating
+- Deployment approval process
+- Deployment rollback capability
+- Deployment verification
+- Canary deployment support
+- Blue-green deployment support
+- Feature flag integration
+
+**Branch Protection:**
+- Main/production branch protection
+- Required reviews
+- Required CI checks
+- Signed commits
+- Branch naming conventions
+- Force push prevention
+
+**Preview Environments:**
+- PR preview environments
+- Preview environment cleanup
+- Preview environment security
+- Preview data safety
+
+**Secret Handling:**
+- Secrets in CI configuration
+- Secret scanning
+- Secret rotation in CI
+- Secret access auditing
+
+**Dependency Management:**
+- Dependency pinning
+- Lock file usage
+- Dependency vulnerability scanning
+- Dependency update automation
+- License compliance checking
+- Dependency approval process
+
+**Supply Chain Security:**
+- Dependency provenance
+- Build provenance
+- Artifact signing
+- Registry security
+- Private package handling
+- Typosquatting prevention
+
+**Release Management:**
+- Versioning strategy (semver)
+- Changelog generation
+- Release notes
+- Release tagging
+- Release artifact storage
+- Release signing
+
+**Environment Parity:**
+- Dev/staging/prod parity
+- Configuration drift detection
+- Dependency version consistency
+- Data fixture quality
+
+### 6. SECURITY AUDIT
+
+**Authentication Security:**
+- Password storage (hashing algorithm)
+- Password policy enforcement
+- Account enumeration prevention
+- Brute force protection
+- Account lockout
+- Password reset flow security
+- Session fixation prevention
+- Session hijacking prevention
+- Concurrent session handling
+- Remember me functionality security
+
+**Authorization Security:**
+- Broken access control risks
+- IDOR vulnerabilities
+- Insecure direct object reference
+- Missing function level access control
+- Path traversal
+- Privilege escalation paths
+- Admin panel security
+- API authorization consistency
+
+**Input Validation:**
+- SQL injection prevention
+- NoSQL injection prevention
+- Command injection prevention
+- LDAP injection prevention
+- XPath injection prevention
+- Expression language injection
+- Template injection prevention
+- Server-Side Request Forgery (SSRF)
+- XML External Entity (XXE)
+- File upload validation
+- File type validation
+- File size validation
+- Filename sanitization
+
+**Output Encoding:**
+- XSS prevention
+- HTML encoding
+- JavaScript encoding
+- URL encoding
+- CSS encoding
+- JSON encoding
+- DOM-based XSS prevention
+
+**CSRF Protection:**
+- CSRF token implementation
+- SameSite cookie attribute
+- Double submit cookie
+- Custom header validation
+- State-changing operation protection
+
+**CORS Configuration:**
+- CORS policy appropriateness
+- Origin whitelist
+- Credential handling
+- Preflight handling
+- Wildcard origin risks
+
+**Content Security Policy:**
+- CSP header presence
+- CSP directive appropriateness
+- Script source restrictions
+- Style source restrictions
+- Unsafe inline/eval usage
+- CSP reporting
+
+**Security Headers:**
+- Strict-Transport-Security
+- X-Frame-Options
+- X-Content-Type-Options
+- X-XSS-Protection
+- Referrer-Policy
+- Permissions-Policy
+
+**Cryptography:**
+- TLS/SSL configuration
+- Certificate management
+- Encryption algorithm selection
+- Key management
+- Random number generation
+- Hashing algorithm selection
+- Sensitive data encryption
+
+**API Security:**
+- API authentication
+- API authorization
+- API rate limiting
+- API input validation
+- API output encoding
+- API versioning security
+- API documentation exposure
+- API error message information leakage
+
+**Third-Party Dependencies:**
+- Known vulnerabilities (CVEs)
+- Outdated dependencies
+- Unmaintained dependencies
+- Malicious package risks
+- Dependency confusion risks
+- Supply chain attack surface
+
+**Secrets Exposure:**
+- Hardcoded secrets
+- Secrets in version control
+- Secrets in logs
+- Secrets in error messages
+- Secrets in URLs
+- Secrets in client-side code
+- API key exposure
+
+**AI/Prompt Security** (if applicable):
+- Prompt injection prevention
+- System prompt protection
+- Output validation
+- PII leakage in prompts
+- Model access controls
+- Prompt logging risks
+
+**Admin Security:**
+- Admin panel access control
+- Admin audit logging
+- Admin MFA enforcement
+- Admin IP restriction
+- Admin session timeout
+- Superuser account management
+
+**Audit Logging:**
+- Authentication events
+- Authorization failures
+- Data access logging
+- Configuration changes
+- Admin actions
+- Sensitive operations
+- Log integrity
+- Log retention
+- Log analysis capability
+
+### 7. ARCHITECTURE/DESIGN AUDIT
+
+**Modularity:**
+- Code organization
+- Module boundaries
+- Package structure
+- Separation of concerns
+- Single responsibility adherence
+- Interface segregation
+
+**Coupling:**
+- Tight coupling identification
+- Circular dependencies
+- Hidden dependencies
+- Temporal coupling
+- Data coupling
+- Control coupling
+
+**Abstraction:**
+- Abstraction level appropriateness
+- Leaky abstractions
+- Over-abstraction
+- Under-abstraction
+- Provider/adapter patterns
+- Dependency injection usage
+
+**Extensibility:**
+- Plugin architecture
+- Hook/event system
+- Configuration extensibility
+- Feature flag usage
+- Deprecation strategy
+- API versioning
+
+**Complexity:**
+- Cyclomatic complexity
+- Cognitive complexity
+- Nested complexity
+- Function length
+- Class size
+- File size
+- God objects
+- Spaghetti code
+
+**Design Patterns:**
+- Pattern usage appropriateness
+- Anti-pattern identification
+- Over-engineering
+- Under-engineering
+- Consistency across codebase
+
+**Service Boundaries:**
+- Microservice vs. monolith suitability
+- Service granularity
+- Service communication patterns
+- Service dependencies
+- Service versioning
+- Service discovery
+- Service mesh appropriateness
+
+**Event-Driven Design:**
+- Event usage appropriateness
+- Event schema design
+- Event versioning
+- Event ordering guarantees
+- Event replay capability
+- Event sourcing suitability
+
+**Data Flow:**
+- Unidirectional data flow
+- Bidirectional sync complexity
+- Data transformation points
+- Data validation points
+- Data enrichment
+- Data normalization
+
+**Error Handling Strategy:**
+- Error propagation
+- Error recovery
+- Compensation logic
+- Saga pattern usage
+- Circuit breaker usage
+- Bulkhead pattern usage
+
+**Maintainability:**
+- Code readability
+- Documentation quality
+- Comment quality
+- Naming conventions
+- Code duplication
+- Magic number usage
+- Magic string usage
+- Configuration management
+
+**Technical Debt:**
+- TODO/FIXME/HACK comments
+- Workaround accumulation
+- Deprecated code usage
+- Dead code
+- Commented-out code
+- Copy-paste code
+- Temporary solutions that became permanent
+
+### 8. PERFORMANCE/SCALE/FINOPS AUDIT
+
+**Frontend Performance:**
+- Bundle size
+- Code splitting effectiveness
+- Lazy loading implementation
+- Tree shaking effectiveness
+- Image optimization
+- Font optimization
+- Critical CSS
+- JavaScript execution time
+- Main thread blocking
+- Memory leaks
+- Layout thrashing
+
+**Backend Performance:**
+- Response time
+- Database query performance
+- Cache hit rate
+- Memory usage
+- CPU usage
+- Garbage collection impact
+- Connection pool utilization
+- Thread pool utilization
+
+**Database Performance:**
+- Query execution time
+- Index usage
+- Table scan frequency
+- Lock contention
+- Connection pool saturation
+- Slow query log analysis
+- Query plan optimization
+- Database size growth rate
+
+**Caching Effectiveness:**
+- Cache hit ratio
+- Cache invalidation frequency
+- Cache memory usage
+- Cache stampede risks
+- Cache warming strategy
+- Multi-layer caching
+- Edge cache effectiveness
+
+**Scaling Bottlenecks:**
+- Single points of failure
+- Shared mutable state
+- Database connection limits
+- File descriptor limits
+- Memory limits
+- CPU limits
+- Network bandwidth limits
+- Third-party API rate limits
+
+**What Breaks at 10x:**
+- Database connection pool
+- Rate limits (self-imposed and third-party)
+- Memory usage
+- File storage
+- Background job queue
+- Session storage
+- Cache storage
+- Logging volume
+- Monitoring costs
+- API costs
+
+**What Breaks at 100x:**
+- Database scalability
+- Single-region limitations
+- Synchronous processing
+- Monolithic architecture limits
+- Manual operations
+- Support scalability
+- Cost structure
+
+**Cost Analysis:**
+- Current monthly cost estimate
+- Cost per user
+- Cost per request
+- Cost growth trajectory
+- Cost optimization opportunities
+- Serverless cost traps
+- Data transfer costs
+- Third-party service costs
+- Monitoring/logging costs
+
+**Cost Hotspots:**
+- Most expensive services
+- Unnecessary resource usage
+- Over-provisioned resources
+- Inefficient queries
+- Inefficient algorithms
+- Wasteful polling
+- Excessive logging
+- Excessive monitoring data
+- Vendor lock-in costs
+
+**FinOps Maturity:**
+- Cost visibility
+- Cost allocation
+- Budget alerts
+- Cost forecasting
+- Resource tagging
+- Showback/chargeback
+- Commitment discount usage
+- Waste reduction process
+
+### 9. OBSERVABILITY/OPERATIONS AUDIT
+
+**Logging:**
+- Logging framework
+- Log levels usage
+- Structured logging
+- Log context (request ID, user ID)
+- Log aggregation
+- Log retention
+- Log analysis capability
+- Sensitive data in logs
+- Log volume management
+- Log sampling
+
+**Error Tracking:**
+- Error tracking service
+- Error grouping
+- Error alerting
+- Error assignment
+- Error resolution tracking
+- Source map upload
+- Release tracking
+- User context
+- Breadcrumbs
+- Error sampling
+
+**Monitoring:**
+- Metrics collection
+- Key metrics identification
+- Dashboard creation
+- Metric retention
+- Metric cardinality
+- Metric aggregation
+- Anomaly detection
+- SLI definition
+
+**Alerting:**
+- Alert definition
+- Alert routing
+- Alert fatigue prevention
+- Alert runbook linkage
+- Alert escalation
+- On-call rotation
+- Alert silencing
+- Alert dependencies
+
+**Tracing:**
+- Distributed tracing implementation
+- Trace sampling
+- Trace context propagation
+- Trace analysis capability
+- Performance profiling
+- Bottleneck identification
+
+**Debugging:**
+- Production debugging capability
+- Log correlation
+- Trace correlation
+- Replay capability
+- Feature flag override
+- Production data access controls
+
+**Incident Management:**
+- Incident detection speed
+- Incident response process
+- Incident communication
+- Post-mortem process
+- Blameless culture evidence
+- Incident learning
+
+**SLO/SLA:**
+- SLO definition
+- SLO measurement
+- SLO alerting
+- Error budget concept
+- Error budget policy
+- SLA commitments
+- SLA monitoring
+
+**Operational Runbooks:**
+- Deployment runbook
+- Rollback runbook
+- Incident response runbook
+- Disaster recovery runbook
+- Routine maintenance procedures
+- Troubleshooting guides
+
+**Backup Verification:**
+- Backup testing process
+- Restore testing process
+- Backup monitoring
+- Backup retention policy
+- Backup encryption
+
+**Capacity Planning:**
+- Resource utilization trends
+- Growth projections
+- Capacity alerts
+- Proactive scaling
+
+**Chaos Engineering:**
+- Failure injection capability
+- Resilience testing
+- Game days
+- Fault injection framework
+
+### 10. QA/TESTING AUDIT
+
+**Unit Tests:**
+- Unit test coverage
+- Unit test quality
+- Test isolation
+- Test naming
+- Test organization
+- Mock usage appropriateness
+- Test data management
+- Snapshot testing usage
+
+**Integration Tests:**
+- Integration test coverage
+- Database integration tests
+- API integration tests
+- Third-party integration tests
+- Test data setup/teardown
+- Test environment management
+
+**End-to-End Tests:**
+- E2E test coverage
+- E2E test flakiness
+- E2E test speed
+- E2E test environment
+- Visual regression testing
+- Cross-browser testing
+- Mobile testing
+
+**API Testing:**
+- API contract testing
+- API schema validation
+- Request validation testing
+- Response validation testing
+- Error scenario testing
+- Authentication testing
+- Authorization testing
+
+**Performance Testing:**
+- Load testing
+- Stress testing
+- Spike testing
+- Soak testing
+- Performance benchmarking
+- Performance regression detection
+
+**Security Testing:**
+- SAST (Static Application Security Testing)
+- DAST (Dynamic Application Security Testing)
+- Dependency vulnerability scanning
+- Secret scanning
+- Penetration testing evidence
+
+**Accessibility Testing:**
+- Automated accessibility testing
+- Manual accessibility testing
+- Screen reader testing
+- Keyboard navigation testing
+- WCAG compliance level
+
+**Regression Testing:**
+- Regression test suite
+- Automated regression testing
+- Critical path coverage
+- Edge case coverage
+
+**Test Data Management:**
+- Test data generation
+- Test data privacy
+- Production data usage in tests
+- PII in test data
+- Test data refresh process
+
+**Test Coverage Analysis:**
+- Code coverage measurement
+- Branch coverage
+- Path coverage
+- Coverage targets
+- Coverage trends
+- Untested critical paths
+
+**Testing Gaps:**
+- Missing test scenarios
+- Failure path testing
+- Error handling testing
+- Edge case testing
+- Race condition testing
+- Timeout testing
+- Retry logic testing
+
+**Test Quality:**
+- Flaky tests
+- Slow tests
+- Brittle tests
+- Test maintainability
+- Test documentation
+
+### 11. BUSINESS LOGIC/PRODUCT INTEGRITY AUDIT
+
+**Business Rules:**
+- Business logic location (frontend/backend)
+- Business rule enforcement consistency
+- Business rule documentation
+- Business rule testing
+- Business rule complexity
+- State machine implementation
+
+**User Flows:**
+- Onboarding flow completeness
+- User journey critical paths
+- Flow error handling
+- Flow abandonment prevention
+- Flow analytics instrumentation
+- Flow A/B testing capability
+
+**Payment Logic:**
+- Payment processing security
+- Payment idempotency
+- Payment failure handling
+- Payment retry logic
+- Subscription logic
+- Proration logic
+- Refund logic
+- Credit logic
+- Invoice generation
+- Payment reconciliation
+- Webhook handling
+- PCI compliance readiness
+
+**Event Tracking:**
+- Analytics event completeness
+- Event naming consistency
+- Event property schema
+- Event tracking reliability
+- Client vs. server tracking
+- Event validation
+- Event duplicate prevention
+- Privacy compliance in tracking
+
+**Admin Tooling:**
+- Admin panel functionality
+- Admin audit trail
+- Data editing safety
+- Bulk operations
+- Data export capability
+- Support ticket integration
+- Customer impersonation safety
+- Admin permission granularity
+
+**Notification System:**
+- Email delivery reliability
+- Email deliverability (SPF, DKIM, DMARC)
+- Push notification handling
+- SMS handling
+- In-app notifications
+- Notification preferences
+- Notification frequency capping
+- Unsubscribe handling
+
+**Terms/Policy Enforcement:**
+- Terms of service acceptance
+- Privacy policy acceptance
+- Policy version tracking
+- Required consent flows
+- GDPR consent management
+- Cookie consent
+- Marketing consent
+
+**Data Rights:**
+- Data export functionality
+- Data deletion functionality
+- Deletion cascading correctness
+- Deletion audit trail
+- Right to be forgotten implementation
+- Data portability
+
+**Abuse Prevention:**
+- Spam prevention
+- Fraud detection
+- Content moderation
+- Rate limiting by business logic
+- Abuse pattern detection
+- Account suspension capability
+- Ban/block functionality
+
+### 12. AI/DATA SCIENCE/SEARCH AUDIT
+(Only if AI/ML features are present)
+
+**Model Provider:**
+- Provider abstraction quality
+- Provider failover capability
+- Provider API key rotation
+- Multi-provider support
+- Provider cost optimization
+
+**Prompt Management:**
+- Prompt versioning
+- Prompt templating
+- Prompt testing
+- Prompt injection prevention
+- System prompt protection
+- User input sanitization
+- Output validation
+
+**Embeddings:**
+- Embedding model selection
+- Embedding generation strategy
+- Embedding storage
+- Embedding dimensionality
+- Embedding cost management
+
+**Vector Search:**
+- Vector database selection
+- Index configuration
+- Query optimization
+- Similarity threshold tuning
+- Result ranking
+- Metadata filtering
+
+**RAG Implementation:**
+- Document chunking strategy
+- Chunk size optimization
+- Overlap strategy
+- Context window management
+- Retrieval quality
+- Hybrid search usage
+- Reranking
+
+**Evaluation:**
+- Evaluation metrics
+- Evaluation dataset
+- Automated evaluation
+- Human evaluation
+- Regression detection
+- A/B testing capability
+
+**AI Observability:**
+- Prompt logging
+- Response logging
+- Latency tracking
+- Cost tracking
+- Error tracking
+- Quality metrics
+- User feedback collection
+
+**AI Safety:**
+- Content filtering
+- Harmful content detection
+- Bias detection
+- PII protection in prompts
+- PII protection in responses
+- Output validation
+- Hallucination detection
+
+**AI Governance:**
+- Model approval process
+- Prompt review process
+- Human-in-the-loop controls
+- Escalation mechanisms
+- Audit trail
+
+**Data Engineering:**
+- Data pipeline quality
+- Data transformation
+- Data validation
+- Data versioning
+- Feature engineering
+- Training data management
+
+**Model Versioning:**
+- Model version tracking
+- Model deployment process
+- Model rollback capability
+- Model performance comparison
+- Shadow deployment
+
+### 13. WEB3/BLOCKCHAIN AUDIT
+(Only if Web3/blockchain features are present)
+
+**Wallet Integration:**
+- Wallet provider support
+- Wallet connection security
+- Wallet signature verification
+- Wallet authentication
+- Multi-wallet support
+- Wallet disconnection handling
+
+**Smart Contract Interaction:**
+- Contract interaction safety
+- Gas estimation
+- Transaction signing
+- Transaction confirmation handling
+- Failed transaction handling
+- Contract event listening
+
+**Decentralized Storage:**
+- IPFS/Arweave integration
+- Content addressing
+- Pinning strategy
+- Gateway usage
+- Content availability
+
+**Blockchain Security:**
+- Private key handling
+- Signature verification
+- Replay attack prevention
+- Front-running prevention
+- MEV awareness
+
+### 14. EMBEDDED/IOT/BLUETOOTH AUDIT
+(Only if embedded/IoT features are present)
+
+**Device Integration:**
+- Device discovery
+- Device pairing
+- Device authentication
+- Device authorization
+- Device state synchronization
+
+**Bluetooth:**
+- Web Bluetooth API usage
+- Service/characteristic discovery
+- Data transmission security
+- Connection management
+- Error handling
+
+**Firmware:**
+- OTA update mechanism
+- Update authentication
+- Update rollback capability
+- Version management
+- Update failure handling
+
+**Device Security:**
+- Device credential storage
+- Secure boot
+- Encrypted communication
+- Device attestation
+
+---
+
+# FINDING FORMAT
+
+For EACH finding, use this exact structure:
+
+```
+## Finding [ID]
+
+**Title:** <Clear, specific title>
+
+**Severity:** Critical | High | Medium | Low
+
+**Confidence:** High | Medium | Low
+
+**Domain:** <e.g., Security, Performance, Architecture, etc.>
+
+**Evidence:**
+- File: `path/to/file.ts` (lines X-Y)
+- Pattern: <specific code pattern, config value, or missing control>
+- Proof: <exact code snippet or config excerpt>
+
+**Why This Matters:**
+<Explain the real production impact, not academic concern>
+
+**Production Failure Scenario:**
+<Describe exactly how this fails in production>
+
+**Attack Scenario (if security):**
+<Describe exactly how an attacker exploits this>
+
+**Business Impact:**
+- <Impact on users>
+- <Impact on revenue>
+- <Impact on trust/brand>
+- <Impact on compliance>
+- <Impact on scale>
+
+**Technical Root Cause:**
+<The underlying technical reason this exists>
+
+**Remediation:**
+<Concrete, specific steps to fix this>
+
+**Example Fix:**
+```language
+// Example code or config showing the fix
+```
+
+**Priority:** P0 | P1 | P2 | P3
+- P0: Fix immediately, blocks launch/causes data loss/security breach
+- P1: Fix this sprint, significant risk
+- P2: Fix this quarter, moderate risk
+- P3: Fix when possible, low risk
+
+**Effort:** S | M | L
+- S: < 1 day
+- M: 1-3 days
+- L: > 3 days
+
+**Related Findings:** [ID], [ID]
+```
+
+---
+
+# REQUIRED OUTPUT SECTIONS
+
+## 1. EXECUTIVE SUMMARY
+- 3-5 sentences maximum
+- Blunt, direct assessment
+- Overall project health score (1-10)
+- Go/no-go recommendation for production
+- Top 3 risks that must be addressed
+
+## 2. RECONSTRUCTED ARCHITECTURE
+
+### System Architecture Diagram (ASCII or description)
+```
+[Describe the actual architecture inferred from code]
+```
+
+### Component Map
+- Frontend: <framework, patterns>
+- Backend: <framework, patterns>
+- Database: <type, design>
+- Auth: <implementation>
+- Infrastructure: <platform, services>
+- Integrations: <third-party services>
+
+### Data Flow
+```
+[User] → [Edge/CDN] → [Frontend] → [API] → [Database]
+                                  ↓
+                            [External APIs]
+```
+
+### Trust Boundaries
+- <Identify each trust boundary and what crosses it>
+
+## 3. CONFIRMED STACK
+
+**Languages & Runtimes:**
+- <List with versions>
+
+**Frameworks:**
+- Frontend: <framework @ version>
+- Backend: <framework @ version>
+
+**Database:**
+- Type: <DB type>
+- Version: <version>
+- ORM/Client: <tool @ version>
+
+**Infrastructure:**
+- Platform: <Vercel/AWS/etc.>
+- Edge: <CDN provider>
+- Serverless: <Functions platform>
+- Container: <if applicable>
+
+**Third-Party Services:**
+- Auth: <provider>
+- Email: <provider>
+- Payments: <provider>
+- Storage: <provider>
+- Monitoring: <provider>
+- Analytics: <provider>
+- AI: <provider>
+
+**CI/CD:**
+- Platform: <GitHub Actions/etc.>
+- Deployment: <method>
+
+**Development Tools:**
+- Package Manager: <npm/yarn/pnpm>
+- Build Tool: <Vite/Webpack/etc.>
+- Linter: <ESLint config>
+- Formatter: <Prettier/etc.>
+- Type Checker: <TypeScript config>
+
+## 4. BLIND SPOTS
+
+**Cannot Verify From Repo:**
+- <List what cannot be determined from code alone>
+
+**Missing Artifacts Needed:**
+- <Specific files, configs, or access needed>
+
+**Unknown Risks:**
+- <Risks that exist due to missing information>
+
+**Need Production Access To Verify:**
+- <What requires production inspection>
+
+## 5. TOP 25 RISKS
+Ranked by real-world impact (business + technical severity):
+
+1. **[Risk Title]** - Severity: [X] - Likelihood: [X] - Impact: [Description]
+2. ...
+[Continue for all 25]
+
+## 6. FIX FIRST (P0 Issues)
+
+**The most critical immediate fixes before production:**
+
+1. **[Finding ID]** - [Title]
+   - Why it's P0: <explanation>
+   - Time to fix: <estimate>
+
+[List all P0 items]
+
+## 7. QUICK WINS IN 24 HOURS
+
+**High-impact, low-effort improvements:**
+
+1. **[Action]** - Impact: [X] - Effort: [X hours]
+   - How: <specific steps>
+
+[List 5-10 quick wins]
+
+## 8. REMEDIATION ROADMAP
+
+### 30-Day Plan (Foundation)
+**Focus: Critical security and stability**
+
+Week 1:
+- [ ] [Task] - [Finding ID]
+- [ ] [Task] - [Finding ID]
+
+Week 2:
+- [ ] [Task] - [Finding ID]
+
+Week 3-4:
+- [ ] [Task] - [Finding ID]
+
+### 60-Day Plan (Hardening)
+**Focus: Scale readiness and operations**
+
+Month 2:
+- [ ] [Task] - [Finding ID]
+- [ ] [Task] - [Finding ID]
+
+### 90-Day Plan (Excellence)
+**Focus: Observability, compliance, optimization**
+
+Month 3:
+- [ ] [Task] - [Finding ID]
+- [ ] [Task] - [Finding ID]
+
+## 9. WHAT BREAKS FIRST AT 10X TRAFFIC
+
+**Ranked by likelihood to fail:**
+
+1. **[Component/System]**
+   - Current capacity: <estimate>
+   - Breaks at: <traffic level>
+   - Symptom: <how it fails>
+   - Fix required: <solution>
+
+[List 5-10 bottlenecks]
+
+## 10. WHAT FAILS A SECURITY REVIEW
+
+**Findings that would block security certification:**
+
+1. **[Finding ID]** - [Title]
+   - Standard violated: <OWASP/CWE/etc.>
+   - Severity for audit: <Critical/High>
+   - Auditor concern: <what they'll flag>
+
+[List all security blockers]
+
+## 11. WHAT FAILS A SOC 2 / ISO 27001 REVIEW
+
+**Compliance gaps that would fail audit:**
+
+1. **[Control Area]** - [Specific Gap]
+   - SOC 2 Trust Service: <Availability/Security/etc.>
+   - ISO 27001 Control: <A.X.X.X>
+   - Evidence missing: <what's needed>
+   - Remediation: <how to fix>
+
+[List all compliance gaps]
+
+## 12. WHAT FAILS A RELIABILITY REVIEW (SRE)
+
+**Operational maturity gaps:**
+
+1. **[Area]** - [Gap]
+   - SRE principle violated: <which principle>
+   - MTTR impact: <estimated impact>
+   - Availability impact: <estimated impact>
+   - Remediation: <solution>
+
+[List operational gaps]
+
+## 13. WHAT FAILS A SCALE REVIEW
+
+**Architectural bottlenecks at scale:**
+
+1. **[System/Pattern]** - [Issue]
+   - Scalability limit: <where it breaks>
+   - Cost at scale: <projection>
+   - Refactoring needed: <solution>
+   - Migration complexity: <estimate>
+
+[List scalability blockers]
+
+## 14. HARD TRUTHS ABOUT THIS ARCHITECTURE
+
+**Brutally honest assessment:**
+
+**What's Actually Good:**
+- <Genuinely good decisions>
+- <Well-implemented patterns>
+- <Smart tradeoffs>
+
+**What's Concerning:**
+- <Architectural risks>
+- <Technical debt>
+- <Problematic patterns>
+
+**What's Hidden Complexity:**
+- <Non-obvious coupling>
+- <Fragile assumptions>
+- <Future maintenance nightmares>
+
+**What's Over-Engineered:**
+- <Unnecessary complexity>
+- <Premature optimization>
+
+**What's Under-Engineered:**
+- <Missing abstractions>
+- <Copy-paste code>
+- <Lacking error handling>
+
+**What Will Bite You:**
+- <Time bombs>
+- <Scale cliffs>
+- <Cost traps>
+
+**What's Misleading:**
+- <Code vs. docs contradictions>
+- <Comments that lie>
+- <Misleading naming>
+
+## 15. IF I HAD TO REBUILD THIS CLEANLY
+
+**Architecture redesign recommendations:**
+
+**Keep:**
+- <What's working well>
+- <Good technology choices>
+- <Solid patterns>
+
+**Redesign:**
+- <What needs rearchitecting>
+- <Better approaches>
+- <Modern alternatives>
+
+**Remove:**
+- <Unnecessary complexity>
+- <Dead code>
+- <Problematic dependencies>
+
+**Standardize:**
+- <Inconsistent patterns to unify>
+- <Missing conventions>
+- <Better defaults>
+
+**Add:**
+- <Missing infrastructure>
+- <Missing observability>
+- <Missing safety controls>
+
+**Technology Swap Recommendations:**
+- <Current> → <Recommended> (Reason: <why>)
+
+## 16. MISSING ARTIFACTS I SHOULD PROVIDE NEXT
+
+**To complete this audit, provide:**
+
+**High Priority:**
+- [ ] <Specific artifact> - Needed to verify: <what>
+- [ ] <Specific artifact> - Needed to verify: <what>
+
+**Medium Priority:**
+- [ ] <Specific artifact> - Would help assess: <what>
+
+**Low Priority:**
+- [ ] <Specific artifact> - Nice to have for: <what>
+
+**Production Access Needed:**
+- [ ] <What access> - To verify: <what>
+
+## 17. TECHNICAL DEBT REGISTER
+
+**All TODOs, FIXMEs, HACKs found:**
+
+| Location | Type | Debt | Effort | Risk if Not Fixed |
+|----------|------|------|--------|-------------------|
+| `path/file.ts:123` | HACK | Description | M | Medium |
+
+**Estimated total debt:** <X engineering weeks>
+
+## 18. DEPENDENCY RISK REPORT
+
+**Outdated Dependencies:**
+- <package>@<current> → <latest> (Released: <date>, Behind by: <X versions>)
+
+**Known CVEs:**
+- <package>@<version> - CVE-XXXX-XXXXX (Severity: <X>, Fixed in: <version>)
+
+**Unmaintained Dependencies:**
+- <package> - Last updated: <date>, Downloads trending: <down/up>
+
+**License Issues:**
+- <package> - License: <type> - Concern: <what>
+
+**Dependency Graph Complexity:**
+- Total dependencies: <X direct, Y transitive>
+- Duplicate dependencies: <list>
+- Largest dependency: <package> (<size>)
+
+## 19. COST MODEL ANALYSIS
+
+**Current Estimated Monthly Cost:**
+- <Service>: $<amount>
+- <Service>: $<amount>
+- **Total:** $<amount>/month
+
+**Cost Per User:** $<amount>
+
+**Cost Per Request:** $<amount>
+
+**What Scales Linearly:**
+- <Service/resource> - Cost growth: 1x user growth
+
+**What Scales Superlinearly:**
+- <Service/resource> - Cost growth: >1x user growth - Reason: <why>
+
+**Cost Cliff Warnings:**
+- <Service>: Will hit next pricing tier at <X users/requests>
+  - Current: $<amount>/month
+  - After cliff: $<amount>/month (+<X>%)
+
+**Cost Optimization Opportunities:**
+- <Opportunity> - Savings: $<amount>/month - Effort: <X>
+
+**Cost at Scale:**
+- At 10x traffic: $<amount>/month
+- At 100x traffic: $<amount>/month
+- Cost sustainability: <assessment>
+
+## 20. OPERATIONAL RUNBOOK GAPS
+
+**Missing Runbooks:**
+- [ ] Deployment procedure
+- [ ] Rollback procedure
+- [ ] Database migration procedure
+- [ ] Incident response for <scenario>
+- [ ] Backup restore procedure
+- [ ] Disaster recovery procedure
+- [ ] <Other critical procedures>
+
+**Missing Escalation Paths:**
+- <Scenario> - No documented escalation path
+
+**Missing Troubleshooting Guides:**
+- <Common issue> - No troubleshooting guide
+
+## 21. DATA FLOW DIAGRAM
+
+```
+[Reconstruct actual data flow from code analysis]
+
+User Input → Validation → Transformation → Storage
+                                        ↓
+                                    Logging
+                                        ↓
+                                  Third-party
+```
+
+**Data Retention Points:**
+- <Where data is stored>
+- <Retention duration>
+- <Deletion mechanism>
+
+**Data Deletion Complexity:**
+- <What's easy to delete>
+- <What's hard to delete>
+- <What's not deletable>
+
+## 22. TRUST BOUNDARY MAP
+
+```
+[Internet] 
+    ↓ (untrusted)
+[CDN/Edge] 
+    ↓ (untrusted)
+[Frontend/Client]
+    ↓ (untrusted - API calls)
+[API Gateway/Middleware]
+    ↓ (authenticated)
+[Backend Services]
+    ↓ (trusted)
+[Database]
+
+[Backend] ↔ (semi-trusted) [Third-party APIs]
+```
+
+**Boundaries & Controls:**
+1. **Internet → CDN:** <controls>
+2. **CDN → Frontend:** <controls>
+3. **Frontend → Backend:** <controls>
+4. **Backend → Database:** <controls>
+5. **Backend → Third-party:** <controls>
+
+**Privilege Boundaries:**
+- Anonymous user
+- Authenticated user
+- Team member
+- Team admin
+- System admin
+- Service accounts
+
+---
+
+# OUTPUT RULES
+
+1. **Evidence-based only:** Every claim must reference specific files, code, or configs
+2. **No generic advice:** Don't say "implement monitoring" - say "Add Sentry error tracking to /app/api/*/route.ts files based on error handling gaps in lines X-Y"
+3. **Quantify impact:** Don't say "will be slow" - say "N+1 query in /app/dashboard will execute 50+ queries for 50 items, causing ~5s load time"
+4. **Real scenarios:** Don't say "security risk" - say "Attacker can access user ID 123's data by changing URL from /user/456 to /user/123 due to missing auth check in /app/api/user/[id]/route.ts:15"
+5. **Prioritize ruthlessly:** Focus on what actually matters for production success
+6. **Call out contradictions:** If README says one thing but code does another, explicitly call it out
+7. **Identify dead code:** Call out unused files, functions, dependencies
+8. **Measure gaps:** If there are no tests, say "0% test coverage, 0 test files" not "needs tests"
+9. **Be specific about "missing":** Don't say "no monitoring" - say "No error tracking, no APM, no logging aggregation, no alerting configured based on absence of monitoring service configs in repo"
+10. **Connect dots:** Link related findings together
+
+---
+
+# FINAL INSTRUCTION
+
+Act like you are:
+1. **A security researcher** doing a penetration test engagement
+2. **An SRE** doing a production readiness review
+3. **A principal engineer** doing architecture review for acquisition
+4. **A compliance auditor** doing SOC 2 / ISO 27001 gap analysis
+5. **A FinOps engineer** doing cost optimization analysis
+
+I want a **real, thorough, ruthless end-to-end audit** that would actually find the issues that cause production incidents, security breaches, failed audits, and scaling failures.
+
+**Be thorough. Be specific. Be brutal. Be helpful.**
+
+---
+
+# NOW PROVIDE YOUR PROJECT DETAILS AND BEGIN
+
+Fill in all the sections above, then I'll execute the complete audit.
+```
+
+---
+
+**This prompt is now ready to use. Just fill in your project details in the PROJECT INFORMATION section and paste it into Claude/GPT-4 with access to your repository.**

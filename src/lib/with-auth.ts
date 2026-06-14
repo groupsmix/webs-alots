@@ -15,20 +15,26 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { verifyProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { perUserLimiter } from "@/lib/rate-limit";
+import { applyRequestScopedResponseHeaders } from "@/lib/request-context-response-headers";
 import { createClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import type { UserRole } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database";
 
+interface AuthenticatedUser {
+  id: string;
+  email?: string | null;
+  [key: string]: unknown;
+}
+
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
-  user: User;
+  user: AuthenticatedUser;
   profile: { id: string; role: UserRole; clinic_id: string | null };
 }
 
@@ -78,15 +84,26 @@ export function withAuth<RouteCtx = unknown>(
 ) {
   const failOpen = options.failOpen === true;
   return async (request: NextRequest, routeCtx?: RouteCtx): Promise<NextResponse> => {
+    const finalize = (response: NextResponse): NextResponse => {
+      applyRequestScopedResponseHeaders(request, response);
+      if (!response.headers.has("Cache-Control")) {
+        response.headers.set("Cache-Control", "private, no-store");
+      }
+      return response;
+    };
+
     try {
       const supabase = await createClient();
+      const authClient = supabase.auth as unknown as {
+        getUser: () => Promise<{ data: { user: AuthenticatedUser | null } }>;
+      };
 
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await authClient.getUser();
 
       if (!user) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        return finalize(NextResponse.json({ error: "Not authenticated" }, { status: 401 }));
       }
 
       // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8).
@@ -127,16 +144,15 @@ export function withAuth<RouteCtx = unknown>(
       }
 
       if (!profile) {
-        return NextResponse.json({ error: "User profile not found" }, { status: 404 });
+        return finalize(NextResponse.json({ error: "User profile not found" }, { status: 404 }));
       }
 
       // If specific roles are required, enforce them.
       // R-04: withAuth no longer accepts null for allowedRoles.
       // Use withAuthAnyRole() for any-authenticated behavior.
       if (!allowedRoles.includes(profile.role as UserRole)) {
-        return NextResponse.json(
-          { error: "Forbidden — insufficient permissions" },
-          { status: 403 },
+        return finalize(
+          NextResponse.json({ error: "Forbidden — insufficient permissions" }, { status: 403 }),
         );
       }
 
@@ -152,7 +168,9 @@ export function withAuth<RouteCtx = unknown>(
               subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
               userId: profile.id,
             });
-            return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });
+            return finalize(
+              NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 }),
+            );
           }
         } catch (tenantErr) {
           logger.warn("Could not resolve tenant for assertion", {
@@ -181,7 +199,9 @@ export function withAuth<RouteCtx = unknown>(
             error: tenantErr,
           });
           if (!failOpen) {
-            return NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 });
+            return finalize(
+              NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 }),
+            );
           }
         }
       }
@@ -197,9 +217,11 @@ export function withAuth<RouteCtx = unknown>(
       // Workers fleet instead of being per-isolate. Falls back to in-memory
       // only when no distributed backend is configured (dev / single host).
       if (!(await perUserLimiter.check(`user:${profile.id}`))) {
-        return NextResponse.json(
-          { error: "Too many requests. Please slow down.", code: "USER_RATE_LIMIT" },
-          { status: 429 },
+        return finalize(
+          NextResponse.json(
+            { error: "Too many requests. Please slow down.", code: "USER_RATE_LIMIT" },
+            { status: 429 },
+          ),
         );
       }
 
@@ -243,14 +265,10 @@ export function withAuth<RouteCtx = unknown>(
         },
         routeCtx,
       );
-      // A53-02: Prevent Cloudflare / browser from caching PHI responses.
-      if (!response.headers.has("Cache-Control")) {
-        response.headers.set("Cache-Control", "private, no-store");
-      }
-      return response;
+      return finalize(response);
     } catch (err) {
       logger.error("Authentication failed", { context: "with-auth", error: err });
-      return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
+      return finalize(NextResponse.json({ error: "Authentication failed" }, { status: 500 }));
     }
   };
 }
@@ -271,15 +289,26 @@ export function withAuthAnyRole<RouteCtx = unknown>(
   // without enforcing any specific role. This is a "deny-by-default with
   // explicit allowlist" pattern - every withAuth call must specify roles.
   return async (request: NextRequest, routeCtx?: RouteCtx): Promise<NextResponse> => {
+    const finalize = (response: NextResponse): NextResponse => {
+      applyRequestScopedResponseHeaders(request, response);
+      if (!response.headers.has("Cache-Control")) {
+        response.headers.set("Cache-Control", "private, no-store");
+      }
+      return response;
+    };
+
     try {
       const supabase = await createClient();
+      const authClient = supabase.auth as unknown as {
+        getUser: () => Promise<{ data: { user: AuthenticatedUser | null } }>;
+      };
 
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await authClient.getUser();
 
       if (!user) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        return finalize(NextResponse.json({ error: "Not authenticated" }, { status: 401 }));
       }
 
       // Check for signed profile headers from middleware
@@ -320,7 +349,7 @@ export function withAuthAnyRole<RouteCtx = unknown>(
       }
 
       if (!profile) {
-        return NextResponse.json({ error: "User profile not found" }, { status: 404 });
+        return finalize(NextResponse.json({ error: "User profile not found" }, { status: 404 }));
       }
 
       // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
@@ -337,7 +366,9 @@ export function withAuthAnyRole<RouteCtx = unknown>(
               subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
               userId: profile.id,
             });
-            return NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 });
+            return finalize(
+              NextResponse.json({ error: "Forbidden — tenant mismatch" }, { status: 403 }),
+            );
           }
         } catch (tenantErr) {
           logger.warn("Could not resolve tenant for assertion", {
@@ -359,7 +390,9 @@ export function withAuthAnyRole<RouteCtx = unknown>(
             error: tenantErr,
           });
           if (!failOpen) {
-            return NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 });
+            return finalize(
+              NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 }),
+            );
           }
         }
       }
@@ -382,17 +415,13 @@ export function withAuthAnyRole<RouteCtx = unknown>(
         },
         routeCtx,
       );
-      // A53-02: Prevent Cloudflare / browser from caching PHI responses.
-      if (!response.headers.has("Cache-Control")) {
-        response.headers.set("Cache-Control", "private, no-store");
-      }
-      return response;
+      return finalize(response);
     } catch (err) {
       logger.error("Authentication failed in withAuthAnyRole", {
         context: "with-auth",
         error: err,
       });
-      return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
+      return finalize(NextResponse.json({ error: "Authentication failed" }, { status: 500 }));
     }
   };
 }

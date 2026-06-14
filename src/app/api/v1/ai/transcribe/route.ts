@@ -22,6 +22,7 @@ import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiVoiceNoteLimiter, aiClinicCeilingLimiter } from "@/lib/rate-limit";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 /** Maximum audio upload size: 25 MB (Whisper API limit) */
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
@@ -143,7 +144,7 @@ export const POST = withAuth(
     );
 
     try {
-      const whisperResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      const whisperResponse = await safeFetch("https://api.openai.com/v1/audio/transcriptions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,

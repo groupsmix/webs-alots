@@ -28,6 +28,17 @@
 
 const BASE = (process.env.SMOKE_BASE_URL || "https://oltigo.com").replace(/\/$/, "");
 const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS || 20000);
+const SMOKE_AI_PATH = process.env.SMOKE_AI_PATH || "";
+const SMOKE_AI_METHOD = (process.env.SMOKE_AI_METHOD || "POST").toUpperCase();
+const SMOKE_AI_BODY =
+  process.env.SMOKE_AI_BODY ||
+  JSON.stringify({
+    question: "Réponds avec un bref statut de disponibilité.",
+    conversationHistory: [],
+  });
+const SMOKE_AI_COOKIE = process.env.SMOKE_AI_COOKIE || "";
+const SMOKE_AI_AUTH_HEADER = process.env.SMOKE_AI_AUTH_HEADER || "";
+const SMOKE_AI_EXPECT_STATUS = Number(process.env.SMOKE_AI_EXPECT_STATUS || 200);
 
 /** Routes that must respond with a status below `maxStatus`. */
 const ROUTES = [
@@ -87,13 +98,13 @@ const log = (ok, msg) => {
   if (!ok) failures++;
 };
 
-async function fetchText(url) {
+async function fetchText(url, init = undefined) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, redirect: "follow" });
+    const res = await fetch(url, { ...init, signal: ctrl.signal, redirect: "follow" });
     const text = await res.text();
-    return { status: res.status, text };
+    return { status: res.status, text, headers: res.headers };
   } finally {
     clearTimeout(timer);
   }
@@ -287,6 +298,56 @@ async function checkAuthNoindex() {
   }
 }
 
+async function checkOptionalAiEndpoint() {
+  if (!SMOKE_AI_PATH) {
+    console.log("· ai smoke: skipped (SMOKE_AI_PATH not configured)");
+    return;
+  }
+
+  const headers = { "Content-Type": "application/json" };
+  if (SMOKE_AI_COOKIE) headers.Cookie = SMOKE_AI_COOKIE;
+  if (SMOKE_AI_AUTH_HEADER) headers.Authorization = SMOKE_AI_AUTH_HEADER;
+
+  try {
+    const {
+      status,
+      text,
+      headers: responseHeaders,
+    } = await fetchText(BASE + SMOKE_AI_PATH, {
+      method: SMOKE_AI_METHOD,
+      headers,
+      body: SMOKE_AI_METHOD === "GET" || SMOKE_AI_METHOD === "HEAD" ? undefined : SMOKE_AI_BODY,
+    });
+
+    log(
+      status === SMOKE_AI_EXPECT_STATUS,
+      `ai smoke: ${SMOKE_AI_PATH} → HTTP ${status} (expected ${SMOKE_AI_EXPECT_STATUS})`,
+    );
+
+    const contentType = responseHeaders.get("content-type") || "";
+    const isJson = /application\/json/i.test(contentType);
+    const isSse = /text\/event-stream/i.test(contentType);
+    log(
+      isJson || isSse,
+      `ai smoke: content-type ${contentType || "MISSING"} (expected JSON or SSE)`,
+    );
+
+    if (isJson) {
+      try {
+        const parsed = JSON.parse(text);
+        const ok = parsed?.ok === true || typeof parsed?.data === "object";
+        log(ok, `ai smoke: JSON payload shape is ${ok ? "valid" : "unexpected"}`);
+      } catch {
+        log(false, "ai smoke: response body is not valid JSON");
+      }
+    } else if (isSse) {
+      log(/data:\s*/.test(text), "ai smoke: SSE stream emitted data frames");
+    }
+  } catch (err) {
+    log(false, `ai smoke: request failed (${err?.message || err})`);
+  }
+}
+
 (async () => {
   console.log(`Post-deploy smoke test → ${BASE}\n`);
   await checkRoutes();
@@ -294,6 +355,7 @@ async function checkAuthNoindex() {
   await checkHealthJson();
   await checkSecurityHeaders();
   await checkAuthNoindex();
+  await checkOptionalAiEndpoint();
   console.log("");
   if (failures > 0) {
     console.error(`✗ smoke test FAILED with ${failures} problem(s).`);

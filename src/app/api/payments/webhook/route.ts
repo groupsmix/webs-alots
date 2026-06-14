@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
+import { apiError, apiRateLimited, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
@@ -9,6 +9,7 @@ import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { stripeWebhookEventSchema } from "@/lib/validations";
 import type { StripeWebhookEvent } from "@/lib/validations";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { readWebhookBody } from "@/lib/webhook-body";
 
 /**
@@ -51,6 +52,11 @@ export async function POST(request: NextRequest) {
 
     if (!signature) {
       return apiError("Missing stripe-signature header");
+    }
+
+    const senderAllowed = await checkWebhookSenderRateLimit("stripe-payments", signature);
+    if (!senderAllowed) {
+      return apiRateLimited("Stripe webhook sender rate limit exceeded.");
     }
 
     const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);

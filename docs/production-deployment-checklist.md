@@ -19,12 +19,14 @@
 
 - [ ] **Core:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` set in Cloudflare Workers
 - [ ] **Service role:** `SUPABASE_SERVICE_ROLE_KEY` set in Cloudflare Workers
+- [ ] **Database pooler:** `SUPABASE_POOLER_URL` set to the Supabase transaction pooler (`:6543`) in Cloudflare Workers
 - [ ] **Tenant routing:** `ROOT_DOMAIN`, `NEXT_PUBLIC_SITE_URL` set
 - [ ] **Auth secrets:** `BOOKING_TOKEN_SECRET`, `PROFILE_HEADER_HMAC_KEY`, `CRON_SECRET` set
 - [ ] **PHI encryption:** `PHI_ENCRYPTION_KEY` set (64 hex chars)
 - [ ] **R2 storage:** `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_SIGNED_URL_SECRET` set
 - [ ] **Observability:** `NEXT_PUBLIC_SENTRY_DSN` set, `SENTRY_DSN` set for cron runtime reporting
-- [ ] **CI secrets:** `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` set in GitHub environment secrets (deploy will hard-fail without these)
+- [ ] **CI deploy secrets:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, public Supabase build vars, and optional AI smoke secrets are set in GitHub Actions secrets/vars as required by `.github/workflows/deploy.yml`
+- [ ] **CI migration secrets:** `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD_PROD`, and `SUPABASE_DB_PASSWORD_STAGING` are set for `.github/workflows/db-migrate.yml`
 
 ### Database
 
@@ -54,20 +56,18 @@
 ## Deployment Steps
 
 1. **Merge PR to `main`** — triggers deploy workflow
-2. **Monitor deploy workflow** — verify all jobs pass:
-   - `preflight` (secret validation — fails if migration secrets missing)
-   - `migrate` (Supabase migrations)
-   - `build-and-deploy` (Cloudflare Workers deploy)
-   - `health-check` (post-deploy verification)
-3. **Verify health endpoint** — `curl https://oltigo.com/api/health`
-4. **Verify Sentry** — confirm no new error spike in Sentry dashboard
-5. **Verify cron execution** — check Sentry Crons dashboard for next scheduled run
+2. **Monitor `deploy.yml`** — verify build, deploy, smoke test, and AI Worker deploy all pass
+3. **Monitor `db-migrate.yml`** if the release includes files under `supabase/migrations/`
+4. **Verify health endpoint** — `curl https://oltigo.com/api/health`
+5. **Verify Sentry** — confirm no new error spike in Sentry dashboard
+6. **Verify cron execution** — check Sentry Crons dashboard for next scheduled run
 
 ---
 
 ## Post-Deployment Verification
 
 - [ ] Health check returns 200: `curl -s https://oltigo.com/api/health | jq .`
+- [ ] Internal health check reports `connectionPooling.status = "ok"` and a PostgreSQL version: `curl -H "Authorization: Bearer $CRON_SECRET" https://oltigo.com/api/health/internal | jq .`
 - [ ] Login flow works (test with a non-seed user)
 - [ ] Public booking page loads correctly on a clinic subdomain
 - [ ] Admin dashboard loads for a `clinic_admin` user
@@ -75,6 +75,7 @@
 - [ ] File upload/download works (R2 binding verified)
 - [ ] No new Sentry errors in first 15 minutes
 - [ ] Cron jobs execute on schedule (check Sentry Crons)
+- [ ] If AI smoke is configured in `deploy.yml`, the smoke step passed for the chosen AI route (for example `/api/ai/manager`)
 
 ---
 
@@ -82,13 +83,12 @@
 
 If the health check fails or post-deploy verification shows critical issues:
 
-1. **Automatic:** The deploy workflow triggers `wrangler rollback` to revert the Worker code
-2. **Database:** Migrations are NOT rolled back (see `docs/db-rollback-constraints.md`)
-3. **Manual rollback:** If automatic rollback fails:
+1. **Database:** Migrations are NOT rolled back automatically (see `docs/db-rollback-constraints.md`)
+2. **Manual Worker rollback:**
    ```bash
    npx wrangler rollback --name webs-alots
    ```
-4. **If migration caused the issue:** Follow `docs/db-rollback-constraints.md` for manual schema remediation
+3. **If migration caused the issue:** Follow `docs/db-rollback-constraints.md` for manual schema remediation
 
 ---
 
@@ -100,6 +100,7 @@ These are one-time verification items for initial production launch:
 - [ ] DPA signed with all data processors (Supabase, Cloudflare, Stripe, Meta, Twilio, Resend, Sentry)
 - [ ] Backup workflow tested end-to-end: backup → encrypt → upload → download → decrypt → restore
 - [ ] Restore drill completed with evidence logged (`docs/restore-drill-evidence.md`)
+- [ ] `LAST_RESTORE_TEST_AT` updated after the latest restore drill so `/api/health/internal` reflects the current drill age
 - [ ] DNS email auth configured (SPF, DKIM, DMARC) per `docs/dns-email-auth-runbook.md`
 - [ ] Branch protection enabled on `main`: require PR reviews, require CI, block force push
 - [ ] Sentry alert rules configured for SEV-1/SEV-2 conditions

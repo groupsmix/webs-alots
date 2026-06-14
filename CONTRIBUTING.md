@@ -51,6 +51,7 @@ refactor: extract shared Supabase mock to test-utils
 - **ESLint** — Run `npm run lint` before committing. Pre-commit hook runs it automatically.
 - **Formatting** — Follow existing file conventions. No Prettier configured; match the surrounding code.
 - **Imports** — Place all imports at the top of files. Use `@/` path alias for `src/` imports.
+- **Bundle budget** — `recharts` is admin-heavy and expensive in shared bundles. Do not import `recharts` from public, auth, or patient-facing routes; keep it isolated to admin-only surfaces or lazy-loaded components.
 
 ## Multi-Tenant Architecture Rules
 

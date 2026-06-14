@@ -27,6 +27,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { type ZodType } from "zod";
 import { apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { applyRequestScopedResponseHeaders } from "@/lib/request-context-response-headers";
 import type { UserRole } from "@/lib/types/database";
 import { safeParse } from "@/lib/validations";
 import { withAuth, withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
@@ -109,10 +110,17 @@ export function withValidation<T>(
   handler: (data: T, request: NextRequest) => Promise<NextResponse | Response>,
 ): (request: NextRequest) => Promise<NextResponse | Response> {
   return async (request: NextRequest): Promise<NextResponse | Response> => {
+    const finalize = (response: NextResponse | Response): NextResponse | Response => {
+      if (response instanceof NextResponse) {
+        return applyRequestScopedResponseHeaders(request, response);
+      }
+      return response;
+    };
+
     // IV-002: Fail-fast if Content-Length exceeds cap
     const contentLength = request.headers.get("content-length");
     if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
-      return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+      return finalize(apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`));
     }
 
     // W8-I-01: Stream-read body with byte cap for chunked requests
@@ -120,30 +128,30 @@ export function withValidation<T>(
     try {
       const text = await readBodyCapped(request, MAX_BODY_BYTES);
       if (text === null) {
-        return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+        return finalize(apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`));
       }
       // A73-F4: depth-limited parse
       body = parseJsonWithDepthLimit(text);
     } catch (err) {
       if (err instanceof RangeError) {
-        return apiValidationError("Request payload nesting depth exceeds limit");
+        return finalize(apiValidationError("Request payload nesting depth exceeds limit"));
       }
-      return apiValidationError("Invalid JSON body");
+      return finalize(apiValidationError("Invalid JSON body"));
     }
 
     const result = safeParse(schema, body);
     if (!result.success) {
-      return apiValidationError(result.error);
+      return finalize(apiValidationError(result.error));
     }
 
     try {
-      return await handler(result.data, request);
+      return finalize(await handler(result.data, request));
     } catch (err) {
       logger.error("Unhandled API route error", {
         context: `api${request.nextUrl.pathname}`,
         error: err,
       });
-      return apiInternalError();
+      return finalize(apiInternalError());
     }
   };
 }
@@ -169,7 +177,10 @@ export function withAuthValidation<T>(
     // IV-002: Fail-fast if Content-Length exceeds cap
     const contentLength = request.headers.get("content-length");
     if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
-      return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+      return applyRequestScopedResponseHeaders(
+        request,
+        apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`),
+      );
     }
 
     // W8-I-01: Stream-read body with byte cap for chunked requests
@@ -177,30 +188,36 @@ export function withAuthValidation<T>(
     try {
       const text = await readBodyCapped(request, MAX_BODY_BYTES);
       if (text === null) {
-        return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+        return applyRequestScopedResponseHeaders(
+          request,
+          apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`),
+        );
       }
       // A73-F4: depth-limited parse
       body = parseJsonWithDepthLimit(text);
     } catch (err) {
       if (err instanceof RangeError) {
-        return apiValidationError("Request payload nesting depth exceeds limit");
+        return applyRequestScopedResponseHeaders(
+          request,
+          apiValidationError("Request payload nesting depth exceeds limit"),
+        );
       }
-      return apiValidationError("Invalid JSON body");
+      return applyRequestScopedResponseHeaders(request, apiValidationError("Invalid JSON body"));
     }
 
     const result = safeParse(schema, body);
     if (!result.success) {
-      return apiValidationError(result.error);
+      return applyRequestScopedResponseHeaders(request, apiValidationError(result.error));
     }
 
     try {
-      return await handler(result.data, request, auth);
+      return applyRequestScopedResponseHeaders(request, await handler(result.data, request, auth));
     } catch (err) {
       logger.error("Unhandled API route error", {
         context: `api${request.nextUrl.pathname}`,
         error: err,
       });
-      return apiInternalError();
+      return applyRequestScopedResponseHeaders(request, apiInternalError());
     }
   };
 

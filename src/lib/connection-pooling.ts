@@ -25,6 +25,7 @@
  * @see https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler
  */
 
+import { getSupabasePoolerUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /** Expected pooling configuration for serverless deployment. */
@@ -36,46 +37,63 @@ export const POOLING_CONFIG = {
 } as const;
 
 /**
- * Verify that the Supabase URL is using the pooler endpoint.
+ * Verify that the server runtime is configured to prefer pooled Supabase access.
  *
- * The pooler endpoint for Supabase is always `https://<ref>.supabase.co`,
- * which is what NEXT_PUBLIC_SUPABASE_URL should be set to.
- * Direct connections bypass the pooler and can exhaust database connections
- * on serverless platforms like Cloudflare Workers.
+ * For browser/PostgREST calls, `NEXT_PUBLIC_SUPABASE_URL` should be the hosted
+ * Supabase HTTPS origin. For server-side code in Workers, `SUPABASE_POOLER_URL`
+ * is preferred when present so bursts do not fall back to direct database
+ * connections accidentally.
  */
 export function verifyPoolerEndpoint(): {
   isPooled: boolean;
   url: string | undefined;
   recommendation: string | null;
 } {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const poolerUrl = getSupabasePoolerUrl();
+  const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || undefined;
 
-  if (!url) {
+  if (poolerUrl) {
+    const isPooler = poolerUrl.includes(".pooler.supabase.com") || poolerUrl.includes(":6543");
+
+    if (!isPooler) {
+      logger.warn("SUPABASE_POOLER_URL does not look like a pooler endpoint", {
+        context: "connection-pooling",
+        url: poolerUrl,
+      });
+    }
+
     return {
-      isPooled: false,
-      url: undefined,
-      recommendation: "NEXT_PUBLIC_SUPABASE_URL is not set",
+      isPooled: isPooler,
+      url: poolerUrl,
+      recommendation: isPooler
+        ? null
+        : "Set SUPABASE_POOLER_URL to the Supabase pooler endpoint on port 6543",
     };
   }
 
-  // Supabase JS client always uses PostgREST (pooled). Direct DB URLs
-  // (port 5432/6543) are only used by migration tools / pg_dump.
-  const isSupabaseHosted = url.includes(".supabase.co");
-  const isPooled = isSupabaseHosted;
+  if (!publicUrl) {
+    return {
+      isPooled: false,
+      url: undefined,
+      recommendation: "Neither SUPABASE_POOLER_URL nor NEXT_PUBLIC_SUPABASE_URL is set",
+    };
+  }
 
-  if (!isPooled) {
-    logger.warn("Supabase URL may not be using connection pooler", {
+  const isSupabaseHosted = publicUrl.includes(".supabase.co");
+
+  if (!isSupabaseHosted) {
+    logger.warn("NEXT_PUBLIC_SUPABASE_URL may not be using hosted Supabase", {
       context: "connection-pooling",
-      url,
+      url: publicUrl,
     });
   }
 
   return {
-    isPooled,
-    url,
-    recommendation: isPooled
-      ? null
-      : "Use the Supabase pooler URL (https://<ref>.supabase.co) for NEXT_PUBLIC_SUPABASE_URL",
+    isPooled: isSupabaseHosted,
+    url: publicUrl,
+    recommendation: isSupabaseHosted
+      ? "SUPABASE_POOLER_URL is not set; server code will fall back to the public Supabase URL"
+      : "Use hosted Supabase for NEXT_PUBLIC_SUPABASE_URL and set SUPABASE_POOLER_URL for server-side pooling",
   };
 }
 

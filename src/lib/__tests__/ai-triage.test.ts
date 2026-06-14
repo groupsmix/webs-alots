@@ -20,6 +20,7 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/features", () => ({
   isAIEnabled: vi.fn().mockResolvedValue(false),
+  getKVBinding: vi.fn(async () => undefined),
 }));
 
 const mockUpdate = vi.fn().mockReturnValue({

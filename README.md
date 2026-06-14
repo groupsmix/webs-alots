@@ -16,6 +16,7 @@ Oltigo focuses on the core clinic workflow: Online booking, Patient Records (PHI
 | ------------- | -------------------------------------------------- |
 | Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui    |
 | Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
+| Database      | Supabase-managed PostgreSQL (version surfaced by `/api/health/internal`) |
 | Notifications | WhatsApp Business API (Meta Cloud API)             |
 | Hosting       | Cloudflare Workers (via OpenNext)                  |
 | Payments      | CMI Payment Gateway                                |
@@ -240,6 +241,15 @@ const key = buildUploadKey(clinicId, "logos", "clinic-logo.png");
 const url = await uploadToR2(key, buffer, "image/png");
 ```
 
+## Operational Health Signals
+
+- `/api/health` exposes public dependency health for uptime monitors.
+- `/api/health/internal` exposes internal-only Postgres version, connection pressure,
+  restore-drill age, and secret-rotation age (protected by `CRON_SECRET`).
+- To make the age-based checks actionable in production, keep these runtime timestamps updated:
+  `LAST_RESTORE_TEST_AT`, `CRON_SECRET_ROTATED_AT`, `PROFILE_HEADER_HMAC_KEY_ROTATED_AT`,
+  `PHI_ENCRYPTION_KEY_ROTATED_AT`.
+
 ## Production Security Checklist
 
 Before deploying to production, complete these steps:
@@ -272,7 +282,7 @@ The middleware enforces Origin-header checks on all mutation requests (`POST`, `
 
 ## Deploy on Cloudflare Workers
 
-This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. The build produces a Worker bundle (`.open-next/worker.js`) and static assets (`.open-next/assets/`), both served by the Workers runtime.
+This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. Wrangler uses the custom entrypoint `worker-cron-handler.ts`, which forwards normal requests to the generated OpenNext bundle (`.open-next/worker.js`) and exposes the Worker-only `scheduled()` and `queue()` handlers. Static assets are emitted to `.open-next/assets/`.
 
 ### Deploy Model (OAuth, no API tokens)
 

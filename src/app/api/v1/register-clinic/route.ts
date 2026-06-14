@@ -33,6 +33,7 @@ import {
   GIBBERISH_NAME_MESSAGE,
 } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 // ---------------------------------------------------------------------------
 // Anti-Abuse Rate Limiter
@@ -105,7 +106,7 @@ async function sendSlackRegistrationAlert(data: {
   };
 
   try {
-    await fetch(SLACK_WEBHOOK_URL, {
+    await safeFetch(SLACK_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(message),
@@ -140,7 +141,7 @@ async function verifyDnsTxtRecord(hostname: string, token: string): Promise<bool
 
     for (const name of namesToQuery) {
       const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=TXT`;
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         headers: { Accept: "application/dns-json" },
         signal: AbortSignal.timeout(5_000),
       });
@@ -331,7 +332,7 @@ export async function POST(request: NextRequest) {
       return apiError("Turnstile verification is required", 400);
     }
     try {
-      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      const verifyRes = await safeFetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({

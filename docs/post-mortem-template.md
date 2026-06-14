@@ -47,6 +47,8 @@ file names, commit SHAs, config values, error messages.]
 - **How was it detected?** [Alert / user report / scheduled check / other]
 - **Time to detect (TTD):** [Minutes from onset to first alert]
 - **Could we have detected it faster?** [Yes/No — how?]
+- **Was the documented alert/rule actually configured and firing?** [Yes/No/Unknown]
+- **Was the runbook current?** [Yes/No — if no, link the doc fix]
 
 ## Resolution
 
@@ -86,6 +88,7 @@ config changes, etc.]
 - [Link to Slack thread / war room]
 - [Link to relevant dashboards / logs]
 - [Link to deploy / commit that caused or fixed the issue]
+- [Link to PRs/docs that updated monitoring, alerts, or operator guidance afterward]
 
 ---
 

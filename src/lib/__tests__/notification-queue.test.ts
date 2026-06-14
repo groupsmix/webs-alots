@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createAdminClient } from "@/lib/supabase-server";
+import { pushToNotificationQueue } from "../cf-notification-queue";
+import { getProcessingEnforcement } from "../gdpr-enforcement";
+import { sendTextMessage } from "../whatsapp";
 
 // Mock Supabase admin client before importing the module
 vi.mock("@/lib/supabase-server", () => ({
@@ -32,18 +36,40 @@ vi.mock("@/lib/supabase-server", () => ({
   })),
 }));
 
-vi.mock("@/lib/whatsapp", () => ({
+vi.mock("../whatsapp", () => ({
   sendTextMessage: vi.fn(() => ({
     success: true,
     messageId: "wa-msg-001",
   })),
 }));
 
-vi.mock("@/lib/sms", () => ({
+vi.mock("../sms", () => ({
   sendSms: vi.fn(() => ({
     success: true,
     messageId: "sms-msg-001",
   })),
+}));
+
+vi.mock("../cf-notification-queue", () => ({
+  pushToNotificationQueue: vi.fn(() => Promise.resolve(true)),
+}));
+
+vi.mock("../gdpr-enforcement", () => ({
+  getProcessingEnforcement: vi.fn(() =>
+    Promise.resolve({
+      restricted: false,
+      objectedActivities: [],
+      objectsTo: () => false,
+    }),
+  ),
+}));
+
+vi.mock("../tenant-metering", () => ({
+  recordUsage: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -55,9 +81,69 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+function makeQueueItem(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "queue-item-1",
+    clinic_id: "clinic-001",
+    channel: "whatsapp",
+    recipient: "+212600000000",
+    payload: { body: "Your appointment is confirmed." },
+    status: "pending",
+    attempts: 0,
+    max_attempts: 5,
+    next_attempt_at: new Date().toISOString(),
+    error_message: null,
+    created_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+function createQueueClient(items: Record<string, unknown>[]) {
+  const limit = vi.fn().mockResolvedValue({ data: items, error: null });
+  const order = vi.fn().mockReturnValue({ limit });
+  const lte = vi.fn().mockReturnValue({ order });
+  const inFilter = vi.fn().mockReturnValue({ lte });
+  const select = vi.fn().mockReturnValue({ in: inFilter });
+  const updateEq = vi.fn().mockResolvedValue({ error: null });
+  const updateIn = vi.fn().mockResolvedValue({ error: null });
+  const update = vi.fn().mockReturnValue({ eq: updateEq, in: updateIn });
+  const insertSingle = vi.fn().mockResolvedValue({ data: { id: "queue-entry-123" }, error: null });
+  const insertSelect = vi.fn().mockReturnValue({ single: insertSingle });
+  const insert = vi.fn().mockReturnValue({ select: insertSelect });
+  const from = vi.fn().mockReturnValue({ select, update, insert });
+
+  return {
+    client: { from },
+    spies: {
+      from,
+      select,
+      inFilter,
+      lte,
+      order,
+      limit,
+      update,
+      updateEq,
+      updateIn,
+      insert,
+      insertSelect,
+      insertSingle,
+    },
+  };
+}
+
 describe("notification-queue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getProcessingEnforcement).mockResolvedValue({
+      restricted: false,
+      objectedActivities: [],
+      objectsTo: () => false,
+    });
+    vi.mocked(sendTextMessage).mockResolvedValue({
+      success: true,
+      messageId: "wa-msg-001",
+      provider: "meta",
+    });
   });
 
   describe("calculateNextRetry", () => {
@@ -124,6 +210,22 @@ describe("notification-queue", () => {
 
       expect(id).toBe("queue-entry-123");
     });
+
+    it("does not push in-app notifications to the external Cloudflare queue", async () => {
+      const { enqueueNotification } = await import("../notification-queue");
+
+      const id = await enqueueNotification({
+        clinicId: "clinic-001",
+        channel: "in_app",
+        recipient: "user-123",
+        body: "Internal notification",
+        trigger: "booking_confirmation",
+      });
+
+      expect(id).toBe("queue-entry-123");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(pushToNotificationQueue).not.toHaveBeenCalled();
+    });
   });
 
   describe("processNotificationQueue", () => {
@@ -138,6 +240,91 @@ describe("notification-queue", () => {
         failed: 0,
         deadLettered: 0,
       });
+    });
+
+    it("claims pending rows and marks successful deliveries as sent", async () => {
+      const queue = createQueueClient([makeQueueItem({ id: "queue-success-1" })]);
+      vi.mocked(createAdminClient).mockReturnValue(queue.client as never);
+
+      const { processNotificationQueue } = await import("../notification-queue");
+      const result = await processNotificationQueue();
+
+      expect(result).toEqual({
+        processed: 1,
+        sent: 1,
+        failed: 0,
+        deadLettered: 0,
+      });
+      expect(queue.spies.update.mock.calls[0][0]).toMatchObject({ status: "processing" });
+      expect(queue.spies.updateIn).toHaveBeenCalledWith(["queue-success-1"]);
+      expect(queue.spies.update.mock.calls[1][0]).toMatchObject({ status: "sent" });
+      expect(queue.spies.updateEq).toHaveBeenCalledWith("queue-success-1");
+      expect(sendTextMessage).toHaveBeenCalledWith(
+        "+212600000000",
+        "Your appointment is confirmed.",
+      );
+    });
+
+    it("skips external delivery when GDPR enforcement blocks notification processing", async () => {
+      const queue = createQueueClient([
+        makeQueueItem({
+          id: "queue-restricted-1",
+          payload: { body: "Restricted", userId: "patient-123" },
+        }),
+      ]);
+      vi.mocked(createAdminClient).mockReturnValue(queue.client as never);
+      vi.mocked(getProcessingEnforcement).mockResolvedValue({
+        restricted: true,
+        objectedActivities: ["whatsapp_reminders"],
+        objectsTo: () => true,
+      });
+
+      const { processNotificationQueue } = await import("../notification-queue");
+      const result = await processNotificationQueue();
+
+      expect(result).toEqual({
+        processed: 1,
+        sent: 1,
+        failed: 0,
+        deadLettered: 0,
+      });
+      expect(sendTextMessage).not.toHaveBeenCalled();
+      expect(queue.spies.update.mock.calls[1][0]).toMatchObject({ status: "sent" });
+      expect(queue.spies.updateEq).toHaveBeenCalledWith("queue-restricted-1");
+    });
+
+    it("moves exhausted deliveries to dead-letter state and reports to Sentry", async () => {
+      const queue = createQueueClient([
+        makeQueueItem({
+          id: "queue-dead-1",
+          attempts: 4,
+          max_attempts: 5,
+        }),
+      ]);
+      vi.mocked(createAdminClient).mockReturnValue(queue.client as never);
+      vi.mocked(sendTextMessage).mockResolvedValue({
+        success: false,
+        error: "Meta API unavailable",
+        provider: "meta",
+      });
+
+      const { processNotificationQueue } = await import("../notification-queue");
+      const result = await processNotificationQueue();
+      const Sentry = await import("@sentry/nextjs");
+
+      expect(result).toEqual({
+        processed: 1,
+        sent: 0,
+        failed: 0,
+        deadLettered: 1,
+      });
+      expect(queue.spies.update.mock.calls[1][0]).toMatchObject({
+        status: "failed",
+        attempts: 5,
+        next_attempt_at: "9999-12-31T23:59:59Z",
+        error_message: "Meta API unavailable",
+      });
+      expect(Sentry.captureException).toHaveBeenCalledTimes(1);
     });
   });
 

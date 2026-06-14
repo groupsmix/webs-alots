@@ -13,6 +13,7 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/features", () => ({
   isAIEnabled: vi.fn(async () => true),
+  getKVBinding: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/audit-log", () => ({

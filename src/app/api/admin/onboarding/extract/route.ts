@@ -6,8 +6,10 @@ import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
+import { safeFetch } from "@/lib/fetch-wrapper";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
+export const MAX_ONBOARDING_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
 
 function extractJsonObject(text: string): Record<string, unknown> | null {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -38,6 +40,12 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
     }
     if (!clinicId) {
       return apiValidationError("clinic_id is required");
+    }
+    if (file.size === 0) {
+      return apiValidationError("file must not be empty");
+    }
+    if (file.size > MAX_ONBOARDING_DOCUMENT_BYTES) {
+      return apiValidationError("file too large (max 10 MB)");
     }
 
     const admin = createUntypedAdminClient("super_admin");
@@ -85,7 +93,7 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
         // the main Worker bundle (pushing it toward Cloudflare's 10 MiB limit),
         // and this route only needs a single, well-defined messages.create call.
         // The request/response shapes below mirror the SDK 1:1.
-        const apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        const apiResponse = await safeFetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
             "content-type": "application/json",

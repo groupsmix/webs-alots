@@ -3,6 +3,7 @@ import {
   apiForbidden,
   apiError,
   apiInternalError,
+  apiRateLimited,
   apiSuccess,
   apiUnauthorized,
 } from "@/lib/api-response";
@@ -11,6 +12,7 @@ import { logger } from "@/lib/logger";
 import { dispatchNotification, type TemplateVariables } from "@/lib/notifications";
 import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { readWebhookBody } from "@/lib/webhook-body";
 import { handleWhatsAppConversation } from "@/lib/whatsapp/conversation-handler";
 
@@ -199,6 +201,10 @@ export async function POST(request: NextRequest) {
 
     // Verify Meta webhook signature
     const signatureHeader = request.headers.get("x-hub-signature-256");
+    const senderAllowed = await checkWebhookSenderRateLimit("whatsapp", signatureHeader);
+    if (!senderAllowed) {
+      return apiRateLimited("WhatsApp webhook sender rate limit exceeded.");
+    }
     const isValid = await verifyWebhookSignature(rawBody, signatureHeader);
     if (!isValid) {
       return apiUnauthorized("Invalid webhook signature");

@@ -8,19 +8,13 @@
  *
  * Returns: { url: string, key: string }
  *
- * GET /api/upload — Get a pre-signed POST policy for direct browser upload
+ * GET /api/upload — Direct browser uploads are disabled.
  *   Query params: filename, contentType, category, clinicId
- *   Returns: { uploadUrl, fields, key, publicUrl?, thumbnails? }
+ *   Returns: an error instructing callers to use POST /api/upload instead.
  *
- *   The client uploads via:
- *     const fd = new FormData();
- *     for (const [k, v] of Object.entries(fields)) fd.append(k, v);
- *     fd.append("file", file);
- *     await fetch(uploadUrl, { method: "POST", body: fd });
- *
- *   R2 enforces both `content-length-range` (max size) and the exact
- *   `Content-Type` from the policy at upload time, so oversized or
- *   wrong-type uploads are rejected before bytes are stored.
+ *   R2 presigned PUT URLs cannot enforce `content-length-range` at write
+ *   time, so this path remains fail-closed until the platform has a true
+ *   pre-storage size-enforcement primitive.
  *
  * PUT /api/upload — Confirm a direct upload (S13 magic-byte validation +
  *   HeadObject size/content-type cross-check).
@@ -32,19 +26,17 @@
 import {
   apiError,
   apiForbidden,
-  apiInternalError,
   apiNotFound,
   apiSuccess,
 } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { requiresEncryption, normalizePhiCategory } from "@/lib/encryption";
-import { getAvScanRequired, getAvScanUrl, getR2Config, isCi, isProduction } from "@/lib/env";
+import { getAvScanRequired, getAvScanUrl, isCi, isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
   uploadToR2,
   isR2Configured,
   buildUploadKey,
-  getPresignedUploadPost,
   getR2ObjectMetadata,
   readR2ObjectHead,
   deleteFromR2,
@@ -579,7 +571,6 @@ export const GET = withAuth(
     const { searchParams } = new URL(request.url);
     const filename = searchParams.get("filename");
     const contentType = searchParams.get("contentType");
-    const category = searchParams.get("category") || "uploads";
     // S-26: Derive clinicId from session. Super-admins may specify a target.
     // Never fall back to "shared" — reject if no clinic context.
     const clinicId =
@@ -591,61 +582,15 @@ export const GET = withAuth(
     if (!filename || !contentType) {
       return apiError("filename and contentType are required");
     }
+    void filename;
+    void contentType;
+    void clinicId;
 
-    if (!ALLOWED_TYPES.has(contentType)) {
-      return apiError(`File type not allowed: ${contentType}`);
-    }
-
-    // W8-A9-01: Block GIF in clinical categories for presigned uploads too.
-    const normGetCat = normalizePhiCategory(category);
-    if (contentType === "image/gif" && CLINICAL_CATEGORIES.has(normGetCat)) {
-      return apiError(
-        "GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.",
-      );
-    }
-
-    // AUDIT-01: PHI categories MUST go through the POST handler which encrypts
-    // the file server-side before storing to R2. Presigned direct uploads bypass
-    // server-side encryption and would store plaintext PHI — a compliance
-    // violation under Moroccan Law 09-08.
-    if (requiresEncryption(category)) {
-      return apiError(
-        "Direct upload is not allowed for PHI file categories. Use the POST endpoint instead.",
-        400,
-        "PHI_DIRECT_UPLOAD_BLOCKED",
-      );
-    }
-
-    const key = buildUploadKey(clinicId, category, filename);
-    // F-16: Use the DB-backed limit so the advertised maxSize reflects any
-    // clinic-level override, not just the platform default.
-    const maxSize = await limitForClinicCategory(
-      clinicId,
-      normalizePhiCategory(category),
-      limitForCategory(category),
+    return apiError(
+      "Direct browser uploads are disabled. Use POST /api/upload with multipart/form-data so the server can enforce file limits before writing to storage.",
+      410,
+      "DIRECT_UPLOAD_DISABLED",
     );
-    const presigned = await getPresignedUploadPost(key, contentType, maxSize);
-
-    if (!presigned) {
-      return apiInternalError("Failed to generate upload URL");
-    }
-
-    const r2PublicUrl = getR2Config().publicUrl;
-    const publicUrl = r2PublicUrl ? `${r2PublicUrl.replace(/\/$/, "")}/${key}` : null;
-
-    // L3-H2: Include responsive thumbnail URLs for image content types so the
-    // client can render optimized previews after direct-upload completes.
-    const isImage = contentType.startsWith("image/");
-    const thumbnails = isImage && publicUrl ? getResponsiveImageUrls(publicUrl) : undefined;
-
-    return apiSuccess({
-      uploadUrl: presigned.url,
-      fields: presigned.fields,
-      key: presigned.key,
-      publicUrl,
-      thumbnails,
-      maxSize,
-    });
   },
   ["super_admin", "clinic_admin", "receptionist", "doctor"],
 );

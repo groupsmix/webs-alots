@@ -12,7 +12,6 @@
  * This file orchestrates the modules and handles Supabase auth.
  */
 import { createServerClient } from "@supabase/ssr";
-import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { verifyCronSecret } from "@/lib/cron-auth";
@@ -40,10 +39,19 @@ import {
 } from "@/lib/middleware/security-headers";
 import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
+import {
+  applyRequestScopedResponseHeaders,
+  clearInternalRateLimitRequestHeaders,
+  setInternalRateLimitRequestHeaders,
+} from "@/lib/request-context-response-headers";
 import { isReservedSubdomain } from "@/lib/reserved-subdomains";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractRawSubdomain, extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
+
+interface MiddlewareUser {
+  id: string;
+}
 
 /**
  * Set tenant headers on a response so downstream Server Components
@@ -174,6 +182,7 @@ export async function middleware(request: NextRequest) {
   // --- Inject CSP nonce into request headers so Server Components
   //     can read it via headers().get('x-nonce') ---
   const requestHeaders = new Headers(request.headers);
+  clearInternalRateLimitRequestHeaders(requestHeaders);
   requestHeaders.set("x-nonce", nonce);
   // Forward the enforcing CSP so Server Components that introspect the request
   // headers see the same policy the browser will enforce. Guard against an
@@ -291,9 +300,8 @@ export async function middleware(request: NextRequest) {
   if (rateLimitResponse) {
     // Add rate limit headers to the response
     if (rateLimitInfo) {
-      rateLimitResponse.headers.set("X-RateLimit-Limit", rateLimitInfo.limit.toString());
-      rateLimitResponse.headers.set("X-RateLimit-Remaining", rateLimitInfo.remaining.toString());
-      rateLimitResponse.headers.set("X-RateLimit-Reset", rateLimitInfo.reset.toString());
+      setInternalRateLimitRequestHeaders(requestHeaders, rateLimitInfo);
+      applyRequestScopedResponseHeaders({ headers: requestHeaders }, rateLimitResponse);
     }
     return rateLimitResponse;
   }
@@ -340,12 +348,11 @@ export async function middleware(request: NextRequest) {
   });
   applyAllSecurityHeaders(supabaseResponse, cspHeaders);
 
-  // Set rate limit headers on every API response (not just 429) so
-  // consumers can monitor their remaining quota proactively.
+  // Store rate limit state on the internal request headers so route handlers
+  // can copy it onto the final response they return.
   if (rateLimitInfo && pathname.startsWith("/api/")) {
-    supabaseResponse.headers.set("X-RateLimit-Limit", rateLimitInfo.limit.toString());
-    supabaseResponse.headers.set("X-RateLimit-Remaining", rateLimitInfo.remaining.toString());
-    supabaseResponse.headers.set("X-RateLimit-Reset", rateLimitInfo.reset.toString());
+    setInternalRateLimitRequestHeaders(requestHeaders, rateLimitInfo);
+    applyRequestScopedResponseHeaders({ headers: requestHeaders }, supabaseResponse);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -449,18 +456,29 @@ export async function middleware(request: NextRequest) {
     .getAll()
     .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
 
-  let user: User | null = null;
+  const authClient = supabase.auth as unknown as {
+    getUser: () => Promise<{ data: { user: MiddlewareUser | null } }>;
+    signOut: () => Promise<unknown>;
+  };
+
+  let user: MiddlewareUser | null = null;
   if (hasSupabaseAuthCookies) {
     const {
       data: { user: validatedUser },
-    } = await supabase.auth.getUser();
+    } = await authClient.getUser();
     user = validatedUser;
   }
 
   // SEED-01: Block seed users from accessing any route in production.
   // Sign them out and redirect to login with an error.
-  if (user && isSeedUserBlocked(user.id)) {
-    await supabase.auth.signOut();
+  if (
+    user &&
+    (await isSeedUserBlocked({
+      authId: user.id,
+      email: user.email ?? null,
+    }))
+  ) {
+    await authClient.signOut();
     return secureRedirect(new URL("/login?error=account_disabled", request.url));
   }
 
@@ -597,7 +615,7 @@ export async function middleware(request: NextRequest) {
     // would bounce them to /patient/dashboard, creating an infinite
     // redirect loop.
     if (!allowedPrefix) {
-      await supabase.auth.signOut();
+      await authClient.signOut();
       return secureRedirect(new URL("/login?error=unauthorized_role", request.url));
     }
 

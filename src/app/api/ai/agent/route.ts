@@ -9,7 +9,7 @@
  * producing a final answer. Replaces the single-shot ToolPlan approach.
  */
 
-import { tool as aiTool, type ToolSet } from "ai";
+import { tool as aiTool } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { incrementAgentTokenUsage, saveAgentConversationTurn } from "@/lib/ai/chat-history";
@@ -124,6 +124,8 @@ function historyToPrompt(messages: AgentMessage[]): string {
     .join("\n");
 }
 
+type AgentToolSet = Record<string, unknown>;
+
 // ── AI SDK tool conversion (Task A5) ──
 
 /**
@@ -132,7 +134,7 @@ function historyToPrompt(messages: AgentMessage[]): string {
  * `executeAgentTool()` so RBAC scoping, read-only guard, and tenant
  * context are unchanged.
  */
-function buildSDKTools(toolDefs: AgentToolDefinition[], ctx: AgentToolContext): ToolSet {
+function buildSDKTools(toolDefs: AgentToolDefinition[], ctx: AgentToolContext): AgentToolSet {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tools: Record<string, any> = {};
 

@@ -25,6 +25,10 @@
  *   F-A199:  AI medical-advice disclaimer in response payloads
  */
 
+import {
+  assertAICircuitBreakerAllowsRequests,
+  getAICircuitBreakerSnapshot,
+} from "@/lib/ai/circuit-breaker";
 import { AI_DISCLAIMER_FR } from "@/lib/ai-disclaimer";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
@@ -119,6 +123,11 @@ export async function resolveAIConfig(): Promise<
   // F-AI-01: Kill switch
   if (!(await isAIEnabled())) {
     return { ok: false, reason: "AI features are disabled", statusCode: 503 };
+  }
+
+  const circuit = await assertAICircuitBreakerAllowsRequests();
+  if (!circuit.ok) {
+    return { ok: false, reason: circuit.reason, statusCode: circuit.statusCode };
   }
 
   const configs = await loadEffectiveConfigs();
@@ -274,6 +283,14 @@ function buildProviderConfig(
 
   logger.debug("AI config resolved", { context: "ai-config", provider, model });
   return { ok: true, config: { provider, apiKey: config.apiKey, baseUrl, model, seed } };
+}
+
+export async function getAIAvailabilityStatus(): Promise<{
+  enabled: boolean;
+  circuit: Awaited<ReturnType<typeof getAICircuitBreakerSnapshot>>;
+}> {
+  const [enabled, circuit] = await Promise.all([isAIEnabled(), getAICircuitBreakerSnapshot()]);
+  return { enabled, circuit };
 }
 
 /**

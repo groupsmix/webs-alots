@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
+import { fetchWithAICircuitBreaker } from "@/lib/ai/circuit-breaker";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiInternalError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -162,23 +163,27 @@ Current Financial Data:
 - Recent payments: ${JSON.stringify(ctx.recentPayments)}`;
 
     try {
-      const response = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${aiConfig.apiKey}`,
-          "Content-Type": "application/json",
+      const response = await fetchWithAICircuitBreaker(
+        `${aiConfig.baseUrl}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${aiConfig.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: aiConfig.model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: question },
+            ],
+            max_tokens: 800,
+            temperature: 0.3,
+          }),
+          signal: AbortSignal.timeout(30_000),
         },
-        body: JSON.stringify({
-          model: aiConfig.model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: question },
-          ],
-          max_tokens: 800,
-          temperature: 0.3,
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
+        { provider: aiConfig.provider },
+      );
 
       if (!response.ok) {
         logger.error("AI API request failed", {
