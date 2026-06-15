@@ -30,6 +30,7 @@ npm run test:e2e -- --grep 'smoke'
 ```
 
 **Expected behavior:**
+
 - Some tests will fail (chaos-induced)
 - No unhandled exceptions or crashes
 - Error boundaries catch chaos errors
@@ -47,6 +48,7 @@ Test critical user flows with chaos enabled:
 4. **Generate invoice** (expect Stripe API timeouts)
 
 **For each failure:**
+
 - ✅ User sees a friendly error message (not a stack trace)
 - ✅ System logs the error to Sentry
 - ✅ User can retry the operation successfully
@@ -56,10 +58,12 @@ Test critical user flows with chaos enabled:
 ## Step 4: Review Sentry Logs
 
 Go to Sentry and filter for:
+
 - Tag: `chaos_experiment:*`
 - Environment: `staging`
 
 **What to look for:**
+
 - ✅ All chaos errors are caught and logged
 - ✅ No uncaught exceptions
 - ❌ User-facing stack traces (if found, fix error boundaries)
@@ -84,7 +88,7 @@ Create a report: `docs/chaos-reviews/YYYY-MM-DD-chaos-report.md`
 # Chaos Engineering Report — {Date}
 
 **Tested by:** {Your Name}  
-**Duration:** {X} hours  
+**Duration:** {X} hours
 
 ## Summary
 
@@ -95,6 +99,7 @@ Create a report: `docs/chaos-reviews/YYYY-MM-DD-chaos-report.md`
 ## Findings
 
 ### Issue #1: Unhandled Stripe timeout
+
 - **Severity:** High
 - **Description:** Stripe timeout crashes booking flow
 - **Fix:** Add try/catch in `createPaymentIntent()`
@@ -122,6 +127,7 @@ In addition to chaos tests, review:
 ## Escalation
 
 If you find:
+
 - ❌ **Unhandled exceptions** — Fix immediately before production
 - ❌ **Data corruption** — Escalate to principal engineer
 - ❌ **Cascading failures** — Review circuit breaker implementation

@@ -19,10 +19,10 @@ import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiError, apiInternalError, apiRateLimited, apiSuccess } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { isAIEnabled } from "@/lib/features";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { aiVoiceNoteLimiter, aiClinicCeilingLimiter } from "@/lib/rate-limit";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
-import { safeFetch } from "@/lib/fetch-wrapper";
 
 /** Maximum audio upload size: 25 MB (Whisper API limit) */
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;

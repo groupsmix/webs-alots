@@ -44,36 +44,39 @@ export default function FeatureFlagsPage() {
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [kvAvailable, setKvAvailable] = useState(true);
 
-  const loadFlags = useCallback(async (showRefreshing = false) => {
-    if (showRefreshing) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const response = await fetch("/api/super-admin/feature-flags", {
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as {
-        ok: boolean;
-        data?: FeatureFlagResponse;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.ok || !payload.data) {
-        throw new Error(payload.error ?? "Failed to load feature flags");
+  const loadFlags = useCallback(
+    async (showRefreshing = false) => {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
       }
 
-      setFlags(payload.data.flags);
-      setKvAvailable(payload.data.kvAvailable);
-    } catch {
-      addToast("Failed to load feature flags", "error");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [addToast]);
+      try {
+        const response = await fetch("/api/super-admin/feature-flags", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          ok: boolean;
+          data?: FeatureFlagResponse;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.ok || !payload.data) {
+          throw new Error(payload.error ?? "Failed to load feature flags");
+        }
+
+        setFlags(payload.data.flags);
+        setKvAvailable(payload.data.kvAvailable);
+      } catch {
+        addToast("Failed to load feature flags", "error");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [addToast],
+  );
 
   useEffect(() => {
     void loadFlags();
@@ -94,16 +97,11 @@ export default function FeatureFlagsPage() {
       }
 
       setFlags((currentFlags) =>
-        currentFlags.map((flag) =>
-          flag.key === key ? { ...flag, enabled: !currentValue } : flag,
-        ),
+        currentFlags.map((flag) => (flag.key === key ? { ...flag, enabled: !currentValue } : flag)),
       );
       addToast(`Feature ${!currentValue ? "enabled" : "disabled"}`, "success");
     } catch (error) {
-      addToast(
-        error instanceof Error ? error.message : "Failed to update feature flag",
-        "error",
-      );
+      addToast(error instanceof Error ? error.message : "Failed to update feature flag", "error");
       await loadFlags(true);
     } finally {
       setUpdating(null);

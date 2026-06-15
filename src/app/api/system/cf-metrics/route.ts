@@ -1,6 +1,6 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { withAuth } from "@/lib/with-auth";
 import { safeFetch } from "@/lib/fetch-wrapper";
+import { withAuth } from "@/lib/with-auth";
 
 export const dynamic = "force-dynamic";
 

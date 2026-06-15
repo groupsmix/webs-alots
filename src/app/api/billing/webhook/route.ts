@@ -8,8 +8,8 @@ import { createAdminClient } from "@/lib/supabase-server";
 import type { Json } from "@/lib/types/database";
 import { subscriptionWebhookEventSchema } from "@/lib/validations";
 import type { SubscriptionWebhookEvent } from "@/lib/validations";
-import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { readWebhookBody } from "@/lib/webhook-body";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 
 /**
  * Q-01: Stripe API timeout. If Stripe is degraded, an unbounded fetch here

@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {

@@ -1,17 +1,22 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 import { withAuth } from "@/lib/with-auth";
 
 // POST /api/super-admin/chaos/toggle — Enable/disable chaos experiments
 export const POST = withAuth(
-  async (req: NextRequest, { user, env }) => {
+  async (req: NextRequest, { user }) => {
     try {
       const body = await req.json();
       const enabled = Boolean(body.enabled);
 
       // Store chaos state in KV (per-environment)
-      await env.FEATURE_FLAGS_KV.put("chaos_enabled", JSON.stringify({ enabled }));
+      const kv = await getWorkerBinding<KVNamespace>("FEATURE_FLAGS_KV");
+      if (!kv) {
+        return apiError("KV binding unavailable", 503, "KV_UNAVAILABLE");
+      }
+      await kv.put("chaos_enabled", JSON.stringify({ enabled }));
 
       logger.warn("Chaos experiments toggled", {
         context: "chaos-engine",

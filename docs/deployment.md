@@ -18,29 +18,32 @@ Merge to main/staging
   └─ db-migrate.yml  -> applies Supabase migrations when supabase/migrations/** changed
 ```
 
-| Stage | Trigger | Workflow | Notes |
-| --- | --- | --- | --- |
-| PR validation | `pull_request` | `ci.yml` | Lint, typecheck, tests, security checks, E2E |
-| Cloudflare build validation | `pull_request` | `pr-preview.yml` | Compile-only `npm run build:cf` smoke check |
-| Worker deploy | `push` to `main` / `staging` | `.github/workflows/deploy.yml` | Deploys both `webs-alots` and `webs-alots-ai` |
-| DB migrations | `push` to `main` / `staging` and migration file changes | `.github/workflows/db-migrate.yml` | Pushes Supabase migrations remotely |
+| Stage                       | Trigger                                                 | Workflow                           | Notes                                         |
+| --------------------------- | ------------------------------------------------------- | ---------------------------------- | --------------------------------------------- |
+| PR validation               | `pull_request`                                          | `ci.yml`                           | Lint, typecheck, tests, security checks, E2E  |
+| Cloudflare build validation | `pull_request`                                          | `pr-preview.yml`                   | Compile-only `npm run build:cf` smoke check   |
+| Worker deploy               | `push` to `main` / `staging`                            | `.github/workflows/deploy.yml`     | Deploys both `webs-alots` and `webs-alots-ai` |
+| DB migrations               | `push` to `main` / `staging` and migration file changes | `.github/workflows/db-migrate.yml` | Pushes Supabase migrations remotely           |
 
 ---
 
 ## Worker architecture
 
 ### Main Worker
+
 - Name: `webs-alots` / `webs-alots-staging`
 - Wrangler entrypoint: `worker-cron-handler.ts`
 - Generated OpenNext fetch bundle: `.open-next/worker.js`
 - Static assets: `.open-next/assets/`
 
 `worker-cron-handler.ts` is the real Worker entry. It:
+
 - forwards normal HTTP traffic to the generated OpenNext bundle
 - exports `scheduled()` for cron triggers
 - exports `queue()` for Cloudflare Queue consumption
 
 ### AI Worker
+
 - Name: `webs-alots-ai`
 - Source: `workers/ai/`
 - Deployed separately by the same `deploy.yml` workflow
@@ -50,6 +53,7 @@ Merge to main/staging
 ## Required GitHub secrets
 
 ### For Worker deploys
+
 Used by `.github/workflows/deploy.yml`:
 
 - `CLOUDFLARE_API_TOKEN`
@@ -60,6 +64,7 @@ Used by `.github/workflows/deploy.yml`:
 - `STAGING_SUPABASE_ANON_KEY`
 
 ### For database migrations
+
 Used by `.github/workflows/db-migrate.yml`:
 
 - `SUPABASE_ACCESS_TOKEN`
@@ -92,9 +97,11 @@ Typical required secrets include:
 Set or rotate them either:
 
 ### Option A — Cloudflare dashboard
+
 **Workers & Pages → Worker → Settings → Variables and Secrets**
 
 ### Option B — Wrangler locally
+
 ```bash
 npx wrangler secret put SECRET_NAME
 npx wrangler secret put SECRET_NAME --env staging
@@ -116,10 +123,12 @@ On push to `main` or `staging`:
 8. deploys the separate AI Worker
 
 ### Environment selection
+
 - `main` -> production
 - `staging` -> staging
 
 ### Build-time public env handling
+
 `NEXT_PUBLIC_*` values are injected during the GitHub Actions build step, not read from runtime Worker secrets.
 
 ---
@@ -143,6 +152,7 @@ This workflow is separate from Worker deploys.
 This repo still contains evidence that a Cloudflare Pages integration may exist for previews, but the application itself targets **Workers**, not Pages.
 
 Operational recommendation:
+
 - disable or disconnect Pages preview builds unless they are intentionally retained
 - keep `pr-preview.yml` as the authoritative PR build signal for the Workers target
 
@@ -179,6 +189,7 @@ npx wrangler deploy --env production
 ## Rollback
 
 ### Worker rollback
+
 Use either:
 
 ```bash
@@ -188,6 +199,7 @@ npx wrangler rollback --name webs-alots
 or the Cloudflare dashboard deployment history.
 
 ### Database rollback
+
 There is no automatic DB rollback in the deploy workflow. Treat schema changes as forward-only unless you have an explicit remediation migration.
 
 ---
@@ -206,11 +218,13 @@ There is no automatic DB rollback in the deploy workflow. Treat schema changes a
 ## Known drift that was fixed
 
 This document previously described:
+
 - Cloudflare Workers Builds OAuth-only deploys
 - `deploy.yml` as deleted
 - Supabase GitHub integration as the active migration path
 
 That was stale relative to the repository. The current source of truth is:
+
 - `.github/workflows/deploy.yml`
 - `.github/workflows/db-migrate.yml`
 - `wrangler.toml`

@@ -200,6 +200,7 @@ Create a dated file in `docs/database-reviews/YYYY-MM-DD-review.md`.
 ## Findings
 
 ### Slow Query #1
+
 - Query: `SELECT ...`
 - Avg Time: 250ms
 - Proposed Fix: add index on `slot_start`

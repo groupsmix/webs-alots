@@ -54,12 +54,12 @@ operators complete and record recurring drills.
 These objectives align with the repo's current backup architecture and should be
 used as the baseline until a stricter commercial SLA is formally adopted.
 
-| Objective | Target | Basis |
-| --- | --- | --- |
-| App-tier RTO | < 30 minutes | Worker rollback/redeploy via GitHub Actions or Wrangler |
-| Platform RTO (full DB restore path) | < 2 hours | Matches `docs/backup-recovery-runbook.md` |
-| Baseline RPO | < 24 hours | Nightly encrypted logical backup |
-| Improved RPO when Supabase PITR is available | Minutes to hours | Depends on Supabase plan and operator execution |
+| Objective                                    | Target           | Basis                                                   |
+| -------------------------------------------- | ---------------- | ------------------------------------------------------- |
+| App-tier RTO                                 | < 30 minutes     | Worker rollback/redeploy via GitHub Actions or Wrangler |
+| Platform RTO (full DB restore path)          | < 2 hours        | Matches `docs/backup-recovery-runbook.md`               |
+| Baseline RPO                                 | < 24 hours       | Nightly encrypted logical backup                        |
+| Improved RPO when Supabase PITR is available | Minutes to hours | Depends on Supabase plan and operator execution         |
 
 ### Important note
 
@@ -76,24 +76,32 @@ Declare DR when any of the following occurs and normal incident handling is not
 sufficient:
 
 ### DR-1 — Database corruption or destructive change
+
 Examples:
+
 - accidental destructive migration
 - bulk tenant data corruption
 - unrecoverable logical inconsistency in production data
 
 ### DR-2 — Primary database regional outage
+
 Examples:
+
 - prolonged Supabase regional outage
 - upstream database unavailability beyond the incident tolerance window
 
 ### DR-3 — Storage loss or severe object-store degradation
+
 Examples:
+
 - R2 bucket deletion
 - unreadable replicated objects
 - widespread signed-download failures for patient files
 
 ### DR-4 — Control-plane drift blocks recovery
+
 Examples:
+
 - missing Worker route bindings
 - wrong KV namespace IDs
 - queue or bucket bindings lost during manual dashboard edits
@@ -102,13 +110,13 @@ Examples:
 
 ## 5. Roles and ownership
 
-| Role | Primary responsibility |
-| --- | --- |
-| Incident Commander | Declares DR, assigns workstreams, approves cutover/failback |
-| Platform Lead | Worker deploys, Cloudflare bindings, route verification |
-| Database Lead | Backup selection, restore execution, integrity verification |
-| Security/Compliance Lead | PHI handling, evidence capture, notification obligations |
-| Communications Lead | Internal updates, clinic/customer messaging, status page |
+| Role                     | Primary responsibility                                      |
+| ------------------------ | ----------------------------------------------------------- |
+| Incident Commander       | Declares DR, assigns workstreams, approves cutover/failback |
+| Platform Lead            | Worker deploys, Cloudflare bindings, route verification     |
+| Database Lead            | Backup selection, restore execution, integrity verification |
+| Security/Compliance Lead | PHI handling, evidence capture, notification obligations    |
+| Communications Lead      | Internal updates, clinic/customer messaging, status page    |
 
 If one person fills multiple roles during a small-team incident, explicitly log
 that in the incident timeline.
@@ -135,6 +143,7 @@ failure even if the technical restore succeeded.
 ## 7. Recovery strategies by failure mode
 
 ### 7.1 Worker-only or deploy regression
+
 Use when the database is healthy but the deployed app is broken.
 
 1. Halt further deploys
@@ -147,10 +156,12 @@ Use when the database is healthy but the deployed app is broken.
 4. Record start/end time and rollback version
 
 Primary references:
+
 - `docs/deployment.md`
 - `.github/workflows/deploy.yml`
 
 ### 7.2 Database restore from Supabase backup/PITR
+
 Use when Supabase remains reachable and platform-native restore is sufficient.
 
 1. Choose restore point
@@ -160,9 +171,11 @@ Use when Supabase remains reachable and platform-native restore is sufficient.
 5. Record actual RPO/RTO in `docs/restore-drill-evidence.md`
 
 Primary references:
+
 - `docs/backup-recovery-runbook.md`
 
 ### 7.3 Database restore from R2 encrypted logical backup
+
 Use when PITR is unavailable, insufficient, or a separate recovery target is
 required.
 
@@ -174,11 +187,13 @@ required.
 6. Run smoke checks and tenant-isolation verification
 
 Primary references:
+
 - `.github/workflows/backup.yml`
 - `.github/workflows/restore-test.yml`
 - `docs/backup-recovery-runbook.md`
 
 ### 7.4 Regional failover / recovery environment cutover
+
 Use when the primary database region is unavailable beyond the tolerance window.
 
 1. Restore latest viable backup into approved secondary environment
@@ -188,10 +203,12 @@ Use when the primary database region is unavailable beyond the tolerance window.
 5. Communicate residual data-loss window to stakeholders
 
 Primary references:
+
 - `docs/multi-region-failover.md`
 - `docs/backup-recovery-runbook.md`
 
 ### 7.5 R2 / file recovery
+
 Use when encrypted uploads are unavailable.
 
 1. Determine whether replica bucket or alternate copy exists
@@ -200,6 +217,7 @@ Use when encrypted uploads are unavailable.
 4. Notify affected clinics if file access remains degraded
 
 Primary references:
+
 - `docs/backup-recovery-runbook.md`
 
 ---
@@ -225,15 +243,18 @@ If tenant isolation cannot be verified, do **not** declare recovery complete.
 ## 9. Drill cadence and evidence
 
 ### Automated drill
+
 - Workflow: `.github/workflows/restore-test.yml`
 - Cadence: monthly
 - Purpose: verify backup fetch, decrypt, decompress, and restore chain
 
 ### Manual full drill
+
 - Cadence: quarterly
 - Purpose: verify operator execution, cutover readiness, smoke checks, and evidence collection
 
 ### Evidence requirements
+
 Every drill must update:
 
 1. `docs/restore-drill-evidence.md`

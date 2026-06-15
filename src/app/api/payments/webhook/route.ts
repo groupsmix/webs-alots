@@ -9,8 +9,8 @@ import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { stripeWebhookEventSchema } from "@/lib/validations";
 import type { StripeWebhookEvent } from "@/lib/validations";
-import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { readWebhookBody } from "@/lib/webhook-body";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 
 /**
  * POST /api/payments/webhook

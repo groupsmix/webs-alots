@@ -51,7 +51,7 @@ export async function createClient() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
+  const client = createServerClient<Database>(
     getSupabaseUrl(),
     requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
@@ -223,7 +223,8 @@ export type AdminPurpose =
   | "ai-team-tasks"
   | "ai-team-review"
   | "ai-triage"
-  | "ai-tracing";
+  | "ai-tracing"
+  | "super_admin_feature_flags";
 
 /**
  * Create a Supabase admin client using the service role key.
@@ -363,7 +364,6 @@ function applyChaos<T>(supabase: T): T {
           const builder = target.from(table);
 
           // Wrap .select(), .insert(), .update(), .delete()
-          // @ts-expect-error Proxying complex Supabase types is hard
           return new Proxy(builder, {
             get(builderTarget, builderProp) {
               const original = builderTarget[builderProp];

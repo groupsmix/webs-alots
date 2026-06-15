@@ -12,8 +12,8 @@ import { logger } from "@/lib/logger";
 import { dispatchNotification, type TemplateVariables } from "@/lib/notifications";
 import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
-import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { readWebhookBody } from "@/lib/webhook-body";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { handleWhatsAppConversation } from "@/lib/whatsapp/conversation-handler";
 
 // ── WhatsApp Webhook payload types ──
@@ -274,8 +274,8 @@ export async function POST(request: NextRequest) {
         const { data: clinic } = await supabase
           .from("clinics")
           .select("id, name")
-          // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-          .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .eq("whatsapp_phone_number_id" as any, wabaPhoneNumberId)
           .is("deleted_at", null)
           .single();
         clinicId = clinic?.id;

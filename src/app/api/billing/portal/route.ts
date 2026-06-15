@@ -1,8 +1,8 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { subscriptionPortalSchema } from "@/lib/validations";
-import { safeFetch } from "@/lib/fetch-wrapper";
 
 /**
  * POST /api/billing/portal

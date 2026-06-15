@@ -23,12 +23,7 @@
  */
 
 // S-26: Upload route requires tenant context — never write to a shared/ prefix
-import {
-  apiError,
-  apiForbidden,
-  apiNotFound,
-  apiSuccess,
-} from "@/lib/api-response";
+import { apiError, apiForbidden, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { requiresEncryption, normalizePhiCategory } from "@/lib/encryption";
 import { getAvScanRequired, getAvScanUrl, isCi, isProduction } from "@/lib/env";

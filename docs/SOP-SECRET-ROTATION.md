@@ -73,7 +73,7 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 1. Update `CRON_SECRET` in GitHub Secrets.
 1. Run `update-secrets.yml`.
    **Verify:** Check the next scheduled cron execution in the Cloudflare Dashboard to ensure it returns 200 OK.
-2. Update `CRON_SECRET_ROTATED_AT` in the runtime environment to the current ISO-8601 timestamp so `/api/health/internal` can alert if rotation age exceeds policy.
+1. Update `CRON_SECRET_ROTATED_AT` in the runtime environment to the current ISO-8601 timestamp so `/api/health/internal` can alert if rotation age exceeds policy.
 
 ## 7. `BOOKING_TOKEN_SECRET`
 

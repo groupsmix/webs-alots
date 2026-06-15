@@ -85,7 +85,8 @@ describe("GET /api/super-admin/feature-flags", () => {
     vi.clearAllMocks();
     vi.mocked(isAiDisabledByEnv).mockReturnValue(false);
     vi.mocked(getKVBinding).mockResolvedValue(mockKv);
-    vi.mocked(createUntypedAdminClient).mockReturnValue(mockUntypedAdminClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(createUntypedAdminClient).mockReturnValue(mockUntypedAdminClient as any);
     mockKv.get.mockResolvedValue(null);
     mockKv.put.mockResolvedValue(undefined);
     mockOrder.mockResolvedValue({ data: [], error: null });
@@ -170,7 +171,8 @@ describe("PUT /api/super-admin/feature-flags", () => {
     vi.clearAllMocks();
     vi.mocked(isAiDisabledByEnv).mockReturnValue(false);
     vi.mocked(getKVBinding).mockResolvedValue(mockKv);
-    vi.mocked(createUntypedAdminClient).mockReturnValue(mockUntypedAdminClient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(createUntypedAdminClient).mockReturnValue(mockUntypedAdminClient as any);
     mockKv.get.mockResolvedValue(null);
     mockKv.put.mockResolvedValue(undefined);
     mockOrder.mockResolvedValue({ data: [], error: null });
@@ -193,6 +195,7 @@ describe("PUT /api/super-admin/feature-flags", () => {
   });
 
   it("rejects unknown feature flag keys", async () => {
+    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
     const { PUT } = await import("@/app/api/super-admin/feature-flags/route");
     const response = await PUT(
       buildRequest("PUT", {

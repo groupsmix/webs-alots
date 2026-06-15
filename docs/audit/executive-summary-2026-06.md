@@ -22,21 +22,25 @@ Oltigo Health has **strong security and tenancy foundations** for a multi-tenant
 ## What needs attention
 
 ### 1. Deployment/runtime complexity
+
 - Evidence: `wrangler.toml`, `package.json`, `.github/workflows/deploy.yml`
 - Queue consumer and Durable Object wiring remain deferred due to OpenNext export limitations.
 - This is the clearest repo-visible reliability hotspot.
 
 ### 2. Coverage gap
+
 - Evidence: `docs/audit/baseline.md`, `.vitest-coverage-floor.json`
 - Current floors remain far below project targets.
 - This is a real regression and governance risk for healthcare-critical paths.
 
 ### 3. Notification architecture incomplete
+
 - Evidence: `wrangler.toml`
 - Queue producer is configured, but queue consumer remains deferred.
 - Cron fallback remains part of the current delivery model.
 
 ### 4. Runtime controls still depend on operator correctness
+
 - Evidence: `wrangler.toml`, env handling, runbooks, health checks
 - Important controls depend on secrets, Cloudflare resource bindings, environment separation, and external alert configuration.
 
@@ -53,12 +57,14 @@ Use these positions going forward:
 ## Recommended next steps
 
 ### Immediate
+
 1. Reduce OpenNext/Workers deployment fragility.
 2. Raise coverage on healthcare/security-critical paths.
 3. Finish queue-consumer architecture or formally accept cron fallback as an interim tradeoff.
 4. Produce operator evidence for alert routing, backup/restore execution, and environment separation.
 
 ### Near term
+
 1. Burst/load test the pooled Supabase path.
 2. Build an enterprise/compliance evidence pack from existing controls and external runtime proof.
 3. Reduce dependence on undocumented external platform state.
@@ -66,4 +72,5 @@ Use these positions going forward:
 ## Canonical detailed audit
 
 For the full repo-grounded version, see:
+
 - `docs/audit/repo-grounded-operational-audit-2026-06.md`

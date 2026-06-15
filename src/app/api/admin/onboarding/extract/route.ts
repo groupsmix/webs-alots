@@ -1,12 +1,12 @@
 import { type NextRequest } from "next/server";
 import { apiInternalError, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { getAnthropicApiKey } from "@/lib/env";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
-import { safeFetch } from "@/lib/fetch-wrapper";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 export const MAX_ONBOARDING_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -35,7 +35,7 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
         ? String(formData.get("clinic_name"))
         : "Clinique";
 
-    if (!(file instanceof File)) {
+    if (!file || typeof (file as { size?: unknown }).size !== "number") {
       return apiValidationError("file is required");
     }
     if (!clinicId) {

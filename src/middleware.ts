@@ -51,6 +51,7 @@ import { TENANT_HEADERS } from "@/lib/tenant";
 
 interface MiddlewareUser {
   id: string;
+  email?: string | null;
 }
 
 /**

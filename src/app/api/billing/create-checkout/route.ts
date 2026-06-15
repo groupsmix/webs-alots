@@ -1,9 +1,9 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { SUBSCRIPTION_PLANS, type PlanSlug } from "@/lib/config/subscription-plans";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { subscriptionCheckoutSchema } from "@/lib/validations";
-import { safeFetch } from "@/lib/fetch-wrapper";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.

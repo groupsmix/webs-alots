@@ -211,7 +211,8 @@ async function logUsage(
     user_id: auth.user.id,
   }); // nosemgrep: semgrep.tenant-scoping — ai_usage_logs is a global admin table (no clinic_id column); super-admin-only API, full RLS defined in migration
 
-  await alertIfAiDailyBudgetExceeded(supabase, response.costCents);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await alertIfAiDailyBudgetExceeded(supabase as any, response.costCents);
 
   // Atomic counter increment. Auto-resets at month boundary.
   const { error } = await supabase.rpc("increment_ai_usage", {

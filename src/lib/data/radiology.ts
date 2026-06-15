@@ -54,8 +54,8 @@ export async function updateRadiologyOrderStatus(
   }
   const { error } = await supabase
     .from("radiology_orders")
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-    .update(updateData)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update(updateData as any)
     .eq("clinic_id", clinicId)
     .eq("id", orderId);
   if (error) {

@@ -8,7 +8,7 @@ export async function createPaymentIntent(amount: number) {
       headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
       body: JSON.stringify({ amount, currency: "mad" }),
     });
-    
+
     return response.json();
   });
 }

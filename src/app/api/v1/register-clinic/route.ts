@@ -20,6 +20,7 @@ import {
   normalizeDomain,
 } from "@/lib/dns-verification";
 import { escapeSlackMrkdwn } from "@/lib/escape-slack";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { generateSubdomain } from "@/lib/generate-subdomain";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
@@ -33,7 +34,6 @@ import {
   GIBBERISH_NAME_MESSAGE,
 } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
-import { safeFetch } from "@/lib/fetch-wrapper";
 
 // ---------------------------------------------------------------------------
 // Anti-Abuse Rate Limiter
@@ -332,16 +332,19 @@ export async function POST(request: NextRequest) {
       return apiError("Turnstile verification is required", 400);
     }
     try {
-      const verifyRes = await safeFetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: data.turnstile_token,
-          remoteip: clientIp,
-        }),
-        signal: AbortSignal.timeout(5_000),
-      });
+      const verifyRes = await safeFetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: data.turnstile_token,
+            remoteip: clientIp,
+          }),
+          signal: AbortSignal.timeout(5_000),
+        },
+      );
       const verifyData = (await verifyRes.json()) as { success: boolean };
       if (!verifyData.success) {
         logger.warn("Turnstile verification failed", {

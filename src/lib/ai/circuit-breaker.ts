@@ -69,7 +69,9 @@ function parseMs(value: string | undefined, fallback: number): number {
 function getFailureThreshold(): number {
   return Math.max(
     1,
-    Math.floor(parseMs(process.env.AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD, DEFAULT_FAILURE_THRESHOLD)),
+    Math.floor(
+      parseMs(process.env.AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD, DEFAULT_FAILURE_THRESHOLD),
+    ),
   );
 }
 
@@ -91,7 +93,10 @@ function deriveState(raw: StoredCircuitBreakerState, now: number): AICircuitStat
   return "closed";
 }
 
-async function readRawState(): Promise<{ backend: "kv" | "memory"; raw: StoredCircuitBreakerState }> {
+async function readRawState(): Promise<{
+  backend: "kv" | "memory";
+  raw: StoredCircuitBreakerState;
+}> {
   try {
     const kv = await getKVBinding("FEATURE_FLAGS_KV");
     if (!kv) {

@@ -12,14 +12,14 @@ Oltigo focuses on the core clinic workflow: Online booking, Patient Records (PHI
 
 ## Stack
 
-| Layer         | Technology                                         |
-| ------------- | -------------------------------------------------- |
-| Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui    |
-| Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
+| Layer         | Technology                                                               |
+| ------------- | ------------------------------------------------------------------------ |
+| Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui                          |
+| Backend       | Supabase (Auth, Database, Storage, Edge Functions)                       |
 | Database      | Supabase-managed PostgreSQL (version surfaced by `/api/health/internal`) |
-| Notifications | WhatsApp Business API (Meta Cloud API)             |
-| Hosting       | Cloudflare Workers (via OpenNext)                  |
-| Payments      | CMI Payment Gateway                                |
+| Notifications | WhatsApp Business API (Meta Cloud API)                                   |
+| Hosting       | Cloudflare Workers (via OpenNext)                                        |
+| Payments      | CMI Payment Gateway                                                      |
 
 ## User Roles
 

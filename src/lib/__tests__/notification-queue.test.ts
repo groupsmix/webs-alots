@@ -256,9 +256,9 @@ describe("notification-queue", () => {
         deadLettered: 0,
       });
       expect(queue.spies.update.mock.calls[0][0]).toMatchObject({ status: "processing" });
-      expect(queue.spies.updateIn).toHaveBeenCalledWith(["queue-success-1"]);
+      expect(queue.spies.updateIn).toHaveBeenCalledWith("id", ["queue-success-1"]);
       expect(queue.spies.update.mock.calls[1][0]).toMatchObject({ status: "sent" });
-      expect(queue.spies.updateEq).toHaveBeenCalledWith("queue-success-1");
+      expect(queue.spies.updateEq).toHaveBeenCalledWith("id", "queue-success-1");
       expect(sendTextMessage).toHaveBeenCalledWith(
         "+212600000000",
         "Your appointment is confirmed.",
@@ -290,7 +290,7 @@ describe("notification-queue", () => {
       });
       expect(sendTextMessage).not.toHaveBeenCalled();
       expect(queue.spies.update.mock.calls[1][0]).toMatchObject({ status: "sent" });
-      expect(queue.spies.updateEq).toHaveBeenCalledWith("queue-restricted-1");
+      expect(queue.spies.updateEq).toHaveBeenCalledWith("id", "queue-restricted-1");
     });
 
     it("moves exhausted deliveries to dead-letter state and reports to Sentry", async () => {

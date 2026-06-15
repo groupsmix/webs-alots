@@ -2,8 +2,10 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/with-auth", () => ({
-  withAuth: (handler: (request: NextRequest, auth: unknown) => Promise<Response>) =>
-    (request: NextRequest) => handler(request, {}),
+  withAuth:
+    (handler: (request: NextRequest, auth: unknown) => Promise<Response>) =>
+    (request: NextRequest) =>
+      handler(request, {}),
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -28,10 +30,20 @@ function buildRequest(file: File): NextRequest {
   formData.append("clinic_id", "11111111-1111-1111-1111-111111111111");
   formData.append("clinic_name", "Clinique Test");
 
-  return new NextRequest("http://localhost:3000/api/admin/onboarding/extract", {
+  const request = new NextRequest("http://localhost:3000/api/admin/onboarding/extract", {
     method: "POST",
     body: formData,
   });
+
+  // jsdom/NextRequest does not preserve File objects through formData() serialization.
+  // Override formData() to return the original FormData so validation checks work.
+  Object.defineProperty(request, "formData", {
+    value: async () => formData,
+    writable: true,
+    configurable: true,
+  });
+
+  return request;
 }
 
 describe("POST /api/admin/onboarding/extract — upload validation", () => {
@@ -40,15 +52,16 @@ describe("POST /api/admin/onboarding/extract — upload validation", () => {
   });
 
   it("rejects oversized onboarding documents", async () => {
-    const { POST, MAX_ONBOARDING_DOCUMENT_BYTES } = await import(
-      "@/app/api/admin/onboarding/extract/route"
-    );
+    const { POST, MAX_ONBOARDING_DOCUMENT_BYTES } =
+      await import("@/app/api/admin/onboarding/extract/route");
 
-    const oversized = new File([
-      new Uint8Array(MAX_ONBOARDING_DOCUMENT_BYTES + 1),
-    ], "legal-doc.pdf", {
-      type: "application/pdf",
-    });
+    const oversized = new File(
+      [new Uint8Array(MAX_ONBOARDING_DOCUMENT_BYTES + 1)],
+      "legal-doc.pdf",
+      {
+        type: "application/pdf",
+      },
+    );
 
     const response = await POST(buildRequest(oversized));
     const body = await response.json();

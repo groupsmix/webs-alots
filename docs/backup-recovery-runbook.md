@@ -188,7 +188,6 @@ If no replica exists, uploaded files cannot be recovered. Enable replication by 
 For a concise cross-reference on regional recovery posture, see
 `docs/multi-region-failover.md`.
 
-
 ### Automated verification
 
 The nightly backup workflow includes a `verify` job that:

@@ -21,10 +21,10 @@ resource "cloudflare_queue" "notification_staging_dlq" {
 resource "cloudflare_queue_consumer" "notification_production" {
   count = var.manage_queue_consumers ? 1 : 0
 
-  account_id       = var.cloudflare_account_id
-  queue_id         = cloudflare_queue.notification_production.queue_id
-  type             = "worker"
-  script_name      = var.production_worker_name
+  account_id        = var.cloudflare_account_id
+  queue_id          = cloudflare_queue.notification_production.queue_id
+  type              = "worker"
+  script_name       = var.production_worker_name
   dead_letter_queue = cloudflare_queue.notification_production_dlq.queue_name
 
   settings = {
@@ -37,10 +37,10 @@ resource "cloudflare_queue_consumer" "notification_production" {
 resource "cloudflare_queue_consumer" "notification_staging" {
   count = var.manage_queue_consumers ? 1 : 0
 
-  account_id       = var.cloudflare_account_id
-  queue_id         = cloudflare_queue.notification_staging.queue_id
-  type             = "worker"
-  script_name      = var.staging_worker_name
+  account_id        = var.cloudflare_account_id
+  queue_id          = cloudflare_queue.notification_staging.queue_id
+  type              = "worker"
+  script_name       = var.staging_worker_name
   dead_letter_queue = cloudflare_queue.notification_staging_dlq.queue_name
 
   settings = {

@@ -11,8 +11,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest } from "next/server";
-import { resolveAIConfig } from "@/lib/ai/config";
 import { fetchWithAICircuitBreaker } from "@/lib/ai/circuit-breaker";
+import { resolveAIConfig } from "@/lib/ai/config";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiInternalError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";

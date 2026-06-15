@@ -44,7 +44,9 @@ const FEATURE_FLAG_DEFINITIONS: readonly SuperAdminFeatureFlagDefinition[] = [
   },
 ] as const;
 
-export function getSuperAdminFeatureFlagDefinition(key: string): SuperAdminFeatureFlagDefinition | null {
+export function getSuperAdminFeatureFlagDefinition(
+  key: string,
+): SuperAdminFeatureFlagDefinition | null {
   return FEATURE_FLAG_DEFINITIONS.find((flag) => flag.key === key) ?? null;
 }
 
@@ -63,13 +65,9 @@ export async function listSuperAdminFeatureFlags(): Promise<{
   const kvFlags = await Promise.all(
     FEATURE_FLAG_DEFINITIONS.map(async (definition) => {
       const lockState = definition.isLocked?.() ?? { locked: false, reason: null };
-      const storedValue = kv
-        ? await kv.get(definition.key, { type: "text" })
-        : null;
+      const storedValue = kv ? await kv.get(definition.key, { type: "text" }) : null;
       const kvEnabled =
-        typeof storedValue === "string"
-          ? storedValue !== "false"
-          : definition.defaultEnabled;
+        typeof storedValue === "string" ? storedValue !== "false" : definition.defaultEnabled;
 
       return {
         key: definition.key,

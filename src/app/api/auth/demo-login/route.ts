@@ -21,12 +21,12 @@ import {
   apiRateLimited,
 } from "@/lib/api-response";
 import { DEMO_USERS, DEMO_SUBDOMAIN } from "@/lib/demo";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { loginLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
 import { createClient } from "@/lib/supabase-server";
 import { safeParse } from "@/lib/validations";
-import { safeFetch } from "@/lib/fetch-wrapper";
 
 const demoLoginSchema = z.object({
   email: z.string().email(),
@@ -107,16 +107,19 @@ export async function POST(request: NextRequest) {
       return apiError("Turnstile verification is required", 400);
     }
     try {
-      const verifyRes = await safeFetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: turnstile_token,
-          remoteip: clientIp,
-        }),
-        signal: AbortSignal.timeout(5_000),
-      });
+      const verifyRes = await safeFetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: turnstile_token,
+            remoteip: clientIp,
+          }),
+          signal: AbortSignal.timeout(5_000),
+        },
+      );
       const verifyData = (await verifyRes.json()) as { success: boolean };
       if (!verifyData.success) {
         logger.warn("Turnstile verification failed for demo login", {

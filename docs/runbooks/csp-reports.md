@@ -37,11 +37,13 @@ violations, and suspicious `blocked-uri` spikes do not disappear into logs.
 ## What to look for
 
 ### Usually benign / expected drift
+
 - newly added third-party origin not yet reflected in policy
 - analytics/embed changes
 - inline style/script regressions introduced by a frontend change
 
 ### Investigate immediately
+
 - repeated `blocked-uri` values pointing to unknown domains
 - spikes in `script-src` or `connect-src` violations
 - repeated violations on auth, booking, billing, or PHI-bearing routes
@@ -67,6 +69,7 @@ Create an alert for either of these patterns:
 - sustained CSP violations on `/login`, `/register`, `/booking`, `/billing`, or `/api/*`
 
 Suggested response target:
+
 - triage within 1 business day for low-volume drift
 - immediate review for spikes that suggest XSS probing or script injection attempts
 

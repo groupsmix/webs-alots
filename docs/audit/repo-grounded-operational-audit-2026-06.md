@@ -35,116 +35,139 @@ Each claim below is classified as one of:
 ### 1. Multi-tenant isolation is a first-class architectural rule
 
 **Evidence**
+
 - `AGENTS.md`
 - `src/middleware.ts`
 - `src/lib/supabase-server.ts`
 
 **Details**
+
 - The repo explicitly requires `clinic_id` scoping.
 - Middleware strips inbound tenant headers and re-derives tenant context server-side.
 - Tenant-aware Supabase access is centralized and guarded.
 
 **Assessment**
+
 - This is one of the strongest parts of the system.
 
 ### 2. Deployment complexity is real and explicitly documented
 
 **Evidence**
+
 - `wrangler.toml`
 - `package.json`
 - `.github/workflows/deploy.yml`
 
 **Details**
+
 - The Worker deployment path depends on OpenNext build output and post-build patching.
 - `wrangler.toml` documents deferred Durable Object and Queue consumer wiring because OpenNext does not re-export those handlers/classes cleanly.
 - Deploy comments describe real failure modes rather than hypothetical ones.
 
 **Assessment**
+
 - This is a genuine operational complexity risk.
 
 ### 3. Coverage is currently low versus project targets
 
 **Evidence**
+
 - `docs/audit/baseline.md`
 - `.vitest-coverage-floor.json`
 
 **Details**
+
 - Floor file currently shows low baseline values.
 - The project documents much higher long-term targets.
 
 **Assessment**
+
 - This remains a justified concern, especially for healthcare/security-sensitive paths.
 
 ### 4. Connection pooler support exists in application code
 
 **Evidence**
+
 - `src/lib/env.ts`
 - `src/lib/supabase-server.ts`
 - `src/lib/connection-pooling.ts`
 - `src/app/api/health/internal/route.ts`
 
 **Details**
+
 - Server-side Supabase client creation prefers `SUPABASE_POOLER_URL`.
 - Pooler verification is surfaced in the internal health route.
 - The getter now normalizes empty/whitespace values to avoid invalid fallback behavior.
 
 **Assessment**
+
 - “Connection pooling not implemented” is no longer accurate.
 - The remaining risk is operational configuration and capacity, not absence of code support.
 
 ### 5. SLO/error-budget concepts are documented
 
 **Evidence**
+
 - `docs/oncall.md`
 - linked `docs/slo.md`
 
 **Details**
+
 - On-call docs reference error-budget burn alerts and latency thresholds.
 - Runbooks connect alerts to operational actions.
 
 **Assessment**
+
 - “No SLOs/error budgets defined” is inaccurate.
 - The correct concern is runtime verification of those alerts.
 
 ### 6. Incident response and postmortem processes are documented
 
 **Evidence**
+
 - `docs/incident-response.md`
 - `docs/post-mortem-template.md`
 - `docs/oncall.md`
 
 **Assessment**
+
 - “No incident response process” is inaccurate.
 - What remains unknown is drill cadence and operational adherence.
 
 ### 7. Backup and restore workflows exist in CI
 
 **Evidence**
+
 - `.github/workflows/backup.yml`
 - `.github/workflows/restore-test.yml`
 
 **Details**
+
 - Scheduled encrypted backups to R2 are defined.
 - A monthly restore drill workflow is defined.
 
 **Assessment**
+
 - “No backup verification / restore testing” is overstated.
 - Actual success history is not visible from repo alone.
 
 ### 8. Supply-chain controls are stronger than a basic npm-audit setup
 
 **Evidence**
+
 - `.github/workflows/ci.yml`
 - `.github/CODEOWNERS`
 - `.gitleaks.toml`
 
 **Details**
+
 - CI runs npm audit, CodeQL, Gitleaks, Semgrep.
 - CI generates a CycloneDX SBOM.
 - CI signs the SBOM with cosign and records build provenance.
 - CODEOWNERS protects critical paths.
 
 **Assessment**
+
 - “No SBOM / no provenance / no signing” is false for this repo.
 
 ---
@@ -156,40 +179,48 @@ These controls appear in the repository, but actual runtime state cannot be full
 ### 9. Branch protection and required checks
 
 **Evidence**
+
 - `.github/CODEOWNERS`
 - docs mentioning branch protection and required checks
 
 **Assessment**
+
 - Likely intended and probably configured, but GitHub repo settings are external.
 
 ### 10. Monitoring dashboards and alert routing
 
 **Evidence**
+
 - `docs/oncall.md`
 - `docs/incident-response.md`
 - Sentry config files
 
 **Assessment**
+
 - The expected operating model is documented.
 - Dashboard completeness, alert tuning, and delivery paths need external verification.
 
 ### 11. Staging/production environment separation
 
 **Evidence**
+
 - `wrangler.toml`
 - `deploy.yml`
 - README deployment notes
 
 **Assessment**
+
 - The repo shows strong intent to separate environments.
 - Secret values, Cloudflare bindings, and Workers Build settings are external.
 
 ### 12. Preview validation exists, but live ephemeral envs are not confirmed
 
 **Evidence**
+
 - `.github/workflows/pr-preview.yml`
 
 **Assessment**
+
 - PRs have a build-preview workflow.
 - This is not the same as a live per-PR application environment.
 
@@ -222,6 +253,7 @@ Even with many tests in the tree, the committed coverage floor shows the baselin
 ### C. Operator-side configuration is part of the control plane
 
 Several important protections depend on correct secret/config setup:
+
 - `SUPABASE_POOLER_URL`
 - production/staging binding separation
 - secret rotation acknowledgements

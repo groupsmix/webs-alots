@@ -1,8 +1,8 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { stripeCheckoutSchema } from "@/lib/validations";
 import { safeFetch } from "@/lib/fetch-wrapper";
+import { stripeCheckoutSchema } from "@/lib/validations";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.

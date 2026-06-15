@@ -11,7 +11,9 @@ vi.mock("../logger", () => ({
   },
 }));
 
-const makeMessage = (overrides: Partial<NotificationQueueMessage> = {}): NotificationQueueMessage => ({
+const makeMessage = (
+  overrides: Partial<NotificationQueueMessage> = {},
+): NotificationQueueMessage => ({
   queueRowId: "row-001",
   clinicId: "clinic-abc",
   channel: "whatsapp",
@@ -191,6 +193,8 @@ describe("processQueueBatch", () => {
 describe("enqueueNotification wires to CF Queue after DB insert", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
+    vi.doMock("../notification-queue", async (importOriginal) => importOriginal());
   });
 
   it("calls pushToNotificationQueue with the newly created row ID", async () => {

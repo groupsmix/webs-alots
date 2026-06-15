@@ -1,4 +1,5 @@
 # REMAINING TASKS TO FIX — Oltigo Health Platform
+
 **Date:** June 14, 2026  
 **Status:** ✅ **ALL P0/P1 CRITICAL RISKS RESOLVED**  
 **Remaining:** 4 operational improvements (P2)
@@ -10,6 +11,7 @@
 **The platform is PRODUCTION-READY.**
 
 All critical (P0) and high-priority (P1) risks have been resolved:
+
 - ✅ 6/6 Critical (P0) risks resolved (100%)
 - ✅ 7/7 High (P1) risks resolved (100%)
 - ✅ 7/11 Medium (P2) risks resolved (64%)
@@ -39,41 +41,43 @@ Based on codebase verification, the following items are **ALREADY DONE**:
 These are operational improvements that enhance long-term maintainability. None are production-blocking.
 
 ### TASK-P2-01: Feature Flag UI for Operators
+
 **Issue:** Feature flags toggled via wrangler CLI only (no UI)
 **Issue:** Post-deploy smoke test only tests signup, not AI endpoints  
 **Impact:** Broken AI deployment not caught until users report errors
 
 **Fix:**
+
 ```javascript
 // Add AI test to existing smoke test script
 // scripts/smoke-post-deploy.mjs
 
 async function testAIChat() {
-  console.log('Testing AI chat endpoint...');
-  
+  console.log("Testing AI chat endpoint...");
+
   const res = await fetch(`${DEPLOY_URL}/api/ai/chat`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${testUserToken}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${testUserToken}`,
     },
     body: JSON.stringify({
-      message: 'Hello, test message',
+      message: "Hello, test message",
       conversationId: null,
     }),
   });
-  
+
   if (!res.ok) {
     throw new Error(`AI chat test failed: ${res.status}`);
   }
-  
+
   const data = await res.json();
-  
+
   if (!data.content || data.content.length === 0) {
-    throw new Error('AI returned empty response');
+    throw new Error("AI returned empty response");
   }
-  
-  console.log('✅ AI chat endpoint working');
+
+  console.log("✅ AI chat endpoint working");
 }
 
 // Add to main test sequence
@@ -81,6 +85,7 @@ await testAIChat();
 ```
 
 **Files to Update:**
+
 - `scripts/smoke-post-deploy.mjs`
 
 **Effort:** Small (2 hours)  
@@ -90,21 +95,23 @@ await testAIChat();
 ---
 
 ### TASK-P2-04: Feature Flag UI for Operators
+
 **Issue:** Feature flags toggled via wrangler CLI only (no UI)  
 **Impact:** Non-technical operators cannot toggle feature flags during incidents
 
 **Fix:**
+
 ```typescript
 // src/app/(super-admin)/super-admin/feature-flags/page.tsx
 import { FeatureFlagToggle } from '@/components/super-admin/feature-flag-toggle';
 
 export default async function FeatureFlagsPage() {
   const flags = await getFeatureFlags(); // Read from KV
-  
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Feature Flags</h1>
-      
+
       {flags.map(flag => (
         <FeatureFlagToggle
           key={flag.key}
@@ -122,6 +129,7 @@ export default async function FeatureFlagsPage() {
 ```
 
 **Files to Create:**
+
 - `src/app/(super-admin)/super-admin/feature-flags/page.tsx`
 - `src/components/super-admin/feature-flag-toggle.tsx`
 - `src/app/api/super-admin/feature-flags/route.ts` (API endpoint)
@@ -133,11 +141,13 @@ export default async function FeatureFlagsPage() {
 ---
 
 ### TASK-P2-02: Database Index Monitoring
+
 **Issue:** No automated detection of slow queries or unused indexes  
 **Impact:** Performance degrades over time, no proactive optimization
 
 **Fix:**
-```markdown
+
+````markdown
 # docs/runbooks/weekly-database-review.md
 
 ## Weekly Database Index Review
@@ -158,6 +168,7 @@ WHERE mean_exec_time > 100 -- queries averaging >100ms
 ORDER BY mean_exec_time DESC
 LIMIT 20;
 ```
+````
 
 ### Step 2: Check for Missing Indexes
 
@@ -197,19 +208,20 @@ WHERE idx_scan = 0
 
 **Frequency:** Weekly  
 **Owner:** Backend team
-```
+
+````
 
 **Files to Create:**
 - `docs/runbooks/weekly-database-review.md`
 
-**Effort:** Small (4 hours initial setup, 30 min/week ongoing)  
-**Priority:** P2  
+**Effort:** Small (4 hours initial setup, 30 min/week ongoing)
+**Priority:** P2
 **Timeline:** Week 5-8 after production launch
 
 ---
 
 ### TASK-P2-03: Egress Allowlist Enforcement
-**Issue:** `EGRESS_ALLOWLIST_ENFORCE=false` in production (disabled)  
+**Issue:** `EGRESS_ALLOWLIST_ENFORCE=false` in production (disabled)
 **Impact:** Compromised dependency could make arbitrary external API calls
 
 **Fix:**
@@ -228,28 +240,30 @@ const ALLOWED_DOMAINS = [
 
 export async function safeFetch(url: string, options?: RequestInit) {
   const hostname = new URL(url).hostname;
-  
+
   // Enforce allowlist in production
   if (process.env.EGRESS_ALLOWLIST_ENFORCE === 'true') {
-    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+    const isAllowed = ALLOWED_DOMAINS.some(domain =>
       hostname === domain || hostname.endsWith(`.${domain}`)
     );
-    
+
     if (!isAllowed) {
       throw new Error(`Egress blocked: ${hostname} not in allowlist`);
     }
   }
-  
+
   return fetch(url, options);
 }
 
 // Replace all fetch() calls with safeFetch()
-```
+````
 
 **Files to Create:**
+
 - `src/lib/fetch-wrapper.ts`
 
 **Files to Update:**
+
 - All files that call `fetch()` directly (search codebase)
 - `.env.example` to document `EGRESS_ALLOWLIST_ENFORCE=true`
 
@@ -260,10 +274,12 @@ export async function safeFetch(url: string, options?: RequestInit) {
 ---
 
 ### TASK-P2-04: Chaos Engineering Experiments
+
 **Issue:** No resilience testing (simulate dependency failures)  
 **Impact:** Unknown system behavior during real outages
 
 **Fix:**
+
 ```markdown
 # docs/runbooks/chaos-engineering.md
 
@@ -274,6 +290,7 @@ export async function safeFetch(url: string, options?: RequestInit) {
 **Hypothesis:** System handles 5s database latency gracefully
 
 **Procedure:**
+
 1. Deploy proxy that injects 5s delay to Supabase requests
 2. Monitor:
    - User-facing error rate (should stay <1%)
@@ -289,6 +306,7 @@ export async function safeFetch(url: string, options?: RequestInit) {
 **Hypothesis:** File upload failures are graceful, don't block core flows
 
 **Procedure:**
+
 1. Block all R2 requests via firewall rule
 2. Test user flows:
    - Booking appointment (should work without file upload)
@@ -304,6 +322,7 @@ export async function safeFetch(url: string, options?: RequestInit) {
 **Hypothesis:** Main worker continues operating when AI worker is down
 
 **Procedure:**
+
 1. Deploy broken AI worker (syntax error in route handler)
 2. Test main worker flows:
    - Login (should work)
@@ -320,6 +339,7 @@ export async function safeFetch(url: string, options?: RequestInit) {
 ```
 
 **Files to Create:**
+
 - `docs/runbooks/chaos-engineering.md`
 - `docs/chaos-experiments/` directory for experiment logs
 
@@ -338,29 +358,34 @@ All P3 tasks have been completed! ✅
 ## 📊 SUMMARY
 
 ### Tasks by Priority
-| Priority | Count | Description |
-|----------|-------|-------------|
-| P2 (Medium) | 4 | Operational improvements |
-| P3 (Low) | 0 | All completed ✅ |
-| **Total** | **4** | **Non-blocking enhancements** |
+
+| Priority    | Count | Description                   |
+| ----------- | ----- | ----------------------------- |
+| P2 (Medium) | 4     | Operational improvements      |
+| P3 (Low)    | 0     | All completed ✅              |
+| **Total**   | **4** | **Non-blocking enhancements** |
 
 ### Tasks by Effort
-| Effort | Count | Time per Task |
-|--------|-------|---------------|
-| Small | 2 | 2-4 hours each |
-| Medium | 2 | 4-12 hours each |
+
+| Effort    | Count | Time per Task       |
+| --------- | ----- | ------------------- |
+| Small     | 2     | 2-4 hours each      |
+| Medium    | 2     | 4-12 hours each     |
 | **Total** | **4** | **~30 hours total** |
 
 ### Recommended Timeline
 
 #### ✅ **Week 0: Production Launch**
+
 All critical risks resolved. Safe to deploy.
 
 #### **Week 2-4: High-Value Improvements** (12 hours)
+
 - TASK-P2-01: Feature flag UI (8 hours)
 - TASK-P2-02: Database index monitoring (4 hours)
 
 #### **Week 5-8: Security & Resilience** (18 hours)
+
 - TASK-P2-03: Egress allowlist (2 hours)
 - TASK-P2-04: Chaos engineering (12 hours + quarterly ongoing)
 
@@ -371,6 +396,7 @@ All critical risks resolved. Safe to deploy.
 ## 🎯 SUCCESS CRITERIA
 
 **After completing these tasks:**
+
 - ✅ Feature flags manageable via UI (no CLI access needed)
 - ✅ Database performance monitored proactively
 - ✅ Egress traffic restricted to approved domains

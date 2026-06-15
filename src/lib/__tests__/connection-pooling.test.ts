@@ -20,7 +20,10 @@ describe("verifyPoolerEndpoint", () => {
   });
 
   it("prefers SUPABASE_POOLER_URL when configured", () => {
-    vi.stubEnv("SUPABASE_POOLER_URL", "postgresql://postgres.xxx@aws-0-eu-west-1.pooler.supabase.com:6543/postgres");
+    vi.stubEnv(
+      "SUPABASE_POOLER_URL",
+      "postgresql://postgres.xxx@aws-0-eu-west-1.pooler.supabase.com:6543/postgres",
+    );
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
 
     expect(verifyPoolerEndpoint()).toEqual({
@@ -37,7 +40,8 @@ describe("verifyPoolerEndpoint", () => {
     expect(verifyPoolerEndpoint()).toEqual({
       isPooled: true,
       url: "https://project.supabase.co",
-      recommendation: "SUPABASE_POOLER_URL is not set; server code will fall back to the public Supabase URL",
+      recommendation:
+        "SUPABASE_POOLER_URL is not set; server code will fall back to the public Supabase URL",
     });
   });
 

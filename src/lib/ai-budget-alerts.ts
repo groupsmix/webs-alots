@@ -8,12 +8,21 @@ const DEFAULT_AI_DAILY_BUDGET_USD = 100;
 type AiUsageSupabase = {
   from: (table: string) => {
     select: (columns: string) => {
-      eq: (column: string, value: boolean) => {
-        gte: (column: string, value: string) => {
+      eq: (
+        column: string,
+        value: boolean,
+      ) => {
+        gte: (
+          column: string,
+          value: string,
+        ) => {
           lt: (
             column: string,
             value: string,
-          ) => Promise<{ data: Array<{ cost_cents?: number | null }> | null; error: { message: string } | null }>;
+          ) => Promise<{
+            data: Array<{ cost_cents?: number | null }> | null;
+            error: { message: string } | null;
+          }>;
         };
       };
     };
@@ -82,7 +91,10 @@ export async function alertIfAiDailyBudgetExceeded(
   }
 
   const totalCostCents =
-    data?.reduce((sum, row) => sum + (typeof row.cost_cents === "number" ? row.cost_cents : 0), 0) ?? 0;
+    data?.reduce(
+      (sum, row) => sum + (typeof row.cost_cents === "number" ? row.cost_cents : 0),
+      0,
+    ) ?? 0;
 
   const previousTotalCents = totalCostCents - currentCostCents;
   if (totalCostCents <= budgetCents || previousTotalCents > budgetCents) {

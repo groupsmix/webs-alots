@@ -338,7 +338,8 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
         let stepIndex = 0;
 
         // Stream text and tool events to client
-        for await (const chunk of streamResult.raw.fullStream) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for await (const chunk of (streamResult.raw as any).fullStream) {
           if (chunk.type === "text-delta") {
             fullContent += chunk.text;
             controller.enqueue(encoder.encode(sseChunk("text", { content: chunk.text })));
