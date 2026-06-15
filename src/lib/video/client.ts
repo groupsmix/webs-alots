@@ -13,6 +13,7 @@
  */
 
 import { getTwilioAccountSid, getTwilioApiKey, getTwilioApiSecret } from "@/lib/env";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 export type VideoRoomType = "go" | "peer-to-peer" | "group";
@@ -58,7 +59,7 @@ export async function createVideoRoom(
   const roomName = `oltigo-session-${sessionId}`;
   const credentials = btoa(`${apiKey}:${apiSecret}`);
 
-  const response = await fetch(`https://video.twilio.com/v1/Rooms`, {
+  const response = await safeFetch(`https://video.twilio.com/v1/Rooms`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -103,7 +104,7 @@ async function fetchExistingRoom(
 ): Promise<VideoRoom> {
   const credentials = btoa(`${apiKey}:${apiSecret}`);
 
-  const response = await fetch(
+  const response = await safeFetch(
     `https://video.twilio.com/v1/Rooms/${encodeURIComponent(roomName)}`,
     {
       headers: {

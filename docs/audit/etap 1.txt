@@ -1,0 +1,280 @@
+etap 1 
+
+Ultimate End-to-End Project Audit Prompt
+> \*\*Usage:\*\* Copy this entire prompt and paste it into any AI assistant (Claude, Devin, GPT, etc.) along with your repository link. Replace `{{REPO\_URL}}` with your actual repository URL. This prompt forces a deep, exhaustive, no-shortcuts analysis of every layer of your project.
+---
+```
+You are a world-class Staff Engineer, DevOps Lead, DBA, Security Auditor, UX/UI Expert, and SEO Specialist — all in one. You have been hired as the fractional CTO to perform a COMPLETE end-to-end audit of a production web application before launch.
+
+Your job is to leave NO stone unturned. You must analyze every layer, every file, every configuration, every deployment detail. You think like a paranoid perfectionist owner who is personally liable if anything goes wrong in production.
+
+## THE PROJECT
+
+Repository: {{REPO\_URL}}
+
+## INSTRUCTIONS
+
+First, concisely enumerate all the core facts you are aware of. If you realize that you are missing some key information, go and get that additional context. Then, deliberately reason through every layer, taking into account everything you know. Be creative and think out of the box. Keep thinking until you are confident about every finding.
+
+You MUST read EVERY file in the repository. Do not skim. Do not skip. Do not summarize without reading first. Read config files, environment examples, deployment configs, migration files, test files, CI/CD pipelines, scripts — everything.
+
+## ANALYSIS LAYERS (ALL REQUIRED — SKIP NOTHING)
+
+### LAYER 1: CODEBASE \& ARCHITECTURE
+- Read every source file end-to-end (components, pages, API routes, middleware, utilities, types, configs)
+- Evaluate: folder structure, separation of concerns, DRY violations, dead code, circular dependencies
+- Check: naming conventions, TypeScript strictness, type safety (no `any`, no unsafe casts)
+- Check: error handling patterns (try/catch coverage, error boundaries, graceful degradation)
+- Check: all imports resolve correctly, no unused imports, no missing dependencies
+- Check: all environment variables referenced in code are documented in .env.example
+- Check: all third-party packages are up-to-date, no known vulnerabilities (run `npm audit` or equivalent)
+- Check: are there proper abstractions? Is business logic leaking into UI components?
+- Check: is there proper separation between server and client code?
+
+### LAYER 2: DATABASE \& DATA LAYER
+- Read all migration files, schema definitions, seed scripts
+- Check: are all tables properly indexed for the queries being run?
+- Check: are there N+1 query patterns in the data access layer?
+- Check: is Row Level Security (RLS) properly configured if using Supabase/Postgres?
+- Check: are there any raw SQL injection risks?
+- Check: are database credentials properly secured (not hardcoded, not in git)?
+- Check: is there proper data validation before database writes?
+- Check: are there orphan records possible (missing foreign key constraints or cascades)?
+- Check: is there a backup and recovery strategy documented?
+- Check: are database types/interfaces in sync with actual schema?
+- Check: are there any missing indexes that would cause slow queries at scale?
+- Check: connection pooling configuration — is it appropriate for the deployment target?
+
+### LAYER 3: API \& BACKEND
+- Read every API route handler end-to-end
+- Check: authentication/authorization on EVERY endpoint (are any endpoints unprotected that should be?)
+- Check: input validation on EVERY endpoint (what happens with malformed input?)
+- Check: rate limiting coverage (which endpoints lack rate limiting?)
+- Check: CORS configuration — is it too permissive?
+- Check: are all responses properly typed and consistent (error format, status codes)?
+- Check: are there any race conditions in concurrent operations?
+- Check: file upload security (size limits, type validation, path traversal prevention)
+- Check: are all API errors logged with enough context for debugging?
+- Check: are there any endpoints that expose sensitive data in responses?
+- Check: CSRF protection — is it applied to all state-changing operations?
+- Check: are webhook/cron endpoints properly authenticated?
+
+### LAYER 4: FRONTEND \& UX/UI
+- Analyze every user-facing page and component
+- Check: is there a loading state for every async operation? (loading.tsx, skeletons, spinners)
+- Check: is there an error state for every async operation? (error.tsx, error boundaries, fallbacks)
+- Check: is there an empty state for every list/collection? ("No items yet" with a CTA)
+- Check: responsive design — does every page work on mobile (320px), tablet (768px), desktop (1440px)?
+- Check: accessibility — WCAG 2.1 AA compliance (aria labels, keyboard navigation, focus management, color contrast, screen reader support)
+- Check: form validation — are all forms validated client-side AND server-side?
+- Check: are all interactive elements providing feedback (hover, active, focus, disabled states)?
+- Check: navigation — can users always orient themselves? (breadcrumbs, active states, back buttons)
+- Check: is there a consistent design system? (spacing, typography, colors, component patterns)
+- Check: internationalization — if multi-language, are ALL strings translated? Any hardcoded text?
+- Check: RTL support — if applicable, does every component render correctly in RTL mode?
+- Check: image optimization — lazy loading, proper sizing, alt text, placeholder/shimmer
+- Check: are there any layout shifts (CLS issues)?
+- Check: dark mode support if applicable
+- Check: print stylesheets if content-heavy
+- Check: 404 page — is it branded, helpful, and localized?
+- Check: favicon, meta tags, Open Graph tags on every page
+
+### LAYER 5: PERFORMANCE
+- Check: bundle size — are there unnecessarily large dependencies?
+- Check: code splitting — are heavy components dynamically imported?
+- Check: image optimization — are images served in modern formats (WebP/AVIF)?
+- Check: caching strategy — ISR/SSG/SSR decisions, cache headers, CDN configuration
+- Check: database query performance — are there slow queries, missing indexes, over-fetching?
+- Check: are there any memory leaks (event listeners not cleaned up, intervals not cleared)?
+- Check: are third-party scripts loaded efficiently (async/defer, lazy loading)?
+- Check: font loading strategy — FOIT/FOUT prevention, font subsetting, preloading
+- Check: Core Web Vitals readiness (LCP, FID/INP, CLS)
+- Check: are there any synchronous operations that should be async?
+- Check: server-side rendering waterfall — are parallel data fetches used where possible?
+
+### LAYER 6: SECURITY
+- Check: authentication implementation (JWT handling, session management, token expiry, refresh flow)
+- Check: password security (hashing algorithm, salt, iterations — PBKDF2/bcrypt/argon2?)
+- Check: CSRF protection (double-submit cookie, SameSite cookies, token validation)
+- Check: XSS prevention (HTML sanitization, CSP headers, output encoding)
+- Check: SQL injection prevention (parameterized queries, input validation)
+- Check: rate limiting (login attempts, API endpoints, search, newsletter signup)
+- Check: security headers (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, CSP)
+- Check: sensitive data exposure (are secrets in git? in logs? in error messages? in API responses?)
+- Check: dependency vulnerabilities (npm audit, known CVEs)
+- Check: file upload security (type validation, size limits, malware scanning)
+- Check: are admin routes properly protected from public access?
+- Check: is there an audit log for admin actions?
+- Check: cookie security (HttpOnly, Secure, SameSite flags)
+- Check: are there any open redirects?
+- Check: SSRF prevention if the app fetches external URLs
+- Check: is `dangerouslySetInnerHTML` used safely everywhere it appears?
+
+### LAYER 7: SEO \& STRUCTURED DATA
+- Check: does every page have unique, descriptive `<title>` and `<meta description>`?
+- Check: is there a sitemap.xml? Does it include all public pages?
+- Check: is there a robots.txt? Does it reference the sitemap? Does it block admin/API routes?
+- Check: canonical URLs on every page (prevent duplicate content)
+- Check: Open Graph and Twitter Card meta tags on every page
+- Check: JSON-LD structured data — is it valid? Does it follow Google's guidelines?
+- Check: are there any broken internal links?
+- Check: heading hierarchy — is there exactly one `<h1>` per page? Are headings in order?
+- Check: `<html lang>` attribute — does it match the page language?
+- Check: image alt text — does every image have descriptive alt text?
+- Check: RSS feed — is it valid XML? Does it include the right content?
+- Check: pagination — are rel="next"/rel="prev" used?
+- Check: is there a 404 page that returns a proper 404 status code?
+- Check: are there any soft 404s (pages returning 200 with "not found" content)?
+
+### LAYER 8: DEPLOYMENT \& INFRASTRUCTURE
+- Check: deployment configuration (Cloudflare Pages, Vercel, AWS — whatever is used)
+- Check: environment variables — are all required vars documented? Are there any missing?
+- Check: build process — does `npm run build` succeed without warnings?
+- Check: CI/CD pipeline — are there automated tests, linting, type checking in the pipeline?
+- Check: preview deployments — is there a preview environment for PRs?
+- Check: CDN configuration — caching rules, edge locations, cache purging strategy
+- Check: DNS configuration — are all domains properly configured?
+- Check: SSL/TLS — are all sites served over HTTPS? HSTS configured?
+- Check: monitoring \& alerting — is there error tracking (Sentry)? Uptime monitoring?
+- Check: logging — are logs structured? Are they searchable? Is there log retention?
+- Check: cron jobs / scheduled tasks — are they properly configured and authenticated?
+- Check: KV storage / edge state — is it properly configured for the deployment target?
+- Check: serverless function limits (execution time, memory, request size)
+- Check: multi-region / edge deployment — does the architecture support it?
+- Check: rollback strategy — can you quickly revert a bad deployment?
+- Check: secrets management — how are production secrets rotated?
+
+### LAYER 9: TESTING \& QUALITY
+- Check: unit test coverage — what critical paths lack tests?
+- Check: integration test coverage — are API routes tested end-to-end?
+- Check: E2E test coverage — are critical user flows tested?
+- Check: are tests actually running in CI? Do they pass?
+- Check: is there a test for every bug that's been fixed (regression tests)?
+- Check: are there any flaky tests?
+- Check: test data management — do tests use fixtures, factories, or seed data?
+- Check: is there a code quality tool (ESLint, Prettier) configured and enforced?
+- Check: is there type checking (TypeScript strict mode) in the CI pipeline?
+
+### LAYER 10: DOCUMENTATION \& DEVELOPER EXPERIENCE  
+- Check: README completeness (setup instructions, architecture overview, deployment guide)
+- Check: API documentation (are all endpoints documented?)
+- Check: environment setup documentation (all env vars explained)
+- Check: contributing guidelines
+- Check: code comments — are complex algorithms explained?
+- Check: are there any misleading or outdated comments?
+- Check: is there a changelog or release notes process?
+
+## OUTPUT FORMAT (STRICT — FOLLOW EXACTLY)
+
+For EACH finding, use this exact structure:
+
+```
+[NUMBER]. [TITLE]
+Type: Bug | UX Issue | UI Issue | Security | Performance | SEO | Technical Debt | Improvement | Missing Feature
+Priority: CRITICAL (launch blocker) | HIGH | MEDIUM | LOW
+Layer: Codebase | Database | API | Frontend | Performance | Security | SEO | Deployment | Testing | Documentation
+File(s): exact file path(s) and line number(s)
+Problem: [Describe the issue clearly and specifically]
+Impact: [Explain exactly what goes wrong for users, SEO, security, or reliability]
+Solution: [Provide a detailed, copy-paste-ready fix with code examples]
+Owner's Note: [Your personal take as the person responsible for fixing this]
+```
+
+## FINAL DELIVERABLES (ALL REQUIRED)
+
+After listing every finding, you MUST provide:
+
+### 1. LAUNCH READINESS VERDICT
+State clearly: \*\*READY TO LAUNCH\*\*, \*\*NOT READY — CONDITIONAL\*\* (list exact conditions), or \*\*NOT READY — BLOCKED\*\* (list blockers).
+
+### 2. LAUNCH BLOCKER TABLE
+| # | Issue | Why It Blocks Launch | Estimated Fix Time |
+|---|-------|---------------------|--------------------|
+
+### 3. WHAT'S ALREADY STRONG
+List everything the project does well. Be specific and generous where deserved.
+
+### 4. PRIORITIZED ACTION PLAN
+Week-by-week plan to reach launch readiness:
+- \*\*Week 1 (Critical):\*\* \[list specific issues to fix]
+- \*\*Week 2 (High):\*\* \[list specific issues to fix]
+- \*\*Week 3 (Medium):\*\* \[list specific issues to fix]
+- \*\*Post-launch (Low):\*\* \[list specific issues to fix]
+
+### 5. PRODUCTION READINESS CHECKLIST
+A final checklist of every item that must be verified before going live:
+- \[ ] All CRITICAL issues resolved
+- \[ ] Error monitoring configured (Sentry DSN set)
+- \[ ] Database backups verified
+- \[ ] All environment variables set in production
+- \[ ] DNS configured for all domains
+- \[ ] SSL certificates valid
+- \[ ] Rate limiting verified with KV bindings
+- \[ ] Cron jobs configured and authenticated
+- \[ ] robots.txt serving correctly
+- \[ ] sitemap.xml valid and discoverable
+- \[ ] 404 pages returning proper status codes
+- \[ ] All admin routes protected
+- \[ ] Cookie consent compliant
+- \[ ] Build succeeds with zero warnings
+- \[ ] All tests passing in CI
+- \[ ] \[Add any project-specific items]
+
+## RULES
+
+1. Do NOT summarize or generalize — every finding must be specific, with file paths and line numbers
+2. Do NOT skip any layer — all 10 layers must be covered
+3. Do NOT ignore "minor" issues — list everything, even cosmetic issues
+4. Do NOT make vague suggestions — every solution must be actionable and include code examples
+5. Do NOT assume anything works without reading the code — verify everything
+6. Make reasonable assumptions where needed but STATE THEM EXPLICITLY
+7. If you cannot verify something (e.g., production env vars, live DNS), flag it as "UNVERIFIED — requires manual check"
+8. Read EVERY file. If the repo has 200 files, read all 200.
+9. Run the build process. Run the linter. Run the tests. Report results.
+10. If you find that a feature is referenced but not implemented (e.g., nav link to nonexistent page), flag it as CRITICAL.
+
+BEGIN YOUR AUDIT NOW. Read every file, analyze every layer, and produce the complete report.
+```
+---
+Customization Guide
+For specific tech stacks, add these sections:
+If using Supabase, add to Layer 2:
+```
+- Check: RLS policies on every table — are they correct and not overly permissive?
+- Check: are there any tables without RLS enabled?
+- Check: service role key usage — is it only used server-side?
+- Check: anon key exposure — is it only used for public operations?
+- Check: Edge Functions configuration if applicable
+- Check: Realtime subscriptions security if used
+```
+If using Cloudflare, add to Layer 8:
+```
+- Check: wrangler.toml/wrangler.jsonc configuration completeness
+- Check: KV namespace bindings — are they properly configured?
+- Check: D1 database bindings if applicable
+- Check: R2 bucket configuration and access policies
+- Check: Cron Triggers — are they defined in wrangler config?
+- Check: Workers/Pages Functions limits (CPU time, memory, subrequest limits)
+- Check: Turnstile (bot protection) — is it configured on all public forms?
+- Check: Custom domains and SSL configuration
+- Check: Cache Rules and Page Rules
+- Check: WAF rules if applicable
+```
+If multi-tenant, add to Layer 1:
+```
+- Check: tenant isolation — can one tenant's data leak to another?
+- Check: domain routing — does every domain resolve to the correct tenant?
+- Check: is there a fallback for unknown domains?
+- Check: are admin operations scoped to the active tenant?
+- Check: can a regular admin escalate to affect other tenants?
+- Check: are all database queries filtered by site\_id/tenant\_id?
+```
+If multi-language/RTL, add to Layer 4:
+```
+- Check: are ALL user-facing strings translated? Search for hardcoded English text
+- Check: does every page correctly set `<html lang>` and `dir` attributes?
+- Check: do all components respect RTL layout (padding, margins, icons, arrows)?
+- Check: are legal pages (privacy, terms, disclosure) translated?
+- Check: are error messages and validation messages translated?
+- Check: are emails (newsletter confirmation, password reset) translated?
+- Check: does the date/number formatting respect locale?

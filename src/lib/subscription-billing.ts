@@ -7,6 +7,7 @@
  */
 
 import { assertClinicId } from "@/lib/assert-tenant";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { logTenantContext } from "@/lib/tenant-context";
@@ -385,7 +386,7 @@ async function chargeViaStripe(
   // failed cron retry on the same day does not create a second charge.
   const idempotencyKey = `renewal-${customerId}-${getLocalDateStr()}`;
 
-  const response = await fetch("https://api.stripe.com/v1/payment_intents", {
+  const response = await safeFetch("https://api.stripe.com/v1/payment_intents", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeKey}`,

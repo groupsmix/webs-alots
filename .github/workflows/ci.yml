@@ -153,14 +153,14 @@ jobs:
           # Excluded paths: seed scripts/data, test/spec files (Vitest *.test.* + Playwright *.spec.* + e2e/),
           # markdown docs, agent prompts, CI workflows, and the instrumentation startup-warning that
           # references the emails as a security warning string.
-          HITS=$(git grep -l 'seed-password-change-me' -- ':!supabase/seed.sql' ':!supabase/seeds/' ':!*test*' ':!*.md' ':!AGENTS.md' ':!CLAUDE.md' ':!*.test.*' ':!*.spec.*' ':!e2e/' ':!scripts/seed-data.sql' ':!scripts/seed.ts' ':!src/instrumentation.ts' ':!.github/workflows/' || true)
+          HITS=$(git grep -l 'seed-password-change-me' -- ':!supabase/seed.sql' ':!supabase/seeds/' ':!*test*' ':!*.md' ':!AGENTS.md' ':!CLAUDE.md' ':!*.test.*' ':!*.spec.*' ':!e2e/' ':!scripts/seed-data.sql' ':!scripts/seed.ts' ':!src/instrumentation.ts' ':!.github/workflows/' ':!supabase/migrations/*_seed_user_blocklist.sql' || true)
           if [ -n "$HITS" ]; then
             echo "::error::Seed password 'seed-password-change-me' found in non-fixture files:"
             echo "$HITS"
             exit 1
           fi
           # Search for seed user emails outside seed/test files
-          SEED_EMAILS=$(git grep -l 'admin@demo-clinic\|doctor@demo-clinic\|receptionist@demo-clinic\|patient[0-9]*@demo-clinic' -- ':!supabase/seed.sql' ':!supabase/seeds/' ':!*test*' ':!*.md' ':!AGENTS.md' ':!CLAUDE.md' ':!*.test.*' ':!*.spec.*' ':!e2e/' ':!scripts/seed-data.sql' ':!scripts/seed.ts' ':!src/instrumentation.ts' ':!.github/workflows/' || true)
+          SEED_EMAILS=$(git grep -l 'admin@demo-clinic\|doctor@demo-clinic\|receptionist@demo-clinic\|patient[0-9]*@demo-clinic' -- ':!supabase/seed.sql' ':!supabase/seeds/' ':!*test*' ':!*.md' ':!AGENTS.md' ':!CLAUDE.md' ':!*.test.*' ':!*.spec.*' ':!e2e/' ':!scripts/seed-data.sql' ':!scripts/seed.ts' ':!src/instrumentation.ts' ':!.github/workflows/' ':!supabase/migrations/*_seed_user_blocklist.sql' || true)
           if [ -n "$SEED_EMAILS" ]; then
             echo "::error::Seed user emails found in non-fixture files:"
             echo "$SEED_EMAILS"
@@ -194,6 +194,9 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Build Storybook
+        run: npm run build-storybook
 
       # Audit Task 8: workers/ai is a self-contained package with its own
       # package.json/tsconfig and previously type-checked only by accident,

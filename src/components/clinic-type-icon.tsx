@@ -37,10 +37,9 @@ import {
   StretchVertical,
   Sparkles,
   FlaskConical,
-  type LucideProps,
 } from "lucide-react";
 
-const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
+const ICON_MAP: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   Stethoscope,
   Heart,
   Scan,
@@ -81,7 +80,7 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   FlaskConical,
 };
 
-interface ClinicTypeIconProps extends LucideProps {
+interface ClinicTypeIconProps extends React.SVGProps<SVGSVGElement> {
   name: string;
 }
 

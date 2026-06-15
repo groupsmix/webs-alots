@@ -32,9 +32,11 @@
 
 Incidents are detected via:
 
-1. **Automated alerts** from Cloudflare, Sentry, or custom monitoring
+1. **Automated alerts** from Cloudflare, Sentry, Supabase, or custom monitoring
 2. **User reports** via Slack `#support` or direct contact
 3. **On-call engineer observation**
+
+> Verification note: alert routing and thresholds partly live outside this repository. Treat this runbook as the expected operating model; confirm the actual PagerDuty / Sentry / Cloudflare rules in production during quarterly drills.
 
 When an alert fires:
 
@@ -108,7 +110,7 @@ When service is restored:
 **Mitigation:**
 
 1. Enable maintenance mode to prevent partial writes
-2. If connection pool exhausted: restart API workers to reset connections
+2. If connection pool exhausted: verify the `SUPABASE_POOLER_URL` secret is set correctly and check Supabase pooler health / plan limits before restarting workers
 3. Monitor for automatic Supabase recovery
 4. If > 15 minutes, escalate to Supabase support
 

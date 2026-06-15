@@ -89,9 +89,12 @@ Primary alerting and escalation tool. Configure:
 ### 3.3 Monitoring Dashboards
 
 - **Cloudflare Dashboard**: API metrics, error rates, latency
-- **Sentry**: Error rates, performance issues
+- **Sentry**: Error rates, traces, performance issues
 - **Supabase Dashboard**: Database health, connection counts
+- **GitHub Actions artifacts**: SBOM (`bom.json`) and Sigstore bundle (`bom.json.bundle`) from CI for supply-chain review
 - **Grafana** (if configured): Custom dashboards
+
+> Current state: SLOs and alert playbooks are documented in this repo, but dashboard coverage varies by environment. Treat dashboards as an operator-owned runtime dependency, not something fully proven by repository contents alone.
 
 ---
 
@@ -199,7 +202,14 @@ The following are the most critical alerts an on-call engineer will encounter, l
 
 ---
 
-## 9. Related Documents
+## 9. Evidence and Verification Notes
+
+- **SLOs / error budgets:** Defined in this document and the related SLO doc; verify the corresponding alert rules in PagerDuty / Sentry / Cloudflare after any major monitoring change.
+- **Connection pooling:** Application code prefers `SUPABASE_POOLER_URL` when set. Confirm the secret is present in each deployed Worker environment and alert on pool exhaustion in Supabase.
+- **Preview validation:** PRs run a Cloudflare Workers build-preview workflow (`.github/workflows/pr-preview.yml`), but this is not the same as a live per-PR runtime environment.
+- **Supply chain:** CI generates an SBOM and signs it keylessly; operators should periodically verify artifact availability and attestation verification flow.
+
+## 10. Related Documents
 
 - [SLO Document](./slo.md)
 - [Incident Response Runbook](./incident-response.md)

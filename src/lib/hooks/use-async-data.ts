@@ -32,7 +32,9 @@ export function useAsyncData<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   const runFetch = useCallback(() => {
     const controller = new AbortController();
@@ -63,7 +65,7 @@ export function useAsyncData<T>(
     };
     // Q-49: `deps` is the caller-supplied dependency array — including
     // `runFetch` here would ignore the caller's explicit dependency contract.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, deps);
 
   useEffect(() => {

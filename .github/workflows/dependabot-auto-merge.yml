@@ -1,0 +1,53 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request_target:
+    branches: [main, staging]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    permissions:
+      contents: write
+      pull-requests: write
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Classify Dependabot bump
+        id: classify
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const title = process.env.PR_TITLE || "";
+            const outputPath = process.env.GITHUB_OUTPUT;
+            const match = title.match(/ from ([vV]?\d+(?:\.\d+){1,2}(?:[-+][^\s]+)?) to ([vV]?\d+(?:\.\d+){1,2}(?:[-+][^\s]+)?)/);
+            const normalize = (value) => value.replace(/^[^\d]*/, "").split(/[+-]/)[0].split(".").map((part) => Number.parseInt(part, 10));
+            let allow = false;
+            let reason = "unparsed-title";
+            if (match) {
+              const from = normalize(match[1]);
+              const to = normalize(match[2]);
+              const fromMajor = from[0] ?? 0;
+              const fromMinor = from[1] ?? 0;
+              const toMajor = to[0] ?? 0;
+              const toMinor = to[1] ?? 0;
+              if (toMajor === fromMajor) {
+                allow = true;
+                reason = toMinor === fromMinor ? "patch" : "minor";
+              } else {
+                reason = "major";
+              }
+            }
+            fs.appendFileSync(outputPath, `allow=${allow}\nreason=${reason}\n`);
+            console.log(`Dependabot PR classification: ${reason} (allow=${allow})`);
+          '
+
+      - name: Enable auto-merge
+        if: steps.classify.outputs.allow == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"

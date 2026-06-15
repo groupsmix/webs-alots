@@ -13,6 +13,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getProcessingEnforcement } from "@/lib/gdpr-enforcement";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database-extended";
+import type { NotificationQueueMessage } from "./cf-notification-queue";
 import type { NotificationTrigger, NotificationChannel } from "./notifications";
 
 // We use the extended Database interface to properly type the notification_queue table
@@ -103,7 +104,38 @@ export async function enqueueNotification(params: EnqueueParams): Promise<string
       return null;
     }
 
-    return data?.id ?? null;
+    const rowId = data?.id ?? null;
+
+    // INF-Q1: Push to Cloudflare Queue so delivery is near-real-time.
+    // Falls back gracefully when the binding is not provisioned — the
+    // 15-minute cron sweep remains as a safety net in that case.
+    // in_app notifications are DB-only (clients read them directly) so
+    // they must not be pushed to the external delivery queue.
+    if (rowId && params.channel !== "in_app") {
+      const message: NotificationQueueMessage = {
+        queueRowId: rowId,
+        clinicId: params.clinicId,
+        channel: params.channel as NotificationQueueMessage["channel"],
+        recipient: params.recipient,
+        body: params.body,
+        trigger: params.trigger,
+        metadata: params.metadata,
+        enqueuedAt: new Date().toISOString(),
+      };
+      // Fire-and-forget — do not await so a CF Queue hiccup never
+      // blocks the calling request. The DB row is already persisted.
+      import("./cf-notification-queue")
+        .then(({ pushToNotificationQueue }) => pushToNotificationQueue(message))
+        .catch((err) =>
+          logger.warn("CF Queue push failed — cron fallback will deliver", {
+            context: "notification-queue",
+            rowId,
+            error: err,
+          }),
+        );
+    }
+
+    return rowId;
   } catch (err) {
     logger.error("Notification enqueue error", {
       context: "notification-queue",

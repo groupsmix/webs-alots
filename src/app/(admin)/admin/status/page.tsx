@@ -1,6 +1,6 @@
+/* eslint-disable i18next/no-literal-string -- internal admin monitoring page */
 "use client";
 
-import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { HealthResponse, HealthStatus } from "@/app/api/health/route";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -64,9 +64,10 @@ interface CheckCardProps {
   latencyMs?: number;
   error?: string;
   backend?: string;
+  detail?: string;
 }
 
-function CheckCard({ name, status, latencyMs, error, backend }: CheckCardProps) {
+function CheckCard({ name, status, latencyMs, error, backend, detail }: CheckCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -83,6 +84,7 @@ function CheckCard({ name, status, latencyMs, error, backend }: CheckCardProps) 
           <p className="text-xs text-muted-foreground">{latencyMs}ms latency</p>
         )}
         {backend && <p className="text-xs text-muted-foreground">Backend: {backend}</p>}
+        {detail && <p className="text-xs text-muted-foreground">Detail: {detail}</p>}
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       </CardContent>
     </Card>
@@ -126,7 +128,9 @@ export default function AdminStatusPage() {
             <span className="text-xs text-muted-foreground">Last checked: {lastChecked}</span>
           )}
           <Button size="sm" variant="outline" onClick={fetchHealth} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+            <span
+              className={`mr-2 inline-block h-2 w-2 rounded-full bg-current ${loading ? "animate-pulse" : "opacity-70"}`}
+            />
             Refresh
           </Button>
         </div>
@@ -155,10 +159,17 @@ export default function AdminStatusPage() {
                 backend={health.checks.rateLimiter.backend}
                 error={health.checks.rateLimiter.error}
               />
+              <CheckCard
+                name="AI Service"
+                status={health.checks.ai.status}
+                backend={health.checks.ai.backend}
+                detail={health.checks.ai.detail}
+                error={health.checks.ai.error}
+              />
             </>
           ) : loading ? (
             <>
-              {["Supabase (Database)", "R2 Storage", "Rate Limiter"].map((name) => (
+              {["Supabase (Database)", "R2 Storage", "Rate Limiter", "AI Service"].map((name) => (
                 <CheckCard key={name} name={name} status="loading" />
               ))}
             </>

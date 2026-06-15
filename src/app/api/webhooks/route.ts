@@ -3,6 +3,7 @@ import {
   apiForbidden,
   apiError,
   apiInternalError,
+  apiRateLimited,
   apiSuccess,
   apiUnauthorized,
 } from "@/lib/api-response";
@@ -12,6 +13,7 @@ import { dispatchNotification, type TemplateVariables } from "@/lib/notification
 import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { readWebhookBody } from "@/lib/webhook-body";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 import { handleWhatsAppConversation } from "@/lib/whatsapp/conversation-handler";
 
 // ── WhatsApp Webhook payload types ──
@@ -199,6 +201,10 @@ export async function POST(request: NextRequest) {
 
     // Verify Meta webhook signature
     const signatureHeader = request.headers.get("x-hub-signature-256");
+    const senderAllowed = await checkWebhookSenderRateLimit("whatsapp", signatureHeader);
+    if (!senderAllowed) {
+      return apiRateLimited("WhatsApp webhook sender rate limit exceeded.");
+    }
     const isValid = await verifyWebhookSignature(rawBody, signatureHeader);
     if (!isValid) {
       return apiUnauthorized("Invalid webhook signature");
@@ -268,8 +274,8 @@ export async function POST(request: NextRequest) {
         const { data: clinic } = await supabase
           .from("clinics")
           .select("id, name")
-          // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-          .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .eq("whatsapp_phone_number_id" as any, wabaPhoneNumberId)
           .is("deleted_at", null)
           .single();
         clinicId = clinic?.id;

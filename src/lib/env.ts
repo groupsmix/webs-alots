@@ -551,7 +551,13 @@ export function validateEnv(): EnvValidationResult {
   // and deliberately skip during `next build` — NEXT_PHASE is
   // "phase-production-build" there and the secret is legitimately absent in CI.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-  if (isProduction && !isBuildPhase) {
+  // CI carve-out: the Playwright E2E job boots `next start` with
+  // NODE_ENV=production but legitimately has no real Sentry DSN (it injects a
+  // format-valid `ci-e2e-...-placeholder` value). Without this, server boot
+  // hard-fails and every E2E route 500s. Mirrors the AV_SCAN_URL /
+  // RATE_LIMIT_BACKEND CI carve-outs; real production never sets CI=true.
+  const isCiRunner = process.env.CI === "true";
+  if (isProduction && !isBuildPhase && !isCiRunner) {
     const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
     if (!sentryDsn || /placeholder/i.test(sentryDsn)) {
       missing.push({
@@ -639,6 +645,11 @@ export function enforceEnvValidation(): void {
 
   // A6-05 / A22-01: Validate BACKUP_ENCRYPTION_KEY shape.
   enforceBackupEncryptionConfigured();
+
+  // RISK-001 / DB-01: Cloudflare Workers must use Supabase's transaction
+  // pooler in production. Direct database connections from ephemeral workers
+  // will exhaust connection slots under load.
+  enforceSupabasePoolerConfigured();
 
   // Audit Finding #7 — enforce safe PHI masking defaults in production.
   // Production must default to a masked view of PHI ("partial" or "full").
@@ -908,6 +919,35 @@ export function enforceBackupEncryptionConfigured(): void {
 }
 
 /**
+ * RISK-001 / DB-01: Require the Supabase transaction pooler in production.
+ *
+ * Cloudflare Workers do not hold persistent TCP connections, so direct DB
+ * connections from ephemeral isolates will exhaust Postgres slots under load.
+ * The app already prefers `SUPABASE_POOLER_URL`; this guard prevents silently
+ * shipping production without it.
+ */
+export function enforceSupabasePoolerConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+  // The Playwright E2E job runs `next start` (NODE_ENV=production) without a
+  // real Supabase pooler. Mirrors the AV_SCAN_URL / NEXT_PUBLIC_SENTRY_DSN CI
+  // carve-outs; real production never sets CI=true, so the guard still applies.
+  if (process.env.CI === "true") return;
+
+  const poolerUrl = getSupabasePoolerUrl();
+  if (poolerUrl) return;
+
+  const message =
+    "[STARTUP HEALTH CHECK FAILED] SUPABASE_POOLER_URL is required in production.\n" +
+    "Cloudflare Workers must use the Supabase transaction pooler (port 6543) to avoid\n" +
+    "connection exhaustion under load. Set the pooler URL via Worker secret before deploy.";
+  logger.error(message, {
+    context: "env-validation",
+    check: "supabase-pooler",
+  });
+  throw new Error(message);
+}
+
+/**
  * A100-35: Reject CRON_SECRET shorter than 32 characters in production.
  * A weak or empty secret would allow unauthenticated cron execution
  * (timingSafeEqual("", "") can return true on some implementations).
@@ -1117,6 +1157,11 @@ export function getCronSecret(): string {
   return process.env.CRON_SECRET ?? "";
 }
 
+/** Timestamp of last CRON_SECRET rotation (ISO 8601). */
+export function getCronSecretRotatedAt(): string | undefined {
+  return process.env.CRON_SECRET_ROTATED_AT;
+}
+
 /** PHI encryption key (AES-256-GCM base64). */
 export function getPhiEncryptionKey(): string | undefined {
   return process.env.PHI_ENCRYPTION_KEY;
@@ -1271,7 +1316,8 @@ export function getBackupEncryptionKey(): string | undefined {
  * Consumed by `src/lib/supabase-server.ts`.
  */
 export function getSupabasePoolerUrl(): string | undefined {
-  return process.env.SUPABASE_POOLER_URL;
+  const value = process.env.SUPABASE_POOLER_URL?.trim();
+  return value ? value : undefined;
 }
 
 /**

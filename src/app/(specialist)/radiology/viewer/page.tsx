@@ -1,36 +1,29 @@
 "use client";
 
 import { ExternalLink as ExternalLinkIcon, Monitor, Info, FileImage, Scan } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink } from "@/components/ui/external-link";
+import { PageError } from "@/components/ui/page-error";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 
 export default function DicomViewerPage() {
   const tenant = useTenant();
-  const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchRadiologyOrders(tenant?.clinicId ?? "")
-      .then((all) => setOrders(all.filter((o) => o.imageCount > 0)))
-      .catch((err) => {
-        if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [tenant?.clinicId]);
+  const {
+    data: orders,
+    loading,
+    error,
+  } = useAsyncData<RadiologyOrderView[]>(
+    async () => {
+      const all = await fetchRadiologyOrders(tenant?.clinicId ?? "");
+      return all.filter((o) => o.imageCount > 0);
+    },
+    [],
+    [tenant?.clinicId],
+  );
 
   const dicomOrders = orders.filter((o) =>
     o.images.some((img) => img.isDicom || img.dicomStudyUid),
@@ -40,14 +33,7 @@ export default function DicomViewerPage() {
   );
 
   if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
+    return <PageError details={error.message} />;
   }
 
   return (

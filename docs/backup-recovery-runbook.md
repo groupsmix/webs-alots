@@ -2,6 +2,9 @@
 
 > **Audience:** Platform operators, clinic admins, on-call engineers
 > **Last updated:** April 2026
+>
+> For DR activation criteria, roles, and closure criteria, see
+> `docs/disaster-recovery.md`.
 
 ---
 
@@ -182,6 +185,9 @@ If no replica exists, uploaded files cannot be recovered. Enable replication by 
 
 ## 5. Testing Backup Integrity
 
+For a concise cross-reference on regional recovery posture, see
+`docs/multi-region-failover.md`.
+
 ### Automated verification
 
 The nightly backup workflow includes a `verify` job that:
@@ -211,6 +217,7 @@ Run the verify workflow manually:
    - [ ] File uploads (R2 URLs) still resolve
    - [ ] WhatsApp notification templates are configured
 5. Document the drill results and time-to-recovery
+6. Update `LAST_RESTORE_TEST_AT` in the runtime environment to the drill completion timestamp so `/api/health/internal` can alert if a restore drill is overdue
 
 ---
 

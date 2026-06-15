@@ -111,9 +111,9 @@ jobs:
           # Real deploys (deploy.yml) run the guard strictly with live secrets.
           ALLOW_MISSING_PUBLIC_ENV: "1"
 
-      # Verify the Worker entry point was actually emitted — catches
-      # silent OpenNext misconfigurations where the build "succeeds"
-      # but the output is missing or moved.
+      # Verify the generated OpenNext fetch bundle was actually emitted —
+      # catches silent OpenNext misconfigurations where the build
+      # "succeeds" but the output is missing or moved.
       - name: Verify build output
         run: |
           if [ ! -f .open-next/worker.js ]; then
@@ -122,4 +122,4 @@ jobs:
             exit 1
           fi
           SIZE=$(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js)
-          echo "Worker entry point: .open-next/worker.js (${SIZE} bytes)"
+          echo "Generated OpenNext bundle: .open-next/worker.js (${SIZE} bytes)"

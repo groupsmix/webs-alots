@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { withChaos, isChaosEnabled } from "@/lib/chaos/chaos-engine";
 import { getSupabasePoolerUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
@@ -50,7 +51,7 @@ export async function createClient() {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
+  const client = createServerClient<Database>(
     getSupabaseUrl(),
     requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
@@ -73,6 +74,8 @@ export async function createClient() {
       },
     },
   );
+
+  return applyChaos(client);
 }
 
 /**
@@ -169,7 +172,7 @@ export async function createTenantClient(clinicId: string) {
     }
   }
 
-  return client;
+  return applyChaos(client);
 }
 
 /**
@@ -212,6 +215,7 @@ export type AdminPurpose =
   | "referral-program"
   | "streaming-chat"
   | "upload-policy"
+  | "seed-guard"
   | "rag-chat"
   | "ai-embed"
   | "ai-memory"
@@ -219,7 +223,8 @@ export type AdminPurpose =
   | "ai-team-tasks"
   | "ai-team-review"
   | "ai-triage"
-  | "ai-tracing";
+  | "ai-tracing"
+  | "super_admin_feature_flags";
 
 /**
  * Create a Supabase admin client using the service role key.
@@ -239,9 +244,14 @@ export type AdminPurpose =
  */
 export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
   logger.debug("Admin client created", { context: "supabase-server", purpose, clinicId });
-  return createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const client = createSupabaseClient<Database>(
+    getSupabaseUrl(),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
+  return applyChaos(client);
 }
 
 /**
@@ -253,9 +263,10 @@ export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
  */
 export function createUntypedAdminClient(purpose: AdminPurpose, clinicId?: string) {
   logger.debug("Untyped admin client created", { context: "supabase-server", purpose, clinicId });
-  return createSupabaseClient(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+  const client = createSupabaseClient(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  return applyChaos(client);
 }
 
 /**
@@ -278,12 +289,17 @@ export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string)
     throw new Error(`createScopedAdminClient: invalid clinicId: ${clinicId}`);
   }
   logger.debug("Scoped admin client created", { context: "supabase-server", purpose, clinicId });
-  return createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: {
-      headers: { "x-clinic-id": clinicId },
+  const client = createSupabaseClient<Database>(
+    getSupabaseUrl(),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        headers: { "x-clinic-id": clinicId },
+      },
     },
-  });
+  );
+  return applyChaos(client);
 }
 
 /**
@@ -296,9 +312,14 @@ export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string)
  */
 export function createServiceClient() {
   logger.debug("Service client created", { context: "supabase-server" });
-  return createSupabaseClient<Database>(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const client = createSupabaseClient<Database>(
+    getSupabaseUrl(),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    },
+  );
+  return applyChaos(client);
 }
 
 /**
@@ -315,7 +336,7 @@ export function createPublicAnonClient(clinicId: string) {
   if (!clinicId || !isValidClinicId(clinicId)) {
     throw new Error(`createPublicAnonClient: invalid clinicId: ${clinicId}`);
   }
-  return createSupabaseClient<Database>(
+  const client = createSupabaseClient<Database>(
     getSupabaseUrl(),
     requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {
@@ -325,4 +346,56 @@ export function createPublicAnonClient(clinicId: string) {
       },
     },
   );
+  return applyChaos(client);
+}
+
+/**
+ * Wraps a Supabase client with chaos engineering experiments.
+ * Intercepts database queries to simulate timeouts and failures.
+ */
+function applyChaos<T>(supabase: T): T {
+  // Chaos is opt-in via CHAOS_ENABLED and is never enabled in CI or production.
+  // When disabled, return the client untouched so the Supabase query builder
+  // stays chainable (.from().select().eq().single() etc.). Wrapping .select()
+  // in an async function otherwise turns it into a Promise, breaking every
+  // filtered query with "select(...).eq is not a function".
+  if (!isChaosEnabled()) {
+    return supabase;
+  }
+  // Wrap database operations with chaos
+  // @ts-expect-error Proxying complex Supabase types is hard
+  return new Proxy(supabase, {
+    get(target, prop) {
+      if (prop === "from") {
+        return (table: string) => {
+          // @ts-expect-error Proxying complex Supabase types is hard
+          const builder = target.from(table);
+
+          // Wrap .select(), .insert(), .update(), .delete()
+          return new Proxy(builder, {
+            get(builderTarget, builderProp) {
+              const original = builderTarget[builderProp];
+
+              if (
+                typeof original === "function" &&
+                ["select", "insert", "update", "delete"].includes(String(builderProp))
+              ) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                return async function (...args: any[]) {
+                  return withChaos("database_timeout", async () => {
+                    return original.apply(builderTarget, args);
+                  });
+                };
+              }
+
+              return original;
+            },
+          });
+        };
+      }
+
+      // @ts-expect-error Proxying complex Supabase types is hard
+      return target[prop];
+    },
+  });
 }

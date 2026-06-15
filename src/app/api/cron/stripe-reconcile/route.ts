@@ -16,6 +16,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError, apiError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { assertCronAllowedInThisEnv } from "@/lib/cron-env-guard";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -67,13 +68,16 @@ async function handler(request: NextRequest) {
       });
       if (startingAfter) params.set("starting_after", startingAfter);
 
-      const res = await fetch(`https://api.stripe.com/v1/checkout/sessions?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+      const res = await safeFetch(
+        `https://api.stripe.com/v1/checkout/sessions?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${stripeKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          signal: AbortSignal.timeout(10_000),
         },
-        signal: AbortSignal.timeout(10_000),
-      });
+      );
 
       if (!res.ok) {
         logger.error("Stripe API error during reconciliation", {

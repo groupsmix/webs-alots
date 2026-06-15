@@ -89,6 +89,11 @@ export async function signInWithPassword(
     return { error: "auth.accountLocked" };
   }
 
+  // Block recreated seed accounts by email before a session is established.
+  if (await isSeedUserBlocked(normalizedEmail)) {
+    return { error: "auth.invalidCredentials" };
+  }
+
   const supabase = await createClient();
 
   const { data: signInData, error } = await supabase.auth.signInWithPassword({
@@ -114,7 +119,13 @@ export async function signInWithPassword(
   // SEED-01: Block seed users from authenticating in production.
   // Even if the password matches, these accounts must not be usable
   // in production because their credentials are in git history.
-  if (signInData?.user && isSeedUserBlocked(signInData.user.id)) {
+  if (
+    signInData?.user &&
+    (await isSeedUserBlocked({
+      authId: signInData.user.id,
+      email: normalizedEmail,
+    }))
+  ) {
     logger.warn("Blocked seed user login attempt in production", {
       context: "auth/signIn",
       userId: signInData.user.id,

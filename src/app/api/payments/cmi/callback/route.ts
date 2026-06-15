@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError, apiInternalError } from "@/lib/api-response";
+import { apiError, apiInternalError, apiRateLimited } from "@/lib/api-response";
 import { verifyCmiCallback } from "@/lib/cmi";
 import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { cmiCallbackFieldsSchema } from "@/lib/validations";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 
 /**
  * POST /api/payments/cmi/callback
@@ -92,6 +93,14 @@ async function readBodyWithLimit(
 
 export async function POST(request: NextRequest) {
   try {
+    const senderAllowed = await checkWebhookSenderRateLimit(
+      "cmi-callback",
+      request.headers.get("cf-connecting-ip"),
+    );
+    if (!senderAllowed) {
+      return apiRateLimited("CMI callback sender rate limit exceeded.");
+    }
+
     // A39.5: Source IP allowlist — defense-in-depth alongside HMAC.
     if (!isCmiSourceAllowed(request)) {
       logger.warn("CMI callback rejected: source IP not in allowlist", {

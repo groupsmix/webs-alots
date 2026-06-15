@@ -73,6 +73,7 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 1. Update `CRON_SECRET` in GitHub Secrets.
 1. Run `update-secrets.yml`.
    **Verify:** Check the next scheduled cron execution in the Cloudflare Dashboard to ensure it returns 200 OK.
+1. Update `CRON_SECRET_ROTATED_AT` in the runtime environment to the current ISO-8601 timestamp so `/api/health/internal` can alert if rotation age exceeds policy.
 
 ## 7. `BOOKING_TOKEN_SECRET`
 
@@ -84,6 +85,17 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 1. Update `BOOKING_TOKEN_SECRET` in GitHub Secrets.
 1. Run `update-secrets.yml`.
    **Impact:** Existing unconfirmed booking links sent to patients will instantly become invalid. Support staff must be ready to manually confirm these bookings if patients call.
+
+## 7b. `PROFILE_HEADER_HMAC_KEY`
+
+**Detection:** Sudden spikes of invalid `x-auth-profile-*` signatures or suspicion that middleware-to-route header signing material has leaked.
+**Revoke & Rotate:**
+
+1. Generate a new secret: `openssl rand -hex 32`.
+2. Deploy it as `PROFILE_HEADER_HMAC_KEY` and keep the previous value temporarily as `PROFILE_HEADER_HMAC_KEY_OLD` for the overlap window.
+3. After at least 10 minutes (2× the header max age), remove `PROFILE_HEADER_HMAC_KEY_OLD`.
+4. Update `PROFILE_HEADER_HMAC_KEY_ROTATED_AT` in the runtime environment to the current ISO-8601 timestamp so `/api/health/internal` reflects the new age.
+5. Verify authenticated API routes succeed and the internal health check no longer reports an overdue rotation.
 
 ## 8. `R2_SIGNED_URL_SECRET`
 
@@ -104,6 +116,7 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 - Every outstanding signed URL is instantly invalidated. Patients and staff with open-tab downloads must re-request the file.
 - Existing R2 object keys are unaffected; only future `buildUploadKey()` calls use the new secret for filename hashing, so old and new uploads coexist safely.
 - PHI files remain accessible through the R2 proxy because authorization re-signs on each request — rotation does **not** require re-uploading files.
+- After PHI key rotation, also update `PHI_ENCRYPTION_KEY_ROTATED_AT` in the runtime environment so `/api/health/internal` can enforce the 120-day alert threshold.
   **Backfill:** Query `audit_logs` for `action = 'file.download'` entries during the suspected compromise window. If the old secret was "default-salt" or the R2 access key, treat every signed URL issued before the rotation as potentially predictable and review download patterns per-clinic for anomalies.
 
 ## 9. Signing Identity Compromise (Sigstore / GitHub OIDC)

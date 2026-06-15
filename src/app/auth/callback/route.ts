@@ -36,7 +36,13 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       // SEED-01: Block seed users from completing auth callback in production
-      if (user && isSeedUserBlocked(user.id)) {
+      if (
+        user &&
+        (await isSeedUserBlocked({
+          authId: user.id,
+          email: user.email ?? null,
+        }))
+      ) {
         await supabase.auth.signOut();
         return NextResponse.redirect(`${origin}/login?error=account_disabled`);
       }
