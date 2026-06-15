@@ -11,7 +11,7 @@
  * by the 3-layer seed-guard (see src/lib/seed-guard.ts).
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "../src/lib/supabase-server";
 
 // ── Configuration ──────────────────────────────────────────────────
 
@@ -26,9 +26,40 @@ if (!SUPABASE_SERVICE_KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+interface SeedAuthUser {
+  id: string;
+  email?: string | null;
+}
+
+type SeedAdminAuth = {
+  createUser: (input: {
+    email: string;
+    password: string;
+    email_confirm: boolean;
+  }) => Promise<{ data: { user: SeedAuthUser }; error: { message?: string } | null }>;
+  listUsers: () => Promise<{
+    data: { users: SeedAuthUser[] } | null;
+    error: { message?: string } | null;
+  }>;
+};
+
+const supabase = createAdminClient("auth_admin");
+
+function getSeedAdminAuth(client: unknown): SeedAdminAuth {
+  const auth = Reflect.get(client as object, "auth");
+  if (!auth || typeof auth !== "object") {
+    throw new Error("Supabase admin auth client is unavailable");
+  }
+
+  const admin = Reflect.get(auth, "admin");
+  if (!admin || typeof admin !== "object") {
+    throw new Error("Supabase auth.admin API is unavailable");
+  }
+
+  return admin as SeedAdminAuth;
+}
+
+const adminAuth = getSeedAdminAuth(supabase);
 
 // ── Deterministic UUIDs ────────────────────────────────────────────
 
@@ -67,14 +98,14 @@ const SERVICE_IDS = {
 // ── Seed Data ──────────────────────────────────────────────────────
 
 async function createAuthUser(email: string, password: string): Promise<string> {
-  const { data, error } = await supabase.auth.admin.createUser({
+  const { data, error } = await adminAuth.createUser({
     email,
     password,
     email_confirm: true,
   });
   if (error) {
     if (error.message?.includes("already been registered")) {
-      const { data: list } = await supabase.auth.admin.listUsers();
+      const { data: list } = await adminAuth.listUsers();
       const existing = list?.users?.find((u) => u.email === email);
       if (existing) return existing.id;
     }
@@ -90,12 +121,13 @@ async function seedClinics() {
       id: CLINIC_IDS.drAhmed,
       name: "Cabinet Dr. Ahmed Benali",
       subdomain: "demo",
-      clinic_type: "general_practitioner",
+      type: "general_practitioner",
       tier: "pro",
+      status: "active",
       is_active: true,
-      settings: {
-        primary_color: "#2563eb",
-        secondary_color: "#1e40af",
+      primary_color: "#2563eb",
+      secondary_color: "#1e40af",
+      config: {
         timezone: "Africa/Casablanca",
         currency: "MAD",
         languages: ["fr", "ar"],
@@ -106,12 +138,13 @@ async function seedClinics() {
       id: CLINIC_IDS.sourireDental,
       name: "Clinique Dentaire Sourire de Casablanca",
       subdomain: "sourire-dental",
-      clinic_type: "dentist",
+      type: "dentist",
       tier: "pro",
+      status: "active",
       is_active: true,
-      settings: {
-        primary_color: "#0891b2",
-        secondary_color: "#0e7490",
+      primary_color: "#0891b2",
+      secondary_color: "#0e7490",
+      config: {
         timezone: "Africa/Casablanca",
         currency: "MAD",
         languages: ["fr", "ar"],
@@ -121,12 +154,13 @@ async function seedClinics() {
       id: CLINIC_IDS.pharmacieCentrale,
       name: "Pharmacie Centrale Rabat",
       subdomain: "pharmacie-centrale",
-      clinic_type: "pharmacy",
+      type: "pharmacy",
       tier: "cabinet",
+      status: "active",
       is_active: true,
-      settings: {
-        primary_color: "#16a34a",
-        secondary_color: "#15803d",
+      primary_color: "#16a34a",
+      secondary_color: "#15803d",
+      config: {
         timezone: "Africa/Casablanca",
         currency: "MAD",
         languages: ["fr", "ar"],
@@ -136,12 +170,13 @@ async function seedClinics() {
       id: CLINIC_IDS.polycliniqueAtlas,
       name: "Polyclinique Atlas Marrakech",
       subdomain: "atlas-polyclinique",
-      clinic_type: "polyclinic",
+      type: "polyclinic",
       tier: "premium",
+      status: "active",
       is_active: true,
-      settings: {
-        primary_color: "#7c3aed",
-        secondary_color: "#6d28d9",
+      primary_color: "#7c3aed",
+      secondary_color: "#6d28d9",
+      config: {
         timezone: "Africa/Casablanca",
         currency: "MAD",
         languages: ["fr", "ar", "en"],
@@ -151,12 +186,13 @@ async function seedClinics() {
       id: CLINIC_IDS.labBioMaroc,
       name: "Laboratoire Bio Maroc - Fès",
       subdomain: "bio-maroc-lab",
-      clinic_type: "analysis_lab",
+      type: "analysis_lab",
       tier: "cabinet",
+      status: "active",
       is_active: true,
-      settings: {
-        primary_color: "#ea580c",
-        secondary_color: "#c2410c",
+      primary_color: "#ea580c",
+      secondary_color: "#c2410c",
+      config: {
         timezone: "Africa/Casablanca",
         currency: "MAD",
         languages: ["fr", "ar"],

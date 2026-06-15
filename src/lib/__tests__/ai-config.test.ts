@@ -23,6 +23,7 @@ vi.mock("@/lib/ai-disclaimer", () => ({
 
 vi.mock("@/lib/features", () => ({
   isAIEnabled: vi.fn(async () => true),
+  getKVBinding: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/supabase-server", () => ({

@@ -1,7 +1,7 @@
 "use client";
 
 import { MoreHorizontal } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Z_INDEX } from "@/lib/z-index";

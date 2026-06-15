@@ -11,8 +11,12 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, it, expect } from "vitest";
 
+function readWranglerToml(): string {
+  return readFileSync(resolve(__dirname, "../../../wrangler.toml"), "utf-8");
+}
+
 function parseWranglerCrons(): string[] {
-  const content = readFileSync(resolve(__dirname, "../../../wrangler.toml"), "utf-8");
+  const content = readWranglerToml();
   const cronsMatch = content.match(/\[triggers\]\s*\ncrons\s*=\s*\[([\s\S]*?)\]/);
   if (!cronsMatch) throw new Error("Could not find [triggers].crons in wrangler.toml");
   const lines = cronsMatch[1].split("\n");
@@ -41,11 +45,33 @@ function getHandlerCrons(): string[] {
 }
 
 describe("Cron schedule synchronization", () => {
+  it("wrangler.toml uses the custom worker entrypoint", () => {
+    const content = readWranglerToml();
+    expect(content).toMatch(/\nmain\s*=\s*"worker-cron-handler\.ts"\n/);
+  });
+
   it("wrangler.toml crons match CRON_ROUTES keys exactly", () => {
     const wranglerCrons = parseWranglerCrons();
     const handlerCrons = getHandlerCrons();
 
     expect(wranglerCrons).toEqual(handlerCrons);
+  });
+
+  it("worker-cron-handler exports both scheduled and queue handlers", () => {
+    const content = readFileSync(resolve(__dirname, "../../../worker-cron-handler.ts"), "utf-8");
+    expect(content).toMatch(/async\s+queue\s*\(/);
+    expect(content).toMatch(/async\s+scheduled\s*\(/);
+  });
+
+  it("wrangler.toml declares notification queue consumers for all deployed environments", () => {
+    const content = readWranglerToml();
+    expect(content).toMatch(/\[\[queues\.consumers\]\][\s\S]*?queue\s*=\s*"notification-queue"/);
+    expect(content).toMatch(
+      /\[\[env\.production\.queues\.consumers\]\][\s\S]*?queue\s*=\s*"notification-queue"/,
+    );
+    expect(content).toMatch(
+      /\[\[env\.staging\.queues\.consumers\]\][\s\S]*?queue\s*=\s*"notification-queue-staging"/,
+    );
   });
 
   it("every CRON_ROUTES entry maps to at least one route", () => {

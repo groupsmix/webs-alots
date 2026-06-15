@@ -7,6 +7,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { fetchWithAICircuitBreaker } from "@/lib/ai/circuit-breaker";
 import { resolveAIConfig } from "@/lib/ai/config";
 import {
   fetchMarketingData,
@@ -167,24 +168,28 @@ export const POST = withAuthValidation(
     const userMessage = `Analyse les données actuelles de la clinique et génère des tâches, alertes et suggestions pertinentes.\n\n${dataContext}`;
 
     try {
-      const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+      const aiResponse = await fetchWithAICircuitBreaker(
+        `${baseUrl}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
+            ],
+            max_tokens: 2000,
+            temperature: 0.3,
+            response_format: { type: "json_object" },
+          }),
+          signal: AbortSignal.timeout(30_000),
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          max_tokens: 2000,
-          temperature: 0.3,
-          response_format: { type: "json_object" },
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
+        { provider: aiResult.config.provider },
+      );
 
       if (!aiResponse.ok) {
         const errorBody = await aiResponse.text().catch(() => "unknown");

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
+import { apiError, apiRateLimited, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { provisionChatbotForPlan } from "@/lib/chatbot-provisioning";
 import { getPlanByPriceId, type PlanSlug } from "@/lib/config/subscription-plans";
 import { logger } from "@/lib/logger";
@@ -9,6 +9,7 @@ import type { Json } from "@/lib/types/database";
 import { subscriptionWebhookEventSchema } from "@/lib/validations";
 import type { SubscriptionWebhookEvent } from "@/lib/validations";
 import { readWebhookBody } from "@/lib/webhook-body";
+import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 
 /**
  * Q-01: Stripe API timeout. If Stripe is degraded, an unbounded fetch here
@@ -113,6 +114,11 @@ export async function POST(request: NextRequest) {
 
     if (!signature) {
       return apiError("Missing stripe-signature header");
+    }
+
+    const senderAllowed = await checkWebhookSenderRateLimit("stripe-billing", signature);
+    if (!senderAllowed) {
+      return apiRateLimited("Stripe billing webhook sender rate limit exceeded.");
     }
 
     const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);

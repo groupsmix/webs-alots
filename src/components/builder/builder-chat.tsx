@@ -148,7 +148,8 @@ export function BuilderChat({ userId: _userId }: BuilderChatProps) {
                 </div>
               </div>
             ) : (
-              messages.map((message) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              messages.map((message: any) => {
                 const text = getTextContent(message.parts as { type: string; text?: string }[]);
                 return (
                   <div

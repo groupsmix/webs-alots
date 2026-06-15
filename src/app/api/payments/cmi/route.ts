@@ -91,7 +91,7 @@ export const POST = withAuthValidation(
       amount,
       orderId,
       description,
-      customerEmail: user.email,
+      customerEmail: user.email ?? undefined,
       successUrl: validateRedirectUrl(successUrl, origin, "success"),
       failUrl: validateRedirectUrl(failUrl, origin, "failed"),
       callbackUrl: `${origin}/api/payments/cmi/callback`,

@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Building2,
   CreditCard,
+  ToggleLeft,
   ToggleRight,
   FileText,
   LifeBuoy,
@@ -135,6 +136,7 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
       { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
       { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
+      { href: "/super-admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
     ],
   },
   // Intelligence (AI features) — always rendered post-launch (was env-gated previously).

@@ -1,56 +1,38 @@
 "use client";
 
 import { Search, FileStack, Copy } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PageError } from "@/components/ui/page-error";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyTemplateView } from "@/lib/data/client";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 
 export default function RadiologyTemplatesPage() {
   const tenant = useTenant();
-  const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const {
+    data: templates,
+    loading,
+    error,
+  } = useAsyncData<RadiologyTemplateView[]>(
+    async () => fetchRadiologyTemplates(tenant?.clinicId ?? ""),
+    [],
+    [tenant?.clinicId],
+  );
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchRadiologyTemplates(tenant?.clinicId ?? "")
-      .then((d) => {
-        if (!controller.signal.aborted) setTemplates(d);
-      })
-      .catch((err) => {
-        if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [tenant?.clinicId]);
 
   if (loading) {
     return <PageLoader message="Loading templates..." />;
   }
 
   if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
+    return <PageError details={error.message} />;
   }
 
   const filtered = templates.filter((t) => {

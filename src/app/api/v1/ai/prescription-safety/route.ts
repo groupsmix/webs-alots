@@ -13,6 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { fetchWithAICircuitBreaker } from "@/lib/ai/circuit-breaker";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
@@ -287,24 +288,28 @@ ${sanitizedAllergies.length > 0 ? sanitizedAllergies.map((a) => `• ${a}`).join
 Effectue une analyse complète de sécurité médicamenteuse.`;
 
     try {
-      const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+      const aiResponse = await fetchWithAICircuitBreaker(
+        `${baseUrl}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: SAFETY_CHECK_PROMPT },
+              { role: "user", content: userMessage },
+            ],
+            max_tokens: 2000,
+            temperature: 0.0,
+            response_format: { type: "json_object" },
+          }),
+          signal: AbortSignal.timeout(20_000),
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SAFETY_CHECK_PROMPT },
-            { role: "user", content: userMessage },
-          ],
-          max_tokens: 2000,
-          temperature: 0.0,
-          response_format: { type: "json_object" },
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
+        { provider: aiResult.config.provider },
+      );
 
       if (!aiResponse.ok) {
         const errBody = await aiResponse.text().catch(() => "unknown");

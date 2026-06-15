@@ -1,6 +1,7 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { SUBSCRIPTION_PLANS, type PlanSlug } from "@/lib/config/subscription-plans";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { subscriptionCheckoutSchema } from "@/lib/validations";
 
@@ -102,7 +103,7 @@ export const POST = withAuthValidation(
     const billingClinicId = profile.clinic_id ?? "unknown";
     const idempotencyKey = `billing_${billingClinicId}_${user.id}_${planId}_${Date.now()}`;
 
-    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    const stripeResponse = await safeFetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeSecretKey}`,

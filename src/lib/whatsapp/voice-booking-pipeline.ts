@@ -14,6 +14,7 @@
  */
 
 import { logAuditEvent } from "@/lib/audit-log";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { sendTextMessage } from "@/lib/whatsapp";
 
@@ -116,7 +117,7 @@ export async function downloadWhatsAppAudio(
   }
 
   const metaUrl = `https://graph.facebook.com/v21.0/${mediaId}`;
-  const mediaResponse = await fetch(metaUrl, {
+  const mediaResponse = await safeFetch(metaUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(15_000),
   });
@@ -133,7 +134,7 @@ export async function downloadWhatsAppAudio(
   const mediaInfo = (await mediaResponse.json()) as { url?: string; mime_type?: string };
   if (!mediaInfo.url) return null;
 
-  const audioResponse = await fetch(mediaInfo.url, {
+  const audioResponse = await safeFetch(mediaInfo.url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(30_000),
   });
@@ -173,7 +174,7 @@ async function transcribeViaOpenAI(
   formData.append("language", config.sttLanguage || "fr");
   formData.append("response_format", "verbose_json");
 
-  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+  const response = await safeFetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
     headers: { Authorization: `Bearer ${config.sttApiKey}` },
     body: formData,
@@ -210,7 +211,7 @@ async function transcribeViaElevenLabs(
   formData.append("audio", blob, "audio.ogg");
   formData.append("model_id", config.sttModel || "scribe_v1");
 
-  const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+  const response = await safeFetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
     headers: { "xi-api-key": config.sttApiKey },
     body: formData,

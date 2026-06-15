@@ -50,12 +50,12 @@ export default defineConfig({
         command: "npx next start",
         url: "http://localhost:3000",
         reuseExistingServer: false,
-        timeout: 30_000,
+        timeout: 120_000,
       }
     : {
-        command: "npm run dev",
+        command: "npx next dev --webpack",
         url: "http://localhost:3000",
         reuseExistingServer: true,
-        timeout: 30_000,
+        timeout: 120_000,
       },
 });

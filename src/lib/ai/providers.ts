@@ -18,7 +18,12 @@ import { createMistral } from "@ai-sdk/mistral";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createXai } from "@ai-sdk/xai";
-import { generateText, stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai";
+import { generateText, stepCountIs, streamText } from "ai";
+import {
+  assertAICircuitBreakerAllowsRequests,
+  recordAICircuitBreakerFailure,
+  recordAICircuitBreakerSuccess,
+} from "@/lib/ai/circuit-breaker";
 import { getWorkersAiConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { PROVIDER_MODELS } from "./models";
@@ -56,8 +61,7 @@ export interface ProviderStreamResult {
   usage: PromiseLike<{ inputTokens: number; outputTokens: number }>;
   response: PromiseLike<{ modelId: string }>;
   /** The full streamText result for consumers that need tool calling, etc. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  raw: ReturnType<typeof streamText<any, any>>;
+  raw: unknown;
 }
 
 // ── Error Types (unchanged) ──
@@ -90,7 +94,7 @@ export function createModel(
   provider: AIProvider,
   apiKey: string | null,
   modelOverride?: string,
-): LanguageModel {
+): unknown {
   // modelOverride comes from per-task pins (task-config.ts) and is already
   // validated against ALLOWED_MODELS before it reaches this point.
   const modelId = modelOverride ?? PROVIDER_MODELS[provider]?.model ?? "";
@@ -178,6 +182,11 @@ export async function callProvider(
   apiKey: string | null,
   modelOverride?: string,
 ): Promise<ProviderResponse> {
+  const allowed = await assertAICircuitBreakerAllowsRequests();
+  if (!allowed.ok) {
+    throw new ProviderError(provider, allowed.statusCode, allowed.reason);
+  }
+
   logger.debug("Calling AI provider", {
     context: "ai-provider",
     provider,
@@ -207,6 +216,8 @@ export async function callProvider(
         abortSignal: abortController.signal,
       });
 
+      await recordAICircuitBreakerSuccess();
+
       return {
         text: result.text,
         model: result.response?.modelId ?? PROVIDER_MODELS[provider]?.model ?? provider,
@@ -217,6 +228,18 @@ export async function callProvider(
       clearTimeout(timeout);
     }
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const statusCode =
+      err && typeof err === "object" && "statusCode" in err
+        ? (err as { statusCode: number }).statusCode
+        : err && typeof err === "object" && "status" in err
+          ? (err as { status: number }).status
+          : undefined;
+
+    if (statusCode === undefined || statusCode === 429 || statusCode >= 500) {
+      await recordAICircuitBreakerFailure({ provider, statusCode, reason: message });
+    }
+
     mapSDKError(provider, err);
   }
 }
@@ -234,7 +257,7 @@ export function callProviderStream(
   provider: AIProvider,
   req: AIRequest,
   apiKey: string | null,
-  options?: { tools?: ToolSet; maxSteps?: number },
+  options?: { tools?: unknown; maxSteps?: number },
 ): ProviderStreamResult {
   logger.debug("Streaming AI provider", {
     context: "ai-provider",
@@ -242,6 +265,8 @@ export function callProviderStream(
     task: req.task,
     complexity: req.complexity,
   });
+
+  const gate = assertAICircuitBreakerAllowsRequests();
 
   const model = createModel(provider, apiKey);
 
@@ -265,19 +290,52 @@ export function callProviderStream(
     // `maxSteps` property was silently IGNORED by streamText, so the agent
     // tool loop ran with the SDK default instead of our configured cap.
     ...(options?.maxSteps ? { stopWhen: stepCountIs(options.maxSteps) } : {}),
-    onFinish: () => clearTimeout(timeout),
-    onError: () => clearTimeout(timeout),
+    onFinish: async () => {
+      clearTimeout(timeout);
+      const allowed = await gate;
+      if (allowed.ok) {
+        await recordAICircuitBreakerSuccess();
+      }
+    },
+    onError: async ({ error }: { error: unknown }) => {
+      clearTimeout(timeout);
+      const allowed = await gate;
+      if (!allowed.ok) return;
+      const statusCode =
+        error && typeof error === "object" && "statusCode" in error
+          ? (error as { statusCode: number }).statusCode
+          : error && typeof error === "object" && "status" in error
+            ? (error as { status: number }).status
+            : undefined;
+      if (statusCode === undefined || statusCode === 429 || statusCode >= 500) {
+        await recordAICircuitBreakerFailure({
+          provider,
+          statusCode,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
   });
 
   const defaultModel = PROVIDER_MODELS[provider]?.model ?? provider;
 
   return {
-    textStream: result.textStream,
-    usage: result.usage.then((u) => ({
+    textStream: {
+      async *[Symbol.asyncIterator]() {
+        const allowed = await gate;
+        if (!allowed.ok) {
+          throw new ProviderError(provider, allowed.statusCode, allowed.reason);
+        }
+        for await (const chunk of result.textStream) {
+          yield chunk;
+        }
+      },
+    },
+    usage: result.usage.then((u: { inputTokens?: number; outputTokens?: number }) => ({
       inputTokens: u.inputTokens ?? 0,
       outputTokens: u.outputTokens ?? 0,
     })),
-    response: result.response.then((r) => ({
+    response: result.response.then((r: { modelId?: string }) => ({
       modelId: r.modelId ?? defaultModel,
     })),
     raw: result,

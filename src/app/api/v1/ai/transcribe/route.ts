@@ -19,6 +19,7 @@ import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiError, apiInternalError, apiRateLimited, apiSuccess } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { isAIEnabled } from "@/lib/features";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { aiVoiceNoteLimiter, aiClinicCeilingLimiter } from "@/lib/rate-limit";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
@@ -143,7 +144,7 @@ export const POST = withAuth(
     );
 
     try {
-      const whisperResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      const whisperResponse = await safeFetch("https://api.openai.com/v1/audio/transcriptions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,

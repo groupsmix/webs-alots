@@ -57,7 +57,6 @@ export const POST = withAuthValidation(
 
     const { data, error } = await auth.supabase
       .from("restaurant_tables")
-      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .insert({
         clinic_id: clinicId,
         name: body.name,
@@ -65,7 +64,8 @@ export const POST = withAuthValidation(
         zone: body.zone ?? null,
         is_active: body.is_active,
         sort_order: body.sort_order,
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
       .select()
       .single();
 

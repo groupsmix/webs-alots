@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { fetchWithAICircuitBreaker } from "@/lib/ai/circuit-breaker";
 import { resolveAIConfig, AI_RESPONSE_DISCLAIMER } from "@/lib/ai/config";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
@@ -26,6 +27,18 @@ import { chatRequestSchema } from "@/lib/validations";
  */
 /** Max number of conversation history messages sent to the LLM. */
 const MAX_HISTORY_LENGTH = 20;
+
+interface AuthenticatedChatUser {
+  id: string;
+  email?: string | null;
+  [key: string]: unknown;
+}
+
+type ChatAuthCapableSupabaseClient = Awaited<ReturnType<typeof createClient>> & {
+  auth: {
+    getUser: () => Promise<{ data: { user: AuthenticatedChatUser | null } }>;
+  };
+};
 
 /** Max length of a single user message (characters). */
 const MAX_MESSAGE_LENGTH = 2000;
@@ -163,7 +176,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   // AA-02: Authenticate BEFORE fetching clinic config to avoid leaking
   // tenant configuration to unauthenticated callers on non-basic tiers.
   // Basic tier is resolved after the config fetch since it needs no auth.
-  const supabaseForAuth = await createClient();
+  const supabaseForAuth = (await createClient()) as ChatAuthCapableSupabaseClient;
   const {
     data: { user: chatUser },
   } = await supabaseForAuth.auth.getUser();
@@ -330,32 +343,36 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   const apiMessages = [{ role: "system" as const, content: systemPrompt }, ...sanitizedMessages];
 
   const doFetch = (withExtras: boolean) =>
-    fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    fetchWithAICircuitBreaker(
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: apiMessages,
+          stream: true,
+          max_tokens: 500,
+          temperature: 0.7,
+          ...(withExtras
+            ? {
+                // AUDIT P1-6: ask for exact token usage in the final SSE chunk
+                // instead of estimating (the old hardcoded estimate of 125
+                // output tokens undercounted by up to 4x).
+                stream_options: { include_usage: true },
+                // F-AI-14 / AUDIT P1-11: reproducibility seed — also logged in
+                // the audit event below so outputs can be reproduced.
+                seed,
+              }
+            : {}),
+        }),
+        signal: AbortSignal.timeout(30_000),
       },
-      body: JSON.stringify({
-        model,
-        messages: apiMessages,
-        stream: true,
-        max_tokens: 500,
-        temperature: 0.7,
-        ...(withExtras
-          ? {
-              // AUDIT P1-6: ask for exact token usage in the final SSE chunk
-              // instead of estimating (the old hardcoded estimate of 125
-              // output tokens undercounted by up to 4x).
-              stream_options: { include_usage: true },
-              // F-AI-14 / AUDIT P1-11: reproducibility seed — also logged in
-              // the audit event below so outputs can be reproduced.
-              seed,
-            }
-          : {}),
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
+      { provider: aiResult.config.provider },
+    );
 
   // Some OpenAI-compatible servers reject unknown params (stream_options /
   // seed). Retry once without the extras before degrading to basic tier.

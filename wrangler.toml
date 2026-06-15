@@ -16,7 +16,12 @@
 # =============================================================================
 
 name = "webs-alots"
-main = ".open-next/worker.js"
+# INF-Q1 / RT-03: Use the custom Worker entry so Cloudflare sees the
+# scheduled() and queue() handlers exported by worker-cron-handler.ts.
+# That file delegates fetch traffic to the generated OpenNext bundle at
+# .open-next/worker.js, so the build artifact is still required — it is
+# just no longer the Wrangler entrypoint.
+main = "worker-cron-handler.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -136,19 +141,16 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 binding = "NOTIFICATION_QUEUE"
 queue = "notification-queue"
 
-# [[queues.consumers]]   ← DEFERRED (same root cause as Durable Objects above)
-# The @opennextjs/cloudflare build does NOT re-export a `queue()` handler from
-# the generated entrypoint (.open-next/worker.js). Declaring the consumer here
-# makes `wrangler deploy` fail with:
-#   "Queue handler is missing."
-# The 15-minute cron fallback (/api/cron/notifications) continues to process
-# pending notifications until the queue consumer is wired through OpenNext.
-#
-# queue = "notification-queue"
-# max_batch_size = 25
-# max_batch_timeout = 30
-# max_retries = 3
-# dead_letter_queue = "notification-queue-dlq"
+# INF-Q1: Queue consumer enabled. The worker entry is worker-cron-handler.ts
+# (not the generated .open-next/worker.js), so it correctly re-exports the
+# queue() handler. The post-build-patch.mjs script ensures .open-next/worker.js
+# is NOT used as main — wrangler.toml [main] already points to the custom entry.
+[[queues.consumers]]
+queue = "notification-queue"
+max_batch_size = 25
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "notification-queue-dlq"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
@@ -204,12 +206,13 @@ NEXT_PUBLIC_DATA_MASKING = "partial"
 binding = "NOTIFICATION_QUEUE"
 queue = "notification-queue"
 
-# [[env.production.queues.consumers]]  ← DEFERRED (see top-level comment)
-# queue = "notification-queue"
-# max_batch_size = 25
-# max_batch_timeout = 30
-# max_retries = 3
-# dead_letter_queue = "notification-queue-dlq"
+# INF-Q1: Queue consumer enabled in production env block.
+[[env.production.queues.consumers]]
+queue = "notification-queue"
+max_batch_size = 25
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "notification-queue-dlq"
 
 [[env.production.r2_buckets]]
 binding = "UPLOADS_BUCKET"
@@ -304,12 +307,13 @@ NEXT_PUBLIC_DATA_MASKING = "partial"
 binding = "NOTIFICATION_QUEUE"
 queue = "notification-queue-staging"
 
-# [[env.staging.queues.consumers]]  ← DEFERRED (see top-level comment)
-# queue = "notification-queue-staging"
-# max_batch_size = 25
-# max_batch_timeout = 30
-# max_retries = 3
-# dead_letter_queue = "notification-queue-staging-dlq"
+# INF-Q1: Queue consumer enabled for staging.
+[[env.staging.queues.consumers]]
+queue = "notification-queue-staging"
+max_batch_size = 25
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "notification-queue-staging-dlq"
 
 [[env.staging.r2_buckets]]
 binding = "UPLOADS_BUCKET"

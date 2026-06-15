@@ -1,4 +1,5 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { withAuth } from "@/lib/with-auth";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export const GET = withAuth(
     }`,
     };
 
-    const response = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+    const response = await safeFetch("https://api.cloudflare.com/client/v4/graphql", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

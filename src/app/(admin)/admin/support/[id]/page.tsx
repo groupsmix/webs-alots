@@ -241,6 +241,7 @@ export default function TicketDetailPage() {
     );
   }
 
+  // eslint-disable-next-line react-hooks/purity
   const hoursOpen = Math.floor((Date.now() - new Date(ticket.created_at).getTime()) / 3_600_000);
 
   return (

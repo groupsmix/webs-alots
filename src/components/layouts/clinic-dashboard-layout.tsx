@@ -1,7 +1,7 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";

@@ -266,36 +266,33 @@ export function register() {
   // from auth.users so that a forked repo cannot bypass the check by setting
   // the env var without actually deleting the accounts.
   if (process.env.NODE_ENV === "production") {
-    // Positive DB check: verify seed accounts are actually deleted
-    const SEED_AUTH_IDS = [
-      "a0000000-0000-0000-0000-000000000001",
-      "a0000000-0000-0000-0000-000000000002",
-      "a0000000-0000-0000-0000-000000000003",
-      "a0000000-0000-0000-0000-000000000004",
-    ];
-
-    import("@/lib/supabase-server").then(({ createAdminClient }) => {
-      try {
-        const supabase = createAdminClient("instrumentation");
-        supabase
-          .from("users")
-          .select("id")
-          .in("auth_id", SEED_AUTH_IDS)
-          .limit(1)
-          .then(({ data }) => {
-            if (data && data.length > 0) {
-              import("@/lib/logger").then(({ logger }) => {
-                logger.error(
-                  "[STARTUP WARNING] Seed user accounts still exist in the database despite " +
-                    "SEED_PASSWORDS_ROTATED being set. Delete seed accounts for full security.",
-                  { context: "instrumentation", seedUsersFound: data.length },
-                );
+    import("@/lib/seed-guard").then(({ listBlockedSeedEmails }) => {
+      import("@/lib/supabase-server").then(({ createAdminClient }) => {
+        try {
+          const supabase = createAdminClient("instrumentation");
+          listBlockedSeedEmails().then((emails) => {
+            if (emails.length === 0) return;
+            supabase
+              .from("users")
+              .select("id")
+              .in("email", emails)
+              .limit(1)
+              .then(({ data }) => {
+                if (data && data.length > 0) {
+                  import("@/lib/logger").then(({ logger }) => {
+                    logger.error(
+                      "[STARTUP WARNING] Seed user accounts still exist in the database despite " +
+                        "SEED_PASSWORDS_ROTATED being set. Delete seed accounts for full security.",
+                      { context: "instrumentation", seedUsersFound: data.length },
+                    );
+                  });
+                }
               });
-            }
           });
-      } catch {
-        // DB check is best-effort; env var guard is the primary gate
-      }
+        } catch {
+          // DB check is best-effort; env var guard is the primary gate
+        }
+      });
     });
 
     if (process.env.SEED_USERS_DELETED !== "true") {

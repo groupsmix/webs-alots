@@ -98,7 +98,6 @@ export async function createParapharmacySale(data: {
   const now = new Date();
   const { data: result, error } = await supabase
     .from("sales")
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .insert({
       clinic_id: data.clinic_id,
       patient_name: data.patient_name,
@@ -108,7 +107,8 @@ export async function createParapharmacySale(data: {
       time: now.toTimeString().slice(0, 5),
       items: data.items,
       is_parapharmacy: true,
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
     .select("id")
     .single();
   if (error) {
