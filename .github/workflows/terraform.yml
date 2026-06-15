@@ -40,9 +40,26 @@ jobs:
       - name: Terraform fmt check
         run: terraform fmt -check -diff -recursive infra
 
+      # Pre-download the Cloudflare provider from GitHub Releases to avoid
+      # intermittent 502s from registry.terraform.io. The binary is fetched
+      # directly and placed in a local filesystem mirror so that
+      # `terraform init -plugin-dir` never touches the registry.
+      - name: Download Cloudflare Terraform provider
+        run: |
+          PROVIDER_VERSION="5.20.0"
+          PLATFORM="linux_amd64"
+          PLUGIN_DIR="${HOME}/.terraform.d/plugins/registry.terraform.io/cloudflare/cloudflare/${PROVIDER_VERSION}/${PLATFORM}"
+          mkdir -p "${PLUGIN_DIR}"
+          curl -fsSL \
+            "https://github.com/cloudflare/terraform-provider-cloudflare/releases/download/v${PROVIDER_VERSION}/terraform-provider-cloudflare_${PROVIDER_VERSION}_${PLATFORM}.zip" \
+            -o /tmp/cf-provider.zip
+          unzip -j /tmp/cf-provider.zip -d "${PLUGIN_DIR}"
+          chmod +x "${PLUGIN_DIR}"/terraform-provider-cloudflare_v*
+          echo "PLUGIN_DIR=${HOME}/.terraform.d/plugins" >> "$GITHUB_ENV"
+
       - name: Terraform init
         working-directory: infra
-        run: terraform init -backend=false -input=false
+        run: terraform init -backend=false -input=false -plugin-dir "${PLUGIN_DIR}"
 
       - name: Terraform validate
         working-directory: infra
