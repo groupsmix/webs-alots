@@ -44,6 +44,11 @@ describe("enforceSupabasePoolerConfigured", () => {
   it("throws in production when SUPABASE_POOLER_URL is missing", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("SUPABASE_POOLER_URL", "");
+    // Simulate a real production deploy, not the CI E2E runner. The runner
+    // executes `next start` in production mode and is intentionally exempt
+    // from this guard (it has no real pooler), so the guard short-circuits
+    // when CI=true. Clear CI here to assert the true-production throw path.
+    vi.stubEnv("CI", "");
 
     expect(() => enforceSupabasePoolerConfigured()).toThrow(/SUPABASE_POOLER_URL is required/i);
   });
