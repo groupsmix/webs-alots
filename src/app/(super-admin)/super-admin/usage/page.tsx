@@ -33,6 +33,25 @@ interface ClinicUsage {
 type SortKey = "appointments" | "users" | "name";
 type SortDir = "asc" | "desc";
 
+// ── SortIcon (top-level so React Compiler does not flag it as created during render) ──
+
+function SortIcon({
+  columnKey,
+  sortKey,
+  sortDir,
+}: {
+  columnKey: SortKey;
+  sortKey: SortKey | null;
+  sortDir: "asc" | "desc";
+}) {
+  if (sortKey !== columnKey) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+  return sortDir === "asc" ? (
+    <ChevronUp className="h-3 w-3 ml-1" />
+  ) : (
+    <ChevronDown className="h-3 w-3 ml-1" />
+  );
+}
+
 // ── Component ──
 
 export default function UsagePage() {
@@ -97,15 +116,6 @@ export default function UsagePage() {
       setSortKey(key);
       setSortDir("desc");
     }
-  };
-
-  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
-    if (sortKey !== columnKey) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
-    return sortDir === "asc" ? (
-      <ChevronUp className="h-3 w-3 ml-1" />
-    ) : (
-      <ChevronDown className="h-3 w-3 ml-1" />
-    );
   };
 
   return (
@@ -199,7 +209,7 @@ export default function UsagePage() {
                     onClick={() => handleSort("name")}
                   >
                     Clinic
-                    <SortIcon columnKey="name" />
+                    <SortIcon columnKey="name" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
                 <th className="text-left p-3 font-medium">Type</th>
@@ -211,7 +221,7 @@ export default function UsagePage() {
                     onClick={() => handleSort("appointments")}
                   >
                     Appointments
-                    <SortIcon columnKey="appointments" />
+                    <SortIcon columnKey="appointments" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
                 <th className="text-right p-3 font-medium">
@@ -221,7 +231,7 @@ export default function UsagePage() {
                     onClick={() => handleSort("users")}
                   >
                     Users
-                    <SortIcon columnKey="users" />
+                    <SortIcon columnKey="users" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
                 <th className="p-3 font-medium">Detail</th>

@@ -35,7 +35,7 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
         ? String(formData.get("clinic_name"))
         : "Clinique";
 
-    if (!file || typeof (file as { size?: unknown }).size !== "number") {
+    if (!file || typeof file === "string") {
       return apiValidationError("file is required");
     }
     if (!clinicId) {
