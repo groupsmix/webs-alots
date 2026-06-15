@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
 import { verifyPoolerEndpoint, verifyDirectDbPooler } from "@/lib/connection-pooling";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { getCronSecretRotatedAt } from "@/lib/env";
 import { logger as _logger } from "@/lib/logger";
 import { isR2Configured as _isR2Configured } from "@/lib/r2";
 import { applyRequestScopedResponseHeaders } from "@/lib/request-context-response-headers";
@@ -232,7 +233,7 @@ export async function GET(request: NextRequest) {
       name: "CRON_SECRET",
       result: evaluateAgeStatus({
         label: "CRON_SECRET rotation",
-        rawTimestamp: process.env.CRON_SECRET_ROTATED_AT,
+        rawTimestamp: getCronSecretRotatedAt(),
         warnAfterDays: 120,
         missingError: "CRON_SECRET_ROTATED_AT not configured",
       }),
