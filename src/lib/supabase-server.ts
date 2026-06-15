@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { withChaos } from "@/lib/chaos/chaos-engine";
+import { withChaos, isChaosEnabled } from "@/lib/chaos/chaos-engine";
 import { getSupabasePoolerUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
@@ -354,6 +354,14 @@ export function createPublicAnonClient(clinicId: string) {
  * Intercepts database queries to simulate timeouts and failures.
  */
 function applyChaos<T>(supabase: T): T {
+  // Chaos is opt-in via CHAOS_ENABLED and is never enabled in CI or production.
+  // When disabled, return the client untouched so the Supabase query builder
+  // stays chainable (.from().select().eq().single() etc.). Wrapping .select()
+  // in an async function otherwise turns it into a Promise, breaking every
+  // filtered query with "select(...).eq is not a function".
+  if (!isChaosEnabled()) {
+    return supabase;
+  }
   // Wrap database operations with chaos
   // @ts-expect-error Proxying complex Supabase types is hard
   return new Proxy(supabase, {

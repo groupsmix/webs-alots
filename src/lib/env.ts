@@ -928,6 +928,10 @@ export function enforceBackupEncryptionConfigured(): void {
  */
 export function enforceSupabasePoolerConfigured(): void {
   if (process.env.NODE_ENV !== "production") return;
+  // The Playwright E2E job runs `next start` (NODE_ENV=production) without a
+  // real Supabase pooler. Mirrors the AV_SCAN_URL / NEXT_PUBLIC_SENTRY_DSN CI
+  // carve-outs; real production never sets CI=true, so the guard still applies.
+  if (process.env.CI === "true") return;
 
   const poolerUrl = getSupabasePoolerUrl();
   if (poolerUrl) return;

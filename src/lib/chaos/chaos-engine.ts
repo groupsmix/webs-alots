@@ -77,7 +77,7 @@ const CHAOS_CONFIGS: Record<ChaosExperiment, ChaosConfig> = {
  * Check if chaos engineering is enabled.
  * Only active in staging/development, never in production.
  */
-function isChaosEnabled(): boolean {
+export function isChaosEnabled(): boolean {
   const enabled = process.env.CHAOS_ENABLED === "true";
   const isProduction = process.env.NODE_ENV === "production";
 
