@@ -1147,6 +1147,11 @@ export function getCronSecret(): string {
   return process.env.CRON_SECRET ?? "";
 }
 
+/** Timestamp of last CRON_SECRET rotation (ISO 8601). */
+export function getCronSecretRotatedAt(): string | undefined {
+  return process.env.CRON_SECRET_ROTATED_AT;
+}
+
 /** PHI encryption key (AES-256-GCM base64). */
 export function getPhiEncryptionKey(): string | undefined {
   return process.env.PHI_ENCRYPTION_KEY;
