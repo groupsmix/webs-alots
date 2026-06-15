@@ -53,7 +53,16 @@ export function verifyPoolerEndpoint(): {
   const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || undefined;
 
   if (poolerUrl) {
-    const isPooler = poolerUrl.includes(".pooler.supabase.com") || poolerUrl.includes(":6543");
+    let isPooler = false;
+    try {
+      const parsed = new URL(poolerUrl);
+      const host = parsed.hostname.toLowerCase();
+      const isPoolerHost = host === "pooler.supabase.com" || host.endsWith(".pooler.supabase.com");
+      const isPoolerPort = parsed.port === "6543";
+      isPooler = isPoolerHost || isPoolerPort;
+    } catch {
+      isPooler = false;
+    }
 
     if (!isPooler) {
       logger.warn("SUPABASE_POOLER_URL does not look like a pooler endpoint", {
