@@ -551,7 +551,13 @@ export function validateEnv(): EnvValidationResult {
   // and deliberately skip during `next build` — NEXT_PHASE is
   // "phase-production-build" there and the secret is legitimately absent in CI.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-  if (isProduction && !isBuildPhase) {
+  // CI carve-out: the Playwright E2E job boots `next start` with
+  // NODE_ENV=production but legitimately has no real Sentry DSN (it injects a
+  // format-valid `ci-e2e-...-placeholder` value). Without this, server boot
+  // hard-fails and every E2E route 500s. Mirrors the AV_SCAN_URL /
+  // RATE_LIMIT_BACKEND CI carve-outs; real production never sets CI=true.
+  const isCiRunner = process.env.CI === "true";
+  if (isProduction && !isBuildPhase && !isCiRunner) {
     const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
     if (!sentryDsn || /placeholder/i.test(sentryDsn)) {
       missing.push({
