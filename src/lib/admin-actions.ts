@@ -26,8 +26,8 @@
 import { requireRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { staffWelcomeEmail } from "@/lib/email-templates";
-import { logger } from "@/lib/logger";
 import { getSiteUrl, getSupabaseServiceRoleKey } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { createClient, createScopedAdminClient } from "@/lib/supabase-server";
 import type { Json, TablesInsert, TablesUpdate } from "@/lib/types/database";
 
