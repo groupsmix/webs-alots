@@ -27,6 +27,15 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -39,6 +48,7 @@ import {
   fetchClinicPatientCount,
   fetchClinicActivityLogs,
   fetchFeatureDefinitions,
+  fetchClinicAdminUserId,
   upsertClinicFeatureOverride,
   deleteClinicFeatureOverride,
   updateClinicStatus,
@@ -46,6 +56,8 @@ import {
   type ActivityLog,
   type FeatureDefinition,
 } from "@/lib/super-admin-actions";
+
+const TIER_OPTIONS = ["trial", "starter", "pro", "enterprise"] as const;
 
 interface ClinicConfigJson {
   city?: string;
@@ -85,6 +97,10 @@ export default function ClinicDetailPage() {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [overrideLoading, setOverrideLoading] = useState<string | null>(null);
+  const [impersonating, setImpersonating] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTier, setEditTier] = useState("pro");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const loadClinic = useCallback(async () => {
     try {
@@ -152,6 +168,69 @@ export default function ClinicDetailPage() {
       addToast("Failed to update clinic status", "error");
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function handleImpersonate() {
+    if (!clinic) return;
+    setImpersonating(true);
+    try {
+      const userId = await fetchClinicAdminUserId(clinic.id);
+      if (!userId) {
+        addToast("No clinic admin account found to impersonate", "error");
+        return;
+      }
+      const res = await fetch(`/api/super-admin/users/${userId}/impersonate`, { method: "POST" });
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        data?: { redirectUrl?: string };
+        error?: string;
+      } | null;
+      if (!res.ok || !json?.data?.redirectUrl) {
+        addToast(
+          res.status === 403
+            ? "Impersonation is disabled on this environment"
+            : (json?.error ?? "Failed to start impersonation"),
+          "error",
+        );
+        return;
+      }
+      addToast(`Impersonating ${clinic.name}…`, "success");
+      router.push(json.data.redirectUrl);
+    } catch (err) {
+      logger.warn("Failed to impersonate clinic admin", { context: "page", error: err });
+      addToast("Failed to start impersonation", "error");
+    } finally {
+      setImpersonating(false);
+    }
+  }
+
+  function openEditDialog() {
+    if (!clinic) return;
+    setEditTier(clinic.tier ?? "pro");
+    setEditOpen(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!clinic) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/super-admin/clinics/${clinic.id}/subscription`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: editTier }),
+      });
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+      setClinic((prev) => (prev ? { ...prev, tier: editTier } : prev));
+      addToast(`Subscription tier updated to ${editTier}`, "success");
+      setEditOpen(false);
+    } catch (err) {
+      logger.warn("Failed to update clinic tier", { context: "page", error: err });
+      addToast("Failed to update subscription tier", "error");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -271,8 +350,12 @@ export default function ClinicDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled>
-            <LogIn className="h-4 w-4 mr-1" />
+          <Button variant="outline" size="sm" disabled={impersonating} onClick={handleImpersonate}>
+            {impersonating ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <LogIn className="h-4 w-4 mr-1" />
+            )}
             Impersonate
           </Button>
           <Button
@@ -294,7 +377,7 @@ export default function ClinicDetailPage() {
               </>
             )}
           </Button>
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" onClick={openEditDialog}>
             <Pencil className="h-4 w-4 mr-1" />
             Edit
           </Button>
@@ -528,6 +611,40 @@ export default function ClinicDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Clinic — subscription tier */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent onClose={() => setEditOpen(false)} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Subscription</DialogTitle>
+            <DialogDescription>Change the subscription tier for {clinic?.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            <Label htmlFor="tier-select">Tier</Label>
+            <select
+              id="tier-select"
+              value={editTier}
+              onChange={(e) => setEditTier(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm capitalize"
+            >
+              {TIER_OPTIONS.map((tier) => (
+                <option key={tier} value={tier} className="capitalize">
+                  {tier}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={savingEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

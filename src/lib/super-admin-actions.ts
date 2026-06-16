@@ -194,6 +194,24 @@ export async function fetchClinicById(clinicId: string): Promise<ClinicRow | nul
   return data as ClinicRow;
 }
 
+/**
+ * Resolve the user id to impersonate for a clinic — its clinic_admin if one
+ * exists, otherwise null. Used by the super-admin clinic detail page to wire
+ * the "Impersonate" action (which targets a user, not a clinic).
+ */
+export async function fetchClinicAdminUserId(clinicId: string): Promise<string | null> {
+  const supabase = await rawClient();
+  const { data } = await supabase
+    .from("users") // nosemgrep: tenant-scoping — super-admin resolves admin for specific clinic
+    .select("id")
+    .eq("clinic_id", clinicId)
+    .eq("role", "clinic_admin")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 export interface ClinicFeatureOverride {
   id: string;
   clinic_id: string;

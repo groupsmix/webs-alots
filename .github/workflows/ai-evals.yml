@@ -30,9 +30,9 @@ jobs:
       - name: Preflight — check required secrets
         id: preflight
         env:
-          TEST_DATABASE_URL:  ${{ secrets.TEST_DATABASE_URL }}
-          OPENAI_API_KEY:     ${{ secrets.OPENAI_API_KEY }}
-          EVAL_AUTH_TOKEN:    ${{ secrets.EVAL_AUTH_TOKEN }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
         run: |
           ok=true
           [ -z "$TEST_DATABASE_URL" ] && echo "::warning::TEST_DATABASE_URL not set — skipping evals" && ok=false

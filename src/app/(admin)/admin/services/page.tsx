@@ -18,14 +18,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
+import {
+  createClinicService,
+  updateClinicService,
+  setClinicServiceActive,
+  deleteClinicService,
+} from "@/lib/admin-actions";
 import { getCurrentUser, fetchServices, type ServiceView } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 
 type Service = ServiceView;
 
 export default function ManageServicesPage() {
+  const { addToast } = useToast();
   const [servicesList, setServicesList] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -84,49 +94,93 @@ export default function ManageServicesPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) return;
-
-    if (editingService) {
-      setServicesList(
-        servicesList.map((s) =>
-          s.id === editingService.id
-            ? {
-                ...s,
-                name: formName,
-                description: formDescription,
-                duration: formDuration,
-                price: formPrice,
-                currency: formCurrency,
-                active: formActive,
-              }
-            : s,
-        ),
-      );
-    } else {
-      setServicesList([
-        ...servicesList,
-        {
-          id: `s${Date.now()}`,
+    setSaving(true);
+    try {
+      if (editingService) {
+        await updateClinicService(editingService.id, {
           name: formName,
           description: formDescription,
-          duration: formDuration,
+          duration_minutes: formDuration,
           price: formPrice,
           currency: formCurrency,
-          active: formActive,
-        },
-      ]);
+          is_active: formActive,
+        });
+        setServicesList((prev) =>
+          prev.map((s) =>
+            s.id === editingService.id
+              ? {
+                  ...s,
+                  name: formName,
+                  description: formDescription,
+                  duration: formDuration,
+                  price: formPrice,
+                  currency: formCurrency,
+                  active: formActive,
+                }
+              : s,
+          ),
+        );
+        addToast("Service updated", "success");
+      } else {
+        const row = await createClinicService({
+          name: formName,
+          description: formDescription,
+          duration_minutes: formDuration,
+          price: formPrice,
+          currency: formCurrency,
+          is_active: formActive,
+        });
+        setServicesList((prev) => [
+          ...prev,
+          {
+            id: row.id,
+            name: formName,
+            description: formDescription,
+            duration: formDuration,
+            price: formPrice,
+            currency: formCurrency,
+            active: formActive,
+          },
+        ]);
+        addToast("Service added", "success");
+      }
+      setDialogOpen(false);
+    } catch (err) {
+      logger.warn("Failed to save service", { context: "admin/services", error: err });
+      addToast("Failed to save service. Please try again.", "error");
+    } finally {
+      setSaving(false);
     }
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setServicesList(servicesList.filter((s) => s.id !== id));
+  const handleDelete = async (id: string) => {
+    const previous = servicesList;
+    setServicesList((prev) => prev.filter((s) => s.id !== id));
     setDeleteConfirm(null);
+    try {
+      await deleteClinicService(id);
+      addToast("Service removed", "success");
+    } catch (err) {
+      logger.warn("Failed to delete service", { context: "admin/services", error: err });
+      setServicesList(previous);
+      addToast("Failed to remove service. Please try again.", "error");
+    }
   };
 
-  const toggleActive = (id: string) => {
-    setServicesList(servicesList.map((s) => (s.id === id ? { ...s, active: !s.active } : s)));
+  const toggleActive = async (id: string) => {
+    const target = servicesList.find((s) => s.id === id);
+    if (!target) return;
+    const next = !target.active;
+    setServicesList((prev) => prev.map((s) => (s.id === id ? { ...s, active: next } : s)));
+    try {
+      await setClinicServiceActive(id, next);
+    } catch (err) {
+      logger.warn("Failed to toggle service", { context: "admin/services", error: err });
+      setServicesList((prev) => prev.map((s) => (s.id === id ? { ...s, active: !next } : s)));
+      addToast("Failed to update status. Please try again.", "error");
+    }
   };
 
   if (loading) {
@@ -270,10 +324,13 @@ export default function ManageServicesPage() {
             </div>
           </div>
           <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>{editingService ? "Save Changes" : "Add Service"}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {editingService ? "Save Changes" : "Add Service"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
