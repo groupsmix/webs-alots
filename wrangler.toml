@@ -173,6 +173,7 @@ RATE_LIMIT_BACKEND = "kv"
 # PHI masking policy — must match what was set in CI build time env.
 # See SECURITY.md § PHI Masking, findings #7/#13
 NEXT_PUBLIC_DATA_MASKING = "partial"
+NEXT_PUBLIC_PLAUSIBLE_HOST = "plausible.io"
 
 # ── Production Environment ────────────────────────────────────────────
 # INF-004: Explicit production block prevents top-level debug toggles
@@ -201,6 +202,7 @@ WORKER_ENV = "production"
 RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in production per SECURITY.md.
 NEXT_PUBLIC_DATA_MASKING = "partial"
+NEXT_PUBLIC_PLAUSIBLE_HOST = "plausible.io"
 
 [[env.production.queues.producers]]
 binding = "NOTIFICATION_QUEUE"
@@ -300,6 +302,7 @@ WORKER_ENV = "staging"
 RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in staging as well.
 NEXT_PUBLIC_DATA_MASKING = "partial"
+NEXT_PUBLIC_PLAUSIBLE_HOST = "plausible.io"
 
 # INF-003: Staging uses a separate R2 bucket to prevent cross-environment
 # PHI contamination. Create with: wrangler r2 bucket create webs-alots-uploads-staging
