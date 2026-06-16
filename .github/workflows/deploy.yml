@@ -34,6 +34,7 @@ name: Deploy
 on:
   push:
     branches: [main, staging]
+  workflow_dispatch:
 
 # Cancel any in-progress deploy for the same branch so a rapid force-push
 # does not leave two deployments racing.
