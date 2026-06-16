@@ -157,7 +157,7 @@ export const POST = withAuth(
     if (action === "enable_feature") {
       const rows = ids.map((id) => ({ clinic_id: id, feature_key: value!, enabled: true }));
       const { error } = await adminClient
-        .from("clinic_feature_overrides")
+        .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin bulk operation; each row in `rows` contains clinic_id explicitly; no single-tenant .eq() filter is appropriate here
         .upsert(rows, { onConflict: "clinic_id,feature_key" });
 
       if (error) {

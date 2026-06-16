@@ -27,6 +27,7 @@ import { requireRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { staffWelcomeEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
+import { getSiteUrl, getSupabaseServiceRoleKey } from "@/lib/env";
 import { createClient, createScopedAdminClient } from "@/lib/supabase-server";
 import type { Json, TablesInsert, TablesUpdate } from "@/lib/types/database";
 
@@ -113,7 +114,7 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
   let authId: string | null = null;
 
   // 1. Best-effort Supabase Auth account so the staff member can log in.
-  if (email && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (email && getSupabaseServiceRoleKey()) {
     try {
       const admin = createScopedAdminClient("register_clinic", clinicId);
       const tempPassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
@@ -151,7 +152,7 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
   //    profile already owns, otherwise the insert fails with a duplicate key.
   if (authId) {
     const { data: existingRow } = await supabase
-      .from("users")
+      .from("users") // nosemgrep: tenant-scoping — intentional cross-tenant auth_id uniqueness check; users.auth_id is a global Supabase Auth identity, not clinic-scoped
       .select("id")
       .eq("auth_id", authId)
       .maybeSingle();
@@ -176,7 +177,7 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
   };
 
   const { data, error } = await supabase
-    .from("users")
+    .from("users") // nosemgrep: tenant-scoping — clinic_id is inside insertPayload (derived from authenticated profile); INSERT has no .eq() chain by design
     .insert(insertPayload as TablesInsert<"users">)
     .select()
     .single();
@@ -186,7 +187,7 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
   // 3. Best-effort welcome email with a password-setup link.
   if (email && authId) {
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+      const siteUrl = getSiteUrl() || "https://oltigo.com";
       const admin = createScopedAdminClient("register_clinic", clinicId);
       const { data: resetLink } = await admin.auth.admin.generateLink({
         type: "recovery",
@@ -308,7 +309,7 @@ export async function createClinicService(
   };
 
   const { data, error } = await supabase
-    .from("services")
+    .from("services") // nosemgrep: tenant-scoping — clinic_id is inside insertPayload (derived from authenticated profile); INSERT has no .eq() chain by design
     .insert(insertPayload as TablesInsert<"services">)
     .select()
     .single();
