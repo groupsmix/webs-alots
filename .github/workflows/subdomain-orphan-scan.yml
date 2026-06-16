@@ -39,8 +39,8 @@ jobs:
       - name: Preflight — check required secrets
         id: preflight
         env:
-          SUPABASE_SERVICE_ROLE_KEY:         ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          CLOUDFLARE_ZONE_ID:                ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         run: |
           ok=true
           [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && echo "::warning::SUPABASE_SERVICE_ROLE_KEY not set — skipping scan" && ok=false
