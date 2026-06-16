@@ -17,15 +17,26 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/toast";
+import {
+  createClinicUser,
+  updateClinicUser,
+  setClinicUserActive,
+  deleteClinicUser,
+} from "@/lib/admin-actions";
 import { getCurrentUser, fetchDoctors, type DoctorView } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import { formatCurrency } from "@/lib/utils";
 
 type Doctor = DoctorView;
 
 export default function ManageDoctorsPage() {
+  const { addToast } = useToast();
   const [doctorsList, setDoctorsList] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -87,51 +98,106 @@ export default function ManageDoctorsPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) return;
     const langs = formLanguages
       .split(",")
       .map((l) => l.trim())
       .filter(Boolean);
 
-    if (editingDoctor) {
-      setDoctorsList(
-        doctorsList.map((d) =>
-          d.id === editingDoctor.id
-            ? {
-                ...d,
-                name: formName,
-                specialty: formSpecialty,
-                specialtyId: formSpecialtyId,
-                phone: formPhone,
-                email: formEmail,
-                consultationFee: formFee,
-                languages: langs,
-              }
-            : d,
-        ),
-      );
-    } else {
-      setDoctorsList([
-        ...doctorsList,
-        {
-          id: `d${Date.now()}`,
+    const metadata = {
+      specialty: formSpecialty,
+      specialty_id: formSpecialtyId,
+      consultation_fee: formFee,
+      languages: langs,
+    };
+
+    setSaving(true);
+    try {
+      if (editingDoctor) {
+        await updateClinicUser(editingDoctor.id, {
           name: formName,
-          specialty: formSpecialty,
-          specialtyId: formSpecialtyId,
-          phone: formPhone,
           email: formEmail,
-          consultationFee: formFee,
-          languages: langs,
-        },
-      ]);
+          phone: formPhone,
+          metadata,
+        });
+        setDoctorsList((prev) =>
+          prev.map((d) =>
+            d.id === editingDoctor.id
+              ? {
+                  ...d,
+                  name: formName,
+                  specialty: formSpecialty,
+                  specialtyId: formSpecialtyId,
+                  phone: formPhone,
+                  email: formEmail,
+                  consultationFee: formFee,
+                  languages: langs,
+                }
+              : d,
+          ),
+        );
+        addToast("Doctor updated", "success");
+      } else {
+        const row = await createClinicUser({
+          role: "doctor",
+          name: formName,
+          email: formEmail,
+          phone: formPhone,
+          metadata,
+        });
+        setDoctorsList((prev) => [
+          ...prev,
+          {
+            id: row.id,
+            name: formName,
+            specialty: formSpecialty,
+            specialtyId: formSpecialtyId,
+            phone: formPhone,
+            email: formEmail,
+            consultationFee: formFee,
+            languages: langs,
+            active: true,
+          },
+        ]);
+        addToast("Doctor added", "success");
+      }
+      setDialogOpen(false);
+    } catch (err) {
+      logger.warn("Failed to save doctor", { context: "admin/doctors", error: err });
+      addToast("Failed to save doctor. Please try again.", "error");
+    } finally {
+      setSaving(false);
     }
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setDoctorsList(doctorsList.filter((d) => d.id !== id));
+  const handleDelete = async (id: string) => {
+    const previous = doctorsList;
+    setDoctorsList((prev) => prev.filter((d) => d.id !== id));
     setDeleteConfirm(null);
+    try {
+      await deleteClinicUser(id);
+      addToast("Doctor removed", "success");
+    } catch (err) {
+      logger.warn("Failed to delete doctor", { context: "admin/doctors", error: err });
+      setDoctorsList(previous);
+      addToast("Failed to remove doctor. Please try again.", "error");
+    }
+  };
+
+  const toggleActive = async (id: string) => {
+    const target = doctorsList.find((d) => d.id === id);
+    if (!target) return;
+    const next = !target.active;
+    setDoctorsList((prev) => prev.map((d) => (d.id === id ? { ...d, active: next } : d)));
+    try {
+      await setClinicUserActive(id, next);
+      addToast(next ? "Doctor reactivated" : "Doctor deactivated", "success");
+    } catch (err) {
+      logger.warn("Failed to toggle doctor", { context: "admin/doctors", error: err });
+      setDoctorsList((prev) => prev.map((d) => (d.id === id ? { ...d, active: !next } : d)));
+      addToast("Failed to update status. Please try again.", "error");
+    }
   };
 
   if (loading) {
@@ -177,7 +243,10 @@ export default function ManageDoctorsPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-medium">{doctor.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{doctor.name}</p>
+                  {!doctor.active && <Badge variant="secondary">Inactive</Badge>}
+                </div>
                 <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
                 <div className="flex gap-1 mt-1">
                   {doctor.languages.map((lang) => (
@@ -192,7 +261,12 @@ export default function ManageDoctorsPage() {
                 <p>{doctor.phone}</p>
                 <p className="text-xs">{doctor.email}</p>
               </div>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
+                <Switch
+                  checked={doctor.active}
+                  onCheckedChange={() => toggleActive(doctor.id)}
+                  aria-label={doctor.active ? "Deactivate doctor" : "Reactivate doctor"}
+                />
                 <Button variant="ghost" size="sm" onClick={() => openEditDialog(doctor)}>
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -290,10 +364,13 @@ export default function ManageDoctorsPage() {
             </div>
           </div>
           <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>{editingDoctor ? "Save Changes" : "Add Doctor"}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {editingDoctor ? "Save Changes" : "Add Doctor"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

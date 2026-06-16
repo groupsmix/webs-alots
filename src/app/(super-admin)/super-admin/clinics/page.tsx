@@ -898,49 +898,85 @@ export default function AllClinicsPage() {
     setSelectedIds(new Set());
   }
 
-  // Bulk action handlers (Phase 1 — mock with toast)
-  function executeBulkAction() {
-    const count = selectedClinics.length;
-    const names = selectedClinics.map((c) => c.name);
-
-    switch (bulkAction) {
-      case "change-tier":
-        addToast(
-          `Tier changed to "${bulkActionValue}" for ${count} clinics: ${names.join(", ")}`,
-          "success",
-        );
-        break;
-      case "send-announcement":
-        addToast(
-          `Announcement "${announcementTitle}" sent to ${count} clinics: ${names.join(", ")}`,
-          "success",
-        );
-        break;
-      case "enable-feature":
-        addToast(
-          `Feature "${bulkActionValue}" enabled for ${count} clinics: ${names.join(", ")}`,
-          "success",
-        );
-        break;
-      case "suspend":
-        addToast(`${count} clinics suspended: ${names.join(", ")}`, "success");
-        break;
-      case "export":
-        handleExportSelectedCSV();
-        break;
-      case "change-status":
-        addToast(
-          `Status changed to "${bulkActionValue}" for ${count} clinics: ${names.join(", ")}`,
-          "success",
-        );
-        break;
+  // Bulk action handlers — POST to /api/super-admin/clinics/bulk, then refresh
+  // from the DB so the table reflects persisted state (no more mock toasts).
+  async function executeBulkAction() {
+    if (!bulkAction) return;
+    if (bulkAction === "export") {
+      handleExportSelectedCSV();
+      return;
     }
 
-    setBulkAction(null);
-    setBulkActionValue("");
-    setAnnouncementTitle("");
-    setAnnouncementBody("");
-    setSelectedIds(new Set());
+    const ids = selectedClinics.map((c) => c.id);
+    const count = ids.length;
+    if (count === 0) return;
+
+    // Translate the UI action into the API contract.
+    let body: { action: string; ids: string[]; message?: string; value?: string };
+    switch (bulkAction) {
+      case "suspend":
+        body = { action: "suspend", ids };
+        break;
+      case "send-announcement": {
+        const message = [announcementTitle.trim(), announcementBody.trim()]
+          .filter(Boolean)
+          .join("\n\n");
+        if (!message) {
+          addToast("Announcement message is required", "error");
+          return;
+        }
+        body = { action: "announce", ids, message };
+        break;
+      }
+      case "change-tier":
+        if (!bulkActionValue) {
+          addToast("Select a tier first", "error");
+          return;
+        }
+        body = { action: "change_tier", ids, value: bulkActionValue };
+        break;
+      case "enable-feature":
+        if (!bulkActionValue) {
+          addToast("Select a feature first", "error");
+          return;
+        }
+        body = { action: "enable_feature", ids, value: bulkActionValue };
+        break;
+      case "change-status":
+        if (!bulkActionValue) {
+          addToast("Select a status first", "error");
+          return;
+        }
+        body = { action: "change_status", ids, value: bulkActionValue };
+        break;
+      default:
+        return;
+    }
+
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/super-admin/clinics/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        throw new Error(`Bulk request failed: ${res.status}`);
+      }
+      // Re-fetch so tier/status changes are reflected from the source of truth.
+      await loadClinics();
+      addToast(`Action applied to ${count} clinic${count === 1 ? "" : "s"}`, "success");
+      setBulkAction(null);
+      setBulkActionValue("");
+      setAnnouncementTitle("");
+      setAnnouncementBody("");
+      setSelectedIds(new Set());
+    } catch (err) {
+      logger.warn("Bulk action failed", { context: "super-admin/clinics", error: err });
+      addToast("Bulk action failed. Please try again.", "error");
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   function openBulkAction(action: BulkAction) {

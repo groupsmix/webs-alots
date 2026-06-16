@@ -1,7 +1,7 @@
 "use client";
 
-import { Plus, Edit, Trash2, Phone, Mail } from "lucide-react";
-import { useState } from "react";
+import { Plus, Edit, Trash2, Phone, Mail, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -18,54 +18,58 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { getLocalDateStr } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import {
+  createClinicUser,
+  updateClinicUser,
+  setClinicUserActive,
+  deleteClinicUser,
+} from "@/lib/admin-actions";
+import { getCurrentUser, fetchReceptionists, type ReceptionistView } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 
-interface Receptionist {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  active: boolean;
-  createdAt: string;
-}
-
-const initialReceptionists: Receptionist[] = [
-  {
-    id: "r1",
-    name: "Layla Amrani",
-    email: "layla@clinic.ma",
-    phone: "+212 6 55 11 22 33",
-    active: true,
-    createdAt: "2025-06-01",
-  },
-  {
-    id: "r2",
-    name: "Houda Bennani",
-    email: "houda@clinic.ma",
-    phone: "+212 6 44 22 33 44",
-    active: true,
-    createdAt: "2025-08-15",
-  },
-  {
-    id: "r3",
-    name: "Sara El Idrissi",
-    email: "sara@clinic.ma",
-    phone: "+212 6 33 44 55 66",
-    active: false,
-    createdAt: "2025-11-20",
-  },
-];
+type Receptionist = ReceptionistView;
 
 export default function ManageReceptionistsPage() {
-  const [receptionists, setReceptionists] = useState<Receptionist[]>(initialReceptionists);
+  const { addToast } = useToast();
+  const [receptionists, setReceptionists] = useState<Receptionist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Receptionist | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formActive, setFormActive] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const rows = await fetchReceptionists(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setReceptionists(rows);
+      setLoading(false);
+    }
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   const openAddDialog = () => {
     setEditing(null);
@@ -85,41 +89,105 @@ export default function ManageReceptionistsPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim() || !formEmail.trim()) return;
-
-    if (editing) {
-      setReceptionists(
-        receptionists.map((r) =>
-          r.id === editing.id
-            ? { ...r, name: formName, email: formEmail, phone: formPhone, active: formActive }
-            : r,
-        ),
-      );
-    } else {
-      setReceptionists([
-        ...receptionists,
-        {
-          id: `r${Date.now()}`,
+    setSaving(true);
+    try {
+      if (editing) {
+        await updateClinicUser(editing.id, {
           name: formName,
           email: formEmail,
           phone: formPhone,
-          active: formActive,
-          createdAt: getLocalDateStr(),
-        },
-      ]);
+        });
+        if (formActive !== editing.active) {
+          await setClinicUserActive(editing.id, formActive);
+        }
+        setReceptionists((prev) =>
+          prev.map((r) =>
+            r.id === editing.id
+              ? { ...r, name: formName, email: formEmail, phone: formPhone, active: formActive }
+              : r,
+          ),
+        );
+        addToast("Receptionist updated", "success");
+      } else {
+        const row = await createClinicUser({
+          role: "receptionist",
+          name: formName,
+          email: formEmail,
+          phone: formPhone,
+        });
+        if (!formActive) {
+          await setClinicUserActive(row.id, false);
+        }
+        setReceptionists((prev) => [
+          ...prev,
+          {
+            id: row.id,
+            name: row.name,
+            email: row.email ?? formEmail,
+            phone: row.phone ?? formPhone,
+            active: formActive,
+            createdAt: row.created_at?.split("T")[0] ?? "",
+          },
+        ]);
+        addToast("Receptionist added", "success");
+      }
+      setDialogOpen(false);
+    } catch (err) {
+      logger.warn("Failed to save receptionist", { context: "admin/receptionists", error: err });
+      addToast("Failed to save receptionist. Please try again.", "error");
+    } finally {
+      setSaving(false);
     }
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setReceptionists(receptionists.filter((r) => r.id !== id));
+  const handleDelete = async (id: string) => {
+    const previous = receptionists;
+    setReceptionists((prev) => prev.filter((r) => r.id !== id));
     setDeleteConfirm(null);
+    try {
+      await deleteClinicUser(id);
+      addToast("Receptionist removed", "success");
+    } catch (err) {
+      logger.warn("Failed to delete receptionist", { context: "admin/receptionists", error: err });
+      setReceptionists(previous);
+      addToast("Failed to remove receptionist. Please try again.", "error");
+    }
   };
 
-  const toggleActive = (id: string) => {
-    setReceptionists(receptionists.map((r) => (r.id === id ? { ...r, active: !r.active } : r)));
+  const toggleActive = async (id: string) => {
+    const target = receptionists.find((r) => r.id === id);
+    if (!target) return;
+    const next = !target.active;
+    setReceptionists((prev) => prev.map((r) => (r.id === id ? { ...r, active: next } : r)));
+    try {
+      await setClinicUserActive(id, next);
+    } catch (err) {
+      logger.warn("Failed to toggle receptionist", { context: "admin/receptionists", error: err });
+      setReceptionists((prev) => prev.map((r) => (r.id === id ? { ...r, active: !next } : r)));
+      addToast("Failed to update status. Please try again.", "error");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
+        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -238,10 +306,13 @@ export default function ManageReceptionistsPage() {
             </div>
           </div>
           <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>{editing ? "Save Changes" : "Add Receptionist"}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {editing ? "Save Changes" : "Add Receptionist"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

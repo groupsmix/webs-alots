@@ -16,6 +16,16 @@ export interface DoctorView {
   avatar?: string;
   consultationFee: number;
   languages: string[];
+  active: boolean;
+}
+
+export interface ReceptionistView {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  active: boolean;
+  createdAt: string;
 }
 
 export interface PatientView {
@@ -29,6 +39,7 @@ export interface PatientView {
   allergies?: string[];
   insurance?: string;
   registeredAt: string;
+  active: boolean;
 }
 
 interface UserRaw {
@@ -58,6 +69,18 @@ function mapDoctor(raw: UserRaw): DoctorView {
     avatar: raw.avatar_url ?? undefined,
     consultationFee: (meta.consultation_fee as number) ?? 0,
     languages: (meta.languages as string[]) ?? [],
+    active: raw.is_active ?? true,
+  };
+}
+
+function mapReceptionist(raw: UserRaw): ReceptionistView {
+  return {
+    id: raw.id,
+    name: raw.name,
+    email: raw.email ?? "",
+    phone: raw.phone ?? "",
+    active: raw.is_active ?? true,
+    createdAt: raw.created_at?.split("T")[0] ?? "",
   };
 }
 
@@ -80,6 +103,7 @@ function mapPatient(raw: UserRaw): PatientView {
     allergies: (meta.allergies as string[]) ?? undefined,
     insurance: (meta.insurance as string) ?? undefined,
     registeredAt: raw.created_at?.split("T")[0] ?? "",
+    active: raw.is_active ?? true,
   };
 }
 
@@ -93,6 +117,18 @@ export async function fetchDoctors(clinicId: string): Promise<DoctorView[]> {
     tenantClinicId: clinicId,
   });
   return rows.map(mapDoctor);
+}
+
+export async function fetchReceptionists(clinicId: string): Promise<ReceptionistView[]> {
+  const rows = await fetchRows<UserRaw>("users", {
+    eq: [
+      ["clinic_id", clinicId],
+      ["role", "receptionist"],
+    ],
+    order: ["name", { ascending: true }],
+    tenantClinicId: clinicId,
+  });
+  return rows.map(mapReceptionist);
 }
 
 export async function fetchPatients(clinicId: string): Promise<PatientView[]> {

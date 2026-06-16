@@ -1,6 +1,20 @@
 "use client";
 
-import { Search, User, Phone, Mail, Calendar, Shield, Pill, Download } from "lucide-react";
+import {
+  Search,
+  User,
+  Phone,
+  Mail,
+  Calendar,
+  Shield,
+  Pill,
+  Download,
+  Edit,
+  Trash2,
+  Ban,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -13,10 +27,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/toast";
+import { updateClinicUser, setClinicUserActive, deleteClinicUser } from "@/lib/admin-actions";
 import {
   getCurrentUser,
   fetchPatients,
@@ -27,6 +45,7 @@ import {
   type PrescriptionView,
 } from "@/lib/data/client";
 import { exportPatients } from "@/lib/export-data";
+import { logger } from "@/lib/logger";
 
 type Patient = PatientView;
 
@@ -38,6 +57,15 @@ export default function AdminPatientDatabasePage() {
   const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const { addToast } = useToast();
+  const [editing, setEditing] = useState<Patient | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Patient | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formInsurance, setFormInsurance] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,6 +130,80 @@ export default function AdminPatientDatabasePage() {
   const getPatientPrescriptions = (patientId: string) =>
     prescriptions.filter((rx) => rx.patientId === patientId);
 
+  const openEditDialog = (patient: Patient) => {
+    setEditing(patient);
+    setFormName(patient.name);
+    setFormPhone(patient.phone);
+    setFormEmail(patient.email);
+    setFormInsurance(patient.insurance ?? "");
+    setSelectedPatient(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing || !formName.trim()) return;
+    setSaving(true);
+    try {
+      await updateClinicUser(editing.id, {
+        name: formName,
+        phone: formPhone,
+        email: formEmail,
+        metadata: { insurance: formInsurance || undefined },
+      });
+      setPatientsList((prev) =>
+        prev.map((p) =>
+          p.id === editing.id
+            ? {
+                ...p,
+                name: formName,
+                phone: formPhone,
+                email: formEmail,
+                insurance: formInsurance || undefined,
+              }
+            : p,
+        ),
+      );
+      addToast("Patient updated", "success");
+      setEditing(null);
+    } catch (err) {
+      logger.warn("Failed to update patient", { context: "admin/patients", error: err });
+      addToast("Failed to update patient. Please try again.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActive = async (patient: Patient) => {
+    const next = !patient.active;
+    setPatientsList((prev) =>
+      prev.map((p) => (p.id === patient.id ? { ...p, active: next } : p)),
+    );
+    setSelectedPatient(null);
+    try {
+      await setClinicUserActive(patient.id, next);
+      addToast(next ? "Patient reactivated" : "Patient deactivated", "success");
+    } catch (err) {
+      logger.warn("Failed to toggle patient", { context: "admin/patients", error: err });
+      setPatientsList((prev) =>
+        prev.map((p) => (p.id === patient.id ? { ...p, active: !next } : p)),
+      );
+      addToast("Failed to update status. Please try again.", "error");
+    }
+  };
+
+  const handleDelete = async (patient: Patient) => {
+    const previous = patientsList;
+    setPatientsList((prev) => prev.filter((p) => p.id !== patient.id));
+    setDeleteConfirm(null);
+    try {
+      await deleteClinicUser(patient.id);
+      addToast("Patient removed", "success");
+    } catch (err) {
+      logger.warn("Failed to delete patient", { context: "admin/patients", error: err });
+      setPatientsList(previous);
+      addToast("Failed to remove patient. Please try again.", "error");
+    }
+  };
+
   return (
     <div>
       <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Patients" }]} />
@@ -154,6 +256,11 @@ export default function AdminPatientDatabasePage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
+                      {!patient.active && (
+                        <Badge variant="destructive" className="text-[10px]">
+                          Inactive
+                        </Badge>
+                      )}
                       {patient.insurance && (
                         <Badge variant="outline" className="text-[10px] flex items-center gap-1">
                           <Shield className="h-2.5 w-2.5" />
@@ -179,6 +286,37 @@ export default function AdminPatientDatabasePage() {
                     onClick={() => setSelectedPatient(patient)}
                   >
                     View Profile
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => openEditDialog(patient)}
+                    aria-label="Edit patient"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => toggleActive(patient)}
+                    aria-label={patient.active ? "Deactivate patient" : "Reactivate patient"}
+                  >
+                    {patient.active ? (
+                      <Ban className="h-3.5 w-3.5" />
+                    ) : (
+                      <CheckCircle className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-500"
+                    onClick={() => setDeleteConfirm(patient)}
+                    aria-label="Delete patient"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </CardContent>
@@ -339,6 +477,74 @@ export default function AdminPatientDatabasePage() {
             </div>
           </DialogContent>
         )}
+      </Dialog>
+
+      {/* Edit Patient Dialog */}
+      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent onClose={() => setEditing(null)} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Patient</DialogTitle>
+            <DialogDescription>Update the patient&apos;s contact details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Insurance</Label>
+              <Input value={formInsurance} onChange={(e) => setFormInsurance(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+      >
+        <DialogContent onClose={() => setDeleteConfirm(null)} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Patient</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently remove {deleteConfirm?.name}? This deletes their
+              record and cannot be undone. Consider deactivating instead to preserve history.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
