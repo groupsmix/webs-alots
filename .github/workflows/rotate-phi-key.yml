@@ -33,9 +33,9 @@ jobs:
       - name: Preflight — verify required secrets are set
         id: preflight
         env:
-          PHI_ENCRYPTION_KEY:       ${{ secrets.PHI_ENCRYPTION_KEY }}
+          PHI_ENCRYPTION_KEY: ${{ secrets.PHI_ENCRYPTION_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          R2_BUCKET:                ${{ secrets.R2_BUCKET }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           missing=""
           [ -z "$PHI_ENCRYPTION_KEY" ]        && missing="$missing PHI_ENCRYPTION_KEY"
