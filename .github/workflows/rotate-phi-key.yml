@@ -30,6 +30,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Preflight — verify required secrets are set
+        id: preflight
+        env:
+          PHI_ENCRYPTION_KEY:       ${{ secrets.PHI_ENCRYPTION_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          R2_BUCKET:                ${{ secrets.R2_BUCKET }}
+        run: |
+          missing=""
+          [ -z "$PHI_ENCRYPTION_KEY" ]        && missing="$missing PHI_ENCRYPTION_KEY"
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]  && missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "$R2_BUCKET" ]                  && missing="$missing R2_BUCKET"
+          if [ -n "$missing" ]; then
+            echo "::error::Cannot rotate — missing secrets:$missing"
+            echo "::error::Set these in GitHub → Settings → Secrets before triggering this workflow."
+            exit 1
+          fi
+          echo "All required secrets present — proceeding with rotation."
+
       - name: Run rotation script
         env:
           PHI_ENCRYPTION_KEY: ${{ secrets.PHI_ENCRYPTION_KEY }}
