@@ -195,7 +195,13 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
         options: { redirectTo: `${siteUrl}/login?reset=true` },
       });
       const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
-      const template = staffWelcomeEmail({ staffName: name, clinicName: clinicId, email, loginUrl, role });
+      const template = staffWelcomeEmail({
+        staffName: name,
+        clinicName: clinicId,
+        email,
+        loginUrl,
+        role,
+      });
       await sendEmail({ to: email, ...template });
     } catch (emailErr) {
       logger.warn("Failed to send staff welcome email", {

@@ -36,10 +36,9 @@ const bodySchema = z
   .refine((d) => !VALUE_ACTIONS.includes(d.action as (typeof VALUE_ACTIONS)[number]) || !!d.value, {
     message: "value is required for this action",
   })
-  .refine(
-    (d) => d.action !== "change_status" || CLINIC_STATUSES.includes(d.value as never),
-    { message: `status must be one of: ${CLINIC_STATUSES.join(", ")}` },
-  );
+  .refine((d) => d.action !== "change_status" || CLINIC_STATUSES.includes(d.value as never), {
+    message: `status must be one of: ${CLINIC_STATUSES.join(", ")}`,
+  });
 
 export const POST = withAuth(
   async (request: NextRequest, { supabase, profile }: AuthContext) => {
@@ -134,10 +133,7 @@ export const POST = withAuth(
     }
 
     if (action === "change_tier") {
-      const { error } = await adminClient
-        .from("clinics")
-        .update({ tier: value })
-        .in("id", ids);
+      const { error } = await adminClient.from("clinics").update({ tier: value }).in("id", ids);
 
       if (error) {
         return apiError("Failed to update clinic tier", 500);

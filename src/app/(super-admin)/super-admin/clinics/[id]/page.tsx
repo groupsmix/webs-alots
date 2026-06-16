@@ -181,9 +181,11 @@ export default function ClinicDetailPage() {
         return;
       }
       const res = await fetch(`/api/super-admin/users/${userId}/impersonate`, { method: "POST" });
-      const json = (await res.json().catch(() => null)) as
-        | { ok?: boolean; data?: { redirectUrl?: string }; error?: string }
-        | null;
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        data?: { redirectUrl?: string };
+        error?: string;
+      } | null;
       if (!res.ok || !json?.data?.redirectUrl) {
         addToast(
           res.status === 403
@@ -348,12 +350,7 @@ export default function ClinicDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={impersonating}
-            onClick={handleImpersonate}
-          >
+          <Button variant="outline" size="sm" disabled={impersonating} onClick={handleImpersonate}>
             {impersonating ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (

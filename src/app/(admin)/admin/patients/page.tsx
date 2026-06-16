@@ -174,9 +174,7 @@ export default function AdminPatientDatabasePage() {
 
   const toggleActive = async (patient: Patient) => {
     const next = !patient.active;
-    setPatientsList((prev) =>
-      prev.map((p) => (p.id === patient.id ? { ...p, active: next } : p)),
-    );
+    setPatientsList((prev) => prev.map((p) => (p.id === patient.id ? { ...p, active: next } : p)));
     setSelectedPatient(null);
     try {
       await setClinicUserActive(patient.id, next);
