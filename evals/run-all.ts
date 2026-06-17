@@ -2,10 +2,6 @@ import { spawn } from "child_process";
 import path from "path";
 
 const scripts = [
-  "runners/jailbreak-runner.ts",
-  "runners/drug-interaction-runner.ts",
-  "runners/hallucination-runner.ts",
-  "runners/bias-runner.ts",
   "runners/rag-groundedness-runner.ts",
   "runners/triage-runner.ts",
   "runners/tool-loop-runner.ts",

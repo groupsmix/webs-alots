@@ -191,7 +191,6 @@ describe("Tenant Isolation — Route Protection", () => {
       "/radiology",
       "/speech-therapist",
       "/equipment",
-      "/lab-panel",
     ];
 
     const mappedPrefixes = Object.values(ROLE_ROUTE_MAP);

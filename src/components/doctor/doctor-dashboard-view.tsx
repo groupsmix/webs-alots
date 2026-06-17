@@ -13,10 +13,6 @@ import {
   DollarSign,
   CalendarClock,
   Stethoscope,
-  Sparkles,
-  Mic,
-  FileText,
-  Pill,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -368,78 +364,6 @@ export function DoctorDashboardView({
           </CardContent>
         </Card>
       )}
-
-      {/* AI Quick Actions */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-8">
-        <Link href="/doctor/smart-prescription">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/50 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/70 transition-colors">
-                <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "dashboard.aiPrescription" as TranslationKey)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "dashboard.aiPrescriptionDesc" as TranslationKey)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/doctor/voice-notes">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/50 group-hover:bg-sky-200 dark:group-hover:bg-sky-900/70 transition-colors">
-                <Mic className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "dashboard.voiceNotes" as TranslationKey)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "dashboard.voiceNotesDesc" as TranslationKey)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/doctor/consultation">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/70 transition-colors">
-                <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "dashboard.consultNotes" as TranslationKey)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "dashboard.consultNotesDesc" as TranslationKey)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/doctor/prescriptions">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full group">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/70 transition-colors">
-                <Pill className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "dashboard.prescriptions" as TranslationKey)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "dashboard.prescriptionsDesc" as TranslationKey)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">

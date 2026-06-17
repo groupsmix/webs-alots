@@ -116,25 +116,6 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
       }
     }
 
-    if (!eventType || eventType === "lab_result") {
-      const { count, data, error } = await fetchLabResults(
-        supabase,
-        clinicId,
-        patientId,
-        search,
-        from,
-        to,
-        eventType === "lab_result" ? limit : undefined,
-        eventType === "lab_result" ? offset : undefined,
-      );
-      if (error) {
-        logger.error("Failed to fetch lab results for timeline", { clinicId, error });
-      } else {
-        events.push(...(data ?? []));
-        totalCount += count ?? 0;
-      }
-    }
-
     if (!eventType || eventType === "imaging") {
       const { count, data, error } = await fetchImaging(
         supabase,
@@ -349,60 +330,6 @@ async function fetchPrescriptions(
         items: row.items,
         notes: row.notes,
         pdf_url: row.pdf_url,
-      },
-      created_at: row.created_at ?? new Date().toISOString(),
-    })),
-    count,
-    error,
-  };
-}
-
-async function fetchLabResults(
-  supabase: ExtendedClient,
-  clinicId: string,
-  patientId: string,
-  search: string | undefined,
-  from: string | undefined,
-  to: string | undefined,
-  limit?: number,
-  offset?: number,
-): Promise<FetchResult> {
-  let query = supabase
-    .from("lab_results")
-    .select("id, title, status, doctor_id, file_name, notes, created_at", { count: "exact" })
-    .eq("clinic_id", clinicId)
-    .eq("patient_id", patientId);
-
-  if (search) {
-    const safe = sanitizeIlike(search);
-    if (safe.length > 0) {
-      query = query.or(`title.ilike.%${safe}%,notes.ilike.%${safe}%`);
-    }
-  }
-  if (from) {
-    query = query.gte("created_at", `${from}T00:00:00Z`);
-  }
-  if (to) {
-    query = query.lte("created_at", `${to}T23:59:59Z`);
-  }
-
-  query = query.order("created_at", { ascending: false });
-  if (typeof limit === "number") query = query.limit(limit);
-  if (typeof offset === "number") query = query.range(offset, offset + (limit ?? 50) - 1);
-
-  const { data, count, error } = await query;
-
-  return {
-    data: (data ?? []).map((row) => ({
-      id: row.id,
-      event_type: "lab_result" as const,
-      event_date: row.created_at ?? new Date().toISOString(),
-      metadata: {
-        title: row.title,
-        status: row.status,
-        doctor_id: row.doctor_id,
-        file_name: row.file_name,
-        notes: row.notes,
       },
       created_at: row.created_at ?? new Date().toISOString(),
     })),

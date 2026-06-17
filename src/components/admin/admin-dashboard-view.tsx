@@ -3,7 +3,6 @@
 import { Users, Calendar, CreditCard, Star, Activity, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
-import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
 import { SetupChecklistWidget } from "@/components/admin/setup-checklist-widget";
 import { UsageWidget } from "@/components/admin/usage-widget";
 import { useLocale } from "@/components/locale-switcher";
@@ -172,13 +171,6 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
       {/* Usage & Plan Widget */}
       <div className="mt-6">
         <UsageWidget />
-      </div>
-
-      {/* Lab Dashboard KPIs (Task 36) */}
-      <div className="mt-8">
-        <ErrorBoundary section="Lab KPIs" compact>
-          <LabDashboardKPIsComponent />
-        </ErrorBoundary>
       </div>
 
       {/* Clinic/Center Dashboard KPIs (Task 37) */}
