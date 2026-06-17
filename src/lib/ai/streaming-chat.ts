@@ -53,24 +53,6 @@ export const CLINIC_AI_TOOLS: AITool[] = [
       doctor_id: { type: "string", description: "ID du médecin (optionnel)" },
     },
   },
-  {
-    name: "check_drug_interactions",
-    description: "Vérifier les interactions médicamenteuses entre plusieurs médicaments",
-    parameters: {
-      medications: {
-        type: "string",
-        description: "Liste de médicaments séparés par des virgules",
-        required: true,
-      },
-    },
-  },
-  {
-    name: "get_patient_history",
-    description: "Obtenir l'historique médical résumé d'un patient",
-    parameters: {
-      patient_id: { type: "string", description: "ID du patient", required: true },
-    },
-  },
 ];
 
 /** Format an SSE chunk for streaming. */

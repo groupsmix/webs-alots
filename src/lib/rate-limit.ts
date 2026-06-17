@@ -732,13 +732,6 @@ const chatLimiter = createRateLimiter({
   failClosed: true,
 });
 
-/** AI Prescription: 50 req / 24h per doctor (included in plan limits) */
-export const aiPrescriptionLimiter = createRateLimiter({
-  windowMs: 24 * 60 * 60_000,
-  max: 50,
-  failClosed: true,
-});
-
 /** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic)
  * R-22: Set failClosed: true for webhook endpoint integrity */
 const webhookLimiter = createRateLimiter({
@@ -769,20 +762,6 @@ const emailVerificationLimiter = createRateLimiter({
   failClosed: true,
 });
 
-/** AI Patient Summary: 30 req / 24h per doctor (included in plan limits) */
-export const aiPatientSummaryLimiter = createRateLimiter({
-  windowMs: 24 * 60 * 60_000,
-  max: 30,
-  failClosed: true,
-});
-
-/** AI Drug Interaction Check: 100 req / 24h per doctor */
-export const aiDrugCheckLimiter = createRateLimiter({
-  windowMs: 24 * 60 * 60_000,
-  max: 100,
-  failClosed: true,
-});
-
 /** AI Manager (Smart Dashboard): 30 req / 24h per admin */
 export const aiManagerLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
@@ -790,31 +769,9 @@ export const aiManagerLimiter = createRateLimiter({
   failClosed: true,
 });
 
-/** AI Auto-Suggest (Prescription suggestions): 100 req / 24h per doctor */
-export const aiAutoSuggestLimiter = createRateLimiter({
-  windowMs: 24 * 60 * 60_000,
-  max: 100,
-  failClosed: true,
-});
-
-/** AI Voice-to-Notes (SOAP structuring): 50 req / 24h per doctor */
-export const aiVoiceNoteLimiter = createRateLimiter({
-  windowMs: 24 * 60 * 60_000,
-  max: 50,
-  failClosed: true,
-});
-
-/** AI Smart Prescription Writer: 100 req / 24h per doctor */
-export const aiSmartPrescriptionLimiter = createRateLimiter({
-  windowMs: 24 * 60 * 60_000,
-  max: 100,
-  failClosed: true,
-});
-
 /**
  * AUDIT P1-10: General per-user cap for AI generation routes that previously
- * had NO rate limit (drug-interactions, lab-preread, referral-letter,
- * revenue-insights). One scripted user could drain the monthly provider
+ * had NO rate limit (e.g. revenue-insights). One scripted user could drain the monthly provider
  * budget, which then trips the router's budget skip and degrades AI for
  * EVERY tenant. 60 req / 24h per user; key format `{route}:{profileId}`.
  */
@@ -945,31 +902,7 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter, windowMs: 60_000, max: 5 },
   { prefix: "/api/upload", limiter: uploadLimiter, windowMs: 60_000, max: 10 },
   { prefix: "/api/onboarding", limiter: onboardingLimiter, windowMs: 60_000, max: 5 },
-  {
-    prefix: "/api/v1/ai/patient-summary",
-    limiter: aiPatientSummaryLimiter,
-    windowMs: 24 * 60 * 60_000,
-    max: 30,
-  },
-  {
-    prefix: "/api/v1/ai/drug-check",
-    limiter: aiDrugCheckLimiter,
-    windowMs: 24 * 60 * 60_000,
-    max: 100,
-  },
-  {
-    prefix: "/api/v1/ai/prescription",
-    limiter: aiPrescriptionLimiter,
-    windowMs: 24 * 60 * 60_000,
-    max: 50,
-  },
   { prefix: "/api/ai/manager", limiter: aiManagerLimiter, windowMs: 24 * 60 * 60_000, max: 30 },
-  {
-    prefix: "/api/ai/auto-suggest",
-    limiter: aiAutoSuggestLimiter,
-    windowMs: 24 * 60 * 60_000,
-    max: 100,
-  },
   { prefix: "/api/chat", limiter: chatLimiter, windowMs: 60_000, max: 15 },
   // S0-11-02: CSP report — defense-in-depth alongside route-local limiter
   { prefix: "/api/csp-report", limiter: cspReportLimiter, windowMs: 60_000, max: 60 },
