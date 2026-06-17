@@ -4,8 +4,6 @@ import {
   Clock,
   AlertTriangle,
   User,
-  FileText,
-  FlaskConical,
   ChevronRight,
   RefreshCw,
   Stethoscope,
@@ -33,11 +31,6 @@ interface MicroDashboardData {
   } | null;
   remainingCount: number;
   completedToday: number;
-  pendingTasks: {
-    prescriptions: number;
-    labResults: number;
-    total: number;
-  };
   urgentAlert: {
     type: string;
     message: string;
@@ -229,41 +222,6 @@ export function MicroDashboardView() {
             <p className="text-muted-foreground text-sm">
               Plus de patients prévus pour aujourd&apos;hui
             </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Pending Tasks */}
-      {data.pendingTasks.total > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Tâches en attente</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {data.pendingTasks.prescriptions > 0 && (
-              <Link
-                href="/doctor/prescriptions"
-                className="flex items-center justify-between rounded-md p-2 hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[var(--signal-amber)]" />
-                  <span className="text-sm">Ordonnances en brouillon</span>
-                </div>
-                <Badge variant="secondary">{data.pendingTasks.prescriptions}</Badge>
-              </Link>
-            )}
-            {data.pendingTasks.labResults > 0 && (
-              <Link
-                href="/doctor/lab-orders"
-                className="flex items-center justify-between rounded-md p-2 hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-2">
-                  <FlaskConical className="h-4 w-4 text-[var(--signal-amber)]" />
-                  <span className="text-sm">Résultats de laboratoire</span>
-                </div>
-                <Badge variant="secondary">{data.pendingTasks.labResults}</Badge>
-              </Link>
-            )}
           </CardContent>
         </Card>
       )}

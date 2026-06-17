@@ -4082,113 +4082,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lab_test_items_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "lab_test_orders"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lab_test_items_test_id_fkey"
             columns: ["test_id"]
             isOneToOne: false
             referencedRelation: "lab_test_catalog"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lab_test_orders: {
-        Row: {
-          assigned_technician_id: string | null
-          clinic_id: string
-          clinical_notes: string | null
-          completed_at: string | null
-          created_at: string | null
-          fasting_required: boolean | null
-          id: string
-          order_number: string
-          ordering_doctor_id: string | null
-          patient_id: string
-          pdf_url: string | null
-          priority: string | null
-          sample_collected_at: string | null
-          status: string
-          updated_at: string | null
-          validated_at: string | null
-          validated_by: string | null
-        }
-        Insert: {
-          assigned_technician_id?: string | null
-          clinic_id: string
-          clinical_notes?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          fasting_required?: boolean | null
-          id?: string
-          order_number: string
-          ordering_doctor_id?: string | null
-          patient_id: string
-          pdf_url?: string | null
-          priority?: string | null
-          sample_collected_at?: string | null
-          status?: string
-          updated_at?: string | null
-          validated_at?: string | null
-          validated_by?: string | null
-        }
-        Update: {
-          assigned_technician_id?: string | null
-          clinic_id?: string
-          clinical_notes?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          fasting_required?: boolean | null
-          id?: string
-          order_number?: string
-          ordering_doctor_id?: string | null
-          patient_id?: string
-          pdf_url?: string | null
-          priority?: string | null
-          sample_collected_at?: string | null
-          status?: string
-          updated_at?: string | null
-          validated_at?: string | null
-          validated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lab_test_orders_assigned_technician_id_fkey"
-            columns: ["assigned_technician_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lab_test_orders_clinic_id_fkey"
-            columns: ["clinic_id"]
-            isOneToOne: false
-            referencedRelation: "clinics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lab_test_orders_ordering_doctor_id_fkey"
-            columns: ["ordering_doctor_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lab_test_orders_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lab_test_orders_validated_by_fkey"
-            columns: ["validated_by"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -4245,73 +4142,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lab_test_results_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "lab_test_orders"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lab_test_results_test_item_id_fkey"
             columns: ["test_item_id"]
             isOneToOne: false
             referencedRelation: "lab_test_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lab_tests: {
-        Row: {
-          category: string
-          clinic_id: string
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          preparation_instructions: string | null
-          price: number | null
-          requires_fasting: boolean | null
-          sample_type: string | null
-          turnaround_time: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string
-          clinic_id: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          preparation_instructions?: string | null
-          price?: number | null
-          requires_fasting?: boolean | null
-          sample_type?: string | null
-          turnaround_time?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string
-          clinic_id?: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          preparation_instructions?: string | null
-          price?: number | null
-          requires_fasting?: boolean | null
-          sample_type?: string | null
-          turnaround_time?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lab_tests_clinic_id_fkey"
-            columns: ["clinic_id"]
-            isOneToOne: false
-            referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
         ]
@@ -9328,88 +9162,6 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      telemedicine_sessions: {
-        Row: {
-          id: string
-          clinic_id: string
-          patient_id: string
-          doctor_id: string
-          appointment_id: string | null
-          scheduled_at: string
-          started_at: string | null
-          ended_at: string | null
-          duration_minutes: number | null
-          status: string
-          room_url: string | null
-          recording_url: string | null
-          consultation_notes: string | null
-          prescription_id: string | null
-          metadata: Json | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          clinic_id: string
-          patient_id: string
-          doctor_id: string
-          appointment_id?: string | null
-          scheduled_at: string
-          started_at?: string | null
-          ended_at?: string | null
-          duration_minutes?: number | null
-          status?: string
-          room_url?: string | null
-          recording_url?: string | null
-          consultation_notes?: string | null
-          prescription_id?: string | null
-          metadata?: Json | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          clinic_id?: string
-          patient_id?: string
-          doctor_id?: string
-          appointment_id?: string | null
-          scheduled_at?: string
-          started_at?: string | null
-          ended_at?: string | null
-          duration_minutes?: number | null
-          status?: string
-          room_url?: string | null
-          recording_url?: string | null
-          consultation_notes?: string | null
-          prescription_id?: string | null
-          metadata?: Json | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "telemedicine_sessions_clinic_id_fkey"
-            columns: ["clinic_id"]
-            isOneToOne: false
-            referencedRelation: "clinics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "telemedicine_sessions_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "telemedicine_sessions_doctor_id_fkey"
-            columns: ["doctor_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

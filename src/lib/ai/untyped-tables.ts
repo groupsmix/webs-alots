@@ -1,8 +1,8 @@
 /**
  * Helper for accessing new tables not yet in the generated Supabase types.
  *
- * The voice_notes, prescription_drafts, drug_interaction_alerts, Site Team
- * Agent, and medical_alerts tables are created by recent migrations but the
+ * The voice_notes, Site Team Agent, and medical_alerts tables are created by
+ * recent migrations but the
  * Supabase type generator has not yet been run. Once types are regenerated,
  * callers should switch to the typed `.from()` calls.
  */
@@ -20,8 +20,6 @@ export function fromUntyped(
   supabase: SupabaseClient,
   table:
     | "voice_notes"
-    | "prescription_drafts"
-    | "drug_interaction_alerts"
     | "agent_conversations"
     | "agent_messages"
     | "clinic_agent_configs"

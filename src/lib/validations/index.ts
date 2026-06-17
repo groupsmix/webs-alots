@@ -185,13 +185,6 @@ export {
 } from "./billing";
 
 export {
-  fhirSearchSchema,
-  fhirImportPatientSchema,
-  prescriptionTransitionSchema,
-  prescriptionCreateSchema,
-} from "./fhir";
-
-export {
   whatsappConsentGrantSchema,
   whatsappConsentRevokeSchema,
   whatsappConsentExportSchema,
@@ -201,23 +194,11 @@ export {
 } from "./whatsapp";
 
 export {
-  cdssCheckRequestSchema,
-  doseValidationRequestSchema,
-  news2RequestSchema,
-} from "./clinical-cdss";
-
-export {
   admissionCreateSchema,
   dischargeSchema,
   transferSchema,
   admissionQuerySchema,
 } from "./adt";
-
-export {
-  telemedicineCreateSchema,
-  telemedicineUpdateSchema,
-  telemedicineQuerySchema,
-} from "./telemedicine";
 
 export {
   staffInviteSchema,
@@ -227,9 +208,3 @@ export {
 } from "./staff-invitations";
 
 export { insuranceClaimQuerySchema } from "./insurance-claims";
-
-export { structureNoteSchema } from "./ai-consultation";
-export type { StructureNoteInput, StructuredNote } from "./ai-consultation";
-
-export { prescriptionSafetySchema } from "./prescription-safety";
-export type { PrescriptionSafetyInput } from "./prescription-safety";

@@ -33,24 +33,28 @@ export default function PrivacyPage() {
       title: "Données Collectées",
       children: (
         <>
-          <p>Dans le cadre de nos services, nous pouvons collecter les données suivantes :</p>
+          <p>Dans le cadre de nos services, nous traitons uniquement les données suivantes :</p>
           <ul>
             <li>
-              <strong>Données d&apos;identification :</strong> nom, prénom, adresse e-mail, numéro
-              de téléphone.
+              <strong>Données de contact :</strong> nom, prénom, adresse e-mail, numéro de
+              téléphone.
             </li>
             <li>
-              <strong>Données de santé :</strong> informations médicales fournies lors de la prise
-              de rendez-vous (motif de consultation, antécédents médicaux).
+              <strong>Données de rendez-vous :</strong> dates, heures et cabinet concerné.
+            </li>
+            <li>
+              <strong>Données de facturation :</strong> montants, méthodes et statuts de paiement
+              (les données de carte sont traitées par nos prestataires de paiement).
             </li>
             <li>
               <strong>Données de connexion :</strong> adresse IP, type de navigateur, pages
               visitées.
             </li>
-            <li>
-              <strong>Données de rendez-vous :</strong> dates, heures, praticiens consultés.
-            </li>
           </ul>
+          <p>
+            Oltigo ne collecte ni ne stocke aucune donnée clinique, diagnostique ou de dossier
+            médical (diagnostics, ordonnances, résultats d&apos;analyses, notes cliniques).
+          </p>
         </>
       ),
     },
@@ -62,8 +66,9 @@ export default function PrivacyPage() {
         <>
           <p>Vos données sont traitées pour les finalités suivantes :</p>
           <ul>
-            <li>Gestion des rendez-vous et du suivi médical.</li>
+            <li>Gestion des rendez-vous et des listes d&apos;attente.</li>
             <li>Communication avec les patients (rappels, confirmations).</li>
+            <li>Facturation et traitement des paiements.</li>
             <li>Amélioration de nos services et de l&apos;expérience utilisateur.</li>
             <li>Respect des obligations légales et réglementaires.</li>
           </ul>
@@ -78,8 +83,7 @@ export default function PrivacyPage() {
         <p>
           Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour
           protéger vos données personnelles contre tout accès non autorisé, modification,
-          divulgation ou destruction. Les données de santé font l&apos;objet de mesures de
-          protection renforcées.
+          divulgation ou destruction. Les coordonnées des patients sont chiffrées au repos.
         </p>
       ),
     },
@@ -88,11 +92,42 @@ export default function PrivacyPage() {
       number: "05",
       title: "Partage des Données",
       children: (
-        <p>
-          Vos données personnelles ne sont partagées qu&apos;avec les praticiens et le personnel
-          médical impliqués dans votre prise en charge. Nous ne vendons ni ne louons vos données à
-          des tiers.
-        </p>
+        <>
+          <p>
+            Vos données personnelles ne sont partagées qu&apos;avec le cabinet auprès duquel vous
+            prenez rendez-vous et avec les sous-traitants techniques strictement nécessaires au
+            fonctionnement du service. Nous ne vendons ni ne louons vos données à des tiers.
+          </p>
+          <p>Nos sous-traitants (sous-processeurs) sont :</p>
+          <ul>
+            <li>
+              <strong>Hébergement et base de données :</strong> Supabase et Cloudflare (Workers,
+              R2).
+            </li>
+            <li>
+              <strong>Paiements :</strong> Stripe et CMI (Centre Monétique Interbancaire).
+            </li>
+            <li>
+              <strong>Messagerie :</strong> Meta (API WhatsApp Business) et Twilio (SMS/WhatsApp de
+              secours).
+            </li>
+            <li>
+              <strong>E-mails transactionnels :</strong> Resend.
+            </li>
+            <li>
+              <strong>Supervision et mesure d&apos;audience :</strong> Sentry et Plausible
+              Analytics.
+            </li>
+            <li>
+              <strong>Assistants IA opérationnels :</strong> OpenAI (analyses et assistants pour les
+              gérants, sans aucune donnée clinique).
+            </li>
+          </ul>
+          <p>
+            La liste détaillée et à jour figure sur notre page{" "}
+            <a href="/sub-processors">Sous-traitants</a>.
+          </p>
+        </>
       ),
     },
     {
@@ -145,23 +180,24 @@ export default function PrivacyPage() {
         <>
           <p>
             Conformément à la loi marocaine n° 09-08 et au RGPD (article 8), le traitement des
-            données personnelles des patients mineurs (moins de 18 ans) nécessite le consentement
-            préalable d&apos;un parent ou tuteur légal.
+            données personnelles des mineurs (moins de 18 ans) nécessite le consentement préalable
+            d&apos;un parent ou tuteur légal.
           </p>
           <ul>
             <li>
-              <strong>Consentement parental :</strong> lors de l&apos;inscription d&apos;un patient
-              mineur, le consentement explicite du parent ou tuteur légal est recueilli et
-              enregistré.
+              <strong>Enregistrement réservé aux adultes :</strong> en l&apos;absence d&apos;un flux
+              de consentement parental complet, l&apos;enregistrement d&apos;un patient dont la date
+              de naissance indique un âge inférieur à 18 ans est refusé.
             </li>
             <li>
-              <strong>Pas de profilage comportemental :</strong> aucune analyse comportementale,
-              publicité ciblée ou traitement automatisé à des fins de profilage n&apos;est effectué
-              sur les données des patients mineurs.
+              <strong>Pas de profilage :</strong> aucune analyse comportementale, publicité ciblée
+              ou traitement automatisé à des fins de profilage n&apos;est effectué sur les données
+              des patients.
             </li>
             <li>
               <strong>Droits du tuteur :</strong> le parent ou tuteur légal peut exercer les droits
-              d&apos;accès, de rectification et de suppression pour le compte du mineur.
+              d&apos;accès, de rectification et de suppression pour le compte d&apos;un mineur dont
+              les coordonnées figureraient dans le système.
             </li>
           </ul>
         </>

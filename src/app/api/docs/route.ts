@@ -1220,20 +1220,6 @@ export const apiEndpoints: ApiEndpoint[] = [
     },
   },
 
-  // Lab
-  {
-    path: "/api/lab/report-html",
-    method: "POST",
-    summary: "Generate lab report HTML",
-    description: "Generates an HTML lab report for a patient's test results.",
-    tags: ["Lab"],
-    security: true,
-    responses: {
-      "200": { description: "HTML report generated" },
-      ...ERROR_RESPONSES,
-    },
-  },
-
   // Consent
   {
     path: "/api/consent",
@@ -1302,44 +1288,6 @@ export const apiEndpoints: ApiEndpoint[] = [
     security: true,
     responses: {
       "200": { description: "Account deleted" },
-      ...ERROR_RESPONSES,
-    },
-  },
-
-  // AI Endpoints
-  {
-    path: "/api/v1/ai/prescription",
-    method: "POST",
-    summary: "AI prescription assistance",
-    description: "Generates medication prescription suggestions using AI. Doctor review required.",
-    tags: ["AI"],
-    security: true,
-    responses: {
-      "200": { description: "AI-generated prescription suggestions" },
-      ...ERROR_RESPONSES,
-    },
-  },
-  {
-    path: "/api/v1/ai/drug-check",
-    method: "POST",
-    summary: "AI drug interaction check",
-    description: "Checks for potential drug interactions in a prescription.",
-    tags: ["AI"],
-    security: true,
-    responses: {
-      "200": { description: "Interaction check results" },
-      ...ERROR_RESPONSES,
-    },
-  },
-  {
-    path: "/api/v1/ai/patient-summary",
-    method: "POST",
-    summary: "AI patient summary",
-    description: "Generates a concise patient summary from medical history using AI.",
-    tags: ["AI"],
-    security: true,
-    responses: {
-      "200": { description: "AI-generated patient summary" },
       ...ERROR_RESPONSES,
     },
   },

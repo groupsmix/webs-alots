@@ -25,7 +25,6 @@ export * from "./analytics";
 export * from "./booking";
 export * from "./pharmacy-transactions";
 export * from "./subscription";
-export * from "./lab";
 export * from "./parapharmacy";
 export * from "./radiology";
 export * from "./medical-equipment";

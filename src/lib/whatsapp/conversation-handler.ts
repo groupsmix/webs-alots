@@ -18,14 +18,7 @@ import { sendTextMessage } from "@/lib/whatsapp";
 
 // ── Types ──
 
-type ConversationIntent =
-  | "booking"
-  | "cancel"
-  | "lab_results"
-  | "payment"
-  | "faq"
-  | "prescription_renewal"
-  | null;
+type ConversationIntent = "booking" | "cancel" | "payment" | "faq" | null;
 
 interface ConversationState {
   clinic_id: string;
@@ -174,13 +167,6 @@ const INTENT_PATTERNS: Array<{
     ],
   },
   {
-    intent: "lab_results",
-    patterns: [
-      /\b(lab|labo|résult|result|analyse|تحليل|bghit\s+n(chouf|3raf)\s+(analyse|résultat))\b/i,
-      /\b(my|mes|mon)\s*(results?|résultat|analyses?)\b/i,
-    ],
-  },
-  {
     intent: "payment",
     patterns: [
       /\b(pay|payer|facture|invoice|دفع|bghit\s+nkhless|paiement|payment)\b/i,
@@ -192,14 +178,6 @@ const INTENT_PATTERNS: Array<{
     patterns: [
       /\b(question|aide|help|info|information|مساعدة|comment|how|horaire|hours|prix|price|tarif)\b/i,
       /\b(c'?est\s+quoi|what\s+is|where|où|quand|when)\b/i,
-    ],
-  },
-  {
-    intent: "prescription_renewal",
-    patterns: [
-      /\b(prescription|ordonnance|médicament|medication|renouvell|renew|دواء)\b/i,
-      /\b(refill|renouveler)\s+(my|ma|mon)?\s*(prescription|ordonnance)\b/i,
-      /\b(bghit|need)\s+(dwa|medication|médicament)\b/i,
     ],
   },
 ];
@@ -644,47 +622,6 @@ async function handleCancelIntent(
   return `Quel rendez-vous souhaitez-vous annuler?\n${list}\n\nRépondez avec le numéro.`;
 }
 
-async function handleLabResultsIntent(
-  supabase: ConversationClient,
-  state: ConversationState,
-  clinicName: string,
-): Promise<string> {
-  const clinicId = state.clinic_id;
-  const patientId = state.patient_id;
-
-  if (!patientId) {
-    return "Désolé, nous ne trouvons pas votre dossier. Veuillez contacter la réception.";
-  }
-
-  const { data: reports } = await supabase
-    .from("lab_reports")
-    .select("id, test_name, status, created_at")
-    .eq("clinic_id", clinicId)
-    .eq("patient_id", patientId)
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  await updateConversation(supabase, clinicId, state.patient_phone, null, {});
-
-  if (!reports || reports.length === 0) {
-    return "Aucun résultat d'analyse disponible pour le moment.";
-  }
-
-  const domain = process.env.NEXT_PUBLIC_APP_URL || "https://oltigo.com";
-
-  const resultLines = reports.map((r) => {
-    const status = r.status === "completed" ? "✅ Prêt" : "⏳ En cours";
-    const link = `${domain}/patient/lab-results/${r.id as string}`;
-    return `• ${r.test_name as string} — ${status}\n  ${link}`;
-  });
-
-  return (
-    `Vos résultats d'analyses — ${clinicName}:\n\n` +
-    resultLines.join("\n\n") +
-    "\n\nCliquez sur le lien pour consulter vos résultats de manière sécurisée."
-  );
-}
-
 async function handlePaymentIntent(
   supabase: ConversationClient,
   state: ConversationState,
@@ -785,82 +722,6 @@ async function handleFaqIntent(
   );
 }
 
-async function handlePrescriptionRenewalIntent(
-  supabase: ConversationClient,
-  state: ConversationState,
-  messageText: string,
-  clinicName: string,
-): Promise<string> {
-  const clinicId = state.clinic_id;
-  const patientId = state.patient_id;
-
-  if (!patientId) {
-    return "Désolé, nous ne trouvons pas votre dossier. Veuillez contacter la réception pour renouveler votre ordonnance.";
-  }
-
-  if (state.context.step === "confirm_renewal") {
-    const upper = messageText.trim().toUpperCase();
-    if (upper === "OUI" || upper === "YES" || upper === "1") {
-      const medicationName = (state.context.medication_name as string) ?? null;
-
-      const { data: lastDoctor } = await supabase
-        .from("appointments")
-        .select("doctor_id")
-        .eq("clinic_id", clinicId)
-        .eq("patient_id", patientId)
-        .in("status", ["completed", "confirmed"])
-        .order("appointment_date", { ascending: false })
-        .limit(1);
-
-      const doctorId = lastDoctor?.[0]?.doctor_id as string | undefined;
-
-      await supabase
-        .from("prescription_renewal_requests")
-        .insert({
-          clinic_id: clinicId,
-          patient_id: patientId,
-          patient_phone: state.patient_phone,
-          medication_name: medicationName,
-          status: "pending",
-          doctor_id: doctorId ?? null,
-        })
-        .select();
-
-      const auditClient = supabase as unknown as Parameters<typeof logAuditEvent>[0]["supabase"];
-      await logAuditEvent({
-        supabase: auditClient,
-        action: "whatsapp_prescription_renewal_requested",
-        type: "patient",
-        clinicId,
-        clinicName,
-        actor: patientId,
-        description: `Prescription renewal requested via WhatsApp: ${medicationName ?? "unspecified"}`,
-      });
-
-      await updateConversation(supabase, clinicId, state.patient_phone, null, {});
-      return `✅ Votre demande de renouvellement d'ordonnance a été envoyée. Le médecin vous contactera bientôt. — ${clinicName}`;
-    } else if (upper === "NON" || upper === "NO" || upper === "2") {
-      await updateConversation(supabase, clinicId, state.patient_phone, null, {});
-      return "Demande annulée.";
-    }
-  }
-
-  if (state.context.step === "awaiting_medication") {
-    await updateConversation(supabase, clinicId, state.patient_phone, "prescription_renewal", {
-      step: "confirm_renewal",
-      medication_name: messageText.trim(),
-    });
-
-    return `Vous souhaitez renouveler: "${messageText.trim()}"\n\nRépondez OUI pour confirmer ou NON pour annuler.`;
-  }
-
-  await updateConversation(supabase, clinicId, state.patient_phone, "prescription_renewal", {
-    step: "awaiting_medication",
-  });
-
-  return "Quel médicament souhaitez-vous renouveler? Indiquez le nom du médicament.";
-}
-
 // ── Main Handler ──
 
 export async function handleWhatsAppConversation(params: HandleMessageParams): Promise<void> {
@@ -894,14 +755,6 @@ export async function handleWhatsAppConversation(params: HandleMessageParams): P
             response = await handleCancelIntent(supabase, state, messageText, clinicName);
           }
           break;
-        case "prescription_renewal":
-          response = await handlePrescriptionRenewalIntent(
-            supabase,
-            state,
-            messageText,
-            clinicName,
-          );
-          break;
         default:
           response = await handleFaqIntent(supabase, state, messageText, clinicName);
       }
@@ -916,19 +769,8 @@ export async function handleWhatsAppConversation(params: HandleMessageParams): P
           case "cancel":
             response = await handleCancelIntent(supabase, state, messageText, clinicName);
             break;
-          case "lab_results":
-            response = await handleLabResultsIntent(supabase, state, clinicName);
-            break;
           case "payment":
             response = await handlePaymentIntent(supabase, state, clinicName);
-            break;
-          case "prescription_renewal":
-            response = await handlePrescriptionRenewalIntent(
-              supabase,
-              state,
-              messageText,
-              clinicName,
-            );
             break;
           case "faq":
           default:

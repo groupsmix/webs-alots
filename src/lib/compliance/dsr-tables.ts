@@ -52,7 +52,7 @@ export interface DsrTable {
 // Catalog
 // ---------------------------------------------------------------------------
 
-/** Tables keyed by `patient_id` — primary DSR scope (93 tables). */
+/** Tables keyed by `patient_id` — primary DSR scope (84 tables). */
 export const PATIENT_SCOPE_TABLES: readonly DsrTable[] = [
   { name: "admissions", key: "patient_id", article9: "core_phi" },
   { name: "appointments", key: "patient_id", article9: null },
@@ -62,14 +62,11 @@ export const PATIENT_SCOPE_TABLES: readonly DsrTable[] = [
   { name: "blood_pressure_readings", key: "patient_id", article9: "physical_health_invasive" },
   { name: "blood_sugar_readings", key: "patient_id", article9: "physical_health_invasive" },
   { name: "body_measurements", key: "patient_id", article9: null },
-  { name: "cdss_override_log", key: "patient_id", article9: null },
-  { name: "clinical_encounters", key: "patient_id", article9: "core_phi" },
   { name: "consultation_notes", key: "patient_id", article9: "core_phi" },
   { name: "consultation_photos", key: "patient_id", article9: "imaging_phi" },
   { name: "developmental_milestones", key: "patient_id", article9: "genetic_biometric" },
   { name: "diabetes_management", key: "patient_id", article9: "physical_health_invasive" },
   { name: "dialysis_sessions", key: "patient_id", article9: "physical_health_invasive" },
-  { name: "drug_interaction_alerts", key: "patient_id", article9: "core_phi" },
   { name: "ecg_records", key: "patient_id", article9: "physical_health_invasive" },
   { name: "eeg_records", key: "patient_id", article9: "physical_health_invasive" },
   { name: "ent_exam_records", key: "patient_id", article9: null },
@@ -86,8 +83,6 @@ export const PATIENT_SCOPE_TABLES: readonly DsrTable[] = [
   { name: "ivf_cycles", key: "patient_id", article9: "reproductive_sexual" },
   { name: "joint_assessments", key: "patient_id", article9: null },
   { name: "lab_orders", key: "patient_id", article9: "core_phi" },
-  { name: "lab_results", key: "patient_id", article9: "core_phi" },
-  { name: "lab_test_orders", key: "patient_id", article9: "core_phi" },
   { name: "loyalty_points", key: "patient_id", article9: null },
   { name: "loyalty_transactions", key: "patient_id", article9: null },
   { name: "meal_plans", key: "patient_id", article9: null },
@@ -112,9 +107,6 @@ export const PATIENT_SCOPE_TABLES: readonly DsrTable[] = [
   { name: "photo_consent_forms", key: "patient_id", article9: null },
   { name: "physio_sessions", key: "patient_id", article9: null },
   { name: "pregnancies", key: "patient_id", article9: "reproductive_sexual" },
-  { name: "prescription_drafts", key: "patient_id", article9: null },
-  { name: "prescription_renewal_requests", key: "patient_id", article9: null },
-  { name: "prescription_renewals", key: "patient_id", article9: null },
   { name: "prescription_requests", key: "patient_id", article9: null },
   { name: "prescriptions", key: "patient_id", article9: "core_phi" },
   { name: "progress_photos", key: "patient_id", article9: "imaging_phi" },
@@ -132,7 +124,6 @@ export const PATIENT_SCOPE_TABLES: readonly DsrTable[] = [
   { name: "speech_progress_reports", key: "patient_id", article9: "mental_health" },
   { name: "speech_sessions", key: "patient_id", article9: "mental_health" },
   { name: "spirometry_records", key: "patient_id", article9: "physical_health_invasive" },
-  { name: "telemedicine_sessions", key: "patient_id", article9: "mental_health" },
   { name: "therapy_plans", key: "patient_id", article9: null },
   { name: "therapy_session_notes", key: "patient_id", article9: null },
   { name: "treatment_plans", key: "patient_id", article9: null },

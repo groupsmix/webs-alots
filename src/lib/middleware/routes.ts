@@ -23,7 +23,7 @@ const PUBLIC_ROUTES = [
 ];
 
 /** Public route prefixes (no auth required) */
-const PUBLIC_PREFIXES = ["/pharmacy", "/dentist", "/lab/"];
+const PUBLIC_PREFIXES = ["/pharmacy", "/dentist"];
 
 /** Protected route prefixes (require authentication) */
 const PROTECTED_PREFIXES = [
@@ -41,7 +41,6 @@ const PROTECTED_PREFIXES = [
   "/radiology",
   "/speech-therapist",
   "/equipment",
-  "/lab-panel",
 ];
 
 /** Lightweight API routes that skip heavy middleware processing */
@@ -70,7 +69,6 @@ export const ROLE_ROUTE_MAP: Record<string, string> = {
   radiology: "/radiology",
   speech_therapist: "/speech-therapist",
   equipment: "/equipment",
-  lab: "/lab-panel",
 };
 
 /** Role to dashboard path mapping */
@@ -89,7 +87,6 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   radiology: "/radiology/dashboard",
   speech_therapist: "/speech-therapist/dashboard",
   equipment: "/equipment/dashboard",
-  lab: "/lab-panel/dashboard",
 };
 
 /**

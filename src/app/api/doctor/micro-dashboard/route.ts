@@ -131,21 +131,6 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       };
     }
 
-    // Count pending tasks: unsigned prescriptions, unread lab results
-    const { count: pendingPrescriptions } = await untypedSupabase
-      .from("prescriptions")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("doctor_id", doctorId)
-      .eq("status", "draft");
-
-    const { count: pendingLabOrders } = await untypedSupabase
-      .from("lab_orders")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("doctor_id", doctorId)
-      .eq("status", "results_ready");
-
     // Check for urgent alerts: emergency patients in waiting room
     const { data: emergencyPatientsRaw } = await untypedSupabase
       .from("appointments")
@@ -192,11 +177,6 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       nextPatient,
       remainingCount: upcomingAppts.length,
       completedToday: completedToday ?? 0,
-      pendingTasks: {
-        prescriptions: pendingPrescriptions ?? 0,
-        labResults: pendingLabOrders ?? 0,
-        total: (pendingPrescriptions ?? 0) + (pendingLabOrders ?? 0),
-      },
       urgentAlert,
       timestamp: new Date().toISOString(),
     });

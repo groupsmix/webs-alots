@@ -15,14 +15,7 @@ import {
   waitingListDeleteSchema,
   checkinConfirmSchema,
 } from "@/lib/validations/booking";
-import {
-  chatRequestSchema,
-  aiPrescriptionRequestSchema,
-  aiPatientSummaryRequestSchema,
-  aiDrugCheckRequestSchema,
-  aiManagerRequestSchema,
-  aiAutoSuggestRequestSchema,
-} from "@/lib/validations/chat";
+import { chatRequestSchema, aiManagerRequestSchema } from "@/lib/validations/chat";
 import {
   uploadConfirmSchema,
   radiologyOrderCreateSchema,
@@ -141,44 +134,12 @@ const endpoints: EndpointDef[] = [
     requestSchema: chatRequestSchema,
   },
   {
-    path: "/api/v1/ai/prescription",
-    method: "post",
-    summary: "Generate AI prescription suggestion",
-    tags: ["AI"],
-    security: true,
-    requestSchema: aiPrescriptionRequestSchema,
-  },
-  {
-    path: "/api/v1/ai/patient-summary",
-    method: "post",
-    summary: "Generate AI patient summary",
-    tags: ["AI"],
-    security: true,
-    requestSchema: aiPatientSummaryRequestSchema,
-  },
-  {
-    path: "/api/v1/ai/drug-check",
-    method: "post",
-    summary: "Check drug interactions",
-    tags: ["AI"],
-    security: true,
-    requestSchema: aiDrugCheckRequestSchema,
-  },
-  {
     path: "/api/v1/ai/manager",
     method: "post",
     summary: "AI clinic manager assistant",
     tags: ["AI"],
     security: true,
     requestSchema: aiManagerRequestSchema,
-  },
-  {
-    path: "/api/v1/ai/auto-suggest",
-    method: "post",
-    summary: "AI auto-suggest for diagnosis",
-    tags: ["AI"],
-    security: true,
-    requestSchema: aiAutoSuggestRequestSchema,
   },
 
   // Uploads

@@ -10,12 +10,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Healthcare API — Response shape consistency", () => {
   test("all new endpoints return standard { ok, error } on 401", async ({ request }) => {
-    const endpoints = [
-      "/api/admissions",
-      "/api/telemedicine",
-      "/api/staff-invitations",
-      "/api/insurance-claims",
-    ];
+    const endpoints = ["/api/admissions", "/api/staff-invitations", "/api/insurance-claims"];
 
     for (const endpoint of endpoints) {
       const response = await request.get(endpoint);
@@ -28,12 +23,7 @@ test.describe("Healthcare API — Response shape consistency", () => {
   });
 
   test("POST endpoints reject empty body gracefully", async ({ request }) => {
-    const endpoints = [
-      "/api/admissions",
-      "/api/telemedicine",
-      "/api/staff-invitations",
-      "/api/insurance-claims",
-    ];
+    const endpoints = ["/api/admissions", "/api/staff-invitations", "/api/insurance-claims"];
 
     for (const endpoint of endpoints) {
       const response = await request.post(endpoint, { data: {} });
@@ -46,11 +36,7 @@ test.describe("Healthcare API — Response shape consistency", () => {
 
 test.describe("Healthcare API — PATCH endpoints require valid IDs", () => {
   test("PATCH with non-UUID ID returns 4xx", async ({ request }) => {
-    const patchEndpoints = [
-      "/api/admissions/not-a-uuid",
-      "/api/telemedicine/not-a-uuid",
-      "/api/insurance-claims/not-a-uuid",
-    ];
+    const patchEndpoints = ["/api/admissions/not-a-uuid", "/api/insurance-claims/not-a-uuid"];
 
     for (const endpoint of patchEndpoints) {
       const response = await request.patch(endpoint, {
@@ -65,7 +51,6 @@ test.describe("Healthcare API — GET individual resources", () => {
   test("GET with non-existent UUID returns 4xx", async ({ request }) => {
     const endpoints = [
       "/api/admissions/00000000-0000-0000-0000-000000000000",
-      "/api/telemedicine/00000000-0000-0000-0000-000000000000",
       "/api/insurance-claims/00000000-0000-0000-0000-000000000000",
     ];
 

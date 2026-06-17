@@ -10,6 +10,15 @@
  * Variables are grouped by feature. Optional features (e.g. Stripe,
  * WhatsApp) only warn when partially configured — they do not block
  * startup.
+ *
+ * Post clinical/EMR-strip review (chore/strip-clinical-surface): every rule
+ * below was re-audited after the clinical surface was removed. No variable
+ * existed solely for a deleted clinical feature, so none were removed. The
+ * encryption keys (PHI_ENCRYPTION_KEY, BACKUP_ENCRYPTION_KEY) remain required
+ * in production because they now protect patient CONTACT/personal data,
+ * uploaded files, and backups; and the security controls (CRON_SECRET,
+ * BOOKING_TOKEN_SECRET, AV_SCAN_URL, PROFILE_HEADER_HMAC_KEY, R2_SIGNED_URL_SECRET)
+ * are unchanged.
  */
 
 import { logger } from "@/lib/logger";
@@ -231,23 +240,31 @@ export const ENV_RULES: EnvRule[] = [
     group: "ai-builder",
   },
 
-  // ── PHI Encryption (C-08) ──────────────────────────────────────────
-  // C-08: PHI_ENCRYPTION_KEY is required in production. Without it, any code
-  // path that calls encryptAndUpload silently fails, and any code path that
-  // calls uploadToR2 directly stores plaintext PHI on R2.
+  // ── Contact / file encryption (C-08) ────────────────────────────────
+  // C-08: PHI_ENCRYPTION_KEY is required in production. After the clinical/EMR
+  // surface was removed, this key still protects PERSONAL data that the
+  // operations platform legitimately stores:
+  //   • patient contact/identity fields (CIN, insurance number, address) via
+  //     application-layer field encryption (src/lib/phi-field-encryption.ts),
+  //   • uploaded files in R2 (src/lib/encryption.ts),
+  //   • stored AI provider secrets (src/lib/ai/secret-encryption.ts).
+  // Without it, contact fields/files would be written in plaintext, so it
+  // stays required in production. (No clinical/medical-record data is stored.)
   {
     name: "PHI_ENCRYPTION_KEY",
     required: process.env.NODE_ENV === "production",
     description:
-      "AES-256-GCM key for PHI file encryption (64 hex chars, required in production; `openssl rand -hex 32`)",
+      "AES-256-GCM key for patient contact-field and file encryption (64 hex chars, required in production; `openssl rand -hex 32`)",
     group: "security",
   },
 
   // ── Backup Encryption (A6-05, A22-01) ────────────────────────────
   // A6-05 / A22-01: BACKUP_ENCRYPTION_KEY is required in production.
-  // Database backups contain all PHI for all tenants. An unencrypted backup
-  // in R2 is a single-point-of-compromise for the entire platform.
-  // Moroccan Law 09-08 requires encryption at rest for all health data.
+  // Database backups contain every tenant's personal data (patient contact
+  // details, appointments, billing). An unencrypted backup in R2 is a
+  // single-point-of-compromise for the entire platform, and Moroccan Law
+  // 09-08 requires encryption at rest for personal data — so this stays
+  // required even though no clinical/medical-record data is stored.
   {
     name: "BACKUP_ENCRYPTION_KEY",
     required: process.env.NODE_ENV === "production",

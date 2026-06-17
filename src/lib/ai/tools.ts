@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
-import { lookupDrugByName, lookupDrugInteractions } from "./knowledge/loader";
 import type { SiteTeamAgentType } from "./prompts";
 import { createTeamTask, buildHistoryEvent } from "./team-data";
 
@@ -62,22 +61,6 @@ const doctorTools: AgentToolDefinition[] = [
         query: { type: "string", description: "Patient name or phone number" },
       },
       required: ["query"],
-    },
-  },
-  {
-    name: "get_drug_info",
-    description:
-      "Get medication information, known interactions, and safety notes from the clinical knowledge pack. Does not replace medical judgment.",
-    input_schema: {
-      type: "object",
-      properties: {
-        drug_name: { type: "string", description: "Primary medication name" },
-        second_drug: {
-          type: "string",
-          description: "Optional second drug to check for interaction pair",
-        },
-      },
-      required: ["drug_name"],
     },
   },
 ];
@@ -255,8 +238,6 @@ export async function executeAgentTool(
       return getTodayAppointments(input, ctx);
     case "lookup_patient":
       return lookupPatient(input, ctx);
-    case "get_drug_info":
-      return getDrugInfo(input);
     case "check_slot_availability":
       return checkSlotAvailability(input, ctx);
     case "draft_whatsapp_reminder":
@@ -406,40 +387,6 @@ async function lookupPatient(input: ToolInput, ctx: AgentToolContext): Promise<T
   }
 
   return { ok: true, data: { patients: [...patientsById.values()], notice: READONLY_NOTICE } };
-}
-
-function getDrugInfo(input: ToolInput): ToolResult {
-  const drugName = stringInput(input, "drug_name");
-  if (!drugName) {
-    return { ok: false, error: "drug_name is required", code: "VALIDATION_ERROR" };
-  }
-
-  const secondDrug = stringInput(input, "second_drug");
-  const { interactions, packVersion } = secondDrug
-    ? lookupDrugInteractions(drugName, secondDrug)
-    : lookupDrugByName(drugName);
-
-  return {
-    ok: true,
-    data: {
-      drugName,
-      packVersion,
-      knownInteractions: interactions.map((ix) => ({
-        drugA: ix.drugA,
-        drugB: ix.drugB,
-        severity: ix.severity,
-        mechanism: ix.mechanism,
-        recommendation: ix.recommendation,
-      })),
-      guidance:
-        "Je peux fournir des informations générales seulement. Vérifiez les doses, contre-indications et interactions dans une source pharmaceutique validée et selon le dossier patient.",
-      safetyNotes: [
-        "Confirmer l'âge, le poids, la grossesse/allaitement et les allergies.",
-        "Vérifier insuffisance rénale/hépatique et traitements en cours.",
-        "En cas d'urgence ou réaction sévère, orienter vers une prise en charge immédiate.",
-      ],
-    },
-  };
 }
 
 async function checkSlotAvailability(input: ToolInput, ctx: AgentToolContext): Promise<ToolResult> {

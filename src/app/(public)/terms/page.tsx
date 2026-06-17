@@ -22,7 +22,17 @@ export default function TermsPage() {
           <p>
             Les présentes conditions générales d&apos;utilisation (CGU) régissent l&apos;accès et
             l&apos;utilisation de la plateforme Oltigo (&quot;la Plateforme&quot;), un service SaaS
-            de gestion de cabinets médicaux, dentaires et pharmacies au Maroc.
+            d&apos;exploitation et de gestion opérationnelle de cabinets, cliniques et pharmacies au
+            Maroc.
+          </p>
+          <p>
+            <strong>
+              Oltigo est une plateforme d&apos;exploitation de cabinet (gestion des rendez-vous,
+              rappels, paiements, communication et analyses opérationnelles pour les gérants). Elle
+              ne stocke ni ne traite de données cliniques, diagnostiques ou de dossier médical. Les
+              cabinets s&apos;engagent à ne saisir aucun contenu médical (diagnostics, ordonnances,
+              résultats d&apos;analyses, notes cliniques) sur la Plateforme.
+            </strong>
           </p>
           <p>
             En accédant à la Plateforme, vous acceptez les présentes CGU dans leur intégralité. Si
@@ -48,7 +58,7 @@ export default function TermsPage() {
           </li>
           <li>
             <strong>Patient :</strong> toute personne utilisant la Plateforme pour prendre
-            rendez-vous ou consulter ses informations médicales.
+            rendez-vous ou consulter ses informations de contact et de rendez-vous.
           </li>
           <li>
             <strong>Tenant :</strong> l&apos;espace dédié à un cabinet ou établissement de santé sur
@@ -65,13 +75,17 @@ export default function TermsPage() {
         <>
           <p>La Plateforme propose les services suivants :</p>
           <ul>
-            <li>Gestion des rendez-vous en ligne.</li>
-            <li>Gestion des dossiers patients.</li>
+            <li>Gestion des rendez-vous en ligne et listes d&apos;attente.</li>
+            <li>Gestion des coordonnées patients (nom, téléphone, e-mail).</li>
             <li>Site web professionnel pour le cabinet.</li>
-            <li>Notifications automatiques (WhatsApp, SMS).</li>
-            <li>Facturation et comptabilité.</li>
-            <li>Ordonnances et prescriptions électroniques.</li>
+            <li>Notifications et rappels automatiques (WhatsApp, SMS).</li>
+            <li>Facturation, paiements et comptabilité.</li>
+            <li>Tableaux de bord et analyses opérationnelles pour les gérants.</li>
           </ul>
+          <p>
+            La Plateforme ne propose aucune fonctionnalité de dossier médical, de prescription, de
+            résultats d&apos;analyses, de notes cliniques ou de télémédecine.
+          </p>
         </>
       ),
     },
@@ -100,9 +114,11 @@ export default function TermsPage() {
             protection des données à caractère personnel.
           </p>
           <p>
-            Les données de santé sont considérées comme des données sensibles et font l&apos;objet
-            de mesures de protection renforcées, conformément aux exigences de la CNDP (Commission
-            Nationale de contrôle de la protection des Données à caractère Personnel).
+            La Plateforme ne traite que des données opérationnelles : coordonnées des patients (nom,
+            téléphone, e-mail), rendez-vous et données de facturation. Elle ne stocke aucune donnée
+            clinique ou de dossier médical. Ces données personnelles sont protégées conformément aux
+            exigences de la CNDP (Commission Nationale de contrôle de la protection des Données à
+            caractère Personnel).
           </p>
         </>
       ),

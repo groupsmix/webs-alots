@@ -29,11 +29,7 @@
     "demo:seed": "tsx scripts/seed.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "eval:ai": "tsx evals/run-all.ts",
-    "eval:ai:jailbreak": "tsx evals/runners/jailbreak-runner.ts",
-    "eval:ai:drugs": "tsx evals/runners/drug-interaction-runner.ts",
-    "eval:ai:hallucination": "tsx evals/runners/hallucination-runner.ts",
-    "eval:ai:bias": "tsx evals/runners/bias-runner.ts"
+    "eval:ai": "tsx evals/run-all.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.81",
