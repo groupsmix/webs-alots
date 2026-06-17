@@ -116,6 +116,28 @@ describe("Auth Flow API — patient create validation", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("rejects a patient whose date of birth is under 18 (adult-only gating)", async () => {
+    const { v1PatientCreateSchema } = await import("@/lib/validations");
+    const minorDob = new Date();
+    minorDob.setFullYear(minorDob.getFullYear() - 10); // 10 years old
+    const result = v1PatientCreateSchema.safeParse({
+      full_name: "Yasmine Minor",
+      date_of_birth: minorDob.toISOString().slice(0, 10),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a patient who is exactly an adult", async () => {
+    const { v1PatientCreateSchema } = await import("@/lib/validations");
+    const adultDob = new Date();
+    adultDob.setFullYear(adultDob.getFullYear() - 30); // 30 years old
+    const result = v1PatientCreateSchema.safeParse({
+      full_name: "Omar Adult",
+      date_of_birth: adultDob.toISOString().slice(0, 10),
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("Auth Flow API — appointment create validation", () => {
