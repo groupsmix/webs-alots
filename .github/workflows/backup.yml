@@ -51,14 +51,6 @@ jobs:
             echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Audit 3.11: Health check the DB connection before attempting backup
-      - name: Health check database connection
-        if: steps.preflight.outputs.secrets_ok == 'true'
-        run: |
-          if ! psql "${SUPABASE_DB_URL}" -c "SELECT 1;" > /dev/null 2>&1; then
-            echo "::error::Database connection failed. SUPABASE_DB_URL may be invalid or rotated."
-            exit 1
-          fi
       # AUDIT-16: Pin GH Actions to SHA for supply-chain hardening
       - name: Checkout
         if: steps.preflight.outputs.secrets_ok == 'true'
@@ -75,6 +67,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
+
+      # Audit 3.11: Health check the DB connection before attempting backup
+      # NOTE: Must run after "Install PostgreSQL client" — psql is not pre-installed on ubuntu-latest.
+      - name: Health check database connection
+        if: steps.preflight.outputs.secrets_ok == 'true'
+        run: |
+          if ! psql "${SUPABASE_DB_URL}" -c "SELECT 1;" > /dev/null 2>&1; then
+            echo "::error::Database connection failed. SUPABASE_DB_URL may be invalid or rotated."
+            exit 1
+          fi
 
       - name: Install AWS CLI (for S3-compatible R2)
         if: steps.preflight.outputs.secrets_ok == 'true'
