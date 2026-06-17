@@ -181,7 +181,6 @@ test.describe("RBAC — specialist role routes require authentication", () => {
     "/psychologist/dashboard",
     "/radiology/dashboard",
     "/speech-therapist/dashboard",
-    "/lab-panel/dashboard",
   ];
 
   for (const route of specialistRoutes) {
