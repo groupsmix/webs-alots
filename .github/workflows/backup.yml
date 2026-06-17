@@ -73,10 +73,12 @@ jobs:
       - name: Health check database connection
         if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
-          if ! psql "${SUPABASE_DB_URL}" -c "SELECT 1;" > /dev/null 2>&1; then
-            echo "::error::Database connection failed. SUPABASE_DB_URL may be invalid or rotated."
+          PGCONN_ERROR=$(psql "${SUPABASE_DB_URL}" -c "SELECT 1;" 2>&1) || {
+            # Mask password in URL before logging (safe to print host/user)
+            SAFE_ERROR=$(echo "$PGCONN_ERROR" | sed 's|postgresql://[^:]*:[^@]*@|postgresql://***:***@|g')
+            echo "::error::Database connection failed: ${SAFE_ERROR}"
             exit 1
-          fi
+          }
 
       - name: Install AWS CLI (for S3-compatible R2)
         if: steps.preflight.outputs.secrets_ok == 'true'
