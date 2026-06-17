@@ -78,15 +78,15 @@ jobs:
 
       - name: Restore Backup to Local DB
         run: |
-          # Apply the decrypted dump to the local Supabase postgres container
-          psql -h localhost -p 5432 -U postgres -d postgres -f latest_backup.sql
+          # Supabase local dev stack exposes Postgres on port 54322 (not 5432)
+          psql -h localhost -p 54322 -U postgres -d postgres -f latest_backup.sql
         env:
           PGPASSWORD: postgres
 
       - name: Run Smoke Query
         run: |
           # Verify that the clinics table exists and has rows
-          COUNT=$(psql -h localhost -p 5432 -U postgres -d postgres -t -c "SELECT count(*) FROM clinics;")
+          COUNT=$(psql -h localhost -p 54322 -U postgres -d postgres -t -c "SELECT count(*) FROM clinics;")
           echo "Clinics count: $COUNT"
           if [ "$COUNT" -eq 0 ]; then
             echo "::warning::Restore succeeded, but clinics table is empty. This may be expected if the production DB is new."
