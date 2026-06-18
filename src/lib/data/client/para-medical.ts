@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
-import { getLocalDateStr } from "@/lib/utils";
+import type { Json } from "@/lib/types/database";
 import type {
   BodyMeasurement,
   Exercise,
@@ -21,6 +21,7 @@ import type {
   TherapyPlan,
   TherapySessionNote,
 } from "@/lib/types/para-medical";
+import { getLocalDateStr } from "@/lib/utils";
 import { ensureLookups, fetchRows, _activeUserMap } from "./_core";
 
 type MealSlot = "breakfast" | "morning_snack" | "lunch" | "afternoon_snack" | "dinner";
@@ -287,13 +288,19 @@ function recalculateMealDay(day: MealDay): MealDay {
 function updateGoalProgress(goal: TherapyGoal): TherapyGoal {
   const completedMilestones = goal.milestones.filter((milestone) => milestone.completed).length;
   const milestoneProgress =
-    goal.milestones.length > 0 ? Math.round((completedMilestones / goal.milestones.length) * 100) : 0;
+    goal.milestones.length > 0
+      ? Math.round((completedMilestones / goal.milestones.length) * 100)
+      : 0;
   const progress_pct =
     goal.status === "achieved"
       ? 100
       : goal.status === "not_started"
         ? 0
-        : Math.max(goal.progress_pct ?? 0, milestoneProgress, goal.status === "in_progress" ? 25 : 0);
+        : Math.max(
+            goal.progress_pct ?? 0,
+            milestoneProgress,
+            goal.status === "in_progress" ? 25 : 0,
+          );
 
   return { ...goal, progress_pct };
 }
@@ -512,7 +519,9 @@ export async function fetchSpeechSessions(clinicId: string): Promise<SpeechSessi
   }));
 }
 
-export async function fetchSpeechProgressReports(clinicId: string): Promise<SpeechProgressReport[]> {
+export async function fetchSpeechProgressReports(
+  clinicId: string,
+): Promise<SpeechProgressReport[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<SpeechProgressReportRaw>("speech_progress_reports", {
     eq: [["clinic_id", clinicId]],
@@ -659,7 +668,7 @@ export async function addMealPlanItem(
 
   const { error: updateError } = await supabase
     .from("meal_plans")
-    .update({ daily_plans: next, updated_at: new Date().toISOString() })
+    .update({ daily_plans: next as unknown as Json, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("clinic_id", clinicId);
 
@@ -695,7 +704,7 @@ export async function removeMealPlanItem(
 
   const { error: updateError } = await supabase
     .from("meal_plans")
-    .update({ daily_plans: next, updated_at: new Date().toISOString() })
+    .update({ daily_plans: next as unknown as Json, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("clinic_id", clinicId);
 
@@ -725,7 +734,7 @@ export async function addExerciseToProgram(
 
   const { error: updateError } = await supabase
     .from("exercise_programs")
-    .update({ exercises: next, updated_at: new Date().toISOString() })
+    .update({ exercises: next as unknown as Json, updated_at: new Date().toISOString() })
     .eq("id", programId)
     .eq("clinic_id", clinicId);
 
@@ -754,7 +763,7 @@ export async function removeExerciseFromProgram(
 
   const { error: updateError } = await supabase
     .from("exercise_programs")
-    .update({ exercises: next, updated_at: new Date().toISOString() })
+    .update({ exercises: next as unknown as Json, updated_at: new Date().toISOString() })
     .eq("id", programId)
     .eq("clinic_id", clinicId);
 
@@ -809,7 +818,7 @@ export async function updateTherapyPlanGoalStatus(
 
   const { error: updateError } = await supabase
     .from("therapy_plans")
-    .update({ goals: next, updated_at: new Date().toISOString() })
+    .update({ goals: next as unknown as Json, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("clinic_id", clinicId);
 
@@ -860,13 +869,15 @@ export async function toggleTherapyPlanMilestone(
       milestones,
       status,
       progress_pct:
-        milestones.length > 0 ? Math.round((completedCount / milestones.length) * 100) : goal.progress_pct,
+        milestones.length > 0
+          ? Math.round((completedCount / milestones.length) * 100)
+          : goal.progress_pct,
     });
   });
 
   const { error: updateError } = await supabase
     .from("therapy_plans")
-    .update({ goals: next, updated_at: new Date().toISOString() })
+    .update({ goals: next as unknown as Json, updated_at: new Date().toISOString() })
     .eq("id", planId)
     .eq("clinic_id", clinicId);
 

@@ -8,8 +8,8 @@ import type {
   LabInvoiceStatus,
 } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
-import { fetchTodayAppointments } from "./appointments";
 import { ensureLookups, fetchRows, _activeUserMap } from "./_core";
+import { fetchTodayAppointments } from "./appointments";
 
 export interface DepartmentManagementView {
   id: string;
@@ -316,9 +316,7 @@ export async function fetchDepartmentOverview(clinicId: string): Promise<Departm
 
   const stats = departmentsView.map((dept) => {
     const deptDoctorIds = new Set(
-      doctorDepartments
-        .filter((row) => row.department_id === dept.id)
-        .map((row) => row.doctor_id),
+      doctorDepartments.filter((row) => row.department_id === dept.id).map((row) => row.doctor_id),
     );
     const deptBeds = beds.filter((bed) => bed.department_id === dept.id);
     const deptAdmissions = admissions.filter((admission) => admission.department_id === dept.id);
@@ -375,7 +373,9 @@ export async function fetchBedManagementRooms(clinicId: string): Promise<BedMana
 
   const departmentMap = new Map(departments.map((department) => [department.id, department.name]));
   const activeAdmissionByBed = new Map<string, AdmissionRow>();
-  for (const admission of [...admissions].sort((a, b) => b.admission_date.localeCompare(a.admission_date))) {
+  for (const admission of [...admissions].sort((a, b) =>
+    b.admission_date.localeCompare(a.admission_date),
+  )) {
     if (activeAdmissionByBed.has(admission.bed_id)) continue;
     if (admission.status === "discharged") continue;
     activeAdmissionByBed.set(admission.bed_id, admission);
@@ -389,7 +389,8 @@ export async function fetchBedManagementRooms(clinicId: string): Promise<BedMana
         .sort((a, b) => byNumericOrText(a.bed_number, b.bed_number))
         .map((bed) => {
           const activeAdmission = activeAdmissionByBed.get(bed.id);
-          const patientId = bed.current_patient_id ?? bed.patient_id ?? activeAdmission?.patient_id ?? null;
+          const patientId =
+            bed.current_patient_id ?? bed.patient_id ?? activeAdmission?.patient_id ?? null;
           return {
             id: bed.id,
             bedNumber: bed.bed_number,
@@ -426,9 +427,12 @@ export async function fetchDialysisMachines(clinicId: string): Promise<DialysisM
   ]);
 
   const relevantSessionByMachine = new Map<string, DialysisSessionRow>();
-  for (const session of [...sessions].sort((a, b) => b.session_date.localeCompare(a.session_date))) {
+  for (const session of [...sessions].sort((a, b) =>
+    b.session_date.localeCompare(a.session_date),
+  )) {
     if (!session.machine_id || relevantSessionByMachine.has(session.machine_id)) continue;
-    const isCurrent = session.session_date === today && ["scheduled", "in_progress"].includes(session.status);
+    const isCurrent =
+      session.session_date === today && ["scheduled", "in_progress"].includes(session.status);
     const isRecent = session.status === "in_progress";
     if (isCurrent || isRecent) relevantSessionByMachine.set(session.machine_id, session);
   }
@@ -535,7 +539,9 @@ export async function fetchClinicSales(clinicId: string) {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("sales")
-    .select("id, clinic_id, patient_id, patient_name, items, total, currency, payment_method, has_prescription, loyalty_points_earned, date, time, created_at")
+    .select(
+      "id, clinic_id, patient_id, patient_name, items, total, currency, payment_method, has_prescription, loyalty_points_earned, date, time, created_at",
+    )
     .eq("clinic_id", clinicId)
     .order("date", { ascending: false });
 
