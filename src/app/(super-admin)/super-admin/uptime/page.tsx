@@ -19,15 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchCoreHealth } from "@/lib/monitoring/health-client";
 
 type ServiceStatus = "operational" | "degraded" | "down";
-
-interface HealthData {
-  status: string;
-  database: string;
-  version: string;
-  timestamp: string;
-}
 
 const statusConfig: Record<
   ServiceStatus,
@@ -56,40 +50,17 @@ export default function UptimeSLAPage() {
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
 
   const checkHealth = useCallback(async () => {
-    const start = performance.now();
-    try {
-      const res = await fetch("/api/admin/health");
-      const elapsed = Math.round(performance.now() - start);
-      setResponseTime(elapsed);
-
-      if (res.ok) {
-        const json = (await res.json()) as { ok: boolean; data: HealthData };
-        if (json.ok && json.data) {
-          setWebAppStatus("operational");
-          setDbStatus(json.data.database === "connected" ? "operational" : "down");
-          setAppVersion(json.data.version);
-        } else {
-          setWebAppStatus("degraded");
-        }
-      } else {
-        setWebAppStatus("degraded");
-      }
-    } catch {
-      setWebAppStatus("down");
-      setResponseTime(null);
-    }
-
-    // Check auth
-    try {
-      const { createClient } = await import("@/lib/supabase-client");
-      const supabase = createClient();
-      const { error } = await supabase.auth.getUser();
-      setAuthStatus(error ? "degraded" : "operational");
-    } catch {
-      setAuthStatus("down");
-    }
-
-    setLastChecked(new Date());
+    // Use the shared probe so this page derives Web App / Database / Auth
+    // status identically to System Status. Previously this page left the
+    // database at its initial "operational" value when /api/admin/health
+    // returned an error, which contradicted System Status (DB "Down").
+    const snapshot = await fetchCoreHealth();
+    setWebAppStatus(snapshot.webApp);
+    setDbStatus(snapshot.database);
+    setAuthStatus(snapshot.auth);
+    setAppVersion(snapshot.version);
+    setResponseTime(snapshot.responseTimeMs);
+    setLastChecked(snapshot.checkedAt);
     setLoading(false);
   }, []);
 

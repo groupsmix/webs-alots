@@ -129,7 +129,13 @@ export default async function ComplianceCenterPage() {
           title="Open DSARs"
           value={String(openDsarsResult.count ?? 0)}
           hint={`${overdueDsarsResult.count ?? 0} overdue`}
-          variant={(overdueDsarsResult.count ?? 0) > 0 ? "destructive" : "warning"}
+          variant={
+            (overdueDsarsResult.count ?? 0) > 0
+              ? "destructive"
+              : (openDsarsResult.count ?? 0) > 0
+                ? "warning"
+                : "success"
+          }
         />
         <OverviewCard
           title="Active breaches"

@@ -25,6 +25,8 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { logger } from "@/lib/logger";
+import { fetchCoreHealth } from "@/lib/monitoring/health-client";
+import { computeOverallStatus } from "@/lib/monitoring/services";
 import { createClient } from "@/lib/supabase-client";
 
 type ServiceStatus = "operational" | "degraded" | "down";
@@ -68,13 +70,6 @@ interface JobsData {
   notifications: { pending: number; failed: number; deadLettered: number };
 }
 
-interface HealthApiResponse {
-  status: string;
-  database: string;
-  version: string;
-  timestamp: string;
-}
-
 const STATUS_CONFIG: Record<
   ServiceStatus,
   { label: string; color: string; bg: string; icon: React.ComponentType<{ className?: string }> }
@@ -112,6 +107,12 @@ function StatusBadge({ status }: { status: ServiceStatus }) {
   );
 }
 
+function formatDeployTime(raw: string | undefined): string {
+  if (!raw) return "N/A";
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleString();
+}
+
 export default function SystemStatusPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,38 +120,28 @@ export default function SystemStatusPage() {
   const [overallStatus, setOverallStatus] = useState<ServiceStatus>("operational");
   const [activeUsers, setActiveUsers] = useState(0);
   const [appVersion, setAppVersion] = useState("0.1.0");
+  const [nodeVersion, setNodeVersion] = useState<string | null>(null);
+  const [apiLatencyMs, setApiLatencyMs] = useState<number | null>(null);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const [readiness, setReadiness] = useState<ReadinessData | null>(null);
   const [backups, setBackups] = useState<BackupsData | null>(null);
   const [jobs, setJobs] = useState<JobsData | null>(null);
+  // Tracks whether the readiness/backups/jobs fetches have settled, so their
+  // panels can show an "unavailable" state instead of spinning on "Loading..."
+  // forever when an endpoint fails to return usable data.
+  const [opsLoaded, setOpsLoaded] = useState(false);
 
   const loadHealth = useCallback(async () => {
     try {
-      const now = new Date();
+      // Single shared probe — identical source/logic to the Uptime SLA page,
+      // so the two pages can no longer disagree about service status.
+      const core = await fetchCoreHealth();
+      const now = core.checkedAt;
       const serviceResults: ServiceHealth[] = [];
 
-      let webAppStatus: ServiceStatus = "operational";
-      let dbStatus: ServiceStatus = "operational";
-      let dbConnected = false;
-      let version = "0.1.0";
-
-      try {
-        const res = await fetch("/api/admin/health");
-        if (res.ok) {
-          const json = (await res.json()) as { ok: boolean; data: HealthApiResponse };
-          if (json.ok && json.data) {
-            dbConnected = json.data.database === "connected";
-            version = json.data.version;
-          }
-        } else {
-          webAppStatus = "degraded";
-        }
-      } catch {
-        webAppStatus = "degraded";
-      }
-
-      dbStatus = dbConnected ? "operational" : "down";
-      setAppVersion(version);
+      setAppVersion(core.version);
+      setNodeVersion(core.nodeVersion);
+      setApiLatencyMs(core.responseTimeMs);
 
       let userCount = 0;
       try {
@@ -167,34 +158,25 @@ export default function SystemStatusPage() {
       }
       setActiveUsers(userCount);
 
-      let authStatus: ServiceStatus = "operational";
-      try {
-        const supabase = createClient();
-        const { error } = await supabase.auth.getUser();
-        if (error) authStatus = "degraded";
-      } catch {
-        authStatus = "down";
-      }
-
       serviceResults.push(
         {
           name: "Web App (Next.js)",
           description: "Main application server",
-          status: webAppStatus,
+          status: core.webApp,
           icon: Globe,
           lastChecked: now,
         },
         {
           name: "Database (Supabase)",
           description: "PostgreSQL database with RLS",
-          status: dbStatus,
+          status: core.database,
           icon: Database,
           lastChecked: now,
         },
         {
           name: "Auth (Supabase Auth)",
           description: "Authentication service",
-          status: authStatus,
+          status: core.auth,
           icon: Shield,
           lastChecked: now,
         },
@@ -243,13 +225,14 @@ export default function SystemStatusPage() {
         }
       } catch (e) {
         logger.warn("Failed to fetch readiness APIs", { error: e });
+      } finally {
+        // Mark the ops panels as settled so they stop showing "Loading..."
+        // even when an endpoint failed to return usable data.
+        setOpsLoaded(true);
       }
 
       setServices(serviceResults);
-
-      const hasDown = serviceResults.some((s) => s.status === "down");
-      const hasDegraded = serviceResults.some((s) => s.status === "degraded");
-      setOverallStatus(hasDown ? "down" : hasDegraded ? "degraded" : "operational");
+      setOverallStatus(computeOverallStatus(serviceResults.map((s) => s.status)));
       setLastChecked(now);
     } finally {
       setLoading(false);
@@ -278,6 +261,10 @@ export default function SystemStatusPage() {
   const overallConfig = STATUS_CONFIG[overallStatus];
   const OverallIcon = overallConfig.icon;
 
+  // Derive incidents from live service health so this panel can never claim
+  // "No recent incidents" while a service is actually down or degraded.
+  const activeIncidents = services.filter((s) => s.status !== "operational");
+
   const kpiCards = [
     {
       label: "System Status",
@@ -300,7 +287,7 @@ export default function SystemStatusPage() {
     },
     {
       label: "API Latency",
-      value: "avg 120ms",
+      value: apiLatencyMs !== null ? `${apiLatencyMs}ms` : "N/A",
       icon: Clock,
       color: "text-purple-600",
       bg: "bg-purple-50",
@@ -436,11 +423,14 @@ export default function SystemStatusPage() {
                 { label: "App Version", value: appVersion },
                 {
                   label: "Node.js Version",
-                  value: typeof process !== "undefined" ? (process.version ?? "N/A") : "N/A",
+                  value: nodeVersion ?? "N/A",
                 },
                 { label: "Next.js Version", value: "16" },
                 // nosemgrep: semgrep.env-access — NEXT_PUBLIC_* is a client-side public env var for display only
-                { label: "Last Deployment", value: process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "N/A" },
+                {
+                  label: "Last Deployment",
+                  value: formatDeployTime(process.env.NEXT_PUBLIC_DEPLOY_TIME),
+                },
                 {
                   label: "Environment",
                   // nosemgrep: semgrep.env-access — NODE_ENV is always available at build time
@@ -471,13 +461,48 @@ export default function SystemStatusPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <CheckCircle className="h-10 w-10 text-green-500 mb-3" />
-            <p className="text-sm font-medium">No recent incidents</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              All systems have been running smoothly
-            </p>
-          </div>
+          {activeIncidents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <CheckCircle className="h-10 w-10 text-green-500 mb-3" />
+              <p className="text-sm font-medium">No recent incidents</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                All systems have been running smoothly
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeIncidents.map((incident) => (
+                <div
+                  key={incident.name}
+                  className="flex items-start justify-between gap-3 rounded-lg border p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`mt-0.5 rounded-lg p-2 ${
+                        incident.status === "down" ? "bg-red-50" : "bg-amber-50"
+                      }`}
+                    >
+                      {incident.status === "down" ? (
+                        <XCircle className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      )}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium">{incident.name}</p>
+                      <p className="text-xs text-muted-foreground">{incident.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <StatusBadge status={incident.status} />
+                    <span className="text-[10px] text-muted-foreground">
+                      since {incident.lastChecked.toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -514,6 +539,10 @@ export default function SystemStatusPage() {
                   </div>
                 ))}
               </div>
+            ) : opsLoaded ? (
+              <p className="text-sm text-muted-foreground">
+                Environment details unavailable. The readiness check did not return data.
+              </p>
             ) : (
               <p className="text-sm text-muted-foreground">Loading environment details...</p>
             )}
@@ -547,6 +576,10 @@ export default function SystemStatusPage() {
                     <span className="font-medium text-xs">{backups.lastRestoreDrill}</span>
                   </div>
                 </div>
+              ) : opsLoaded ? (
+                <p className="text-sm text-muted-foreground">
+                  Backups data unavailable. The readiness check did not return data.
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground">Loading backups data...</p>
               )}
@@ -582,6 +615,10 @@ export default function SystemStatusPage() {
                     </div>
                   </div>
                 </div>
+              ) : opsLoaded ? (
+                <p className="text-sm text-muted-foreground">
+                  Background jobs data unavailable. The readiness check did not return data.
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground">Loading jobs data...</p>
               )}
