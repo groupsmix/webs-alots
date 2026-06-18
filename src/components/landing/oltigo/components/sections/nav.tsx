@@ -29,7 +29,9 @@ export function Nav() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
-        scrolled ? "border-b border-hairline bg-ink/80 backdrop-blur-md" : "border-b border-transparent",
+        scrolled
+          ? "border-b border-hairline bg-ink/80 backdrop-blur-md"
+          : "border-b border-transparent",
       )}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
@@ -82,7 +84,9 @@ function LangToggle({ locale, setLocale }: { locale: Locale; setLocale: (l: Loca
           aria-pressed={locale === l}
           className={cn(
             "telemetry rounded-full px-2 py-1 text-[10.5px] uppercase tracking-wider transition-colors",
-            locale === l ? "bg-surface-high text-text" : "text-text-muted hover:text-text-secondary",
+            locale === l
+              ? "bg-surface-high text-text"
+              : "text-text-muted hover:text-text-secondary",
           )}
         >
           {localeLabel[l]}

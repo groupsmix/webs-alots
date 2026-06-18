@@ -97,7 +97,9 @@ export function CtaDemo() {
               disabled={status === "submitting"}
             >
               {status === "submitting" ? c.submitting : c.submit}
-              {status !== "submitting" && <ArrowRight className="size-4 rtl:rotate-180" strokeWidth={1.75} />}
+              {status !== "submitting" && (
+                <ArrowRight className="size-4 rtl:rotate-180" strokeWidth={1.75} />
+              )}
             </Button>
 
             <p

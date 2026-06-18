@@ -15,7 +15,11 @@ export function MultiTenant() {
       <div className="blueprint-grid pointer-events-none absolute inset-0 opacity-50" aria-hidden />
 
       <div className="relative mx-auto max-w-7xl px-6">
-        <SectionHeading eyebrow={dict.tenant.eyebrow} title={dict.tenant.title} sub={dict.tenant.sub} />
+        <SectionHeading
+          eyebrow={dict.tenant.eyebrow}
+          title={dict.tenant.title}
+          sub={dict.tenant.sub}
+        />
 
         <div className="mt-16 grid gap-4 sm:grid-cols-3">
           {dict.tenant.subdomains.map((sd, i) => (
@@ -63,7 +67,11 @@ export function MultiTenant() {
                 </p>
               </div>
             </div>
-            <ShieldCheck className="hidden size-6 shrink-0 text-emerald sm:block" strokeWidth={1.25} aria-hidden />
+            <ShieldCheck
+              className="hidden size-6 shrink-0 text-emerald sm:block"
+              strokeWidth={1.25}
+              aria-hidden
+            />
           </div>
         </Reveal>
       </div>

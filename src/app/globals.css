@@ -832,7 +832,9 @@
 .telemetry {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "zero" 1;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
   direction: ltr;
   unicode-bidi: isolate;
   letter-spacing: 0;
@@ -873,17 +875,32 @@
 
 /* --- Motion --------------------------------------------------------------- */
 @keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
-.animate-ticker { animation: ticker-scroll 42s linear infinite; }
-[dir="rtl"] .animate-ticker { animation-direction: reverse; }
+.animate-ticker {
+  animation: ticker-scroll 42s linear infinite;
+}
+[dir="rtl"] .animate-ticker {
+  animation-direction: reverse;
+}
 
 @keyframes soft-pulse {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
-.animate-soft-pulse { animation: soft-pulse 2.8s var(--ease-calm, cubic-bezier(0.22, 1, 0.36, 1)) infinite; }
+.animate-soft-pulse {
+  animation: soft-pulse 2.8s var(--ease-calm, cubic-bezier(0.22, 1, 0.36, 1)) infinite;
+}
 
 .reveal {
   transition:
@@ -899,8 +916,12 @@ html.js .reveal:not(.is-visible) {
   transform-origin: left center;
   transition: transform 700ms var(--ease-precise, cubic-bezier(0.16, 1, 0.3, 1));
 }
-[dir="rtl"] .draw-line { transform-origin: right center; }
-html.js .draw-line:not(.is-visible) { transform: scaleX(0); }
+[dir="rtl"] .draw-line {
+  transform-origin: right center;
+}
+html.js .draw-line:not(.is-visible) {
+  transform: scaleX(0);
+}
 
 /* Reduced motion — settle everything, scoped to the landing */
 @media (prefers-reduced-motion: reduce) {

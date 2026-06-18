@@ -22,13 +22,7 @@ type RevealProps = {
  * ref passed to createElement from a render-phase ref read, hence the scoped
  * disable below.)
  */
-export function Reveal({
-  children,
-  className,
-  delay = 0,
-  variant = "settle",
-  as,
-}: RevealProps) {
+export function Reveal({ children, className, delay = 0, variant = "settle", as }: RevealProps) {
   const Tag = (as ?? "div") as ElementType;
   const [visible, setVisible] = useState(false);
   const started = useRef(false);

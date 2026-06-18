@@ -1,7 +1,11 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { AgendaFace, DossierFace, WhatsappFace } from "@/components/landing/oltigo/components/hero/faces";
+import {
+  AgendaFace,
+  DossierFace,
+  WhatsappFace,
+} from "@/components/landing/oltigo/components/hero/faces";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
@@ -60,7 +64,11 @@ function FeatureRow({
           {feature.bullets.map((b, i) => (
             <Reveal key={i} delay={160 + i * 50} as="li">
               <span className="flex items-start gap-3">
-                <Check className="mt-0.5 size-4 shrink-0 text-emerald" strokeWidth={1.75} aria-hidden />
+                <Check
+                  className="mt-0.5 size-4 shrink-0 text-emerald"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
                 <span className="text-[14.5px] text-text-secondary">{b}</span>
               </span>
             </Reveal>

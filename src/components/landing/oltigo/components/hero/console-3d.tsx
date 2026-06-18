@@ -85,13 +85,7 @@ function Slab({ index, baseY, xOff, breatheRate, breathePhase, children }: SlabP
         />
       </RoundedBox>
       {/* Crisp DOM face on the slab front. distanceFactor is the one size knob. */}
-      <Html
-        transform
-        distanceFactor={2.55}
-        position={[0, 0, 0.09]}
-        pointerEvents="none"
-        prepend
-      >
+      <Html transform distanceFactor={2.55} position={[0, 0, 0.09]} pointerEvents="none" prepend>
         <div style={{ transform: "translate(-50%, -50%)" }}>{children}</div>
       </Html>
     </group>
@@ -157,7 +151,14 @@ function Rig({ onFocus }: { onFocus: (i: number) => void }) {
         </Slab>
       </group>
       {/* one large soft contact shadow on a matte floor */}
-      <ContactShadows position={[0, -2.5, 0]} opacity={0.5} blur={2.9} scale={11} far={4.2} color="#000000" />
+      <ContactShadows
+        position={[0, -2.5, 0]}
+        opacity={0.5}
+        blur={2.9}
+        scale={11}
+        far={4.2}
+        color="#000000"
+      />
       <FocusReporter onFocus={onFocus} />
     </>
   );

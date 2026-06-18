@@ -75,8 +75,7 @@ export function DossierFace() {
         <span
           className="relative grid size-7 place-items-center rounded-full"
           style={{
-            background:
-              "conic-gradient(from 210deg, #2a3236, #5b6568, #1c2225, #454f52, #2a3236)",
+            background: "conic-gradient(from 210deg, #2a3236, #5b6568, #1c2225, #454f52, #2a3236)",
             boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12), 0 2px 6px -2px rgba(0,0,0,0.8)",
           }}
         >

@@ -13,7 +13,10 @@ export function HowItWorks() {
 
         <div className="relative mt-16">
           {/* connecting hairline that draws in */}
-          <Reveal variant="line" className="absolute inset-x-0 top-[14px] hidden h-px bg-hairline lg:block" />
+          <Reveal
+            variant="line"
+            className="absolute inset-x-0 top-[14px] hidden h-px bg-hairline lg:block"
+          />
           <ol className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
             {dict.how.steps.map((s, i) => (
               <Reveal key={s.num} delay={i * 90} as="li">

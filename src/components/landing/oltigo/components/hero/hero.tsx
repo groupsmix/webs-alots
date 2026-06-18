@@ -88,8 +88,14 @@ export function Hero() {
                 value={<BilingualNumeral value={dict.hero.trust.uptime} />}
                 label={dict.hero.trust.uptimeLabel}
               />
-              <TrustItem value={<span className="telemetry">{dict.hero.trust.cipher}</span>} label="" />
-              <TrustItem value={<span className="text-emerald">●</span>} label={dict.hero.trust.law} />
+              <TrustItem
+                value={<span className="telemetry">{dict.hero.trust.cipher}</span>}
+                label=""
+              />
+              <TrustItem
+                value={<span className="text-emerald">●</span>}
+                label={dict.hero.trust.law}
+              />
               <TrustItem
                 value={<span className="telemetry">{dict.hero.trust.latency}</span>}
                 label=""
@@ -129,9 +135,7 @@ function TrustItem({ value, label }: { value: React.ReactNode; label: string }) 
   return (
     <div className="flex flex-col gap-1">
       <dd className="text-[15px] font-medium text-text">{value}</dd>
-      {label ? (
-        <dt className="text-[11px] leading-tight text-text-muted">{label}</dt>
-      ) : null}
+      {label ? <dt className="text-[11px] leading-tight text-text-muted">{label}</dt> : null}
     </div>
   );
 }

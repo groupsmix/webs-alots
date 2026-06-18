@@ -52,7 +52,10 @@ export function ProgressRail() {
     >
       <div className="pointer-events-auto relative flex flex-col gap-7">
         {/* track */}
-        <span className="absolute top-0 h-full w-px bg-hairline" style={{ insetInlineStart: "3px" }} />
+        <span
+          className="absolute top-0 h-full w-px bg-hairline"
+          style={{ insetInlineStart: "3px" }}
+        />
         {/* fill */}
         <span
           className="absolute top-0 w-px bg-emerald/70 transition-[height] duration-200 ease-out"

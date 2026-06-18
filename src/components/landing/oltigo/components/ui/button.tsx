@@ -7,8 +7,10 @@ const button = cva(
     variants: {
       variant: {
         // The single living-color CTA. Use sparingly — one per section.
-        primary: "bg-emerald text-ink hover:bg-[var(--color-emerald-deep)] hover:text-text shadow-[0_14px_32px_-20px_rgba(16,185,129,0.55)]",
-        secondary: "border border-hairline bg-surface/40 text-text-secondary hover:text-text hover:border-text-muted",
+        primary:
+          "bg-emerald text-ink hover:bg-[var(--color-emerald-deep)] hover:text-text shadow-[0_14px_32px_-20px_rgba(16,185,129,0.55)]",
+        secondary:
+          "border border-hairline bg-surface/40 text-text-secondary hover:text-text hover:border-text-muted",
         ghost: "text-text-secondary hover:text-text",
         outline: "border border-hairline text-text hover:border-emerald/60",
       },
@@ -31,7 +33,11 @@ export function Button({ className, variant, size, href, ...props }: ButtonProps
     const { type: _type, ...anchorProps } = props;
     void _type;
     return (
-      <a href={href} className={classes} {...(anchorProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)} />
+      <a
+        href={href}
+        className={classes}
+        {...(anchorProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+      />
     );
   }
   return <button className={classes} {...props} />;
