@@ -2,6 +2,7 @@
 import { AlertTriangle, Database, ShieldAlert } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MONITORED_SERVICES } from "@/lib/monitoring/services";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 // uptime_sla_monthly (view) and uptime_events are introduced by migration
@@ -44,6 +45,11 @@ export default async function SystemHealthPage() {
   const metrics = await getMetrics();
   const latestMonth = metrics.uptime[0]?.month;
   const latestMonthRows = metrics.uptime.filter((row) => row.month === latestMonth);
+  const distinctMonitors = new Set(metrics.uptime.map((row) => row.monitor_name)).size;
+  // Fall back to the canonical monitored-services count so "Services suivis"
+  // never reads a misleading 0 before the historical uptime_sla_monthly table
+  // has been populated by the monitoring pipeline.
+  const servicesTracked = distinctMonitors > 0 ? distinctMonitors : MONITORED_SERVICES.length;
 
   return (
     <div className="space-y-6">
@@ -71,7 +77,7 @@ export default async function SystemHealthPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{latestMonthRows.length}</div>
+            <div className="text-2xl font-bold">{servicesTracked}</div>
           </CardContent>
         </Card>
         <Card>
@@ -116,19 +122,27 @@ export default async function SystemHealthPage() {
                 </tr>
               </thead>
               <tbody>
-                {metrics.uptime.map((row) => (
-                  <tr key={`${row.monitor_name}-${row.month}`} className="border-b">
-                    <td className="p-3">{row.monitor_name}</td>
-                    <td className="p-3">
-                      {new Date(row.month).toLocaleDateString("fr-MA", {
-                        year: "numeric",
-                        month: "long",
-                      })}
+                {metrics.uptime.length === 0 ? (
+                  <tr>
+                    <td className="p-3 text-muted-foreground" colSpan={4}>
+                      Aucune donnée de disponibilité enregistrée pour le moment.
                     </td>
-                    <td className="p-3">{row.uptime_pct}%</td>
-                    <td className="p-3">{row.downtime_events}</td>
                   </tr>
-                ))}
+                ) : (
+                  metrics.uptime.map((row) => (
+                    <tr key={`${row.monitor_name}-${row.month}`} className="border-b">
+                      <td className="p-3">{row.monitor_name}</td>
+                      <td className="p-3">
+                        {new Date(row.month).toLocaleDateString("fr-MA", {
+                          year: "numeric",
+                          month: "long",
+                        })}
+                      </td>
+                      <td className="p-3">{row.uptime_pct}%</td>
+                      <td className="p-3">{row.downtime_events}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -141,22 +155,26 @@ export default async function SystemHealthPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {metrics.events.map((event) => (
-              <div key={event.id} className="rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="font-medium">{event.monitor_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(event.occurred_at).toLocaleString("fr-MA")}
+            {metrics.events.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun événement récent enregistré.</p>
+            ) : (
+              metrics.events.map((event) => (
+                <div key={event.id} className="rounded-lg border p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{event.monitor_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(event.occurred_at).toLocaleString("fr-MA")}
+                      </div>
                     </div>
+                    <div className="text-sm capitalize">{event.event_type}</div>
                   </div>
-                  <div className="text-sm capitalize">{event.event_type}</div>
+                  {event.message ? (
+                    <p className="mt-2 text-sm text-muted-foreground">{event.message}</p>
+                  ) : null}
                 </div>
-                {event.message ? (
-                  <p className="mt-2 text-sm text-muted-foreground">{event.message}</p>
-                ) : null}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

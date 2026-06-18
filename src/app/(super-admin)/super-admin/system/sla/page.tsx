@@ -90,19 +90,30 @@ export default async function SLAPage() {
                 </tr>
               </thead>
               <tbody>
-                {(slaRows.data ?? []).map((row: Record<string, unknown>) => (
-                  <tr key={`${String(row.monitor_name)}-${String(row.month)}`} className="border-b">
-                    <td className="p-3">{String(row.monitor_name ?? "unknown")}</td>
-                    <td className="p-3">
-                      {new Date(String(row.month)).toLocaleDateString("fr-MA", {
-                        month: "long",
-                        year: "numeric",
-                      })}
+                {(slaRows.data ?? []).length === 0 ? (
+                  <tr>
+                    <td className="p-3 text-muted-foreground" colSpan={4}>
+                      Aucune donnée SLA enregistrée pour le moment.
                     </td>
-                    <td className="p-3">{String(row.uptime_pct ?? "—")}%</td>
-                    <td className="p-3">{String(row.downtime_events ?? 0)}</td>
                   </tr>
-                ))}
+                ) : (
+                  (slaRows.data ?? []).map((row: Record<string, unknown>) => (
+                    <tr
+                      key={`${String(row.monitor_name)}-${String(row.month)}`}
+                      className="border-b"
+                    >
+                      <td className="p-3">{String(row.monitor_name ?? "unknown")}</td>
+                      <td className="p-3">
+                        {new Date(String(row.month)).toLocaleDateString("fr-MA", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="p-3">{String(row.uptime_pct ?? "—")}%</td>
+                      <td className="p-3">{String(row.downtime_events ?? 0)}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -115,17 +126,21 @@ export default async function SLAPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {(recentEvents.data ?? []).map((event: Record<string, unknown>) => (
-              <div key={String(event.id)} className="rounded-lg border p-3">
-                <div className="font-medium">{String(event.monitor_name ?? "unknown")}</div>
-                <div className="text-xs text-muted-foreground">
-                  {new Date(String(event.occurred_at)).toLocaleString("fr-MA")}
+            {(recentEvents.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune panne enregistrée.</p>
+            ) : (
+              (recentEvents.data ?? []).map((event: Record<string, unknown>) => (
+                <div key={String(event.id)} className="rounded-lg border p-3">
+                  <div className="font-medium">{String(event.monitor_name ?? "unknown")}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(String(event.occurred_at)).toLocaleString("fr-MA")}
+                  </div>
+                  {typeof event.message === "string" ? (
+                    <p className="mt-2 text-sm text-muted-foreground">{event.message}</p>
+                  ) : null}
                 </div>
-                {typeof event.message === "string" ? (
-                  <p className="mt-2 text-sm text-muted-foreground">{event.message}</p>
-                ) : null}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

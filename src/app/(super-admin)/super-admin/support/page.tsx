@@ -345,7 +345,7 @@ export default function SupportPage() {
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">Avg Response</p>
             </div>
-            <p className="text-2xl font-bold">--</p>
+            <p className="text-2xl font-bold">N/A</p>
           </CardContent>
         </Card>
         <Card>

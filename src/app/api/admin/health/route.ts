@@ -56,6 +56,10 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     status: "ok",
     database: databaseStatus,
     version,
+    // Surface the server runtime version so the System Status "Platform Info"
+    // panel can populate "Node.js Version" — a client component cannot read
+    // process.version reliably. Null on runtimes that do not expose it.
+    nodeVersion: typeof process !== "undefined" ? (process.version ?? null) : null,
     timestamp,
   });
 }

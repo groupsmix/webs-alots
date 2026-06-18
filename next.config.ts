@@ -74,6 +74,10 @@ const nextConfig: NextConfig = {
   // the env var still ship a safe default.
   env: {
     NEXT_PUBLIC_DATA_MASKING: process.env.NEXT_PUBLIC_DATA_MASKING || "partial",
+    // Ops dashboard "Last Deployment": inline a build timestamp so the metric
+    // is populated even when CI does not set NEXT_PUBLIC_DEPLOY_TIME. CI may
+    // still override it (e.g. with the deploy time or release SHA).
+    NEXT_PUBLIC_DEPLOY_TIME: process.env.NEXT_PUBLIC_DEPLOY_TIME || new Date().toISOString(),
   },
 
   // E2E suite (login-flow / registration-flow / pricing / mobile-flows specs)
