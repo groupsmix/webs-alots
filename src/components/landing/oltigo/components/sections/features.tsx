@@ -1,10 +1,10 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
-import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
-import { SectionHeading } from "./section-kit";
 import { AgendaFace, DossierFace, WhatsappFace } from "@/components/landing/oltigo/components/hero/faces";
+import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
+import { SectionHeading } from "./section-kit";
 
 export function Features() {
   const { dict } = useI18n();

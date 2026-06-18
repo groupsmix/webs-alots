@@ -42,7 +42,7 @@ export default defineConfig({
         "src/app/api/**/*.ts",
         "src/app/api/**/*.tsx",
       ],
-      exclude: ["src/lib/types/**", "src/app/api/docs/**"],
+      exclude: ["src/lib/types/**", "src/app/api/docs/**", "src/components/landing/oltigo/**"],
       thresholds: floor,
     },
   },

@@ -1,7 +1,7 @@
 "use client";
 
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { Accordion } from "@/components/landing/oltigo/components/ui/accordion";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
 
 export function Faq() {

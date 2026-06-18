@@ -1,7 +1,7 @@
 "use client";
 
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
 
 export function HowItWorks() {

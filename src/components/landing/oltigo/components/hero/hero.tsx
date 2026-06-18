@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
-import { Button } from "@/components/landing/oltigo/components/ui/button";
-import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { BilingualNumeral } from "@/components/landing/oltigo/components/primitives/bilingual-numeral";
+import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import { Button } from "@/components/landing/oltigo/components/ui/button";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { ConsoleStatic } from "./console-static";
-import { ConsoleMotion } from "./console-motion";
+
+// The 3D console is client-only WebGL. Lazy-load it so three.js stays out of
+// the shared bundle and never executes during SSR; the static console is both
+// the loading state and the WebGL-unavailable fallback.
+const Console3D = dynamic(() => import("./console-3d"), {
+  ssr: false,
+  loading: () => <ConsoleStatic />,
+});
 
 export function Hero() {
   const { dict } = useI18n();
@@ -92,7 +100,7 @@ export function Hero() {
 
         {/* Object — RIGHT */}
         <div className="relative">
-          {wide ? <ConsoleMotion onFocus={setFocus} /> : <ConsoleStatic />}
+          {wide ? <Console3D onFocus={setFocus} /> : <ConsoleStatic />}
 
           {/* Explode captions, synced to the focused layer */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">

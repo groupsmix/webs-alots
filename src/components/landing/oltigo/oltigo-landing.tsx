@@ -2,18 +2,18 @@
 
 import { useEffect } from "react";
 import { Hero } from "@/components/landing/oltigo/components/hero/hero";
-import { Footer } from "@/components/landing/oltigo/components/sections/footer";
-import { Nav } from "@/components/landing/oltigo/components/sections/nav";
+import { Grain } from "@/components/landing/oltigo/components/primitives/grain";
+import { ProgressRail } from "@/components/landing/oltigo/components/primitives/progress-rail";
 import { CtaDemo } from "@/components/landing/oltigo/components/sections/cta-demo";
 import { Faq } from "@/components/landing/oltigo/components/sections/faq";
 import { Features } from "@/components/landing/oltigo/components/sections/features";
+import { Footer } from "@/components/landing/oltigo/components/sections/footer";
 import { HowItWorks } from "@/components/landing/oltigo/components/sections/how-it-works";
 import { MultiTenant } from "@/components/landing/oltigo/components/sections/multi-tenant";
+import { Nav } from "@/components/landing/oltigo/components/sections/nav";
 import { Pricing } from "@/components/landing/oltigo/components/sections/pricing";
 import { TelemetryTicker } from "@/components/landing/oltigo/components/sections/telemetry-ticker";
 import { Testimonials } from "@/components/landing/oltigo/components/sections/testimonials";
-import { Grain } from "@/components/landing/oltigo/components/primitives/grain";
-import { ProgressRail } from "@/components/landing/oltigo/components/primitives/progress-rail";
 import { LanguageProvider } from "@/components/landing/oltigo/i18n/context";
 
 /**

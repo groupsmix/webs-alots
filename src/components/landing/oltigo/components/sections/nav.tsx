@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { locales, localeLabel, type Locale } from "@/components/landing/oltigo/i18n/dictionaries";
-import { Button } from "@/components/landing/oltigo/components/ui/button";
-import { Wordmark } from "./section-kit";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "./section-kit";
 
 export function Nav() {
   const { dict, locale, setLocale } = useI18n();

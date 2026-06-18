@@ -1,8 +1,8 @@
 "use client";
 
 import { Database, Lock, ShieldCheck } from "lucide-react";
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
 
 /** The ONE section carrying the embossed zellige relief (<6% contrast). */

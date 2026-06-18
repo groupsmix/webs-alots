@@ -1,12 +1,12 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
-import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { BilingualNumeral } from "@/components/landing/oltigo/components/primitives/bilingual-numeral";
+import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
-import { SectionHeading } from "./section-kit";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { cn } from "@/lib/utils";
+import { SectionHeading } from "./section-kit";
 
 export function Pricing() {
   const { dict } = useI18n();

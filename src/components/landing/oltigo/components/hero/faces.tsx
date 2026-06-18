@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Calendar, Check, CheckCheck, Fingerprint, Lock } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 
 /* ===========================================================================

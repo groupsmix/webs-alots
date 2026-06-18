@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight, MessageCircle } from "lucide-react";
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
+import { useState } from "react";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { Eyebrow } from "./section-kit";
 
 type Status = "idle" | "submitting" | "success" | "error";
