@@ -1,23 +1,29 @@
 // SC-01: Server component layout — client-interactive shell extracted to
 // @/components/layouts/super-admin-layout-shell (a "use client" component).
 //
-// HOTFIX 2026-06-06: CopilotShell temporarily disabled.
-// The CopilotKit runtime endpoint (/api/copilotkit) was moved to the
-// separate webs-alots-ai Worker in PR #976. That Worker requires an
-// ANTHROPIC_API_KEY secret which is not yet provisioned. With the
-// AI Worker routes removed from the zone, the main app's /api/copilotkit
-// route returns a 501 stub on every request, causing CopilotKit's
-// provider initialization to throw and the super-admin error boundary
-// to fire on every super-admin page (including /super-admin/dashboard).
+// AI assistant: the super-admin in-layout assistant is <AgentWidgetMount>
+// (see below), NOT CopilotKit. The earlier in-app CopilotKit provider/sidebar
+// (<CopilotShell>) was retired after PR #976: wrapping the layout in the
+// provider made the whole super-admin tree depend on a live AI backend, so a
+// 501 from /api/copilotkit tripped the error boundary on every page. The
+// AgentWidget is self-contained and fails closed (the panel just stays empty
+// if the backend is unavailable) instead of taking down the page.
 //
-// To restore the sidebar:
-//   1. Set ANTHROPIC_API_KEY on webs-alots-ai (production + staging).
-//   2. Recreate Cloudflare zone routes:
-//        oltigo.com/api/copilotkit       -> webs-alots-ai
-//        oltigo.com/api/copilotkit/*     -> webs-alots-ai
-//        oltigo.com/api/builder/sandbox  -> webs-alots-ai
+// The CopilotKit *runtime* still exists, but as a standalone endpoint served by
+// the separate webs-alots-ai Worker (workers/ai/) and called directly by
+// clients — it is no longer mounted as a React provider here. The main app's
+// /api/copilotkit and /api/builder/sandbox routes are intentional 501 stubs
+// (Cloudflare zone routes send those paths to webs-alots-ai first).
+//
+// To bring the AI Builder / CopilotKit endpoints online (ops, not code):
+//   1. Set ANTHROPIC_API_KEY + E2B_API_KEY on webs-alots-ai (production + staging).
+//   2. Recreate the Cloudflare zone routes (see workers/ai/wrangler.toml):
+//        oltigo.com/api/copilotkit        -> webs-alots-ai
+//        oltigo.com/api/copilotkit/*      -> webs-alots-ai
+//        oltigo.com/api/builder/sandbox   -> webs-alots-ai
 //        oltigo.com/api/builder/sandbox/* -> webs-alots-ai
-//   3. Re-enable the <CopilotShell> wrapper below.
+// Reviving the in-app CopilotKit sidebar would mean re-creating the removed
+// <CopilotShell> component; prefer extending <AgentWidget> instead.
 import { Suspense } from "react";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { AgentWidgetMount } from "@/components/ai/AgentWidgetMount";
