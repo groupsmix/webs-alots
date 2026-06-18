@@ -32,5 +32,7 @@ export * from "./pediatrician";
 export * from "./gynecologist";
 export * from "./ophthalmologist";
 export * from "./kpis";
+export * from "./clinic-centers";
+export * from "./para-medical";
 export * from "./onboarding";
 export * from "./timeline";

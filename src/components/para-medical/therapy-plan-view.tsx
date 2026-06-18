@@ -158,7 +158,7 @@ export function TherapyPlanView({
                                 {goal.milestones.map((ms, mIdx) => (
                                   <div key={mIdx} className="flex items-center gap-2 text-xs">
                                     <button
-                                      disabled={!editable}
+                                      disabled={!editable || !onToggleMilestone}
                                       onClick={() => onToggleMilestone?.(plan.id, goal.id, mIdx)}
                                       className="shrink-0"
                                     >
@@ -186,7 +186,7 @@ export function TherapyPlanView({
                             )}
 
                             {/* Goal status actions */}
-                            {editable && goal.status !== "achieved" && (
+                            {editable && onUpdateGoalStatus && goal.status !== "achieved" && (
                               <div className="flex gap-1 mt-2">
                                 {goal.status === "not_started" && (
                                   <Button

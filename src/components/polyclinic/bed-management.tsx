@@ -89,7 +89,7 @@ export function BedManagement({
           <BedDouble className="h-5 w-5" />
           Bed Management
         </h2>
-        {editable && (
+        {editable && onAddRoom && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="h-4 w-4 mr-1" />
             Add Room
@@ -231,7 +231,7 @@ export function BedManagement({
                         {bed.patientName && (
                           <p className="text-[10px] mt-1 truncate">{bed.patientName}</p>
                         )}
-                        {editable && bed.status === "available" && (
+                        {editable && onAdmit && bed.status === "available" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -241,7 +241,7 @@ export function BedManagement({
                             Admit
                           </Button>
                         )}
-                        {editable && bed.status === "occupied" && (
+                        {editable && onDischarge && bed.status === "occupied" && (
                           <Button
                             size="sm"
                             variant="outline"

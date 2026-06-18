@@ -105,7 +105,7 @@ export function MaterialsInventory({
             </Badge>
           )}
         </h2>
-        {editable && (
+        {editable && onAdd && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="h-4 w-4 mr-1" />
             Add Material
@@ -291,7 +291,7 @@ export function MaterialsInventory({
                             "—"
                           )}
                         </td>
-                        {editable && (
+                        {editable && onRestock && (
                           <td className="p-2">
                             {restockId === m.id ? (
                               <div className="flex items-center gap-1">

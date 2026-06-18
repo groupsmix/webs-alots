@@ -216,7 +216,7 @@ export function OpticalPrescriptionTracker({
                 )}
 
                 {/* Status actions */}
-                {editable && rx.status !== "delivered" && (
+                {editable && onUpdateStatus && rx.status !== "delivered" && (
                   <div className="flex gap-2 pt-2 border-t">
                     {rx.status === "pending" && (
                       <button

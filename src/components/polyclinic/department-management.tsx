@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Plus, Users, Edit2, ChevronDown, ChevronUp } from "lucide-react";
+import { Building2, Plus, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export function DepartmentManagement({
             {departments.length}
           </Badge>
         </h2>
-        {editable && (
+        {editable && onAdd && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="h-4 w-4 mr-1" />
             Add Department
@@ -180,16 +180,13 @@ export function DepartmentManagement({
                     {dept.description && (
                       <p className="text-xs text-muted-foreground">{dept.description}</p>
                     )}
-                    {editable && (
+                    {editable && onToggleActive && (
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="text-xs h-7">
-                          <Edit2 className="h-3 w-3 mr-1" /> Edit
-                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="text-xs h-7"
-                          onClick={() => onToggleActive?.(dept.id, !dept.isActive)}
+                          onClick={() => onToggleActive(dept.id, !dept.isActive)}
                         >
                           {dept.isActive ? "Deactivate" : "Activate"}
                         </Button>

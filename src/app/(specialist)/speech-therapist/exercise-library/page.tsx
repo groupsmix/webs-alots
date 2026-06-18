@@ -4,7 +4,8 @@ import { BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { SpeechExerciseLibrary } from "@/components/para-medical/speech-exercise-library";
 import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser } from "@/lib/data/client";
+import { getCurrentUser, fetchSpeechExercises } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import type { SpeechExercise } from "@/lib/types/para-medical";
 
 export default function ExerciseLibraryPage() {
@@ -21,30 +22,30 @@ export default function ExerciseLibraryPage() {
         setLoading(false);
         return;
       }
-      setExercises([]);
+      const data = await fetchSpeechExercises(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setExercises(data);
       setLoading(false);
     }
     load().catch((err) => {
       if (!controller.signal.aborted) {
+        logger.warn("Failed to load speech exercises", {
+          context: "speech-therapist/exercise-library",
+          error: err,
+        });
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <PageLoader message="Loading exercise library..." />;
-  }
+  if (loading) return <PageLoader message="Loading exercise library..." />;
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">Failed to load exercise library.</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
