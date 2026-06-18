@@ -33,7 +33,7 @@ interface ServiceHealth {
   name: string;
   description: string;
   status: ServiceStatus;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   lastChecked: Date;
 }
 
@@ -77,7 +77,7 @@ interface HealthApiResponse {
 
 const STATUS_CONFIG: Record<
   ServiceStatus,
-  { label: string; color: string; bg: string; icon: React.ElementType }
+  { label: string; color: string; bg: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   operational: {
     label: "Operational",

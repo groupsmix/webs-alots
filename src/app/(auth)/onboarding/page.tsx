@@ -42,7 +42,7 @@ interface StepMeta {
   key: WizardStep;
   label: string;
   sublabel: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 // ---------------------------------------------------------------------------

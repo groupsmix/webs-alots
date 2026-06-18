@@ -758,3 +758,198 @@
 [data-width="100"] {
   width: 100%;
 }
+
+/* ============================================================================
+   OLTIGO marketing landing — scoped design system
+   Ported from groupsmix/oltigo-landing. Tokens + base styles are SCOPED to the
+   `.oltigo-landing` wrapper (rendered only on the root-domain SaaS landing) so
+   the dark "engineering-grade" palette never leaks into the light-theme app.
+   The @theme block registers the colors with Tailwind so utilities such as
+   `bg-ink`, `text-text`, `border-hairline`, `bg-emerald` generate correctly.
+   ========================================================================== */
+@theme {
+  --color-ink: #0a0d0e; /* canvas */
+  --color-surface: #13181a; /* raised */
+  --color-surface-high: #1c2225; /* higher elevation */
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-text: #f2f5f4;
+  --color-text-secondary: #97a1a2;
+  --color-text-muted: #5b6568;
+  --color-emerald: #10b981;
+  --color-emerald-deep: #0b7a5b;
+  --color-emerald-dim: #0e5e47;
+  --color-cyan: #4aa6c9;
+  --color-cyan-deep: #2d7e9e;
+  --color-sand: #e7c9a1;
+}
+
+/* --- Landing root: dark canvas + base typography (scoped) ----------------- */
+.oltigo-landing {
+  --font-arabic: var(--font-ibm-plex-arabic), "Readex Pro", system-ui, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.011em;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.oltigo-landing :is(h1, h2, h3, h4) {
+  font-weight: 560;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.oltigo-landing[dir="rtl"],
+[dir="rtl"] .oltigo-landing {
+  font-family: var(--font-arabic);
+  letter-spacing: 0;
+}
+[dir="rtl"] .oltigo-landing :is(h1, h2, h3, h4) {
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+.oltigo-landing :focus-visible {
+  outline: 2px solid var(--color-emerald);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.oltigo-landing ::selection {
+  background: color-mix(in srgb, var(--color-emerald) 28%, transparent);
+  color: var(--color-text);
+}
+/* hairline default for bare `border` usage inside the landing only */
+.oltigo-landing *,
+.oltigo-landing *::before,
+.oltigo-landing *::after {
+  border-color: var(--color-hairline);
+}
+
+/* --- Telemetry: mono, tabular, stays LTR even under RTL ------------------- */
+.telemetry {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  direction: ltr;
+  unicode-bidi: isolate;
+  letter-spacing: 0;
+}
+
+/* --- Texture -------------------------------------------------------------- */
+.film-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+.hairline {
+  border-color: var(--color-hairline);
+}
+.blueprint-grid {
+  background-image: radial-gradient(
+    circle at center,
+    rgba(74, 166, 201, 0.07) 0.5px,
+    transparent 0.5px
+  );
+  background-size: 26px 26px;
+}
+.ruled-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+.zellige-relief {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23E7C9A1' stroke-width='1' opacity='0.04'%3E%3Cpath d='M40 0l40 40-40 40L0 40z'/%3E%3Cpath d='M40 14l26 26-26 26-26-26z'/%3E%3Cpath d='M40 28l12 12-12 12-12-12z'/%3E%3Cpath d='M0 0h80v80H0z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
+
+/* --- Motion --------------------------------------------------------------- */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-ticker {
+  animation: ticker-scroll 42s linear infinite;
+}
+[dir="rtl"] .animate-ticker {
+  animation-direction: reverse;
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.animate-soft-pulse {
+  animation: soft-pulse 2.8s var(--ease-calm, cubic-bezier(0.22, 1, 0.36, 1)) infinite;
+}
+
+.reveal {
+  transition:
+    opacity 560ms var(--ease-calm, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform 560ms var(--ease-calm, cubic-bezier(0.22, 1, 0.36, 1));
+  will-change: opacity, transform;
+}
+html.js .reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.draw-line {
+  transform-origin: left center;
+  transition: transform 700ms var(--ease-precise, cubic-bezier(0.16, 1, 0.3, 1));
+}
+[dir="rtl"] .draw-line {
+  transform-origin: right center;
+}
+html.js .draw-line:not(.is-visible) {
+  transform: scaleX(0);
+}
+
+/* Reduced motion — settle everything, scoped to the landing */
+@media (prefers-reduced-motion: reduce) {
+  .oltigo-landing *,
+  .oltigo-landing *::before,
+  .oltigo-landing *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  html.js .reveal:not(.is-visible) {
+    opacity: 1;
+    transform: none;
+  }
+  html.js .draw-line:not(.is-visible) {
+    transform: scaleX(1);
+  }
+}
+
+/* --- Panels --------------------------------------------------------------- */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.02) inset,
+    0 24px 60px -28px rgba(0, 0, 0, 0.7);
+}
+.panel-high {
+  background: var(--color-surface-high);
+}
