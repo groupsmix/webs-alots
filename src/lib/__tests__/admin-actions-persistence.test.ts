@@ -13,6 +13,7 @@
  * createClinicService code paths from src/lib/admin-actions.ts.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createClinicUser, createClinicService } from "@/lib/admin-actions";
 
 // ── Mock setup (hoisted above the module-under-test import) ──────────
 
@@ -66,9 +67,6 @@ vi.mock("@/lib/email-templates", () => ({ staffWelcomeEmail: vi.fn(() => ({})) }
 vi.mock("@/lib/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
-
-// Import AFTER mocks are registered.
-import { createClinicUser, createClinicService } from "@/lib/admin-actions";
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -26,7 +26,7 @@ place; what is described here is configuration and verification.
 - In the main app, `src/app/api/copilotkit/route.ts` and
   `src/app/api/builder/sandbox/route.ts` are **deliberate `501` stubs**.
   Cloudflare zone routes are supposed to send those paths to `webs-alots-ai`
-  *before* the main Worker sees them. **If you get a `501` from `oltigo.com`,
+  _before_ the main Worker sees them. **If you get a `501` from `oltigo.com`,
   the zone routes are missing or misconfigured** (see step 2.2).
 - The AI Builder page is gated to `super_admin` and lives at
   **`/super-admin/builder`** (`src/app/(super-admin)/super-admin/builder/`).
@@ -86,16 +86,16 @@ The admin dashboards do **not** write to local state only. Each "Add" / "Edit" /
 bulk action calls a server action or API route that performs a real,
 tenant-scoped Supabase mutation and returns the persisted row:
 
-| UI surface                         | Code path                                                        | DB effect |
-| ---------------------------------- | ---------------------------------------------------------------- | --------- |
-| `/admin/doctors`, `/admin/receptionists` | `createClinicUser` / `updateClinicUser` (`src/lib/admin-actions.ts`) | `users` insert/update |
-| `/admin/services`                  | `createClinicService` (`src/lib/admin-actions.ts`)               | `services` insert |
-| `/admin/beds`                      | `createClinicRoom` (`src/lib/admin-actions.ts`)                  | `rooms` + `beds` insert |
-| `/admin/machines`                  | `createClinicDialysisMachine`                                    | `dialysis_machines` insert |
-| `/admin/departments`               | `createClinicDepartment`                                         | `departments` insert |
-| `/admin/lab-materials`             | `createClinicLabMaterial`                                        | `lab_materials` insert |
-| `/admin/lab-invoices`              | `createClinicLabInvoice`                                         | `lab_invoices` insert |
-| `/super-admin/clinics` bulk        | `POST /api/super-admin/clinics/bulk`                             | `clinics` update / `clinic_feature_overrides` upsert |
+| UI surface                               | Code path                                                            | DB effect                                            |
+| ---------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
+| `/admin/doctors`, `/admin/receptionists` | `createClinicUser` / `updateClinicUser` (`src/lib/admin-actions.ts`) | `users` insert/update                                |
+| `/admin/services`                        | `createClinicService` (`src/lib/admin-actions.ts`)                   | `services` insert                                    |
+| `/admin/beds`                            | `createClinicRoom` (`src/lib/admin-actions.ts`)                      | `rooms` + `beds` insert                              |
+| `/admin/machines`                        | `createClinicDialysisMachine`                                        | `dialysis_machines` insert                           |
+| `/admin/departments`                     | `createClinicDepartment`                                             | `departments` insert                                 |
+| `/admin/lab-materials`                   | `createClinicLabMaterial`                                            | `lab_materials` insert                               |
+| `/admin/lab-invoices`                    | `createClinicLabInvoice`                                             | `lab_invoices` insert                                |
+| `/super-admin/clinics` bulk              | `POST /api/super-admin/clinics/bulk`                                 | `clinics` update / `clinic_feature_overrides` upsert |
 
 All write helpers **throw** (server action) or return a non-2xx (API route) on a
 DB error, and the clients surface a **failure** toast — they cannot show a false

@@ -16,9 +16,10 @@
  */
 import { NextRequest } from "next/server";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { POST } from "@/app/api/super-admin/clinics/bulk/route";
 
-const CLINIC_A = "11110000-1111-1111-1111-111100001111";
-const CLINIC_B = "22220000-2222-2222-2222-222200002222";
+const CLINIC_A = "11111111-1111-4111-8111-111111111111";
+const CLINIC_B = "22222222-2222-4222-9222-222222222222";
 
 // ── Mocks (hoisted above the route import) ───────────────────────────
 
@@ -37,22 +38,17 @@ vi.mock("@/lib/supabase-server", () => ({
 
 // Pass-through auth wrapper that injects a super_admin context.
 vi.mock("@/lib/with-auth", () => ({
-  withAuth:
-    (handler: (req: NextRequest, ctx: unknown) => unknown) =>
-    (req: NextRequest) =>
-      handler(req, {
-        supabase: { from: vi.fn() },
-        user: { id: "auth-sa-1", email: "sa@oltigo.com" },
-        profile: { id: "sa-1", role: "super_admin", clinic_id: null },
-      }),
+  withAuth: (handler: (req: NextRequest, ctx: unknown) => unknown) => (req: NextRequest) =>
+    handler(req, {
+      supabase: { from: vi.fn() },
+      user: { id: "auth-sa-1", email: "sa@oltigo.com" },
+      profile: { id: "sa-1", role: "super_admin", clinic_id: null },
+    }),
 }));
 
 const logAuditEvent = vi.fn();
 vi.mock("@/lib/audit-log", () => ({ logAuditEvent: (...a: unknown[]) => logAuditEvent(...a) }));
 vi.mock("@/lib/whatsapp", () => ({ sendTextMessage: vi.fn().mockResolvedValue(undefined) }));
-
-// Import AFTER mocks.
-import { POST } from "@/app/api/super-admin/clinics/bulk/route";
 
 function bulkRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost:3000/api/super-admin/clinics/bulk", {
