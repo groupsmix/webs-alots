@@ -4,7 +4,7 @@ import { Scale } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 // eslint-disable-next-line import/order
-import { getCurrentUser } from "@/lib/data/client";
+import { getCurrentUser, fetchBodyMeasurements } from "@/lib/data/client";
 
 const BodyMeasurementTracker = dynamic(
   () =>
@@ -14,6 +14,8 @@ const BodyMeasurementTracker = dynamic(
   { ssr: false, loading: () => <div className="h-[400px] animate-pulse bg-muted rounded-lg" /> },
 );
 import type { BodyMeasurement } from "@/lib/types/para-medical";
+// eslint-disable-next-line import/order
+import { logger } from "@/lib/logger";
 // eslint-disable-next-line import/order
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -31,30 +33,30 @@ export default function MeasurementsPage() {
         setLoading(false);
         return;
       }
-      setMeasurements([]);
+      const data = await fetchBodyMeasurements(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setMeasurements(data);
       setLoading(false);
     }
     load().catch((err) => {
       if (!controller.signal.aborted) {
+        logger.warn("Failed to load body measurements", {
+          context: "nutritionist/measurements",
+          error: err,
+        });
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <PageLoader message="Loading measurements..." />;
-  }
+  if (loading) return <PageLoader message="Loading measurements..." />;
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">Failed to load measurements.</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );

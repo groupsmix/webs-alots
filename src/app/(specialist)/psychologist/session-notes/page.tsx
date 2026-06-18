@@ -4,7 +4,8 @@ import { Brain } from "lucide-react";
 import { useState, useEffect } from "react";
 import { TherapySessionNotes } from "@/components/para-medical/therapy-session-notes";
 import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser } from "@/lib/data/client";
+import { getCurrentUser, fetchTherapySessionNotes } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
 
 export default function SessionNotesPage() {
@@ -21,30 +22,30 @@ export default function SessionNotesPage() {
         setLoading(false);
         return;
       }
-      setSessions([]);
+      const data = await fetchTherapySessionNotes(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setSessions(data);
       setLoading(false);
     }
     load().catch((err) => {
       if (!controller.signal.aborted) {
+        logger.warn("Failed to load session notes", {
+          context: "psychologist/session-notes",
+          error: err,
+        });
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <PageLoader message="Loading session notes..." />;
-  }
+  if (loading) return <PageLoader message="Loading session notes..." />;
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">Failed to load session notes.</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );

@@ -104,7 +104,7 @@ export function ExerciseProgramBuilder({
                   <Badge variant={STATUS_VARIANT[program.status]} className="text-xs">
                     {program.status}
                   </Badge>
-                  {editable && program.status === "active" && (
+                  {editable && onUpdateStatus && program.status === "active" && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -117,7 +117,7 @@ export function ExerciseProgramBuilder({
                       <Pause className="h-3.5 w-3.5" />
                     </Button>
                   )}
-                  {editable && program.status === "paused" && (
+                  {editable && onUpdateStatus && program.status === "paused" && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -130,7 +130,7 @@ export function ExerciseProgramBuilder({
                       <Play className="h-3.5 w-3.5" />
                     </Button>
                   )}
-                  {editable && program.status !== "completed" && (
+                  {editable && onUpdateStatus && program.status !== "completed" && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -187,12 +187,12 @@ export function ExerciseProgramBuilder({
                           <span>Rest: {ex.rest_seconds}s</span>
                         </div>
                       </div>
-                      {editable && (
+                      {editable && onRemoveExercise && (
                         <Button
                           variant="ghost"
                           size="sm"
                           aria-label="Remove exercise"
-                          onClick={() => onRemoveExercise?.(program.id, idx)}
+                          onClick={() => onRemoveExercise(program.id, idx)}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-red-500" />
                         </Button>
@@ -201,7 +201,7 @@ export function ExerciseProgramBuilder({
                   ))}
                 </div>
 
-                {editable && (
+                {editable && onAddExercise && (
                   <div className="mt-3">
                     {adding === program.id ? (
                       <div className="space-y-3 p-3 border rounded-lg">

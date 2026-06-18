@@ -29,7 +29,13 @@ import { staffWelcomeEmail } from "@/lib/email-templates";
 import { getSiteUrl, getSupabaseServiceRoleKey } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { createClient, createScopedAdminClient } from "@/lib/supabase-server";
-import type { Json, TablesInsert, TablesUpdate } from "@/lib/types/database";
+import type {
+  DialysisMachineStatus,
+  Json,
+  LabInvoiceStatus,
+  TablesInsert,
+  TablesUpdate,
+} from "@/lib/types/database";
 
 // ─────────────────────────────────────────────
 // Shared context + row shapes
@@ -128,7 +134,9 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
       if (authError) {
         if (authError.message?.includes("already been registered")) {
           const { data: listData } = await admin.auth.admin.listUsers();
-          const existing = listData?.users?.find((u) => u.email === email);
+          const existing = listData?.users?.find(
+            (u: { email?: string | null; id: string }) => u.email === email,
+          );
           if (existing) authId = existing.id;
         } else {
           logger.warn("Failed to create auth account for staff — creating without login", {
@@ -376,4 +384,246 @@ export async function deleteClinicService(serviceId: string): Promise<void> {
     .eq("id", serviceId)
     .eq("clinic_id", clinicId);
   if (error) throw new Error(`Failed to delete service: ${error.message}`);
+}
+
+// ─────────────────────────────────────────────
+// Clinic center / specialist admin CRUD
+// ─────────────────────────────────────────────
+
+export interface CreateClinicDepartmentInput {
+  name: string;
+  nameAr?: string;
+  floor?: string;
+  description?: string;
+}
+
+export async function createClinicDepartment(input: CreateClinicDepartmentInput) {
+  const { clinicId, supabase } = await adminContext();
+  const { data, error } = await supabase
+    .from("departments")
+    .insert({
+      clinic_id: clinicId,
+      name: input.name.trim(),
+      name_ar: input.nameAr?.trim() || null,
+      floor: input.floor?.trim() || null,
+      description: input.description?.trim() || null,
+      is_active: true,
+    } as TablesInsert<"departments">)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create department: ${error.message}`);
+  return data;
+}
+
+export async function setClinicDepartmentActive(
+  departmentId: string,
+  isActive: boolean,
+): Promise<void> {
+  const { clinicId, supabase } = await adminContext();
+  const { error } = await supabase
+    .from("departments")
+    .update({
+      is_active: isActive,
+      updated_at: new Date().toISOString(),
+    } as TablesUpdate<"departments">)
+    .eq("id", departmentId)
+    .eq("clinic_id", clinicId);
+
+  if (error) throw new Error(`Failed to update department status: ${error.message}`);
+}
+
+export interface CreateClinicRoomInput {
+  roomNumber: string;
+  roomType: string;
+  floor?: string;
+  totalBeds: number;
+}
+
+export async function createClinicRoom(input: CreateClinicRoomInput) {
+  const { clinicId, supabase } = await adminContext();
+  const totalBeds = Math.max(1, Math.floor(input.totalBeds || 1));
+
+  const { data: room, error: roomError } = await supabase
+    .from("rooms")
+    .insert({
+      clinic_id: clinicId,
+      room_number: input.roomNumber.trim(),
+      room_type: input.roomType,
+      floor: input.floor?.trim() || null,
+      total_beds: totalBeds,
+      is_active: true,
+    } as TablesInsert<"rooms">)
+    .select()
+    .single();
+
+  if (roomError) throw new Error(`Failed to create room: ${roomError.message}`);
+
+  const bedRows = Array.from({ length: totalBeds }, (_, index) => ({
+    clinic_id: clinicId,
+    room_id: room.id,
+    department_id: room.department_id ?? null,
+    bed_number: String(index + 1),
+    status: "available",
+  })) as TablesInsert<"beds">[];
+
+  const { error: bedError } = await supabase.from("beds").insert(bedRows);
+  if (bedError) throw new Error(`Failed to create room beds: ${bedError.message}`);
+
+  return room;
+}
+
+export interface CreateClinicDialysisMachineInput {
+  machineName: string;
+  machineModel?: string;
+  serialNumber?: string;
+}
+
+export async function createClinicDialysisMachine(input: CreateClinicDialysisMachineInput) {
+  const { clinicId, supabase } = await adminContext();
+  const { data, error } = await supabase
+    .from("dialysis_machines")
+    .insert({
+      clinic_id: clinicId,
+      machine_name: input.machineName.trim(),
+      machine_model: input.machineModel?.trim() || null,
+      serial_number: input.serialNumber?.trim() || null,
+      status: "available",
+    } as TablesInsert<"dialysis_machines">)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create dialysis machine: ${error.message}`);
+  return data;
+}
+
+export async function updateClinicDialysisMachineStatus(
+  machineId: string,
+  status: DialysisMachineStatus,
+): Promise<void> {
+  const { clinicId, supabase } = await adminContext();
+  const patch: TablesUpdate<"dialysis_machines"> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  if (status === "available") patch.last_maintenance = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("dialysis_machines")
+    .update(patch)
+    .eq("id", machineId)
+    .eq("clinic_id", clinicId);
+
+  if (error) throw new Error(`Failed to update machine status: ${error.message}`);
+}
+
+export interface CreateClinicLabMaterialInput {
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  minThreshold: number;
+  unitCost?: number;
+  supplier?: string;
+}
+
+export async function createClinicLabMaterial(input: CreateClinicLabMaterialInput) {
+  const { clinicId, supabase } = await adminContext();
+  const { data, error } = await supabase
+    .from("lab_materials")
+    .insert({
+      clinic_id: clinicId,
+      name: input.name.trim(),
+      category: input.category.trim(),
+      quantity: input.quantity,
+      unit: input.unit.trim() || "pcs",
+      min_threshold: input.minThreshold,
+      unit_cost: input.unitCost ?? null,
+      supplier: input.supplier?.trim() || null,
+      last_restocked: new Date().toISOString(),
+    } as TablesInsert<"lab_materials">)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create lab material: ${error.message}`);
+  return data;
+}
+
+export async function restockClinicLabMaterial(
+  materialId: string,
+  quantity: number,
+): Promise<void> {
+  const { clinicId, supabase } = await adminContext();
+  const { data: current, error: fetchError } = await supabase
+    .from("lab_materials")
+    .select("quantity")
+    .eq("id", materialId)
+    .eq("clinic_id", clinicId)
+    .single();
+
+  if (fetchError) throw new Error(`Failed to load lab material: ${fetchError.message}`);
+
+  const { error } = await supabase
+    .from("lab_materials")
+    .update({
+      quantity: (current?.quantity ?? 0) + quantity,
+      last_restocked: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as TablesUpdate<"lab_materials">)
+    .eq("id", materialId)
+    .eq("clinic_id", clinicId);
+
+  if (error) throw new Error(`Failed to restock lab material: ${error.message}`);
+}
+
+export interface CreateClinicLabInvoiceInput {
+  invoiceNumber: string;
+  dentistName?: string;
+  dueDate?: string;
+  notes?: string;
+  items: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
+}
+
+export async function createClinicLabInvoice(input: CreateClinicLabInvoiceInput) {
+  const { clinicId, supabase } = await adminContext();
+  const subtotal = input.items.reduce((sum, item) => sum + item.total, 0);
+  const { data, error } = await supabase
+    .from("lab_invoices")
+    .insert({
+      clinic_id: clinicId,
+      invoice_number: input.invoiceNumber.trim(),
+      dentist_name: input.dentistName?.trim() || null,
+      due_date: input.dueDate || null,
+      notes: input.notes?.trim() || null,
+      items: input.items as Json,
+      subtotal,
+      tax_amount: 0,
+      total: subtotal,
+      currency: "MAD",
+      status: "draft",
+      issued_date: new Date().toISOString().split("T")[0],
+    } as TablesInsert<"lab_invoices">)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to create lab invoice: ${error.message}`);
+  return data;
+}
+
+export async function updateClinicLabInvoiceStatus(
+  invoiceId: string,
+  status: LabInvoiceStatus,
+): Promise<void> {
+  const { clinicId, supabase } = await adminContext();
+  const { error } = await supabase
+    .from("lab_invoices")
+    .update({
+      status,
+      paid_date: status === "paid" ? new Date().toISOString().split("T")[0] : null,
+      updated_at: new Date().toISOString(),
+    } as TablesUpdate<"lab_invoices">)
+    .eq("id", invoiceId)
+    .eq("clinic_id", clinicId);
+
+  if (error) throw new Error(`Failed to update lab invoice status: ${error.message}`);
 }

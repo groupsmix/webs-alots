@@ -146,7 +146,7 @@ export function DeliveryInvoicing({
         >
           <Truck className="h-4 w-4 mr-1" /> Deliveries
         </Button>
-        {editable && activeTab === "invoices" && (
+        {editable && onAddInvoice && activeTab === "invoices" && (
           <Button
             size="sm"
             variant="outline"
@@ -281,7 +281,7 @@ export function DeliveryInvoicing({
                             </p>
                           )}
                         </div>
-                        {editable && invoice.status === "draft" && (
+                        {editable && onUpdateInvoiceStatus && invoice.status === "draft" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -291,7 +291,7 @@ export function DeliveryInvoicing({
                             Send
                           </Button>
                         )}
-                        {editable && invoice.status === "sent" && (
+                        {editable && onUpdateInvoiceStatus && invoice.status === "sent" && (
                           <Button
                             size="sm"
                             variant="outline"

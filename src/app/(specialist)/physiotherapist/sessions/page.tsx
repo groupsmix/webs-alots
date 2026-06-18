@@ -4,7 +4,8 @@ import { ClipboardList } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PhysioSessionTracker } from "@/components/para-medical/physio-session-tracker";
 import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser } from "@/lib/data/client";
+import { getCurrentUser, fetchPhysioSessions } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import type { PhysioSession } from "@/lib/types/para-medical";
 
 export default function PhysioSessionsPage() {
@@ -21,30 +22,30 @@ export default function PhysioSessionsPage() {
         setLoading(false);
         return;
       }
-      setSessions([]);
+      const data = await fetchPhysioSessions(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setSessions(data);
       setLoading(false);
     }
     load().catch((err) => {
       if (!controller.signal.aborted) {
+        logger.warn("Failed to load physio sessions", {
+          context: "physiotherapist/sessions",
+          error: err,
+        });
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <PageLoader message="Loading sessions..." />;
-  }
+  if (loading) return <PageLoader message="Loading sessions..." />;
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">Failed to load sessions.</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );

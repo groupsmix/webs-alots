@@ -4,7 +4,8 @@ import { FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { SpeechProgressReports } from "@/components/para-medical/speech-progress-reports";
 import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser } from "@/lib/data/client";
+import { getCurrentUser, fetchSpeechProgressReports } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import type { SpeechProgressReport } from "@/lib/types/para-medical";
 
 export default function SpeechReportsPage() {
@@ -21,30 +22,30 @@ export default function SpeechReportsPage() {
         setLoading(false);
         return;
       }
-      setReports([]);
+      const data = await fetchSpeechProgressReports(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setReports(data);
       setLoading(false);
     }
     load().catch((err) => {
       if (!controller.signal.aborted) {
+        logger.warn("Failed to load speech reports", {
+          context: "speech-therapist/reports",
+          error: err,
+        });
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <PageLoader message="Loading reports..." />;
-  }
+  if (loading) return <PageLoader message="Loading reports..." />;
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">Failed to load progress reports.</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );

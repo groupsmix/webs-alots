@@ -1,9 +1,15 @@
 "use client";
 
-import { ensureLookups, fetchRows, _activeUserMap, type TableName } from "./_core";
+import { ensureLookups, fetchRows, _activeUserMap } from "./_core";
 
 // ─────────────────────────────────────────────
-// Pharmacy: Daily Sales
+// Pharmacy / Parapharmacy: Daily Sales
+//
+// Both modules write to the canonical `sales` table (with the
+// `is_parapharmacy` flag set to true for parapharmacy transactions).
+// Previously this function was reading from `pharmacy_sales` (a
+// non-existent table name used as a TypeScript cast), which meant
+// reads always returned an empty array while writes persisted fine.
 // ─────────────────────────────────────────────
 
 interface DailySaleItemView {
@@ -25,41 +31,47 @@ export interface DailySaleView {
   loyaltyPointsEarned: number;
 }
 
-interface PharmacySaleRaw {
+interface SaleRaw {
   id: string;
   clinic_id: string;
   patient_id: string | null;
+  patient_name: string | null;
   items: DailySaleItemView[] | null;
   total: number | null;
-  payment_method: string | null;
-  has_prescription?: boolean;
-  loyalty_points_earned?: number | null;
-  created_at: string;
+  currency: string;
+  payment_method: string;
+  has_prescription: boolean | null;
+  loyalty_points_earned: number | null;
+  date: string;
+  time: string;
 }
 
-export async function fetchDailySales(clinicId: string): Promise<DailySaleView[]> {
+export async function fetchDailySales(
+  clinicId: string,
+  options?: { parapharmacyOnly?: boolean },
+): Promise<DailySaleView[]> {
   await ensureLookups(clinicId);
-  const rows = await fetchRows<PharmacySaleRaw>("pharmacy_sales" as TableName, {
-    eq: [["clinic_id", clinicId]],
-    order: ["created_at", { ascending: false }],
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (options?.parapharmacyOnly) eq.push(["is_parapharmacy", true]);
+  const rows = await fetchRows<SaleRaw>("sales", {
+    eq,
+    order: ["date", { ascending: false }],
+    tenantClinicId: clinicId,
   });
-  return rows.map((r) => {
-    const dt = r.created_at ?? "";
-    return {
-      id: r.id,
-      date: dt.split("T")[0] ?? "",
-      time: dt.split("T")[1]?.slice(0, 5) ?? "",
-      patientName: r.patient_id
-        ? (_activeUserMap?.get(r.patient_id)?.name ?? "Patient")
-        : "Walk-in",
-      items: r.items ?? [],
-      total: r.total ?? 0,
-      currency: "MAD",
-      paymentMethod: (r.payment_method as "cash" | "card" | "insurance") ?? "cash",
-      hasPrescription: r.has_prescription ?? false,
-      loyaltyPointsEarned: r.loyalty_points_earned ?? 0,
-    };
-  });
+  return rows.map((r) => ({
+    id: r.id,
+    date: r.date ?? "",
+    time: typeof r.time === "string" ? r.time.slice(0, 5) : "",
+    patientName:
+      r.patient_name ??
+      (r.patient_id ? (_activeUserMap?.get(r.patient_id)?.name ?? "Patient") : "Walk-in"),
+    items: r.items ?? [],
+    total: r.total ?? 0,
+    currency: r.currency ?? "MAD",
+    paymentMethod: (r.payment_method as "cash" | "card" | "insurance") ?? "cash",
+    hasPrescription: r.has_prescription ?? false,
+    loyaltyPointsEarned: r.loyalty_points_earned ?? 0,
+  }));
 }
 
 // ─────────────────────────────────────────────

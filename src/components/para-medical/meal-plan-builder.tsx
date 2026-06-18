@@ -165,12 +165,12 @@ export function MealPlanBuilder({
                                   <span className="flex-1">{item.name}</span>
                                   <span className="text-muted-foreground">{item.quantity}</span>
                                   <span className="w-14 text-right">{item.calories} kcal</span>
-                                  {editable && (
+                                  {editable && onRemoveMealItem && (
                                     <button
                                       type="button"
                                       aria-label="Remove item"
                                       onClick={() =>
-                                        onRemoveMealItem?.(plan.id, expandedDay, slot, idx)
+                                        onRemoveMealItem(plan.id, expandedDay, slot, idx)
                                       }
                                     >
                                       <Trash2 className="h-3 w-3 text-red-500" />
@@ -180,7 +180,7 @@ export function MealPlanBuilder({
                               ))}
                             </div>
                           )}
-                          {editable && (
+                          {editable && onAddMealItem && (
                             <>
                               {addingSlot === `${plan.id}-${expandedDay}-${slot}` ? (
                                 <div className="mt-2 space-y-2 p-2 border rounded bg-muted/30">

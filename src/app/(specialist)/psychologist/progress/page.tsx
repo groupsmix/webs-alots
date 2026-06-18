@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser } from "@/lib/data/client";
+import { getCurrentUser, fetchTherapySessionNotes } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
 
 const MoodChart = dynamic(() => import("./mood-chart").then((m) => m.MoodChart), {
@@ -27,30 +28,30 @@ export default function ProgressTrackingPage() {
         setLoading(false);
         return;
       }
-      setSessions([]);
+      const data = await fetchTherapySessionNotes(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setSessions(data);
       setLoading(false);
     }
     load().catch((err) => {
       if (!controller.signal.aborted) {
+        logger.warn("Failed to load therapy sessions for progress", {
+          context: "psychologist/progress",
+          error: err,
+        });
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <PageLoader message="Loading progress data..." />;
-  }
+  if (loading) return <PageLoader message="Loading progress data..." />;
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">Failed to load progress data.</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );

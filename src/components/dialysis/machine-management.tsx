@@ -100,7 +100,7 @@ export function MachineManagement({
             {machines.length}
           </Badge>
         </h2>
-        {editable && (
+        {editable && onAdd && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="h-4 w-4 mr-1" />
             Add Machine
@@ -225,7 +225,7 @@ export function MachineManagement({
                       </span>
                     </div>
                   )}
-                  {editable && (
+                  {editable && onUpdateStatus && (
                     <div className="mt-2 flex gap-1 justify-center">
                       {machine.status === "available" && (
                         <Button
