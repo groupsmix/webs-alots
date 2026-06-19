@@ -31,7 +31,7 @@ the tenant layer while closing no real bypass. Three facts establish this:
    follows the same pattern: SECURITY DEFINER, granted to `anon`, it validates
    that `doctor_id` / `service_id` / `patient_id` belong to the supplied
    `clinic_id` by reading `users` / `services` directly. Its own comment states:
-   *"SECURITY DEFINER bypasses RLS, so we enforce tenant scoping manually."*
+   _"SECURITY DEFINER bypasses RLS, so we enforce tenant scoping manually."_
 
 2. **FORCE strips exactly the bypass those functions rely on.** With FORCE on,
    the owner is no longer exempt, so:
@@ -41,13 +41,13 @@ the tenant layer while closing no real bypass. Three facts establish this:
      `1` without FORCE and `0` with it.
    - The RLS helpers' read of `users` becomes subject to `users`' own policies,
      which call the helpers again → `infinite recursion detected in policy for
-     relation "users"` / empty results → **authenticated staff and admins are
+relation "users"` / empty results → **authenticated staff and admins are
      locked out of their own rows.** The blast radius is the whole tenant layer,
      not just booking.
 
 3. **FORCE closes nothing here.** The roles that carry tenant traffic — `anon`
    and `authenticated` — are not table owners and are already fully subject to
-   RLS *without* FORCE. The one role that bypasses RLS, `service_role`, does so
+   RLS _without_ FORCE. The one role that bypasses RLS, `service_role`, does so
    via the `BYPASSRLS` **role attribute**, which FORCE does not touch. So FORCE
    adds zero protection against either the public path or the service-role path;
    it only removes the owner bypass, and no application traffic connects as the
@@ -60,7 +60,7 @@ mandatory application-level `clinic_id` scoping**, not the sole tenant guard.
 > not a superuser, so FORCE subjects it to RLS and the breakage above is real.
 > On the local `supabase start` stack `postgres` is a superuser and always
 > bypasses RLS, so the breakage does **not** reproduce locally. That is why this
-> decision is pinned by a *structural* guard (assert nothing is force-enabled)
+> decision is pinned by a _structural_ guard (assert nothing is force-enabled)
 > rather than a live FORCE-toggle test — see Consequences.
 
 ## Decision
@@ -74,7 +74,7 @@ Enforced two ways:
    (`Guard against FORCE ROW LEVEL SECURITY`) rejects any migration that enables
    FORCE, with no live database required.
 2. **Database, `rls` job** — `supabase/tests/no_force_rls.test.sql` asserts that
-   no `public` table is force-enabled, that RLS stays *enabled* on the core PHI
+   no `public` table is force-enabled, that RLS stays _enabled_ on the core PHI
    tables, and that the tenant-critical helpers remain SECURITY DEFINER. Any of
    those flips fails the build loudly.
 

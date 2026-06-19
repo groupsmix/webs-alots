@@ -25,6 +25,6 @@ running them does not leave fixtures behind.
 - `booking_atomic_insert.test.sql` — pins the cross-tenant validation in the
   `booking_atomic_insert` SECURITY DEFINER RPC. See audit finding A2-03.
 - `no_force_rls.test.sql` — pins that no `public` table has `FORCE ROW LEVEL
-  SECURITY` enabled, that RLS stays enabled on the core PHI tables, and that the
+SECURITY` enabled, that RLS stays enabled on the core PHI tables, and that the
   tenant helpers stay SECURITY DEFINER. FORCE would break the booking RPC and
   the RLS-helper layer while closing no real bypass. See `docs/adr/0011-no-force-rls.md`.
