@@ -36,9 +36,7 @@ let dropped = 0;
 let kept = 0;
 for (const run of sarif.runs ?? []) {
   run.results = (run.results ?? []).filter((result) => {
-    const isSuppressed = (result.suppressions ?? []).some(
-      (s) => s.kind === "inSource",
-    );
+    const isSuppressed = (result.suppressions ?? []).some((s) => s.kind === "inSource");
     if (isSuppressed) {
       dropped += 1;
       return false;
