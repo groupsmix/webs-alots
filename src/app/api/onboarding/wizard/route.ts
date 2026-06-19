@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { TEMPLATE_PRESETS } from "@/lib/template-presets";
+import { hexColor, templateId } from "@/lib/validations/primitives";
 import { sendTextMessage } from "@/lib/whatsapp";
 
 // ---------------------------------------------------------------------------
@@ -37,9 +38,12 @@ const scheduleEntrySchema = z.object({
 });
 
 const brandingSchema = z.object({
-  primary_color: z.string().max(20).optional(),
-  secondary_color: z.string().max(20).optional(),
-  template_id: z.string().max(50).optional(),
+  // A8: enforce real hex colours and a known template id so we never persist
+  // branding the public site can't render. Defaults are still applied from the
+  // preset below when fields are omitted.
+  primary_color: hexColor.optional(),
+  secondary_color: hexColor.optional(),
+  template_id: templateId.optional(),
 });
 
 const wizardSchema = z.object({
