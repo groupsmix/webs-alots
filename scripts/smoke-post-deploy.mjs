@@ -40,6 +40,15 @@ const SMOKE_AI_COOKIE = process.env.SMOKE_AI_COOKIE || "";
 const SMOKE_AI_AUTH_HEADER = process.env.SMOKE_AI_AUTH_HEADER || "";
 const SMOKE_AI_EXPECT_STATUS = Number(process.env.SMOKE_AI_EXPECT_STATUS || 200);
 
+// Audit Task 14: paths that are 501 stubs in the main Worker and MUST be
+// zone-routed to the separate `webs-alots-ai` Worker in production. Comma-
+// separated; set empty to skip. /api/builder/sandbox can be added once its
+// unauthenticated GET behaviour is confirmed (it is POST-only today).
+const SMOKE_AI_WORKER_PATHS = (process.env.SMOKE_AI_WORKER_PATHS || "/api/copilotkit")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 /** Routes that must respond with a status below `maxStatus`. */
 const ROUTES = [
   { path: "/", maxStatus: 400 },
@@ -298,6 +307,47 @@ async function checkAuthNoindex() {
   }
 }
 
+/**
+ * Audit Task 14 — Layer 7: dual-Worker AI routing split.
+ *
+ * /api/copilotkit (and /api/builder/sandbox) are STUBS in the main
+ * `webs-alots` Worker that return HTTP 501. In production, Cloudflare zone
+ * routes must send these paths to the separate `webs-alots-ai` Worker BEFORE
+ * the main Worker sees them. The built-in failure signature of a missing or
+ * misordered route is therefore a 501 served from the main Worker — exactly
+ * what this probe catches. A correctly routed unauthenticated call is rejected
+ * by the AI Worker (typically 401/403/405), never answered by the 501 stub.
+ */
+async function checkAiWorkerRouting() {
+  if (SMOKE_AI_WORKER_PATHS.length === 0) {
+    console.log("· ai routing: skipped (SMOKE_AI_WORKER_PATHS empty)");
+    return;
+  }
+  for (const path of SMOKE_AI_WORKER_PATHS) {
+    try {
+      const { status, text } = await fetchText(BASE + path);
+      // 501 is the definitive stub signature; the "Route moved" body marker is
+      // stub-specific too and guards against the status code being changed.
+      const servedByStub = status === 501 || /"error"\s*:\s*"Route moved"/.test(text);
+      log(
+        !servedByStub,
+        servedByStub
+          ? `ai routing: ${path} → HTTP ${status} served by the 501 STUB in the main Worker — ` +
+              `the Cloudflare zone route to webs-alots-ai is missing or misordered`
+          : `ai routing: ${path} → HTTP ${status} (reached webs-alots-ai, not the 501 stub)`,
+      );
+      // Informational only: a routed unauthenticated call should be rejected.
+      if (!servedByStub && status >= 400 && ![401, 403, 405].includes(status)) {
+        console.log(
+          `· ai routing: ${path} returned ${status} (expected 401/403/405 unauthenticated) — review`,
+        );
+      }
+    } catch (err) {
+      log(false, `ai routing: ${path} request failed (${err?.message || err})`);
+    }
+  }
+}
+
 async function checkOptionalAiEndpoint() {
   if (!SMOKE_AI_PATH) {
     console.log("· ai smoke: skipped (SMOKE_AI_PATH not configured)");
@@ -355,6 +405,7 @@ async function checkOptionalAiEndpoint() {
   await checkHealthJson();
   await checkSecurityHeaders();
   await checkAuthNoindex();
+  await checkAiWorkerRouting();
   await checkOptionalAiEndpoint();
   console.log("");
   if (failures > 0) {
