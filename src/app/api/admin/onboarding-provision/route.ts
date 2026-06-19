@@ -79,6 +79,9 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       specialty,
       whatsapp_number,
       payment_gateway,
+      template,
+      theme_colors,
+      services,
     } = result.data;
 
     const typedAdmin = createAdminClient("super_admin");
@@ -107,6 +110,9 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
             phone: owner_phone ?? null,
             email: owner_email,
             owner_name,
+            ...(template ? { template } : {}),
+            ...(theme_colors && theme_colors.length > 0 ? { theme_colors } : {}),
+            ...(services && services.length > 0 ? { services } : {}),
           },
         })
         .select("id")

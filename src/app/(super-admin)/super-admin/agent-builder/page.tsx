@@ -2,7 +2,8 @@
 
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 
-import { Download, RotateCcw, Rocket, Save, Send, Sparkles } from "lucide-react";
+import { Download, Loader2, RotateCcw, Rocket, Save, Send, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage, type ChatMessageData } from "@/components/agent-builder/chat-message";
 import { presetPalettes } from "@/components/agent-builder/color-palette";
@@ -26,6 +27,13 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function inferClinicType(specialty: string): "dentist" | "pharmacy" | "doctor" {
+  const lower = specialty.toLowerCase();
+  if (lower.includes("dent")) return "dentist";
+  if (lower.includes("pharma")) return "pharmacy";
+  return "doctor";
 }
 
 function inferSpecialtyColors(specialty: string): string[] {
@@ -263,6 +271,8 @@ export default function AgentBuilderPage() {
     () => loadDraft()?.config ?? createEmptyConfig(),
   );
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [deploying, setDeploying] = useState(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -324,6 +334,80 @@ export default function AgentBuilderPage() {
     sessionStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
+  const appendAssistantMessage = useCallback((content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: generateId(), role: "assistant", content, timestamp: new Date() },
+    ]);
+  }, []);
+
+  const handleDeploy = useCallback(async () => {
+    if (deploying) return;
+
+    // The provisioning endpoint requires these fields; validate before POSTing.
+    const missing: string[] = [];
+    if (!config.name.trim()) missing.push("clinic name");
+    if (!config.email.trim()) missing.push("owner email");
+    if (!config.subdomain.trim()) missing.push("subdomain");
+    if (missing.length > 0) {
+      appendAssistantMessage(
+        `I can't deploy yet — I still need: ${missing.join(", ")}. Add those, then click Deploy again.`,
+      );
+      return;
+    }
+
+    setDeploying(true);
+    appendAssistantMessage(`Deploying **${config.name}** to ${config.subdomain}.oltigo.com…`);
+
+    try {
+      const res = await fetch("/api/admin/onboarding-provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinic_name: config.name.trim(),
+          clinic_type: inferClinicType(config.specialty),
+          tier: "vitrine",
+          subdomain: config.subdomain.trim(),
+          owner_name: config.name.trim(),
+          owner_email: config.email.trim(),
+          owner_phone: config.phone.trim() || undefined,
+          city: config.city.trim() || undefined,
+          specialty: config.specialty.trim() || undefined,
+          whatsapp_number: config.phone.trim() || undefined,
+          // Carry the builder's design into clinics.config.
+          template: config.template,
+          theme_colors: config.colors,
+          services: config.services,
+        }),
+      });
+
+      const payload = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        data?: { clinicId?: string; subdomain?: string };
+        error?: string;
+      } | null;
+
+      if (!res.ok || !payload?.ok) {
+        appendAssistantMessage(
+          `Couldn't deploy: ${payload?.error ?? `request failed (HTTP ${res.status})`}.`,
+        );
+        return;
+      }
+
+      sessionStorage.removeItem(LOCAL_STORAGE_KEY);
+      appendAssistantMessage(
+        `Deployed! **${config.name}** is live at ${config.subdomain}.oltigo.com. Opening the clinic…`,
+      );
+
+      const clinicId = payload.data?.clinicId;
+      router.push(clinicId ? `/super-admin/clinics/${clinicId}` : "/super-admin/clinics");
+    } catch {
+      appendAssistantMessage("Couldn't deploy: network error. Please try again.");
+    } finally {
+      setDeploying(false);
+    }
+  }, [config, deploying, router, appendAssistantMessage]);
+
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
       {/* Chat Panel */}
@@ -347,9 +431,19 @@ export default function AgentBuilderPage() {
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs">Reset</span>
             </Button>
-            <Button variant="default" size="sm" title="Deploy Site">
-              <Rocket className="mr-1 h-3.5 w-3.5" />
-              <span className="text-xs">Deploy</span>
+            <Button
+              variant="default"
+              size="sm"
+              title="Deploy Site"
+              onClick={handleDeploy}
+              disabled={deploying}
+            >
+              {deploying ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Rocket className="mr-1 h-3.5 w-3.5" />
+              )}
+              <span className="text-xs">{deploying ? "Deploying…" : "Deploy"}</span>
             </Button>
           </div>
         </div>

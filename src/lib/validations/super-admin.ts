@@ -36,6 +36,15 @@ export const clinicProvisionSchema = z.object({
   specialty: z.string().max(200).optional(),
   whatsapp_number: z.string().max(30).optional(),
   payment_gateway: z.enum(["cmi", "stripe", "cash"]).optional(),
+  // Optional design payload from the agent builder. Persisted into
+  // clinics.config so the provisioned site keeps the chosen look. Backward
+  // compatible — the onboarding wizard simply omits these.
+  template: z.enum(["modern", "classic", "minimal"]).optional(),
+  theme_colors: z
+    .array(z.string().regex(/^#[0-9a-fA-F]{3,8}$/))
+    .max(8)
+    .optional(),
+  services: z.array(z.string().min(1).max(120)).max(50).optional(),
 });
 
 export const churnPredictionQuerySchema = z.object({
