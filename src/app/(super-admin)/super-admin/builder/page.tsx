@@ -5,6 +5,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BuilderChatClient } from "@/components/builder/builder-chat-client";
+import { getActiveBuilderModels } from "@/lib/builder/models.server";
 import { createClient } from "@/lib/supabase-server";
 
 export const metadata: Metadata = {
@@ -33,13 +34,17 @@ export default async function BuilderPage() {
 
   if (profile?.role !== "super_admin") redirect("/unauthorized");
 
+  // The model picker reflects whichever providers are active in
+  // /admin/ai-config — managed entirely from the dashboard.
+  const models = await getActiveBuilderModels();
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <div className="flex items-center justify-between px-6 py-4 border-b bg-background flex-shrink-0">
         <div>
           <h1 className="text-lg font-semibold">AI Builder</h1>
           <p className="text-sm text-muted-foreground">
-            Build internal tools, reports, and scripts with Claude AI
+            Build internal tools, reports, and scripts with AI
           </p>
         </div>
         <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-md">
@@ -47,7 +52,7 @@ export default async function BuilderPage() {
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
-        <BuilderChatClient userId={user.id} />
+        <BuilderChatClient userId={user.id} models={models} />
       </div>
     </div>
   );

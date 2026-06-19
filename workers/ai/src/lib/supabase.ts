@@ -20,12 +20,19 @@ import { createServerClient } from "@supabase/ssr";
 export interface Env {
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
-  // The AI Builder runs on Groq (Llama 3.3 70B) — see handlers/builder-sandbox.ts.
+  // ── AI Builder provider secrets ───────────────────────────────────────
+  // The AI Builder routes to whichever provider the super_admin activates in
+  // /admin/ai-config (see handlers/builder-sandbox.ts → BUILDER_PROVIDERS).
+  // Each active provider needs its matching secret here; the handler returns
+  // a clear 503 naming the missing secret if one is selected but unset.
+  // GROQ is the default/fallback (free tier), so it is the only required one.
   GROQ_API_KEY: string;
-  // Optional: only the (currently dormant) CopilotKit runtime handler still
-  // uses Anthropic. Leave unset unless you re-enable the CopilotKit sidebar;
-  // handlers/copilotkit.ts returns a 500 "not configured" when it is absent.
-  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string; // also used by the dormant CopilotKit runtime
+  GOOGLE_GENERATIVE_AI_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  DEEPSEEK_API_KEY?: string;
+  MISTRAL_API_KEY?: string;
+  XAI_API_KEY?: string;
   // Optional: the builder no longer creates an E2B sandbox per request
   // (generated code is rendered client-side). Retained for when real
   // server-side code execution is wired back into builder-sandbox.ts.
