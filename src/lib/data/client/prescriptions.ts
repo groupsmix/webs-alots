@@ -28,6 +28,18 @@ interface PrescriptionRaw {
   created_at: string;
 }
 
+function mapPrescription(r: PrescriptionRaw): PrescriptionView {
+  return {
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
+    date: r.created_at?.split("T")[0] ?? "",
+    medications: r.items ?? [],
+    notes: r.notes ?? undefined,
+  };
+}
+
 export async function fetchPrescriptions(
   clinicId: string,
   doctorId?: string,
@@ -39,13 +51,24 @@ export async function fetchPrescriptions(
     eq,
     order: ["created_at", { ascending: false }],
   });
-  return rows.map((r) => ({
-    id: r.id,
-    patientId: r.patient_id,
-    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
-    date: r.created_at?.split("T")[0] ?? "",
-    medications: r.items ?? [],
-    notes: r.notes ?? undefined,
-  }));
+  return rows.map(mapPrescription);
+}
+
+/**
+ * B6: fetch a single patient's prescriptions on demand. Lets dashboards avoid
+ * loading every prescription in the clinic just to populate a detail panel.
+ */
+export async function fetchPatientPrescriptions(
+  clinicId: string,
+  patientId: string,
+): Promise<PrescriptionView[]> {
+  await ensureLookups(clinicId);
+  const rows = await fetchRows<PrescriptionRaw>("prescriptions", {
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
+    order: ["created_at", { ascending: false }],
+  });
+  return rows.map(mapPrescription);
 }

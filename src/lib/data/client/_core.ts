@@ -102,6 +102,8 @@ export async function fetchRows<T>(
     eq?: [string, unknown][];
     order?: [string, { ascending: boolean }];
     limit?: number;
+    /** Zero-based inclusive [from, to] window for offset pagination. */
+    range?: [number, number];
     gte?: [string, unknown];
     lte?: [string, unknown];
     inFilter?: [string, unknown[]];
@@ -134,6 +136,11 @@ export async function fetchRows<T>(
   // Apply an upper-bound limit to prevent unbounded result sets.
   // Callers can override with a smaller value via opts.limit.
   q = q.limit(opts?.limit ?? 1000);
+  // Offset pagination window (applied after limit so "load more" callers get
+  // a bounded page rather than the whole table).
+  if (opts?.range) {
+    q = q.range(opts.range[0], opts.range[1]);
+  }
   const { data, error } = await q;
   if (error) {
     logger.error("Query failed", { context: "data/client", table, error });

@@ -39,7 +39,7 @@ import {
   getCurrentUser,
   fetchPatients,
   fetchAppointments,
-  fetchPrescriptions,
+  fetchPatientPrescriptions,
   type PatientView,
   type AppointmentView,
   type PrescriptionView,
@@ -54,7 +54,11 @@ export default function AdminPatientDatabasePage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patientsList, setPatientsList] = useState<Patient[]>([]);
   const [appointmentsList, setAppointmentsList] = useState<AppointmentView[]>([]);
-  const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
+  const [clinicId, setClinicId] = useState<string | null>(null);
+  // B6: the selected patient's prescriptions are loaded on demand instead of
+  // pulling every prescription in the clinic up front.
+  const [selectedRx, setSelectedRx] = useState<PrescriptionView[]>([]);
+  const [rxLoading, setRxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -76,15 +80,14 @@ export default function AdminPatientDatabasePage() {
         setLoading(false);
         return;
       }
-      const [p, a, rx] = await Promise.all([
+      setClinicId(user.clinic_id);
+      const [p, a] = await Promise.all([
         fetchPatients(user.clinic_id),
         fetchAppointments(user.clinic_id),
-        fetchPrescriptions(user.clinic_id),
       ]);
       if (controller.signal.aborted) return;
       setPatientsList(p);
       setAppointmentsList(a);
-      setPrescriptionsList(rx);
       setLoading(false);
     }
     load().catch((err) => {
@@ -98,9 +101,31 @@ export default function AdminPatientDatabasePage() {
     };
   }, []);
 
+  // B6: load the selected patient's prescriptions on demand.
+  useEffect(() => {
+    if (!selectedPatient || !clinicId) {
+      setSelectedRx([]);
+      return;
+    }
+    const controller = new AbortController();
+    const patientId = selectedPatient.id;
+    setRxLoading(true);
+    setSelectedRx([]);
+    fetchPatientPrescriptions(clinicId, patientId)
+      .then((rx) => {
+        if (!controller.signal.aborted) setSelectedRx(rx);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setSelectedRx([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setRxLoading(false);
+      });
+    return () => controller.abort();
+  }, [selectedPatient, clinicId]);
+
   const patients = patientsList;
   const appointments = appointmentsList;
-  const prescriptions = prescriptionsList;
 
   const filtered = patients.filter(
     (p) =>
@@ -126,9 +151,6 @@ export default function AdminPatientDatabasePage() {
 
   const getPatientAppts = (patientId: string) =>
     appointments.filter((a) => a.patientId === patientId);
-
-  const getPatientPrescriptions = (patientId: string) =>
-    prescriptions.filter((rx) => rx.patientId === patientId);
 
   const openEditDialog = (patient: Patient) => {
     setEditing(patient);
@@ -445,30 +467,36 @@ export default function AdminPatientDatabasePage() {
 
                 <TabsContent value="prescriptions">
                   <div className="space-y-2 mt-2">
-                    {getPatientPrescriptions(selectedPatient.id).length === 0 && (
+                    {rxLoading && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Loading prescriptions…
+                      </p>
+                    )}
+                    {!rxLoading && selectedRx.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         No prescriptions
                       </p>
                     )}
-                    {getPatientPrescriptions(selectedPatient.id).map((rx) => (
-                      <div key={rx.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-medium flex items-center gap-1">
-                            <Pill className="h-3.5 w-3.5" />
-                            {rx.doctorName}
-                          </p>
-                          <span className="text-xs text-muted-foreground">{rx.date}</span>
-                        </div>
-                        <div className="space-y-1">
-                          {rx.medications.map((med, i) => (
-                            <p key={i} className="text-xs text-muted-foreground">
-                              <span className="font-medium text-foreground">{med.name}</span> —{" "}
-                              {med.dosage} for {med.duration}
+                    {!rxLoading &&
+                      selectedRx.map((rx) => (
+                        <div key={rx.id} className="border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium flex items-center gap-1">
+                              <Pill className="h-3.5 w-3.5" />
+                              {rx.doctorName}
                             </p>
-                          ))}
+                            <span className="text-xs text-muted-foreground">{rx.date}</span>
+                          </div>
+                          <div className="space-y-1">
+                            {rx.medications.map((med, i) => (
+                              <p key={i} className="text-xs text-muted-foreground">
+                                <span className="font-medium text-foreground">{med.name}</span> —{" "}
+                                {med.dosage} for {med.duration}
+                              </p>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </TabsContent>
               </Tabs>
