@@ -73,8 +73,8 @@ const DEFAULT_SLOT: TimeSlotFormData = {
 
 const DEFAULT_CLINIC_FORM: ClinicFormData = {
   name: "",
-  type: "doctor",
-  tier: "pro",
+  type: "",
+  tier: "",
   city: "",
   phone: "",
   email: "",
@@ -421,14 +421,22 @@ export default function OnboardingPage() {
       setError("Please enter a valid email address");
       return;
     }
+    if (!clinicForm.type) {
+      setError("Please select a clinic type");
+      return;
+    }
+    if (!clinicForm.tier) {
+      setError("Please select a subscription tier");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     try {
       const clinic = await createClinic({
         name: clinicForm.name,
-        type: clinicForm.type,
-        tier: clinicForm.tier,
+        type: clinicForm.type || "doctor",
+        tier: clinicForm.tier || "pro",
         subdomain: clinicForm.subdomain || undefined,
         config: {
           locale: "fr",
@@ -669,8 +677,8 @@ export default function OnboardingPage() {
       addRecentClinic({
         id: createdClinicId,
         name: clinicForm.name,
-        type: clinicForm.type,
-        tier: clinicForm.tier,
+        type: clinicForm.type || "doctor",
+        tier: clinicForm.tier || "pro",
         created_at: new Date().toISOString(),
         status: "active",
       });
@@ -690,8 +698,8 @@ export default function OnboardingPage() {
       addRecentClinic({
         id: createdClinicId,
         name: clinicForm.name,
-        type: clinicForm.type,
-        tier: clinicForm.tier,
+        type: clinicForm.type || "doctor",
+        tier: clinicForm.tier || "pro",
         created_at: new Date().toISOString(),
         status: "active",
       });

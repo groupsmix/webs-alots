@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
+const CLINIC_TYPE_PLACEHOLDER = "Select clinic type…";
+const CLINIC_TIER_PLACEHOLDER = "Select a subscription tier…";
+
 export interface ClinicFormData {
   name: string;
-  type: "doctor" | "dentist" | "pharmacy";
-  tier: "vitrine" | "cabinet" | "pro" | "premium" | "saas";
+  type: "" | "doctor" | "dentist" | "pharmacy";
+  tier: "" | "vitrine" | "cabinet" | "pro" | "premium" | "saas";
   city: string;
   phone: string;
   email: string;
@@ -60,6 +63,9 @@ export function OnboardingStepClinic({
               value={clinicForm.type}
               onChange={(e) => onUpdateField("type", e.target.value)}
             >
+              <option value="" disabled>
+                {CLINIC_TYPE_PLACEHOLDER}
+              </option>
               <option value="doctor">Doctor</option>
               <option value="dentist">Dentist</option>
               <option value="pharmacy">Pharmacy</option>
@@ -75,6 +81,9 @@ export function OnboardingStepClinic({
               value={clinicForm.tier}
               onChange={(e) => onUpdateField("tier", e.target.value)}
             >
+              <option value="" disabled>
+                {CLINIC_TIER_PLACEHOLDER}
+              </option>
               <option value="vitrine">Vitrine — 2,500-3,000 MAD</option>
               <option value="cabinet">Cabinet — 6,000-8,000 MAD</option>
               <option value="pro">Pro — 12,000-15,000 MAD</option>
