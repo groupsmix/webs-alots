@@ -34,15 +34,7 @@ const DOC = "MVP_SCOPE.md";
 
 // Tokens that match the code-identifier shape but are English/SQL keywords or
 // otherwise not symbols we expect to grep for. Extend deliberately.
-const SKIP = new Set([
-  "JSONB",
-  "true",
-  "false",
-  "null",
-  "AND",
-  "OR",
-  "NOT",
-]);
+const SKIP = new Set(["JSONB", "true", "false", "null", "AND", "OR", "NOT"]);
 
 const text = readFileSync(resolve(ROOT, DOC), "utf8");
 
@@ -68,11 +60,11 @@ for (const raw of spans) {
 function tracked(token) {
   // Literal, fixed-string search over tracked files, excluding the doc itself.
   try {
-    const out = execFileSync(
-      "git",
-      ["grep", "-l", "-F", "--", token, ":(exclude)" + DOC],
-      { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
-    );
+    const out = execFileSync("git", ["grep", "-l", "-F", "--", token, ":(exclude)" + DOC], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
     return out.split("\n").filter(Boolean);
   } catch {
     return []; // git grep exits 1 when there are no matches
@@ -103,5 +95,7 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-console.log(`✅ MVP_SCOPE.md scope-reference check passed — ${resolved.length} code anchors resolve:`);
+console.log(
+  `✅ MVP_SCOPE.md scope-reference check passed — ${resolved.length} code anchors resolve:`,
+);
 for (const a of resolved) console.log(`   • ${a.raw}`);
