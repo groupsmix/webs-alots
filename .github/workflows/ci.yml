@@ -521,6 +521,15 @@ jobs:
           python3 -m pip install --upgrade semgrep
           semgrep --config p/javascript --config p/owasp-top-ten --config p/secrets --config .semgrep/ --sarif --output semgrep.sarif .
 
+      # Honour inline `// nosemgrep` annotations. Semgrep still emits in-source
+      # suppressed findings into the SARIF, and GitHub code scanning renders
+      # them as PR review comments on changed lines — which then block merge
+      # under the `require conversation resolution` rule, defeating the reviewed
+      # annotation. Strip only those (genuine findings stay and keep blocking).
+      - name: Strip nosemgrep-suppressed results from SARIF
+        if: always() && hashFiles('semgrep.sarif') != ''
+        run: node scripts/strip-suppressed-sarif.mjs semgrep.sarif
+
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         if: always() && hashFiles('semgrep.sarif') != ''
