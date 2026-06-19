@@ -348,7 +348,7 @@ export function CookieConsent() {
       id="cookie-consent-banner"
       role="dialog"
       aria-label={t(locale, "cookie.ariaLabel")}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background shadow-lg"
+      className="fixed bottom-0 left-0 right-0 z-[60] border-t bg-background shadow-lg"
     >
       <div className="mx-auto max-w-5xl p-4 md:px-6">
         {/* Main banner */}

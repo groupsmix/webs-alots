@@ -4,6 +4,7 @@ import {
   Phone,
   ArrowLeft,
   Lock,
+  Loader2,
   Key,
   Mail,
   Eye,
@@ -656,7 +657,14 @@ export default function LoginPage() {
                     className="w-full h-11 text-sm font-semibold"
                     disabled={loading}
                   >
-                    {loading ? t(locale, "auth.signingIn") : t(locale, "auth.signIn")}
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t(locale, "auth.signingIn")}
+                      </>
+                    ) : (
+                      t(locale, "auth.signIn")
+                    )}
                   </Button>
                 </form>
               ) : method === "email-otp" ? (
