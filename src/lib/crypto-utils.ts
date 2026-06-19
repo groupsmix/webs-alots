@@ -109,3 +109,29 @@ export async function hmacSha256Hex(secret: string, message: string): Promise<st
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
   return bytesToHex(new Uint8Array(signature));
 }
+
+/**
+ * Base64-encode raw bytes in an edge-safe way (no Node `Buffer`).
+ */
+export function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  // Chunk to avoid blowing the call-stack on String.fromCharCode(...spread).
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Compute base64-encoded SHA-512 of a UTF-8 string using the Web Crypto API.
+ *
+ * Used by the CMI (Centre Monétique Interbancaire) `ver3` hash scheme, which
+ * is plain SHA-512 over the canonical payload with the store key appended —
+ * NOT an HMAC. Output is base64 to match what the CMI gateway sends back.
+ */
+export async function sha512Base64(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value);
+  const hashBuffer = await crypto.subtle.digest("SHA-512", data);
+  return bytesToBase64(new Uint8Array(hashBuffer));
+}

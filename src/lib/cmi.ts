@@ -16,7 +16,7 @@
  *   CMI_GATEWAY_URL  — CMI gateway URL (defaults to production)
  */
 
-import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+import { sha512Base64, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 
 // ---- Types ----
@@ -74,17 +74,50 @@ export function isCmiConfigured(): boolean {
   return getCmiConfig() !== null;
 }
 
-// ---- HMAC Signature ----
+// ---- CMI ver3 Hash ----
 
 /**
- * Generate HMAC-SHA256 hash for CMI request/response verification.
- * CMI requires fields to be sorted alphabetically and concatenated
- * with pipe (|) separator before hashing.
+ * Escape a parameter value for the CMI `ver3` hash payload.
+ *
+ * P0-1(b): CMI joins values with `|`, so any `|` (and the escape char `\`)
+ * inside a value MUST be escaped, otherwise the concatenation is ambiguous
+ * and two distinct field maps can serialize to the same input — a forgeable
+ * canonicalization. CMI's spec escapes `\` first (`\` → `\\`), then `|`
+ * (`|` → `\|`). Order matters: escaping `\` last would double-escape the
+ * backslash introduced by the `|` rule.
  */
-async function generateHash(fields: Record<string, string>, secretKey: string): Promise<string> {
-  const sortedKeys = Object.keys(fields).sort();
-  const hashInput = sortedKeys.map((k) => fields[k]).join("|");
-  return hmacSha256Hex(secretKey, hashInput);
+export function escapeCmiValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+}
+
+/**
+ * Generate the CMI `ver3` hash for request signing / callback verification.
+ *
+ * P0-1(a): CMI ver3 is **plain SHA-512** over the canonical payload with the
+ * store key appended — it is NOT an HMAC. The previous implementation used
+ * HMAC-SHA256 (hex), which the live CMI gateway rejects outright, so real
+ * card payments never validated.
+ *
+ * Canonical payload, per CMI's documented algorithm:
+ *   1. Sort parameter NAMES case-insensitively (the gateway lowercases for
+ *      ordering; sorting by the raw mixed-case key puts all uppercase keys
+ *      before lowercase ones and produces a different order than CMI).
+ *   2. Escape `\` and `|` in each value (see {@link escapeCmiValue}).
+ *   3. Join the escaped values with `|`.
+ *   4. Append the store key (also escaped) with a trailing `|` separator.
+ *   5. SHA-512 the UTF-8 bytes, base64-encoded.
+ */
+export async function generateHash(
+  fields: Record<string, string>,
+  secretKey: string,
+): Promise<string> {
+  const sortedKeys = Object.keys(fields).sort((a, b) =>
+    a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0,
+  );
+  const escapedValues = sortedKeys.map((k) => escapeCmiValue(fields[k] ?? ""));
+  // CMI appends the (escaped) store key to the pipe-joined values.
+  const hashInput = escapedValues.join("|") + "|" + escapeCmiValue(secretKey);
+  return sha512Base64(hashInput);
 }
 
 // ---- Payment Creation ----
@@ -106,6 +139,22 @@ export async function createCmiPayment(request: CmiPaymentRequest): Promise<CmiP
   }
 
   const currency = request.currency || "504"; // 504 = MAD (ISO 4217)
+
+  // P3: parse the shop origin once, up front. When NEXT_PUBLIC_SITE_URL is
+  // unset the origin allowlist below is skipped, so successUrl is otherwise
+  // unvalidated — guard the parse so a malformed URL returns a clean error
+  // instead of throwing out of the handler.
+  let shopOrigin: string;
+  try {
+    shopOrigin = new URL(request.successUrl).origin;
+  } catch {
+    return {
+      success: false,
+      formUrl: "",
+      formFields: {},
+      error: `Invalid success URL: ${request.successUrl}`,
+    };
+  }
 
   // W8-R-02: Whitelist successUrl, failUrl, callbackUrl origins to prevent
   // an attacker from setting an external shopurl that redirects the user to
@@ -145,7 +194,8 @@ export async function createCmiPayment(request: CmiPaymentRequest): Promise<CmiP
     okUrl: request.successUrl,
     failUrl: request.failUrl,
     callbackUrl: request.callbackUrl,
-    shopurl: request.successUrl.split("/").slice(0, 3).join("/"),
+    // P3: derive the shop origin with the URL parser, not string-splitting.
+    shopurl: shopOrigin,
     TranType: "PreAuth",
     lang: "fr",
     BillToName: request.customerName || "",
@@ -257,10 +307,11 @@ export async function verifyCmiCallback(
   }
 
   const expectedHash = await generateHash(fieldsToHash, config.secretKey);
-  const received = receivedHash.toLowerCase();
 
-  // Constant-time comparison to prevent timing attacks
-  if (!timingSafeEqual(expectedHash, received)) {
+  // P0-1(a): base64 is case-SENSITIVE, so do NOT lowercase the received hash
+  // (the old HMAC-hex scheme could, base64 cannot). Compare verbatim.
+  // Constant-time comparison to prevent timing attacks.
+  if (!timingSafeEqual(expectedHash, receivedHash)) {
     return null; // Invalid hash — potential tampering
   }
 

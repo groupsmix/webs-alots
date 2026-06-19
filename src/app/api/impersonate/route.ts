@@ -2,24 +2,19 @@ import { cookies } from "next/headers";
 import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logSecurityEvent } from "@/lib/audit-log";
+import {
+  COOKIE_CLINIC_ID,
+  COOKIE_CLINIC_NAME,
+  COOKIE_SESSION_ID,
+} from "@/lib/impersonation-cookies";
 import { logger } from "@/lib/logger";
 import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { impersonateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
-/**
- * A54.2: Use __Host- prefix in production to prevent Domain= attribute
- * on the cookie, which would allow subdomain leakage between clinic tenants
- * (e.g. clinic-a.oltigo.com setting a cookie readable by clinic-b.oltigo.com).
- *
- * __Host- cookies require: Secure, Path=/, no Domain attribute.
- * In dev (non-HTTPS), fall back to unprefixed names since __Host- requires Secure.
- */
+// Cookie names + options are shared with the user-level impersonation callback
+// (`/api/auth/impersonate-callback`) so both flows agree byte-for-byte.
 const IS_PROD = process.env.NODE_ENV === "production";
-const COOKIE_PREFIX = IS_PROD ? "__Host-" : "";
-const COOKIE_CLINIC_ID = `${COOKIE_PREFIX}sa_impersonate_clinic_id`;
-const COOKIE_CLINIC_NAME = `${COOKIE_PREFIX}sa_impersonate_clinic_name`;
-const COOKIE_SESSION_ID = `${COOKIE_PREFIX}sa_impersonate_session_id`;
 
 /**
  * POST /api/impersonate

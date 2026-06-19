@@ -29,6 +29,7 @@ import {
   LIGHTWEIGHT_API_PATHS,
   ROLE_ROUTE_MAP,
   ROLE_DASHBOARD_MAP,
+  safeRedirectPath,
 } from "@/lib/middleware/routes";
 import { checkSanctionedCountry } from "@/lib/middleware/sanctioned-countries";
 import {
@@ -67,22 +68,6 @@ function setTenantHeaders(
   response.headers.set(TENANT_HEADERS.subdomain, clinic.subdomain);
   response.headers.set(TENANT_HEADERS.clinicType, clinic.type);
   response.headers.set(TENANT_HEADERS.clinicTier, clinic.tier);
-}
-
-/**
- * S0-1-03: Sanitize a post-login redirect path. Rejects protocol-relative
- * values (`//evil.example`) and anything that isn't a simple same-origin
- * path, preventing open-redirect attacks via the `?redirect=` query param.
- */
-function safeRedirectPath(raw: string): string {
-  // TF-02: Normalize the path first to defeat Unicode look-alike slashes
-  // (e.g. U+2215 DIVISION SLASH, U+FF0F FULLWIDTH SOLIDUS) that bypass
-  // the naive startsWith("//") check above.
-  const normalized = decodeURIComponent(encodeURIComponent(raw)).normalize("NFKC");
-  // Only allow paths that start with exactly one slash followed by a
-  // non-slash character (or end of string for bare "/").
-  if (!/^\/[^/]/.test(normalized) && normalized !== "/") return "/";
-  return normalized;
 }
 
 /** Global body size cap (25 MB). Requests advertising a larger payload are

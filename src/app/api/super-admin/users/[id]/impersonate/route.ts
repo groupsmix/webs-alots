@@ -48,10 +48,22 @@ export const POST = (request: NextRequest, context: { params: Promise<{ id: stri
       const untypedClient = createUntypedAdminClient("impersonate");
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
+      // M-03 (parity with /api/impersonate): expire any previous active
+      // sessions for this actor before creating a new one, so a super_admin
+      // never accumulates multiple live impersonation rows. actor_id is the
+      // profile id (see insert below), matching how the callback binds the
+      // session to the caller.
+      // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant: expires all active sessions for this actor
+      await untypedClient
+        .from("impersonation_sessions")
+        .update({ ended_at: new Date().toISOString(), ended_reason: "superseded" })
+        .eq("actor_id", profile.id)
+        .is("ended_at", null);
+
       const { data: session, error: sessionError } = await untypedClient
         .from("impersonation_sessions")
         .insert({
-          actor_id: user.id,
+          actor_id: profile.id,
           clinic_id: targetUser.clinic_id,
           reason: "Initiated by super_admin via dashboard",
           expires_at: expiresAt,
