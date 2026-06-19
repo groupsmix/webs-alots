@@ -21,7 +21,10 @@ export interface Env {
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
   ANTHROPIC_API_KEY: string;
-  E2B_API_KEY: string;
+  // Optional: the builder no longer creates an E2B sandbox per request
+  // (generated code is rendered client-side). Retained for when real
+  // server-side code execution is wired back into builder-sandbox.ts.
+  E2B_API_KEY?: string;
 }
 
 interface ParsedCookie {

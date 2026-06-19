@@ -2,27 +2,57 @@
  * AI Builder sandbox handler.
  *
  * Moved from src/app/api/builder/sandbox/route.ts (main Next.js app) to
- * this standalone Worker. Streams Claude output back to the browser and
- * spins up an E2B sandbox for code execution.
+ * this standalone Worker. Streams Claude output back to the browser.
  *
  * Why dynamic imports? See workers/ai/src/handlers/copilotkit.ts header.
- * Heavy AI deps (ai SDK, @ai-sdk/anthropic, @e2b/code-interpreter) are
- * loaded inside the handler to avoid global-scope I/O / random ops that
- * Cloudflare Workers prohibit at module load.
+ * Heavy AI deps (ai SDK, @ai-sdk/anthropic) are loaded inside the handler
+ * to avoid global-scope I/O / random ops that Cloudflare Workers prohibit
+ * at module load.
+ *
+ * ── Message format (AI SDK v6) ────────────────────────────────────────
+ * The client (src/components/builder/builder-chat.tsx) is on AI SDK v6 and
+ * sends UIMessages (a `parts` array), NOT the legacy { role, content }
+ * shape. We validate the UIMessage envelope with zod, then convert to
+ * ModelMessages via convertToModelMessages() before handing them to
+ * streamText. The previous handler required `content: string` and rejected
+ * every v6 request with a 400 — see PR that introduced this comment.
+ *
+ * ── E2B ───────────────────────────────────────────────────────────────
+ * The generated code is rendered client-side (sandbox-preview.tsx builds a
+ * blob-URL iframe with Babel standalone). The earlier handler created an
+ * E2B sandbox per request and immediately killed it without ever executing
+ * anything — pure quota + latency waste. That has been removed. To add real
+ * server-side execution later, re-introduce `@e2b/code-interpreter` here and
+ * run the extracted code block inside the sandbox before streaming results.
  */
 
+import type { UIMessage } from "ai";
 import { z } from "zod";
 import { requireSuperAdmin, jsonResponse, type Env } from "../lib/supabase";
 
+// Allowlist of model IDs the builder may use. Keep in sync with
+// src/lib/builder/models.ts (BUILDER_MODELS) in the main app. A strict
+// enum prevents arbitrary model strings being forwarded to the Anthropic
+// API. The default mirrors DEFAULT_MODEL there.
+const BUILDER_MODEL_IDS = ["claude-sonnet-4-6", "claude-opus-4-8"] as const;
+
+// Lenient UIMessage part: we only consume text parts, but allow other
+// declared fields so future part kinds don't hard-fail validation.
+const uiMessagePartSchema = z.object({
+  type: z.string(),
+  text: z.string().optional(),
+});
+
+const uiMessageSchema = z.object({
+  id: z.string().optional(),
+  role: z.enum(["system", "user", "assistant"]),
+  parts: z.array(uiMessagePartSchema),
+});
+
 const requestSchema = z.object({
-  messages: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string(),
-    }),
-  ),
+  messages: z.array(uiMessageSchema).min(1),
   templateId: z.string().default("nextjs-report"),
-  modelId: z.string().default("claude-sonnet-4-20250514"),
+  modelId: z.enum(BUILDER_MODEL_IDS).default("claude-sonnet-4-6"),
 });
 
 // WARNING: This in-memory map does NOT survive across Cloudflare Worker
@@ -70,9 +100,6 @@ DOMAIN CONTEXT:
 
 export async function handleBuilderSandbox(request: Request, env: Env): Promise<Response> {
   try {
-    if (!env.E2B_API_KEY) {
-      return jsonResponse({ error: "E2B_API_KEY is not configured on webs-alots-ai" }, 500);
-    }
     if (!env.ANTHROPIC_API_KEY) {
       return jsonResponse({ error: "ANTHROPIC_API_KEY is not configured on webs-alots-ai" }, 500);
     }
@@ -81,7 +108,7 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
     if (!authResult.ok) return authResult.response;
     const { userId, supabase } = authResult;
 
-    const { allowed, remaining } = checkRateLimit(userId);
+    const { allowed } = checkRateLimit(userId);
     if (!allowed) {
       return jsonResponse(
         { error: "Rate limit exceeded. Max 20 builder requests per hour." },
@@ -101,16 +128,26 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
     const { messages, modelId, templateId } = parsed.data;
 
     // Dynamic imports — see header comment.
-    const [{ anthropic }, { Sandbox }, { streamText }] = await Promise.all([
+    const [{ createAnthropic }, { streamText, convertToModelMessages }] = await Promise.all([
       import("@ai-sdk/anthropic"),
-      import("@e2b/code-interpreter"),
       import("ai"),
     ]);
 
-    const sandbox = await Sandbox.create("base", {
-      apiKey: env.E2B_API_KEY,
-      timeoutMs: 120_000,
-    });
+    // Convert the v6 UIMessages (parts) to ModelMessages. The zod schema
+    // above already guarantees the { role, parts[].text } runtime shape
+    // convertToModelMessages needs; the cast bridges zod's inferred type
+    // to the SDK's discriminated-union UIMessage type.
+    let modelMessages;
+    try {
+      modelMessages = await convertToModelMessages(messages as unknown as UIMessage[]);
+    } catch (err) {
+      console.error("[builder/sandbox] convertToModelMessages failed:", err);
+      return jsonResponse({ error: "Could not parse messages" }, 400);
+    }
+
+    // Bind the provider to the Worker secret explicitly rather than relying
+    // on process.env mirroring inside the Workers runtime.
+    const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
     // Fire-and-forget usage log — builder_usage_logs is a platform-level
     // audit table (no clinic_id column) accessed only by super_admin.
@@ -123,21 +160,11 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
       created_at: new Date().toISOString(),
     });
 
-    void remaining; // available for response headers in future
-
     const result = streamText({
-      model: anthropic(modelId as "claude-sonnet-4-20250514"),
+      model: anthropic(modelId),
       system: SYSTEM_PROMPT,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      messages: messages as any,
+      messages: modelMessages,
       maxOutputTokens: 8192,
-      onFinish: async () => {
-        try {
-          await sandbox.kill();
-        } catch {
-          // sandbox already terminated
-        }
-      },
     });
 
     return result.toTextStreamResponse();
