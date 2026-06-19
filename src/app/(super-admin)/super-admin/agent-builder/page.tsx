@@ -148,10 +148,15 @@ function buildProvisionBody(config: ClinicConfig) {
     owner_phone: config.phone.trim() || undefined,
     city: config.city.trim() || undefined,
     specialty: config.specialty.trim() || undefined,
-    // Carry the builder's design through so the live site matches the preview.
+    // Canonical branding columns so the live site matches the preview.
     primary_color: config.colors[0],
     secondary_color: config.colors[1],
     template_id: config.template,
+    // Richer builder snapshot persisted into clinics.config: the full palette,
+    // the chosen template, and the generated service list.
+    template: config.template,
+    theme_colors: config.colors,
+    services: config.services,
   };
 }
 

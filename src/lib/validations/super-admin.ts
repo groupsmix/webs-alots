@@ -37,11 +37,21 @@ export const clinicProvisionSchema = z.object({
   whatsapp_number: z.string().max(30).optional(),
   payment_gateway: z.enum(["cmi", "stripe", "cash"]).optional(),
   // Optional design/branding carried over from the agent builder so the
-  // deployed site reflects the previewed design immediately. Kept optional
-  // and backward-compatible with the existing super-admin onboarding wizard.
+  // deployed site reflects the previewed design immediately. Kept optional and
+  // backward-compatible with the existing super-admin onboarding wizard.
+  //
+  // Canonical branding columns (consumed by getPublicBranding):
   primary_color: z.string().max(20).optional(),
   secondary_color: z.string().max(20).optional(),
   template_id: z.enum(["modern", "classic", "minimal"]).optional(),
+  // Richer builder snapshot persisted into clinics.config: the full palette,
+  // the chosen template, and the generated service list.
+  template: z.enum(["modern", "classic", "minimal"]).optional(),
+  theme_colors: z
+    .array(z.string().regex(/^#[0-9a-fA-F]{3,8}$/))
+    .max(8)
+    .optional(),
+  services: z.array(z.string().min(1).max(120)).max(50).optional(),
 });
 
 export const churnPredictionQuerySchema = z.object({
