@@ -228,6 +228,22 @@ async function fetchBrandingFromDb(
   // Fallback to config JSONB for phone/address/email when direct columns are null
   const cfg = (data.config ?? {}) as ClinicConfigJson;
 
+  // A7: defaults below keep the site renderable, but a clinic missing core
+  // branding usually means an incomplete provisioning/onboarding. Surface it
+  // once per cache TTL so it can be backfilled rather than silently masked.
+  const missingBranding = [
+    !data.name && "name",
+    !data.primary_color && "primary_color",
+    !data.template_id && "template_id",
+  ].filter((field): field is string => Boolean(field));
+  if (missingBranding.length > 0) {
+    logger.warn("Clinic branding incomplete — applying defaults", {
+      context: "data/public:fetchBrandingFromDb",
+      clinicId,
+      missingFields: missingBranding,
+    });
+  }
+
   return {
     logoUrl: data.logo_url ?? null,
     faviconUrl: data.favicon_url ?? null,
