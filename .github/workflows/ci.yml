@@ -312,6 +312,25 @@ jobs:
             exit 1
           fi
 
+      # ADR-0011: FORCE ROW LEVEL SECURITY must never be enabled. The tenant
+      # layer (public booking + the get_user_clinic_id / get_user_role /
+      # is_clinic_staff RLS helpers) is built on SECURITY DEFINER functions that
+      # read across the RLS boundary via the owner's bypass; FORCE strips that
+      # bypass -> broken public bookings + RLS-helper recursion, while closing
+      # neither the anon nor the service_role path (service_role bypasses via
+      # the BYPASSRLS role attribute, which FORCE does not touch).
+      # Companion DB assertion: supabase/tests/no_force_rls.test.sql.
+      - name: Guard against FORCE ROW LEVEL SECURITY
+        run: |
+          HITS=$(grep -rniE 'force[[:space:]]+row[[:space:]]+level[[:space:]]+security' supabase/migrations/ 2>/dev/null \
+            | grep -viE 'no[[:space:]]+force[[:space:]]+row[[:space:]]+level[[:space:]]+security' \
+            | grep -viE ':[0-9]+:[[:space:]]*--' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::FORCE ROW LEVEL SECURITY found in a migration. It breaks the SECURITY DEFINER tenant layer and closes no real bypass. See docs/adr/0011-no-force-rls.md:"
+            echo "$HITS"
+            exit 1
+          fi
+
       # CI-01: Check for pending DB migrations. Fails if migration files
       # have been added but the migration-check workflow hasn't verified them.
       - name: Migration file check
