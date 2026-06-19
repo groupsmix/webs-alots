@@ -21,12 +21,6 @@ const BuilderChat = dynamic(
   },
 );
 
-export function BuilderChatClient({
-  userId,
-  models,
-}: {
-  userId: string;
-  models: BuilderModel[];
-}) {
+export function BuilderChatClient({ userId, models }: { userId: string; models: BuilderModel[] }) {
   return <BuilderChat userId={userId} models={models} />;
 }
