@@ -25,8 +25,8 @@
  * Usage:   bun run scripts/check-mvp-scope-refs.mjs
  * Hooked into .github/workflows/ci.yml.
  */
-import { readFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = process.cwd();
