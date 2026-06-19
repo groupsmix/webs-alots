@@ -675,6 +675,32 @@ jobs:
       - name: Run Knip
         run: npx knip
 
+  # Audit Task 10: type-check the Supabase Edge Functions (Deno). They run
+  # outside the Next.js tsconfig (which excludes supabase/functions), so this
+  # is the only gate covering them — including parse-medical-document, which
+  # decrypts and parses PHI. All three functions type-check clean today.
+  # Starts non-blocking (continue-on-error) so the gate cannot block the
+  # pipeline on its first real run; promote to blocking once it is green in CI.
+  edge-functions:
+    runs-on: ubuntu-latest
+    name: Edge Functions Type Check (Deno)
+    steps:
+      # C-14: Pin all GH Actions to full SHA to prevent tag-mutation supply-chain attacks
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
+        with:
+          deno-version: v2.x
+
+      - name: Type check edge functions
+        # --no-lock: the functions import from esm.sh (a CDN that can rebuild
+        # artifacts), so a committed lockfile would cause spurious integrity
+        # failures. Imports are version-pinned in the URLs instead.
+        run: deno check --no-lock -c supabase/functions/deno.json supabase/functions/*/index.ts
+        continue-on-error: true
+
   # F-009 / F-054: Dedicated RLS integration test job that runs in parallel
   # with `ci` — never skipped due to lint or build failures. This is the
   # single highest-leverage quality investment: a malformed RLS policy in a

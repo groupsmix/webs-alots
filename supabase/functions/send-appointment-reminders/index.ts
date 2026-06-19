@@ -197,7 +197,11 @@ Deno.serve(async (req: Request) => {
     if (!appointments?.length) continue;
 
     // Load already-sent reminders for this window to avoid re-sending.
-    const appointmentIds = appointments.map((a: Appointment) => a.id);
+    // supabase-js mis-infers these to-one (`!patient_id`) joins as arrays;
+    // the runtime rows are object-shaped, so cast through `unknown` to the
+    // Appointment shape that models reality. See send query above.
+    const rows = appointments as unknown as Appointment[];
+    const appointmentIds = rows.map((a) => a.id);
     const { data: alreadySent } = await supabase
       .from("appointment_reminders")
       .select("appointment_id")
@@ -212,7 +216,7 @@ Deno.serve(async (req: Request) => {
     // hit the credentials table once per appointment.
     const tokenCache = new Map<string, string | null>();
 
-    for (const appt of appointments as Appointment[]) {
+    for (const appt of rows) {
       if (alreadySentIds.has(appt.id)) continue;
 
       const clinic = appt.clinic;

@@ -79,7 +79,7 @@ Retourne UNIQUEMENT ce JSON (sans Markdown):
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Convert a hex string to a Uint8Array backed by a concrete ArrayBuffer. */
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
   // Allocate a concrete ArrayBuffer so Web Crypto APIs accept the result
   // without further casting (avoids ArrayBufferLike vs ArrayBuffer mismatch).
@@ -106,8 +106,8 @@ async function decryptBuffer(encrypted: Uint8Array, phiKeyHex: string): Promise<
 
   // `.slice()` on a Uint8Array returns Uint8Array<ArrayBufferLike>; we need
   // a concrete ArrayBuffer for crypto.subtle APIs. Copy into new ArrayBuffers.
-  let iv: Uint8Array;
-  let ciphertext: Uint8Array;
+  let iv: Uint8Array<ArrayBuffer>;
+  let ciphertext: Uint8Array<ArrayBuffer>;
 
   // Detect versioned format (first byte == 0x01)
   if (encrypted[0] === 0x01 && encrypted.length > 13) {
@@ -145,10 +145,13 @@ async function getR2PresignedUrl(
   expiresIn = 60,
 ): Promise<string> {
   const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
-  const url = `${endpoint}/${bucketName}/${key}`;
+  // aws4fetch has no top-level `expiresIn` option — presigned-URL expiry is
+  // set via the X-Amz-Expires query param. Putting it in the URL both fixes
+  // the type error and actually enforces the intended expiry window (the
+  // previous `expiresIn` property was silently ignored at runtime).
+  const url = `${endpoint}/${bucketName}/${key}?X-Amz-Expires=${expiresIn}`;
   const request = await aws.sign(new Request(url, { method: "GET" }), {
     aws: { signQuery: true },
-    expiresIn,
   });
   return request.url;
 }
