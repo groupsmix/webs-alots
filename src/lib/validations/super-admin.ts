@@ -36,6 +36,12 @@ export const clinicProvisionSchema = z.object({
   specialty: z.string().max(200).optional(),
   whatsapp_number: z.string().max(30).optional(),
   payment_gateway: z.enum(["cmi", "stripe", "cash"]).optional(),
+  // Optional design/branding carried over from the agent builder so the
+  // deployed site reflects the previewed design immediately. Kept optional
+  // and backward-compatible with the existing super-admin onboarding wizard.
+  primary_color: z.string().max(20).optional(),
+  secondary_color: z.string().max(20).optional(),
+  template_id: z.enum(["modern", "classic", "minimal"]).optional(),
 });
 
 export const churnPredictionQuerySchema = z.object({
