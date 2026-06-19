@@ -53,8 +53,8 @@ export const POST = (request: NextRequest, context: { params: Promise<{ id: stri
       // never accumulates multiple live impersonation rows. actor_id is the
       // profile id (see insert below), matching how the callback binds the
       // session to the caller.
+      // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant: expires all active sessions for this actor
       await untypedClient
-        // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant: expires all active sessions for this actor
         .from("impersonation_sessions")
         .update({ ended_at: new Date().toISOString(), ended_reason: "superseded" })
         .eq("actor_id", profile.id)

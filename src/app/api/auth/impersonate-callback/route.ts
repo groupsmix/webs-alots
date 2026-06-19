@@ -53,6 +53,7 @@ export const GET = (request: NextRequest) =>
       // Look up the session with the untyped admin client (the table is not in
       // the generated Database type and RLS is super_admin-only anyway).
       const untypedClient = createUntypedAdminClient("impersonate-callback");
+      // nosemgrep: semgrep.tenant-scoping — impersonation_sessions is a super_admin session table looked up by session id, not clinic-scoped
       const { data: sessionRow } = await untypedClient
         .from("impersonation_sessions")
         .select("id, actor_id, clinic_id, expires_at, ended_at")
@@ -87,7 +88,7 @@ export const GET = (request: NextRequest) =>
 
       // Resolve the clinic name for the cookie + banner. Soft-deleted clinics
       // cannot be impersonated.
-      // nosemgrep: semgrep.tenant-scoping — super_admin cross-tenant read
+      // nosemgrep: semgrep.admin-client-guard — intentional cross-tenant: super_admin resolves the clinic name across tenants
       const adminClient = createAdminClient("impersonate-callback");
       const { data: clinic } = await adminClient
         .from("clinics")
@@ -98,6 +99,7 @@ export const GET = (request: NextRequest) =>
 
       if (!clinic) {
         // Clinic vanished/soft-deleted after the session was created — end it.
+        // nosemgrep: semgrep.tenant-scoping — ends this super_admin's own session by id; not clinic-scoped
         await untypedClient
           .from("impersonation_sessions")
           .update({ ended_at: new Date().toISOString(), ended_reason: "clinic_unavailable" })

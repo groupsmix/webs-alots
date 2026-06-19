@@ -14,6 +14,7 @@
  * fall back to unprefixed names.
  */
 
+// nosemgrep: semgrep.env-access — NODE_ENV selects the __Host- cookie prefix; reading it directly here avoids a low-level cookie helper importing the env validator
 const IS_PROD = process.env.NODE_ENV === "production";
 const COOKIE_PREFIX = IS_PROD ? "__Host-" : "";
 

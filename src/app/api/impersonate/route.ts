@@ -2,12 +2,12 @@ import { cookies } from "next/headers";
 import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logSecurityEvent } from "@/lib/audit-log";
-import { logger } from "@/lib/logger";
 import {
   COOKIE_CLINIC_ID,
   COOKIE_CLINIC_NAME,
   COOKIE_SESSION_ID,
 } from "@/lib/impersonation-cookies";
+import { logger } from "@/lib/logger";
 import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { impersonateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
