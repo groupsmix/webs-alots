@@ -190,6 +190,7 @@ export type AdminPurpose =
   | "register_clinic"
   | "impersonate"
   | "impersonate-precheck"
+  | "impersonate-callback"
   | "payments/cmi"
   | "features"
   | "directory"

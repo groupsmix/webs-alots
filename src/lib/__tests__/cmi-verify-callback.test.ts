@@ -44,14 +44,17 @@ describe("verifyCmiCallback", () => {
   });
 
   /**
-   * Helper: compute the expected HMAC hash the same way generateHash does
-   * internally (sort keys alphabetically, join values with |, HMAC-SHA256).
+   * Helper: compute the expected hash using the PRODUCTION implementation.
+   *
+   * P0-1: the previous helper reimplemented the (buggy) hash inline — sort
+   * keys, join with `|`, HMAC-SHA256 — which mirrored the production blind
+   * spot exactly, so no test could ever catch the canonicalization flaw or
+   * the wrong primitive. We now call the real `generateHash`, so the test
+   * and the code can never silently drift apart again.
    */
   async function computeExpectedHash(fields: Record<string, string>): Promise<string> {
-    const { hmacSha256Hex } = await import("@/lib/crypto-utils");
-    const sortedKeys = Object.keys(fields).sort();
-    const hashInput = sortedKeys.map((k) => fields[k]).join("|");
-    return hmacSha256Hex(TEST_SECRET_KEY, hashInput);
+    const { generateHash } = await import("@/lib/cmi");
+    return generateHash(fields, TEST_SECRET_KEY);
   }
 
   /**
@@ -276,5 +279,76 @@ describe("verifyCmiCallback", () => {
     const result = await verifyCmiCallback(params);
     expect(result).not.toBeNull();
     expect(result!.status).toBe("error");
+  });
+
+  // ── 9. P0-1(b): pipe-injection canonicalization ───────────────────
+
+  it("is not fooled by a '|' inside a field value (canonicalization)", async () => {
+    const { verifyCmiCallback, generateHash } = await import("@/lib/cmi");
+
+    // Two DIFFERENT field maps that, under an UNESCAPED `join("|")`, would
+    // serialize to the same input "...|x|y|..." and thus the same hash.
+    // With proper escaping they must produce DIFFERENT hashes.
+    const a: Record<string, string> = {
+      clientid: TEST_MERCHANT_ID,
+      amount: "100.00",
+      description: "x|y", // contains a pipe
+      oid: "order-pipe",
+      ProcReturnCode: "00",
+    };
+    const b: Record<string, string> = {
+      clientid: TEST_MERCHANT_ID,
+      amount: "100.00",
+      description: "x", // boundary shifted: "x" | (next field starts "y...")
+      descriptionx: "y", // crafted neighbour — only matters if unescaped
+      oid: "order-pipe",
+      ProcReturnCode: "00",
+    };
+
+    const hashA = await generateHash(a, TEST_SECRET_KEY);
+    const hashB = await generateHash(b, TEST_SECRET_KEY);
+    expect(hashA).not.toBe(hashB);
+
+    // And a callback whose hash was computed for `a` must NOT validate if an
+    // attacker swaps in a pipe-shifted value while keeping the old hash.
+    const tampered = { ...a, description: "x", extra: "|y", hash: hashA };
+    const result = await verifyCmiCallback(tampered);
+    expect(result).toBeNull();
+  });
+
+  it("accepts a value that legitimately contains a pipe when correctly signed", async () => {
+    const { verifyCmiCallback } = await import("@/lib/cmi");
+    const fields: Record<string, string> = {
+      clientid: TEST_MERCHANT_ID,
+      amount: "100.00",
+      description: "Soins | Détartrage", // real-world pipe in a label
+      oid: "order-pipe-ok",
+      ProcReturnCode: "00",
+    };
+    const hash = await computeExpectedHash(fields);
+    const result = await verifyCmiCallback({ ...fields, hash, hashAlgorithm: "ver3" });
+    expect(result).not.toBeNull();
+    expect(result!.orderId).toBe("order-pipe-ok");
+  });
+
+  // ── 10. P0-1(a): hash is SHA-512/base64, not HMAC-hex ─────────────
+
+  it("produces a base64 SHA-512 digest (not 64-char hex)", async () => {
+    const { generateHash } = await import("@/lib/cmi");
+    const hash = await generateHash({ a: "1", b: "2" }, TEST_SECRET_KEY);
+    // SHA-512 → 64 bytes → 88 base64 chars (with one '=' pad). Definitely not
+    // the 64-char lowercase hex an HMAC-SHA256 hex digest would be.
+    expect(hash).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(hash.length).toBe(88);
+    expect(hash).not.toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("sorts keys case-insensitively (BillToName vs billtoname order)", async () => {
+    const { generateHash } = await import("@/lib/cmi");
+    // Same logical fields, different key casing → identical canonical order →
+    // identical hash. (A case-SENSITIVE sort would order "Z" before "a".)
+    const h1 = await generateHash({ Zeta: "1", alpha: "2" }, TEST_SECRET_KEY);
+    const h2 = await generateHash({ alpha: "2", Zeta: "1" }, TEST_SECRET_KEY);
+    expect(h1).toBe(h2);
   });
 });

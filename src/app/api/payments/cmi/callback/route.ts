@@ -226,11 +226,16 @@ export async function POST(request: NextRequest) {
         const callbackAmount = parseFloat(callbackData.amount ?? "0");
         // CMI uses currency code "504" for MAD. Extract from raw params if available.
         const callbackCurrency = (params as Record<string, string>).currency || "504";
+        // P2-1: A NULL stored amount on an APPROVED callback must fail closed —
+        // previously the whole comparison was gated on `payment.amount !== null`,
+        // so a payment row with no amount let a callback for ANY value complete
+        // with zero amount validation. Treat a missing expected amount as a hard
+        // tampering signal, alongside NaN / mismatch / wrong-currency.
         if (
-          payment.amount !== null &&
-          (Number.isNaN(callbackAmount) ||
-            Math.abs(callbackAmount - payment.amount) > 0.01 ||
-            callbackCurrency !== "504")
+          payment.amount === null ||
+          Number.isNaN(callbackAmount) ||
+          Math.abs(callbackAmount - payment.amount) > 0.01 ||
+          callbackCurrency !== "504"
         ) {
           logger.error("CMI callback amount/currency mismatch — potential tampering", {
             context: "payments/cmi/callback",

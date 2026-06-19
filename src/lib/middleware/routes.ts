@@ -200,3 +200,51 @@ export function isPublicRoute(pathname: string): boolean {
 export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
+
+/**
+ * S0-1-03: Sanitize a post-login redirect path. Rejects protocol-relative
+ * values (`//evil.example`, `/\evil.example`) and anything that isn't a
+ * simple same-origin path, preventing open-redirect attacks via the
+ * `?redirect=` query param.
+ *
+ * Lives here (not inline in middleware.ts) so it is unit-testable without
+ * pulling in the Next.js edge runtime.
+ */
+export function safeRedirectPath(raw: string): string {
+  // P2-3: Decode percent-encoding so look-alike / encoded separators are
+  // resolved before validation (e.g. `%2F%2Fevil`, `%5Cevil`). A prior
+  // `decodeURIComponent(encodeURIComponent(raw))` round-trip re-encoded the
+  // `%` of any literal `%2F`/`%5C`, so encoded separators slipped through
+  // un-decoded. decodeURIComponent throws on malformed sequences (e.g. a lone
+  // `%E0%A4`), and this runs in the Worker hot path for every protected route,
+  // so it MUST be wrapped — an unhandled URIError would 500 the redirect.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return "/";
+  }
+
+  // NFKC-normalize first. NOTE: NFKC only folds *fullwidth* solidus (U+FF0F)
+  // and reverse solidus (U+FF3C/U+FE68) to `/`/`\` — it does NOT fold U+2215
+  // DIVISION SLASH, U+2044 FRACTION SLASH, or U+29F8 BIG SOLIDUS. So we cannot
+  // rely on normalization alone (the old code's comment claimed it defeated
+  // U+2215; it did not). The allowlist below is what actually closes this.
+  const normalized = decoded.normalize("NFKC");
+
+  // Bare root is fine.
+  if (normalized === "/") return "/";
+
+  // P2-2: A safe same-origin path is exactly one leading `/` followed by a
+  // character from a strict ASCII path-legal set. This rejects, in one check:
+  //   - `//evil.com`           (protocol-relative)
+  //   - `/\evil.com`           (browsers treat `\` as `/` in the authority)
+  //   - `/∕evil.com`, `/⁄x`    (Unicode slash look-alikes NFKC leaves intact)
+  //   - any other non-path leading byte
+  // The set is RFC 3986 unreserved + sub-delims + `:@%` (all legal at the start
+  // of a path segment); notably it excludes `/` and `\` and every non-ASCII
+  // char, so look-alike separators can never appear in the authority position.
+  if (!/^\/[A-Za-z0-9._~!$&'()*+,;=:@%-]/.test(normalized)) return "/";
+
+  return normalized;
+}

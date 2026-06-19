@@ -135,11 +135,16 @@ export function withAuth<RouteCtx = unknown>(
 
       if (!profile) {
         // Always fetch the real profile from the database if headers are missing or invalid
+        // P1-1: `.maybeSingle()` (not `.single()`) — a user authenticated by
+        // Supabase Auth but without a provisioned `users` row (signup/onboarding
+        // race, or a deleted profile) must surface as the 404 below, NOT as a
+        // throw that the outer catch turns into an opaque 500. This matches the
+        // authoritative middleware lookup, which already uses `.maybeSingle()`.
         const { data: dbProfile } = await supabase
           .from("users")
           .select("id, role, clinic_id")
           .eq("auth_id", user.id)
-          .single();
+          .maybeSingle();
         profile = dbProfile as { id: string; role: UserRole; clinic_id: string | null } | null;
       }
 
@@ -340,11 +345,16 @@ export function withAuthAnyRole<RouteCtx = unknown>(
       }
 
       if (!profile) {
+        // P1-1: `.maybeSingle()` (not `.single()`) — a user authenticated by
+        // Supabase Auth but without a provisioned `users` row (signup/onboarding
+        // race, or a deleted profile) must surface as the 404 below, NOT as a
+        // throw that the outer catch turns into an opaque 500. This matches the
+        // authoritative middleware lookup, which already uses `.maybeSingle()`.
         const { data: dbProfile } = await supabase
           .from("users")
           .select("id, role, clinic_id")
           .eq("auth_id", user.id)
-          .single();
+          .maybeSingle();
         profile = dbProfile as { id: string; role: UserRole; clinic_id: string | null } | null;
       }
 
