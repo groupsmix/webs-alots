@@ -2,20 +2,26 @@
  * AI Builder sandbox handler.
  *
  * Moved from src/app/api/builder/sandbox/route.ts (main Next.js app) to
- * this standalone Worker. Streams Claude output back to the browser.
+ * this standalone Worker. Streams model output back to the browser.
  *
  * Why dynamic imports? See workers/ai/src/handlers/copilotkit.ts header.
- * Heavy AI deps (ai SDK, @ai-sdk/anthropic) are loaded inside the handler
+ * Heavy AI deps (ai SDK, @ai-sdk/groq) are loaded inside the handler
  * to avoid global-scope I/O / random ops that Cloudflare Workers prohibit
  * at module load.
+ *
+ * ── Provider (free) ───────────────────────────────────────────────────
+ * The builder runs on Groq (Llama 3.3 70B) instead of Anthropic Claude so
+ * it works without a paid Anthropic key — Groq's free tier is fast and only
+ * needs a GROQ_API_KEY secret. The AI SDK keeps the rest of the handler
+ * provider-agnostic: to switch back to Claude (or any other provider), swap
+ * the dynamic import + createGroq() call and the model id below.
  *
  * ── Message format (AI SDK v6) ────────────────────────────────────────
  * The client (src/components/builder/builder-chat.tsx) is on AI SDK v6 and
  * sends UIMessages (a `parts` array), NOT the legacy { role, content }
  * shape. We validate the UIMessage envelope with zod, then convert to
  * ModelMessages via convertToModelMessages() before handing them to
- * streamText. The previous handler required `content: string` and rejected
- * every v6 request with a 400 — see PR that introduced this comment.
+ * streamText.
  *
  * ── E2B ───────────────────────────────────────────────────────────────
  * The generated code is rendered client-side (sandbox-preview.tsx builds a
@@ -30,11 +36,13 @@ import type { UIMessage } from "ai";
 import { z } from "zod";
 import { requireSuperAdmin, jsonResponse, type Env } from "../lib/supabase";
 
-// Allowlist of model IDs the builder may use. Keep in sync with
-// src/lib/builder/models.ts (BUILDER_MODELS) in the main app. A strict
-// enum prevents arbitrary model strings being forwarded to the Anthropic
-// API. The default mirrors DEFAULT_MODEL there.
-const BUILDER_MODEL_IDS = ["claude-sonnet-4-6", "claude-opus-4-8"] as const;
+// The model the builder runs on. Groq hosts Llama 3.3 70B on its free tier.
+// The client (src/components/builder/builder-chat.tsx) still sends its legacy
+// model-picker ids (e.g. "claude-sonnet-4-6"); we accept any string but pin
+// generation to this model until the main app's model picker
+// (src/lib/builder/models.ts) is updated to list Groq models. Hard-coding the
+// model also removes the need to allowlist arbitrary model strings.
+const BUILDER_MODEL = "llama-3.3-70b-versatile";
 
 // Lenient UIMessage part: we only consume text parts, but allow other
 // declared fields so future part kinds don't hard-fail validation.
@@ -52,7 +60,10 @@ const uiMessageSchema = z.object({
 const requestSchema = z.object({
   messages: z.array(uiMessageSchema).min(1),
   templateId: z.string().default("nextjs-report"),
-  modelId: z.enum(BUILDER_MODEL_IDS).default("claude-sonnet-4-6"),
+  // Accept the client's legacy model id but do not trust it — generation is
+  // pinned to BUILDER_MODEL below. z.string() avoids 400s while the picker UI
+  // still sends "claude-*" ids.
+  modelId: z.string().optional(),
 });
 
 // WARNING: This in-memory map does NOT survive across Cloudflare Worker
@@ -100,8 +111,8 @@ DOMAIN CONTEXT:
 
 export async function handleBuilderSandbox(request: Request, env: Env): Promise<Response> {
   try {
-    if (!env.ANTHROPIC_API_KEY) {
-      return jsonResponse({ error: "ANTHROPIC_API_KEY is not configured on webs-alots-ai" }, 500);
+    if (!env.GROQ_API_KEY) {
+      return jsonResponse({ error: "GROQ_API_KEY is not configured on webs-alots-ai" }, 500);
     }
 
     const authResult = await requireSuperAdmin(request, env);
@@ -125,11 +136,11 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
     if (!parsed.success) {
       return jsonResponse({ error: "Invalid request", details: parsed.error.flatten() }, 400);
     }
-    const { messages, modelId, templateId } = parsed.data;
+    const { messages, templateId } = parsed.data;
 
     // Dynamic imports — see header comment.
-    const [{ createAnthropic }, { streamText, convertToModelMessages }] = await Promise.all([
-      import("@ai-sdk/anthropic"),
+    const [{ createGroq }, { streamText, convertToModelMessages }] = await Promise.all([
+      import("@ai-sdk/groq"),
       import("ai"),
     ]);
 
@@ -147,7 +158,7 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
 
     // Bind the provider to the Worker secret explicitly rather than relying
     // on process.env mirroring inside the Workers runtime.
-    const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY });
+    const groq = createGroq({ apiKey: env.GROQ_API_KEY });
 
     // Fire-and-forget usage log — builder_usage_logs is a platform-level
     // audit table (no clinic_id column) accessed only by super_admin.
@@ -155,13 +166,13 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
     void (supabase as any).from("builder_usage_logs").insert({
       user_id: userId,
       template_id: templateId,
-      model_id: modelId,
+      model_id: BUILDER_MODEL,
       message_count: messages.length,
       created_at: new Date().toISOString(),
     });
 
     const result = streamText({
-      model: anthropic(modelId),
+      model: groq(BUILDER_MODEL),
       system: SYSTEM_PROMPT,
       messages: modelMessages,
       maxOutputTokens: 8192,

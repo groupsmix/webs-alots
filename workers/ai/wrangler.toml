@@ -20,11 +20,19 @@
 # handler so the bundle stays small (Next.js + OpenNext shim are ~3 MiB
 # of dead weight for two route handlers).
 #
-# Secrets that must be set BEFORE first deploy:
-#   wrangler secret put ANTHROPIC_API_KEY
-#   wrangler secret put E2B_API_KEY
-#   wrangler secret put NEXT_PUBLIC_SUPABASE_URL
-#   wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Secrets that must be set BEFORE first deploy (per environment, e.g. --env production):
+#   wrangler secret put GROQ_API_KEY --env production                 # AI Builder (Groq / Llama 3.3 70B) — REQUIRED
+#   wrangler secret put NEXT_PUBLIC_SUPABASE_URL --env production      # super_admin auth — REQUIRED
+#   wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY --env production # super_admin auth — REQUIRED
+#   wrangler secret put ANTHROPIC_API_KEY --env production            # OPTIONAL: only the dormant CopilotKit runtime
+#   wrangler secret put E2B_API_KEY --env production                  # OPTIONAL: reserved for server-side execution
+#
+# The NEXT_PUBLIC_SUPABASE_* values are public (they ship in the browser
+# bundle), but they are set ON THE WORKER rather than committed here — this
+# matches deploy.yml's convention of keeping the AI Worker's runtime values
+# out of the repo, and satisfies the gitleaks secret-scan in CI. If you prefer,
+# add them as plain (non-secret) Variables in the Cloudflare dashboard instead.
+# Staging uses a DIFFERENT Supabase project — set its values separately.
 #
 # Last key rotation: 2026-06-06 (initial)
 # =============================================================================
