@@ -130,6 +130,13 @@ export default function MultiClinicAnalyticsPage() {
         )}
       </div>
 
+      <div>
+        <h1 className="text-2xl font-bold">Multi-Clinic Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Revenue, appointments, and churn risk across all clinics
+        </p>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -283,6 +283,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
             <button
               type="button"
               onClick={() => toggleGroup(group.key)}
+              aria-expanded={isExpanded}
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
             >
               <group.icon className="h-3.5 w-3.5" />
