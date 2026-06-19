@@ -1,7 +1,8 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
-import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
+import { fetchRows, ensureLookups, _activeUserMap, type MutationResult } from "./_core";
 
 // ─────────────────────────────────────────────
 // Pharmacy: Products / Stock
@@ -153,8 +154,8 @@ interface SupplierRaw {
   clinic_id: string;
   name: string;
   contact_person?: string | null;
-  contact_phone?: string | null;
-  contact_email?: string | null;
+  phone?: string | null;
+  email?: string | null;
   address?: string | null;
   city?: string | null;
   categories?: string[] | null;
@@ -172,8 +173,8 @@ export async function fetchSuppliers(clinicId: string): Promise<SupplierView[]> 
     id: r.id,
     name: r.name,
     contactPerson: r.contact_person ?? "",
-    phone: r.contact_phone ?? "",
-    email: r.contact_email ?? "",
+    phone: r.phone ?? "",
+    email: r.email ?? "",
     address: r.address ?? "",
     city: r.city ?? "",
     categories: r.categories ?? [],
@@ -182,6 +183,61 @@ export async function fetchSuppliers(clinicId: string): Promise<SupplierView[]> 
     deliveryDays: r.delivery_days ?? 0,
     active: r.is_active ?? true,
   }));
+}
+
+export async function createSupplier(
+  clinicId: string,
+  input: {
+    name: string;
+    contactPerson?: string;
+    phone?: string;
+    email?: string;
+    city?: string;
+  },
+): Promise<MutationResult<SupplierView>> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert({
+      clinic_id: clinicId,
+      name: input.name,
+      contact_person: input.contactPerson || null,
+      phone: input.phone || null,
+      email: input.email || null,
+      city: input.city || null,
+      is_active: true,
+    })
+    .select(
+      "id, name, contact_person, phone, email, address, city, categories, rating, payment_terms, delivery_days, is_active",
+    )
+    .single();
+  if (error || !data) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return {
+      success: false,
+      error: {
+        code: error?.code ?? "unknown",
+        message: error?.message ?? "Failed to create supplier",
+      },
+    };
+  }
+  return {
+    success: true,
+    data: {
+      id: data.id,
+      name: data.name,
+      contactPerson: data.contact_person ?? "",
+      phone: data.phone ?? "",
+      email: data.email ?? "",
+      address: data.address ?? "",
+      city: data.city ?? "",
+      categories: data.categories ?? [],
+      rating: data.rating ?? 0,
+      paymentTerms: data.payment_terms ?? "N/A",
+      deliveryDays: data.delivery_days ?? 0,
+      active: data.is_active ?? true,
+    },
+  };
 }
 
 // ─────────────────────────────────────────────
