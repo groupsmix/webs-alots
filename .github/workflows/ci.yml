@@ -60,6 +60,12 @@ jobs:
       - name: Check RATE_LIMIT_KV namespace IDs
         run: node scripts/check-kv-namespace-collision.mjs
 
+      # Audit Task 5: ensure every code symbol MVP_SCOPE.md names (feature
+      # gates, env vars, KV bindings, files) still exists in the source tree,
+      # so the scope-control doc auditors read cannot silently drift from code.
+      - name: Check MVP_SCOPE.md references resolve
+        run: node scripts/check-mvp-scope-refs.mjs
+
       # CI-001: Enforce a warning ceiling that ratchets downward over time.
       # The baseline is stored in .eslint-warning-baseline and must be
       # reduced whenever warnings are fixed — never increased.
