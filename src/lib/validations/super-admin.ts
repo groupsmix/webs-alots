@@ -36,9 +36,16 @@ export const clinicProvisionSchema = z.object({
   specialty: z.string().max(200).optional(),
   whatsapp_number: z.string().max(30).optional(),
   payment_gateway: z.enum(["cmi", "stripe", "cash"]).optional(),
-  // Optional design payload from the agent builder. Persisted into
-  // clinics.config so the provisioned site keeps the chosen look. Backward
-  // compatible — the onboarding wizard simply omits these.
+  // Optional design/branding carried over from the agent builder so the
+  // deployed site reflects the previewed design immediately. Kept optional and
+  // backward-compatible with the existing super-admin onboarding wizard.
+  //
+  // Canonical branding columns (consumed by getPublicBranding):
+  primary_color: z.string().max(20).optional(),
+  secondary_color: z.string().max(20).optional(),
+  template_id: z.enum(["modern", "classic", "minimal"]).optional(),
+  // Richer builder snapshot persisted into clinics.config: the full palette,
+  // the chosen template, and the generated service list.
   template: z.enum(["modern", "classic", "minimal"]).optional(),
   theme_colors: z
     .array(z.string().regex(/^#[0-9a-fA-F]{3,8}$/))

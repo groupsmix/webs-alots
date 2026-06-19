@@ -82,6 +82,9 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       template,
       theme_colors,
       services,
+      primary_color,
+      secondary_color,
+      template_id,
     } = result.data;
 
     const typedAdmin = createAdminClient("super_admin");
@@ -102,6 +105,11 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           owner_email,
           phone: owner_phone ?? null,
           city: city ?? null,
+          // Design/branding from the agent builder (optional). When absent,
+          // the columns stay null and getPublicBranding() applies defaults.
+          primary_color: primary_color ?? null,
+          secondary_color: secondary_color ?? null,
+          template_id: template_id ?? null,
           config: {
             locale: "fr",
             currency: "MAD",
