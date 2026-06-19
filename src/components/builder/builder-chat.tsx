@@ -19,13 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { BUILDER_MODELS } from "@/lib/builder/models";
+import { findBuilderModel, type BuilderModel } from "@/lib/builder/models";
 import { BUILDER_TEMPLATES, type BuilderTemplate } from "@/lib/builder/templates";
 import { cn } from "@/lib/utils";
 import { SandboxPreview } from "./sandbox-preview";
 
 interface BuilderChatProps {
   userId: string;
+  /** Active providers' models, derived server-side from ai_provider_configs. */
+  models: BuilderModel[];
 }
 
 // Extract plain text from AI SDK v6 UIMessage parts
@@ -36,19 +38,22 @@ function getTextContent(parts: { type: string; text?: string }[]): string {
     .join("");
 }
 
-export function BuilderChat({ userId: _userId }: BuilderChatProps) {
+export function BuilderChat({ userId: _userId, models }: BuilderChatProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<BuilderTemplate>(BUILDER_TEMPLATES[0]);
-  const [selectedModelId, setSelectedModelId] = useState(BUILDER_MODELS[0].id);
+  const [selectedModelId, setSelectedModelId] = useState(models[0]?.id ?? "");
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages, sendMessage, status } = useChat({
-    transport: new TextStreamChatTransport({
-      api: "/api/builder/sandbox",
-      body: { templateId: selectedTemplate.id, modelId: selectedModelId },
-    }),
+    transport: new TextStreamChatTransport({ api: "/api/builder/sandbox" }),
   });
+
+  // Resolve the picked model so we can send both its id and the provider that
+  // serves it; the AI Worker routes on `provider`. Per-request body (below)
+  // guarantees the current selection is used even though the transport is
+  // created once.
+  const selectedModel = findBuilderModel(models, selectedModelId) ?? models[0];
 
   const isLoading = status === "streaming" || status === "submitted";
   const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
@@ -63,7 +68,16 @@ export function BuilderChat({ userId: _userId }: BuilderChatProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
+    sendMessage(
+      { text: input },
+      {
+        body: {
+          templateId: selectedTemplate.id,
+          modelId: selectedModel?.id,
+          provider: selectedModel?.provider,
+        },
+      },
+    );
     setInput("");
   }
 
@@ -115,8 +129,8 @@ export function BuilderChat({ userId: _userId }: BuilderChatProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {BUILDER_MODELS.map((m) => (
-                  <SelectItem key={m.id} value={m.id} className="text-xs">
+                {models.map((m) => (
+                  <SelectItem key={`${m.provider}:${m.id}`} value={m.id} className="text-xs">
                     {m.name}
                   </SelectItem>
                 ))}
@@ -220,8 +234,9 @@ export function BuilderChat({ userId: _userId }: BuilderChatProps) {
             </Button>
           </form>
           <p className="text-xs text-muted-foreground mt-1">
-            Powered by Claude {BUILDER_MODELS.find((m) => m.id === selectedModelId)?.name} + E2B
-            Sandboxes
+            {selectedModel
+              ? `Powered by ${selectedModel.name} · ${selectedModel.id}`
+              : "No active AI provider — enable one in AI Config to deploy."}
           </p>
         </div>
       </div>

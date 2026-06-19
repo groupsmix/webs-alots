@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import type { BuilderModel } from "@/lib/builder/models";
 
 // CF-BUNDLE-02: Lazy-load the BuilderChat client component.
 // builder-chat.tsx imports useChat from @ai-sdk/react and
@@ -20,6 +21,12 @@ const BuilderChat = dynamic(
   },
 );
 
-export function BuilderChatClient({ userId }: { userId: string }) {
-  return <BuilderChat userId={userId} />;
+export function BuilderChatClient({
+  userId,
+  models,
+}: {
+  userId: string;
+  models: BuilderModel[];
+}) {
+  return <BuilderChat userId={userId} models={models} />;
 }

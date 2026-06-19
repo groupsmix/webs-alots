@@ -5,44 +5,99 @@
  * this standalone Worker. Streams model output back to the browser.
  *
  * Why dynamic imports? See workers/ai/src/handlers/copilotkit.ts header.
- * Heavy AI deps (ai SDK, @ai-sdk/groq) are loaded inside the handler
+ * Heavy AI deps (ai SDK, @ai-sdk/* providers) are loaded inside the handler
  * to avoid global-scope I/O / random ops that Cloudflare Workers prohibit
- * at module load.
+ * at module load, and so only the selected provider's adapter is pulled in.
  *
- * ── Provider (free) ───────────────────────────────────────────────────
- * The builder runs on Groq (Llama 3.3 70B) instead of Anthropic Claude so
- * it works without a paid Anthropic key — Groq's free tier is fast and only
- * needs a GROQ_API_KEY secret. The AI SDK keeps the rest of the handler
- * provider-agnostic: to switch back to Claude (or any other provider), swap
- * the dynamic import + createGroq() call and the model id below.
+ * ── Multi-provider, dashboard-managed ─────────────────────────────────────
+ * The builder no longer hard-codes a single model. The main app's builder
+ * page derives the model picker from the **active** providers in
+ * `ai_provider_configs` (managed from /admin/ai-config) and sends both the
+ * chosen `provider` and `modelId` with each request. This handler routes to
+ * that provider using ITS OWN per-provider secret (GROQ_API_KEY,
+ * ANTHROPIC_API_KEY, …) — no platform key material (PHI-grade encrypted keys)
+ * is touched here. A provider the worker has no secret for returns a clear
+ * 503 so the operator knows exactly which secret to add.
  *
- * ── Message format (AI SDK v6) ────────────────────────────────────────
- * The client (src/components/builder/builder-chat.tsx) is on AI SDK v6 and
- * sends UIMessages (a `parts` array), NOT the legacy { role, content }
- * shape. We validate the UIMessage envelope with zod, then convert to
- * ModelMessages via convertToModelMessages() before handing them to
- * streamText.
+ * Keep `BUILDER_PROVIDERS` below in sync with `BUILDER_SUPPORTED_PROVIDERS`
+ * and `PROVIDER_MODELS` in the main app (src/lib/builder/models.server.ts,
+ * src/lib/ai/models.ts). The two codebases can't import each other (separate
+ * Workers / bundles), so the canonical model per provider is mirrored here.
  *
- * ── E2B ───────────────────────────────────────────────────────────────
+ * ── Message format (AI SDK v6) ────────────────────────────────────────────
+ * The client (src/components/builder/builder-chat.tsx) sends UIMessages (a
+ * `parts` array), NOT the legacy { role, content } shape. We validate the
+ * UIMessage envelope with zod, then convert to ModelMessages via
+ * convertToModelMessages() before handing them to streamText.
+ *
+ * ── E2B ───────────────────────────────────────────────────────────────────
  * The generated code is rendered client-side (sandbox-preview.tsx builds a
- * blob-URL iframe with Babel standalone). The earlier handler created an
- * E2B sandbox per request and immediately killed it without ever executing
- * anything — pure quota + latency waste. That has been removed. To add real
- * server-side execution later, re-introduce `@e2b/code-interpreter` here and
- * run the extracted code block inside the sandbox before streaming results.
+ * blob-URL iframe with Babel standalone). No server-side sandbox is created.
  */
 
 import type { UIMessage } from "ai";
 import { z } from "zod";
 import { requireSuperAdmin, jsonResponse, type Env } from "../lib/supabase";
 
-// The model the builder runs on. Groq hosts Llama 3.3 70B on its free tier.
-// The client (src/components/builder/builder-chat.tsx) still sends its legacy
-// model-picker ids (e.g. "claude-sonnet-4-6"); we accept any string but pin
-// generation to this model until the main app's model picker
-// (src/lib/builder/models.ts) is updated to list Groq models. Hard-coding the
-// model also removes the need to allowlist arbitrary model strings.
-const BUILDER_MODEL = "llama-3.3-70b-versatile";
+/** Providers the builder can route to, each with its own Worker secret. */
+type BuilderProvider = "groq" | "anthropic" | "google" | "openai" | "deepseek" | "mistral" | "xai";
+
+interface ProviderConfig {
+  /** Env key holding this provider's API key on the AI Worker. */
+  secretEnv:
+    | "GROQ_API_KEY"
+    | "ANTHROPIC_API_KEY"
+    | "GOOGLE_GENERATIVE_AI_API_KEY"
+    | "OPENAI_API_KEY"
+    | "DEEPSEEK_API_KEY"
+    | "MISTRAL_API_KEY"
+    | "XAI_API_KEY";
+  /** Canonical model id — mirrors PROVIDER_MODELS in the main app. */
+  defaultModel: string;
+  /** Native AI-SDK adapter, or an OpenAI-compatible endpoint. */
+  kind: "native" | "compat";
+  /** Base URL for `compat` providers (OpenAI-compatible REST surface). */
+  baseURL?: string;
+}
+
+const BUILDER_PROVIDERS: Record<BuilderProvider, ProviderConfig> = {
+  groq: { secretEnv: "GROQ_API_KEY", defaultModel: "llama-3.3-70b-versatile", kind: "native" },
+  anthropic: {
+    secretEnv: "ANTHROPIC_API_KEY",
+    defaultModel: "claude-sonnet-4-6",
+    kind: "native",
+  },
+  google: {
+    secretEnv: "GOOGLE_GENERATIVE_AI_API_KEY",
+    defaultModel: "gemini-3.5-flash",
+    kind: "native",
+  },
+  openai: { secretEnv: "OPENAI_API_KEY", defaultModel: "gpt-5.4-mini", kind: "native" },
+  deepseek: {
+    secretEnv: "DEEPSEEK_API_KEY",
+    defaultModel: "deepseek-v4-flash",
+    kind: "compat",
+    baseURL: "https://api.deepseek.com",
+  },
+  mistral: {
+    secretEnv: "MISTRAL_API_KEY",
+    defaultModel: "mistral-small-2603",
+    kind: "compat",
+    baseURL: "https://api.mistral.ai/v1",
+  },
+  xai: {
+    secretEnv: "XAI_API_KEY",
+    defaultModel: "grok-4.3",
+    kind: "compat",
+    baseURL: "https://api.x.ai/v1",
+  },
+};
+
+const SUPPORTED_PROVIDERS = Object.keys(BUILDER_PROVIDERS) as BuilderProvider[];
+
+function isBuilderProvider(value: string): value is BuilderProvider {
+  return (SUPPORTED_PROVIDERS as string[]).includes(value);
+}
 
 // Lenient UIMessage part: we only consume text parts, but allow other
 // declared fields so future part kinds don't hard-fail validation.
@@ -60,9 +115,10 @@ const uiMessageSchema = z.object({
 const requestSchema = z.object({
   messages: z.array(uiMessageSchema).min(1),
   templateId: z.string().default("nextjs-report"),
-  // Accept the client's legacy model id but do not trust it — generation is
-  // pinned to BUILDER_MODEL below. z.string() avoids 400s while the picker UI
-  // still sends "claude-*" ids.
+  // Which managed provider to route to (defaults to groq for legacy clients).
+  provider: z.string().optional(),
+  // The model id the picker showed. Generation is pinned to the provider's
+  // canonical model below; an arbitrary string never reaches the provider.
   modelId: z.string().optional(),
 });
 
@@ -109,12 +165,47 @@ DOMAIN CONTEXT:
 - Payments: CMI gateway (Moroccan Interbank)
 - Notifications: WhatsApp Business API with Darija templates`;
 
+/**
+ * Build an AI-SDK language model for the chosen provider, bound to the
+ * Worker's per-provider secret. `native` providers use their dedicated
+ * adapter; `compat` providers go through the OpenAI-compatible adapter with
+ * the provider's REST base URL. Returns `unknown` because each adapter has a
+ * distinct nominal type; streamText accepts any LanguageModel.
+ */
+async function buildModel(
+  provider: BuilderProvider,
+  config: ProviderConfig,
+  apiKey: string,
+  model: string,
+): Promise<unknown> {
+  if (config.kind === "compat") {
+    const { createOpenAICompatible } = await import("@ai-sdk/openai-compatible");
+    return createOpenAICompatible({ name: provider, apiKey, baseURL: config.baseURL ?? "" })(model);
+  }
+
+  switch (provider) {
+    case "anthropic": {
+      const { createAnthropic } = await import("@ai-sdk/anthropic");
+      return createAnthropic({ apiKey })(model);
+    }
+    case "google": {
+      const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
+      return createGoogleGenerativeAI({ apiKey })(model);
+    }
+    case "openai": {
+      const { createOpenAI } = await import("@ai-sdk/openai");
+      return createOpenAI({ apiKey })(model);
+    }
+    default: {
+      // groq (the only remaining native provider)
+      const { createGroq } = await import("@ai-sdk/groq");
+      return createGroq({ apiKey })(model);
+    }
+  }
+}
+
 export async function handleBuilderSandbox(request: Request, env: Env): Promise<Response> {
   try {
-    if (!env.GROQ_API_KEY) {
-      return jsonResponse({ error: "GROQ_API_KEY is not configured on webs-alots-ai" }, 500);
-    }
-
     const authResult = await requireSuperAdmin(request, env);
     if (!authResult.ok) return authResult.response;
     const { userId, supabase } = authResult;
@@ -138,11 +229,40 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
     }
     const { messages, templateId } = parsed.data;
 
-    // Dynamic imports — see header comment.
-    const [{ createGroq }, { streamText, convertToModelMessages }] = await Promise.all([
-      import("@ai-sdk/groq"),
-      import("ai"),
-    ]);
+    // ── Resolve the managed provider + its Worker secret ──────────────────
+    const requestedProvider = parsed.data.provider ?? "groq";
+    if (!isBuilderProvider(requestedProvider)) {
+      return jsonResponse(
+        {
+          error: `Unsupported provider "${requestedProvider}". Supported: ${SUPPORTED_PROVIDERS.join(", ")}.`,
+        },
+        400,
+      );
+    }
+    const providerConfig = BUILDER_PROVIDERS[requestedProvider];
+    const apiKey = env[providerConfig.secretEnv];
+    if (!apiKey) {
+      return jsonResponse(
+        {
+          error: `Provider "${requestedProvider}" is active in the dashboard but ${providerConfig.secretEnv} is not configured on the webs-alots-ai Worker. Add it with: wrangler secret put ${providerConfig.secretEnv}`,
+        },
+        503,
+      );
+    }
+
+    // Generation is pinned to the provider's canonical model. The client's
+    // modelId should already equal this (the picker shows one model per
+    // provider); we never forward an arbitrary model string to the provider.
+    const model = providerConfig.defaultModel;
+    if (parsed.data.modelId && parsed.data.modelId !== model) {
+      console.warn(
+        `[builder/sandbox] modelId "${parsed.data.modelId}" != canonical "${model}" for ${requestedProvider}; using canonical.`,
+      );
+    }
+
+    // Dynamic imports — see header comment. Only the selected provider's
+    // adapter is loaded.
+    const { streamText, convertToModelMessages } = await import("ai");
 
     // Convert the v6 UIMessages (parts) to ModelMessages. The zod schema
     // above already guarantees the { role, parts[].text } runtime shape
@@ -156,9 +276,7 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
       return jsonResponse({ error: "Could not parse messages" }, 400);
     }
 
-    // Bind the provider to the Worker secret explicitly rather than relying
-    // on process.env mirroring inside the Workers runtime.
-    const groq = createGroq({ apiKey: env.GROQ_API_KEY });
+    const languageModel = await buildModel(requestedProvider, providerConfig, apiKey, model);
 
     // Fire-and-forget usage log — builder_usage_logs is a platform-level
     // audit table (no clinic_id column) accessed only by super_admin.
@@ -166,13 +284,16 @@ export async function handleBuilderSandbox(request: Request, env: Env): Promise<
     void (supabase as any).from("builder_usage_logs").insert({
       user_id: userId,
       template_id: templateId,
-      model_id: BUILDER_MODEL,
+      model_id: `${requestedProvider}:${model}`,
       message_count: messages.length,
       created_at: new Date().toISOString(),
     });
 
     const result = streamText({
-      model: groq(BUILDER_MODEL),
+      // Each adapter returns its own nominal model type; streamText accepts
+      // any LanguageModel. The buildModel() return is intentionally `unknown`.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      model: languageModel as any,
       system: SYSTEM_PROMPT,
       messages: modelMessages,
       maxOutputTokens: 8192,
