@@ -98,6 +98,63 @@ function inferServices(specialty: string): string[] {
   ];
 }
 
+type ClinicType =
+  | "doctor"
+  | "dentist"
+  | "pharmacy"
+  | "clinic"
+  | "hospital"
+  | "laboratory"
+  | "veterinary";
+
+/** Map a free-text specialty to the clinic_type the provisioning API expects. */
+function inferClinicType(specialty: string): ClinicType {
+  const lower = specialty.toLowerCase();
+  if (lower.includes("dent")) return "dentist";
+  if (lower.includes("pharma")) return "pharmacy";
+  if (lower.includes("vet")) return "veterinary";
+  if (lower.includes("lab")) return "laboratory";
+  if (lower.includes("hospital") || lower.includes("hôpital")) return "hospital";
+  return "clinic";
+}
+
+const EMAIL_RE = /^[\w.-]+@[\w.-]+\.\w+$/;
+
+/**
+ * Return the list of human-readable fields still required before the design
+ * can be deployed. The provisioning API requires name, subdomain, owner email
+ * and a valid clinic type; specialty/city/phone make the generated site usable.
+ */
+function missingForDeploy(config: ClinicConfig): string[] {
+  const missing: string[] = [];
+  if (!config.name.trim()) missing.push("clinic name");
+  if (!config.subdomain.trim()) missing.push("subdomain");
+  if (!config.specialty.trim()) missing.push("specialty");
+  if (!config.city.trim()) missing.push("city");
+  if (!config.phone.trim()) missing.push("phone number");
+  if (!config.email.trim() || !EMAIL_RE.test(config.email.trim())) missing.push("a valid email");
+  return missing;
+}
+
+/** Build the request body for POST /api/admin/onboarding-provision. */
+function buildProvisionBody(config: ClinicConfig) {
+  return {
+    clinic_name: config.name.trim(),
+    clinic_type: inferClinicType(config.specialty),
+    tier: "vitrine" as const,
+    subdomain: config.subdomain.trim(),
+    owner_name: config.name.trim(),
+    owner_email: config.email.trim(),
+    owner_phone: config.phone.trim() || undefined,
+    city: config.city.trim() || undefined,
+    specialty: config.specialty.trim() || undefined,
+    // Carry the builder's design through so the live site matches the preview.
+    primary_color: config.colors[0],
+    secondary_color: config.colors[1],
+    template_id: config.template,
+  };
+}
+
 function processUserMessage(
   input: string,
   currentConfig: ClinicConfig,
@@ -262,7 +319,15 @@ export default function AgentBuilderPage() {
   const [config, setConfig] = useState<ClinicConfig>(
     () => loadDraft()?.config ?? createEmptyConfig(),
   );
+  const [deploying, setDeploying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const pushAssistantMessage = useCallback((content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: generateId(), role: "assistant", content, timestamp: new Date() },
+    ]);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -324,6 +389,64 @@ export default function AgentBuilderPage() {
     sessionStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
+  const handleDeploy = useCallback(async () => {
+    if (deploying) return;
+
+    const missing = missingForDeploy(config);
+    if (missing.length > 0) {
+      pushAssistantMessage(
+        `Before I can deploy, I still need: ${missing.join(", ")}. Add ${
+          missing.length > 1 ? "those" : "that"
+        } and click **Deploy** again.`,
+      );
+      return;
+    }
+
+    setDeploying(true);
+    pushAssistantMessage(`🚀 Deploying **${config.name}** to ${config.subdomain}.oltigo.com…`);
+
+    try {
+      const res = await fetch("/api/admin/onboarding-provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(buildProvisionBody(config)),
+      });
+
+      const json = (await res.json().catch(() => null)) as
+        | { ok: true; data: { clinicId: string; subdomain: string } }
+        | { ok: false; error?: { message?: string } }
+        | null;
+
+      if (!res.ok || !json || json.ok !== true) {
+        const reason =
+          (json && json.ok === false && json.error?.message) ||
+          (res.status === 403
+            ? "you need super-admin access to deploy"
+            : res.status === 409
+              ? "that subdomain is already in use — try another name"
+              : `the server returned ${res.status}`);
+        pushAssistantMessage(
+          `❌ Deploy failed: ${reason}. Nothing was created — you can try again.`,
+        );
+        return;
+      }
+
+      const url = `https://${json.data.subdomain}.oltigo.com`;
+      pushAssistantMessage(
+        `✅ **${config.name}** is live!\n\n🔗 ${url}\n\nThe clinic record, subdomain, and design have been provisioned. You can refine services, schedule, and content from the clinic's admin dashboard.`,
+      );
+      // Clear the saved draft now that it has been deployed.
+      sessionStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch {
+      pushAssistantMessage(
+        "❌ Deploy failed: couldn't reach the server. Check your connection and try again.",
+      );
+    } finally {
+      setDeploying(false);
+    }
+  }, [config, deploying, pushAssistantMessage]);
+
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
       {/* Chat Panel */}
@@ -347,9 +470,15 @@ export default function AgentBuilderPage() {
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs">Reset</span>
             </Button>
-            <Button variant="default" size="sm" title="Deploy Site">
-              <Rocket className="mr-1 h-3.5 w-3.5" />
-              <span className="text-xs">Deploy</span>
+            <Button
+              variant="default"
+              size="sm"
+              title="Deploy Site"
+              onClick={handleDeploy}
+              disabled={deploying}
+            >
+              <Rocket className={`mr-1 h-3.5 w-3.5 ${deploying ? "animate-pulse" : ""}`} />
+              <span className="text-xs">{deploying ? "Deploying…" : "Deploy"}</span>
             </Button>
           </div>
         </div>

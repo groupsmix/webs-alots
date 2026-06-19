@@ -43,6 +43,20 @@ export const phoneNumber = z
   .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format");
 
 /**
+ * A CSS hex colour: #RGB, #RRGGBB, or #RRGGBBAA (case-insensitive).
+ * Used for clinic branding so we never persist an unrenderable colour.
+ */
+export const hexColor = z
+  .string()
+  .regex(
+    /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/,
+    "Invalid hex colour (expected #RRGGBB)",
+  );
+
+/** The layout template ids a clinic site can render (see src/lib/templates.ts). */
+export const templateId = z.enum(["modern", "classic", "elegant", "bold", "minimal", "arabic"]);
+
+/**
  * Validate Moroccan phone numbers.
  * Accepted formats: +212 6XXXXXXXX, +212 7XXXXXXXX, 06XXXXXXXX, 07XXXXXXXX
  * (with or without spaces/dashes).
