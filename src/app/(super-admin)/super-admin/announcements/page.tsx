@@ -48,7 +48,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
-import { fetchAnnouncements, type Announcement } from "@/lib/super-admin-actions";
+import {
+  fetchAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  setAnnouncementActive,
+  deleteAnnouncement,
+  type Announcement,
+} from "@/lib/super-admin-actions";
 import { getLocalDateStr } from "@/lib/utils";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
@@ -189,68 +196,81 @@ export default function AnnouncementsPage() {
     setEditOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     const targetLabels: Record<string, string> = {
       all: "All Clinics",
       basic: "Basic Plan",
       standard: "Standard Plan",
       premium: "Premium Plan",
     };
-    if (editItem) {
-      setList((prev) =>
-        prev.map((a) =>
-          a.id === editItem.id
-            ? {
-                ...a,
-                title: formTitle,
-                message: formMessage,
-                type: formType,
-                target: formTarget,
-                targetLabel: targetLabels[formTarget] || formTarget,
-                expiresAt: formExpires || undefined,
-              }
-            : a,
-        ),
-      );
-    } else {
-      const newItem: Announcement = {
-        id: `ann-${Date.now()}`,
-        title: formTitle,
-        message: formMessage,
-        type: formType,
-        target: formTarget,
-        targetLabel: targetLabels[formTarget] || formTarget,
-        publishedAt:
-          formScheduleMode === "later" && formScheduleDate ? formScheduleDate : getLocalDateStr(),
-        expiresAt: formExpires || undefined,
-        active: true,
-        createdBy: "Super Admin",
-      };
-      setList((prev) => [newItem, ...prev]);
+    if (!formTitle.trim() || !formMessage.trim()) {
+      addToast("Title and message are required", "error");
+      return;
     }
-    setEditOpen(false);
-    addToast(
-      editItem
-        ? "Announcement updated"
-        : formScheduleMode === "later"
-          ? "Announcement scheduled"
-          : "Announcement published",
-      "success",
-    );
+    const payload = {
+      title: formTitle.trim(),
+      message: formMessage.trim(),
+      type: formType,
+      target: formTarget,
+      targetLabel: targetLabels[formTarget] || formTarget,
+      expiresAt: formExpires || undefined,
+    };
+    try {
+      if (editItem) {
+        const updated = await updateAnnouncement(editItem.id, payload);
+        setList((prev) => prev.map((a) => (a.id === editItem.id ? updated : a)));
+        addToast("Announcement updated", "success");
+      } else {
+        const created = await createAnnouncement({
+          ...payload,
+          publishedAt:
+            formScheduleMode === "later" && formScheduleDate ? formScheduleDate : getLocalDateStr(),
+        });
+        setList((prev) => [created, ...prev]);
+        addToast(
+          formScheduleMode === "later" ? "Announcement scheduled" : "Announcement published",
+          "success",
+        );
+      }
+      setEditOpen(false);
+    } catch (err) {
+      logger.warn("Failed to save announcement", { context: "page", error: err });
+      addToast(err instanceof Error ? err.message : "Failed to save announcement", "error");
+    }
   }
 
-  function handleDelete() {
-    if (deleteItem) {
-      setList((prev) => prev.filter((a) => a.id !== deleteItem.id));
-      addToast("Announcement deleted", "success");
+  async function handleDelete() {
+    if (!deleteItem) {
+      setDeleteOpen(false);
+      return;
     }
+    const target = deleteItem;
+    const previous = list;
+    setList((prev) => prev.filter((a) => a.id !== target.id));
     setDeleteOpen(false);
     setDeleteItem(null);
+    try {
+      await deleteAnnouncement(target.id);
+      addToast("Announcement deleted", "success");
+    } catch (err) {
+      setList(previous);
+      logger.warn("Failed to delete announcement", { context: "page", error: err });
+      addToast(err instanceof Error ? err.message : "Failed to delete announcement", "error");
+    }
   }
 
-  function toggleActive(item: Announcement) {
-    setList((prev) => prev.map((a) => (a.id === item.id ? { ...a, active: !a.active } : a)));
-    addToast(item.active ? "Announcement archived" : "Announcement activated", "success");
+  async function toggleActive(item: Announcement) {
+    const previous = list;
+    const next = !item.active;
+    setList((prev) => prev.map((a) => (a.id === item.id ? { ...a, active: next } : a)));
+    try {
+      await setAnnouncementActive(item.id, next);
+      addToast(next ? "Announcement activated" : "Announcement archived", "success");
+    } catch (err) {
+      setList(previous);
+      logger.warn("Failed to toggle announcement", { context: "page", error: err });
+      addToast(err instanceof Error ? err.message : "Failed to update announcement", "error");
+    }
   }
 
   if (loading) {
