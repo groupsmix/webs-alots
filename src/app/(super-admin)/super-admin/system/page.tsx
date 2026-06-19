@@ -334,6 +334,7 @@ export default function SystemStatusPage() {
               { label: "System Status" },
             ]}
           />
+          <h1 className="text-2xl font-bold">System Status</h1>
           <div className="flex items-center gap-3 text-sm">
             <Link href="/super-admin/system/health" className="text-primary underline">
               Health
