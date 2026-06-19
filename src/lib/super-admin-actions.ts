@@ -792,12 +792,14 @@ async function logAnnouncementActivity(
   description: string,
 ): Promise<void> {
   try {
-    await supabase.from("activity_logs").insert({
-      action,
-      description,
-      type: "announcement",
-      timestamp: new Date().toISOString(),
-    });
+    await supabase // nosemgrep: tenant-scoping — global super-admin audit event; announcements are platform-wide (no clinic_id) so this audit row is not clinic-scoped
+      .from("activity_logs")
+      .insert({
+        action,
+        description,
+        type: "announcement",
+        timestamp: new Date().toISOString(),
+      });
   } catch (err) {
     logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", error: err });
   }

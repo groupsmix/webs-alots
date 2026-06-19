@@ -50,6 +50,11 @@ rules:
           #                             directly is the service-level pattern.
           #   - `ai_provider_configs`— global provider config; no clinic_id.
           #   - `ai_task_configs`    — global per-task model routing pins; no clinic_id.
+          #   - `announcements`      — platform-wide super-admin broadcasts; the
+          #                             table has NO clinic_id column (see
+          #                             00005_schema_gaps.sql). Targeting is done
+          #                             via the `target`/`target_label` columns,
+          #                             not tenant ownership.
           #
           # All other queue / processed-events tables (notification_queue,
           # processed_stripe_events, processed_whatsapp_messages,
@@ -64,7 +69,7 @@ rules:
           # annotated rather than whitelisted, so a future bare
           # .from("users").select("*") still triggers a warning.
           regex: |-
-            ^(?!["'](clinics|ai_provider_configs|ai_task_configs)["']).*$
+            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements)["']).*$
       # Any .eq("clinic_id", ...) anywhere in the surrounding method chain
       # makes this query tenant-scoped. Semgrep normalises JS string quotes,
       # but both variants are kept for belt-and-suspenders parity with the

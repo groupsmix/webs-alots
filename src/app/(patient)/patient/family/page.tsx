@@ -85,7 +85,7 @@ export default function FamilyMembersPage() {
     }
     setSaving(true);
     const res = editingId
-      ? await updateFamilyMember(editingId, {
+      ? await updateFamilyMember(editingId, user.id, {
           name: form.name.trim(),
           relationship: form.relationship,
           phone: form.phone.trim(),
@@ -113,10 +113,14 @@ export default function FamilyMembersPage() {
   }
 
   async function handleDelete(id: string) {
+    if (!user?.id) {
+      addToast("Your account is not linked to a clinic.", "error");
+      return;
+    }
     const previous = members;
     setMembers((m) => m.filter((x) => x.id !== id));
     setDeleteId(null);
-    const res = await deleteFamilyMember(id);
+    const res = await deleteFamilyMember(id, user.id);
     if (!res.success) {
       setMembers(previous);
       addToast(res.error.message || "Could not remove family member", "error");

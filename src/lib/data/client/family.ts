@@ -70,10 +70,11 @@ export async function createFamilyMember(input: {
 
 export async function updateFamilyMember(
   id: string,
+  primaryUserId: string,
   input: { name: string; relationship: string; phone?: string | null },
 ): Promise<MutationResult<FamilyMemberView>> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  const { data, error } = await supabase // nosemgrep: tenant-scoping — clinic_id not yet in generated types (migration 00068); row scoped by primary_user_id below + family_members_manage_own RLS
     .from("family_members")
     .update({
       name: input.name,
@@ -81,6 +82,7 @@ export async function updateFamilyMember(
       phone: input.phone || null,
     } as Database["public"]["Tables"]["family_members"]["Update"])
     .eq("id", id)
+    .eq("primary_user_id", primaryUserId)
     .select("id, name, relationship, phone")
     .single();
   if (error) {
@@ -98,9 +100,16 @@ export async function updateFamilyMember(
   };
 }
 
-export async function deleteFamilyMember(id: string): Promise<MutationResult<{ id: string }>> {
+export async function deleteFamilyMember(
+  id: string,
+  primaryUserId: string,
+): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { error } = await supabase.from("family_members").delete().eq("id", id);
+  const { error } = await supabase // nosemgrep: tenant-scoping — clinic_id not yet in generated types (migration 00068); row scoped by primary_user_id below + family_members_manage_own RLS
+    .from("family_members")
+    .delete()
+    .eq("id", id)
+    .eq("primary_user_id", primaryUserId);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
