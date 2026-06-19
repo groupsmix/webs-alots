@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { RealtimeIndicator } from "@/components/ui/realtime-indicator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import { updateAppointmentStatus } from "@/lib/data/client";
@@ -42,6 +43,7 @@ import type {
   DoctorInvoiceView,
 } from "@/lib/data/dashboard";
 import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 import { t } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
@@ -78,11 +80,14 @@ const statusVariant: Record<
   cancelled: "secondary",
 };
 
+const REALTIME_TABLES = ["appointments", "waiting_queue"] as const;
+
 interface DoctorDashboardViewProps {
   initialAppointments: DoctorAppointmentView[];
   patients: DoctorPatientView[];
   waitingRoom: DoctorWaitingRoomEntry[];
   invoices: DoctorInvoiceView[];
+  clinicId: string;
 }
 
 export function DoctorDashboardView({
@@ -90,8 +95,10 @@ export function DoctorDashboardView({
   patients,
   waitingRoom: waitingRoomEntries,
   invoices,
+  clinicId,
 }: DoctorDashboardViewProps) {
   const [locale] = useLocale();
+  const realtimeStatus = useRealtimeRefresh(clinicId, REALTIME_TABLES);
   const {
     data: appointmentList,
     mutate: mutateAppointments,
@@ -323,7 +330,10 @@ export function DoctorDashboardView({
     <div>
       {/* Personalized greeting */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">{greeting}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{greeting}</h1>
+          <RealtimeIndicator status={realtimeStatus} />
+        </div>
         <p className="text-muted-foreground text-sm mt-1">
           {isNewDoctor
             ? t(locale, "dashboard.welcomeDoctor" as TranslationKey)
