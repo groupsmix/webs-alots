@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { RealtimeIndicator } from "@/components/ui/realtime-indicator";
 import type { DashboardStats, RecentActivityItem } from "@/lib/data/dashboard";
+import { useRealtimeRefresh } from "@/lib/hooks/use-realtime-refresh";
 import { t } from "@/lib/i18n";
 import { formatCurrency, formatDisplayDate } from "@/lib/utils";
 
@@ -27,12 +29,16 @@ const activityVariant: Record<string, "default" | "success" | "warning" | "destr
   config: "warning",
 };
 
+const REALTIME_TABLES = ["appointments", "payments"] as const;
+
 interface AdminDashboardViewProps {
   stats: DashboardStats;
+  clinicId: string;
 }
 
-export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
+export function AdminDashboardView({ stats, clinicId }: AdminDashboardViewProps) {
   const [locale] = useLocale();
+  const realtimeStatus = useRealtimeRefresh(clinicId, REALTIME_TABLES);
 
   const totalPatients = stats.totalPatients;
   const totalAppts = stats.totalAppointments;
@@ -75,7 +81,10 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t(locale, "dashboard.admin")}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{t(locale, "dashboard.admin")}</h1>
+          <RealtimeIndicator status={realtimeStatus} />
+        </div>
         <Link href="/admin/notifications">
           <Button variant="outline" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />

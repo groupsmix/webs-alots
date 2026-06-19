@@ -11,6 +11,7 @@ export default async function DoctorDashboardPage() {
       patients={data.patients}
       waitingRoom={data.waitingRoom}
       invoices={data.invoices}
+      clinicId={profile.clinic_id!}
     />
   );
 }
