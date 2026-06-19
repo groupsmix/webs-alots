@@ -1,9 +1,8 @@
 "use client";
 
-import { UserPlus, Phone, Calendar, Edit2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { UserPlus, Phone, Edit2, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,46 +15,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-interface FamilyMember {
-  id: string;
-  name: string;
-  relation: string;
-  age: number;
-  phone: string;
-  gender: string;
-  insurance: string;
-}
-
-const initialMembers: FamilyMember[] = [
-  {
-    id: "f1",
-    name: "Laila Mansouri",
-    relation: "Wife",
-    age: 33,
-    phone: "+212 6 11 22 33 55",
-    gender: "F",
-    insurance: "CNSS",
-  },
-  {
-    id: "f2",
-    name: "Yassine Mansouri",
-    relation: "Son",
-    age: 8,
-    phone: "\u2014",
-    gender: "M",
-    insurance: "CNSS",
-  },
-  {
-    id: "f3",
-    name: "Sara Mansouri",
-    relation: "Daughter",
-    age: 5,
-    phone: "\u2014",
-    gender: "F",
-    insurance: "CNSS",
-  },
-];
+import { PageLoader } from "@/components/ui/page-loader";
+import {
+  getCurrentUser,
+  fetchFamilyMembers,
+  createFamilyMember,
+  updateFamilyMember,
+  deleteFamilyMember,
+  type FamilyMemberView,
+} from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 
 const relationColors: Record<string, string> = {
   Wife: "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300",
@@ -65,55 +34,142 @@ const relationColors: Record<string, string> = {
   Parent: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
 };
 
+const emptyForm = { name: "", relationship: "Wife", phone: "" };
+
 export default function FamilyMembersPage() {
-  const [members, setMembers] = useState(initialMembers);
-  const [addOpen, setAddOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [newMember, setNewMember] = useState({
-    name: "",
-    relation: "Wife",
-    age: "",
-    phone: "",
-    gender: "F",
-    insurance: "",
-  });
+  const [members, setMembers] = useState<FamilyMemberView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const handleAdd = () => {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      setUserId(user.id);
+      setClinicId(user.clinic_id);
+      const data = await fetchFamilyMembers(user.id);
+      if (controller.signal.aborted) return;
+      setMembers(data);
+      setLoading(false);
+    }
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        logger.warn("Failed to load family members", { context: "patient/family", error: err });
+        setLoadError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => controller.abort();
+  }, []);
+
+  function openAdd() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setFormError(null);
+    setSuccess(false);
+    setFormOpen(true);
+  }
+
+  function openEdit(member: FamilyMemberView) {
+    setEditingId(member.id);
+    setForm({ name: member.name, relationship: member.relationship, phone: member.phone ?? "" });
+    setFormError(null);
+    setSuccess(false);
+    setFormOpen(true);
+  }
+
+  async function handleSubmit() {
+    if (!userId || !clinicId) {
+      setFormError("Your account is not linked to a clinic, so family members cannot be saved.");
+      return;
+    }
     setSaving(true);
-    setTimeout(() => {
-      const member: FamilyMember = {
-        id: `f${Date.now()}`,
-        name: newMember.name,
-        relation: newMember.relation,
-        age: parseInt(newMember.age, 10) || 0,
-        phone: newMember.phone || "\u2014",
-        gender: newMember.gender,
-        insurance: newMember.insurance,
-      };
-      setMembers([...members, member]);
-      setSaving(false);
+    setFormError(null);
+    try {
+      const phone = form.phone.trim() || null;
+      if (editingId) {
+        const ok = await updateFamilyMember(editingId, {
+          name: form.name.trim(),
+          relationship: form.relationship,
+          phone,
+        });
+        if (!ok) throw new Error("update failed");
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.id === editingId
+              ? { ...m, name: form.name.trim(), relationship: form.relationship, phone }
+              : m,
+          ),
+        );
+      } else {
+        const created = await createFamilyMember({
+          primaryUserId: userId,
+          clinicId,
+          name: form.name.trim(),
+          relationship: form.relationship,
+          phone,
+        });
+        if (!created) throw new Error("create failed");
+        setMembers((prev) => [...prev, created]);
+      }
       setSuccess(true);
       setTimeout(() => {
-        setAddOpen(false);
+        setFormOpen(false);
         setSuccess(false);
-        setNewMember({
-          name: "",
-          relation: "Wife",
-          age: "",
-          phone: "",
-          gender: "F",
-          insurance: "",
-        });
-      }, 1500);
-    }, 1000);
-  };
+        setEditingId(null);
+        setForm(emptyForm);
+      }, 1200);
+    } catch (err) {
+      logger.warn("Failed to save family member", { context: "patient/family", error: err });
+      setFormError("Could not save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-  const handleDelete = (id: string) => {
-    setMembers(members.filter((m) => m.id !== id));
-    setDeleteId(null);
-  };
+  async function handleDelete(id: string) {
+    setDeleting(true);
+    try {
+      const ok = await deleteFamilyMember(id);
+      if (!ok) throw new Error("delete failed");
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+      setDeleteId(null);
+    } catch (err) {
+      logger.warn("Failed to delete family member", { context: "patient/family", error: err });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (loading) return <PageLoader message="Loading family members..." />;
+
+  if (loadError) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">Failed to load family members.</p>
+        {loadError.message && (
+          <p className="text-sm text-muted-foreground mt-2">{loadError.message}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -126,72 +182,76 @@ export default function FamilyMembersPage() {
             {members.length !== 1 ? "s" : ""} added.
           </p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
+        <Button onClick={openAdd}>
           <UserPlus className="h-4 w-4 mr-1" />
           Add Member
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {members.map((member) => (
-          <Card key={member.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                    {member.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{member.name}</p>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${relationColors[member.relation] ?? "bg-gray-100 text-gray-700"}`}
+      {members.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-sm text-muted-foreground">
+            No family members yet. Use “Add Member” to add a spouse, child, or relative.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {members.map((member) => (
+            <Card key={member.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                      {member.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{member.name}</p>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${relationColors[member.relationship] ?? "bg-gray-100 text-gray-700"}`}
+                    >
+                      {member.relationship}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5" />
+                    <span>{member.phone ?? "—"}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4 pt-3 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => openEdit(member)}
                   >
-                    {member.relation}
-                  </span>
+                    <Edit2 className="h-3.5 w-3.5 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteId(member.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>Age: {member.age}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>{member.phone}</span>
-                </div>
-                {member.insurance && (
-                  <Badge variant="outline" className="text-xs">
-                    {member.insurance}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex gap-2 mt-4 pt-3 border-t">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Edit2 className="h-3.5 w-3.5 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setDeleteId(member.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Family Member</DialogTitle>
+            <DialogTitle>{editingId ? "Edit Family Member" : "Add Family Member"}</DialogTitle>
             <DialogDescription>
               Add a spouse, child, or other family member to your account.
             </DialogDescription>
@@ -202,7 +262,7 @@ export default function FamilyMembersPage() {
                 <UserPlus className="h-6 w-6 text-green-600" />
               </div>
               <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                Family member added successfully!
+                {editingId ? "Family member updated." : "Family member added."}
               </p>
             </div>
           ) : (
@@ -212,8 +272,8 @@ export default function FamilyMembersPage() {
                 <Input
                   id="memberName"
                   placeholder="First and last name"
-                  value={newMember.name}
-                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                 />
               </div>
@@ -223,8 +283,8 @@ export default function FamilyMembersPage() {
                   <select
                     id="memberRelation"
                     className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                    value={newMember.relation}
-                    onChange={(e) => setNewMember({ ...newMember, relation: e.target.value })}
+                    value={form.relationship}
+                    onChange={(e) => setForm({ ...form, relationship: e.target.value })}
                   >
                     <option value="Wife">Wife</option>
                     <option value="Husband">Husband</option>
@@ -234,56 +294,29 @@ export default function FamilyMembersPage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="memberAge">Age</Label>
-                  <Input
-                    id="memberAge"
-                    type="number"
-                    placeholder="Age"
-                    value={newMember.age}
-                    onChange={(e) => setNewMember({ ...newMember, age: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="memberGender">Gender</Label>
-                  <select
-                    id="memberGender"
-                    className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                    value={newMember.gender}
-                    onChange={(e) => setNewMember({ ...newMember, gender: e.target.value })}
-                  >
-                    <option value="M">Male</option>
-                    <option value="F">Female</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="memberPhone">Phone</Label>
                   <Input
                     id="memberPhone"
                     type="tel"
                     placeholder="+212 6XX XX XX XX"
-                    value={newMember.phone}
-                    onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="memberInsurance">Insurance (optional)</Label>
-                <select
-                  id="memberInsurance"
-                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                  value={newMember.insurance}
-                  onChange={(e) => setNewMember({ ...newMember, insurance: e.target.value })}
-                >
-                  <option value="">No insurance</option>
-                  <option value="CNSS">CNSS</option>
-                  <option value="CNOPS">CNOPS</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <Button className="w-full" onClick={handleAdd} disabled={saving || !newMember.name}>
-                {saving ? "Adding..." : "Add Family Member"}
+              {formError && <p className="text-sm text-red-600">{formError}</p>}
+              <Button
+                className="w-full"
+                onClick={handleSubmit}
+                disabled={saving || !form.name.trim()}
+              >
+                {saving
+                  ? editingId
+                    ? "Saving..."
+                    : "Adding..."
+                  : editingId
+                    ? "Save Changes"
+                    : "Add Family Member"}
               </Button>
             </div>
           )}
@@ -306,9 +339,10 @@ export default function FamilyMembersPage() {
               variant="destructive"
               className="flex-1"
               onClick={() => deleteId && handleDelete(deleteId)}
+              disabled={deleting}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              Remove
+              {deleting ? "Removing..." : "Remove"}
             </Button>
           </div>
         </DialogContent>

@@ -36,3 +36,4 @@ export * from "./clinic-centers";
 export * from "./para-medical";
 export * from "./onboarding";
 export * from "./timeline";
+export * from "./family";
