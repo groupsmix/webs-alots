@@ -109,113 +109,6 @@ const RECOMMENDED_ACTIONS: Record<string, string[]> = {
   low: ["Continue regular engagement", "Invite to product feedback sessions"],
 };
 
-// ── Mock data generator ──────────────────────────────────────────────
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function randomInRange(min: number, max: number, seed: number): number {
-  return Math.round(min + seededRandom(seed) * (max - min));
-}
-
-function generateMockScores(): { scores: ChurnScore[]; summary: ChurnSummary } {
-  const clinicNames = [
-    "Clinique Atlas",
-    "Cabinet Marrakech",
-    "Centre Dental Fès",
-    "Pharmacie Rabat Central",
-    "Clinique Casablanca Sud",
-    "Cabinet Tanger Nord",
-    "Centre Médical Agadir",
-    "Pharmacie Meknès",
-    "Clinique Oujda Est",
-    "Cabinet Dental Kénitra",
-    "Centre Santé Tétouan",
-    "Pharmacie Salé Ville",
-  ];
-  const types = [
-    "doctor",
-    "doctor",
-    "dentist",
-    "pharmacy",
-    "doctor",
-    "doctor",
-    "doctor",
-    "pharmacy",
-    "doctor",
-    "dentist",
-    "doctor",
-    "pharmacy",
-  ];
-  const tiers = [
-    "starter",
-    "professional",
-    "enterprise",
-    "starter",
-    "enterprise",
-    "professional",
-    "professional",
-    "starter",
-    "enterprise",
-    "professional",
-    "starter",
-    "professional",
-  ];
-
-  const factorTemplates: Array<{ factor: string; weight: number; description: string }> = [
-    { factor: "login_decline", weight: 25, description: "Declining login frequency" },
-    { factor: "missed_payments", weight: 30, description: "Missed or late payments" },
-    { factor: "support_tickets", weight: 20, description: "Unresolved support tickets" },
-    { factor: "low_feature_usage", weight: 15, description: "Low feature adoption" },
-    { factor: "appointment_decline", weight: 20, description: "Declining appointment volume" },
-    { factor: "no_recent_login", weight: 35, description: "No login in 14+ days" },
-  ];
-
-  const scores: ChurnScore[] = clinicNames.map((name, i) => {
-    const score = randomInRange(5, 95, i * 11 + 1);
-    const risk: "low" | "medium" | "high" | "critical" =
-      score >= 80 ? "critical" : score >= 60 ? "high" : score >= 30 ? "medium" : "low";
-
-    const numFactors = risk === "critical" ? 4 : risk === "high" ? 3 : risk === "medium" ? 2 : 1;
-    const factors = factorTemplates.sort(() => seededRandom(i * 3 + 7) - 0.5).slice(0, numFactors);
-
-    const appointVolume = randomInRange(10, 180, i * 11 + 2);
-    return {
-      id: `churn-${i + 1}`,
-      clinic_id: `clinic-${i + 1}`,
-      clinic_name: name,
-      clinic_type: types[i],
-      clinic_tier: tiers[i],
-      clinic_status: "active",
-      clinic_subdomain: name.toLowerCase().replace(/\s+/g, "-").replace(/[éè]/g, "e"),
-      score,
-      risk_level: risk,
-      factors,
-      login_frequency_30d: randomInRange(2, 60, i * 11 + 3),
-      appointment_volume_30d: appointVolume,
-      appointment_volume_prev_30d: appointVolume + randomInRange(-30, 30, i * 11 + 8),
-      support_tickets_30d: randomInRange(0, 12, i * 11 + 4),
-      days_since_last_login:
-        risk === "critical" ? randomInRange(14, 45, i * 11 + 5) : randomInRange(0, 10, i * 11 + 5),
-      revenue_30d: randomInRange(3000, 25000, i * 11 + 6),
-      calculated_at: new Date().toISOString(),
-    };
-  });
-
-  const summary: ChurnSummary = {
-    total: scores.length,
-    critical: scores.filter((s) => s.risk_level === "critical").length,
-    high: scores.filter((s) => s.risk_level === "high").length,
-    medium: scores.filter((s) => s.risk_level === "medium").length,
-    low: scores.filter((s) => s.risk_level === "low").length,
-    averageScore: Math.round(scores.reduce((acc, s) => acc + s.score, 0) / scores.length),
-  };
-
-  return { scores, summary };
-}
-
 // ── Score color helper ───────────────────────────────────────────────
 
 function getScoreColor(score: number): string {
@@ -258,14 +151,13 @@ export default function ChurnPredictionPage() {
       setScores(json.data.scores);
       setSummary(json.data.summary);
     } catch (err) {
-      logger.warn("Failed to load churn scores, using mock data", {
+      logger.error("Failed to load churn scores", {
         context: "churn-page",
         error: err,
       });
-      const mock = generateMockScores();
-      setScores(mock.scores);
-      setSummary(mock.summary);
-      setError(null);
+      setScores([]);
+      setSummary(null);
+      setError(err instanceof Error ? err.message : "Failed to load churn data. Please retry.");
     } finally {
       setLoading(false);
     }
@@ -283,13 +175,11 @@ export default function ChurnPredictionPage() {
       if (!json.ok) throw new Error(json.error ?? "Recalculation failed");
       await fetchScores();
     } catch (err) {
-      logger.warn("Churn recalculation failed, regenerating mock data", {
+      logger.error("Churn recalculation failed", {
         context: "churn-page",
         error: err,
       });
-      const mock = generateMockScores();
-      setScores(mock.scores);
-      setSummary(mock.summary);
+      setError(err instanceof Error ? err.message : "Recalculation failed. Please retry.");
     } finally {
       setRecalculating(false);
     }
