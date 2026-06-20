@@ -63,7 +63,7 @@ export default async function SystemHealthPage() {
       />
 
       <div>
-        <h1 className="text-2xl font-bold">System Health</h1>
+        <h1 className="text-2xl font-bold">Métriques santé</h1>
         <p className="text-sm text-muted-foreground">
           Vue consolidée des incidents, de la disponibilité et des signaux opérationnels.
         </p>

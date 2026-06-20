@@ -63,16 +63,16 @@ type StatusFilter = "all" | "open" | "in_progress" | "resolved" | "closed";
 type PriorityFilter = "all" | "low" | "medium" | "high" | "urgent";
 
 const STATUS_LABELS: Record<string, string> = {
-  open: "Open",
-  in_progress: "In Progress",
-  resolved: "Resolved",
-  closed: "Closed",
+  open: "Ouvert",
+  in_progress: "En cours",
+  resolved: "Résolu",
+  closed: "Fermé",
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+  low: "Faible",
+  medium: "Moyen",
+  high: "Élevé",
   urgent: "Urgent",
 };
 
@@ -134,6 +134,14 @@ export default function SupportPage() {
   const [replyText, setReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
   const [triageLoadingId, setTriageLoadingId] = useState<string | null>(null);
+  // B4: tracks whether the last tickets fetch failed (non-ok response or
+  // network error) so the UI never shows the "no tickets yet" empty state
+  // when the real reason is an unreachable/blocked API.
+  const [fetchFailed, setFetchFailed] = useState(false);
+  // I1: tracks whether the failure was specifically a geo-restriction (403
+  // GEO_RESTRICTED) so a targeted, actionable banner is shown instead of
+  // the generic "API unavailable" error.
+  const [geoBlocked, setGeoBlocked] = useState(false);
 
   const loadTickets = useCallback(async () => {
     try {
@@ -146,11 +154,24 @@ export default function SupportPage() {
       const json = await res.json();
       if (json.ok) {
         setTickets(json.data.tickets);
+        setFetchFailed(false);
+        setGeoBlocked(false);
       } else {
-        logger.warn("Failed to load tickets", { context: "support-page", error: json.error });
+        // I1: check for geo-restriction specifically so the UI shows a
+        // targeted banner rather than the generic "API unavailable" error.
+        if (json.code === "GEO_RESTRICTED") {
+          setGeoBlocked(true);
+          setFetchFailed(false);
+        } else {
+          logger.warn("Failed to load tickets", { context: "support-page", error: json.error });
+          setGeoBlocked(false);
+          setFetchFailed(true);
+        }
       }
     } catch (err) {
       logger.warn("Failed to load tickets", { context: "support-page", error: err });
+      setGeoBlocked(false);
+      setFetchFailed(true);
     } finally {
       setLoading(false);
     }
@@ -205,13 +226,13 @@ export default function SupportPage() {
       const json = await res.json();
       if (json.ok) {
         setReplyText("");
-        addToast("Reply sent", "success");
+        addToast("Réponse envoyée", "success");
         loadMessages(ticketId);
       } else {
-        addToast("Failed to send reply", "error");
+        addToast("Échec de l'envoi de la réponse", "error");
       }
     } catch {
-      addToast("Failed to send reply", "error");
+      addToast("Échec de l'envoi de la réponse", "error");
     } finally {
       setReplySending(false);
     }
@@ -226,13 +247,13 @@ export default function SupportPage() {
       });
       const json = await res.json();
       if (json.ok) {
-        addToast(`Status changed to ${STATUS_LABELS[newStatus] ?? newStatus}`, "success");
+        addToast(`Statut changé en ${STATUS_LABELS[newStatus] ?? newStatus}`, "success");
         loadTickets();
       } else {
-        addToast("Failed to update status", "error");
+        addToast("Échec de la mise à jour du statut", "error");
       }
     } catch {
-      addToast("Failed to update status", "error");
+      addToast("Échec de la mise à jour du statut", "error");
     }
   }
 
@@ -245,13 +266,13 @@ export default function SupportPage() {
       });
       const json = await res.json();
       if (json.ok) {
-        addToast(`Priority changed to ${PRIORITY_LABELS[newPriority] ?? newPriority}`, "success");
+        addToast(`Priorité changée en ${PRIORITY_LABELS[newPriority] ?? newPriority}`, "success");
         loadTickets();
       } else {
-        addToast("Failed to update priority", "error");
+        addToast("Échec de la mise à jour de la priorité", "error");
       }
     } catch {
-      addToast("Failed to update priority", "error");
+      addToast("Échec de la mise à jour de la priorité", "error");
     }
   }
 
@@ -265,10 +286,10 @@ export default function SupportPage() {
       });
       const json = await res.json();
       if (json.ok) {
-        addToast("AI triage completed", "success");
+        addToast("Triage IA terminé", "success");
         await loadTickets();
       } else {
-        addToast(json.error ?? "Failed to triage ticket", "error");
+        addToast(json.error ?? "Échec du triage", "error");
       }
     } catch {
       addToast("Failed to triage ticket", "error");
@@ -312,9 +333,9 @@ export default function SupportPage() {
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Support Tickets</h1>
+          <h1 className="text-2xl font-bold">Tickets de support</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage clinic support requests and conversations
+            Gérez les demandes de support et les conversations des cliniques.
           </p>
         </div>
       </div>
@@ -325,7 +346,7 @@ export default function SupportPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <AlertCircle className="h-4 w-4 text-blue-600" />
-              <p className="text-xs text-muted-foreground">Open</p>
+              <p className="text-xs text-muted-foreground">Ouvert</p>
             </div>
             <p className="text-2xl font-bold">{openCount}</p>
           </CardContent>
@@ -334,7 +355,7 @@ export default function SupportPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="h-4 w-4 text-yellow-600" />
-              <p className="text-xs text-muted-foreground">In Progress</p>
+              <p className="text-xs text-muted-foreground">En cours</p>
             </div>
             <p className="text-2xl font-bold">{inProgressCount}</p>
           </CardContent>
@@ -343,7 +364,7 @@ export default function SupportPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Avg Response</p>
+              <p className="text-xs text-muted-foreground">Tps réponse moy.</p>
             </div>
             <p className="text-2xl font-bold">N/A</p>
           </CardContent>
@@ -352,19 +373,69 @@ export default function SupportPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-muted-foreground">Resolved Today</p>
+              <p className="text-xs text-muted-foreground">Résolus aujourd&apos;hui</p>
             </div>
             <p className="text-2xl font-bold text-green-600">{resolvedTodayCount}</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* I1: Geo-block banner — specific message when the API is reachable but
+          access is restricted to Moroccan IPs. Shown instead of the generic
+          error so operators travelling abroad understand the cause. */}
+      {geoBlocked && (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+          <CardContent className="flex items-start gap-3 p-4">
+            <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Accès restreint depuis votre localisation
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                L&apos;API de support est limitée aux accès depuis le Maroc. Vous semblez vous
+                connecter depuis un autre emplacement. Les tickets existants ne peuvent pas être
+                chargés.
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Pour un accès d&apos;urgence, utilisez un VPN autorisé ou contactez
+                l&apos;administrateur système.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => loadTickets()} className="shrink-0">
+              Réessayer
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* B4: API failure banner — never show the "no tickets yet" empty state
+          when the real cause is a blocked/unreachable endpoint. */}
+      {fetchFailed && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex items-center gap-3 p-4">
+            <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-destructive">
+                Impossible de charger les tickets
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                La requête a échoué (restriction d&apos;accès, erreur réseau ou API indisponible).
+                Les données affichées ci-dessous peuvent être incomplètes.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => loadTickets()}>
+              Réessayer
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by subject or clinic name..."
+            placeholder="Rechercher par sujet ou nom de clinique..."
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -379,7 +450,7 @@ export default function SupportPage() {
               onClick={() => setStatusFilter(s)}
               className="text-xs"
             >
-              {s === "all" ? "All Status" : (STATUS_LABELS[s] ?? s)}
+              {s === "all" ? "Tous les statuts" : (STATUS_LABELS[s] ?? s)}
             </Button>
           ))}
         </div>
@@ -392,7 +463,7 @@ export default function SupportPage() {
               onClick={() => setPriorityFilter(p)}
               className="text-xs"
             >
-              {p === "all" ? "All Priority" : (PRIORITY_LABELS[p] ?? p)}
+              {p === "all" ? "Toutes priorités" : (PRIORITY_LABELS[p] ?? p)}
             </Button>
           ))}
         </div>
@@ -403,11 +474,11 @@ export default function SupportPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <LifeBuoy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold mb-1">No support tickets</h3>
+            <h3 className="text-lg font-semibold mb-1">Aucun ticket de support</h3>
             <p className="text-sm text-muted-foreground">
               {search || statusFilter !== "all" || priorityFilter !== "all"
-                ? "No tickets match your current filters. Try adjusting your search or filters."
-                : "No support tickets have been created yet. Tickets from clinics will appear here."}
+                ? "Aucun ticket ne correspond aux filtres actuels. Essayez de modifier votre recherche ou vos filtres."
+                : "Aucun ticket de support n'a encore été créé. Les tickets des cliniques apparaîtront ici."}
             </p>
           </CardContent>
         </Card>
@@ -445,13 +516,13 @@ export default function SupportPage() {
                       {ticket.description}
                     </p>
                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                      <span>{ticket.clinics?.name ?? "Unknown Clinic"}</span>
+                      <span>{ticket.clinics?.name ?? "Clinique inconnue"}</span>
                       <span>{formatDate(ticket.created_at)}</span>
                       {ticket.updated_at !== ticket.created_at && (
-                        <span>Updated {formatDate(ticket.updated_at)}</span>
+                        <span>Mis à jour {formatDate(ticket.updated_at)}</span>
                       )}
                       {ticket.assigned_team_member_name ? (
-                        <span>Assignee: {ticket.assigned_team_member_name}</span>
+                        <span>Assigné : {ticket.assigned_team_member_name}</span>
                       ) : null}
                     </div>
                   </div>
@@ -463,7 +534,7 @@ export default function SupportPage() {
                         onClick={() => handleStatusChange(ticket.id, "in_progress")}
                         className="text-xs"
                       >
-                        Start
+                        Démarrer
                       </Button>
                     )}
                     {ticket.status === "in_progress" && (
@@ -473,7 +544,7 @@ export default function SupportPage() {
                         onClick={() => handleStatusChange(ticket.id, "resolved")}
                         className="text-xs"
                       >
-                        Resolve
+                        Résoudre
                       </Button>
                     )}
                     {ticket.priority !== "urgent" && (
@@ -487,7 +558,7 @@ export default function SupportPage() {
                             handlePriorityChange(ticket.id, priorities[idx + 1]);
                           }
                         }}
-                        title="Increase priority"
+                        title="Augmenter la priorité"
                       >
                         <ArrowUpCircle className="h-4 w-4" />
                       </Button>
@@ -497,7 +568,7 @@ export default function SupportPage() {
                       size="sm"
                       onClick={() => handleTriage(ticket.id)}
                       disabled={triageLoadingId === ticket.id}
-                      title="Run AI triage"
+                      title="Lancer le triage IA"
                     >
                       {triageLoadingId === ticket.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -516,7 +587,7 @@ export default function SupportPage() {
                             handlePriorityChange(ticket.id, priorities[idx - 1]);
                           }
                         }}
-                        title="Decrease priority"
+                        title="Diminuer la priorité"
                       >
                         <ArrowDownCircle className="h-4 w-4" />
                       </Button>
@@ -555,28 +626,28 @@ export default function SupportPage() {
                         <div className="flex flex-wrap gap-2 mb-2 text-xs">
                           {ticket.ai_priority ? (
                             <Badge variant="outline" className="capitalize">
-                              Priority: {ticket.ai_priority}
+                              Priorité : {ticket.ai_priority}
                             </Badge>
                           ) : null}
                           {ticket.ai_category ? (
                             <Badge variant="outline" className="capitalize">
-                              Category: {ticket.ai_category}
+                              Catégorie : {ticket.ai_category}
                             </Badge>
                           ) : null}
                           {ticket.sentiment ? (
                             <Badge variant="outline" className="capitalize">
-                              Sentiment: {ticket.sentiment}
+                              Sentiment : {ticket.sentiment}
                             </Badge>
                           ) : null}
                           {ticket.assigned_team_member_name ? (
                             <Badge variant="outline">
-                              Assigned: {ticket.assigned_team_member_name}
+                              Assigné : {ticket.assigned_team_member_name}
                             </Badge>
                           ) : null}
                         </div>
                         {ticket.ai_draft_response ? (
                           <div>
-                            <p className="text-xs font-medium mb-1">Suggested reply</p>
+                            <p className="text-xs font-medium mb-1">Réponse suggérée</p>
                             <p className="text-sm text-muted-foreground whitespace-pre-line">
                               {ticket.ai_draft_response}
                             </p>
@@ -586,7 +657,7 @@ export default function SupportPage() {
                               className="mt-2"
                               onClick={() => setReplyText(ticket.ai_draft_response ?? "")}
                             >
-                              Use draft response
+                              Utiliser le brouillon
                             </Button>
                           </div>
                         ) : null}
@@ -601,7 +672,7 @@ export default function SupportPage() {
                         </div>
                       ) : messages.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-2">
-                          No messages yet. Send a reply to start the conversation.
+                          Aucun message. Envoyez une réponse pour démarrer la conversation.
                         </p>
                       ) : (
                         <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -635,7 +706,7 @@ export default function SupportPage() {
                     {ticket.status !== "closed" && (
                       <div className="flex gap-2">
                         <Textarea
-                          placeholder="Type your reply..."
+                          placeholder="Tapez votre réponse…"
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           className="min-h-[60px]"
@@ -656,7 +727,7 @@ export default function SupportPage() {
 
                     {/* Status change buttons */}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                      <span className="text-xs text-muted-foreground mr-1">Set status:</span>
+                      <span className="text-xs text-muted-foreground mr-1">Statut :</span>
                       {(["open", "in_progress", "resolved", "closed"] as const).map((s) => (
                         <Button
                           key={s}

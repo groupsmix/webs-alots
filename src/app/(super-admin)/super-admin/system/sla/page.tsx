@@ -33,37 +33,40 @@ export default async function SLAPage() {
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Uptime SLA</h1>
+          <h1 className="text-2xl font-bold">SLA disponibilité</h1>
           <p className="text-sm text-muted-foreground">
             Suivi mensuel de la disponibilité et des incidents enregistrés.
           </p>
         </div>
-        <SlaExportButton reportMonth={reportMonthParam} />
+        <SlaExportButton
+          reportMonth={reportMonthParam}
+          disabled={(slaRows.data ?? []).length === 0}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Starter target</CardTitle>
+            <CardTitle className="text-sm">Objectif Starter</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">99%</div>
+            <div className="text-2xl font-bold">99 %</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Pro target</CardTitle>
+            <CardTitle className="text-sm">Objectif Pro</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">99.9%</div>
+            <div className="text-2xl font-bold">99,9 %</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Enterprise target</CardTitle>
+            <CardTitle className="text-sm">Objectif Enterprise</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">99.99%</div>
+            <div className="text-2xl font-bold">99,99 %</div>
           </CardContent>
         </Card>
       </div>

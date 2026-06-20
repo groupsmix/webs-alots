@@ -5,6 +5,7 @@ const scripts = [
   "runners/rag-groundedness-runner.ts",
   "runners/triage-runner.ts",
   "runners/tool-loop-runner.ts",
+  "runners/drug-interaction-runner.ts",
 ];
 
 async function runScript(scriptPath: string): Promise<boolean> {

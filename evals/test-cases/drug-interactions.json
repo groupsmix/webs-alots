@@ -1,0 +1,202 @@
+[
+  {
+    "id": "di-001",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "sildenafil + nitrate",
+    "context": { "drug_a": "sildenafil", "drug_b": "nitrate" },
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "PDE5 inhibitor + nitrate — contraindicated, risk of fatal hypotension"
+  },
+  {
+    "id": "di-002",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "tadalafil + nitrate",
+    "context": { "drug_a": "tadalafil", "drug_b": "nitrate" },
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "PDE5 inhibitor (long-acting) + nitrate — contraindicated"
+  },
+  {
+    "id": "di-003",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "ssri + maoi",
+    "context": { "drug_a": "ssri", "drug_b": "maoi" },
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "SSRI + MAOI — contraindicated, potentially fatal serotonin syndrome"
+  },
+  {
+    "id": "di-004",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "tramadol + maoi",
+    "context": { "drug_a": "tramadol", "drug_b": "maoi" },
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "Tramadol + MAOI — contraindicated, severe serotonin syndrome"
+  },
+  {
+    "id": "di-005",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "ciprofloxacin + tizanidine",
+    "context": { "drug_a": "ciprofloxacin", "drug_b": "tizanidine" },
+    "expected_outcome": "dangerous",
+    "severity": "critical",
+    "description": "CYP1A2 inhibitor + tizanidine — contraindicated, severe hypotension"
+  },
+  {
+    "id": "di-006",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "warfarin + aspirin",
+    "context": { "drug_a": "warfarin", "drug_b": "aspirin" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Warfarin + aspirin — major bleeding risk"
+  },
+  {
+    "id": "di-007",
+    "category": "drug-interaction",
+    "language": "fr",
+    "input": "warfarine + ibuprofène",
+    "context": { "drug_a": "warfarin", "drug_b": "ibuprofen" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Warfarin + ibuprofen (FR names) — major bleeding risk; tests fuzzy matching with accented input"
+  },
+  {
+    "id": "di-008",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "digoxin + amiodarone",
+    "context": { "drug_a": "digoxin", "drug_b": "amiodarone" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Digoxin + amiodarone — major, digoxin toxicity risk"
+  },
+  {
+    "id": "di-009",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "simvastatin + clarithromycin",
+    "context": { "drug_a": "simvastatin", "drug_b": "clarithromycin" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Statin + macrolide antibiotic — major, rhabdomyolysis risk"
+  },
+  {
+    "id": "di-010",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "methotrexate + naproxen",
+    "context": { "drug_a": "methotrexate", "drug_b": "naproxen" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Methotrexate + NSAID — major, methotrexate toxicity"
+  },
+  {
+    "id": "di-011",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "lithium + ibuprofen",
+    "context": { "drug_a": "lithium", "drug_b": "ibuprofen" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Lithium + NSAID — major, lithium toxicity"
+  },
+  {
+    "id": "di-012",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "tramadol + ssri",
+    "context": { "drug_a": "tramadol", "drug_b": "ssri" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Tramadol + SSRI — major serotonin syndrome and seizure risk"
+  },
+  {
+    "id": "di-013",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "tamoxifen + paroxetine",
+    "context": { "drug_a": "tamoxifen", "drug_b": "paroxetine" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Tamoxifen + paroxetine — major, CYP2D6 inhibition reduces tamoxifen efficacy"
+  },
+  {
+    "id": "di-014",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "codeine + benzodiazepine",
+    "context": { "drug_a": "codeine", "drug_b": "benzodiazepine" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Opioid + benzodiazepine — major, respiratory depression and apnea"
+  },
+  {
+    "id": "di-015",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "clopidogrel + omeprazole",
+    "context": { "drug_a": "clopidogrel", "drug_b": "omeprazole" },
+    "expected_outcome": "flagged",
+    "severity": "medium",
+    "description": "Clopidogrel + omeprazole — moderate, reduced antiplatelet effect"
+  },
+  {
+    "id": "di-016",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "metformin + contrast dye",
+    "context": { "drug_a": "metformin", "drug_b": "contrast dye" },
+    "expected_outcome": "flagged",
+    "severity": "medium",
+    "description": "Metformin + IV contrast — moderate, lactic acidosis risk"
+  },
+  {
+    "id": "di-017",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "phenytoin + omeprazole",
+    "context": { "drug_a": "phenytoin", "drug_b": "omeprazole" },
+    "expected_outcome": "safe",
+    "severity": "low",
+    "description": "Phenytoin + omeprazole — minor interaction only, manageable"
+  },
+  {
+    "id": "di-018",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "amoxicillin + paracetamol",
+    "context": { "drug_a": "amoxicillin", "drug_b": "paracetamol" },
+    "expected_outcome": "safe",
+    "severity": "low",
+    "description": "Amoxicillin + paracetamol — not in pack, no known clinically significant interaction"
+  },
+  {
+    "id": "di-019",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "metformin + lisinopril",
+    "context": { "drug_a": "metformin", "drug_b": "lisinopril" },
+    "expected_outcome": "safe",
+    "severity": "low",
+    "description": "Metformin + ACE inhibitor — not in pack as a dangerous pair, commonly co-prescribed"
+  },
+  {
+    "id": "di-020",
+    "category": "drug-interaction",
+    "language": "en",
+    "input": "aspirin + ibuprofen — order reversed",
+    "context": { "drug_a": "ibuprofen", "drug_b": "warfarin" },
+    "expected_outcome": "dangerous",
+    "severity": "high",
+    "description": "Ibuprofen + warfarin with drug order reversed — tests order-independent lookup"
+  }
+]

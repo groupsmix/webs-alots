@@ -305,6 +305,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                       <div key={item.href} className="space-y-0.5">
                         <Link
                           href={item.href}
+                          prefetch={false}
                           aria-current={isActive ? "page" : undefined}
                           className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                             isActive
@@ -323,6 +324,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                                 <Link
                                   key={child.href}
                                   href={child.href}
+                                  prefetch={false}
                                   aria-current={childActive ? "page" : undefined}
                                   className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
                                     childActive
@@ -346,6 +348,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={false}
                       aria-current={isActive ? "page" : undefined}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                         isActive

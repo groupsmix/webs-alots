@@ -1,0 +1,42 @@
+# Oltigo Clinical Knowledge Pack — Moroccan Darija Medical Terms
+# Version: 1.0.0 | Built: 2026-06-20
+# Columns: darija_term,darija_variants,fr_term,ar_term,category
+# Categories: anatomy | symptom | medication | procedure
+darija_term,darija_variants,fr_term,ar_term,category
+ras,rass;rasna,tête / mal de tête,رأس,anatomy
+kelb,galb;galbna,cœur,قلب,anatomy
+sder,,poitrine / thorax,صدر,anatomy
+botna,btne;krch;kerch,ventre / abdomen,بطن,anatomy
+dhar,,dos / colonne vertébrale,ظهر,anatomy
+yed,yad;yadi,main / bras,يد,anatomy
+rijel,rjel;rejl,jambe / pied,رجل,anatomy
+wdna,wdane;widne;oud en,oreille,أذن,anatomy
+3in,3ioun;ain,œil / yeux,عين,anatomy
+anf,nif,nez,أنف,anatomy
+halq,hnouch,gorge / cou,حلق / رقبة,anatomy
+sna,snane;snan,dent / dentition,سن,anatomy
+lisan,,langue,لسان,anatomy
+kbda,,foie,كبد,anatomy
+klawi,klawy,reins / rein,كليتان,anatomy
+rkba,rkuba;rkabna,genou,ركبة,anatomy
+moukh,,cerveau / tête,مخ,anatomy
+rida,,poumon,رئة,anatomy
+me3da,,estomac,معدة,anatomy
+ferda,,cuisse / hanche,فخذ,anatomy
+skhana,skhona;shkha;sokhan,fièvre,حمى,symptom
+wed3,wdaa;w daa,douleur,وجع,symptom
+berd,,rhume / froid,برد,symptom
+wahd blissa,bli;blissa;8tayan,nausée / envie de vomir,غثيان,symptom
+hdiq,hdiqa;shhal,diarrhée,إسهال,symptom
+imsak,,constipation,إمساك,symptom
+3wara,3ouara;7riq,brûlures / irritation,حرقان,symptom
+dawekha,dawkha;ldawkha,vertiges / étourdissements,دوخة,symptom
+7rira,hrira;7kka,démangeaisons,حكة,symptom
+chwat,shwat,crampe / spasme,تشنج,symptom
+dwa,dwiya;adwiya;l dwa,médicament / traitement,دواء,medication
+ibra,ibrat,injection / piqûre,حقنة,procedure
+tahlil,tahlilat;bilan,analyse / bilan sanguin,تحليل,procedure
+radio,radiyo;echographie,radiographie / échographie,أشعة,procedure
+3maliya,3maliyat;opération,opération / chirurgie,عملية جراحية,procedure
+dkhoul,dkhoul l spital,hospitalisation,دخول للمستشفى,procedure
+tasdir,tsdira,ordonnance / prescription,وصفة طبية,procedure

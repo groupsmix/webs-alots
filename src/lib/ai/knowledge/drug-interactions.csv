@@ -1,0 +1,31 @@
+# Oltigo Clinical Knowledge Pack — Drug Interactions
+# Version: 1.0.0 | Built: 2026-06-20
+# Columns: drug_a,drug_b,severity,mechanism,consequence,recommendation
+# Severity: minor | moderate | major | contraindicated
+drug_a,drug_b,severity,mechanism,consequence,recommendation
+warfarin,aspirin,major,Synergistic inhibition of platelet aggregation,Significantly increased bleeding risk,Avoid combination or monitor INR closely; use lowest effective aspirin dose
+warfarin,ibuprofen,major,NSAID inhibits platelet function and displaces warfarin from protein binding,Major bleeding risk including GI haemorrhage,Avoid NSAIDs; use paracetamol for pain relief instead; monitor INR if unavoidable
+warfarin,rifampicin,major,Rifampicin strongly induces CYP2C9 and CYP3A4,Markedly reduced anticoagulant effect leading to thrombosis risk,Avoid combination; if unavoidable increase warfarin dose significantly and monitor INR daily
+warfarin,fluconazole,major,Fluconazole potently inhibits CYP2C9 reducing warfarin metabolism,Markedly elevated INR and major bleeding risk,Avoid fluconazole in warfarin patients; if needed reduce warfarin dose by 50% and monitor INR daily
+metformin,contrast_dye,moderate,IV contrast can impair renal function causing metformin accumulation,Risk of lactic acidosis particularly with pre-existing renal impairment,Hold metformin 48h before contrast; restart only when renal function confirmed normal
+sildenafil,nitrate,contraindicated,Additive vasodilation via cGMP and cAMP pathways,Severe hypotension cardiovascular collapse and death,Absolutely contraindicated; do not administer within 24h (48h for tadalafil)
+tadalafil,nitrate,contraindicated,Additive vasodilation via cGMP and cAMP pathways,Severe hypotension cardiovascular collapse and death,Absolutely contraindicated; do not administer within 48h of tadalafil
+ssri,maoi,contraindicated,Serotonin accumulation due to dual inhibition of reuptake and metabolism,Potentially fatal serotonin syndrome with hyperthermia rigidity and rhabdomyolysis,Contraindicated; wait at least 14 days after stopping MAOI before starting SSRI
+tramadol,ssri,major,Additive serotonergic effect and lowered seizure threshold,Serotonin syndrome and seizure risk,Avoid combination; if necessary monitor closely for tremor agitation and hyperthermia
+tramadol,maoi,contraindicated,Additive serotonergic and noradrenergic effect,Severe serotonin syndrome hyperpyrexia and cardiovascular instability,Absolutely contraindicated
+digoxin,amiodarone,major,Amiodarone inhibits P-glycoprotein reducing digoxin clearance,Digoxin toxicity with bradycardia arrhythmia visual disturbances and nausea,Reduce digoxin dose by 50% when starting amiodarone; monitor digoxin levels closely
+ace_inhibitor,spironolactone,major,Combined potassium retention via dual renin-angiotensin-aldosterone blockade,Life-threatening hyperkalemia causing cardiac arrest,Avoid or monitor serum potassium weekly; reduce spironolactone dose
+ciprofloxacin,antacid,moderate,Divalent cations chelate fluoroquinolone in GI tract,Reduced ciprofloxacin absorption by up to 90%,Administer ciprofloxacin 2h before or 6h after antacids/dairy/iron
+simvastatin,clarithromycin,major,Clarithromycin strongly inhibits CYP3A4 causing statin accumulation,Rhabdomyolysis with myopathy and acute renal failure,Switch to pravastatin or rosuvastatin; do not exceed simvastatin 10mg with CYP3A4 inhibitors
+atorvastatin,clarithromycin,major,Clarithromycin strongly inhibits CYP3A4 causing statin accumulation,Rhabdomyolysis with myopathy and acute renal failure,Temporarily withhold statin or use lowest dose during clarithromycin course
+methotrexate,naproxen,major,NSAIDs reduce renal clearance of methotrexate,Methotrexate toxicity with mucositis cytopenias and hepatotoxicity,Avoid NSAIDs within 24h of methotrexate; use paracetamol if analgesic needed
+methotrexate,ibuprofen,major,NSAIDs reduce renal clearance of methotrexate,Methotrexate toxicity with mucositis cytopenias and hepatotoxicity,Avoid NSAIDs within 24h of methotrexate; use paracetamol if analgesic needed
+carbamazepine,oral_contraceptive,major,Carbamazepine induces CYP3A4 reducing ethinylestradiol and progestin levels,Contraceptive failure and unintended pregnancy,Use additional non-hormonal contraception; consider alternative anticonvulsant
+lithium,ibuprofen,major,NSAIDs reduce renal prostaglandin synthesis impairing lithium excretion,Lithium toxicity with tremor nausea polyuria confusion and cardiac arrhythmia,Avoid NSAIDs; use paracetamol; monitor lithium levels if NSAID unavoidable
+clopidogrel,omeprazole,moderate,Omeprazole inhibits CYP2C19 reducing conversion of clopidogrel to active metabolite,Reduced antiplatelet effect increasing cardiovascular event risk,Switch to pantoprazole or rabeprazole which have less CYP2C19 inhibition
+codeine,benzodiazepine,major,Additive CNS and respiratory depression,Severe respiratory depression apnea and death,Avoid combination; if opioid needed use lowest dose and monitor closely
+codeine,alcohol,moderate,Additive CNS and respiratory depression,Enhanced sedation respiratory depression and risk of overdose,Avoid alcohol during codeine therapy; counsel patients explicitly
+ciprofloxacin,tizanidine,contraindicated,Ciprofloxacin strongly inhibits CYP1A2 causing massive tizanidine accumulation,Severe hypotension bradycardia and excessive sedation,Absolutely contraindicated; use alternative antibiotic
+tamoxifen,paroxetine,major,Paroxetine strongly inhibits CYP2D6 blocking conversion of tamoxifen to active endoxifen,Reduced tamoxifen efficacy increasing breast cancer recurrence risk,Avoid paroxetine and fluoxetine in tamoxifen patients; use escitalopram or venlafaxine instead
+ace_inhibitor,ibuprofen,moderate,NSAIDs reduce prostaglandin-dependent renal vasodilation and blunt ACE inhibitor effect,Acute kidney injury and reduced antihypertensive effect,Avoid NSAIDs; if unavoidable monitor renal function and blood pressure closely
+phenytoin,omeprazole,minor,Omeprazole modestly inhibits CYP2C19 increasing phenytoin levels,Mild phenytoin toxicity risk with nystagmus and ataxia at high levels,Monitor phenytoin levels periodically; interaction usually manageable

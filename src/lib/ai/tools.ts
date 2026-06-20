@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
+import {
+  lookupDrugInteraction,
+  formatDrugInteractionForTool,
+  formatDrugInteractionNotFound,
+} from "./knowledge/loader";
 import type { SiteTeamAgentType } from "./prompts";
 import { createTeamTask, buildHistoryEvent } from "./team-data";
 
@@ -61,6 +66,27 @@ const doctorTools: AgentToolDefinition[] = [
         query: { type: "string", description: "Patient name or phone number" },
       },
       required: ["query"],
+    },
+  },
+  {
+    name: "get_drug_info",
+    description:
+      "Look up a known drug-drug interaction from the Oltigo Clinical Knowledge Pack. " +
+      "Returns severity, mechanism, consequence, and recommendation with a pack version citation. " +
+      "A 'not found' result does NOT mean the combination is safe — always recommend pharmacist review for unknown pairs.",
+    input_schema: {
+      type: "object",
+      properties: {
+        drug_a: {
+          type: "string",
+          description: "First drug name (generic or brand name, e.g. 'warfarin', 'aspirine')",
+        },
+        drug_b: {
+          type: "string",
+          description: "Second drug name (generic or brand name, e.g. 'ibuprofène', 'rifampicin')",
+        },
+      },
+      required: ["drug_a", "drug_b"],
     },
   },
 ];
@@ -238,6 +264,8 @@ export async function executeAgentTool(
       return getTodayAppointments(input, ctx);
     case "lookup_patient":
       return lookupPatient(input, ctx);
+    case "get_drug_info":
+      return getDrugInfo(input);
     case "check_slot_availability":
       return checkSlotAvailability(input, ctx);
     case "draft_whatsapp_reminder":
@@ -426,6 +454,35 @@ async function checkSlotAvailability(input: ToolInput, ctx: AgentToolContext): P
       available: (data ?? []).length === 0,
       conflicts: data ?? [],
       notice: READONLY_NOTICE,
+    },
+  };
+}
+
+function getDrugInfo(input: ToolInput): ToolResult {
+  const drugA = stringInput(input, "drug_a");
+  const drugB = stringInput(input, "drug_b");
+
+  if (!drugA || !drugB) {
+    return {
+      ok: false,
+      error: "drug_a and drug_b are both required",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const interaction = lookupDrugInteraction(drugA, drugB);
+
+  return {
+    ok: true,
+    data: {
+      found: interaction !== null,
+      severity: interaction?.severity ?? null,
+      formatted: interaction
+        ? formatDrugInteractionForTool(interaction)
+        : formatDrugInteractionNotFound(drugA, drugB),
+      notice:
+        "Les informations sur les interactions médicamenteuses sont fournies à titre indicatif. " +
+        "Consultez toujours un pharmacien ou une source de référence complète avant de prescrire.",
     },
   };
 }

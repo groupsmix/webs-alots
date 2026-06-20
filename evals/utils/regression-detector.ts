@@ -28,6 +28,7 @@ const THRESHOLDS: RegressionThresholds = {
     "rag-groundedness": 90,
     triage: 100,
     "tool-loop": 100,
+    "drug-interaction": 100,
   },
 };
 

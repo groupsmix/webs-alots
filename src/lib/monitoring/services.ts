@@ -50,12 +50,18 @@ export interface HealthApiData {
  * - `http-error`    — the server responded but with a non-2xx status. The
  *                     health route returns 503 when the database is
  *                     unreachable, so this path must mark the DB as "down".
+ * - `geo-blocked`   — the server returned 403 with code GEO_RESTRICTED,
+ *                     meaning the admin is connecting from outside the
+ *                     allowed geography (e.g. travelling or on a VPN). The
+ *                     platform itself is healthy; access is restricted for
+ *                     this specific network location.
  * - `network-error` — the request threw (server unreachable).
  */
 export type HealthFetchOutcome =
   | { kind: "ok"; data: HealthApiData }
   | { kind: "bad-json" }
   | { kind: "http-error" }
+  | { kind: "geo-blocked" }
   | { kind: "network-error" };
 
 export interface DerivedHealth {
@@ -96,6 +102,17 @@ export function deriveHealthStatus(outcome: HealthFetchOutcome): DerivedHealth {
       return {
         webApp: "degraded",
         database: "down",
+        version: DEFAULT_VERSION,
+        nodeVersion: null,
+        nextVersion: null,
+      };
+    case "geo-blocked":
+      // The platform is healthy but access from this location is restricted.
+      // We cannot determine actual service health, so report unknown (degraded)
+      // rather than falsely showing operational or down.
+      return {
+        webApp: "degraded",
+        database: "degraded",
         version: DEFAULT_VERSION,
         nodeVersion: null,
         nextVersion: null,

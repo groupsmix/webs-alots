@@ -136,14 +136,16 @@ export function LiveIncidents() {
                       : "border-amber-200 bg-amber-50 text-amber-700"
                   }`}
                 >
-                  {incident.status === "down" ? "Down" : "Degraded"}
+                  {incident.status === "down" ? "En panne" : "Dégradé"}
                 </span>
               </div>
             ))}
           </div>
         )}
+        {/* B2/B3 fix: toLocaleTimeString() output differs between server and
+            client locale → suppressHydrationWarning prevents React #418. */}
         {checkedAt && (
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p suppressHydrationWarning className="mt-3 text-xs text-muted-foreground">
             Dernière vérification : {checkedAt.toLocaleTimeString()}
           </p>
         )}
