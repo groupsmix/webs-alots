@@ -236,33 +236,6 @@ function saveExpandedGroups(keys: Set<string>): void {
   }
 }
 
-const FALLBACK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "mock-1",
-    title: "New clinic registered: Devin Test Clinic",
-    message: "A new clinic has been onboarded and is awaiting configuration.",
-    time: "2m ago",
-    unread: true,
-    type: "info",
-  },
-  {
-    id: "mock-2",
-    title: "1 subscription suspended: VqfatzgAG",
-    message: "Subscription suspended due to overdue payment.",
-    time: "1h ago",
-    unread: true,
-    type: "warning",
-  },
-  {
-    id: "mock-3",
-    title: "System update deployed successfully",
-    message: "Platform v2.4.1 has been deployed to all regions.",
-    time: "3h ago",
-    unread: true,
-    type: "success",
-  },
-];
-
 const notifTypeIcon: Record<NotificationType, typeof Info> = {
   info: Info,
   warning: AlertTriangle,
@@ -549,21 +522,10 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
             }),
           );
         } else {
-          // XB2-fix: no real notifications → show empty list so the bell
-          // displays 0 instead of the stale mock count (always "3").
-          // FALLBACK_NOTIFICATIONS remain available for local dev only.
-          if (process.env.NODE_ENV !== "production") {
-            // nosemgrep: semgrep.env-access — NODE_ENV is a Next.js/Webpack build-time constant, not a runtime secret
-            const readIds = getReadNotifIds();
-            setNotifications(
-              FALLBACK_NOTIFICATIONS.map((n) => ({
-                ...n,
-                unread: !readIds.has(n.id),
-              })),
-            );
-          } else {
-            setNotifications([]);
-          }
+          // XB2-fix: no real notifications → show an empty list so the bell
+          // displays 0 instead of a stale mock count. Applies in every
+          // environment (no env-gated mock data).
+          setNotifications([]);
         }
       } catch (err) {
         logger.warn("Failed to load notifications", { context: "super-admin-layout", error: err });

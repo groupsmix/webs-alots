@@ -27,7 +27,7 @@ import {
   Percent,
   AlertTriangle,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ComponentProps } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -648,10 +648,12 @@ export default function PricingPage() {
                       }
                     />
                     <Tooltip
-                      formatter={(value: number) => [
-                        value === 0 ? "Gratuit" : formatCurrency(value, "fr", "MAD"),
-                        "Prix",
-                      ]}
+                      formatter={
+                        ((value: number) => [
+                          value === 0 ? "Gratuit" : formatCurrency(value, "fr", "MAD"),
+                          "Prix",
+                        ]) as unknown as ComponentProps<typeof Tooltip>["formatter"]
+                      }
                       labelStyle={{ fontSize: 11 }}
                       contentStyle={{ fontSize: 11 }}
                       cursor={{ fill: "hsl(var(--muted))" }}

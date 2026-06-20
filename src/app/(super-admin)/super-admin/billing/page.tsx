@@ -21,7 +21,7 @@ import {
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type ComponentProps } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -420,10 +420,12 @@ export default function BillingPage() {
                       }
                     />
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value, "fr", "MAD"),
-                        "Encaissé",
-                      ]}
+                      formatter={
+                        ((value: number) => [
+                          formatCurrency(value, "fr", "MAD"),
+                          "Encaissé",
+                        ]) as unknown as ComponentProps<typeof Tooltip>["formatter"]
+                      }
                       labelStyle={{ fontSize: 11 }}
                       contentStyle={{ fontSize: 11 }}
                       cursor={{ fill: "hsl(var(--muted))" }}
