@@ -889,7 +889,37 @@ export default function SubscriptionsPage() {
               <DialogTitle>{detailSub.clinicName}</DialogTitle>
               <DialogDescription>Détails de l&apos;abonnement</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-1">
+              {/* S19: financial summary strip -------------------------------- */}
+              {(() => {
+                const paid = detailSub.invoices.filter((i) => i.status === "paid");
+                const totalPaid = paid.reduce((s, i) => s + i.amount, 0);
+                const lastPmt = paid
+                  .map((i) => i.paidDate ?? i.date)
+                  .sort()
+                  .at(-1);
+                return totalPaid > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3 text-center">
+                    <div>
+                      <p className="text-base font-bold text-green-600">
+                        {formatCurrency(totalPaid, "fr", detailSub.currency)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Total encaissé</p>
+                    </div>
+                    <div>
+                      <p className="text-base font-bold">{paid.length}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Paiement{paid.length > 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold tabular-nums">{lastPmt ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">Dernier pmt</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Type :</span>{" "}
@@ -991,6 +1021,120 @@ export default function SubscriptionsPage() {
                   <p className="text-sm text-muted-foreground">Aucune facture</p>
                 )}
               </div>
+
+              {/* S19: synthesised activity timeline ----------------------- */}
+              {(() => {
+                type TlEvent = {
+                  date: string;
+                  label: string;
+                  sub?: string;
+                  dot: string; // tailwind bg + text classes
+                  glyph: string;
+                };
+                const events: TlEvent[] = [];
+
+                // Period start
+                events.push({
+                  date: detailSub.currentPeriodStart,
+                  label: "Période en cours démarrée",
+                  dot: "bg-blue-100 text-blue-600 dark:bg-blue-900/40",
+                  glyph: "▶",
+                });
+
+                // Invoice events (sorted ascending)
+                const sorted = [...detailSub.invoices].sort((a, b) =>
+                  a.date.localeCompare(b.date),
+                );
+                for (const inv of sorted) {
+                  if (inv.status === "paid") {
+                    events.push({
+                      date: inv.paidDate ?? inv.date,
+                      label: `Paiement reçu — ${formatCurrency(inv.amount, "fr", detailSub.currency)}`,
+                      sub: `Facture ${inv.id.slice(-6).toUpperCase()}`,
+                      dot: "bg-green-100 text-green-700 dark:bg-green-900/40",
+                      glyph: "✓",
+                    });
+                  } else if (inv.status === "overdue") {
+                    events.push({
+                      date: inv.date,
+                      label: `Facture impayée — ${formatCurrency(inv.amount, "fr", detailSub.currency)}`,
+                      sub: `Facture ${inv.id.slice(-6).toUpperCase()}`,
+                      dot: "bg-red-100 text-red-600 dark:bg-red-900/40",
+                      glyph: "!",
+                    });
+                  } else {
+                    events.push({
+                      date: inv.date,
+                      label: `Facture en attente — ${formatCurrency(inv.amount, "fr", detailSub.currency)}`,
+                      sub: `Facture ${inv.id.slice(-6).toUpperCase()}`,
+                      dot: "bg-amber-100 text-amber-600 dark:bg-amber-900/40",
+                      glyph: "·",
+                    });
+                  }
+                }
+
+                // Status events
+                if (detailSub.cancelledAt) {
+                  events.push({
+                    date: detailSub.cancelledAt,
+                    label: "Abonnement annulé",
+                    dot: "bg-red-100 text-red-600 dark:bg-red-900/40",
+                    glyph: "✕",
+                  });
+                }
+                if (
+                  detailSub.status === "suspended" &&
+                  !detailSub.cancelledAt
+                ) {
+                  const reason = getSuspensionReason(detailSub);
+                  events.push({
+                    date: detailSub.currentPeriodEnd,
+                    label: "Abonnement suspendu",
+                    sub: reason || undefined,
+                    dot: "bg-orange-100 text-orange-600 dark:bg-orange-900/40",
+                    glyph: "⏸",
+                  });
+                }
+                if (detailSub.trialEndsAt) {
+                  events.push({
+                    date: detailSub.trialEndsAt,
+                    label: "Fin de période d'essai",
+                    dot: "bg-sky-100 text-sky-600 dark:bg-sky-900/40",
+                    glyph: "◷",
+                  });
+                }
+
+                if (events.length < 2) return null; // nothing useful to show
+
+                events.sort((a, b) => a.date.localeCompare(b.date));
+
+                return (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="text-sm font-semibold mb-3">Activité</h4>
+                      <ol className="ml-2 border-l border-border space-y-3">
+                        {events.map((evt, i) => (
+                          <li key={i} className="ml-4 relative">
+                            <span
+                              className={`absolute -left-[1.375rem] flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold leading-none ${evt.dot}`}
+                            >
+                              {evt.glyph}
+                            </span>
+                            <p className="text-xs font-medium leading-tight">{evt.label}</p>
+                            {evt.sub && (
+                              <p className="text-[10px] text-muted-foreground">{evt.sub}</p>
+                            )}
+                            <p className="text-[10px] text-muted-foreground tabular-nums">
+                              {evt.date}
+                            </p>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetailSub(null)}>

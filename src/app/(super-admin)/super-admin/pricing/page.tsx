@@ -669,6 +669,14 @@ export default function PricingPage() {
                         )}
                       </CardTitle>
                     )}
+                    {/* S10: Show monthly equivalent when annual billing is selected.
+                        Admins comparing annual vs monthly need to see the per-month cost
+                        without doing mental arithmetic on the annual figure. */}
+                    {!isEditing && billingCycle === "yearly" && price > 0 && (
+                      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 -mt-1">
+                        soit {formatNumber(Math.round(price / 12))} MAD/mois
+                      </p>
+                    )}
                     {!isEditing && (
                       <p className="text-xs text-muted-foreground">{tier.description}</p>
                     )}

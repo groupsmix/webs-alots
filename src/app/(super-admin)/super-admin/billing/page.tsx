@@ -20,7 +20,16 @@ import {
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -118,6 +127,26 @@ export default function BillingPage() {
   const overdueAmount = overdueRecords.reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
 
   const isFilteredView = statusFilter !== "all" || search.trim().length > 0 || !!dateFrom || !!dateTo;
+
+  // S5: Aggregate paid revenue by month for the trend sparkbar.
+  // Always uses the full `records` set (not `filtered`) so the chart
+  // shows the true historical trend regardless of the active filter.
+  const chartData = useMemo(() => {
+    const byMonth: Record<string, number> = {};
+    for (const r of records) {
+      if (r.status === "paid" && r.amountPaid > 0) {
+        const month = r.invoiceDate.slice(0, 7); // YYYY-MM
+        byMonth[month] = (byMonth[month] ?? 0) + r.amountPaid;
+      }
+    }
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-12) // cap at 12 months so the chart stays readable
+      .map(([month, amount]) => ({
+        label: month.slice(5) + "/" + month.slice(2, 4), // "MM/YY"
+        amount,
+      }));
+  }, [records]);
 
   function handleExportBillingCSV() {
     const rows = filtered.map((r) => ({
@@ -325,6 +354,70 @@ export default function BillingPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* S5: Monthly paid-revenue bar chart — always shows all-time trend
+              regardless of the active filter so admins keep the big picture
+              in view while drilling into specific invoices. Hidden when no
+              paid invoices exist yet (chartData.length === 0). */}
+          {chartData.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  Revenus encaissés par mois
+                </CardTitle>
+                <span className="text-xs text-muted-foreground">
+                  {chartData.length} mois · toutes factures
+                </span>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0">
+                <ResponsiveContainer width="100%" height={140}>
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                    barCategoryGap="30%"
+                  >
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={44}
+                      tickFormatter={(v: number) =>
+                        v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
+                      }
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        formatCurrency(value, "fr", "MAD"),
+                        "Encaissé",
+                      ]}
+                      labelStyle={{ fontSize: 11 }}
+                      contentStyle={{ fontSize: 11 }}
+                      cursor={{ fill: "hsl(var(--muted))" }}
+                    />
+                    <Bar dataKey="amount" radius={[3, 3, 0, 0]}>
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            index === chartData.length - 1
+                              ? "hsl(var(--primary))"
+                              : "hsl(var(--primary) / 0.45)"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Search, Status Filters, and Date Range */}
           <div className="flex flex-col sm:flex-row gap-3 mb-2">

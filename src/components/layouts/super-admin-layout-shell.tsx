@@ -23,6 +23,7 @@ import {
   Search,
   Plus,
   BarChart3,
+  TrendingUp,
   Bot,
   CheckCheck,
   Info,
@@ -119,7 +120,23 @@ const navGroups: NavGroup[] = [
     label: "Revenue",
     icon: CreditCard,
     items: [
-      { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
+      {
+        href: "/super-admin/billing",
+        label: "Billing",
+        icon: CreditCard,
+        children: [
+          {
+            href: "/super-admin/billing/revenue",
+            label: "Revenue Overview",
+            icon: TrendingUp,
+          },
+          {
+            href: "/super-admin/billing/forecast",
+            label: "Forecast",
+            icon: BarChart3,
+          },
+        ],
+      },
       { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
       { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
       { href: "/super-admin/referrals", label: "Medical Referrals", icon: Gift },
