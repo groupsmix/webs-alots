@@ -176,10 +176,12 @@ export async function createTenantClient(clinicId: string) {
 }
 
 /**
- * R-01: Every call site must declare its purpose so auditors can
- * verify each admin-client usage is intentional and appropriately scoped.
+ * R-01: Every call site must declare an audit label so each admin-client
+ * usage is traceable in structured logs. This is a LOG LABEL ONLY — it
+ * provides no access control. The real gate is always the handler's
+ * withAuth([roles]) / verifyCronSecret / webhook signature check.
  */
-export type AdminPurpose =
+export type AdminAuditLabel =
   | "auth_admin"
   | "cron"
   | "audit_log"
@@ -237,14 +239,16 @@ export type AdminPurpose =
  * onboarding staff accounts, audit log writes). Never expose this client
  * to the browser.
  *
- * R-01: Requires `purpose` so each usage is auditable. Optionally accepts
- * `clinicId` for structured logging (does NOT set tenant context — use
- * createTenantClient for that).
+ * R-01: Requires `auditLabel` so each usage is traceable in structured logs.
+ * NOTE: `auditLabel` is a LOG LABEL ONLY — it provides no access control.
+ * The real gate is always the handler's withAuth([roles]) / verifyCronSecret /
+ * webhook signature check. Optionally accepts `clinicId` for structured
+ * logging (does NOT set tenant context — use createTenantClient for that).
  *
  * @throws Error if SUPABASE_SERVICE_ROLE_KEY is not configured
  */
-export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
-  logger.debug("Admin client created", { context: "supabase-server", purpose, clinicId });
+export function createAdminClient(auditLabel: AdminAuditLabel, clinicId?: string) {
+  logger.debug("Admin client created", { context: "supabase-server", auditLabel, clinicId });
   const client = createSupabaseClient<Database>(
     getSupabaseUrl(),
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
@@ -262,8 +266,8 @@ export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
  * (e.g. impersonation_sessions, pending_audit_logs). Once the types are
  * regenerated, callers should migrate to createAdminClient() for type safety.
  */
-export function createUntypedAdminClient(purpose: AdminPurpose, clinicId?: string) {
-  logger.debug("Untyped admin client created", { context: "supabase-server", purpose, clinicId });
+export function createUntypedAdminClient(auditLabel: AdminAuditLabel, clinicId?: string) {
+  logger.debug("Untyped admin client created", { context: "supabase-server", auditLabel, clinicId });
   const client = createSupabaseClient(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -285,11 +289,11 @@ export function createUntypedAdminClient(purpose: AdminPurpose, clinicId?: strin
  * @param clinicId - The clinic UUID to scope operations to
  * @throws Error if clinicId is missing or invalid
  */
-export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string) {
+export function createScopedAdminClient(auditLabel: AdminAuditLabel, clinicId: string) {
   if (!clinicId || !isValidClinicId(clinicId)) {
     throw new Error(`createScopedAdminClient: invalid clinicId: ${clinicId}`);
   }
-  logger.debug("Scoped admin client created", { context: "supabase-server", purpose, clinicId });
+  logger.debug("Scoped admin client created", { context: "supabase-server", auditLabel, clinicId });
   const client = createSupabaseClient<Database>(
     getSupabaseUrl(),
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
