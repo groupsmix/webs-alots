@@ -48,6 +48,16 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     });
   }
 
+  let nextVersion: string | null = null;
+  try {
+    const nextPkg = await import("next/package.json");
+    nextVersion = (nextPkg as { version?: string }).version ?? null;
+  } catch {
+    logger.warn("Could not read Next.js package version", {
+      context: "api/admin/health",
+    });
+  }
+
   if (databaseStatus === "disconnected") {
     return apiError("Database unreachable", 503, "DB_UNREACHABLE");
   }
@@ -60,6 +70,8 @@ async function handler(_request: NextRequest, auth: AuthContext) {
     // panel can populate "Node.js Version" — a client component cannot read
     // process.version reliably. Null on runtimes that do not expose it.
     nodeVersion: typeof process !== "undefined" ? (process.version ?? null) : null,
+    // Surface the Next.js version from the installed package.
+    nextVersion,
     timestamp,
   });
 }

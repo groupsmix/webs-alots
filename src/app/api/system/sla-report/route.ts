@@ -25,7 +25,7 @@ export const GET = withAuth(
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "private, no-store",
-        "Content-Disposition": `inline; filename="sla-report-${month}.html"`,
+        "Content-Disposition": `attachment; filename="sla-report-${month}.html"`,
       },
     });
   },

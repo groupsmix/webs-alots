@@ -2,6 +2,7 @@
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
+import { SlaExportButton } from "./export-button";
 
 export default async function SLAPage() {
   const supabase = createUntypedAdminClient("super_admin");
@@ -37,14 +38,7 @@ export default async function SLAPage() {
             Suivi mensuel de la disponibilité et des incidents enregistrés.
           </p>
         </div>
-        <a
-          href={`/api/system/sla-report?month=${reportMonthParam}`}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-        >
-          Export latest report
-        </a>
+        <SlaExportButton reportMonth={reportMonthParam} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -4,6 +4,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MONITORED_SERVICES } from "@/lib/monitoring/services";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
+import { LiveIncidents } from "./live-incidents";
 
 // uptime_sla_monthly (view) and uptime_events are introduced by migration
 // 00160 and are not yet in the generated Supabase types. Use the untyped
@@ -105,6 +106,9 @@ export default async function SystemHealthPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Live incident probe - same data source as System Status page */}
+      <LiveIncidents />
 
       <Card>
         <CardHeader>

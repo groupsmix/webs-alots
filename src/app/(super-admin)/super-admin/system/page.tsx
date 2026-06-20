@@ -121,6 +121,7 @@ export default function SystemStatusPage() {
   const [activeUsers, setActiveUsers] = useState(0);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [nodeVersion, setNodeVersion] = useState<string | null>(null);
+  const [nextVersion, setNextVersion] = useState<string | null>(null);
   const [apiLatencyMs, setApiLatencyMs] = useState<number | null>(null);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const [readiness, setReadiness] = useState<ReadinessData | null>(null);
@@ -141,6 +142,7 @@ export default function SystemStatusPage() {
 
       setAppVersion(core.version);
       setNodeVersion(core.nodeVersion);
+      setNextVersion(core.nextVersion);
       setApiLatencyMs(core.responseTimeMs);
 
       let userCount = 0;
@@ -184,9 +186,9 @@ export default function SystemStatusPage() {
 
       try {
         const [readinessRes, backupsRes, jobsRes] = await Promise.all([
-          fetch("/api/admin/readiness"),
-          fetch("/api/admin/readiness/backups"),
-          fetch("/api/admin/readiness/jobs"),
+          fetch("/api/admin/readiness", { credentials: "include" }),
+          fetch("/api/admin/readiness/backups", { credentials: "include" }),
+          fetch("/api/admin/readiness/jobs", { credentials: "include" }),
         ]);
         if (readinessRes.ok) {
           const json = await readinessRes.json();
@@ -426,7 +428,7 @@ export default function SystemStatusPage() {
                   label: "Node.js Version",
                   value: nodeVersion ?? "N/A",
                 },
-                { label: "Next.js Version", value: "16" },
+                { label: "Next.js Version", value: nextVersion ?? "N/A" },
                 // nosemgrep: semgrep.env-access — NEXT_PUBLIC_* is a client-side public env var for display only
                 {
                   label: "Last Deployment",

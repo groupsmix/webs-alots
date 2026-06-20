@@ -37,6 +37,8 @@ export interface HealthApiData {
   version: string;
   /** Server runtime version (e.g. "v22.13.0"); null when unavailable. */
   nodeVersion?: string | null;
+  /** Next.js framework version (e.g. "16.2.9"); null when unavailable. */
+  nextVersion?: string | null;
   timestamp: string;
 }
 
@@ -61,6 +63,7 @@ export interface DerivedHealth {
   database: ServiceStatus;
   version: string;
   nodeVersion: string | null;
+  nextVersion: string | null;
 }
 
 const DEFAULT_VERSION = "0.1.0";
@@ -83,17 +86,30 @@ export function deriveHealthStatus(outcome: HealthFetchOutcome): DerivedHealth {
         database: outcome.data.database === "connected" ? "operational" : "down",
         version: outcome.data.version || DEFAULT_VERSION,
         nodeVersion: outcome.data.nodeVersion ?? null,
+        nextVersion: outcome.data.nextVersion ?? null,
       };
     case "bad-json":
     case "http-error":
       // The app server responded but the health probe failed. The most
       // common cause is the database being unreachable (the route returns
       // 503 / DB_UNREACHABLE), so the web app is degraded and the DB is down.
-      return { webApp: "degraded", database: "down", version: DEFAULT_VERSION, nodeVersion: null };
+      return {
+        webApp: "degraded",
+        database: "down",
+        version: DEFAULT_VERSION,
+        nodeVersion: null,
+        nextVersion: null,
+      };
     case "network-error":
     default:
       // Could not reach the app at all.
-      return { webApp: "down", database: "down", version: DEFAULT_VERSION, nodeVersion: null };
+      return {
+        webApp: "down",
+        database: "down",
+        version: DEFAULT_VERSION,
+        nodeVersion: null,
+        nextVersion: null,
+      };
   }
 }
 
