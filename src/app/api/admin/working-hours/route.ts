@@ -86,7 +86,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       .eq("id", clinicId)
       .single();
 
-    const currentConfig = ((current?.config ?? {}) as Record<string, unknown>);
+    const currentConfig = (current?.config ?? {}) as Record<string, unknown>;
     await supabase
       .from("clinics")
       .update({ config: { ...currentConfig, doctorSchedules: parsed.data.doctorSchedules } })

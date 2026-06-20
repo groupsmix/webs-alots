@@ -68,6 +68,15 @@ const ALLOWLIST = new Set([
   "src/app/api/admin/ai-task-config/route.ts",
   // AI route — unified AI endpoint with cross-tenant usage logging
   "src/app/api/ai/route.ts",
+  // Super-admin document templates — `document_templates` is a platform-wide
+  // global table (migration 00193) with NO clinic_id column. RLS gives
+  // super_admin full access and authenticated users read-only on active rows.
+  // Cross-tenant by design.
+  "src/app/api/super-admin/templates/route.ts",
+  // Super-admin self-service profile — only touches the `users` table scoped
+  // to the authenticated super_admin's own row (.eq("id", auth.profile.id)).
+  // No tenant-scoped tables; RLS enforces row ownership.
+  "src/app/api/super-admin/me/route.ts",
   // AI router/feature-toggles helpers — cross-tenant reads of ai_* tables
   "src/lib/ai/router.ts",
   "src/lib/ai/feature-toggles.ts",

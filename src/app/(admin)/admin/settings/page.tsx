@@ -200,22 +200,35 @@ export default function ClinicSettingsPage() {
     loadedRef.current = true;
     fetch("/api/admin/settings")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
-      .then((json: { data: { profile: ClinicProfile; payment: PaymentSettings; booking: BookingRules; whatsapp: { patientMessageLocale: "fr" | "ar" | "darija"; templates: WhatsAppTemplate[] }; features: { kioskModeEnabled: boolean; googlePlaceId: string } } }) => {
-        const d = json.data;
-        if (d.profile) setClinicProfile(d.profile);
-        if (d.payment) setPaymentSettings(d.payment);
-        if (d.booking) setBookingRules(d.booking);
-        if (d.whatsapp) {
-          setPatientMessageLocale(d.whatsapp.patientMessageLocale ?? "fr");
-          if (d.whatsapp.templates && d.whatsapp.templates.length > 0) {
-            setTemplates(d.whatsapp.templates);
+      .then(
+        (json: {
+          data: {
+            profile: ClinicProfile;
+            payment: PaymentSettings;
+            booking: BookingRules;
+            whatsapp: {
+              patientMessageLocale: "fr" | "ar" | "darija";
+              templates: WhatsAppTemplate[];
+            };
+            features: { kioskModeEnabled: boolean; googlePlaceId: string };
+          };
+        }) => {
+          const d = json.data;
+          if (d.profile) setClinicProfile(d.profile);
+          if (d.payment) setPaymentSettings(d.payment);
+          if (d.booking) setBookingRules(d.booking);
+          if (d.whatsapp) {
+            setPatientMessageLocale(d.whatsapp.patientMessageLocale ?? "fr");
+            if (d.whatsapp.templates && d.whatsapp.templates.length > 0) {
+              setTemplates(d.whatsapp.templates);
+            }
           }
-        }
-        if (d.features) {
-          setKioskModeEnabled(d.features.kioskModeEnabled ?? false);
-          setGooglePlaceId(d.features.googlePlaceId ?? "");
-        }
-      })
+          if (d.features) {
+            setKioskModeEnabled(d.features.kioskModeEnabled ?? false);
+            setGooglePlaceId(d.features.googlePlaceId ?? "");
+          }
+        },
+      )
       .catch((err) => {
         logger.warn("Failed to load clinic settings", { context: "admin/settings", error: err });
       });
@@ -246,7 +259,10 @@ export default function ClinicSettingsPage() {
       addToast("Settings saved", "success");
       setTimeout(() => setSavedSection(null), 2000);
     } catch (err) {
-      logger.warn("Failed to save clinic settings", { context: `admin/settings/${section}`, error: err });
+      logger.warn("Failed to save clinic settings", {
+        context: `admin/settings/${section}`,
+        error: err,
+      });
       addToast("Failed to save settings. Please try again.", "error");
     } finally {
       setSavingSection(null);
@@ -295,7 +311,11 @@ export default function ClinicSettingsPage() {
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("profile")}>
                   <Save className="h-4 w-4 mr-1" />
-                  {savingSection === "profile" ? "Saving..." : savedSection === "profile" ? "Saved!" : "Save"}
+                  {savingSection === "profile"
+                    ? "Saving..."
+                    : savedSection === "profile"
+                      ? "Saved!"
+                      : "Save"}
                 </Button>
               </div>
             </CardHeader>
@@ -430,7 +450,11 @@ export default function ClinicSettingsPage() {
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("payment")}>
                   <Save className="h-4 w-4 mr-1" />
-                  {savingSection === "payment" ? "Saving..." : savedSection === "payment" ? "Saved!" : "Save"}
+                  {savingSection === "payment"
+                    ? "Saving..."
+                    : savedSection === "payment"
+                      ? "Saved!"
+                      : "Save"}
                 </Button>
               </div>
             </CardHeader>
@@ -511,7 +535,11 @@ export default function ClinicSettingsPage() {
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("booking")}>
                   <Save className="h-4 w-4 mr-1" />
-                  {savingSection === "booking" ? "Saving..." : savedSection === "booking" ? "Saved!" : "Save"}
+                  {savingSection === "booking"
+                    ? "Saving..."
+                    : savedSection === "booking"
+                      ? "Saved!"
+                      : "Save"}
                 </Button>
               </div>
             </CardHeader>
@@ -658,7 +686,11 @@ export default function ClinicSettingsPage() {
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("whatsapp")}>
                   <Save className="h-4 w-4 mr-1" />
-                  {savingSection === "whatsapp" ? "Saving..." : savedSection === "whatsapp" ? "Saved!" : "Save"}
+                  {savingSection === "whatsapp"
+                    ? "Saving..."
+                    : savedSection === "whatsapp"
+                      ? "Saved!"
+                      : "Save"}
                 </Button>
               </div>
             </CardHeader>
@@ -746,7 +778,11 @@ export default function ClinicSettingsPage() {
                   </CardTitle>
                   <Button size="sm" onClick={() => handleSave("features")}>
                     <Save className="h-4 w-4 mr-1" />
-                    {savingSection === "features" ? "Saving..." : savedSection === "features" ? "Saved!" : "Save"}
+                    {savingSection === "features"
+                      ? "Saving..."
+                      : savedSection === "features"
+                        ? "Saved!"
+                        : "Save"}
                   </Button>
                 </div>
               </CardHeader>

@@ -30,7 +30,10 @@ export default function DoctorConsentFormsPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const [forms, pats] = await Promise.all([
         fetchConsentForms(user.clinic_id),
@@ -50,7 +53,11 @@ export default function DoctorConsentFormsPage() {
     return () => controller.abort();
   }, []);
 
-  async function handleAdd(consent: { patientName: string; consentType: string; consentText: string }) {
+  async function handleAdd(consent: {
+    patientName: string;
+    consentType: string;
+    consentText: string;
+  }) {
     if (!clinicId) return;
     const patient = patients.find(
       (p) => p.name.toLowerCase() === consent.patientName.toLowerCase().trim(),
@@ -84,10 +91,11 @@ export default function DoctorConsentFormsPage() {
   }
 
   async function handleRevoke(id: string) {
+    if (!clinicId) return;
     const previous = consents;
     setConsents((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: false } : c)));
     try {
-      await revokeConsentForm(id);
+      await revokeConsentForm(clinicId, id);
       addToast("Consent revoked", "success");
     } catch (err) {
       logger.warn("Failed to revoke consent form", { context: "doctor/consent-forms", error: err });
@@ -120,12 +128,7 @@ export default function DoctorConsentFormsPage() {
           {patients.length} patients available).
         </p>
       )}
-      <ConsentFormManager
-        consents={consents}
-        editable
-        onAdd={handleAdd}
-        onRevoke={handleRevoke}
-      />
+      <ConsentFormManager consents={consents} editable onAdd={handleAdd} onRevoke={handleRevoke} />
     </div>
   );
 }

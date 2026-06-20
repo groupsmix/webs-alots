@@ -549,7 +549,6 @@ export async function fetchClinicSales(clinicId: string) {
   return data ?? [];
 }
 
-
 // ============================================================
 // CONSENT FORMS (photo_consent_forms)
 // ============================================================
@@ -598,6 +597,7 @@ export async function createConsentForm(
   data: { consentType: string; consentText: string },
 ): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("photo_consent_forms")
     .insert({
@@ -614,15 +614,15 @@ export async function createConsentForm(
   return { id: (row as { id: string }).id };
 }
 
-export async function revokeConsentForm(id: string): Promise<void> {
+export async function revokeConsentForm(clinicId: string, id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
     .from("photo_consent_forms")
     .update({ is_active: false })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
-
 
 // ============================================================
 // CONSULTATION PHOTOS (consultation_photos)
@@ -654,9 +654,7 @@ interface ConsultationPhotoRow {
   created_at: string | null;
 }
 
-export async function fetchConsultationPhotos(
-  clinicId: string,
-): Promise<ConsultationPhotoView[]> {
+export async function fetchConsultationPhotos(clinicId: string): Promise<ConsultationPhotoView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<ConsultationPhotoRow>("consultation_photos", {
     eq: [["clinic_id", clinicId]],
@@ -685,6 +683,7 @@ export async function createConsultationPhoto(
   data: { bodyArea: string; notes: string; photoUrl?: string },
 ): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("consultation_photos")
     .insert({
@@ -702,7 +701,6 @@ export async function createConsultationPhoto(
   if (error) throw error;
   return { id: (row as { id: string }).id };
 }
-
 
 // ============================================================
 // DIALYSIS SESSIONS (dialysis_sessions)
@@ -772,9 +770,7 @@ interface FullDialysisSessionRow {
   notes: string | null;
 }
 
-export async function fetchDialysisSessions(
-  clinicId: string,
-): Promise<DialysisSessionView[]> {
+export async function fetchDialysisSessions(clinicId: string): Promise<DialysisSessionView[]> {
   await ensureLookups(clinicId);
   const [sessions, machines] = await Promise.all([
     fetchRows<FullDialysisSessionRow>("dialysis_sessions", {
@@ -800,8 +796,7 @@ export async function fetchDialysisSessions(
     durationMinutes: row.duration_minutes ?? 240,
     status: row.status as DialysisSessionView["status"],
     isRecurring: row.is_recurring,
-    recurrencePattern:
-      row.recurrence_pattern as DialysisSessionView["recurrencePattern"],
+    recurrencePattern: row.recurrence_pattern as DialysisSessionView["recurrencePattern"],
     accessType: row.access_type,
     preWeight: row.pre_weight,
     postWeight: row.post_weight,
@@ -834,6 +829,7 @@ export async function createDialysisSession(
   },
 ): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("dialysis_sessions")
     .insert({
@@ -853,6 +849,7 @@ export async function createDialysisSession(
 }
 
 export async function updateDialysisSessionStatus(
+  clinicId: string,
   sessionId: string,
   status: import("@/lib/types/database").DialysisSessionStatus,
 ): Promise<void> {
@@ -860,11 +857,13 @@ export async function updateDialysisSessionStatus(
   const { error } = await supabase
     .from("dialysis_sessions")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", sessionId);
+    .eq("id", sessionId)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
 
 export async function updateDialysisSessionVitals(
+  clinicId: string,
   sessionId: string,
   vitals: {
     preWeight?: number | null;
@@ -907,10 +906,10 @@ export async function updateDialysisSessionVitals(
       notes: vitals.notes,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", sessionId);
+    .eq("id", sessionId)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
-
 
 // ============================================================
 // IVF CYCLES (ivf_cycles)
@@ -1002,6 +1001,7 @@ export async function createIVFCycle(
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
     .eq("patient_id", patientId);
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("ivf_cycles")
     .insert({
@@ -1019,6 +1019,7 @@ export async function createIVFCycle(
 }
 
 export async function updateIVFCycleStatus(
+  clinicId: string,
   cycleId: string,
   status: import("@/lib/types/database").IVFCycleStatus,
 ): Promise<void> {
@@ -1026,11 +1027,13 @@ export async function updateIVFCycleStatus(
   const { error } = await supabase
     .from("ivf_cycles")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", cycleId);
+    .eq("id", cycleId)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
 
 export async function updateIVFCycleOutcome(
+  clinicId: string,
   cycleId: string,
   outcome: import("@/lib/types/database").IVFOutcome,
 ): Promise<void> {
@@ -1042,10 +1045,10 @@ export async function updateIVFCycleOutcome(
       status: "completed",
       updated_at: new Date().toISOString(),
     })
-    .eq("id", cycleId);
+    .eq("id", cycleId)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
-
 
 // ============================================================
 // IVF PROTOCOLS (ivf_protocols)
@@ -1101,6 +1104,7 @@ export async function createIVFProtocol(
   },
 ): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("ivf_protocols")
     .insert({
@@ -1119,12 +1123,15 @@ export async function createIVFProtocol(
   return { id: (row as { id: string }).id };
 }
 
-export async function deleteIVFProtocol(id: string): Promise<void> {
+export async function deleteIVFProtocol(clinicId: string, id: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase.from("ivf_protocols").delete().eq("id", id);
+  const { error } = await supabase
+    .from("ivf_protocols")
+    .delete()
+    .eq("id", id)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
-
 
 // ============================================================
 // TREATMENT PACKAGES (treatment_packages + patient_packages)
@@ -1236,6 +1243,7 @@ export async function createTreatmentPackage(
   },
 ): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("treatment_packages")
     .insert({
@@ -1254,13 +1262,17 @@ export async function createTreatmentPackage(
   return { id: (row as { id: string }).id };
 }
 
-export async function recordPatientPackageSession(patientPackageId: string): Promise<void> {
+export async function recordPatientPackageSession(
+  clinicId: string,
+  patientPackageId: string,
+): Promise<void> {
   const supabase = createClient();
   // Use RPC or a raw increment — safe with Supabase's update + select pattern
   const { data: current, error: fetchErr } = await supabase
     .from("patient_packages")
     .select("sessions_used, sessions_total")
     .eq("id", patientPackageId)
+    .eq("clinic_id", clinicId)
     .single();
   if (fetchErr) throw fetchErr;
   const row = current as { sessions_used: number; sessions_total: number };
@@ -1273,10 +1285,10 @@ export async function recordPatientPackageSession(patientPackageId: string): Pro
       status: newStatus,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", patientPackageId);
+    .eq("id", patientPackageId)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }
-
 
 // ============================================================
 // PROSTHETIC ORDERS (prosthetic_orders)
@@ -1326,9 +1338,7 @@ interface FullProstheticOrderRow {
   is_paid: boolean;
 }
 
-export async function fetchProstheticOrders(
-  clinicId: string,
-): Promise<ProstheticOrderView[]> {
+export async function fetchProstheticOrders(clinicId: string): Promise<ProstheticOrderView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<FullProstheticOrderRow>("prosthetic_orders", {
     eq: [["clinic_id", clinicId]],
@@ -1379,6 +1389,7 @@ export async function createProstheticOrder(
     .split(/[,\s]+/)
     .map((t) => parseInt(t.trim()))
     .filter((n) => Number.isFinite(n) && n > 0);
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("prosthetic_orders")
     .insert({
@@ -1404,6 +1415,7 @@ export async function createProstheticOrder(
 }
 
 export async function updateProstheticOrderStatus(
+  clinicId: string,
   orderId: string,
   status: import("@/lib/types/database").ProstheticOrderStatus,
 ): Promise<void> {
@@ -1414,6 +1426,7 @@ export async function updateProstheticOrderStatus(
   const { error } = await supabase
     .from("prosthetic_orders")
     .update({ status, updated_at: new Date().toISOString(), ...extra })
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }

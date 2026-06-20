@@ -33,7 +33,10 @@ export default function DoctorDialysisSessionsPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const [sess, pats] = await Promise.all([
         fetchDialysisSessions(user.clinic_id),
@@ -122,12 +125,11 @@ export default function DoctorDialysisSessionsPage() {
   }
 
   async function handleUpdateStatus(sessionId: string, status: DialysisSessionStatus) {
+    if (!clinicId) return;
     const previous = sessions;
-    setSessions((prev) =>
-      prev.map((s) => (s.id === sessionId ? { ...s, status } : s)),
-    );
+    setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, status } : s)));
     try {
-      await updateDialysisSessionStatus(sessionId, status);
+      await updateDialysisSessionStatus(clinicId, sessionId, status);
       addToast(`Session ${status.replace("_", " ")}`, "success");
     } catch (err) {
       logger.warn("Failed to update session status", {
@@ -160,12 +162,11 @@ export default function DoctorDialysisSessionsPage() {
       notes: string | null;
     }>,
   ) {
+    if (!clinicId) return;
     const previous = sessions;
-    setSessions((prev) =>
-      prev.map((s) => (s.id === sessionId ? { ...s, ...vitals } : s)),
-    );
+    setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, ...vitals } : s)));
     try {
-      await updateDialysisSessionVitals(sessionId, vitals);
+      await updateDialysisSessionVitals(clinicId, sessionId, vitals);
       addToast("Vitals saved", "success");
     } catch (err) {
       logger.warn("Failed to save vitals", { context: "doctor/dialysis-sessions", error: err });
@@ -205,11 +206,7 @@ export default function DoctorDialysisSessionsPage() {
           />
         </TabsContent>
         <TabsContent value="vitals" className="mt-4">
-          <VitalsTracker
-            sessions={sessions}
-            editable
-            onSaveVitals={handleSaveVitals}
-          />
+          <VitalsTracker sessions={sessions} editable onSaveVitals={handleSaveVitals} />
         </TabsContent>
       </Tabs>
     </div>

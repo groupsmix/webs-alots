@@ -26,6 +26,7 @@ const patchBodySchema = z.object({
 async function handleGet(_req: NextRequest, auth: AuthContext) {
   try {
     const supabase = await createClient();
+    // nosemgrep: tenant-scoping — self-service read of the authenticated super_admin's own row (.eq("id", auth.profile.id)); RLS enforces ownership
     const { data, error } = await supabase
       .from("users")
       .select("id, name, email, role, metadata")
@@ -61,6 +62,7 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     const supabase = await createClient();
 
     // Fetch current metadata to merge
+    // nosemgrep: tenant-scoping — self-service read of the authenticated super_admin's own row (.eq("id", auth.profile.id)); RLS enforces ownership
     const { data: current, error: fetchErr } = await supabase
       .from("users")
       .select("metadata")
@@ -71,16 +73,20 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
       return apiInternalError("Failed to fetch user");
     }
 
-    const currentMeta = ((current.metadata ?? {}) as Record<string, unknown>);
+    const currentMeta = (current.metadata ?? {}) as Record<string, unknown>;
     const newMeta = { ...currentMeta, [parsed.data.metadataKey]: parsed.data.value };
 
+    // nosemgrep: tenant-scoping — self-service update of the authenticated super_admin's own row (.eq("id", auth.profile.id)); RLS enforces ownership
     const { error: updateErr } = await supabase
       .from("users")
       .update({ metadata: newMeta, updated_at: new Date().toISOString() })
       .eq("id", auth.profile.id);
 
     if (updateErr) {
-      logger.warn("Failed to update user metadata", { context: "super-admin/me", error: updateErr });
+      logger.warn("Failed to update user metadata", {
+        context: "super-admin/me",
+        error: updateErr,
+      });
       return apiInternalError("Failed to save settings");
     }
 
@@ -91,5 +97,5 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
   }
 }
 
-export const GET   = withAuth(handleGet,   ALLOWED_ROLES);
+export const GET = withAuth(handleGet, ALLOWED_ROLES);
 export const PATCH = withAuth(handlePatch, ALLOWED_ROLES);

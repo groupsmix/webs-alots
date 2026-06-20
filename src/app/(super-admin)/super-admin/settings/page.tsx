@@ -68,16 +68,34 @@ export default function SettingsPage() {
     loadedRef.current = true;
     fetch("/api/super-admin/me")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
-      .then((json: { data: { metadata?: { superAdminSettings?: { language?: string; timezone?: string; emailNotifications?: boolean; inAppNotifications?: boolean; refreshInterval?: string } } } }) => {
-        const s = json.data?.metadata?.superAdminSettings;
-        if (!s) return;
-        if (s.language) setLanguage(s.language);
-        if (s.timezone) setTimezone(s.timezone);
-        if (typeof s.emailNotifications === "boolean") setEmailNotifications(s.emailNotifications);
-        if (typeof s.inAppNotifications === "boolean") setInAppNotifications(s.inAppNotifications);
-        if (s.refreshInterval) setRefreshInterval(s.refreshInterval);
-      })
-      .catch(() => { /* use defaults */ });
+      .then(
+        (json: {
+          data: {
+            metadata?: {
+              superAdminSettings?: {
+                language?: string;
+                timezone?: string;
+                emailNotifications?: boolean;
+                inAppNotifications?: boolean;
+                refreshInterval?: string;
+              };
+            };
+          };
+        }) => {
+          const s = json.data?.metadata?.superAdminSettings;
+          if (!s) return;
+          if (s.language) setLanguage(s.language);
+          if (s.timezone) setTimezone(s.timezone);
+          if (typeof s.emailNotifications === "boolean")
+            setEmailNotifications(s.emailNotifications);
+          if (typeof s.inAppNotifications === "boolean")
+            setInAppNotifications(s.inAppNotifications);
+          if (s.refreshInterval) setRefreshInterval(s.refreshInterval);
+        },
+      )
+      .catch(() => {
+        /* use defaults */
+      });
   }, []);
 
   async function handleSave() {
@@ -98,7 +116,10 @@ export default function SettingsPage() {
       }
       addToast("Settings saved successfully", "success");
     } catch (err) {
-      logger.warn("Failed to save super-admin settings", { context: "super-admin/settings", error: err });
+      logger.warn("Failed to save super-admin settings", {
+        context: "super-admin/settings",
+        error: err,
+      });
       addToast("Failed to save settings. Please try again.", "error");
     } finally {
       setSaving(false);

@@ -51,7 +51,6 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
   }));
 }
 
-
 // ─────────────────────────────────────────────
 // Write: submit a patient review
 // ─────────────────────────────────────────────
@@ -66,6 +65,7 @@ export async function createReview(data: {
   comment: string;
 }): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("reviews")
     .insert({
@@ -97,6 +97,7 @@ export async function upsertNotificationPreferences(data: {
   prescriptionUpdates: boolean;
 }): Promise<void> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
   const { error } = await supabase.from("notification_preferences").upsert(
     {
       user_id: data.userId,
@@ -122,6 +123,7 @@ export async function fetchNotificationPreferences(userId: string): Promise<{
   prescriptionUpdates: boolean;
 } | null> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — notification_preferences is user-keyed (unique on user_id); RLS scopes rows to the authenticated user
   const { data, error } = await supabase
     .from("notification_preferences")
     .select(

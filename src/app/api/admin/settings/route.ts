@@ -51,13 +51,17 @@ const bookingSchema = z.object({
 
 const whatsappSchema = z.object({
   patientMessageLocale: z.enum(["fr", "ar", "darija"]).default("fr"),
-  templates: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    label: z.string(),
-    enabled: z.boolean(),
-    template: z.string(),
-  })).optional(),
+  templates: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        label: z.string(),
+        enabled: z.boolean(),
+        template: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 const featuresSchema = z.object({
@@ -91,7 +95,11 @@ async function handleGet(_req: NextRequest, auth: AuthContext) {
       .single();
 
     if (error || !clinic) {
-      logger.warn("Failed to fetch clinic settings", { context: "api/admin/settings", clinicId, error });
+      logger.warn("Failed to fetch clinic settings", {
+        context: "api/admin/settings",
+        clinicId,
+        error,
+      });
       return apiInternalError("Failed to load settings");
     }
 
@@ -144,7 +152,9 @@ async function handleGet(_req: NextRequest, auth: AuthContext) {
         templates: (waTpls ?? []).map((t) => ({
           id: t.id,
           name: t.template_name,
-          label: t.template_name.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          label: t.template_name
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c: string) => c.toUpperCase()),
           enabled: t.status === "active",
           template: t.body_template,
         })),
@@ -190,8 +200,8 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       .eq("id", clinicId)
       .single();
 
-    const currentConfig = ((current?.config ?? {}) as Record<string, unknown>);
-    const currentWsCfg = ((current?.website_config ?? {}) as Record<string, unknown>);
+    const currentConfig = (current?.config ?? {}) as Record<string, unknown>;
+    const currentWsCfg = (current?.website_config ?? {}) as Record<string, unknown>;
 
     if (section === "profile") {
       const d = data as z.infer<typeof profileSchema>;
@@ -220,6 +230,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       };
       if (d.cmiMerchantId) newCfg.cmiMerchantId = d.cmiMerchantId;
       if (d.cmiSecretKey) newCfg.cmiSecretKey = d.cmiSecretKey;
+      // The clinics row IS the tenant — scoped by its primary key id (= clinic_id).
       await supabase.from("clinics").update({ config: newCfg }).eq("id", clinicId);
     } else if (section === "booking") {
       const d = data as z.infer<typeof bookingSchema>;
@@ -250,6 +261,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       // Upsert WA templates
       if (d.templates && d.templates.length > 0) {
         for (const tpl of d.templates) {
+          // nosemgrep: tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
           await supabase.from("whatsapp_templates").upsert(
             {
               id: tpl.id.startsWith("t") ? undefined : tpl.id, // allow generated UUIDs only

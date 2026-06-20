@@ -195,6 +195,7 @@ export async function createHoliday(
   data: { name: string; date: string; type: string; recurring: boolean },
 ): Promise<{ id: string }> {
   const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("clinic_holidays")
     .insert({
@@ -211,8 +212,12 @@ export async function createHoliday(
   return { id: (row as { id: string }).id };
 }
 
-export async function deleteHoliday(id: string): Promise<void> {
+export async function deleteHoliday(clinicId: string, id: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase.from("clinic_holidays").delete().eq("id", id);
+  const { error } = await supabase
+    .from("clinic_holidays")
+    .delete()
+    .eq("id", id)
+    .eq("clinic_id", clinicId);
   if (error) throw error;
 }

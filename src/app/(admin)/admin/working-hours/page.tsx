@@ -71,26 +71,33 @@ export default function WorkingHoursPage() {
     const controller = new AbortController();
     fetch("/api/admin/working-hours", { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
-      .then((json: { data: { doctorSchedules: Record<string, Record<string, { open: string; close: string; enabled: boolean }>> } }) => {
-        if (controller.signal.aborted) return;
-        const saved = json.data?.doctorSchedules ?? {};
-        setSchedules((prev) =>
-          prev.map((s) =>
-            saved[s.doctorId]
-              ? {
-                  ...s,
-                  days: {
-                    ...defaultSchedule(),
-                    ...Object.fromEntries(
-                      Object.entries(saved[s.doctorId]).map(([k, v]) => [Number(k), v]),
-                    ),
-                  },
-                }
-              : s,
-          ),
-        );
-      })
-      .catch(() => {/* use defaults */});
+      .then(
+        (json: {
+          data: {
+            doctorSchedules: Record<
+              string,
+              Record<string, { open: string; close: string; enabled: boolean }>
+            >;
+          };
+        }) => {
+          if (controller.signal.aborted) return;
+          const saved = json.data?.doctorSchedules ?? {};
+          setSchedules((prev) =>
+            prev.map((s) => {
+              const savedDays = saved[s.doctorId];
+              if (!savedDays) return s;
+              const mergedDays = { ...defaultSchedule() };
+              for (const [dayKey, val] of Object.entries(savedDays)) {
+                mergedDays[Number(dayKey)] = val;
+              }
+              return { ...s, days: mergedDays };
+            }),
+          );
+        },
+      )
+      .catch(() => {
+        /* use defaults */
+      });
     return () => controller.abort();
   }, [doctors]);
 
@@ -110,7 +117,10 @@ export default function WorkingHoursPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const doctorSchedules: Record<string, Record<string, { open: string; close: string; enabled: boolean }>> = {};
+      const doctorSchedules: Record<
+        string,
+        Record<string, { open: string; close: string; enabled: boolean }>
+      > = {};
       for (const s of schedules) {
         doctorSchedules[s.doctorId] = Object.fromEntries(
           Object.entries(s.days).map(([day, val]) => [String(day), val]),

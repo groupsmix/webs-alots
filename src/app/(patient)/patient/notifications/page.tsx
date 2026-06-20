@@ -27,7 +27,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getCurrentUser, fetchNotifications, fetchNotificationPreferences, upsertNotificationPreferences, type NotificationView } from "@/lib/data/client";
+import {
+  getCurrentUser,
+  fetchNotifications,
+  fetchNotificationPreferences,
+  upsertNotificationPreferences,
+  type NotificationView,
+} from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 
 // ---- Type Mapping ----
@@ -155,7 +161,9 @@ export default function PatientNotificationsPage() {
       .catch(() => {
         if (!controller) setPageLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (pageLoading) {
@@ -200,7 +208,10 @@ export default function PatientNotificationsPage() {
       setSavedPrefs(true);
       setTimeout(() => setSavedPrefs(false), 2000);
     } catch (err) {
-      logger.warn("Failed to save notification preferences", { context: "patient/notifications", error: err });
+      logger.warn("Failed to save notification preferences", {
+        context: "patient/notifications",
+        error: err,
+      });
     } finally {
       setSavingPrefs(false);
     }

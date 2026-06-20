@@ -28,7 +28,10 @@ export default function DoctorTreatmentPackagesPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const data = await fetchTreatmentPackages(user.clinic_id);
       if (controller.signal.aborted) return;
@@ -79,6 +82,7 @@ export default function DoctorTreatmentPackagesPage() {
   }
 
   async function handleRecordSession(patientPackageId: string) {
+    if (!clinicId) return;
     const previous = patientPackages;
     setPatientPackages((prev) =>
       prev.map((pp) => {
@@ -92,7 +96,7 @@ export default function DoctorTreatmentPackagesPage() {
       }),
     );
     try {
-      await recordPatientPackageSession(patientPackageId);
+      await recordPatientPackageSession(clinicId, patientPackageId);
       addToast("Session recorded", "success");
     } catch (err) {
       logger.warn("Failed to record session", {

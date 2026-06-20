@@ -26,7 +26,10 @@ export default function DoctorIVFProtocolsPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const data = await fetchIVFProtocols(user.clinic_id);
       if (controller.signal.aborted) return;

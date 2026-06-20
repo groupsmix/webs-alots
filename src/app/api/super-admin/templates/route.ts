@@ -37,7 +37,6 @@ const patchSchema = z.object({ id: z.string().uuid(), active: z.boolean() });
 
 async function handleGet(_req: NextRequest, _auth: AuthContext) {
   try {
-    // nosemgrep: tenant-scoping – document_templates is a global (non-tenant) table
     const supabase = createUntypedAdminClient("super_admin");
     const { data, error } = await supabase
       .from("document_templates")
@@ -60,13 +59,17 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
 
 async function handlePost(req: NextRequest, _auth: AuthContext) {
   let body: unknown;
-  try { body = await req.json(); } catch { return apiError("Invalid JSON", 400, "INVALID_JSON"); }
+  try {
+    body = await req.json();
+  } catch {
+    return apiError("Invalid JSON", 400, "INVALID_JSON");
+  }
 
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0]?.message ?? "Invalid body", 400, "VALIDATION_ERROR");
+  if (!parsed.success)
+    return apiError(parsed.error.issues[0]?.message ?? "Invalid body", 400, "VALIDATION_ERROR");
 
   try {
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
     const { data, error } = await supabase
       .from("document_templates")
@@ -97,13 +100,17 @@ async function handlePost(req: NextRequest, _auth: AuthContext) {
 
 async function handlePut(req: NextRequest, _auth: AuthContext) {
   let body: unknown;
-  try { body = await req.json(); } catch { return apiError("Invalid JSON", 400, "INVALID_JSON"); }
+  try {
+    body = await req.json();
+  } catch {
+    return apiError("Invalid JSON", 400, "INVALID_JSON");
+  }
 
   const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0]?.message ?? "Invalid body", 400, "VALIDATION_ERROR");
+  if (!parsed.success)
+    return apiError(parsed.error.issues[0]?.message ?? "Invalid body", 400, "VALIDATION_ERROR");
 
   try {
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
     const { data, error } = await supabase
       .from("document_templates")
@@ -134,13 +141,17 @@ async function handlePut(req: NextRequest, _auth: AuthContext) {
 
 async function handlePatch(req: NextRequest, _auth: AuthContext) {
   let body: unknown;
-  try { body = await req.json(); } catch { return apiError("Invalid JSON", 400, "INVALID_JSON"); }
+  try {
+    body = await req.json();
+  } catch {
+    return apiError("Invalid JSON", 400, "INVALID_JSON");
+  }
 
   const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0]?.message ?? "Invalid body", 400, "VALIDATION_ERROR");
+  if (!parsed.success)
+    return apiError(parsed.error.issues[0]?.message ?? "Invalid body", 400, "VALIDATION_ERROR");
 
   try {
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
     const { error } = await supabase
       .from("document_templates")
@@ -162,7 +173,6 @@ async function handleDelete(req: NextRequest, _auth: AuthContext) {
   if (!id) return apiError("Missing id", 400, "MISSING_ID");
 
   try {
-    // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
     const { error } = await supabase.from("document_templates").delete().eq("id", id);
     if (error) return apiInternalError("Failed to delete template");
@@ -173,8 +183,8 @@ async function handleDelete(req: NextRequest, _auth: AuthContext) {
   }
 }
 
-export const GET    = withAuth(handleGet,    ALLOWED_ROLES);
-export const POST   = withAuth(handlePost,   ALLOWED_ROLES);
-export const PUT    = withAuth(handlePut,    ALLOWED_ROLES);
-export const PATCH  = withAuth(handlePatch,  ALLOWED_ROLES);
+export const GET = withAuth(handleGet, ALLOWED_ROLES);
+export const POST = withAuth(handlePost, ALLOWED_ROLES);
+export const PUT = withAuth(handlePut, ALLOWED_ROLES);
+export const PATCH = withAuth(handlePatch, ALLOWED_ROLES);
 export const DELETE = withAuth(handleDelete, ALLOWED_ROLES);

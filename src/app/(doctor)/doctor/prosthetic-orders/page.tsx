@@ -13,7 +13,11 @@ import {
   type ProstheticOrderView,
 } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
-import type { ProstheticOrderType, ProstheticOrderStatus, ProstheticPriority } from "@/lib/types/database";
+import type {
+  ProstheticOrderType,
+  ProstheticOrderStatus,
+  ProstheticPriority,
+} from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
 
 export default function DoctorProstheticOrdersPage() {
@@ -28,7 +32,10 @@ export default function DoctorProstheticOrdersPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const data = await fetchProstheticOrders(user.clinic_id);
       if (controller.signal.aborted) return;
@@ -97,6 +104,7 @@ export default function DoctorProstheticOrdersPage() {
   }
 
   async function handleAdvanceStatus(orderId: string, newStatus: ProstheticOrderStatus) {
+    if (!clinicId) return;
     const previous = orders;
     const today = getLocalDateStr();
     setOrders((prev) =>
@@ -111,7 +119,7 @@ export default function DoctorProstheticOrdersPage() {
       }),
     );
     try {
-      await updateProstheticOrderStatus(orderId, newStatus);
+      await updateProstheticOrderStatus(clinicId, orderId, newStatus);
     } catch (err) {
       logger.warn("Failed to advance prosthetic order status", {
         context: "doctor/prosthetic-orders",

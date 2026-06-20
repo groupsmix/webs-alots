@@ -55,9 +55,7 @@ function computeIVFStats(cycles: IVFCycleView[]) {
       completed.filter((c) => c.embryosTransferred !== null).map((c) => c.embryosTransferred!),
     ),
     successRatePercent:
-      completed.length > 0
-        ? Math.round((positive.length / completed.length) * 1000) / 10
-        : 0,
+      completed.length > 0 ? Math.round((positive.length / completed.length) * 1000) / 10 : 0,
     cyclesByType: [...cycleTypeMap.entries()].map(([type, d]) => ({ type, ...d })),
     monthlyOutcomes: [] as { month: string; total: number; positive: number; negative: number }[],
   };
@@ -76,7 +74,10 @@ export default function DoctorIVFCyclesPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const [cyc, pats] = await Promise.all([
         fetchIVFCycles(user.clinic_id),
@@ -148,12 +149,11 @@ export default function DoctorIVFCyclesPage() {
   }
 
   async function handleAdvanceStatus(cycleId: string, newStatus: IVFCycleStatus) {
+    if (!clinicId) return;
     const previous = cycles;
-    setCycles((prev) =>
-      prev.map((c) => (c.id === cycleId ? { ...c, status: newStatus } : c)),
-    );
+    setCycles((prev) => prev.map((c) => (c.id === cycleId ? { ...c, status: newStatus } : c)));
     try {
-      await updateIVFCycleStatus(cycleId, newStatus);
+      await updateIVFCycleStatus(clinicId, cycleId, newStatus);
     } catch (err) {
       logger.warn("Failed to advance cycle status", { context: "doctor/ivf-cycles", error: err });
       setCycles(previous);
@@ -162,6 +162,7 @@ export default function DoctorIVFCyclesPage() {
   }
 
   async function handleUpdateOutcome(cycleId: string, outcome: IVFOutcome) {
+    if (!clinicId) return;
     const previous = cycles;
     setCycles((prev) =>
       prev.map((c) =>
@@ -169,7 +170,7 @@ export default function DoctorIVFCyclesPage() {
       ),
     );
     try {
-      await updateIVFCycleOutcome(cycleId, outcome);
+      await updateIVFCycleOutcome(clinicId, cycleId, outcome);
       addToast(`Cycle outcome recorded: ${outcome}`, "success");
     } catch (err) {
       logger.warn("Failed to update cycle outcome", { context: "doctor/ivf-cycles", error: err });
