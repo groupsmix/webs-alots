@@ -52,7 +52,7 @@ export function SlaExportButton({ reportMonth }: { reportMonth: string }) {
           error ? "border-red-300 text-red-700" : ""
         }`}
       >
-        {downloading ? "Downloading..." : error ? "Export failed - Retry" : "Export latest report"}
+        {downloading ? "Téléchargement…" : error ? "Échec — Réessayer" : "Exporter le rapport"}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>

@@ -141,6 +141,11 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
       name: input.name,
       type: input.type,
       tier: input.tier,
+      // QA root-cause fix: always persist the caller-supplied status so new
+      // clinics are created as 'active' by default, not the DB column default
+      // which is 'suspended'. Without this, every onboarding-created clinic
+      // immediately appeared suspended in the All Clinics list.
+      status: input.status ?? "active",
       config: cfg as Json,
       subdomain: input.subdomain ?? null,
       // Also set direct columns so public branding queries work
@@ -1090,6 +1095,20 @@ const TIER_NAMES: Record<string, string> = {
   "saas-monthly": "SaaS Monthly",
 };
 
+/**
+ * I9 fix: default monthly subscription price per tier slug.
+ * Used as a fallback amount when a clinic has no payment records
+ * (new accounts, trial, or seed data). Prevents every subscription
+ * from displaying 0 MAD in the admin panel.
+ */
+const TIER_DEFAULT_MONTHLY_PRICE: Record<string, number> = {
+  vitrine: 0,
+  cabinet: 499,
+  pro: 999,
+  premium: 1999,
+  "saas-monthly": 1499,
+};
+
 // ---------- Revenue Stats ----------
 
 export interface RevenueStats {
@@ -1213,7 +1232,14 @@ export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> 
     const monthEnd = getLocalDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
     const latestPayment = clinicPayments[0];
-    const amount = latestPayment?.amount ?? 0;
+    // I9 fix: fall back to the tier's default monthly price when the clinic
+    // has no payment records yet (new / trial / seed data). This ensures
+    // the subscription table shows a meaningful expected amount rather than
+    // 0 MAD for every account that hasn't billed yet.
+    const amount =
+      latestPayment?.amount != null && latestPayment.amount > 0
+        ? latestPayment.amount
+        : (TIER_DEFAULT_MONTHLY_PRICE[tierSlug] ?? 0);
 
     return {
       id: `sub-${c.id}`,

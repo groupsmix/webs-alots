@@ -166,7 +166,7 @@ export default function SuperAdminDashboardPage() {
     exportToPDF(
       t(locale, "superAdmin.reportTitle"),
       [kpiRow, ...rows],
-      ["Clinic", "Type", "Plan", "City", "Status"],
+      ["Clinique", "Type", "Plan", "Ville", "Statut"],
     );
     addToast(t(locale, "superAdmin.reportGenerated"), "success");
   }

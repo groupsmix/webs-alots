@@ -54,7 +54,7 @@ import {
 // ---------- Constants ----------
 
 const STEPS = [
-  { id: 1, label: "Create Clinic", icon: Building2 },
+  { id: 1, label: "Créer une clinique", icon: Building2 },
   { id: 2, label: "Add Staff", icon: Users },
   { id: 3, label: "Add Services", icon: Stethoscope },
   { id: 4, label: "Time Slots", icon: Clock },
@@ -404,11 +404,11 @@ export default function OnboardingPage() {
 
   async function handleStep1() {
     if (!clinicForm.name.trim()) {
-      setError("Clinic name is required");
+      setError("Le nom de la clinique est requis");
       return;
     }
     if (!clinicForm.subdomain.trim()) {
-      setError("Subdomain is required — the clinic needs a URL to be accessible");
+      setError("Le sous-domaine est requis — la clinique a besoin d'une URL pour être accessible");
       return;
     }
     if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(clinicForm.subdomain)) {

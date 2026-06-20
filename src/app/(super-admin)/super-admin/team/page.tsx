@@ -80,7 +80,7 @@ interface TeamBriefingEntry {
 
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: "Super Admin",
-  clinic_admin: "Clinic Admin",
+  clinic_admin: "Admin clinique",
 };
 
 const ROLE_COLORS: Record<AdminRole, "default" | "secondary" | "destructive"> = {
@@ -599,19 +599,19 @@ export default function TeamPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="super_admin">Super Admin</SelectItem>
-                  <SelectItem value="clinic_admin">Clinic Admin</SelectItem>
+                  <SelectItem value="clinic_admin">Admin clinique</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {inviteRole === "super_admin" &&
-                  "Full access to all platform features and settings."}
-                {inviteRole === "clinic_admin" && "Can manage their assigned clinic."}
+                  "Accès complet à toutes les fonctionnalités et paramètres."}
+                {inviteRole === "clinic_admin" && "Peut gérer la clinique qui lui est assignée."}
               </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Cancel
+              Annuler
             </Button>
             <Button onClick={handleInvite} disabled={inviteSending}>
               {inviteSending ? (
@@ -619,7 +619,7 @@ export default function TeamPage() {
               ) : (
                 <Send className="h-4 w-4 mr-2" />
               )}
-              Send Invitation
+              Envoyer l&apos;invitation
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -629,21 +629,20 @@ export default function TeamPage() {
       <Dialog open={editRoleOpen} onOpenChange={setEditRoleOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Role</DialogTitle>
+            <DialogTitle>Modifier le rôle</DialogTitle>
             <DialogDescription>
-              Change the role for {editTarget?.name}. This will update their permissions
-              immediately.
+              Modifier le rôle de {editTarget?.name}. Les permissions seront mises à jour immédiatement.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="edit-role">New Role</Label>
+            <Label htmlFor="edit-role">Nouveau rôle</Label>
             <Select value={editNewRole} onValueChange={(v) => setEditNewRole(v as AdminRole)}>
               <SelectTrigger id="edit-role" className="mt-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="clinic_admin">Clinic Admin</SelectItem>
+                <SelectItem value="clinic_admin">Admin clinique</SelectItem>
               </SelectContent>
             </Select>
           </div>

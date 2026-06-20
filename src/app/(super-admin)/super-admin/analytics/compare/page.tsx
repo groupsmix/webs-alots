@@ -60,11 +60,11 @@ const METRICS: MetricDef[] = [
   },
   {
     key: "revenue",
-    label: "Revenue",
+    label: "Revenus",
     icon: DollarSign,
     getValue: (c) => c.monthlyRevenue,
     format: (v) => formatCurrency(v),
-    unit: "/month",
+    unit: "/mois",
   },
   {
     key: "patients",
@@ -153,7 +153,7 @@ export default function ClinicComparisonPage() {
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
             { label: "Analytics", href: "/super-admin/analytics" },
-            { label: "Clinic Comparison" },
+            { label: "Comparaison cliniques" },
           ]}
         />
         <p className="text-sm text-muted-foreground">Loading clinic data…</p>
@@ -168,7 +168,7 @@ export default function ClinicComparisonPage() {
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
             { label: "Analytics", href: "/super-admin/analytics" },
-            { label: "Clinic Comparison" },
+            { label: "Comparaison cliniques" },
           ]}
         />
         <p className="text-sm text-destructive">{loadError}</p>
@@ -183,7 +183,7 @@ export default function ClinicComparisonPage() {
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
             { label: "Analytics", href: "/super-admin/analytics" },
-            { label: "Clinic Comparison" },
+            { label: "Comparaison cliniques" },
           ]}
         />
         <Card>
@@ -219,11 +219,11 @@ export default function ClinicComparisonPage() {
   function handleExport() {
     const lines = [
       [
-        "Clinic",
+        "Clinique",
         "Type",
         "Tier",
         "Appointments",
-        "Revenue (MAD)",
+        "Revenus (MAD)",
         "Patients",
         "No-Show %",
         "Satisfaction",

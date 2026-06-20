@@ -856,16 +856,16 @@ export default function AllClinicsPage() {
     exportToCSV(
       filtered,
       [
-        { key: "name", label: "Clinic Name" },
+        { key: "name", label: "Nom clinique" },
         { key: "type", label: "Type" },
-        { key: "ownerName", label: "Owner" },
+        { key: "ownerName", label: "Propriétaire" },
         { key: "ownerEmail", label: "Email" },
-        { key: "ownerPhone", label: "Phone" },
-        { key: "city", label: "City" },
+        { key: "ownerPhone", label: "Téléphone" },
+        { key: "city", label: "Ville" },
         { key: "plan", label: "Plan" },
-        { key: "status", label: "Status" },
-        { key: "userCountRange", label: "Users (range)" },
-        { key: "createdAt", label: "Created" },
+        { key: "status", label: "Statut" },
+        { key: "userCountRange", label: "Utilisateurs (tranche)" },
+        { key: "createdAt", label: "Créé le" },
       ],
       `clinics-export-${getLocalDateStr()}.csv`,
     );
@@ -880,17 +880,17 @@ export default function AllClinicsPage() {
     exportToCSV(
       clinicsWithHealth,
       [
-        { key: "name", label: "Clinic Name" },
+        { key: "name", label: "Nom clinique" },
         { key: "type", label: "Type" },
-        { key: "ownerName", label: "Owner" },
+        { key: "ownerName", label: "Propriétaire" },
         { key: "ownerEmail", label: "Email" },
-        { key: "ownerPhone", label: "Phone" },
-        { key: "city", label: "City" },
+        { key: "ownerPhone", label: "Téléphone" },
+        { key: "city", label: "Ville" },
         { key: "plan", label: "Plan" },
-        { key: "status", label: "Status" },
-        { key: "healthScore", label: "Health Score" },
-        { key: "userCountRange", label: "Users (range)" },
-        { key: "createdAt", label: "Created" },
+        { key: "status", label: "Statut" },
+        { key: "healthScore", label: "Score santé" },
+        { key: "userCountRange", label: "Utilisateurs (tranche)" },
+        { key: "createdAt", label: "Créé le" },
       ],
       `clinics-selected-${getLocalDateStr()}.csv`,
     );
@@ -1057,7 +1057,7 @@ export default function AllClinicsPage() {
         }
       }
 
-      addToast("Clinic health analytics refreshed", "success");
+      addToast("Données de santé cliniques actualisées", "success");
     } catch (err) {
       logger.warn("Failed to refresh clinic health analytics", {
         context: "clinics-page",
