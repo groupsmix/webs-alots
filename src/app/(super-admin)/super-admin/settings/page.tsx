@@ -13,7 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { logger } from "@/lib/logger";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ const REFRESH_INTERVALS = [
 export default function SettingsPage() {
   const { addToast } = useToast();
   const [saving, setSaving] = useState(false);
+  const loadedRef = useRef(false);
 
   const [language, setLanguage] = useState("fr");
   const [timezone, setTimezone] = useState("Africa/Casablanca");
@@ -60,11 +62,44 @@ export default function SettingsPage() {
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState("60");
 
+  // Load persisted settings from user metadata on mount
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetch("/api/super-admin/me")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
+      .then((json: { data: { metadata?: { superAdminSettings?: { language?: string; timezone?: string; emailNotifications?: boolean; inAppNotifications?: boolean; refreshInterval?: string } } } }) => {
+        const s = json.data?.metadata?.superAdminSettings;
+        if (!s) return;
+        if (s.language) setLanguage(s.language);
+        if (s.timezone) setTimezone(s.timezone);
+        if (typeof s.emailNotifications === "boolean") setEmailNotifications(s.emailNotifications);
+        if (typeof s.inAppNotifications === "boolean") setInAppNotifications(s.inAppNotifications);
+        if (s.refreshInterval) setRefreshInterval(s.refreshInterval);
+      })
+      .catch(() => { /* use defaults */ });
+  }, []);
+
   async function handleSave() {
     setSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const res = await fetch("/api/super-admin/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          metadataKey: "superAdminSettings",
+          value: { language, timezone, emailNotifications, inAppNotifications, refreshInterval },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        addToast((err as { error?: string } | null)?.error ?? "Failed to save", "error");
+        return;
+      }
       addToast("Settings saved successfully", "success");
+    } catch (err) {
+      logger.warn("Failed to save super-admin settings", { context: "super-admin/settings", error: err });
+      addToast("Failed to save settings. Please try again.", "error");
     } finally {
       setSaving(false);
     }

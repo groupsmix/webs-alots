@@ -50,3 +50,100 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
     response: r.response ?? undefined,
   }));
 }
+
+
+// ─────────────────────────────────────────────
+// Write: submit a patient review
+// ─────────────────────────────────────────────
+
+import { createClient } from "./_core";
+
+export async function createReview(data: {
+  clinicId: string;
+  patientId: string;
+  doctorId: string;
+  stars: number;
+  comment: string;
+}): Promise<{ id: string }> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("reviews")
+    .insert({
+      clinic_id: data.clinicId,
+      patient_id: data.patientId,
+      doctor_id: data.doctorId || null,
+      stars: data.stars,
+      comment: data.comment || null,
+      is_visible: false, // pending moderation by admin
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { id: (row as { id: string }).id };
+}
+
+// ─────────────────────────────────────────────
+// Write: upsert notification preferences
+// ─────────────────────────────────────────────
+
+export async function upsertNotificationPreferences(data: {
+  userId: string;
+  clinicId: string;
+  whatsappEnabled: boolean;
+  inAppEnabled: boolean;
+  appointmentReminders: boolean;
+  bookingConfirmations: boolean;
+  paymentReceipts: boolean;
+  prescriptionUpdates: boolean;
+}): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("notification_preferences").upsert(
+    {
+      user_id: data.userId,
+      clinic_id: data.clinicId,
+      whatsapp_enabled: data.whatsappEnabled,
+      in_app_enabled: data.inAppEnabled,
+      appointment_reminders: data.appointmentReminders,
+      booking_confirmations: data.bookingConfirmations,
+      payment_receipts: data.paymentReceipts,
+      prescription_updates: data.prescriptionUpdates,
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) throw error;
+}
+
+export async function fetchNotificationPreferences(userId: string): Promise<{
+  whatsappEnabled: boolean;
+  inAppEnabled: boolean;
+  appointmentReminders: boolean;
+  bookingConfirmations: boolean;
+  paymentReceipts: boolean;
+  prescriptionUpdates: boolean;
+} | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("notification_preferences")
+    .select(
+      "whatsapp_enabled, in_app_enabled, appointment_reminders, booking_confirmations, payment_receipts, prescription_updates",
+    )
+    .eq("user_id", userId)
+    .single();
+  if (error || !data) return null;
+  const row = data as {
+    whatsapp_enabled: boolean;
+    in_app_enabled: boolean;
+    appointment_reminders: boolean;
+    booking_confirmations: boolean;
+    payment_receipts: boolean;
+    prescription_updates: boolean;
+  };
+  return {
+    whatsappEnabled: row.whatsapp_enabled,
+    inAppEnabled: row.in_app_enabled,
+    appointmentReminders: row.appointment_reminders,
+    bookingConfirmations: row.booking_confirmations,
+    paymentReceipts: row.payment_receipts,
+    prescriptionUpdates: row.prescription_updates,
+  };
+}
