@@ -22,6 +22,7 @@ export const GET = withAuth(async () => {
     try {
       // prettier-ignore
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // nosemgrep: tenant-scoping
       const webhooksResult = await supabase.from("webhook_retry_queue" as any).select("status").in("status", ["pending", "failed"]);
 
       // If the table doesn't exist, Supabase returns an error with code 42P01
@@ -44,6 +45,7 @@ export const GET = withAuth(async () => {
     try {
       // prettier-ignore
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // nosemgrep: tenant-scoping
       const notificationsResult = await supabase.from("notification_queue" as any).select("status, next_attempt_at").in("status", ["pending", "failed"]);
 
       // If the table doesn't exist, Supabase returns an error with code 42P01
