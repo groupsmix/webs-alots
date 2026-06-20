@@ -9,7 +9,14 @@ import { logger } from "@/lib/logger";
  * and ensures Content-Disposition: attachment is respected even on browsers
  * that ignore it for same-origin navigations.
  */
-export function SlaExportButton({ reportMonth }: { reportMonth: string }) {
+export function SlaExportButton({
+  reportMonth,
+  disabled: exportDisabled,
+}: {
+  reportMonth: string;
+  /** When true the button is greyed out and shows a tooltip explaining why. */
+  disabled?: boolean;
+}) {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,13 +54,23 @@ export function SlaExportButton({ reportMonth }: { reportMonth: string }) {
       <button
         type="button"
         onClick={handleDownload}
-        disabled={downloading}
-        className={`inline-flex rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 ${
+        disabled={downloading || exportDisabled}
+        title={
+          exportDisabled
+            ? "Aucune donnée SLA enregistrée — l'export sera disponible une fois les données collectées."
+            : undefined
+        }
+        className={`inline-flex rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${
           error ? "border-red-300 text-red-700" : ""
         }`}
       >
         {downloading ? "Téléchargement…" : error ? "Échec — Réessayer" : "Exporter le rapport"}
       </button>
+      {exportDisabled && (
+        <p className="text-xs text-muted-foreground">
+          Export indisponible : aucune donnée SLA pour ce mois.
+        </p>
+      )}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );

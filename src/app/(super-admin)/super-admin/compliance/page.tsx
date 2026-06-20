@@ -99,36 +99,36 @@ export default async function ComplianceCenterPage() {
   return (
     <div className="space-y-8 p-4 md:p-6">
       <Breadcrumb
-        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Compliance" }]}
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Conformité" }]}
       />
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Compliance Center</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Centre de conformité</h1>
           <p className="text-muted-foreground">
-            Live CNDP, DSAR, retention, consent, and breach-monitoring posture.
+            Suivi en direct de la conformité CNDP, DSAR, rétention, consentements et incidents de sécurité.
           </p>
         </div>
         <Link href="/dsar-request" className="text-sm text-primary underline">
-          Public DSAR form
+          Formulaire DSAR public
         </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <OverviewCard
           title="CNDP"
-          value={String(cndp?.registration_number ?? cndp?.status ?? "Not filed")}
+          value={String(cndp?.registration_number ?? cndp?.status ?? "Non déposé")}
           hint={
             typeof cndp?.renewal_due_at === "string"
-              ? `Renewal due ${new Date(cndp.renewal_due_at).toLocaleDateString("fr-MA")}`
-              : "Awaiting filing or approval"
+              ? `Renouvellement dû le ${new Date(cndp.renewal_due_at).toLocaleDateString("fr-MA")}`
+              : "En attente de dépôt ou d'approbation"
           }
           variant={statusVariant(typeof cndp?.status === "string" ? cndp.status : undefined)}
         />
         <OverviewCard
-          title="Open DSARs"
+          title="DSARs ouverts"
           value={String(openDsarsResult.count ?? 0)}
-          hint={`${overdueDsarsResult.count ?? 0} overdue`}
+          hint={`${overdueDsarsResult.count ?? 0} en retard`}
           variant={
             (overdueDsarsResult.count ?? 0) > 0
               ? "destructive"
@@ -138,15 +138,15 @@ export default async function ComplianceCenterPage() {
           }
         />
         <OverviewCard
-          title="Active breaches"
+          title="Incidents actifs"
           value={String(activeBreachesResult.count ?? 0)}
-          hint="Unresolved incidents requiring follow-up"
+          hint="Incidents de sécurité actifs non résolus"
           variant={(activeBreachesResult.count ?? 0) > 0 ? "destructive" : "success"}
         />
         <OverviewCard
-          title="Consent ledger"
+          title="Registre consentements"
           value={String(consentCount)}
-          hint={`${consentRecordsResult.count ?? 0} structured + ${legacyConsentLogsResult.count ?? 0} legacy logs`}
+          hint={`${consentRecordsResult.count ?? 0} structurés + ${legacyConsentLogsResult.count ?? 0} journaux legacy`}
           variant={consentCount > 0 ? "success" : "warning"}
         />
       </div>
@@ -156,13 +156,13 @@ export default async function ComplianceCenterPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5" />
-              Data subject requests
+              Demandes des personnes concernées
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {dsars.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No DSAR requests have been submitted yet.
+                Aucune demande DSAR soumise pour le moment.
               </p>
             ) : (
               dsars.map((request) => {
@@ -177,7 +177,7 @@ export default async function ComplianceCenterPage() {
                       <div>
                         <p className="font-medium">
                           #{String(request.dsar_number ?? "—")} —{" "}
-                          {String(request.requester_name ?? "Unknown requester")}
+                          {String(request.requester_name ?? "Demandeur inconnu")}
                         </p>
                         <p className="text-xs text-muted-foreground capitalize">
                           {String(request.request_type ?? "other")}
@@ -193,7 +193,7 @@ export default async function ComplianceCenterPage() {
                     </div>
                     {typeof request.response_due_at === "string" ? (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Due {new Date(request.response_due_at).toLocaleDateString("fr-MA")}
+                        Échéance {new Date(request.response_due_at).toLocaleDateString("fr-MA")}
                       </p>
                     ) : null}
                   </div>
@@ -207,12 +207,12 @@ export default async function ComplianceCenterPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              Breach register
+              Registre des incidents
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {breaches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No breach incidents recorded.</p>
+              <p className="text-sm text-muted-foreground">Aucun incident de sécurité enregistré.</p>
             ) : (
               breaches.map((incident) => (
                 <div key={String(incident.id)} className="rounded-lg border p-4">
@@ -222,10 +222,10 @@ export default async function ComplianceCenterPage() {
                         Incident #{String(incident.incident_number ?? "—")}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Detected{" "}
+                        Détecté le{" "}
                         {typeof incident.detected_at === "string"
                           ? new Date(incident.detected_at).toLocaleString("fr-MA")
-                          : "unknown"}
+                          : "inconnu"}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -252,12 +252,12 @@ export default async function ComplianceCenterPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              CNDP filing
+              Dossier CNDP
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Status</span>
+              <span className="text-muted-foreground">Statut</span>
               <Badge
                 variant={statusVariant(typeof cndp?.status === "string" ? cndp.status : undefined)}
               >
@@ -265,15 +265,15 @@ export default async function ComplianceCenterPage() {
               </Badge>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Registration</span>
+              <span className="text-muted-foreground">Enregistrement</span>
               <span>{String(cndp?.registration_number ?? "—")}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Authorization</span>
+              <span className="text-muted-foreground">Autorisation</span>
               <span>{String(cndp?.authorization_number ?? "—")}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Expires</span>
+              <span className="text-muted-foreground">Expiration</span>
               <span>
                 {typeof cndp?.expires_at === "string"
                   ? new Date(cndp.expires_at).toLocaleDateString("fr-MA")
@@ -287,16 +287,16 @@ export default async function ComplianceCenterPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
-              Retention posture
+              Politique de rétention
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-              <span className="text-muted-foreground">Schedules configured</span>
+              <span className="text-muted-foreground">Calendriers configurés</span>
               <span className="font-medium">{retentionRows.length}</span>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-              <span className="text-muted-foreground">Overdue purge runs</span>
+              <span className="text-muted-foreground">Purges en retard</span>
               <span className={`font-medium ${overdueRetention > 0 ? "text-destructive" : ""}`}>
                 {overdueRetention}
               </span>
@@ -306,7 +306,7 @@ export default async function ComplianceCenterPage() {
                 <div key={String(row.data_type)} className="rounded-lg border p-3">
                   <p className="font-medium">{String(row.data_type)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {String(row.retention_days)} days · {String(row.legal_basis ?? "")}
+                    {String(row.retention_days)} jours · {String(row.legal_basis ?? "")}
                   </p>
                 </div>
               ))}
@@ -318,16 +318,16 @@ export default async function ComplianceCenterPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Controls summary
+              Contrôles de conformité
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <ControlRow label="PHI encryption" ok />
-            <ControlRow label="Tenant isolation" ok />
-            <ControlRow label="DSAR intake" ok />
-            <ControlRow label="Consent evidence" ok={consentCount > 0} />
-            <ControlRow label="Retention schedules" ok={retentionRows.length > 0} />
-            <ControlRow label="Breach register" ok />
+            <ControlRow label="Chiffrement PHI" ok />
+            <ControlRow label="Isolation multi-tenant" ok />
+            <ControlRow label="Réception DSAR" ok />
+            <ControlRow label="Preuves de consentement" ok={consentCount > 0} />
+            <ControlRow label="Calendriers de rétention" ok={retentionRows.length > 0} />
+            <ControlRow label="Registre incidents" ok />
           </CardContent>
         </Card>
       </div>
@@ -336,13 +336,14 @@ export default async function ComplianceCenterPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Consent evidence
+              Preuves de consentement
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Structured consent records are now counted alongside legacy consent logs so compliance
-            reviews can track adoption of the new ledger without losing historical evidence.
+            Les enregistrements de consentement structurés sont comptabilisés avec les journaux
+            legacy afin que les audits de conformité puissent suivre l'adoption du nouveau registre
+            sans perdre les preuves historiques.
           </p>
         </CardContent>
       </Card>

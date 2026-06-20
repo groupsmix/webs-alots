@@ -22,7 +22,8 @@ const PERMISSIONS_POLICY = [
   "browsing-topics=()",
   "attribution-reporting=()",
   "display-capture=()",
-  "document-domain=()",
+  // "document-domain" is not a recognised Permissions-Policy feature in
+  // current browsers and produces a console warning. Removed per QA B-I3.
   "encrypted-media=(self)",
   "fullscreen=(self)",
   "gamepad=()",
@@ -40,7 +41,8 @@ const PERMISSIONS_POLICY = [
   "serial=()",
   "sync-xhr=()",
   "usb=()",
-  "web-share=(self)",
+  // "web-share" produces a browser warning on some versions that don't
+  // implement it as a Permissions-Policy directive. Removed per QA B-I3.
   "xr-spatial-tracking=()",
 ].join(", ");
 
@@ -156,10 +158,16 @@ function buildCsp(nonce: string, options?: BuildCspOptions): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
-    // H-01 / A55-2: 'unsafe-inline' removed on non-builder routes.
-    // Dynamic inline styles using style={{}} that depend on runtime values
-    // must now be converted to CSS custom properties.
-    `style-src 'self'`,
+    // H-01 / A55-2: 'unsafe-inline' added back to style-src (QA fix B5).
+    // Radix UI popovers, tooltips, and framer-motion animations inject
+    // position/transform inline styles at runtime that cannot be expressed
+    // as static CSS custom properties without significant refactoring.
+    // Keeping 'unsafe-inline' in style-src is safe here because style
+    // injection has no script-execution capability; our strict nonce/
+    // 'strict-dynamic' script-src is the meaningful XSS barrier.
+    // TODO: migrate dynamic inline styles to CSS custom properties so this
+    // can be hardened back to 'self' only.
+    `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,
