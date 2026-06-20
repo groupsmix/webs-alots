@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Calendar,
   X,
+  Loader2,
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
@@ -68,6 +69,8 @@ export default function BillingPage() {
   const [reminderRecord, setReminderRecord] = useState<BillingRecord | null>(null);
   const [records, setRecords] = useState<BillingRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  // S3: export loading feedback
+  const [isExporting, setIsExporting] = useState(false);
   // S2: date range filter
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -148,42 +151,55 @@ export default function BillingPage() {
       }));
   }, [records]);
 
-  function handleExportBillingCSV() {
-    const rows = filtered.map((r) => ({
-      Invoice: r.id,
-      Clinic: r.clinicName,
-      Plan: r.plan,
-      "Amount Due (MAD)": r.amountDue,
-      "Amount Paid (MAD)": r.amountPaid,
-      Currency: r.currency,
-      Status: r.status,
-      "Invoice Date": r.invoiceDate,
-      "Due Date": r.dueDate,
-      "Paid Date": r.paidDate ?? "",
-      "Payment Method": r.paymentMethod ?? "",
-    }));
-    exportToCSV(rows, `billing-${getLocalDateStr()}.csv`);
-    addToast("Export CSV téléchargé", "success");
+  async function handleExportBillingCSV() {
+    setIsExporting(true);
+    // yield to React so the spinner renders before the synchronous CSV work
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      const rows = filtered.map((r) => ({
+        Invoice: r.id,
+        Clinic: r.clinicName,
+        Plan: r.plan,
+        "Amount Due (MAD)": r.amountDue,
+        "Amount Paid (MAD)": r.amountPaid,
+        Currency: r.currency,
+        Status: r.status,
+        "Invoice Date": r.invoiceDate,
+        "Due Date": r.dueDate,
+        "Paid Date": r.paidDate ?? "",
+        "Payment Method": r.paymentMethod ?? "",
+      }));
+      exportToCSV(rows, `billing-${getLocalDateStr()}.csv`);
+      addToast("Export CSV téléchargé", "success");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
-  function handleExportBillingPDF() {
-    const rows = filtered.map((r) => ({
-      Invoice: r.id,
-      Clinic: r.clinicName,
-      Plan: r.plan,
-      "Amount Due": `${r.amountDue} ${r.currency}`,
-      Status: r.status,
-      "Due Date": r.dueDate,
-    }));
-    exportToPDF("Billing Report — Oltigo Health", rows, [
-      "Invoice",
-      "Clinic",
-      "Plan",
-      "Amount Due",
-      "Status",
-      "Due Date",
-    ]);
-    addToast("PDF generated — use Save as PDF in the print dialog", "success");
+  async function handleExportBillingPDF() {
+    setIsExporting(true);
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      const rows = filtered.map((r) => ({
+        Invoice: r.id,
+        Clinic: r.clinicName,
+        Plan: r.plan,
+        "Amount Due": `${r.amountDue} ${r.currency}`,
+        Status: r.status,
+        "Due Date": r.dueDate,
+      }));
+      exportToPDF("Billing Report — Oltigo Health", rows, [
+        "Invoice",
+        "Clinic",
+        "Plan",
+        "Amount Due",
+        "Status",
+        "Due Date",
+      ]);
+      addToast("PDF généré — utilisez Enregistrer en PDF dans la boîte d'impression", "success");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   // S4: per-row invoice PDF download
@@ -277,18 +293,27 @@ export default function BillingPage() {
         {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={filtered.length === 0}>
-              <Download className="h-4 w-4 mr-1" />
-              Exporter
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filtered.length === 0 || isExporting}
+              aria-label={isExporting ? "Export en cours…" : "Exporter"}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-1" />
+              )}
+              {isExporting ? "Export…" : "Exporter"}
               <ChevronDown className="h-3 w-3 ml-1" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleExportBillingCSV}>
+            <DropdownMenuItem onClick={handleExportBillingCSV} disabled={isExporting}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               Export CSV
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportBillingPDF}>
+            <DropdownMenuItem onClick={handleExportBillingPDF} disabled={isExporting}>
               <FileText className="h-4 w-4 mr-2" />
               Export PDF
             </DropdownMenuItem>

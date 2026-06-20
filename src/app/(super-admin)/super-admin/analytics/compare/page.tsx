@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils";
 
 // ── Clinic comparison data (O6): fetched live from the API, no mocks ──
 
@@ -62,7 +63,7 @@ const METRICS: MetricDef[] = [
     label: "Revenue",
     icon: DollarSign,
     getValue: (c) => c.monthlyRevenue,
-    format: (v) => `${v.toLocaleString()} MAD`,
+    format: (v) => formatCurrency(v),
     unit: "/month",
   },
   {
@@ -383,7 +384,7 @@ export default function ClinicComparisonPage() {
                 <span className="text-muted-foreground flex items-center gap-1">
                   <DollarSign className="h-3 w-3" /> Revenue
                 </span>
-                <span className="font-medium">{clinic.monthlyRevenue.toLocaleString()} MAD</span>
+                <span className="font-medium">{formatCurrency(clinic.monthlyRevenue)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-1">

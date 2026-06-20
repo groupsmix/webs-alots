@@ -1206,7 +1206,7 @@ export default function PricingPage() {
                   >
                     <div className="flex-1">
                       <p className="font-medium">
-                        {entry.oldPrice.toLocaleString()} → {entry.newPrice.toLocaleString()} MAD
+                        {formatCurrency(entry.oldPrice)} → {formatCurrency(entry.newPrice)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {entry.system} &middot; {entry.cycle === "monthly" ? "Mensuel" : "Annuel"}

@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ArrowUpDown,
   X,
+  Loader2,
   Stethoscope,
   Crown,
   Pill,
@@ -119,6 +120,8 @@ export default function SubscriptionsPage() {
   const [expandedInvoices, setExpandedInvoices] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<ClientSubscription[]>([]);
   const [loading, setLoading] = useState(true);
+  // S3: export loading feedback
+  const [isExporting, setIsExporting] = useState(false);
   // S16/S17: sort + pagination
   const [sortField, setSortField] = useState<SortField>("clinicName");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -319,43 +322,55 @@ export default function SubscriptionsPage() {
     return labels[status];
   };
 
-  function handleExportSubscriptionsCSV() {
-    const rows = sorted.map((sub) => ({
-      "Nom du client": sub.clinicName,
-      Type: systemTypeLabels[sub.systemType],
-      Tier: sub.tierName,
-      Cycle: sub.billingCycle === "monthly" ? "Mensuel" : "Annuel",
-      "Montant (MAD)": sub.amount,
-      Devise: sub.currency,
-      Statut: statusLabel(sub.status),
-      "Dernier paiement": getLastPaymentDate(sub.invoices),
-      "Début de période": sub.currentPeriodStart,
-      "Fin de période": sub.currentPeriodEnd,
-    }));
-    exportToCSV(rows, `abonnements-${getLocalDateStr()}.csv`);
-    addToast("Export CSV téléchargé", "success");
+  async function handleExportSubscriptionsCSV() {
+    setIsExporting(true);
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      const rows = sorted.map((sub) => ({
+        "Nom du client": sub.clinicName,
+        Type: systemTypeLabels[sub.systemType],
+        Tier: sub.tierName,
+        Cycle: sub.billingCycle === "monthly" ? "Mensuel" : "Annuel",
+        "Montant (MAD)": sub.amount,
+        Devise: sub.currency,
+        Statut: statusLabel(sub.status),
+        "Dernier paiement": getLastPaymentDate(sub.invoices),
+        "Début de période": sub.currentPeriodStart,
+        "Fin de période": sub.currentPeriodEnd,
+      }));
+      exportToCSV(rows, `abonnements-${getLocalDateStr()}.csv`);
+      addToast("Export CSV téléchargé", "success");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
-  function handleExportSubscriptionsPDF() {
-    const rows = sorted.map((sub) => ({
-      Client: sub.clinicName,
-      Type: systemTypeLabels[sub.systemType],
-      Tier: sub.tierName,
-      "Montant (MAD)": String(sub.amount),
-      Statut: statusLabel(sub.status),
-      "Dernier pmt": getLastPaymentDate(sub.invoices),
-      Période: `${sub.currentPeriodStart} — ${sub.currentPeriodEnd}`,
-    }));
-    exportToPDF("Abonnements — Oltigo Health", rows, [
-      "Client",
-      "Type",
-      "Tier",
-      "Montant (MAD)",
-      "Statut",
-      "Dernier pmt",
-      "Période",
-    ]);
-    addToast("PDF généré — utilisez Enregistrer en PDF dans la boîte d'impression", "success");
+  async function handleExportSubscriptionsPDF() {
+    setIsExporting(true);
+    await new Promise((r) => setTimeout(r, 50));
+    try {
+      const rows = sorted.map((sub) => ({
+        Client: sub.clinicName,
+        Type: systemTypeLabels[sub.systemType],
+        Tier: sub.tierName,
+        "Montant (MAD)": String(sub.amount),
+        Statut: statusLabel(sub.status),
+        "Dernier pmt": getLastPaymentDate(sub.invoices),
+        Période: `${sub.currentPeriodStart} — ${sub.currentPeriodEnd}`,
+      }));
+      exportToPDF("Abonnements — Oltigo Health", rows, [
+        "Client",
+        "Type",
+        "Tier",
+        "Montant (MAD)",
+        "Statut",
+        "Dernier pmt",
+        "Période",
+      ]);
+      addToast("PDF généré — utilisez Enregistrer en PDF dans la boîte d'impression", "success");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   if (loading) {
@@ -367,12 +382,39 @@ export default function SubscriptionsPage() {
             { label: "Subscriptions" },
           ]}
         />
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold">Gestion des abonnements</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Suivi des abonnements clients, facturation et paiements
           </p>
         </div>
+
+        {/* S12: indeterminate progress bar replaces the silent skeleton-only wait.
+            Gives the admin clear feedback that data is being fetched, and avoids
+            the "page looks broken" impression reported in the June QA. */}
+        <div
+          role="progressbar"
+          aria-label="Chargement des abonnements"
+          aria-busy="true"
+          className="relative h-1 w-full overflow-hidden rounded-full bg-primary/15 mb-6"
+        >
+          <div
+            className="absolute inset-y-0 left-0 w-[40%] rounded-full bg-primary"
+            style={{
+              animation: "sa-indeterminate 1.4s cubic-bezier(0.65,0.05,0.36,0.95) infinite",
+            }}
+          />
+          <style>{`
+            @keyframes sa-indeterminate {
+              0%   { transform: translateX(-100%); }
+              100% { transform: translateX(350%); }
+            }
+          `}</style>
+        </div>
+
+        <p className="text-xs text-muted-foreground mb-4 animate-pulse">
+          Récupération des abonnements…
+        </p>
         <CardSkeleton count={4} className="mb-6" />
         <TableSkeleton rows={6} columns={7} className="mt-4" />
       </div>
@@ -397,18 +439,27 @@ export default function SubscriptionsPage() {
         {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={filtered.length === 0}>
-              <Download className="h-4 w-4 mr-1" />
-              Exporter
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filtered.length === 0 || isExporting}
+              aria-label={isExporting ? "Export en cours…" : "Exporter"}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-1" />
+              )}
+              {isExporting ? "Export…" : "Exporter"}
               <ChevronDown className="h-3 w-3 ml-1" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleExportSubscriptionsCSV}>
+            <DropdownMenuItem onClick={handleExportSubscriptionsCSV} disabled={isExporting}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               Export CSV
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportSubscriptionsPDF}>
+            <DropdownMenuItem onClick={handleExportSubscriptionsPDF} disabled={isExporting}>
               <FileText className="h-4 w-4 mr-2" />
               Export PDF
             </DropdownMenuItem>
