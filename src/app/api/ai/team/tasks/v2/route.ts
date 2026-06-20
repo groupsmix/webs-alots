@@ -28,7 +28,7 @@ export const POST = withAuthValidation(
     const userId = profile.id;
 
     if (!clinicId) {
-      return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
+      return apiError("No clinic associated with this account", 403, "NO_CLINIC");
     }
 
     try {
@@ -42,7 +42,7 @@ export const POST = withAuthValidation(
       });
 
       if (!result) {
-        return apiInternalError("Erreur lors de la création de la tâche.");
+        return apiInternalError("Failed to create task.");
       }
 
       void logAuditEvent({
@@ -66,7 +66,7 @@ export const POST = withAuthValidation(
         error: err,
         clinicId,
       });
-      return apiInternalError("Erreur lors de la création de la tâche.");
+      return apiInternalError("Failed to create task.");
     }
   },
   ["clinic_admin", "super_admin"],
@@ -81,7 +81,7 @@ export const PATCH = withAuthValidation(
     const userId = profile.id;
 
     if (!clinicId) {
-      return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
+      return apiError("No clinic associated with this account", 403, "NO_CLINIC");
     }
 
     try {
@@ -149,7 +149,7 @@ export const PATCH = withAuthValidation(
         error: err,
         clinicId,
       });
-      return apiInternalError("Erreur lors de la transition de la tâche.");
+      return apiInternalError("Failed to transition task.");
     }
   },
   ["clinic_admin", "super_admin"],

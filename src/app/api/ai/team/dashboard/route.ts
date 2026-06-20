@@ -59,7 +59,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         teamTasks: [],
       });
     }
-    return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
+    return apiError("No clinic associated with this account", 403, "NO_CLINIC");
   }
 
   try {
@@ -217,7 +217,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       clinicId,
       error: err,
     });
-    return apiInternalError("Erreur lors du chargement du tableau de bord IA.");
+    return apiInternalError("Failed to load AI dashboard.");
   }
 }
 
