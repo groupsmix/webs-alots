@@ -668,9 +668,9 @@ jobs:
           category: "scorecard"
         continue-on-error: true
 
-  # R-25: Run Knip to detect unused exports, files, and dependencies.
-  # Non-blocking (continue-on-error) because the current codebase has known
-  # findings — the goal is visibility, not gating.
+  # R-25 / Audit Task 16: Knip dead-code ratchet. The script counts unused
+  # files reported by knip and fails if the count exceeds .knip-baseline.
+  # The baseline is a monotonic ratchet — it must only go down, never up.
   knip:
     runs-on: ubuntu-latest
     name: Knip (dead code detection)
@@ -687,8 +687,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Run Knip
-        run: npx knip
+      - name: Run Knip ratchet
+        run: node scripts/check-knip-ratchet.mjs
+
+      # Prevent raising the knip baseline in PRs (mirror of the ESLint/i18n
+      # ratchet guards): a PR may lower the count, never raise it.
+      - name: Guard knip baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_BASELINE=$(cat .knip-baseline | tr -d '[:space:]')
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          MAIN_BASELINE=$(git show "origin/${{ github.event.pull_request.base.ref }}:.knip-baseline" 2>/dev/null | tr -d '[:space:]' || echo "$PR_BASELINE")
+          if [ "$PR_BASELINE" -gt "$MAIN_BASELINE" ]; then
+            echo "::error::Knip baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
+            exit 1
+          fi
 
   # Audit Task 10: type-check the Supabase Edge Functions (Deno). They run
   # outside the Next.js tsconfig (which excludes supabase/functions), so this
