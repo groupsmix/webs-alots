@@ -5,6 +5,7 @@ import {
   ensureLookups,
   _activeUserMap,
   _activeServiceMap,
+  createClient,
   type TableName,
 } from "./_core";
 import { fetchTodayAppointments } from "./appointments";
@@ -150,4 +151,77 @@ export async function fetchInstallmentPlans(clinicId: string): Promise<Installme
       whatsappReminderEnabled: p.whatsapp_reminder ?? false,
     };
   });
+}
+
+// clinic_holidays.{type,recurring} columns (migration 00192) are not yet in the
+// generated DB types. Cast through this minimal shape — matches whatsapp.ts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseUntyped = { from(table: string): any };
+
+// ============================================================
+// HOLIDAYS (clinic_holidays)
+// ============================================================
+
+export interface HolidayView {
+  id: string;
+  name: string;
+  date: string;
+  type: "national" | "clinic" | "doctor";
+  recurring: boolean;
+}
+
+interface HolidayRow {
+  id: string;
+  clinic_id: string;
+  title: string;
+  start_date: string;
+  type: string;
+  recurring: boolean;
+}
+
+export async function fetchHolidays(clinicId: string): Promise<HolidayView[]> {
+  const rows = await fetchRows<HolidayRow>("clinic_holidays", {
+    eq: [["clinic_id", clinicId]],
+    order: ["start_date", { ascending: true }],
+    tenantClinicId: clinicId,
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.title,
+    date: row.start_date,
+    type: (row.type ?? "clinic") as HolidayView["type"],
+    recurring: row.recurring ?? false,
+  }));
+}
+
+export async function createHoliday(
+  clinicId: string,
+  data: { name: string; date: string; type: string; recurring: boolean },
+): Promise<{ id: string }> {
+  const supabase = createClient();
+  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  const { data: row, error } = await (supabase as unknown as SupabaseUntyped)
+    .from("clinic_holidays")
+    .insert({
+      clinic_id: clinicId,
+      title: data.name,
+      start_date: data.date,
+      end_date: data.date,
+      type: data.type,
+      recurring: data.recurring,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { id: (row as { id: string }).id };
+}
+
+export async function deleteHoliday(clinicId: string, id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("clinic_holidays")
+    .delete()
+    .eq("id", id)
+    .eq("clinic_id", clinicId);
+  if (error) throw error;
 }

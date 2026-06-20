@@ -11,14 +11,18 @@ import {
   getCurrentUser,
   fetchDoctors,
   fetchReviews,
+  createReview,
   type DoctorView,
   type ReviewView,
 } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 
 export default function PatientFeedbackPage() {
   const [doctors, setDoctors] = useState<DoctorView[]>([]);
   const [pastFeedback, setPastFeedback] = useState<ReviewView[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [clinicId, setClinicId] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -34,6 +38,8 @@ export default function PatientFeedbackPage() {
         setPageLoading(false);
         return;
       }
+      setUserId(user.id);
+      setClinicId(user.clinic_id);
       const [docs, reviews] = await Promise.all([
         fetchDoctors(user.clinic_id),
         fetchReviews(user.clinic_id),
@@ -56,11 +62,32 @@ export default function PatientFeedbackPage() {
     );
   }
 
-  const handleSubmit = () => {
-    if (!selectedDoctor || rating === 0) return;
+  const handleSubmit = async () => {
+    if (!selectedDoctor || rating === 0 || !userId || !clinicId) return;
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      const { id } = await createReview({
+        clinicId,
+        patientId: userId,
+        doctorId: selectedDoctor,
+        stars: rating,
+        comment,
+      });
+      const doctor = doctors.find((d) => d.id === selectedDoctor);
+      setPastFeedback((prev) => [
+        {
+          id,
+          patientId: userId,
+          patientName: "You",
+          doctorName: doctor?.name ?? "Doctor",
+          rating,
+          comment,
+          date: new Date().toISOString().split("T")[0],
+          status: "pending",
+          replied: false,
+        },
+        ...prev,
+      ]);
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -68,7 +95,12 @@ export default function PatientFeedbackPage() {
         setRating(0);
         setComment("");
       }, 3000);
-    }, 1200);
+    } catch (err) {
+      logger.warn("Failed to submit review", { context: "patient/feedback", error: err });
+      alert("Failed to submit feedback. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

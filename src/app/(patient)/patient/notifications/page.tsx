@@ -27,7 +27,14 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getCurrentUser, fetchNotifications, type NotificationView } from "@/lib/data/client";
+import {
+  getCurrentUser,
+  fetchNotifications,
+  fetchNotificationPreferences,
+  upsertNotificationPreferences,
+  type NotificationView,
+} from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 
 // ---- Type Mapping ----
 
@@ -113,6 +120,9 @@ export default function PatientNotificationsPage() {
     prescriptions: true,
   });
   const [savedPrefs, setSavedPrefs] = useState(false);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentClinicId, setCurrentClinicId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -122,7 +132,12 @@ export default function PatientNotificationsPage() {
           if (!controller.signal.aborted) setPageLoading(false);
           return;
         }
-        const notifs = await fetchNotifications(user.id);
+        setCurrentUserId(user.id);
+        setCurrentClinicId(user.clinic_id);
+        const [notifs, savedPrefsData] = await Promise.all([
+          fetchNotifications(user.id),
+          fetchNotificationPreferences(user.id),
+        ]);
         if (controller.signal.aborted) return;
         setNotifications(
           notifs.map((n) => ({
@@ -131,10 +146,20 @@ export default function PatientNotificationsPage() {
             time: formatTimeAgo(n.createdAt),
           })),
         );
+        if (savedPrefsData) {
+          setPrefs({
+            whatsapp: savedPrefsData.whatsappEnabled,
+            in_app: savedPrefsData.inAppEnabled,
+            reminders: savedPrefsData.appointmentReminders,
+            confirmations: savedPrefsData.bookingConfirmations,
+            payments: savedPrefsData.paymentReceipts,
+            prescriptions: savedPrefsData.prescriptionUpdates,
+          });
+        }
         setPageLoading(false);
       })
       .catch(() => {
-        // ignored — component unmounted or fetch failed
+        if (!controller) setPageLoading(false);
       });
     return () => {
       controller.abort();
@@ -166,9 +191,30 @@ export default function PatientNotificationsPage() {
     setNotifications(notifications.filter((n) => n.id !== id));
   };
 
-  const handleSavePrefs = () => {
-    setSavedPrefs(true);
-    setTimeout(() => setSavedPrefs(false), 2000);
+  const handleSavePrefs = async () => {
+    if (!currentUserId || !currentClinicId) return;
+    setSavingPrefs(true);
+    try {
+      await upsertNotificationPreferences({
+        userId: currentUserId,
+        clinicId: currentClinicId,
+        whatsappEnabled: prefs.whatsapp,
+        inAppEnabled: prefs.in_app,
+        appointmentReminders: prefs.reminders,
+        bookingConfirmations: prefs.confirmations,
+        paymentReceipts: prefs.payments,
+        prescriptionUpdates: prefs.prescriptions,
+      });
+      setSavedPrefs(true);
+      setTimeout(() => setSavedPrefs(false), 2000);
+    } catch (err) {
+      logger.warn("Failed to save notification preferences", {
+        context: "patient/notifications",
+        error: err,
+      });
+    } finally {
+      setSavingPrefs(false);
+    }
   };
 
   return (
@@ -339,8 +385,8 @@ export default function PatientNotificationsPage() {
               </div>
             </div>
 
-            <Button className="w-full" onClick={handleSavePrefs}>
-              {savedPrefs ? "Saved!" : "Save Preferences"}
+            <Button className="w-full" onClick={handleSavePrefs} disabled={savingPrefs}>
+              {savingPrefs ? "Saving..." : savedPrefs ? "Saved!" : "Save Preferences"}
             </Button>
           </div>
         </DialogContent>

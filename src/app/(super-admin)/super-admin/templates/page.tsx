@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -11,8 +12,9 @@ import {
   FileSpreadsheet,
   FileCheck,
   FilePlus,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -28,170 +30,78 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { formatNumber } from "@/lib/utils";
 
 interface Template {
   id: string;
   name: string;
   description: string;
   type: "prescription" | "invoice" | "report" | "certificate" | "consent" | "letter";
-  clinicType: "all" | "doctor" | "dentist" | "pharmacy";
+  clinic_type: "all" | "doctor" | "dentist" | "pharmacy";
   content: string;
-  createdAt: string;
-  updatedAt: string;
-  usageCount: number;
-  active: boolean;
+  created_at: string;
+  updated_at: string;
+  usage_count: number;
+  is_active: boolean;
 }
 
-const initialTemplates: Template[] = [
-  {
-    id: "tpl-1",
-    name: "Standard Prescription",
-    description: "General prescription template for doctors",
-    type: "prescription",
-    clinicType: "doctor",
-    content:
-      "Patient: {{patient_name}}\nDate: {{date}}\n\nRx:\n{{medications}}\n\nDr. {{doctor_name}}\nLicense: {{license_no}}",
-    createdAt: "2024-01-15",
-    updatedAt: "2024-11-01",
-    usageCount: 1245,
-    active: true,
-  },
-  {
-    id: "tpl-2",
-    name: "Dental Treatment Plan",
-    description: "Treatment plan template for dental clinics",
-    type: "report",
-    clinicType: "dentist",
-    content:
-      "Patient: {{patient_name}}\nTreatment Plan:\n{{treatment_details}}\n\nEstimated Cost: {{cost}} MAD\nDuration: {{duration}}",
-    createdAt: "2024-02-20",
-    updatedAt: "2024-10-15",
-    usageCount: 890,
-    active: true,
-  },
-  {
-    id: "tpl-3",
-    name: "Invoice Standard",
-    description: "Standard billing invoice for all clinic types",
-    type: "invoice",
-    clinicType: "all",
-    content:
-      "Invoice #{{invoice_no}}\nDate: {{date}}\nPatient: {{patient_name}}\n\nServices:\n{{services}}\n\nTotal: {{total}} MAD",
-    createdAt: "2024-01-10",
-    updatedAt: "2024-12-01",
-    usageCount: 2340,
-    active: true,
-  },
-  {
-    id: "tpl-4",
-    name: "Medical Certificate",
-    description: "Medical certificate for work/school absence",
-    type: "certificate",
-    clinicType: "doctor",
-    content:
-      "MEDICAL CERTIFICATE\n\nThis certifies that {{patient_name}} was examined on {{date}} and requires {{days}} days of rest.\n\nDr. {{doctor_name}}",
-    createdAt: "2024-03-05",
-    updatedAt: "2024-09-20",
-    usageCount: 567,
-    active: true,
-  },
-  {
-    id: "tpl-5",
-    name: "Pharmacy Dispensing Record",
-    description: "Record of medications dispensed",
-    type: "report",
-    clinicType: "pharmacy",
-    content:
-      "Dispensing Record\nDate: {{date}}\nPatient: {{patient_name}}\nPrescription: {{rx_no}}\n\nMedications:\n{{medications}}\n\nPharmacist: {{pharmacist_name}}",
-    createdAt: "2024-04-12",
-    updatedAt: "2024-11-10",
-    usageCount: 1890,
-    active: true,
-  },
-  {
-    id: "tpl-6",
-    name: "Patient Consent Form",
-    description: "General consent form for procedures",
-    type: "consent",
-    clinicType: "all",
-    content:
-      "CONSENT FORM\n\nI, {{patient_name}}, consent to {{procedure}} as explained by Dr. {{doctor_name}}.\n\nSignature: ___________\nDate: {{date}}",
-    createdAt: "2024-05-01",
-    updatedAt: "2024-08-15",
-    usageCount: 345,
-    active: true,
-  },
-  {
-    id: "tpl-7",
-    name: "Referral Letter",
-    description: "Referral letter to specialist",
-    type: "letter",
-    clinicType: "doctor",
-    content:
-      "Dear Dr. {{specialist_name}},\n\nI am referring {{patient_name}} for {{reason}}.\n\nHistory: {{medical_history}}\n\nRegards,\nDr. {{doctor_name}}",
-    createdAt: "2024-06-18",
-    updatedAt: "2024-10-30",
-    usageCount: 234,
-    active: true,
-  },
-  {
-    id: "tpl-8",
-    name: "Dental X-Ray Report",
-    description: "X-ray findings report template",
-    type: "report",
-    clinicType: "dentist",
-    content:
-      "X-RAY REPORT\nPatient: {{patient_name}}\nDate: {{date}}\nType: {{xray_type}}\n\nFindings:\n{{findings}}\n\nRecommendation: {{recommendation}}",
-    createdAt: "2024-07-22",
-    updatedAt: "2024-11-25",
-    usageCount: 456,
-    active: false,
-  },
-];
-
-type TypeFilter =
-  | "all"
-  | "prescription"
-  | "invoice"
-  | "report"
-  | "certificate"
-  | "consent"
-  | "letter";
+type TypeFilter = "all" | Template["type"];
 type ClinicTypeFilter = "all" | "doctor" | "dentist" | "pharmacy";
 
 export default function TemplateManagerPage() {
   const [locale] = useLocale();
-
   const { addToast } = useToast();
-  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [clinicTypeFilter, setClinicTypeFilter] = useState<ClinicTypeFilter>("all");
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<Template | null>(null);
+  const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<Template | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState<Template | null>(null);
-
   const [formName, setFormName] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formType, setFormType] = useState<Template["type"]>("prescription");
-  const [formClinicType, setFormClinicType] = useState<Template["clinicType"]>("all");
+  const [formClinicType, setFormClinicType] = useState<Template["clinic_type"]>("all");
   const [formContent, setFormContent] = useState("");
+
+  const loadTemplates = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const res = await fetch("/api/super-admin/templates");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `${res.status}`);
+      setTemplates(json.data.templates ?? []);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load templates");
+      logger.warn("Failed to load document templates", { error: err });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadTemplates();
+  }, [loadTemplates]);
 
   const filtered = templates.filter((t) => {
     const q = search.toLowerCase();
     const matchSearch =
-      !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q);
+      !q || t.name.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q);
     return (
       matchSearch &&
       (typeFilter === "all" || t.type === typeFilter) &&
-      (clinicTypeFilter === "all" || t.clinicType === clinicTypeFilter || t.clinicType === "all")
+      (clinicTypeFilter === "all" || t.clinic_type === clinicTypeFilter || t.clinic_type === "all")
     );
   });
 
@@ -227,74 +137,142 @@ export default function TemplateManagerPage() {
   function openEdit(item: Template) {
     setEditItem(item);
     setFormName(item.name);
-    setFormDesc(item.description);
+    setFormDesc(item.description ?? "");
     setFormType(item.type);
-    setFormClinicType(item.clinicType);
+    setFormClinicType(item.clinic_type);
     setFormContent(item.content);
     setEditOpen(true);
   }
 
-  function handleSave() {
-    if (editItem) {
-      setTemplates((prev) =>
-        prev.map((t) =>
-          t.id === editItem.id
-            ? {
-                ...t,
-                name: formName,
-                description: formDesc,
-                type: formType,
-                clinicType: formClinicType,
-                content: formContent,
-                updatedAt: getLocalDateStr(),
-              }
-            : t,
-        ),
-      );
-    } else {
-      const newTemplate: Template = {
-        id: `tpl-${Date.now()}`,
-        name: formName,
-        description: formDesc,
-        type: formType,
-        clinicType: formClinicType,
-        content: formContent,
-        createdAt: getLocalDateStr(),
-        updatedAt: getLocalDateStr(),
-        usageCount: 0,
-        active: true,
-      };
-      setTemplates((prev) => [newTemplate, ...prev]);
+  async function handleSave() {
+    if (!formName.trim() || !formContent.trim()) return;
+    setSaving(true);
+    try {
+      if (editItem) {
+        const res = await fetch("/api/super-admin/templates", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editItem.id,
+            name: formName,
+            description: formDesc,
+            type: formType,
+            clinicType: formClinicType,
+            content: formContent,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `${res.status}`);
+        setTemplates((prev) => prev.map((t) => (t.id === editItem.id ? json.data.template : t)));
+        addToast("Template updated", "success");
+      } else {
+        const res = await fetch("/api/super-admin/templates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formName,
+            description: formDesc,
+            type: formType,
+            clinicType: formClinicType,
+            content: formContent,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `${res.status}`);
+        setTemplates((prev) => [json.data.template, ...prev]);
+        addToast("Template created", "success");
+      }
+      setEditOpen(false);
+    } catch (err) {
+      logger.warn("Failed to save template", { error: err });
+      addToast("Failed to save template. Please try again.", "error");
+    } finally {
+      setSaving(false);
     }
-    setEditOpen(false);
-    addToast(editItem ? "Template updated" : "Template created", "success");
   }
 
-  function handleDuplicate(item: Template) {
-    const dup: Template = {
-      ...item,
-      id: `tpl-${Date.now()}`,
-      name: `${item.name} (Copy)`,
-      createdAt: getLocalDateStr(),
-      updatedAt: getLocalDateStr(),
-      usageCount: 0,
-    };
-    setTemplates((prev) => [dup, ...prev]);
-    addToast(`"${item.name}" duplicated`, "success");
+  async function handleDuplicate(item: Template) {
+    try {
+      const res = await fetch("/api/super-admin/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${item.name} (Copy)`,
+          description: item.description ?? "",
+          type: item.type,
+          clinicType: item.clinic_type,
+          content: item.content,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `${res.status}`);
+      setTemplates((prev) => [json.data.template, ...prev]);
+      addToast(`"${item.name}" duplicated`, "success");
+    } catch (err) {
+      logger.warn("Failed to duplicate template", { error: err });
+      addToast("Failed to duplicate template.", "error");
+    }
   }
 
-  function handleDelete() {
-    if (deleteItem) {
+  async function handleDelete() {
+    if (!deleteItem) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/super-admin/templates?id=${deleteItem.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
       setTemplates((prev) => prev.filter((t) => t.id !== deleteItem.id));
       addToast("Template deleted", "success");
+    } catch (err) {
+      logger.warn("Failed to delete template", { error: err });
+      addToast("Failed to delete template.", "error");
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+      setDeleteItem(null);
     }
-    setDeleteOpen(false);
-    setDeleteItem(null);
   }
 
-  function toggleActive(item: Template) {
-    setTemplates((prev) => prev.map((t) => (t.id === item.id ? { ...t, active: !t.active } : t)));
-    addToast(item.active ? "Template deactivated" : "Template activated", "success");
+  async function toggleActive(item: Template) {
+    const previous = templates;
+    setTemplates((prev) =>
+      prev.map((t) => (t.id === item.id ? { ...t, is_active: !t.is_active } : t)),
+    );
+    try {
+      const res = await fetch("/api/super-admin/templates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, active: !item.is_active }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      addToast(item.is_active ? "Template deactivated" : "Template activated", "success");
+    } catch (err) {
+      logger.warn("Failed to toggle template", { error: err });
+      setTemplates(previous);
+      addToast("Failed to update template.", "error");
+    }
+  }
+
+  if (loading) return <PageLoader message="Loading templates..." />;
+
+  if (loadError) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">Failed to load templates.</p>
+        <p className="text-sm text-muted-foreground mt-1">{loadError}</p>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => {
+            setLoading(true);
+            void loadTemplates();
+          }}
+        >
+          Try again
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -315,7 +293,6 @@ export default function TemplateManagerPage() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
@@ -327,7 +304,7 @@ export default function TemplateManagerPage() {
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground mb-1">Active</p>
             <p className="text-2xl font-bold text-green-600">
-              {templates.filter((t) => t.active).length}
+              {templates.filter((t) => t.is_active).length}
             </p>
           </CardContent>
         </Card>
@@ -342,15 +319,14 @@ export default function TemplateManagerPage() {
             <p className="text-xs text-muted-foreground mb-1">Total Usage</p>
             <p className="text-2xl font-bold">
               {formatNumber(
-                templates.reduce((sum, t) => sum + t.usageCount, 0),
-                typeof locale !== "undefined" ? locale : "fr",
+                templates.reduce((s, t) => s + t.usage_count, 0),
+                locale ?? "fr",
               )}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -402,17 +378,16 @@ export default function TemplateManagerPage() {
         </div>
       </div>
 
-      {/* Templates Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((tpl) => (
-          <Card key={tpl.id} className={!tpl.active ? "opacity-60" : ""}>
+          <Card key={tpl.id} className={!tpl.is_active ? "opacity-60" : ""}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   {typeIcon(tpl.type)}
                   <CardTitle className="text-sm">{tpl.name}</CardTitle>
                 </div>
-                {!tpl.active && (
+                {!tpl.is_active && (
                   <Badge variant="outline" className="text-[10px]">
                     Inactive
                   </Badge>
@@ -426,15 +401,12 @@ export default function TemplateManagerPage() {
                   {tpl.type}
                 </Badge>
                 <Badge variant="outline" className="text-[10px] capitalize">
-                  {tpl.clinicType === "all" ? "All Clinics" : tpl.clinicType}
+                  {tpl.clinic_type === "all" ? "All Clinics" : tpl.clinic_type}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  Used {formatNumber(tpl.usageCount, typeof locale !== "undefined" ? locale : "fr")}{" "}
-                  times
-                </span>
-                <span>Updated {tpl.updatedAt}</span>
+                <span>Used {formatNumber(tpl.usage_count, locale ?? "fr")} times</span>
+                <span>Updated {tpl.updated_at.slice(0, 10)}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -466,8 +438,8 @@ export default function TemplateManagerPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    title={tpl.active ? "Deactivate" : "Activate"}
-                    className={tpl.active ? "text-green-600" : "text-gray-400"}
+                    title={tpl.is_active ? "Deactivate" : "Activate"}
+                    className={tpl.is_active ? "text-green-600" : "text-gray-400"}
                     onClick={() => toggleActive(tpl)}
                   >
                     <FileCheck className="h-3.5 w-3.5" />
@@ -492,7 +464,11 @@ export default function TemplateManagerPage() {
         {filtered.length === 0 && (
           <div className="col-span-full text-center py-12 text-muted-foreground">
             <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No templates found.</p>
+            <p>
+              {templates.length === 0
+                ? "No templates yet. Create your first template."
+                : "No templates match your filter."}
+            </p>
           </div>
         )}
       </div>
@@ -551,7 +527,7 @@ export default function TemplateManagerPage() {
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   value={formClinicType}
-                  onChange={(e) => setFormClinicType(e.target.value as Template["clinicType"])}
+                  onChange={(e) => setFormClinicType(e.target.value as Template["clinic_type"])}
                 >
                   <option value="all">All Clinic Types</option>
                   <option value="doctor">Doctor</option>
@@ -564,7 +540,7 @@ export default function TemplateManagerPage() {
             <div className="space-y-2">
               <Label>Template Content</Label>
               <p className="text-xs text-muted-foreground">
-                Use {"{{variable_name}}"} for dynamic placeholders.
+                Use {`{{variable_name}}`} for dynamic placeholders.
               </p>
               <textarea
                 className="flex min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -575,10 +551,14 @@ export default function TemplateManagerPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!formName || !formContent}>
+            <Button
+              onClick={handleSave}
+              disabled={saving || !formName.trim() || !formContent.trim()}
+            >
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
               {editItem ? "Update Template" : "Create Template"}
             </Button>
           </DialogFooter>
@@ -601,23 +581,16 @@ export default function TemplateManagerPage() {
                   {previewItem.type}
                 </Badge>
                 <Badge variant="outline" className="capitalize">
-                  {previewItem.clinicType === "all" ? "All Clinics" : previewItem.clinicType}
+                  {previewItem.clinic_type === "all" ? "All Clinics" : previewItem.clinic_type}
                 </Badge>
               </div>
               <div className="rounded-lg border bg-muted/30 p-4">
                 <pre className="text-sm whitespace-pre-wrap font-mono">{previewItem.content}</pre>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>Created: {previewItem.createdAt}</span>
-                <span>Updated: {previewItem.updatedAt}</span>
-                <span>
-                  Used:{" "}
-                  {formatNumber(
-                    previewItem.usageCount,
-                    typeof locale !== "undefined" ? locale : "fr",
-                  )}{" "}
-                  times
-                </span>
+                <span>Created: {previewItem.created_at.slice(0, 10)}</span>
+                <span>Updated: {previewItem.updated_at.slice(0, 10)}</span>
+                <span>Used: {formatNumber(previewItem.usage_count, locale ?? "fr")} times</span>
               </div>
             </div>
             <DialogFooter>
@@ -651,17 +624,20 @@ export default function TemplateManagerPage() {
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deleteItem.name}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {deleteItem.type} &middot; Used{" "}
-                {formatNumber(deleteItem.usageCount, typeof locale !== "undefined" ? locale : "fr")}{" "}
+                {deleteItem.type} · Used {formatNumber(deleteItem.usage_count, locale ?? "fr")}{" "}
                 times
               </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1" />
+                )}
                 Delete
               </Button>
             </DialogFooter>
