@@ -1197,6 +1197,7 @@ export type Database = {
           hero_image_url: string | null
           id: string
           is_active: boolean
+          is_pilot: boolean
           logo_url: string | null
           name: string
           owner_email: string | null
@@ -1234,6 +1235,7 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           is_active?: boolean
+          is_pilot?: boolean
           logo_url?: string | null
           name: string
           owner_email?: string | null
@@ -1271,6 +1273,7 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           is_active?: boolean
+          is_pilot?: boolean
           logo_url?: string | null
           name?: string
           owner_email?: string | null

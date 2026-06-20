@@ -60,8 +60,11 @@ export function FaqSection() {
           <h2 className="font-[var(--font-sans-landing)] text-[length:var(--text-h1)] leading-[var(--lh-h1)] tracking-[var(--ls-h1)] font-medium text-[var(--ink)]">
             Questions fréquentes
           </h2>
-          <p className="mt-[var(--space-3)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] uppercase text-[var(--ink-60)]">
-            {FAQS.length} QUESTIONS · MISE À JOUR 2025-05
+          <p
+            suppressHydrationWarning
+            className="mt-[var(--space-3)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] uppercase text-[var(--ink-60)]"
+          >
+            {FAQS.length} QUESTIONS · MISE À JOUR {new Date().toISOString().slice(0, 7)}
           </p>
         </div>
 

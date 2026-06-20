@@ -12,22 +12,41 @@ type Status = "idle" | "submitting" | "success" | "error";
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "212600000000";
 
 export function CtaDemo() {
-  const { dict } = useI18n();
+  const { dict, locale } = useI18n();
   const c = dict.cta;
   const [status, setStatus] = useState<Status>("idle");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    // Snapshot the values before any await — React reuses the synthetic
+    // event and form.reset() would clear the fields out from under us.
+    const fd = new FormData(form);
+    const city = String(fd.get("city") ?? "").trim();
     setStatus("submitting");
-    // TODO(lead-capture): persist this lead for real. Add a POST route under
-    // /api, register it in PUBLIC_API_ROUTES (src/middleware.ts is deny-by-
-    // default for /api/*), then insert into Supabase. For now we acknowledge
-    // client-side and steer prospects to the WhatsApp channel above — this
-    // mirrors the upstream oltigo-landing, which shipped a no-op stub.
-    await new Promise<void>((resolve) => setTimeout(resolve, 600));
-    setStatus("success");
-    form.reset();
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinic: String(fd.get("clinic") ?? "").trim(),
+          doctor: String(fd.get("doctor") ?? "").trim(),
+          phone: String(fd.get("phone") ?? "").trim(),
+          email: String(fd.get("email") ?? "").trim(),
+          city: city || undefined,
+          locale,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (res.ok && json?.ok) {
+        setStatus("success");
+        form.reset();
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
   }
 
   const fields = [

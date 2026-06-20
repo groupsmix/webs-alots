@@ -4,6 +4,39 @@
 import { useLandingLocale } from "../landing-locale-provider";
 import { HairlineRule } from "./hairline-rule";
 
+// O11: derive the editorial mock dates from the current date so the
+// marketing surface never ships a stale calendar year.
+const FR_MONTHS = [
+  "JANVIER",
+  "FÉVRIER",
+  "MARS",
+  "AVRIL",
+  "MAI",
+  "JUIN",
+  "JUILLET",
+  "AOÛT",
+  "SEPTEMBRE",
+  "OCTOBRE",
+  "NOVEMBRE",
+  "DÉCEMBRE",
+];
+
+function isoWeek(d: Date): number {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const ftDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - ftDayNum + 3);
+  return 1 + Math.round((date.getTime() - firstThursday.getTime()) / 6048e5);
+}
+
+const EDITORIAL_NOW = new Date();
+const EDITORIAL_WEEK_LABEL = `SEMAINE ${isoWeek(EDITORIAL_NOW)} · ${FR_MONTHS[EDITORIAL_NOW.getMonth()]} ${EDITORIAL_NOW.getFullYear()}`;
+const EDITORIAL_LAST_VISIT = new Date(EDITORIAL_NOW.getTime() - 35 * 864e5)
+  .toISOString()
+  .slice(0, 10);
+
 function AppointmentCalendarMock() {
   const days = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM"];
   const slots = [
@@ -20,8 +53,11 @@ function AppointmentCalendarMock() {
   return (
     <div className="aspect-[16/10] rounded-[var(--radius-landing)] border border-[var(--rule)] bg-[var(--bone)] p-4 flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] tracking-[var(--ls-mono)] uppercase text-[var(--ink-60)]">
-          SEMAINE 22 · MAI 2025
+        <span
+          suppressHydrationWarning
+          className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] tracking-[var(--ls-mono)] uppercase text-[var(--ink-60)]"
+        >
+          {EDITORIAL_WEEK_LABEL}
         </span>
         <span className="inline-flex h-5 items-center rounded-full bg-[var(--oltigo-green)] px-2 font-[var(--font-mono-landing)] text-[length:10px] tracking-[var(--ls-mono)] text-[var(--bone)]">
           8 RDV
@@ -87,8 +123,11 @@ function PatientRecordMock() {
             <span className="block font-[var(--font-mono-landing)] text-[length:9px] tracking-[var(--ls-mono)] uppercase text-[var(--ink-60)] mb-1">
               DERNIÈRE VISITE
             </span>
-            <span className="block font-[var(--font-sans-landing)] text-[length:10px] text-[var(--ink)]">
-              2025-05-15
+            <span
+              suppressHydrationWarning
+              className="block font-[var(--font-sans-landing)] text-[length:10px] text-[var(--ink)]"
+            >
+              {EDITORIAL_LAST_VISIT}
             </span>
             <span className="block font-[var(--font-sans-landing)] text-[length:10px] text-[var(--ink-70)] mt-0.5">
               Consultation générale

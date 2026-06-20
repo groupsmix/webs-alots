@@ -141,6 +141,9 @@ const PUBLIC_API_ROUTES = [
   "/api/waiting-queue",
   // Public chatbot — basic (keyword) tier serves anonymous clinic visitors
   "/api/chat",
+  // Demo-request lead capture — prospective clinics submit from the public
+  // marketing landing page before they are tenants (no session/clinic context)
+  "/api/leads",
   // Demo login (dev/staging only, guarded in handler)
   "/api/auth/demo-login",
   // CSP report endpoint

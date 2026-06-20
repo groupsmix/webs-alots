@@ -320,7 +320,7 @@ export default function PatientSettingsPage() {
             </li>
           </ul>
           <div className="mt-4">
-            <a href="/privacy" className="text-sm text-primary hover:underline">
+            <a href="/privacy/" className="text-sm text-primary hover:underline">
               Consulter la politique de confidentialité complète
             </a>
           </div>

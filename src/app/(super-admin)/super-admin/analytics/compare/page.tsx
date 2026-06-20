@@ -13,15 +13,15 @@ import {
   Trophy,
   UserCheck,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// ── Mock clinic data ─────────────────────────────────────────────────
+// ── Clinic comparison data (O6): fetched live from the API, no mocks ──
 
-interface MockClinic {
+interface ClinicMetrics {
   id: string;
   name: string;
   type: string;
@@ -35,93 +35,6 @@ interface MockClinic {
   staffCount: number;
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-function randomInRange(min: number, max: number, seed: number): number {
-  return Math.round(min + seededRandom(seed) * (max - min));
-}
-
-function randomFloat(min: number, max: number, seed: number, decimals: number): number {
-  const val = min + seededRandom(seed) * (max - min);
-  return Number(val.toFixed(decimals));
-}
-
-const CLINIC_POOL: MockClinic[] = Array.from({ length: 12 }, (_, i) => {
-  const names = [
-    "Clinique Atlas",
-    "Cabinet Marrakech",
-    "Centre Dental Fès",
-    "Pharmacie Rabat Central",
-    "Clinique Casablanca Sud",
-    "Cabinet Tanger Nord",
-    "Centre Médical Agadir",
-    "Pharmacie Meknès",
-    "Clinique Oujda Est",
-    "Cabinet Dental Kénitra",
-    "Centre Santé Tétouan",
-    "Pharmacie Salé Ville",
-  ];
-  const types = [
-    "doctor",
-    "doctor",
-    "dentist",
-    "pharmacy",
-    "doctor",
-    "doctor",
-    "doctor",
-    "pharmacy",
-    "doctor",
-    "dentist",
-    "doctor",
-    "pharmacy",
-  ];
-  const tiers = [
-    "starter",
-    "professional",
-    "enterprise",
-    "starter",
-    "enterprise",
-    "professional",
-    "professional",
-    "starter",
-    "enterprise",
-    "professional",
-    "starter",
-    "professional",
-  ];
-  const statuses = [
-    "active",
-    "active",
-    "active",
-    "active",
-    "active",
-    "active",
-    "active",
-    "active",
-    "trial",
-    "active",
-    "active",
-    "active",
-  ];
-
-  return {
-    id: `clinic-${i + 1}`,
-    name: names[i],
-    type: types[i],
-    tier: tiers[i],
-    status: statuses[i],
-    monthlyAppointments: randomInRange(50, 200, i * 7 + 1),
-    monthlyRevenue: randomInRange(5000, 25000, i * 7 + 2),
-    activePatients: randomInRange(100, 500, i * 7 + 3),
-    noShowRate: randomFloat(5, 20, i * 7 + 4, 1),
-    satisfaction: randomFloat(3.5, 5.0, i * 7 + 5, 1),
-    staffCount: randomInRange(2, 10, i * 7 + 6),
-  };
-});
-
 // ── Metric definitions ───────────────────────────────────────────────
 
 type MetricKey = "appointments" | "revenue" | "patients" | "activity" | "rating";
@@ -130,7 +43,7 @@ interface MetricDef {
   key: MetricKey;
   label: string;
   icon: typeof Calendar;
-  getValue: (c: MockClinic) => number;
+  getValue: (c: ClinicMetrics) => number;
   format: (v: number) => string;
   unit: string;
 }
@@ -189,16 +102,97 @@ const BAR_COLORS = [
 // ── Component ────────────────────────────────────────────────────────
 
 export default function ClinicComparisonPage() {
-  const [selectedIds, setSelectedIds] = useState<string[]>(["clinic-1", "clinic-2", "clinic-3"]);
+  const [clinics, setClinics] = useState<ClinicMetrics[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMetric, setActiveMetric] = useState<MetricKey>("appointments");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/clinic-comparison");
+        const json = (await res.json()) as {
+          ok?: boolean;
+          data?: { clinics: ClinicMetrics[] };
+          error?: { message?: string };
+        };
+        if (!res.ok || !json.data) {
+          throw new Error(json.error?.message ?? "Failed to load clinic data");
+        }
+        if (cancelled) return;
+        setClinics(json.data.clinics);
+        setSelectedIds(json.data.clinics.slice(0, 3).map((c) => c.id));
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : "Failed to load clinic data");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const selectedClinics = useMemo(
-    () => CLINIC_POOL.filter((c) => selectedIds.includes(c.id)),
-    [selectedIds],
+    () => clinics.filter((c) => selectedIds.includes(c.id)),
+    [clinics, selectedIds],
   );
 
   const currentMetric = METRICS.find((m) => m.key === activeMetric) ?? METRICS[0];
+
+  if (loading) {
+    return (
+      <div className="space-y-6 p-6">
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Analytics", href: "/super-admin/analytics" },
+            { label: "Clinic Comparison" },
+          ]}
+        />
+        <p className="text-sm text-muted-foreground">Loading clinic data…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-6 p-6">
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Analytics", href: "/super-admin/analytics" },
+            { label: "Clinic Comparison" },
+          ]}
+        />
+        <p className="text-sm text-destructive">{loadError}</p>
+      </div>
+    );
+  }
+
+  if (clinics.length === 0) {
+    return (
+      <div className="space-y-6 p-6">
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Analytics", href: "/super-admin/analytics" },
+            { label: "Clinic Comparison" },
+          ]}
+        />
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No clinics found yet.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   function toggleClinic(id: string) {
     setSelectedIds((prev) => {
@@ -211,13 +205,13 @@ export default function ClinicComparisonPage() {
     });
   }
 
-  function getBarWidth(clinic: MockClinic, metric: MetricDef): number {
+  function getBarWidth(clinic: ClinicMetrics, metric: MetricDef): number {
     const values = selectedClinics.map((c) => metric.getValue(c));
     const max = Math.max(...values, 1);
     return (metric.getValue(clinic) / max) * 100;
   }
 
-  function getRankings(metric: MetricDef): MockClinic[] {
+  function getRankings(metric: MetricDef): ClinicMetrics[] {
     return [...selectedClinics].sort((a, b) => metric.getValue(b) - metric.getValue(a));
   }
 
@@ -296,7 +290,7 @@ export default function ClinicComparisonPage() {
               </button>
               {dropdownOpen && (
                 <div className="absolute z-50 mt-1 w-full rounded-md border bg-background shadow-lg max-h-60 overflow-auto">
-                  {CLINIC_POOL.map((clinic) => {
+                  {clinics.map((clinic) => {
                     const selected = selectedIds.includes(clinic.id);
                     const disabled = !selected && selectedIds.length >= 5;
                     return (

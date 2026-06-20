@@ -84,6 +84,7 @@ const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/docs",
   "/api/health",
   "/api/health/internal",
+  "/api/leads",
   "/api/nps/respond",
   "/api/payments/cmi/callback",
   "/api/payments/webhook",

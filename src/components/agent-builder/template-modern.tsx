@@ -141,10 +141,11 @@ export function TemplateModern({ config }: TemplateModernProps) {
 
       {/* Footer */}
       <footer
+        suppressHydrationWarning
         className="px-4 py-2 text-center text-[9px]"
         style={{ backgroundColor: primary, color: "#fff", opacity: 0.9 }}
       >
-        &copy; 2025 {config.name || "Clinic"} — Powered by Oltigo Health
+        &copy; {new Date().getFullYear()} {config.name || "Clinic"} — Powered by Oltigo Health
       </footer>
     </div>
   );

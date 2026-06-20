@@ -135,8 +135,11 @@ export function TemplateClassic({ config }: TemplateClassicProps) {
       </section>
 
       {/* Footer */}
-      <footer className="border-t px-4 py-2 text-center text-[9px] text-muted-foreground">
-        &copy; 2025 {config.name || "Clinic"} — Powered by Oltigo Health
+      <footer
+        suppressHydrationWarning
+        className="border-t px-4 py-2 text-center text-[9px] text-muted-foreground"
+      >
+        &copy; {new Date().getFullYear()} {config.name || "Clinic"} — Powered by Oltigo Health
       </footer>
     </div>
   );

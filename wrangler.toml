@@ -74,8 +74,11 @@ binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
-# Application cache for clinic configs, feature flags, AI status.
-# Provision via:
+# O4 (DEFERRED — provisioning task, not code): Application cache for clinic
+# configs, feature flags, AI status. features.ts prefers this namespace and
+# falls back to a direct Supabase read when the binding is absent, so leaving
+# it commented costs only the cache tier, not correctness.
+# To activate (staging + prod each get distinct IDs):
 #   wrangler kv:namespace create APP_CACHE_KV
 #   wrangler kv:namespace create APP_CACHE_KV --preview
 # Then uncomment the binding below and paste the returned IDs.
@@ -92,8 +95,9 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # id         = "<paste-namespace-id>"
 # preview_id = "<paste-preview-namespace-id>"
 
-# TASK-017: Tenant lookup cache — 5-minute TTL, reduces Supabase DB reads per subdomain.
-# Provision via:
+# TASK-017 / O4 (DEFERRED — provisioning task, not code): Tenant lookup cache
+# — 5-minute TTL, reduces Supabase DB reads per subdomain in middleware.
+# Provision via (staging + prod each get distinct IDs):
 #   wrangler kv namespace create TENANT_CACHE
 #   wrangler kv namespace create TENANT_CACHE --preview
 # Then paste the returned IDs below and uncomment.
@@ -104,7 +108,8 @@ preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 # costs the 5-min cache, not correctness. Placeholders like
 # "<run: wrangler ...>" are rejected by Cloudflare Workers Builds validation,
 # which is why this block has to be commented (not left with placeholders)
-# until real namespace IDs are pasted in.
+# until real namespace IDs are pasted in. Verify with `wrangler tail` (look
+# for KV hits on subdomain resolution) once the namespaces exist.
 # [[kv_namespaces]]
 # binding = "TENANT_CACHE"
 # id = "<paste-namespace-id-here>"
