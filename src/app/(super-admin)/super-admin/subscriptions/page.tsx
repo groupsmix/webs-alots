@@ -50,7 +50,7 @@ import {
   type ClientSubscription,
   type SystemType,
 } from "@/lib/super-admin-actions";
-import { formatCurrency, getLocalDateStr } from "@/lib/utils";
+import { formatCurrency, formatNumber, getLocalDateStr } from "@/lib/utils";
 
 type StatusFilter = "all" | ClientSubscription["status"];
 type SystemFilter = "all" | SystemType;
@@ -96,8 +96,8 @@ export default function SubscriptionsPage() {
     active: subscriptions.filter((s) => s.status === "active").length,
     trial: subscriptions.filter((s) => s.status === "trial").length,
     pastDue: subscriptions.filter((s) => s.status === "past_due").length,
-    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended")
-      .length,
+    suspended: subscriptions.filter((s) => s.status === "suspended").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled").length,
     total: subscriptions.length,
   };
   const mrr = subscriptions
@@ -243,7 +243,7 @@ export default function SubscriptionsPage() {
               <CreditCard className="h-4 w-4 text-green-600" />
               <span className="text-xs text-muted-foreground">MRR</span>
             </div>
-            <p className="text-2xl font-bold">{mrr.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
             <p className="text-xs text-muted-foreground">MAD / mois</p>
           </CardContent>
         </Card>
@@ -253,7 +253,7 @@ export default function SubscriptionsPage() {
               <Receipt className="h-4 w-4 text-blue-600" />
               <span className="text-xs text-muted-foreground">ARR</span>
             </div>
-            <p className="text-2xl font-bold">{arr.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{formatNumber(arr)}</p>
             <p className="text-xs text-muted-foreground">MAD / an</p>
           </CardContent>
         </Card>
@@ -273,9 +273,11 @@ export default function SubscriptionsPage() {
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <span className="text-xs text-muted-foreground">Problèmes</span>
             </div>
-            <p className="text-2xl font-bold text-red-600">{stats.pastDue + stats.cancelled}</p>
+            <p className="text-2xl font-bold text-red-600">
+              {stats.pastDue + stats.suspended + stats.cancelled}
+            </p>
             <p className="text-xs text-muted-foreground">
-              {stats.pastDue} impayés, {stats.cancelled} annulés
+              {stats.pastDue} impayés, {stats.suspended} suspendus, {stats.cancelled} annulés
             </p>
           </CardContent>
         </Card>
@@ -382,7 +384,7 @@ export default function SubscriptionsPage() {
                         {sub.billingCycle === "monthly" ? "Mensuel" : "Annuel"}
                       </td>
                       <td className="py-3 px-4 font-medium">
-                        {sub.amount.toLocaleString()} {sub.currency}
+                        {formatCurrency(sub.amount, "fr", sub.currency)}
                       </td>
                       <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground text-xs">
                         {sub.currentPeriodStart} — {sub.currentPeriodEnd}
@@ -405,35 +407,40 @@ export default function SubscriptionsPage() {
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          {sub.invoices.length > 0 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Factures"
-                              onClick={() => setExpandedInvoices(isInvoicesOpen ? null : sub.id)}
-                            >
-                              <Receipt className="h-3.5 w-3.5" />
-                              {isInvoicesOpen ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={sub.invoices.length > 0 ? "Factures" : "Aucune facture"}
+                            disabled={sub.invoices.length === 0}
+                            onClick={() => setExpandedInvoices(isInvoicesOpen ? null : sub.id)}
+                          >
+                            <Receipt className="h-3.5 w-3.5" />
+                            {sub.invoices.length > 0 &&
+                              (isInvoicesOpen ? (
                                 <ChevronUp className="h-3 w-3 ml-0.5" />
                               ) : (
                                 <ChevronDown className="h-3 w-3 ml-0.5" />
-                              )}
-                            </Button>
-                          )}
-                          {(sub.status === "past_due" || sub.status === "suspended") && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Envoyer rappel"
-                              className="text-orange-600"
-                              onClick={() => {
-                                setReminderSub(sub);
-                                setReminderOpen(true);
-                              }}
-                            >
-                              <Send className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
+                              ))}
+                          </Button>
+                          {(() => {
+                            const canRemind =
+                              sub.status === "past_due" || sub.status === "suspended";
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title={canRemind ? "Envoyer rappel" : "Rappel indisponible"}
+                                disabled={!canRemind}
+                                className={canRemind ? "text-orange-600" : undefined}
+                                onClick={() => {
+                                  setReminderSub(sub);
+                                  setReminderOpen(true);
+                                }}
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                              </Button>
+                            );
+                          })()}
                         </div>
                       </td>
                     </tr>
@@ -527,7 +534,7 @@ export default function SubscriptionsPage() {
                 <div>
                   <span className="text-muted-foreground">Montant :</span>{" "}
                   <span className="font-medium">
-                    {detailSub.amount.toLocaleString()} {detailSub.currency}
+                    {formatCurrency(detailSub.amount, "fr", detailSub.currency)}
                   </span>
                 </div>
                 <div>
@@ -635,8 +642,8 @@ export default function SubscriptionsPage() {
             <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
               <p className="text-sm font-medium">{reminderSub.clinicName}</p>
               <p className="text-xs text-muted-foreground">
-                Tier: {reminderSub.tierName} — {reminderSub.amount.toLocaleString()}{" "}
-                {reminderSub.currency}
+                Tier: {reminderSub.tierName} —{" "}
+                {formatCurrency(reminderSub.amount, "fr", reminderSub.currency)}
               </p>
               <p className="text-xs text-red-600">Statut: {statusLabel(reminderSub.status)}</p>
             </div>
