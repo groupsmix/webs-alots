@@ -267,7 +267,11 @@ export function createAdminClient(auditLabel: AdminAuditLabel, clinicId?: string
  * regenerated, callers should migrate to createAdminClient() for type safety.
  */
 export function createUntypedAdminClient(auditLabel: AdminAuditLabel, clinicId?: string) {
-  logger.debug("Untyped admin client created", { context: "supabase-server", auditLabel, clinicId });
+  logger.debug("Untyped admin client created", {
+    context: "supabase-server",
+    auditLabel,
+    clinicId,
+  });
   const client = createSupabaseClient(getSupabaseUrl(), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: { autoRefreshToken: false, persistSession: false },
   });
