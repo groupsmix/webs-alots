@@ -32,7 +32,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         agents: {
           marketing: {
             status: "active",
-            label: "Agent Marketing",
+            label: "Marketing Agent",
             metrics: {},
             pendingTasks: 0,
             tasks: [],
@@ -40,7 +40,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
           },
           support: {
             status: "active",
-            label: "Agent Support",
+            label: "Support Agent",
             metrics: {},
             pendingTasks: 0,
             tasks: [],
@@ -48,7 +48,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
           },
           reminder: {
             status: "active",
-            label: "Agent Rappels",
+            label: "Reminder Agent",
             metrics: {},
             pendingTasks: 0,
             tasks: [],
@@ -172,7 +172,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       agents: {
         marketing: {
           status: "active",
-          label: "Agent Marketing",
+          label: "Marketing Agent",
           metrics: {
             inactivePatients: marketingData.inactivePatientsCount,
             newPatientsThisMonth: marketingData.newPatientsThisMonth,
@@ -184,7 +184,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         },
         support: {
           status: "active",
-          label: "Agent Support",
+          label: "Support Agent",
           metrics: {
             npsScore: supportData.npsScore,
             waitingQueueCount: supportData.waitingQueueCount,
@@ -196,7 +196,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         },
         reminder: {
           status: "active",
-          label: "Agent Rappels",
+          label: "Reminder Agent",
           metrics: {
             todayAppointments: reminderData.todayTotal,
             pendingApprovals: reminderData.totalPendingAppointments,
