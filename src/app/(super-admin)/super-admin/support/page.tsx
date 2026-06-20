@@ -359,7 +359,7 @@ export default function SupportPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-muted-foreground">Résolus aujourd'hui</p>
+              <p className="text-xs text-muted-foreground">Résolus aujourd&apos;hui</p>
             </div>
             <p className="text-2xl font-bold text-green-600">{resolvedTodayCount}</p>
           </CardContent>
@@ -377,7 +377,7 @@ export default function SupportPage() {
                 Impossible de charger les tickets
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                La requête a échoué (restriction d'accès, erreur réseau ou API indisponible).
+                La requête a échoué (restriction d&apos;accès, erreur réseau ou API indisponible).
                 Les données affichées ci-dessous peuvent être incomplètes.
               </p>
             </div>

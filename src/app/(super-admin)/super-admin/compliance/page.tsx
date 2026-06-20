@@ -106,7 +106,8 @@ export default async function ComplianceCenterPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Centre de conformité</h1>
           <p className="text-muted-foreground">
-            Suivi en direct de la conformité CNDP, DSAR, rétention, consentements et incidents de sécurité.
+            Suivi en direct de la conformité CNDP, DSAR, rétention, consentements et incidents de
+            sécurité.
           </p>
         </div>
         <Link href="/dsar-request" className="text-sm text-primary underline">
@@ -212,7 +213,9 @@ export default async function ComplianceCenterPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {breaches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucun incident de sécurité enregistré.</p>
+              <p className="text-sm text-muted-foreground">
+                Aucun incident de sécurité enregistré.
+              </p>
             ) : (
               breaches.map((incident) => (
                 <div key={String(incident.id)} className="rounded-lg border p-4">
@@ -336,14 +339,14 @@ export default async function ComplianceCenterPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-              Preuves de consentement
+            Preuves de consentement
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
             Les enregistrements de consentement structurés sont comptabilisés avec les journaux
-            legacy afin que les audits de conformité puissent suivre l'adoption du nouveau registre
-            sans perdre les preuves historiques.
+            legacy afin que les audits de conformité puissent suivre l&apos;adoption du nouveau
+            registre sans perdre les preuves historiques.
           </p>
         </CardContent>
       </Card>
