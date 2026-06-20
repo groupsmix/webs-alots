@@ -28,12 +28,12 @@ const companyLinks: readonly { key: TranslationKey; href: string }[] = [
 ];
 
 const legalLinks: readonly { key: TranslationKey; href: string }[] = [
-  { key: "landing.footerPrivacy", href: "/privacy" },
-  { key: "landing.footerTerms", href: "/terms" },
-  { key: "landing.footerLaw0908" as TranslationKey, href: "/compliance/law-09-08" },
-  { key: "landing.footerDPA" as TranslationKey, href: "/compliance/dpa" },
-  { key: "landing.footerSubprocessors" as TranslationKey, href: "/compliance/subprocessors" },
-  { key: "landing.footerSecurity" as TranslationKey, href: "/security" },
+  { key: "landing.footerPrivacy", href: "/privacy/" },
+  { key: "landing.footerTerms", href: "/terms/" },
+  { key: "landing.footerLaw0908" as TranslationKey, href: "/compliance/law-09-08/" },
+  { key: "landing.footerDPA" as TranslationKey, href: "/compliance/dpa/" },
+  { key: "landing.footerSubprocessors" as TranslationKey, href: "/compliance/subprocessors/" },
+  { key: "landing.footerSecurity" as TranslationKey, href: "/security/" },
 ];
 
 const locales: readonly { code: Locale; label: string }[] = [

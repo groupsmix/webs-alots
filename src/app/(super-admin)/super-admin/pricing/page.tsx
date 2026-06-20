@@ -663,7 +663,9 @@ export default function PricingPage() {
                             </span>
                           </>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Mensuel uniquement</span>
+                          // I7-fix: Vitrine is free — display "Gratuit" instead of the
+                          // ambiguous "Mensuel uniquement" which gave no price signal.
+                          <span className="text-2xl font-bold text-green-600">Gratuit</span>
                         )}
                       </CardTitle>
                     )}
@@ -728,10 +730,12 @@ export default function PricingPage() {
                               <>
                                 <span className="font-medium text-foreground">
                                   {tier.limits.maxPatients === 0
-                                    ? "—"
+                                    ? "Non inclus"
                                     : tier.limits.maxPatients.toLocaleString()}
                                 </span>{" "}
-                                patients
+                                {/* I6-fix: "Non inclus" instead of "—" for tiers with 0 patients
+                                    (Vitrine). The dash was ambiguous: 0, unlimited, or N/A? */}
+                                {tier.limits.maxPatients !== 0 && "patients"}
                               </>
                             )}
                           </p>
