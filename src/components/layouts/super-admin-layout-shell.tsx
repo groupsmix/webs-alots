@@ -552,7 +552,8 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           // XB2-fix: no real notifications → show empty list so the bell
           // displays 0 instead of the stale mock count (always "3").
           // FALLBACK_NOTIFICATIONS remain available for local dev only.
-          if (process.env.NODE_ENV !== "production") { // nosemgrep: semgrep.env-access — NODE_ENV is a Next.js/Webpack build-time constant, not a runtime secret
+          if (process.env.NODE_ENV !== "production") {
+            // nosemgrep: semgrep.env-access — NODE_ENV is a Next.js/Webpack build-time constant, not a runtime secret
             const readIds = getReadNotifIds();
             setNotifications(
               FALLBACK_NOTIFICATIONS.map((n) => ({

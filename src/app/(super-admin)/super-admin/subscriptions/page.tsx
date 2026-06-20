@@ -109,6 +109,25 @@ const systemIcons: Record<SystemType, typeof Stethoscope> = {
   pharmacy: Pill,
 };
 
+// S17: SortIndicator must live outside SubscriptionsPage so it is not
+// re-created on every render (react-hooks/static-components rule).
+function SortIndicator({
+  field,
+  sortField,
+  sortDir,
+}: {
+  field: SortField;
+  sortField: SortField;
+  sortDir: "asc" | "desc";
+}) {
+  if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
+  return sortDir === "asc" ? (
+    <ChevronUp className="h-3 w-3 ml-1" />
+  ) : (
+    <ChevronDown className="h-3 w-3 ml-1" />
+  );
+}
+
 export default function SubscriptionsPage() {
   const { addToast } = useToast();
   const [search, setSearch] = useState("");
@@ -222,19 +241,9 @@ export default function SubscriptionsPage() {
     setPage(1);
   }
 
-  function SortIndicator({ field }: { field: SortField }) {
-    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
-    return sortDir === "asc" ? (
-      <ChevronUp className="h-3 w-3 ml-1" />
-    ) : (
-      <ChevronDown className="h-3 w-3 ml-1" />
-    );
-  }
-
   // S11/S14: bulk-select helpers
   const pagedIds = paged.map((s) => s.id);
-  const allPageSelected =
-    pagedIds.length > 0 && pagedIds.every((id) => selectedIds.has(id));
+  const allPageSelected = pagedIds.length > 0 && pagedIds.every((id) => selectedIds.has(id));
   const somePageSelected = !allPageSelected && pagedIds.some((id) => selectedIds.has(id));
 
   function toggleSelectAll() {
@@ -265,8 +274,7 @@ export default function SubscriptionsPage() {
     setSelectedIds(new Set());
     setBulkConfirmOpen(false);
     setPendingBulkAction(null);
-    const past =
-      action === "activate" ? "activés" : action === "suspend" ? "suspendus" : "annulés";
+    const past = action === "activate" ? "activés" : action === "suspend" ? "suspendus" : "annulés";
     addToast(
       `${ids.length} abonnement${ids.length > 1 ? "s" : ""} ${past}`,
       action === "cancel" ? "error" : "success",
@@ -655,7 +663,7 @@ export default function SubscriptionsPage() {
                       className="flex items-center hover:text-foreground transition-colors"
                     >
                       Client
-                      <SortIndicator field="clinicName" />
+                      <SortIndicator field="clinicName" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
                   <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Type</th>
@@ -665,7 +673,7 @@ export default function SubscriptionsPage() {
                       className="flex items-center hover:text-foreground transition-colors"
                     >
                       Tier
-                      <SortIndicator field="tierName" />
+                      <SortIndicator field="tierName" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
                   <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Cycle</th>
@@ -675,7 +683,7 @@ export default function SubscriptionsPage() {
                       className="flex items-center hover:text-foreground transition-colors"
                     >
                       Montant
-                      <SortIndicator field="amount" />
+                      <SortIndicator field="amount" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
                   <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">
@@ -685,7 +693,7 @@ export default function SubscriptionsPage() {
                       title="Date du dernier paiement reçu"
                     >
                       Dernier pmt
-                      <SortIndicator field="lastPayment" />
+                      <SortIndicator field="lastPayment" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
                   <th className="text-left font-medium py-3 px-4">
@@ -694,7 +702,7 @@ export default function SubscriptionsPage() {
                       className="flex items-center hover:text-foreground transition-colors"
                     >
                       Statut
-                      <SortIndicator field="status" />
+                      <SortIndicator field="status" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
                   <th className="text-right font-medium py-3 px-4">Actions</th>
@@ -1093,9 +1101,7 @@ export default function SubscriptionsPage() {
                 });
 
                 // Invoice events (sorted ascending)
-                const sorted = [...detailSub.invoices].sort((a, b) =>
-                  a.date.localeCompare(b.date),
-                );
+                const sorted = [...detailSub.invoices].sort((a, b) => a.date.localeCompare(b.date));
                 for (const inv of sorted) {
                   if (inv.status === "paid") {
                     events.push({
@@ -1133,10 +1139,7 @@ export default function SubscriptionsPage() {
                     glyph: "✕",
                   });
                 }
-                if (
-                  detailSub.status === "suspended" &&
-                  !detailSub.cancelledAt
-                ) {
+                if (detailSub.status === "suspended" && !detailSub.cancelledAt) {
                   const reason = getSuspensionReason(detailSub);
                   events.push({
                     date: detailSub.currentPeriodEnd,

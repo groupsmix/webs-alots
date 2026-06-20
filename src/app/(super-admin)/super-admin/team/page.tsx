@@ -631,7 +631,8 @@ export default function TeamPage() {
           <DialogHeader>
             <DialogTitle>Modifier le rôle</DialogTitle>
             <DialogDescription>
-              Modifier le rôle de {editTarget?.name}. Les permissions seront mises à jour immédiatement.
+              Modifier le rôle de {editTarget?.name}. Les permissions seront mises à jour
+              immédiatement.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

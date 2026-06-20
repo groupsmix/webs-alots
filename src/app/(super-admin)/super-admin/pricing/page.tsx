@@ -28,6 +28,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -58,15 +59,6 @@ import {
   type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
 
 type TabView = "tiers" | "features" | "promotions";
 type SystemFilter = "all" | SystemType;
@@ -305,6 +297,7 @@ export default function PricingPage() {
 
   // S9: duplicate a tier so admins can create a new tier based on an existing one
   function duplicateTier(tier: PricingTierRow) {
+    // eslint-disable-next-line react-hooks/purity -- ID generated in an event handler, not during render
     const newId = `dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const duplicated: PricingTierRow = {
       ...tier,
@@ -630,8 +623,7 @@ export default function PricingPage() {
             return (
               <div className="rounded-xl border bg-card p-4 mb-6">
                 <p className="text-xs font-medium text-muted-foreground mb-3">
-                  Comparaison des prix —{" "}
-                  {systemTypeLabels[selectedSystem]} ·{" "}
+                  Comparaison des prix — {systemTypeLabels[selectedSystem]} ·{" "}
                   {billingCycle === "monthly" ? "Mensuel" : "Annuel"}
                 </p>
                 <ResponsiveContainer width="100%" height={130}>
@@ -669,9 +661,7 @@ export default function PricingPage() {
                         <Cell
                           key={`cell-${i}`}
                           fill={
-                            entry.popular
-                              ? "hsl(var(--primary))"
-                              : "hsl(var(--primary) / 0.45)"
+                            entry.popular ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.45)"
                           }
                         />
                       ))}
@@ -679,8 +669,7 @@ export default function PricingPage() {
                   </BarChart>
                 </ResponsiveContainer>
                 <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                  La barre en couleur pleine = tier{" "}
-                  <span className="font-medium">Populaire</span>
+                  La barre en couleur pleine = tier <span className="font-medium">Populaire</span>
                 </p>
               </div>
             );

@@ -686,7 +686,11 @@ export default function AnnouncementsPage() {
                   Cancel
                 </Button>
                 <Button onClick={handleSave} disabled={!formTitle || !formMessage}>
-                  {editItem ? "Mettre à jour" : formScheduleMode === "later" ? "Planifier" : "Publier"}
+                  {editItem
+                    ? "Mettre à jour"
+                    : formScheduleMode === "later"
+                      ? "Planifier"
+                      : "Publier"}
                 </Button>
               </div>
             </div>

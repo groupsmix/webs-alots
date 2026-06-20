@@ -22,15 +22,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -129,7 +121,8 @@ export default function BillingPage() {
   const totalRevenue = paidRecords.reduce((sum, r) => sum + r.amountPaid, 0);
   const overdueAmount = overdueRecords.reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
 
-  const isFilteredView = statusFilter !== "all" || search.trim().length > 0 || !!dateFrom || !!dateTo;
+  const isFilteredView =
+    statusFilter !== "all" || search.trim().length > 0 || !!dateFrom || !!dateTo;
 
   // S5: Aggregate paid revenue by month for the trend sparkbar.
   // Always uses the full `records` set (not `filtered`) so the chart
@@ -221,7 +214,16 @@ export default function BillingPage() {
     exportToPDF(
       `Facture ${formatInvoiceNumber(record.id, record.invoiceDate)} — ${record.clinicName}`,
       rows,
-      ["Facture", "Client", "Plan", "Montant dû", "Montant payé", "Statut", "Date facture", "Date échéance"],
+      [
+        "Facture",
+        "Client",
+        "Plan",
+        "Montant dû",
+        "Montant payé",
+        "Statut",
+        "Date facture",
+        "Date échéance",
+      ],
     );
     addToast(
       `PDF de la facture ${formatInvoiceNumber(record.id, record.invoiceDate)} généré — utilisez Enregistrer en PDF`,
@@ -641,7 +643,9 @@ export default function BillingPage() {
               <DialogTitle>
                 Invoice {formatInvoiceNumber(detailRecord.id, detailRecord.invoiceDate)}
               </DialogTitle>
-              <DialogDescription>Détails de la facture pour {detailRecord.clinicName}</DialogDescription>
+              <DialogDescription>
+                Détails de la facture pour {detailRecord.clinicName}
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
