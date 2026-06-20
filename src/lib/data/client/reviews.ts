@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
+import { fetchRows, ensureLookups, _activeUserMap, createClient } from "./_core";
 
 // ─────────────────────────────────────────────
 // Reviews
@@ -55,7 +55,10 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
 // Write: submit a patient review
 // ─────────────────────────────────────────────
 
-import { createClient } from "./_core";
+// notification_preferences (migration 00161) is not yet in the generated DB
+// types. Cast through this minimal shape — matches src/lib/whatsapp.ts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseUntyped = { from(table: string): any };
 
 export async function createReview(data: {
   clinicId: string;
@@ -98,19 +101,21 @@ export async function upsertNotificationPreferences(data: {
 }): Promise<void> {
   const supabase = createClient();
   // nosemgrep: tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
-  const { error } = await supabase.from("notification_preferences").upsert(
-    {
-      user_id: data.userId,
-      clinic_id: data.clinicId,
-      whatsapp_enabled: data.whatsappEnabled,
-      in_app_enabled: data.inAppEnabled,
-      appointment_reminders: data.appointmentReminders,
-      booking_confirmations: data.bookingConfirmations,
-      payment_receipts: data.paymentReceipts,
-      prescription_updates: data.prescriptionUpdates,
-    },
-    { onConflict: "user_id" },
-  );
+  const { error } = await (supabase as unknown as SupabaseUntyped)
+    .from("notification_preferences")
+    .upsert(
+      {
+        user_id: data.userId,
+        clinic_id: data.clinicId,
+        whatsapp_enabled: data.whatsappEnabled,
+        in_app_enabled: data.inAppEnabled,
+        appointment_reminders: data.appointmentReminders,
+        booking_confirmations: data.bookingConfirmations,
+        payment_receipts: data.paymentReceipts,
+        prescription_updates: data.prescriptionUpdates,
+      },
+      { onConflict: "user_id" },
+    );
   if (error) throw error;
 }
 
@@ -124,7 +129,7 @@ export async function fetchNotificationPreferences(userId: string): Promise<{
 } | null> {
   const supabase = createClient();
   // nosemgrep: tenant-scoping — notification_preferences is user-keyed (unique on user_id); RLS scopes rows to the authenticated user
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as unknown as SupabaseUntyped)
     .from("notification_preferences")
     .select(
       "whatsapp_enabled, in_app_enabled, appointment_reminders, booking_confirmations, payment_receipts, prescription_updates",

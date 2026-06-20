@@ -16,7 +16,6 @@ import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
-import { getLocalDateStr } from "@/lib/utils";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["super_admin"];

@@ -16,6 +16,14 @@ import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const ALLOWED_ROLES: UserRole[] = ["clinic_admin"];
 
+// Some columns/tables used here were added by later migrations and are not yet
+// in the generated DB types: clinics.{kiosk_mode_enabled,google_place_id,
+// patient_message_locale} (migrations 00054/00055) and the whatsapp_templates
+// table (migration 00102). Cast through this minimal shape — matches the
+// pattern in src/lib/whatsapp.ts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseUntyped = { from(table: string): any };
+
 // ── schemas ────────────────────────────────────────────────────────────────
 
 const profileSchema = z.object({
@@ -85,8 +93,9 @@ async function handleGet(_req: NextRequest, auth: AuthContext) {
 
   try {
     const supabase = await createTenantClient(clinicId);
+    const db = supabase as unknown as SupabaseUntyped;
 
-    const { data: clinic, error } = await supabase
+    const { data: clinic, error } = await db
       .from("clinics")
       .select(
         "name, type, phone, address, city, config, kiosk_mode_enabled, google_place_id, patient_message_locale, website_config",
@@ -107,7 +116,7 @@ async function handleGet(_req: NextRequest, auth: AuthContext) {
     const wsCfg = (clinic.website_config ?? {}) as Record<string, unknown>;
 
     // Fetch WhatsApp templates for this clinic
-    const { data: waTpls } = await supabase
+    const { data: waTpls } = await db
       .from("whatsapp_templates")
       .select("id, template_name, body_template, status")
       .eq("clinic_id", clinicId)
@@ -149,15 +158,17 @@ async function handleGet(_req: NextRequest, auth: AuthContext) {
       },
       whatsapp: {
         patientMessageLocale: clinic.patient_message_locale ?? "fr",
-        templates: (waTpls ?? []).map((t) => ({
-          id: t.id,
-          name: t.template_name,
-          label: t.template_name
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c: string) => c.toUpperCase()),
-          enabled: t.status === "active",
-          template: t.body_template,
-        })),
+        templates: (waTpls ?? []).map(
+          (t: { id: string; template_name: string; body_template: string; status: string }) => ({
+            id: t.id,
+            name: t.template_name,
+            label: t.template_name
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (c: string) => c.toUpperCase()),
+            enabled: t.status === "active",
+            template: t.body_template,
+          }),
+        ),
       },
       features: {
         kioskModeEnabled: clinic.kiosk_mode_enabled ?? false,
@@ -192,9 +203,10 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
 
   try {
     const supabase = await createTenantClient(clinicId);
+    const db = supabase as unknown as SupabaseUntyped;
 
     // Fetch current config to merge into
-    const { data: current } = await supabase
+    const { data: current } = await db
       .from("clinics")
       .select("config, website_config")
       .eq("id", clinicId)
@@ -205,7 +217,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
 
     if (section === "profile") {
       const d = data as z.infer<typeof profileSchema>;
-      await supabase
+      await db
         .from("clinics")
         .update({
           name: d.name,
@@ -231,10 +243,10 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       if (d.cmiMerchantId) newCfg.cmiMerchantId = d.cmiMerchantId;
       if (d.cmiSecretKey) newCfg.cmiSecretKey = d.cmiSecretKey;
       // The clinics row IS the tenant — scoped by its primary key id (= clinic_id).
-      await supabase.from("clinics").update({ config: newCfg }).eq("id", clinicId);
+      await db.from("clinics").update({ config: newCfg }).eq("id", clinicId);
     } else if (section === "booking") {
       const d = data as z.infer<typeof bookingSchema>;
-      await supabase
+      await db
         .from("clinics")
         .update({
           config: {
@@ -254,7 +266,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
     } else if (section === "whatsapp") {
       const d = data as z.infer<typeof whatsappSchema>;
       // Update locale
-      await supabase
+      await db
         .from("clinics")
         .update({ patient_message_locale: d.patientMessageLocale })
         .eq("id", clinicId);
@@ -262,7 +274,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       if (d.templates && d.templates.length > 0) {
         for (const tpl of d.templates) {
           // nosemgrep: tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
-          await supabase.from("whatsapp_templates").upsert(
+          await db.from("whatsapp_templates").upsert(
             {
               id: tpl.id.startsWith("t") ? undefined : tpl.id, // allow generated UUIDs only
               clinic_id: clinicId,
@@ -278,7 +290,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       }
     } else if (section === "features") {
       const d = data as z.infer<typeof featuresSchema>;
-      await supabase
+      await db
         .from("clinics")
         .update({
           kiosk_mode_enabled: d.kioskModeEnabled,

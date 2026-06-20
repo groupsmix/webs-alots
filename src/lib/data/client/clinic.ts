@@ -5,6 +5,7 @@ import {
   ensureLookups,
   _activeUserMap,
   _activeServiceMap,
+  createClient,
   type TableName,
 } from "./_core";
 import { fetchTodayAppointments } from "./appointments";
@@ -152,7 +153,10 @@ export async function fetchInstallmentPlans(clinicId: string): Promise<Installme
   });
 }
 
-import { createClient } from "./_core";
+// clinic_holidays.{type,recurring} columns (migration 00192) are not yet in the
+// generated DB types. Cast through this minimal shape — matches whatsapp.ts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseUntyped = { from(table: string): any };
 
 // ============================================================
 // HOLIDAYS (clinic_holidays)
@@ -196,7 +200,7 @@ export async function createHoliday(
 ): Promise<{ id: string }> {
   const supabase = createClient();
   // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
-  const { data: row, error } = await supabase
+  const { data: row, error } = await (supabase as unknown as SupabaseUntyped)
     .from("clinic_holidays")
     .insert({
       clinic_id: clinicId,

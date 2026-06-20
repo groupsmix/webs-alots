@@ -18,7 +18,7 @@ const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
 const patchBodySchema = z.object({
   metadataKey: z.string().min(1).max(100),
-  value: z.record(z.unknown()),
+  value: z.record(z.string(), z.unknown()),
 });
 
 // ── GET ────────────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     // nosemgrep: tenant-scoping — self-service update of the authenticated super_admin's own row (.eq("id", auth.profile.id)); RLS enforces ownership
     const { error: updateErr } = await supabase
       .from("users")
-      .update({ metadata: newMeta, updated_at: new Date().toISOString() })
+      .update({ metadata: newMeta as never, updated_at: new Date().toISOString() })
       .eq("id", auth.profile.id);
 
     if (updateErr) {
