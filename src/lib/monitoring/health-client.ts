@@ -21,6 +21,7 @@ export interface CoreHealthSnapshot {
   auth: ServiceStatus;
   version: string;
   nodeVersion: string | null;
+  nextVersion: string | null;
   /** Round-trip time of the /api/admin/health call, in ms (null on failure). */
   responseTimeMs: number | null;
   checkedAt: Date;
@@ -39,7 +40,7 @@ export async function fetchCoreHealth(): Promise<CoreHealthSnapshot> {
   let responseTimeMs: number | null = null;
 
   try {
-    const res = await fetch("/api/admin/health");
+    const res = await fetch("/api/admin/health", { credentials: "include" });
     responseTimeMs = Math.round(performance.now() - start);
     if (res.ok) {
       const json = (await res.json()) as { ok?: boolean; data?: HealthApiData };
@@ -71,6 +72,7 @@ export async function fetchCoreHealth(): Promise<CoreHealthSnapshot> {
     auth,
     version: derived.version,
     nodeVersion: derived.nodeVersion,
+    nextVersion: derived.nextVersion,
     responseTimeMs,
     checkedAt,
   };

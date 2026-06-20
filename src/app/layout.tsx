@@ -189,16 +189,20 @@ export default async function RootLayout({
             <TenantProvider tenant={tenant}>{children}</TenantProvider>
             <OfflineIndicator />
             {process.env.NEXT_PUBLIC_ENABLE_PERF_MONITORING === "true" && <PerformanceMonitor />}
+            {/*
+              A69-F1: Cookie / consent banner on ALL pages (public + authenticated).
+              The CookieConsent component shows only when no prior choice is stored
+              in localStorage, so authenticated users who already accepted are
+              unaffected. This satisfies ePrivacy Directive + GDPR Art.7 for any
+              EU visitor that lands on a public page.
+
+              Placed inside ThemeProvider/ToastProvider to remain within the stable
+              client component boundary that persists across navigations. Previously
+              placed outside caused re-mounts during App Router transitions.
+            */}
+            <CookieConsent />
           </ToastProvider>
         </ThemeProvider>
-        {/*
-          A69-F1: Cookie / consent banner on ALL pages (public + authenticated).
-          The CookieConsent component shows only when no prior choice is stored
-          in localStorage, so authenticated users who already accepted are
-          unaffected. This satisfies ePrivacy Directive + GDPR Art.7 for any
-          EU visitor that lands on a public page.
-        */}
-        <CookieConsent />
         {/*
           A69-F2: Gate Sentry Replay on session-recording consent.
           Only enables Sentry's Replay integration after the user explicitly

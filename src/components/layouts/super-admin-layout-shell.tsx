@@ -160,7 +160,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/super-admin/system", label: "System Status", icon: Activity },
       { href: "/super-admin/system/health", label: "Health Metrics", icon: HeartPulse },
-      { href: "/super-admin/uptime", label: "Uptime SLA", icon: Shield },
+      { href: "/super-admin/system/sla", label: "Uptime SLA", icon: Shield },
       { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
       { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
     ],
@@ -297,7 +297,18 @@ function SidebarNav({ pathname }: { pathname: string }) {
             {isExpanded && (
               <div className="mt-0.5 space-y-0.5">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                  // Determine if this item has sibling nav entries that share
+                  // the same path prefix (e.g. /super-admin/system has siblings
+                  // /super-admin/system/health and /super-admin/system/sla). In
+                  // that case, use exact match only to avoid the parent item
+                  // stealing the active state from its children.
+                  const hasSiblingSubItems = group.items.some(
+                    (sibling) =>
+                      sibling.href !== item.href && sibling.href.startsWith(item.href + "/"),
+                  );
+                  const isActive = hasSiblingSubItems
+                    ? pathname === item.href
+                    : pathname === item.href || pathname.startsWith(item.href + "/");
 
                   if (item.children) {
                     return (

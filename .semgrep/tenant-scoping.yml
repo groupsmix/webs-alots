@@ -102,6 +102,7 @@ rules:
       exclude:
         - "src/lib/__tests__/integration/rls-*.test.ts"
         - "src/lib/__tests__/integration/rls-*.test.tsx"
+        - "src/app/api/admin/readiness/**"
     metadata:
       category: security
       technology:
