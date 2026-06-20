@@ -157,17 +157,17 @@ export default function BillingPage() {
     await new Promise((r) => setTimeout(r, 50));
     try {
       const rows = filtered.map((r) => ({
-        Invoice: r.id,
-        Clinic: r.clinicName,
+        Facture: r.id,
+        Clinique: r.clinicName,
         Plan: r.plan,
-        "Amount Due (MAD)": r.amountDue,
-        "Amount Paid (MAD)": r.amountPaid,
-        Currency: r.currency,
-        Status: r.status,
-        "Invoice Date": r.invoiceDate,
-        "Due Date": r.dueDate,
-        "Paid Date": r.paidDate ?? "",
-        "Payment Method": r.paymentMethod ?? "",
+        "Montant dû (MAD)": r.amountDue,
+        "Montant payé (MAD)": r.amountPaid,
+        Devise: r.currency,
+        Statut: billingStatusLabel(r.status),
+        "Date facture": r.invoiceDate,
+        "Date d'échéance": r.dueDate,
+        "Date de paiement": r.paidDate ?? "",
+        "Mode de paiement": r.paymentMethod ?? "",
       }));
       exportToCSV(rows, `billing-${getLocalDateStr()}.csv`);
       addToast("Export CSV téléchargé", "success");
@@ -181,20 +181,20 @@ export default function BillingPage() {
     await new Promise((r) => setTimeout(r, 50));
     try {
       const rows = filtered.map((r) => ({
-        Invoice: r.id,
-        Clinic: r.clinicName,
+        Facture: r.id,
+        Clinique: r.clinicName,
         Plan: r.plan,
-        "Amount Due": `${r.amountDue} ${r.currency}`,
-        Status: r.status,
-        "Due Date": r.dueDate,
+        "Montant dû": formatCurrency(r.amountDue, "fr", r.currency),
+        Statut: billingStatusLabel(r.status),
+        "Date d'échéance": r.dueDate,
       }));
-      exportToPDF("Billing Report — Oltigo Health", rows, [
-        "Invoice",
-        "Clinic",
+      exportToPDF("Rapport de facturation — Oltigo Health", rows, [
+        "Facture",
+        "Clinique",
         "Plan",
-        "Amount Due",
-        "Status",
-        "Due Date",
+        "Montant dû",
+        "Statut",
+        "Date d'échéance",
       ]);
       addToast("PDF généré — utilisez Enregistrer en PDF dans la boîte d'impression", "success");
     } finally {

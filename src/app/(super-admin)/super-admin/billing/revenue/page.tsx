@@ -45,15 +45,15 @@ export default function RevenueDashboardPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Billing", href: "/super-admin/billing" },
-          { label: "Revenue" },
+          { label: "Facturation", href: "/super-admin/billing" },
+          { label: "Vue revenus" },
         ]}
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Revenue Dashboard</h1>
+          <h1 className="text-2xl font-bold">Tableau de bord revenus</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Monitor MRR, subscriptions, and churn across all clinics
+            Suivi du MRR, des abonnements et du churn sur toutes les cliniques
           </p>
         </div>
       </div>

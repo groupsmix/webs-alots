@@ -632,7 +632,7 @@ export default function ChurnPredictionPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
-                          <span>{Number(score.revenue_30d).toLocaleString()} MAD (30d)</span>
+                          <span>{formatCurrency(Number(score.revenue_30d))} (30 j)</span>
                         </div>
                       </div>
 

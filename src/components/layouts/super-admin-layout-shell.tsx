@@ -549,22 +549,25 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
             }),
           );
         } else {
-          setNotifications(
-            FALLBACK_NOTIFICATIONS.map((n) => ({
-              ...n,
-              unread: !readIds.has(n.id),
-            })),
-          );
+          // XB2-fix: no real notifications → show empty list so the bell
+          // displays 0 instead of the stale mock count (always "3").
+          // FALLBACK_NOTIFICATIONS remain available for local dev only.
+          if (process.env.NODE_ENV !== "production") {
+            const readIds = getReadNotifIds();
+            setNotifications(
+              FALLBACK_NOTIFICATIONS.map((n) => ({
+                ...n,
+                unread: !readIds.has(n.id),
+              })),
+            );
+          } else {
+            setNotifications([]);
+          }
         }
       } catch (err) {
         logger.warn("Failed to load notifications", { context: "super-admin-layout", error: err });
-        const readIds = getReadNotifIds();
-        setNotifications(
-          FALLBACK_NOTIFICATIONS.map((n) => ({
-            ...n,
-            unread: !readIds.has(n.id),
-          })),
-        );
+        // On error, show empty list — don't leak stale mock counts in prod.
+        setNotifications([]);
       }
     }
 

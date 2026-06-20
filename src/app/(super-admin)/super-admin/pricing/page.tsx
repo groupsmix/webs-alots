@@ -1274,8 +1274,8 @@ export default function PricingPage() {
                 <span>{billingCycle === "monthly" ? "Mensuel" : "Annuel"}</span>
               </div>
               <p className="text-sm">
-                New price:{" "}
-                <span className="font-semibold">{Number(editPriceMin).toLocaleString()} MAD</span>
+                Nouveau prix :{" "}
+                <span className="font-semibold">{formatCurrency(Number(editPriceMin))}</span>
               </p>
               <p className="text-xs text-amber-600 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
@@ -1285,7 +1285,7 @@ export default function PricingPage() {
                     return tier && s.tierSlug === tier.slug;
                   }).length
                 }{" "}
-                active subscriptions will be affected
+                abonnements actifs seront affectés
               </p>
             </div>
           )}

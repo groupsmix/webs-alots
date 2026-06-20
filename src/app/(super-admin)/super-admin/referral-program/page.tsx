@@ -8,6 +8,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { formatCurrency } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ export default function SuperAdminReferralProgramPage() {
     }
   };
 
-  const formatMAD = (centimes: number) => `${(centimes / 100).toFixed(2)} MAD`;
+  const formatMAD = (centimes: number) => formatCurrency(centimes / 100, "fr", "MAD");
 
   const pendingCredits = (data?.credits ?? []).filter((c) => c.status === "pending");
   const resolvedCredits = (data?.credits ?? []).filter((c) => c.status !== "pending");

@@ -28,6 +28,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { formatCurrency } from "@/lib/utils";
 
 // ── Types ──
 
@@ -311,7 +312,7 @@ export default function ClinicUsageDetailPage() {
                       <div className="shrink-0 text-right">
                         {entry.amount_centimes > 0 && (
                           <p className="text-sm font-medium">
-                            {(entry.amount_centimes / 100).toLocaleString("fr-MA")} {entry.currency}
+                            {formatCurrency(entry.amount_centimes / 100, "fr", entry.currency)}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
