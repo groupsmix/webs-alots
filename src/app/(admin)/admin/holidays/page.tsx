@@ -1,39 +1,23 @@
 "use client";
 
-import { Calendar, Plus, Trash2, Sun, Moon } from "lucide-react";
-import { useState } from "react";
+import { Calendar, Plus, Trash2, Sun, Moon, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
+import {
+  getCurrentUser,
+  fetchHolidays,
+  createHoliday,
+  deleteHoliday,
+  type HolidayView,
+} from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
-
-interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-  type: "national" | "clinic" | "doctor";
-  recurring: boolean;
-}
-
-const initialHolidays: Holiday[] = [
-  { id: "h1", name: "Throne Day", date: "2026-07-30", type: "national", recurring: true },
-  { id: "h2", name: "Independence Day", date: "2026-11-18", type: "national", recurring: true },
-  { id: "h3", name: "Labour Day", date: "2026-05-01", type: "national", recurring: true },
-  { id: "h4", name: "Eid Al-Fitr", date: "2026-03-30", type: "national", recurring: false },
-  { id: "h5", name: "Eid Al-Adha", date: "2026-06-07", type: "national", recurring: false },
-  {
-    id: "h6",
-    name: "Clinic Annual Maintenance",
-    date: "2026-08-15",
-    type: "clinic",
-    recurring: false,
-  },
-  { id: "h7", name: "Dr. Ahmed Conference", date: "2026-04-10", type: "doctor", recurring: false },
-  { id: "h8", name: "Staff Training Day", date: "2026-05-15", type: "clinic", recurring: false },
-];
 
 const typeColors: Record<string, string> = {
   national: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -42,40 +26,102 @@ const typeColors: Record<string, string> = {
 };
 
 export default function AdminHolidaysPage() {
-  const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
+  const { addToast } = useToast();
+  const [holidays, setHolidays] = useState<HolidayView[]>([]);
+  const [clinicId, setClinicId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDate, setNewDate] = useState("");
-  const [newType, setNewType] = useState<Holiday["type"]>("clinic");
+  const [newType, setNewType] = useState<HolidayView["type"]>("clinic");
+  const [newRecurring, setNewRecurring] = useState(false);
 
-  const removeHoliday = (id: string) => {
-    setHolidays(holidays.filter((h) => h.id !== id));
-  };
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      if (!user?.clinic_id) { setLoading(false); return; }
+      setClinicId(user.clinic_id);
+      const data = await fetchHolidays(user.clinic_id);
+      if (controller.signal.aborted) return;
+      setHolidays(data);
+      setLoading(false);
+    }
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err.message : "Failed to load holidays");
+        setLoading(false);
+      }
+    });
+    return () => controller.abort();
+  }, []);
 
-  const addHoliday = () => {
-    if (!newName || !newDate) return;
-    setHolidays([
-      ...holidays,
-      {
-        id: `h${Date.now()}`,
-        name: newName,
+  async function addHoliday() {
+    if (!newName.trim() || !newDate || !clinicId) return;
+    setSaving(true);
+    try {
+      const { id } = await createHoliday(clinicId, {
+        name: newName.trim(),
         date: newDate,
         type: newType,
-        recurring: false,
-      },
-    ]);
-    setNewName("");
-    setNewDate("");
-    setShowForm(false);
-  };
+        recurring: newRecurring,
+      });
+      setHolidays((prev) =>
+        [...prev, { id, name: newName.trim(), date: newDate, type: newType, recurring: newRecurring }]
+          .sort((a, b) => a.date.localeCompare(b.date)),
+      );
+      setNewName("");
+      setNewDate("");
+      setNewType("clinic");
+      setNewRecurring(false);
+      setShowForm(false);
+      addToast("Holiday added", "success");
+    } catch (err) {
+      logger.warn("Failed to add holiday", { context: "admin/holidays", error: err });
+      addToast("Failed to add holiday. Please try again.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-  const upcoming = [...holidays]
-    .filter((h) => h.date >= getLocalDateStr())
-    .sort((a, b) => a.date.localeCompare(b.date));
+  async function removeHoliday(id: string) {
+    const previous = holidays;
+    setHolidays((prev) => prev.filter((h) => h.id !== id));
+    try {
+      await deleteHoliday(id);
+      addToast("Holiday removed", "success");
+    } catch (err) {
+      logger.warn("Failed to delete holiday", { context: "admin/holidays", error: err });
+      setHolidays(previous);
+      addToast("Failed to remove holiday. Please try again.", "error");
+    }
+  }
 
-  const past = [...holidays]
-    .filter((h) => h.date < getLocalDateStr())
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const today = getLocalDateStr();
+  const upcoming = [...holidays].filter((h) => h.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const past = [...holidays].filter((h) => h.date < today).sort((a, b) => b.date.localeCompare(a.date));
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        Loading holidays...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">Failed to load holidays.</p>
+        <p className="text-sm text-muted-foreground mt-1">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -91,8 +137,8 @@ export default function AdminHolidaysPage() {
       {showForm && (
         <Card className="mb-6">
           <CardContent className="pt-4 pb-4">
-            <div className="grid gap-4 sm:grid-cols-4">
-              <div className="space-y-2">
+            <div className="grid gap-4 sm:grid-cols-5 items-end">
+              <div className="space-y-2 sm:col-span-2">
                 <Label>Holiday Name</Label>
                 <Input
                   placeholder="e.g., Staff Training"
@@ -108,7 +154,7 @@ export default function AdminHolidaysPage() {
                 <Label>Type</Label>
                 <select
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as Holiday["type"])}
+                  onChange={(e) => setNewType(e.target.value as HolidayView["type"])}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="national">National Holiday</option>
@@ -116,9 +162,17 @@ export default function AdminHolidaysPage() {
                   <option value="doctor">Doctor Leave</option>
                 </select>
               </div>
-              <div className="flex items-end">
-                <Button onClick={addHoliday} className="w-full">
-                  Add
+              <div className="flex items-center gap-2 pb-0.5">
+                <input
+                  type="checkbox"
+                  id="recurring"
+                  checked={newRecurring}
+                  onChange={(e) => setNewRecurring(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="recurring" className="text-sm cursor-pointer">Recurring</Label>
+                <Button onClick={addHoliday} disabled={saving || !newName.trim() || !newDate} className="ml-auto">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
                 </Button>
               </div>
             </div>
@@ -137,10 +191,7 @@ export default function AdminHolidaysPage() {
           <CardContent>
             <div className="space-y-2">
               {upcoming.map((holiday) => (
-                <div
-                  key={holiday.id}
-                  className="flex items-center justify-between border rounded-lg p-3"
-                >
+                <div key={holiday.id} className="flex items-center justify-between border rounded-lg p-3">
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -149,15 +200,11 @@ export default function AdminHolidaysPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}
-                    >
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}>
                       {holiday.type}
                     </span>
                     {holiday.recurring && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Recurring
-                      </Badge>
+                      <Badge variant="outline" className="text-[10px]">Recurring</Badge>
                     )}
                     <Button
                       variant="ghost"
@@ -171,9 +218,7 @@ export default function AdminHolidaysPage() {
                 </div>
               ))}
               {upcoming.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No upcoming holidays
-                </p>
+                <p className="text-sm text-muted-foreground text-center py-4">No upcoming holidays</p>
               )}
             </div>
           </CardContent>
@@ -189,10 +234,7 @@ export default function AdminHolidaysPage() {
           <CardContent>
             <div className="space-y-2">
               {past.map((holiday) => (
-                <div
-                  key={holiday.id}
-                  className="flex items-center justify-between border rounded-lg p-3 opacity-60"
-                >
+                <div key={holiday.id} className="flex items-center justify-between border rounded-lg p-3 opacity-60">
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -200,9 +242,7 @@ export default function AdminHolidaysPage() {
                       <p className="text-xs text-muted-foreground">{holiday.date}</p>
                     </div>
                   </div>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}
-                  >
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}>
                     {holiday.type}
                   </span>
                 </div>

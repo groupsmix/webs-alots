@@ -63,6 +63,36 @@ export default function WorkingHoursPage() {
     };
   }, []);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load persisted schedules from clinic config on top of the doctor list
+  useEffect(() => {
+    if (doctors.length === 0) return;
+    const controller = new AbortController();
+    fetch("/api/admin/working-hours", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
+      .then((json: { data: { doctorSchedules: Record<string, Record<string, { open: string; close: string; enabled: boolean }>> } }) => {
+        if (controller.signal.aborted) return;
+        const saved = json.data?.doctorSchedules ?? {};
+        setSchedules((prev) =>
+          prev.map((s) =>
+            saved[s.doctorId]
+              ? {
+                  ...s,
+                  days: {
+                    ...defaultSchedule(),
+                    ...Object.fromEntries(
+                      Object.entries(saved[s.doctorId]).map(([k, v]) => [Number(k), v]),
+                    ),
+                  },
+                }
+              : s,
+          ),
+        );
+      })
+      .catch(() => {/* use defaults */});
+    return () => controller.abort();
+  }, [doctors]);
 
   const currentSchedule = schedules.find((s) => s.doctorId === selectedDoctor);
 
@@ -77,9 +107,28 @@ export default function WorkingHoursPage() {
     setSaved(false);
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const doctorSchedules: Record<string, Record<string, { open: string; close: string; enabled: boolean }>> = {};
+      for (const s of schedules) {
+        doctorSchedules[s.doctorId] = Object.fromEntries(
+          Object.entries(s.days).map(([day, val]) => [String(day), val]),
+        );
+      }
+      const res = await fetch("/api/admin/working-hours", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorSchedules }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // silently surface error inline — could add toast if desired
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -108,9 +157,9 @@ export default function WorkingHoursPage() {
       />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Working Hours</h1>
-        <Button onClick={handleSave}>
+        <Button onClick={handleSave} disabled={saving}>
           <Save className="h-4 w-4 mr-1" />
-          {saved ? "Saved!" : "Save Changes"}
+          {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </Button>
       </div>
 
