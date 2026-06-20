@@ -134,7 +134,7 @@ export default function BillingPage() {
       "Payment Method": r.paymentMethod ?? "",
     }));
     exportToCSV(rows, `billing-${getLocalDateStr()}.csv`);
-    addToast("Billing CSV exported", "success");
+    addToast("Export CSV téléchargé", "success");
   }
 
   function handleExportBillingPDF() {
@@ -179,13 +179,13 @@ export default function BillingPage() {
       ["Facture", "Client", "Plan", "Montant dû", "Montant payé", "Statut", "Date facture", "Date échéance"],
     );
     addToast(
-      `PDF de la facture ${formatInvoiceNumber(record.id, record.invoiceDate)} généré`,
+      `PDF de la facture ${formatInvoiceNumber(record.id, record.invoiceDate)} généré — utilisez Enregistrer en PDF`,
       "success",
     );
   }
 
   function handleSendReminder() {
-    addToast(`Payment reminder sent to ${reminderRecord?.clinicName}`, "success");
+    addToast(`Rappel de paiement envoyé à ${reminderRecord?.clinicName}`, "success");
     setReminderOpen(false);
     setReminderRecord(null);
   }
@@ -205,10 +205,20 @@ export default function BillingPage() {
     );
     setDetailRecord(null);
     addToast(
-      `Invoice ${formatInvoiceNumber(record.id, record.invoiceDate)} marked as paid`,
+      `Facture ${formatInvoiceNumber(record.id, record.invoiceDate)} marquée comme payée`,
       "success",
     );
   }
+
+  const billingStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      paid: "Payé",
+      pending: "En attente",
+      overdue: "Impayé",
+      cancelled: "Annulé",
+    };
+    return map[status] ?? status;
+  };
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -226,13 +236,13 @@ export default function BillingPage() {
   return (
     <div>
       <Breadcrumb
-        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Billing" }]}
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Facturation" }]}
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Billing Management</h1>
+          <h1 className="text-2xl font-bold">Gestion de la facturation</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Monitor revenue, subscriptions, and payment status
+            Suivi des revenus, abonnements et statuts de paiement
           </p>
         </div>
         {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
@@ -240,7 +250,7 @@ export default function BillingPage() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={filtered.length === 0}>
               <Download className="h-4 w-4 mr-1" />
-              Export
+              Exporter
               <ChevronDown className="h-3 w-3 ml-1" />
             </Button>
           </DropdownMenuTrigger>
@@ -270,8 +280,8 @@ export default function BillingPage() {
           {/* KPI Cards */}
           <p className="text-xs text-muted-foreground mb-2">
             {isFilteredView
-              ? `Filtered view — ${filtered.length} invoice${filtered.length !== 1 ? "s" : ""} matching current filters`
-              : "Showing all invoices"}
+              ? `Vue filtrée — ${filtered.length} facture${filtered.length !== 1 ? "s" : ""} correspondant aux filtres`
+              : "Affichage de toutes les factures"}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card>
@@ -281,7 +291,7 @@ export default function BillingPage() {
                   <span className="text-xs text-muted-foreground">MRR</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
-                <p className="text-xs text-muted-foreground">MAD / month</p>
+                <p className="text-xs text-muted-foreground">MAD / mois</p>
               </CardContent>
             </Card>
             <Card>
@@ -291,27 +301,27 @@ export default function BillingPage() {
                   <span className="text-xs text-muted-foreground">ARR</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(arr)}</p>
-                <p className="text-xs text-muted-foreground">MAD / year</p>
+                <p className="text-xs text-muted-foreground">MAD / an</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-xs text-muted-foreground">Collected</span>
+                  <span className="text-xs text-muted-foreground">Collecté</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(totalRevenue)}</p>
-                <p className="text-xs text-muted-foreground">{paidCount} invoices paid</p>
+                <p className="text-xs text-muted-foreground">{paidCount} factures payées</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="text-xs text-muted-foreground">Overdue</span>
+                  <span className="text-xs text-muted-foreground">Impayés</span>
                 </div>
                 <p className="text-2xl font-bold text-red-600">{formatNumber(overdueAmount)}</p>
-                <p className="text-xs text-muted-foreground">{overdueCount} invoices overdue</p>
+                <p className="text-xs text-muted-foreground">{overdueCount} factures impayées</p>
               </CardContent>
             </Card>
           </div>
@@ -321,7 +331,7 @@ export default function BillingPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by clinic or invoice ID..."
+                placeholder="Rechercher par clinique ou numéro de facture..."
                 className="pl-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -335,9 +345,9 @@ export default function BillingPage() {
                   variant={statusFilter === s ? "default" : "outline"}
                   size="sm"
                   onClick={() => setStatusFilter(s)}
-                  className="capitalize text-xs"
+                  className="text-xs"
                 >
-                  {s === "all" ? "All" : s}
+                  {s === "all" ? "Tous" : billingStatusLabel(s)}
                 </Button>
               ))}
             </div>
@@ -385,7 +395,7 @@ export default function BillingPage() {
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Receipt className="h-4 w-4" />
-                Invoices ({filtered.length})
+                Factures ({filtered.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -393,14 +403,14 @@ export default function BillingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4">Invoice</th>
-                      <th className="text-left font-medium py-3 px-4">Clinic</th>
+                      <th className="text-left font-medium py-3 px-4">Facture</th>
+                      <th className="text-left font-medium py-3 px-4">Clinique</th>
                       <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Plan</th>
-                      <th className="text-left font-medium py-3 px-4">Amount</th>
+                      <th className="text-left font-medium py-3 px-4">Montant</th>
                       <th className="text-left font-medium py-3 px-4 hidden md:table-cell">
-                        Due Date
+                        Échéance
                       </th>
-                      <th className="text-left font-medium py-3 px-4">Status</th>
+                      <th className="text-left font-medium py-3 px-4">Statut</th>
                       <th className="text-right font-medium py-3 px-4">Actions</th>
                     </tr>
                   </thead>
@@ -427,7 +437,7 @@ export default function BillingPage() {
                           </p>
                           {record.amountPaid > 0 && record.amountPaid < record.amountDue && (
                             <p className="text-xs text-muted-foreground">
-                              Paid: {formatCurrency(record.amountPaid, "fr", record.currency)}
+                              Payé : {formatCurrency(record.amountPaid, "fr", record.currency)}
                             </p>
                           )}
                         </td>
@@ -449,7 +459,7 @@ export default function BillingPage() {
                               }
                               className="capitalize"
                             >
-                              {record.status}
+                              {billingStatusLabel(record.status)}
                             </Badge>
                           </div>
                         </td>
@@ -493,7 +503,7 @@ export default function BillingPage() {
                     {filtered.length === 0 && (
                       <tr>
                         <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                          No invoices found.
+                          Aucune facture trouvée.
                         </td>
                       </tr>
                     )}
@@ -513,60 +523,60 @@ export default function BillingPage() {
               <DialogTitle>
                 Invoice {formatInvoiceNumber(detailRecord.id, detailRecord.invoiceDate)}
               </DialogTitle>
-              <DialogDescription>Invoice details for {detailRecord.clinicName}</DialogDescription>
+              <DialogDescription>Détails de la facture pour {detailRecord.clinicName}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="col-span-2">
-                  <span className="text-muted-foreground">Reference:</span>{" "}
+                  <span className="text-muted-foreground">Référence :</span>{" "}
                   <span className="font-mono text-xs break-all">{detailRecord.id}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Clinic:</span>{" "}
+                  <span className="text-muted-foreground">Clinique :</span>{" "}
                   <span className="font-medium">{detailRecord.clinicName}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Plan:</span>{" "}
+                  <span className="text-muted-foreground">Plan :</span>{" "}
                   <Badge variant="outline" className="capitalize ml-1">
                     {detailRecord.plan}
                   </Badge>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Amount Due:</span>{" "}
+                  <span className="text-muted-foreground">Montant dû :</span>{" "}
                   <span className="font-medium">
                     {formatCurrency(detailRecord.amountDue, "fr", detailRecord.currency)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Amount Paid:</span>{" "}
+                  <span className="text-muted-foreground">Montant payé :</span>{" "}
                   <span className="font-medium">
                     {formatCurrency(detailRecord.amountPaid, "fr", detailRecord.currency)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Invoice Date:</span>{" "}
+                  <span className="text-muted-foreground">Date de facture :</span>{" "}
                   <span>{detailRecord.invoiceDate}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Due Date:</span>{" "}
+                  <span className="text-muted-foreground">Date d&apos;échéance :</span>{" "}
                   <span>{detailRecord.dueDate}</span>
                 </div>
                 {detailRecord.paidDate && (
                   <div>
-                    <span className="text-muted-foreground">Paid Date:</span>{" "}
+                    <span className="text-muted-foreground">Date de paiement :</span>{" "}
                     <span>{detailRecord.paidDate}</span>
                   </div>
                 )}
                 {detailRecord.paymentMethod && (
                   <div>
-                    <span className="text-muted-foreground">Payment:</span>{" "}
+                    <span className="text-muted-foreground">Mode de paiement :</span>{" "}
                     <span className="capitalize">{detailRecord.paymentMethod}</span>
                   </div>
                 )}
               </div>
               <Separator />
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Status:</span>
+                <span className="text-sm text-muted-foreground">Statut :</span>
                 <div className="flex items-center gap-1.5">
                   {statusIcon(detailRecord.status)}
                   <Badge
@@ -579,19 +589,19 @@ export default function BillingPage() {
                     }
                     className="capitalize"
                   >
-                    {detailRecord.status}
+                    {billingStatusLabel(detailRecord.status)}
                   </Badge>
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetailRecord(null)}>
-                Close
+                Fermer
               </Button>
               {detailRecord.status !== "paid" && (
                 <Button onClick={() => handleMarkPaid(detailRecord)}>
                   <CreditCard className="h-4 w-4 mr-1" />
-                  Mark as Paid
+                  Marquer comme payé
                 </Button>
               )}
             </DialogFooter>
@@ -604,28 +614,28 @@ export default function BillingPage() {
         {reminderRecord && (
           <DialogContent onClose={() => setReminderOpen(false)}>
             <DialogHeader>
-              <DialogTitle>Send Payment Reminder</DialogTitle>
+              <DialogTitle>Envoyer un rappel de paiement</DialogTitle>
               <DialogDescription>
-                Send an overdue payment reminder to {reminderRecord.clinicName}.
+                Un rappel de paiement en retard sera envoyé à {reminderRecord.clinicName}.
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
               <p className="text-sm font-medium">{reminderRecord.clinicName}</p>
               <p className="text-xs text-muted-foreground" title={reminderRecord.id}>
-                Invoice: {formatInvoiceNumber(reminderRecord.id, reminderRecord.invoiceDate)}
+                Facture : {formatInvoiceNumber(reminderRecord.id, reminderRecord.invoiceDate)}
               </p>
               <p className="text-xs text-muted-foreground">
-                Amount: {formatCurrency(reminderRecord.amountDue, "fr", reminderRecord.currency)}
+                Montant : {formatCurrency(reminderRecord.amountDue, "fr", reminderRecord.currency)}
               </p>
-              <p className="text-xs text-red-600">Due: {reminderRecord.dueDate}</p>
+              <p className="text-xs text-red-600">Échéance : {reminderRecord.dueDate}</p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setReminderOpen(false)}>
-                Cancel
+                Annuler
               </Button>
               <Button onClick={handleSendReminder}>
                 <Send className="h-4 w-4 mr-1" />
-                Send Reminder
+                Envoyer le rappel
               </Button>
             </DialogFooter>
           </DialogContent>

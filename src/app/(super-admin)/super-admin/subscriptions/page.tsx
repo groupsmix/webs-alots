@@ -17,11 +17,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  X,
   Stethoscope,
   Crown,
   Pill,
   FileSpreadsheet,
   FileText,
+  FlaskConical,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +84,24 @@ function getSuspensionReason(sub: ClientSubscription): string {
   return "";
 }
 
+// S18: Heuristic detection of test/junk account names.
+// Flags names that look auto-generated or typed carelessly:
+//   - single repeated character  (FFFFFFFF, aaaaaaa)
+//   - very short (≤ 3 chars)
+//   - no vowels in a name ≥ 6 chars  (sdqsdqsdq, jgjjrjrj)
+//   - all digits
+//   - contains test/demo/temp/junk/lorem keywords
+function isTestAccount(name: string): boolean {
+  const n = name.trim();
+  if (!n) return false;
+  if (/^(.)\1{2,}$/.test(n)) return true; // repeated single char
+  if (n.length <= 3) return true;
+  if (/^\d+$/.test(n)) return true;
+  if (n.length >= 6 && !/[aeiouAEIOU]/u.test(n)) return true;
+  if (/\b(test|demo|temp|junk|lorem|fake|dummy|sample)\b/i.test(n)) return true;
+  return false;
+}
+
 const systemIcons: Record<SystemType, typeof Stethoscope> = {
   doctor: Stethoscope,
   dentist: Crown,
@@ -104,6 +124,13 @@ export default function SubscriptionsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
+
+  // S11/S14: bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [pendingBulkAction, setPendingBulkAction] = useState<
+    "activate" | "suspend" | "cancel" | null
+  >(null);
 
   const loadSubscriptions = useCallback(async () => {
     try {
@@ -200,6 +227,73 @@ export default function SubscriptionsPage() {
       <ChevronDown className="h-3 w-3 ml-1" />
     );
   }
+
+  // S11/S14: bulk-select helpers
+  const pagedIds = paged.map((s) => s.id);
+  const allPageSelected =
+    pagedIds.length > 0 && pagedIds.every((id) => selectedIds.has(id));
+  const somePageSelected = !allPageSelected && pagedIds.some((id) => selectedIds.has(id));
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) pagedIds.forEach((id) => next.delete(id));
+      else pagedIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function toggleSelectRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function executeBulkAction(action: "activate" | "suspend" | "cancel") {
+    const ids = [...selectedIds];
+    const newStatus: ClientSubscription["status"] =
+      action === "activate" ? "active" : action === "suspend" ? "suspended" : "cancelled";
+    setSubscriptions((prev) =>
+      prev.map((s) => (ids.includes(s.id) ? { ...s, status: newStatus } : s)),
+    );
+    setSelectedIds(new Set());
+    setBulkConfirmOpen(false);
+    setPendingBulkAction(null);
+    const past =
+      action === "activate" ? "activés" : action === "suspend" ? "suspendus" : "annulés";
+    addToast(
+      `${ids.length} abonnement${ids.length > 1 ? "s" : ""} ${past}`,
+      action === "cancel" ? "error" : "success",
+    );
+  }
+
+  function handleBulkExport() {
+    const rows = subscriptions
+      .filter((s) => selectedIds.has(s.id))
+      .map((sub) => ({
+        "Nom du client": sub.clinicName,
+        Type: systemTypeLabels[sub.systemType],
+        Tier: sub.tierName,
+        Cycle: sub.billingCycle === "monthly" ? "Mensuel" : "Annuel",
+        "Montant (MAD)": sub.amount,
+        Devise: sub.currency,
+        Statut: statusLabel(sub.status),
+        "Dernier paiement": getLastPaymentDate(sub.invoices),
+      }));
+    exportToCSV(rows, `selection-abonnements-${getLocalDateStr()}.csv`);
+    addToast(
+      `${rows.length} abonnement${rows.length > 1 ? "s" : ""} exporté${rows.length > 1 ? "s" : ""}`,
+      "success",
+    );
+  }
+
+  // Clear selection when visible page changes or filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, statusFilter, systemFilter, search]);
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -371,6 +465,65 @@ export default function SubscriptionsPage() {
         </Card>
       </div>
 
+      {/* S11/S14: Bulk action bar — visible only when rows are selected */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 mb-4">
+          <span className="text-sm font-medium text-primary">
+            {selectedIds.size} sélectionné{selectedIds.size > 1 ? "s" : ""}
+          </span>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" onClick={handleBulkExport}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            Exporter CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-green-700 border-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+            onClick={() => {
+              setPendingBulkAction("activate");
+              setBulkConfirmOpen(true);
+            }}
+          >
+            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+            Activer
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-orange-700 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+            onClick={() => {
+              setPendingBulkAction("suspend");
+              setBulkConfirmOpen(true);
+            }}
+          >
+            <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+            Suspendre
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-red-700 border-red-300 hover:bg-red-50 dark:hover:bg-red-950"
+            onClick={() => {
+              setPendingBulkAction("cancel");
+              setBulkConfirmOpen(true);
+            }}
+          >
+            <X className="h-3.5 w-3.5 mr-1.5" />
+            Annuler abonnement
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={() => setSelectedIds(new Set())}
+            aria-label="Désélectionner tout"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
@@ -432,6 +585,19 @@ export default function SubscriptionsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
+                  {/* S11: select-all checkbox */}
+                  <th className="py-3 px-3 w-8">
+                    <input
+                      type="checkbox"
+                      aria-label="Sélectionner la page"
+                      checked={allPageSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = somePageSelected;
+                      }}
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 cursor-pointer accent-primary"
+                    />
+                  </th>
                   <th className="text-left font-medium py-3 px-4">
                     <button
                       onClick={() => handleSort("clinicName")}
@@ -490,9 +656,34 @@ export default function SubscriptionsPage() {
                   const reason = getSuspensionReason(sub);
 
                   return (
-                    <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/50">
+                    <tr
+                      key={sub.id}
+                      className={`border-b last:border-0 hover:bg-muted/50 ${selectedIds.has(sub.id) ? "bg-primary/5" : ""}`}
+                    >
+                      {/* S11: row checkbox */}
+                      <td className="py-3 px-3">
+                        <input
+                          type="checkbox"
+                          aria-label={`Sélectionner ${sub.clinicName}`}
+                          checked={selectedIds.has(sub.id)}
+                          onChange={() => toggleSelectRow(sub.id)}
+                          className="h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </td>
                       <td className="py-3 px-4">
-                        <p className="font-medium">{sub.clinicName}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-medium">{sub.clinicName}</p>
+                          {/* S18: test-account indicator */}
+                          {isTestAccount(sub.clinicName) && (
+                            <span
+                              title="Nom détecté comme compte test — vérifiez avant toute action"
+                              className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                            >
+                              <FlaskConical className="h-2.5 w-2.5" />
+                              Test
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground md:hidden">
                           {systemTypeLabels[sub.systemType]}
                         </p>
@@ -583,7 +774,7 @@ export default function SubscriptionsPage() {
                 })}
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={9} className="py-8 text-center text-muted-foreground">
                       Aucun abonnement trouvé.
                     </td>
                   </tr>
@@ -844,6 +1035,40 @@ export default function SubscriptionsPage() {
             </DialogFooter>
           </DialogContent>
         )}
+      </Dialog>
+      {/* S11/S14: Bulk action confirmation dialog */}
+      <Dialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
+        <DialogContent onClose={() => setBulkConfirmOpen(false)}>
+          <DialogHeader>
+            <DialogTitle>Confirmer l&apos;action groupée</DialogTitle>
+            <DialogDescription>
+              {selectedIds.size} abonnement{selectedIds.size > 1 ? "s" : ""} seront{" "}
+              {pendingBulkAction === "activate"
+                ? "réactivés"
+                : pendingBulkAction === "suspend"
+                  ? "suspendus"
+                  : "annulés définitivement"}
+              . Cette opération est réversible sauf annulation.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBulkConfirmOpen(false);
+                setPendingBulkAction(null);
+              }}
+            >
+              Retour
+            </Button>
+            <Button
+              variant={pendingBulkAction === "cancel" ? "destructive" : "default"}
+              onClick={() => pendingBulkAction && executeBulkAction(pendingBulkAction)}
+            >
+              Confirmer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
