@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Admin internal surface: French/English UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import { Calendar, Plus, Trash2, Sun, Moon, Loader2 } from "lucide-react";

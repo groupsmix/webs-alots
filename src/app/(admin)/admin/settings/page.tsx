@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTenant } from "@/components/tenant-provider";
-import { useToast } from "@/components/ui/toast";
-import { logger } from "@/lib/logger";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -29,6 +27,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 
 /** Defaults used until the tenant settings are fetched from the DB. */
 const DEFAULT_CURRENCY = "MAD";
