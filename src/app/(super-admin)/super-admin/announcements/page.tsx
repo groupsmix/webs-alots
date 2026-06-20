@@ -514,8 +514,8 @@ export default function AnnouncementsPage() {
             <DialogTitle>{editItem ? "Edit Announcement" : "New Announcement"}</DialogTitle>
             <DialogDescription>
               {editItem
-                ? "Update the announcement details."
-                : "Create a new system announcement for clinic owners."}
+                ? "Modifier les détails de l'annonce."
+                : "Créer une nouvelle annonce système pour les propriétaires de cliniques."}
             </DialogDescription>
           </DialogHeader>
 
@@ -686,7 +686,11 @@ export default function AnnouncementsPage() {
                   Cancel
                 </Button>
                 <Button onClick={handleSave} disabled={!formTitle || !formMessage}>
-                  {editItem ? "Update" : formScheduleMode === "later" ? "Schedule" : "Publish"}
+                  {editItem
+                    ? "Mettre à jour"
+                    : formScheduleMode === "later"
+                      ? "Planifier"
+                      : "Publier"}
                 </Button>
               </div>
             </div>

@@ -21,12 +21,14 @@ import {
   History,
   Tag,
   Plus,
+  Copy,
   Trash2,
   Calendar,
   Percent,
   AlertTriangle,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ComponentProps } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -291,6 +293,33 @@ export default function PricingPage() {
 
   function cancelEditTier() {
     setEditingTierId(null);
+  }
+
+  // S9: duplicate a tier so admins can create a new tier based on an existing one
+  function duplicateTier(tier: PricingTierRow) {
+    // eslint-disable-next-line react-hooks/purity -- ID generated in an event handler, not during render
+    const newId = `dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const duplicated: PricingTierRow = {
+      ...tier,
+      id: newId,
+      slug: `${tier.slug}-copie` as TierSlug,
+      name: `Copie de ${tier.name}`,
+      popular: false, // only one tier can be "Populaire"
+    };
+    setTiers((prev) => [...prev, duplicated]);
+    // immediately enter edit mode so the admin can rename & adjust price
+    setEditingTierId(newId);
+    setEditName(duplicated.name);
+    const price = duplicated.pricing[selectedSystem]?.[billingCycle] ?? 0;
+    setEditPriceMin(String(price));
+    setEditPriceMax(String(price));
+    setEditFeatures(
+      duplicated.features
+        .filter((f) => f.included)
+        .map((f) => f.label)
+        .join("\n"),
+    );
+    addToast(`Tier "Copie de ${tier.name}" créé — modifiez et enregistrez`, "success");
   }
 
   function requestSaveTier() {
@@ -578,6 +607,76 @@ export default function PricingPage() {
             </div>
           </div>
 
+          {/* S7: Price comparison bar chart — shows tier prices side-by-side for
+              the active system type + billing cycle. Helps admins instantly spot
+              tier positioning gaps and pricing outliers (e.g. SaaS < Premium). */}
+          {(() => {
+            const chartData = tiers
+              .filter((t) => (t.pricing[selectedSystem]?.[billingCycle] ?? 0) >= 0)
+              .map((t) => ({
+                name: t.name,
+                price: t.pricing[selectedSystem]?.[billingCycle] ?? 0,
+                popular: t.popular,
+                slug: t.slug,
+              }));
+            if (chartData.every((d) => d.price === 0)) return null;
+            return (
+              <div className="rounded-xl border bg-card p-4 mb-6">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
+                  Comparaison des prix — {systemTypeLabels[selectedSystem]} ·{" "}
+                  {billingCycle === "monthly" ? "Mensuel" : "Annuel"}
+                </p>
+                <ResponsiveContainer width="100%" height={130}>
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                    barCategoryGap="28%"
+                  >
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={46}
+                      tickFormatter={(v: number) =>
+                        v === 0 ? "Gratuit" : `${(v / 1000).toFixed(0)}k`
+                      }
+                    />
+                    <Tooltip
+                      formatter={
+                        ((value: number) => [
+                          value === 0 ? "Gratuit" : formatCurrency(value, "fr", "MAD"),
+                          "Prix",
+                        ]) as unknown as ComponentProps<typeof Tooltip>["formatter"]
+                      }
+                      labelStyle={{ fontSize: 11 }}
+                      contentStyle={{ fontSize: 11 }}
+                      cursor={{ fill: "hsl(var(--muted))" }}
+                    />
+                    <Bar dataKey="price" radius={[3, 3, 0, 0]}>
+                      {chartData.map((entry, i) => (
+                        <Cell
+                          key={`cell-${i}`}
+                          fill={
+                            entry.popular ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.45)"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                  La barre en couleur pleine = tier <span className="font-medium">Populaire</span>
+                </p>
+              </div>
+            );
+          })()}
+
           {/* Pricing Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {tiers.map((tier) => {
@@ -614,15 +713,26 @@ export default function PricingPage() {
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-muted-foreground">{subCount} clients</span>
                         {!isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => startEditTier(tier)}
-                            title="Edit tier"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => duplicateTier(tier)}
+                              title="Dupliquer ce tier"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => startEditTier(tier)}
+                              title="Edit tier"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -663,9 +773,19 @@ export default function PricingPage() {
                             </span>
                           </>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Mensuel uniquement</span>
+                          // I7-fix: Vitrine is free — display "Gratuit" instead of the
+                          // ambiguous "Mensuel uniquement" which gave no price signal.
+                          <span className="text-2xl font-bold text-green-600">Gratuit</span>
                         )}
                       </CardTitle>
+                    )}
+                    {/* S10: Show monthly equivalent when annual billing is selected.
+                        Admins comparing annual vs monthly need to see the per-month cost
+                        without doing mental arithmetic on the annual figure. */}
+                    {!isEditing && billingCycle === "yearly" && price > 0 && (
+                      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 -mt-1">
+                        soit {formatNumber(Math.round(price / 12))} MAD/mois
+                      </p>
                     )}
                     {!isEditing && (
                       <p className="text-xs text-muted-foreground">{tier.description}</p>
@@ -728,10 +848,12 @@ export default function PricingPage() {
                               <>
                                 <span className="font-medium text-foreground">
                                   {tier.limits.maxPatients === 0
-                                    ? "—"
+                                    ? "Non inclus"
                                     : tier.limits.maxPatients.toLocaleString()}
                                 </span>{" "}
-                                patients
+                                {/* I6-fix: "Non inclus" instead of "—" for tiers with 0 patients
+                                    (Vitrine). The dash was ambiguous: 0, unlimited, or N/A? */}
+                                {tier.limits.maxPatients !== 0 && "patients"}
                               </>
                             )}
                           </p>
@@ -773,6 +895,20 @@ export default function PricingPage() {
                                 </span>
                               </div>
                             ))}
+                          </div>
+                        )}
+
+                        {/* I3: SaaS Monthly differentiator vs Premium.
+                            SaaS costs less (1 499 MAD) but has less storage (50 GB vs 100 GB).
+                            Clarify the value proposition to prevent admin confusion. */}
+                        {tier.slug === "saas-monthly" && (
+                          <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[10px] text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400">
+                            <p className="font-semibold mb-0.5">Différent du plan Premium</p>
+                            <p>
+                              Conçu pour les groupes multi-sites et revendeurs SaaS. Inclut un
+                              support dédié, une gestion multi-cabinets et une facturation
+                              centralisée — sans les 100 GB de stockage du plan Premium.
+                            </p>
                           </div>
                         )}
                       </>
@@ -1129,8 +1265,8 @@ export default function PricingPage() {
                 <span>{billingCycle === "monthly" ? "Mensuel" : "Annuel"}</span>
               </div>
               <p className="text-sm">
-                New price:{" "}
-                <span className="font-semibold">{Number(editPriceMin).toLocaleString()} MAD</span>
+                Nouveau prix :{" "}
+                <span className="font-semibold">{formatCurrency(Number(editPriceMin))}</span>
               </p>
               <p className="text-xs text-amber-600 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
@@ -1140,7 +1276,7 @@ export default function PricingPage() {
                     return tier && s.tierSlug === tier.slug;
                   }).length
                 }{" "}
-                active subscriptions will be affected
+                abonnements actifs seront affectés
               </p>
             </div>
           )}
@@ -1180,7 +1316,7 @@ export default function PricingPage() {
                   >
                     <div className="flex-1">
                       <p className="font-medium">
-                        {entry.oldPrice.toLocaleString()} → {entry.newPrice.toLocaleString()} MAD
+                        {formatCurrency(entry.oldPrice)} → {formatCurrency(entry.newPrice)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {entry.system} &middot; {entry.cycle === "monthly" ? "Mensuel" : "Annuel"}

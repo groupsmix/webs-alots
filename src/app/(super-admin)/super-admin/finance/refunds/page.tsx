@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase-server";
+import { formatCurrency } from "@/lib/utils";
 
 interface RefundRow {
   id: string;
@@ -80,7 +81,7 @@ async function RefundList() {
                     <TableCell className="font-medium">{r.clinic?.name ?? "—"}</TableCell>
                     <TableCell className="font-mono text-xs">{r.payment_order_id}</TableCell>
                     <TableCell className="font-semibold tabular-nums">
-                      {r.amount_mad.toLocaleString("fr-MA")} MAD
+                      {formatCurrency(r.amount_mad)}
                     </TableCell>
                     <TableCell>
                       <Badge

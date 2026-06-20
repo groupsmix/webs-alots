@@ -97,11 +97,42 @@ export async function applyRateLimit(
     // The dedicated `globalPageLimiter` is now independent of API rules.
     const allowed = await globalPageLimiter.check(`global_${rateLimitKey}`);
     if (!allowed) {
+      // QA-B3-fix: For HTML page navigations, return a human-readable HTML
+      // 429 page instead of a raw JSON body. Previously the JSON
+      // { error: "RATE_LIMIT_EXCEEDED" } was shown verbatim in the browser
+      // when an admin navigated quickly between pages.
+      const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trop de requêtes — Oltigo</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#fafafa;color:#111;display:flex;
+         align-items:center;justify-content:center;min-height:100vh;margin:0;padding:1rem}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:.75rem;padding:2rem 2.5rem;
+          max-width:420px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    h1{font-size:1.25rem;font-weight:600;margin:0 0 .5rem}
+    p{color:#6b7280;font-size:.9rem;margin:.5rem 0 1.5rem;line-height:1.5}
+    a{display:inline-block;background:#111;color:#fff;text-decoration:none;
+      padding:.5rem 1.25rem;border-radius:.5rem;font-size:.875rem}
+    a:hover{background:#374151}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Trop de requêtes</h1>
+    <p>Vous avez effectué trop de requêtes en peu de temps.<br/>
+    Veuillez patienter quelques secondes et réessayer.</p>
+    <a href="javascript:history.back()">← Retour</a>
+  </div>
+</body>
+</html>`;
       const response = withSecurityHeaders(
-        NextResponse.json(
-          { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
-          { status: 429 },
-        ),
+        new NextResponse(html, {
+          status: 429,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        }),
         csp,
       );
       response.headers.set("Retry-After", "60");

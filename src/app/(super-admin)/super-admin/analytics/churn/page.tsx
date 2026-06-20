@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { logger } from "@/lib/logger";
+import { formatCurrency } from "@/lib/utils";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -333,7 +334,7 @@ export default function ChurnPredictionPage() {
                       <span className="text-sm text-muted-foreground">Avg Monthly Revenue</span>
                     </div>
                     <p className="text-2xl font-bold">
-                      {retentionMetrics.avgMonthlyRevenue.toLocaleString()} MAD
+                      {formatCurrency(retentionMetrics.avgMonthlyRevenue)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">per clinic</p>
                   </div>
@@ -343,7 +344,7 @@ export default function ChurnPredictionPage() {
                       <span className="text-sm text-muted-foreground">Avg Lifetime Value</span>
                     </div>
                     <p className="text-2xl font-bold">
-                      {retentionMetrics.avgLifetimeValue.toLocaleString()} MAD
+                      {formatCurrency(retentionMetrics.avgLifetimeValue)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">estimated 18-month LTV</p>
                   </div>
@@ -631,7 +632,7 @@ export default function ChurnPredictionPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
-                          <span>{Number(score.revenue_30d).toLocaleString()} MAD (30d)</span>
+                          <span>{formatCurrency(Number(score.revenue_30d))} (30 j)</span>
                         </div>
                       </div>
 

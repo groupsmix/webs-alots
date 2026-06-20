@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils";
 
 // ── Clinic comparison data (O6): fetched live from the API, no mocks ──
 
@@ -59,11 +60,11 @@ const METRICS: MetricDef[] = [
   },
   {
     key: "revenue",
-    label: "Revenue",
+    label: "Revenus",
     icon: DollarSign,
     getValue: (c) => c.monthlyRevenue,
-    format: (v) => `${v.toLocaleString()} MAD`,
-    unit: "/month",
+    format: (v) => formatCurrency(v),
+    unit: "/mois",
   },
   {
     key: "patients",
@@ -152,7 +153,7 @@ export default function ClinicComparisonPage() {
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
             { label: "Analytics", href: "/super-admin/analytics" },
-            { label: "Clinic Comparison" },
+            { label: "Comparaison cliniques" },
           ]}
         />
         <p className="text-sm text-muted-foreground">Loading clinic data…</p>
@@ -167,7 +168,7 @@ export default function ClinicComparisonPage() {
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
             { label: "Analytics", href: "/super-admin/analytics" },
-            { label: "Clinic Comparison" },
+            { label: "Comparaison cliniques" },
           ]}
         />
         <p className="text-sm text-destructive">{loadError}</p>
@@ -182,7 +183,7 @@ export default function ClinicComparisonPage() {
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
             { label: "Analytics", href: "/super-admin/analytics" },
-            { label: "Clinic Comparison" },
+            { label: "Comparaison cliniques" },
           ]}
         />
         <Card>
@@ -218,11 +219,11 @@ export default function ClinicComparisonPage() {
   function handleExport() {
     const lines = [
       [
-        "Clinic",
+        "Clinique",
         "Type",
         "Tier",
         "Appointments",
-        "Revenue (MAD)",
+        "Revenus (MAD)",
         "Patients",
         "No-Show %",
         "Satisfaction",
@@ -383,7 +384,7 @@ export default function ClinicComparisonPage() {
                 <span className="text-muted-foreground flex items-center gap-1">
                   <DollarSign className="h-3 w-3" /> Revenue
                 </span>
-                <span className="font-medium">{clinic.monthlyRevenue.toLocaleString()} MAD</span>
+                <span className="font-medium">{formatCurrency(clinic.monthlyRevenue)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-1">

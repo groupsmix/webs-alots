@@ -45,10 +45,10 @@ export function EditorialFooter() {
     {
       headingKey: "landing.editorial.editorial-footer.legalHeading",
       links: [
-        { labelKey: "landing.editorial.editorial-footer.conditions", href: "/terms" },
-        { labelKey: "landing.editorial.editorial-footer.privacy", href: "/privacy" },
-        { labelKey: "landing.footerDPA", href: "/dpa" },
-        { labelKey: "landing.editorial.editorial-footer.law0908", href: "/compliance" },
+        { labelKey: "landing.editorial.editorial-footer.conditions", href: "/terms/" },
+        { labelKey: "landing.editorial.editorial-footer.privacy", href: "/privacy/" },
+        { labelKey: "landing.footerDPA", href: "/dpa/" },
+        { labelKey: "landing.editorial.editorial-footer.law0908", href: "/compliance/" },
       ],
     },
   ];
