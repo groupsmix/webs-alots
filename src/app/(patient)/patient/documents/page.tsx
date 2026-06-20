@@ -1,7 +1,7 @@
 "use client";
 
-import { Upload, FileText, Image, CreditCard, Download, Trash2, Eye, Filter } from "lucide-react";
-import { useState } from "react";
+import { Upload, FileText, Image, CreditCard, Download, Trash2, Filter } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -15,70 +15,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getLocalDateStr } from "@/lib/utils";
 
 type DocType = "analysis" | "radiology" | "insurance" | "other";
 
-interface PatientDocument {
+interface DocumentView {
   id: string;
   name: string;
-  type: DocType;
+  type: string;
+  fileType: string;
+  size: number;
+  key: string;
   date: string;
-  size: string;
-  icon: typeof FileText;
 }
-
-const initialDocuments: PatientDocument[] = [
-  {
-    id: "doc1",
-    name: "Blood Test Results",
-    type: "analysis",
-    date: "2026-03-15",
-    size: "1.2 MB",
-    icon: FileText,
-  },
-  {
-    id: "doc2",
-    name: "Chest X-Ray",
-    type: "radiology",
-    date: "2026-02-20",
-    size: "3.5 MB",
-    icon: Image,
-  },
-  {
-    id: "doc3",
-    name: "CNSS Insurance Card",
-    type: "insurance",
-    date: "2026-01-10",
-    size: "0.8 MB",
-    icon: CreditCard,
-  },
-  {
-    id: "doc4",
-    name: "ECG Report",
-    type: "analysis",
-    date: "2025-12-05",
-    size: "0.5 MB",
-    icon: FileText,
-  },
-  {
-    id: "doc5",
-    name: "Spine MRI",
-    type: "radiology",
-    date: "2025-11-18",
-    size: "8.2 MB",
-    icon: Image,
-  },
-  {
-    id: "doc6",
-    name: "Allergy Panel Results",
-    type: "analysis",
-    date: "2025-10-02",
-    size: "0.3 MB",
-    icon: FileText,
-  },
-];
 
 const typeConfig: Record<
   DocType,
@@ -106,45 +56,154 @@ const typeConfig: Record<
   },
 };
 
+function configForType(type: string) {
+  return type in typeConfig ? typeConfig[type as DocType] : typeConfig.other;
+}
+
+function iconForType(type: string) {
+  if (type === "radiology") return Image;
+  if (type === "insurance") return CreditCard;
+  return FileText;
+}
+
+function formatFileSize(bytes: number): string {
+  if (!bytes || bytes <= 0) return "—";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// File types the patient_files upload pipeline accepts for documents.
+const ACCEPTED_TYPES = "application/pdf,image/jpeg,image/png,image/webp";
+
 export default function PatientDocumentsPage() {
-  const [documents, setDocuments] = useState(initialDocuments);
+  const [documents, setDocuments] = useState<DocumentView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
   const [uploadOpen, setUploadOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | DocType>("all");
   const [fileName, setFileName] = useState("");
   const [fileType, setFileType] = useState<DocType>("analysis");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/patient/documents", { signal: controller.signal });
+        const json = await res.json();
+        if (controller.signal.aborted) return;
+        if (res.ok && json.ok) {
+          setDocuments(json.data.documents as DocumentView[]);
+          setLoadError(null);
+        } else {
+          setLoadError(json.error ?? "Failed to load documents.");
+        }
+      } catch {
+        if (!controller.signal.aborted) setLoadError("Failed to load documents.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    load();
+    return () => controller.abort();
+  }, [reloadKey]);
 
   const filtered = filter === "all" ? documents : documents.filter((d) => d.type === filter);
 
-  const handleUpload = () => {
-    setUploading(true);
-    setTimeout(() => {
-      const newDoc: PatientDocument = {
-        id: `doc${Date.now()}`,
-        name: fileName || "Uploaded Document",
-        type: fileType,
-        date: getLocalDateStr(),
-        size: "1.0 MB",
-        icon: fileType === "radiology" ? Image : fileType === "insurance" ? CreditCard : FileText,
-      };
-      setDocuments([newDoc, ...documents]);
-      setUploading(false);
-      setUploadSuccess(true);
-      setTimeout(() => {
-        setUploadOpen(false);
-        setUploadSuccess(false);
-        setFileName("");
-        setFileType("analysis");
-      }, 1500);
-    }, 1200);
+  const resetUploadForm = () => {
+    setFileName("");
+    setFileType("analysis");
+    setSelectedFile(null);
+    setUploadError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleDelete = (id: string) => {
-    setDocuments(documents.filter((d) => d.id !== id));
-    setDeleteId(null);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    setUploadError(null);
+    if (file && !fileName) {
+      // Pre-fill the name from the file (drop the extension) for convenience.
+      setFileName(file.name.replace(/\.[^.]+$/, ""));
+    }
   };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadError("Please select a file to upload.");
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    try {
+      // Step 1: upload the encrypted bytes to R2 via the shared pipeline
+      // (magic-byte validation, AV scan, EXIF strip, PHI encryption).
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("category", "patient_files");
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+      const uploadJson = await uploadRes.json();
+      if (!uploadRes.ok || !uploadJson.ok) {
+        setUploadError(uploadJson.error ?? "Upload failed. Please try again.");
+        return;
+      }
+
+      // Step 2: persist the document record linking the R2 object to the patient.
+      const metaRes = await fetch("/api/patient/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          r2Key: uploadJson.data.key,
+          fileName: fileName.trim() || selectedFile.name,
+          fileType: selectedFile.type,
+          fileSize: selectedFile.size,
+          docType: fileType,
+          originalName: selectedFile.name,
+        }),
+      });
+      const metaJson = await metaRes.json();
+      if (!metaRes.ok || !metaJson.ok) {
+        setUploadError(metaJson.error ?? "Failed to save the document. Please try again.");
+        return;
+      }
+
+      resetUploadForm();
+      setUploadOpen(false);
+      setReloadKey((k) => k + 1);
+    } catch {
+      setUploadError("An error occurred during upload. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/patient/documents?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setReloadKey((k) => k + 1);
+      }
+    } finally {
+      setDeleting(false);
+      setDeleteId(null);
+    }
+  };
+
+  if (loading) {
+    return <PageLoader message="Loading documents..." />;
+  }
 
   return (
     <div>
@@ -161,6 +220,17 @@ export default function PatientDocumentsPage() {
           Upload Document
         </Button>
       </div>
+
+      {loadError && (
+        <Card className="mb-4 border-destructive/50">
+          <CardContent className="py-4 text-center">
+            <p className="text-sm text-destructive">{loadError}</p>
+            <Button variant="link" className="mt-1" onClick={() => setReloadKey((k) => k + 1)}>
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="all" className="mb-6">
         <TabsList>
@@ -193,14 +263,15 @@ export default function PatientDocumentsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((doc) => {
-            const config = typeConfig[doc.type];
+            const config = configForType(doc.type);
+            const DocIcon = iconForType(doc.type);
             return (
               <Card key={doc.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center gap-4 p-4">
                   <div
                     className={`flex h-12 w-12 items-center justify-center rounded-lg ${config.color}`}
                   >
-                    <doc.icon className="h-6 w-6" />
+                    <DocIcon className="h-6 w-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{doc.name}</p>
@@ -209,16 +280,20 @@ export default function PatientDocumentsPage() {
                         {config.label}
                       </Badge>
                       <span className="text-xs text-muted-foreground">{doc.date}</span>
-                      <span className="text-xs text-muted-foreground">{doc.size}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatFileSize(doc.size)}
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" title="View">
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                    <Button variant="ghost" size="sm" title="Download">
-                      <Download className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    <a
+                      href={`/api/files/download?key=${encodeURIComponent(doc.key)}`}
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="ghost" size="sm" title="Download">
+                        <Download className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </a>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -235,7 +310,13 @@ export default function PatientDocumentsPage() {
         </div>
       )}
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+      <Dialog
+        open={uploadOpen}
+        onOpenChange={(open) => {
+          setUploadOpen(open);
+          if (!open) resetUploadForm();
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
@@ -243,52 +324,55 @@ export default function PatientDocumentsPage() {
               Upload radiology images, lab analyses, or insurance cards.
             </DialogDescription>
           </DialogHeader>
-          {uploadSuccess ? (
-            <div className="text-center py-6">
-              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mx-auto mb-3">
-                <Upload className="h-6 w-6 text-green-600" />
-              </div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                Document uploaded successfully!
-              </p>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label htmlFor="docName">Document Name</Label>
+              <Input
+                id="docName"
+                placeholder="e.g., Blood Test Results"
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+              />
             </div>
-          ) : (
-            <div className="space-y-4 mt-2">
-              <div className="space-y-2">
-                <Label htmlFor="docName">Document Name</Label>
-                <Input
-                  id="docName"
-                  placeholder="e.g., Blood Test Results"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="docType">Document Type</Label>
-                <select
-                  id="docType"
-                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                  value={fileType}
-                  onChange={(e) => setFileType(e.target.value as DocType)}
-                >
-                  <option value="analysis">Analysis / Lab Results</option>
-                  <option value="radiology">Radiology / X-Ray / MRI</option>
-                  <option value="insurance">Insurance Card</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <div className="space-y-2">
+              <Label htmlFor="docType">Document Type</Label>
+              <select
+                id="docType"
+                className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
+                value={fileType}
+                onChange={(e) => setFileType(e.target.value as DocType)}
+              >
+                <option value="analysis">Analysis / Lab Results</option>
+                <option value="radiology">Radiology / X-Ray / MRI</option>
+                <option value="insurance">Insurance Card</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_TYPES}
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+            >
+              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              {selectedFile ? (
+                <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+              ) : (
                 <p className="text-sm font-medium">Click to select a file</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  PDF, JPG, PNG, DICOM up to 25MB
-                </p>
-              </div>
-              <Button className="w-full" onClick={handleUpload} disabled={uploading}>
-                {uploading ? "Uploading..." : "Upload Document"}
-              </Button>
-            </div>
-          )}
+              )}
+              <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, WebP up to 25MB</p>
+            </button>
+            {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+            <Button className="w-full" onClick={handleUpload} disabled={uploading || !selectedFile}>
+              {uploading ? "Uploading..." : "Upload Document"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -307,10 +391,11 @@ export default function PatientDocumentsPage() {
             <Button
               variant="destructive"
               className="flex-1"
+              disabled={deleting}
               onClick={() => deleteId && handleDelete(deleteId)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              Delete
+              {deleting ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </DialogContent>

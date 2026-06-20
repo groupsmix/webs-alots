@@ -109,7 +109,7 @@ export default function TermsPage() {
         <>
           <p>
             La collecte et le traitement des données personnelles sont régis par notre{" "}
-            <a href="/privacy">Politique de Confidentialité</a>, conformément au Règlement Général
+            <a href="/privacy/">Politique de Confidentialité</a>, conformément au Règlement Général
             sur la Protection des Données (RGPD) et à la loi marocaine n° 09-08 relative à la
             protection des données à caractère personnel.
           </p>

@@ -2,6 +2,7 @@
 
 import { Calendar, Users, UserPlus, Clock, CreditCard, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
+import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
 import { AppointmentCard } from "@/components/receptionist/appointment-card";
 import { CashRegister } from "@/components/receptionist/cash-register";
 import { EndOfDayReportButton } from "@/components/receptionist/end-of-day-report-button";
@@ -34,6 +35,8 @@ export default function ReceptionistDashboardPage() {
   const [error, setError] = useState<Error | null>(null);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
   const [clinicId, setClinicId] = useState("");
+  const [rescheduleApptId, setRescheduleApptId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -77,7 +80,7 @@ export default function ReceptionistDashboardPage() {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [refreshKey]);
 
   const todayDateStr = new Date().toISOString().split("T")[0];
   const tomorrowDate = new Date();
@@ -138,8 +141,8 @@ export default function ReceptionistDashboardPage() {
     setTodayAppts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "no-show" } : a)));
   };
 
-  const handleReschedule = (_id: string) => {
-    // TODO: Implement reschedule flow (open reschedule dialog)
+  const handleReschedule = (id: string) => {
+    setRescheduleApptId(id);
   };
 
   const renderApptList = (appointments: AppointmentView[], emptyMessage: string) => {
@@ -182,6 +185,26 @@ export default function ReceptionistDashboardPage() {
           Failed to load data. Please try refreshing the page.
         </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
+      </div>
+    );
+  }
+
+  const apptToReschedule = rescheduleApptId
+    ? todayAppts.find((a) => a.id === rescheduleApptId)
+    : null;
+
+  if (apptToReschedule) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Reschedule Appointment</h1>
+        <RescheduleDialog
+          appointment={apptToReschedule}
+          onClose={() => setRescheduleApptId(null)}
+          onReschedule={() => {
+            setRescheduleApptId(null);
+            setRefreshKey((k) => k + 1);
+          }}
+        />
       </div>
     );
   }

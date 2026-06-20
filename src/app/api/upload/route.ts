@@ -358,7 +358,12 @@ export const POST = withAuth(
       thumbnails,
     });
   },
-  ["super_admin", "clinic_admin", "receptionist", "doctor"],
+  // Patients may upload their own documents (e.g. lab results, insurance
+  // cards) to the `patient_files` category. clinicId is always derived from
+  // the authenticated profile above, so a patient can only ever write under
+  // their own clinic prefix — symmetric with /api/files/download, which
+  // already allows the patient role to read their own files.
+  ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"],
 );
 
 /**

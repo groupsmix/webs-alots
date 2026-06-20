@@ -355,7 +355,7 @@ export function CookieConsent() {
         <div className="md:flex md:items-center md:justify-between md:gap-4">
           <p className="text-sm text-muted-foreground mb-3 md:mb-0">
             {t(locale, "cookie.message")}{" "}
-            <a href="/privacy" className="underline hover:text-foreground">
+            <a href="/privacy/" className="underline hover:text-foreground">
               {t(locale, "cookie.privacyPolicy")}
             </a>
             .

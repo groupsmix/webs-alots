@@ -23,12 +23,14 @@ interface PilotClinic {
 export default async function PilotsDashboardPage() {
   const supabase = await createClient();
 
-  // Fetch clinics that have 'pilot' in their notes or we can just fetch all and filter later.
-  // For now, we simulate fetching the 3 designated pilot clinics.
+  // O7: pilots are the clinics explicitly flagged via `clinics.is_pilot`
+  // (migration 00190). Operators toggle this flag for the designated launch
+  // pilots; an empty result means none have been flagged yet.
   const { data } = await supabase
     .from("clinics")
     .select("*, auth_users:users(count), appointments(count)")
-    .limit(10); // Adjust this query based on how pilots are tagged in production
+    .eq("is_pilot", true)
+    .order("name", { ascending: true });
   const pilots = (data ?? null) as PilotClinic[] | null;
 
   return (

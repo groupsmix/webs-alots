@@ -27,6 +27,9 @@ const ALLOWLIST = new Set([
   "src/app/api/verify-email/route.ts",
   "src/app/api/v1/register-clinic/verification-token/route.ts",
   "src/app/api/auth/demo-login/route.ts",
+  // Demo-request leads — platform-level `demo_leads` table (migration 00191)
+  // has no clinic_id: prospects are not yet tenants. Cross-tenant by design.
+  "src/app/api/leads/route.ts",
   // Cron jobs — iterate per-clinic internally
   "src/app/api/cron/notifications/route.ts",
   "src/app/api/cron/dedup-purge/route.ts",

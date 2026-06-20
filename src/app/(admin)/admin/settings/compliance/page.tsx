@@ -146,7 +146,7 @@ export default function CompliancePage() {
 
         <div className="mt-6 flex gap-3">
           <a
-            href="/privacy"
+            href="/privacy/"
             className="inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
           >
             Voir la politique de confidentialité
