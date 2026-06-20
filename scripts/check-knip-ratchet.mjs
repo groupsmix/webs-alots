@@ -12,8 +12,8 @@
  * Lower the baseline number whenever you remove dead files to lock in
  * the gain.
  */
-import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const BASELINE_PATH = ".knip-baseline";
 
