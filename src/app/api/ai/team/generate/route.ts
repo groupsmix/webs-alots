@@ -140,6 +140,13 @@ export const POST = withAuthValidation(
     const userId = profile.id;
 
     if (!clinicId) {
+      if (profile.role === "super_admin") {
+        return apiError(
+          "No clinic context selected. Use the clinic selector to choose a clinic before generating.",
+          400,
+          "NO_CLINIC_CONTEXT",
+        );
+      }
       return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
     }
 

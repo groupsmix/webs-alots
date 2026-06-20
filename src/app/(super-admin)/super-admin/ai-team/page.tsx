@@ -179,9 +179,12 @@ export default function AITeamPage() {
         throw new Error(err.error ?? "Chat failed");
       }
 
-      const json = (await res.json()) as { ok: boolean; data?: { answer: string } };
+      const json = (await res.json()) as { ok: boolean; data?: { response: { answer: string } } };
       if (json.ok && json.data) {
-        setChatMessages((prev) => [...prev, { role: "assistant", content: json.data!.answer }]);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: json.data!.response.answer },
+        ]);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Chat failed";

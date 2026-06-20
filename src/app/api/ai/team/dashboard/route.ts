@@ -27,6 +27,38 @@ async function handler(_request: NextRequest, auth: AuthContext) {
   const clinicId = profile.clinic_id;
 
   if (!clinicId) {
+    if (profile.role === "super_admin") {
+      return apiSuccess({
+        agents: {
+          marketing: {
+            status: "active",
+            label: "Agent Marketing",
+            metrics: {},
+            pendingTasks: 0,
+            tasks: [],
+            alerts: [],
+          },
+          support: {
+            status: "active",
+            label: "Agent Support",
+            metrics: {},
+            pendingTasks: 0,
+            tasks: [],
+            alerts: [],
+          },
+          reminder: {
+            status: "active",
+            label: "Agent Rappels",
+            metrics: {},
+            pendingTasks: 0,
+            tasks: [],
+            alerts: [],
+          },
+        },
+        totalUnreadAlerts: 0,
+        teamTasks: [],
+      });
+    }
     return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
   }
 
