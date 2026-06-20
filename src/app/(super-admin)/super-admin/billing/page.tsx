@@ -15,6 +15,8 @@ import {
   Receipt,
   Download,
   ChevronDown,
+  Calendar,
+  X,
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
@@ -57,6 +59,9 @@ export default function BillingPage() {
   const [reminderRecord, setReminderRecord] = useState<BillingRecord | null>(null);
   const [records, setRecords] = useState<BillingRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  // S2: date range filter
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const loadRecords = useCallback(async () => {
     try {
@@ -92,7 +97,11 @@ export default function BillingPage() {
       r.clinicName.toLowerCase().includes(q) ||
       r.id.toLowerCase().includes(q) ||
       formatInvoiceNumber(r.id, r.invoiceDate).toLowerCase().includes(q);
-    return matchSearch && (statusFilter === "all" || r.status === statusFilter);
+    const matchStatus = statusFilter === "all" || r.status === statusFilter;
+    // S2: date range — compare ISO date strings (YYYY-MM-DD) lexicographically
+    const matchFrom = !dateFrom || r.invoiceDate >= dateFrom;
+    const matchTo = !dateTo || r.invoiceDate <= dateTo;
+    return matchSearch && matchStatus && matchFrom && matchTo;
   });
 
   // KPI figures reflect the active filters/search so the cards stay in sync
@@ -108,7 +117,7 @@ export default function BillingPage() {
   const totalRevenue = paidRecords.reduce((sum, r) => sum + r.amountPaid, 0);
   const overdueAmount = overdueRecords.reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
 
-  const isFilteredView = statusFilter !== "all" || search.trim().length > 0;
+  const isFilteredView = statusFilter !== "all" || search.trim().length > 0 || !!dateFrom || !!dateTo;
 
   function handleExportBillingCSV() {
     const rows = filtered.map((r) => ({
@@ -146,6 +155,33 @@ export default function BillingPage() {
       "Due Date",
     ]);
     addToast("PDF generated — use Save as PDF in the print dialog", "success");
+  }
+
+  // S4: per-row invoice PDF download
+  function handleDownloadInvoicePDF(record: BillingRecord) {
+    const rows = [
+      {
+        Facture: formatInvoiceNumber(record.id, record.invoiceDate),
+        Client: record.clinicName,
+        Plan: record.plan,
+        "Montant dû": formatCurrency(record.amountDue, "fr", record.currency),
+        "Montant payé": formatCurrency(record.amountPaid, "fr", record.currency),
+        Statut: record.status,
+        "Date facture": record.invoiceDate,
+        "Date échéance": record.dueDate,
+        ...(record.paidDate ? { "Date paiement": record.paidDate } : {}),
+        ...(record.paymentMethod ? { Paiement: record.paymentMethod } : {}),
+      },
+    ];
+    exportToPDF(
+      `Facture ${formatInvoiceNumber(record.id, record.invoiceDate)} — ${record.clinicName}`,
+      rows,
+      ["Facture", "Client", "Plan", "Montant dû", "Montant payé", "Statut", "Date facture", "Date échéance"],
+    );
+    addToast(
+      `PDF de la facture ${formatInvoiceNumber(record.id, record.invoiceDate)} généré`,
+      "success",
+    );
   }
 
   function handleSendReminder() {
@@ -280,8 +316,8 @@ export default function BillingPage() {
             </Card>
           </div>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          {/* Search, Status Filters, and Date Range */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -305,6 +341,43 @@ export default function BillingPage() {
                 </Button>
               ))}
             </div>
+          </div>
+          {/* S2: Date range filter row */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground">Période :</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              max={dateTo || undefined}
+              className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              aria-label="Date de début"
+            />
+            <span className="text-muted-foreground text-xs">→</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              min={dateFrom || undefined}
+              className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              aria-label="Date de fin"
+            />
+            {(dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+                title="Effacer les dates"
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Effacer
+              </Button>
+            )}
           </div>
 
           {/* Invoices Table */}
@@ -389,6 +462,15 @@ export default function BillingPage() {
                               onClick={() => setDetailRecord(record)}
                             >
                               <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            {/* S4: per-row invoice PDF download */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Télécharger PDF"
+                              onClick={() => handleDownloadInvoicePDF(record)}
+                            >
+                              <Download className="h-3.5 w-3.5" />
                             </Button>
                             {record.status === "overdue" && (
                               <Button

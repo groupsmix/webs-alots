@@ -779,6 +779,20 @@ export default function PricingPage() {
                             ))}
                           </div>
                         )}
+
+                        {/* I3: SaaS Monthly differentiator vs Premium.
+                            SaaS costs less (1 499 MAD) but has less storage (50 GB vs 100 GB).
+                            Clarify the value proposition to prevent admin confusion. */}
+                        {tier.slug === "saas-monthly" && (
+                          <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[10px] text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400">
+                            <p className="font-semibold mb-0.5">Différent du plan Premium</p>
+                            <p>
+                              Conçu pour les groupes multi-sites et revendeurs SaaS. Inclut un
+                              support dédié, une gestion multi-cabinets et une facturation
+                              centralisée — sans les 100 GB de stockage du plan Premium.
+                            </p>
+                          </div>
+                        )}
                       </>
                     )}
                   </CardContent>

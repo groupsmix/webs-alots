@@ -14,6 +14,9 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
   Stethoscope,
   Crown,
   Pill,
@@ -55,6 +58,29 @@ import { formatCurrency, formatNumber, getLocalDateStr } from "@/lib/utils";
 
 type StatusFilter = "all" | ClientSubscription["status"];
 type SystemFilter = "all" | SystemType;
+type SortField = "clinicName" | "amount" | "status" | "tierName" | "lastPayment";
+
+// S15: last paid invoice date for a subscription
+function getLastPaymentDate(invoices: ClientSubscription["invoices"]): string {
+  const dates = invoices
+    .filter((i) => i.status === "paid")
+    .map((i) => i.paidDate ?? i.date)
+    .sort();
+  return dates.at(-1) ?? "—";
+}
+
+// S13: derive reason from available data (no dedicated DB field)
+function getSuspensionReason(sub: ClientSubscription): string {
+  if (sub.status === "cancelled")
+    return sub.cancelledAt ? `Annulé le ${sub.cancelledAt}` : "Annulé";
+  if (sub.status === "suspended") {
+    if (sub.invoices.some((i) => i.status === "overdue")) return "Paiement en retard";
+    if (sub.invoices.length === 0) return "Aucune facture enregistrée";
+    return "Voir les détails";
+  }
+  if (sub.status === "past_due") return "Paiement en retard";
+  return "";
+}
 
 const systemIcons: Record<SystemType, typeof Stethoscope> = {
   doctor: Stethoscope,
@@ -73,6 +99,11 @@ export default function SubscriptionsPage() {
   const [expandedInvoices, setExpandedInvoices] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<ClientSubscription[]>([]);
   const [loading, setLoading] = useState(true);
+  // S16/S17: sort + pagination
+  const [sortField, setSortField] = useState<SortField>("clinicName");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const loadSubscriptions = useCallback(async () => {
     try {
@@ -117,6 +148,59 @@ export default function SubscriptionsPage() {
     return matchSearch && matchStatus && matchSystem;
   });
 
+  // S16/S17: sort then paginate
+  const sorted = [...filtered].sort((a, b) => {
+    let cmp = 0;
+    switch (sortField) {
+      case "clinicName":
+        cmp = a.clinicName.localeCompare(b.clinicName, "fr");
+        break;
+      case "amount":
+        cmp = a.amount - b.amount;
+        break;
+      case "status":
+        cmp = a.status.localeCompare(b.status);
+        break;
+      case "tierName":
+        cmp = a.tierName.localeCompare(b.tierName, "fr");
+        break;
+      case "lastPayment": {
+        const la = getLastPaymentDate(a.invoices);
+        const lb = getLastPaymentDate(b.invoices);
+        cmp =
+          la === "—" && lb === "—" ? 0 : la === "—" ? 1 : lb === "—" ? -1 : la.localeCompare(lb);
+        break;
+      }
+    }
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE) || 1;
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset to page 1 whenever filters or sort order change
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, systemFilter, sortField, sortDir]);
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+    setPage(1);
+  }
+
+  function SortIndicator({ field }: { field: SortField }) {
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
+    return sortDir === "asc" ? (
+      <ChevronUp className="h-3 w-3 ml-1" />
+    ) : (
+      <ChevronDown className="h-3 w-3 ml-1" />
+    );
+  }
+
   const statusIcon = (status: string) => {
     switch (status) {
       case "active":
@@ -142,7 +226,7 @@ export default function SubscriptionsPage() {
   };
 
   function handleExportSubscriptionsCSV() {
-    const rows = filtered.map((sub) => ({
+    const rows = sorted.map((sub) => ({
       "Nom du client": sub.clinicName,
       Type: systemTypeLabels[sub.systemType],
       Tier: sub.tierName,
@@ -150,6 +234,7 @@ export default function SubscriptionsPage() {
       "Montant (MAD)": sub.amount,
       Devise: sub.currency,
       Statut: statusLabel(sub.status),
+      "Dernier paiement": getLastPaymentDate(sub.invoices),
       "Début de période": sub.currentPeriodStart,
       "Fin de période": sub.currentPeriodEnd,
     }));
@@ -158,12 +243,13 @@ export default function SubscriptionsPage() {
   }
 
   function handleExportSubscriptionsPDF() {
-    const rows = filtered.map((sub) => ({
+    const rows = sorted.map((sub) => ({
       Client: sub.clinicName,
       Type: systemTypeLabels[sub.systemType],
       Tier: sub.tierName,
       "Montant (MAD)": String(sub.amount),
       Statut: statusLabel(sub.status),
+      "Dernier pmt": getLastPaymentDate(sub.invoices),
       Période: `${sub.currentPeriodStart} — ${sub.currentPeriodEnd}`,
     }));
     exportToPDF("Abonnements — Oltigo Health", rows, [
@@ -172,6 +258,7 @@ export default function SubscriptionsPage() {
       "Tier",
       "Montant (MAD)",
       "Statut",
+      "Dernier pmt",
       "Période",
     ]);
     addToast("PDF généré — utilisez Enregistrer en PDF dans la boîte d'impression", "success");
@@ -345,20 +432,62 @@ export default function SubscriptionsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="text-left font-medium py-3 px-4">Client</th>
+                  <th className="text-left font-medium py-3 px-4">
+                    <button
+                      onClick={() => handleSort("clinicName")}
+                      className="flex items-center hover:text-foreground transition-colors"
+                    >
+                      Client
+                      <SortIndicator field="clinicName" />
+                    </button>
+                  </th>
                   <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Type</th>
-                  <th className="text-left font-medium py-3 px-4">Tier</th>
+                  <th className="text-left font-medium py-3 px-4">
+                    <button
+                      onClick={() => handleSort("tierName")}
+                      className="flex items-center hover:text-foreground transition-colors"
+                    >
+                      Tier
+                      <SortIndicator field="tierName" />
+                    </button>
+                  </th>
                   <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Cycle</th>
-                  <th className="text-left font-medium py-3 px-4">Montant</th>
-                  <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Période</th>
-                  <th className="text-left font-medium py-3 px-4">Statut</th>
+                  <th className="text-left font-medium py-3 px-4">
+                    <button
+                      onClick={() => handleSort("amount")}
+                      className="flex items-center hover:text-foreground transition-colors"
+                    >
+                      Montant
+                      <SortIndicator field="amount" />
+                    </button>
+                  </th>
+                  <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">
+                    <button
+                      onClick={() => handleSort("lastPayment")}
+                      className="flex items-center hover:text-foreground transition-colors"
+                      title="Date du dernier paiement reçu"
+                    >
+                      Dernier pmt
+                      <SortIndicator field="lastPayment" />
+                    </button>
+                  </th>
+                  <th className="text-left font-medium py-3 px-4">
+                    <button
+                      onClick={() => handleSort("status")}
+                      className="flex items-center hover:text-foreground transition-colors"
+                    >
+                      Statut
+                      <SortIndicator field="status" />
+                    </button>
+                  </th>
                   <th className="text-right font-medium py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((sub) => {
+                {paged.map((sub) => {
                   const Icon = systemIcons[sub.systemType];
                   const isInvoicesOpen = expandedInvoices === sub.id;
+                  const reason = getSuspensionReason(sub);
 
                   return (
                     <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/50">
@@ -387,13 +516,18 @@ export default function SubscriptionsPage() {
                       <td className="py-3 px-4 font-medium">
                         {formatCurrency(sub.amount, "fr", sub.currency)}
                       </td>
+                      {/* S15: last payment date replaces the period column */}
                       <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground text-xs">
-                        {sub.currentPeriodStart} — {sub.currentPeriodEnd}
+                        {getLastPaymentDate(sub.invoices)}
                       </td>
                       <td className="py-3 px-4">
+                        {/* S13: show derived suspension/cancellation reason as tooltip */}
                         <div className="flex items-center gap-1.5">
                           {statusIcon(sub.status)}
-                          <Badge className={`text-[10px] ${statusColors[sub.status]}`}>
+                          <Badge
+                            className={`text-[10px] ${statusColors[sub.status]} ${reason ? "cursor-help" : ""}`}
+                            title={reason || undefined}
+                          >
                             {statusLabel(sub.status)}
                           </Badge>
                         </div>
@@ -447,7 +581,7 @@ export default function SubscriptionsPage() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && (
+                {paged.length === 0 && (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-muted-foreground">
                       Aucun abonnement trouvé.
@@ -456,6 +590,52 @@ export default function SubscriptionsPage() {
                 )}
               </tbody>
             </table>
+
+            {/* S16: Pagination controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t px-4 py-3">
+                <span className="text-xs text-muted-foreground">
+                  Page {page} sur {totalPages} — {sorted.length} abonnement
+                  {sorted.length !== 1 ? "s" : ""}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => p - 1)}
+                    aria-label="Page précédente"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+                    const n = start + i;
+                    if (n > totalPages) return null;
+                    return (
+                      <Button
+                        key={n}
+                        variant={n === page ? "default" : "outline"}
+                        size="sm"
+                        className="w-8 h-8 p-0 text-xs"
+                        onClick={() => setPage(n)}
+                      >
+                        {n}
+                      </Button>
+                    );
+                  })}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                    aria-label="Page suivante"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Expanded Invoices */}
