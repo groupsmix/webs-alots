@@ -179,9 +179,12 @@ export default function AITeamPage() {
         throw new Error(err.error ?? "Chat failed");
       }
 
-      const json = (await res.json()) as { ok: boolean; data?: { answer: string } };
+      const json = (await res.json()) as { ok: boolean; data?: { response: { answer: string } } };
       if (json.ok && json.data) {
-        setChatMessages((prev) => [...prev, { role: "assistant", content: json.data!.answer }]);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: json.data!.response.answer },
+        ]);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Chat failed";
@@ -310,6 +313,8 @@ export default function AITeamPage() {
                       setActiveChat(activeChat === agentType ? null : agentType);
                       setChatMessages([]);
                     }}
+                    disabled={agent?.status !== "active"}
+                    title={agent?.status !== "active" ? "Agent is inactive" : undefined}
                   >
                     <MessageSquare className="mr-1 h-3.5 w-3.5" />
                     Chat
@@ -319,7 +324,8 @@ export default function AITeamPage() {
                     variant="outline"
                     className="flex-1"
                     onClick={() => void handleGenerate(agentType)}
-                    disabled={generating !== null}
+                    disabled={generating !== null || agent?.status !== "active"}
+                    title={agent?.status !== "active" ? "Agent is inactive" : undefined}
                   >
                     {generating === agentType ? (
                       <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />

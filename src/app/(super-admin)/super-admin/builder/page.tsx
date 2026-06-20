@@ -29,7 +29,7 @@ export default async function BuilderPage() {
   const { data: profile } = await supabase
     .from("users")
     .select("role, email")
-    .eq("id", user.id)
+    .eq("auth_id", user.id)
     .single();
 
   if (profile?.role !== "super_admin") redirect("/unauthorized");

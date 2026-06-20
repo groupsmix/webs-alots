@@ -123,8 +123,8 @@ export default function AIAgentsPage() {
     return matchSearch && (catFilter === "All" || agent.category === catFilter);
   });
 
-  const totalAgents = platformAgents.length;
-  const activeAgents = platformAgents.filter((a) => a.status === "active").length;
+  const totalAgents = filtered.length;
+  const activeAgents = filtered.filter((a) => a.status === "active").length;
 
   return (
     <div>
@@ -170,7 +170,11 @@ export default function AIAgentsPage() {
             placeholder="Search agents..."
             className="pl-10"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearch(val);
+              if (val.trim()) setCatFilter("All");
+            }}
           />
         </div>
         <div className="flex items-center gap-1 flex-wrap">

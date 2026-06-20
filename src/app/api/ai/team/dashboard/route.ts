@@ -27,7 +27,39 @@ async function handler(_request: NextRequest, auth: AuthContext) {
   const clinicId = profile.clinic_id;
 
   if (!clinicId) {
-    return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
+    if (profile.role === "super_admin") {
+      return apiSuccess({
+        agents: {
+          marketing: {
+            status: "active",
+            label: "Marketing Agent",
+            metrics: {},
+            pendingTasks: 0,
+            tasks: [],
+            alerts: [],
+          },
+          support: {
+            status: "active",
+            label: "Support Agent",
+            metrics: {},
+            pendingTasks: 0,
+            tasks: [],
+            alerts: [],
+          },
+          reminder: {
+            status: "active",
+            label: "Reminder Agent",
+            metrics: {},
+            pendingTasks: 0,
+            tasks: [],
+            alerts: [],
+          },
+        },
+        totalUnreadAlerts: 0,
+        teamTasks: [],
+      });
+    }
+    return apiError("No clinic associated with this account", 403, "NO_CLINIC");
   }
 
   try {
@@ -140,7 +172,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       agents: {
         marketing: {
           status: "active",
-          label: "Agent Marketing",
+          label: "Marketing Agent",
           metrics: {
             inactivePatients: marketingData.inactivePatientsCount,
             newPatientsThisMonth: marketingData.newPatientsThisMonth,
@@ -152,7 +184,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         },
         support: {
           status: "active",
-          label: "Agent Support",
+          label: "Support Agent",
           metrics: {
             npsScore: supportData.npsScore,
             waitingQueueCount: supportData.waitingQueueCount,
@@ -164,7 +196,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
         },
         reminder: {
           status: "active",
-          label: "Agent Rappels",
+          label: "Reminder Agent",
           metrics: {
             todayAppointments: reminderData.todayTotal,
             pendingApprovals: reminderData.totalPendingAppointments,
@@ -185,7 +217,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       clinicId,
       error: err,
     });
-    return apiInternalError("Erreur lors du chargement du tableau de bord IA.");
+    return apiInternalError("Failed to load AI dashboard.");
   }
 }
 

@@ -128,19 +128,24 @@ export const POST = withAuthValidation(
     const userId = profile.id;
 
     if (!clinicId) {
-      return apiError("Aucune clinique associée à ce compte", 403, "NO_CLINIC");
+      if (profile.role === "super_admin") {
+        return apiError(
+          "No clinic context selected. Use the clinic selector to choose a clinic before chatting.",
+          400,
+          "NO_CLINIC_CONTEXT",
+        );
+      }
+      return apiError("No clinic associated with this account", 403, "NO_CLINIC");
     }
 
     const allowed = await aiManagerLimiter.check(`ai-team:${userId}`);
     if (!allowed) {
-      return apiRateLimited("Limite quotidienne atteinte. Réessayez demain.");
+      return apiRateLimited("Daily limit reached. Try again tomorrow.");
     }
 
     const clinicAllowed = await aiClinicCeilingLimiter.check(`ai:clinic:${clinicId}`);
     if (!clinicAllowed) {
-      return apiRateLimited(
-        "Limite quotidienne de la clinique atteinte pour les fonctionnalités IA. Réessayez demain.",
-      );
+      return apiRateLimited("Clinic daily AI limit reached. Try again tomorrow.");
     }
 
     const aiResult = await resolveAIConfig();
@@ -195,9 +200,7 @@ export const POST = withAuthValidation(
           agentType,
           errorBody: errorBody.slice(0, 500),
         });
-        return apiInternalError(
-          "Le service IA est temporairement indisponible. Veuillez réessayer.",
-        );
+        return apiInternalError("AI service temporarily unavailable. Please try again.");
       }
 
       const aiData = (await aiResponse.json()) as {
@@ -211,7 +214,7 @@ export const POST = withAuthValidation(
           clinicId,
           agentType,
         });
-        return apiInternalError("Le service IA n'a pas retourné de réponse valide.");
+        return apiInternalError("AI service returned no valid response.");
       }
 
       const content = validateAIOutput(rawContent);
@@ -221,12 +224,12 @@ export const POST = withAuthValidation(
           clinicId,
           agentType,
         });
-        return apiInternalError("La réponse IA a été rejetée par le validateur de sécurité.");
+        return apiInternalError("AI response rejected by safety validator.");
       }
 
       const agentResponse = parseAgentResponse(content);
       if (!agentResponse) {
-        return apiInternalError("La réponse IA n'a pas pu être interprétée. Veuillez réessayer.");
+        return apiInternalError("AI response could not be interpreted. Please try again.");
       }
 
       const safeMessage = message
@@ -251,11 +254,7 @@ export const POST = withAuthValidation(
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        return apiError(
-          "Le service IA a mis trop de temps à répondre. Veuillez réessayer.",
-          504,
-          "AI_TIMEOUT",
-        );
+        return apiError("AI service timed out. Please try again.", 504, "AI_TIMEOUT");
       }
       logger.error("AI Team chat failed", {
         context: "ai-team-chat",
@@ -263,7 +262,7 @@ export const POST = withAuthValidation(
         agentType,
         error: err,
       });
-      return apiInternalError("Erreur lors de la requête IA. Veuillez réessayer.");
+      return apiInternalError("AI request failed. Please try again.");
     }
   },
   ["clinic_admin", "super_admin"],
