@@ -145,6 +145,10 @@ export default function SystemStatusPage() {
   // hardcoded "99.9%" uptime KPI is not shown when the API is unreachable.
   // When false the uptime card shows "N/A" instead of a misleading value.
   const [apiHealthy, setApiHealthy] = useState(true);
+  // I1 fix: true when the health endpoint returned 403 GEO_RESTRICTED.
+  // Shown as a specific amber banner so operators know it is a location
+  // restriction, not a platform outage.
+  const [geoBlocked, setGeoBlocked] = useState(false);
 
   const loadHealth = useCallback(async () => {
     try {
@@ -156,6 +160,8 @@ export default function SystemStatusPage() {
 
       // B1: only trust the health metrics when the API actually responded OK.
       setApiHealthy(core.webApp === "operational");
+      // I1: surface geo-block specifically so the banner can explain the cause.
+      setGeoBlocked(core.geoBlocked);
 
       setAppVersion(core.version);
       setNodeVersion(core.nodeVersion);
@@ -376,6 +382,29 @@ export default function SystemStatusPage() {
         </button>
       </div>
 
+      {/* I1: geo-block banner — shown only when the health API returned
+          GEO_RESTRICTED so the operator knows it is a location restriction,
+          not a platform outage, and understands the data may be stale. */}
+      {geoBlocked && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-medium text-amber-800 dark:text-amber-200">
+              Accès restreint depuis votre localisation
+            </p>
+            <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+              L'API d'administration est limitée aux accès depuis le Maroc. Vous semblez vous
+              connecter depuis un autre emplacement (VPN, réseau étranger). Les données ci-dessous
+              peuvent être incomplètes ou indisponibles.
+            </p>
+            <p className="text-amber-600 dark:text-amber-400 mt-1 text-xs">
+              Pour un accès d'urgence depuis l'étranger, contactez l'administrateur système ou
+              utilisez un accès VPN autorisé.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((kpi) => (
@@ -477,21 +506,21 @@ export default function SystemStatusPage() {
         </Card>
       </div>
 
-      {/* Recent Incidents */}
+      {/* Incidents récents */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="h-4 w-4" />
-            Recent Incidents
+            Incidents récents
           </CardTitle>
         </CardHeader>
         <CardContent>
           {activeIncidents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <CheckCircle className="h-10 w-10 text-green-500 mb-3" />
-              <p className="text-sm font-medium">No recent incidents</p>
+              <p className="text-sm font-medium">Aucun incident récent</p>
               <p className="text-xs text-muted-foreground mt-1">
-                All systems have been running smoothly
+                Tous les systèmes fonctionnent normalement
               </p>
             </div>
           ) : (
@@ -520,8 +549,9 @@ export default function SystemStatusPage() {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <StatusBadge status={incident.status} />
-                    <span className="text-[10px] text-muted-foreground">
-                      since {incident.lastChecked.toLocaleTimeString()}
+                    {/* B2/B3: suppressHydrationWarning on locale-dependent time string */}
+                    <span suppressHydrationWarning className="text-[10px] text-muted-foreground">
+                      depuis {incident.lastChecked.toLocaleTimeString()}
                     </span>
                   </div>
                 </div>
@@ -537,7 +567,7 @@ export default function SystemStatusPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Shield className="h-4 w-4" />
-              Environment Configuration
+              Configuration d'environnement
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -566,10 +596,13 @@ export default function SystemStatusPage() {
               </div>
             ) : opsLoaded ? (
               <p className="text-sm text-muted-foreground">
-                Environment details unavailable. The readiness check did not return data.
+                Détails de configuration indisponibles. La vérification de disponibilité n'a pas
+                renvoyé de données.
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">Loading environment details...</p>
+              <p className="text-sm text-muted-foreground">
+                Chargement de la configuration…
+              </p>
             )}
           </CardContent>
         </Card>
@@ -580,33 +613,33 @@ export default function SystemStatusPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Database className="h-4 w-4" />
-                Backups & Recovery
+                Sauvegardes et récupération
               </CardTitle>
             </CardHeader>
             <CardContent>
               {backups ? (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Encryption Key</span>
+                    <span className="text-muted-foreground">Clé de chiffrement</span>
                     <Badge variant={backups.configured ? "success" : "destructive"}>
-                      {backups.configured ? "Configured" : "Missing"}
+                      {backups.configured ? "Configurée" : "Manquante"}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Last Backup</span>
+                    <span className="text-muted-foreground">Dernière sauvegarde</span>
                     <span className="font-medium text-xs">{backups.lastBackup}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Restore Drill</span>
+                    <span className="text-muted-foreground">Test de restauration</span>
                     <span className="font-medium text-xs">{backups.lastRestoreDrill}</span>
                   </div>
                 </div>
               ) : opsLoaded ? (
                 <p className="text-sm text-muted-foreground">
-                  Backups data unavailable. The readiness check did not return data.
+                  Données de sauvegarde indisponibles.
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Loading backups data...</p>
+                <p className="text-sm text-muted-foreground">Chargement des sauvegardes…</p>
               )}
             </CardContent>
           </Card>
@@ -616,44 +649,45 @@ export default function SystemStatusPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Activity className="h-4 w-4" />
-                Background Jobs
+                Tâches de fond
               </CardTitle>
             </CardHeader>
             <CardContent>
               {jobs ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold">Webhooks Retry Queue</h4>
+                    <h4 className="text-sm font-semibold">File de réessai webhooks</h4>
                     <div className="flex gap-4 text-sm">
-                      <span className="text-amber-600">{jobs.webhooks.pending} Pending</span>
-                      <span className="text-red-600">{jobs.webhooks.failed} Failed</span>
+                      <span className="text-amber-600">{jobs.webhooks.pending} en attente</span>
+                      <span className="text-red-600">{jobs.webhooks.failed} échoués</span>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold">Notification Queue</h4>
+                    <h4 className="text-sm font-semibold">File de notifications</h4>
                     <div className="flex gap-4 text-sm">
-                      <span className="text-amber-600">{jobs.notifications.pending} Pending</span>
-                      <span className="text-red-600">{jobs.notifications.failed} Failed</span>
+                      <span className="text-amber-600">{jobs.notifications.pending} en attente</span>
+                      <span className="text-red-600">{jobs.notifications.failed} échoués</span>
                       <span className="text-red-800">
-                        {jobs.notifications.deadLettered} Dead-lettered
+                        {jobs.notifications.deadLettered} dead-letter
                       </span>
                     </div>
                   </div>
                 </div>
               ) : opsLoaded ? (
                 <p className="text-sm text-muted-foreground">
-                  Background jobs data unavailable. The readiness check did not return data.
+                  Données des tâches indisponibles.
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Loading jobs data...</p>
+                <p className="text-sm text-muted-foreground">Chargement des tâches…</p>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
-        Last checked: {lastChecked.toLocaleString()}
+      {/* B2/B3: suppressHydrationWarning — toLocaleString is locale-dependent */}
+      <p suppressHydrationWarning className="text-xs text-muted-foreground text-center">
+        Dernière vérification : {lastChecked.toLocaleString()}
       </p>
     </div>
   );

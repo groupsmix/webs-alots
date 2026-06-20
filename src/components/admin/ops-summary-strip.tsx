@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
-import { AlertTriangle, CheckCircle2, Shield, WifiOff } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Shield, WifiOff, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -24,16 +24,34 @@ interface OpsSummaryResponse {
 export function OpsSummaryStrip() {
   const [data, setData] = useState<OpsSummaryResponse["data"] | null>(null);
   const [fetchError, setFetchError] = useState(false);
+  // I1: separate flag for geo-restriction so a targeted banner is shown
+  // rather than the generic "system data unavailable" message.
+  const [geoBlocked, setGeoBlocked] = useState(false);
 
   useEffect(() => {
     let active = true;
 
     async function load() {
-      if (active) setFetchError(false);
+      if (active) {
+        setFetchError(false);
+        setGeoBlocked(false);
+      }
       try {
         const response = await fetch("/api/super-admin/ops-summary", { cache: "no-store" });
         if (!response.ok) {
-          if (active) setFetchError(true);
+          // I1: parse the response body to distinguish geo-block from other
+          // failures (auth error, server error, etc.).
+          let isGeo = false;
+          try {
+            const errJson = (await response.json()) as { code?: string };
+            isGeo = errJson.code === "GEO_RESTRICTED";
+          } catch {
+            /* non-JSON body — treat as generic failure */
+          }
+          if (active) {
+            if (isGeo) setGeoBlocked(true);
+            else setFetchError(true);
+          }
           return;
         }
         const json = (await response.json()) as OpsSummaryResponse;
@@ -67,6 +85,29 @@ export function OpsSummaryStrip() {
   // B4 fix: when the ops-summary API is unreachable (geo-block, network error,
   // or any non-2xx), show an explicit "data unavailable" state rather than
   // silently rendering the green "all operational" placeholder.
+  if (geoBlocked) {
+    return (
+      <div className="mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+        <Link href="/super-admin/system" className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-amber-600" />
+          <span className="text-amber-800 dark:text-amber-200">
+            Accès admin restreint à votre localisation — connectez-vous depuis le Maroc ou via un
+            VPN autorisé
+          </span>
+        </Link>
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          <Link href="/super-admin/system" className="hover:text-foreground">
+            Système
+          </Link>
+          <span>·</span>
+          <Link href="/super-admin/compliance" className="hover:text-foreground">
+            Conformité
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (fetchError) {
     return (
       <div className="mb-4 flex flex-wrap items-center gap-4 rounded-lg border bg-muted/20 px-4 py-3 text-sm">

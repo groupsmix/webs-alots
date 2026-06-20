@@ -1,8 +1,8 @@
 "use client";
 
-import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download, ShieldAlert } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,8 +22,9 @@ import { formatDisplayDate } from "@/lib/utils";
 
 type Step = "loading" | "qr" | "verify" | "backup" | "done";
 
-export default function Setup2FAPage() {
+function Setup2FAInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [locale] = useLocale();
   const [step, setStep] = useState<Step>("loading");
   const [enrollment, setEnrollment] = useState<MFAEnrollment | null>(null);
@@ -33,6 +34,11 @@ export default function Setup2FAPage() {
   const [copied, setCopied] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [backupCopied, setBackupCopied] = useState(false);
+
+  // R1 fix: read ?required and ?next so the middleware can force enrolment for
+  // privileged roles and redirect back to the original destination afterwards.
+  const required = searchParams.get("required") === "1";
+  const nextParam = searchParams.get("next") ?? "";
 
   useEffect(() => {
     async function startEnrollment() {
@@ -70,6 +76,12 @@ export default function Setup2FAPage() {
       setStep("done");
     }
     setLoading(false);
+  }
+
+  // Shared redirect helper: go to ?next if set, otherwise to a sensible default.
+  function handleFinish() {
+    const dest = nextParam || "/doctor/dashboard";
+    router.push(dest);
   }
 
   async function handleCopySecret() {
@@ -130,6 +142,15 @@ export default function Setup2FAPage() {
   if (step === "backup") {
     return (
       <div className="w-full max-w-md mx-auto">
+        {required && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+            <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+            <p className="text-amber-800 dark:text-amber-200">
+              L'authentification à deux facteurs est <strong>obligatoire</strong> pour votre
+              rôle. Sauvegardez ces codes avant de continuer.
+            </p>
+          </div>
+        )}
         <Card>
           <CardHeader className="text-center pb-4">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
@@ -174,7 +195,7 @@ export default function Setup2FAPage() {
             </p>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={() => router.push("/doctor/dashboard")}>
+            <Button className="w-full" onClick={handleFinish}>
               {t(locale, "mfa.goToDashboard")}
             </Button>
           </CardFooter>
@@ -193,7 +214,7 @@ export default function Setup2FAPage() {
             </div>
             <h2 className="text-xl font-bold mb-2">{t(locale, "mfa.enabled")}</h2>
             <p className="text-muted-foreground mb-6">{t(locale, "mfa.setupCompleteDesc")}</p>
-            <Button onClick={() => router.push("/doctor/dashboard")}>
+            <Button onClick={handleFinish}>
               {t(locale, "mfa.goToDashboard")}
             </Button>
           </CardContent>
@@ -204,6 +225,16 @@ export default function Setup2FAPage() {
 
   return (
     <div className="w-full max-w-md mx-auto">
+      {required && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+          <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+          <p className="text-amber-800 dark:text-amber-200">
+            L'authentification à deux facteurs (2FA) est <strong>obligatoire</strong> pour les
+            comptes Super Admin et Admin Clinique. Veuillez configurer votre application
+            d'authentification pour continuer.
+          </p>
+        </div>
+      )}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-2 mb-2">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
@@ -326,5 +357,20 @@ export default function Setup2FAPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+
+export default function Setup2FAPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full max-w-md mx-auto flex items-center justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <Setup2FAInner />
+    </Suspense>
   );
 }
