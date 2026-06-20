@@ -44,7 +44,9 @@ function makeHistoryEvent(
 
 // ── Mock task factory ─────────────────────────────────────────────────────────
 
-function makeTask(overrides: Partial<TeamTask> & Pick<TeamTask, "id" | "title" | "status">): TeamTask {
+function makeTask(
+  overrides: Partial<TeamTask> & Pick<TeamTask, "id" | "title" | "status">,
+): TeamTask {
   return {
     description: null,
     agent_type: "marketing",
@@ -79,7 +81,8 @@ const FULL_BOARD_TASKS: TeamTask[] = [
   makeTask({
     id: "task-002",
     title: "Résumé hebdomadaire des tickets support",
-    description: "Générer un rapport synthétique des 20 derniers tickets avec catégories et tendances.",
+    description:
+      "Générer un rapport synthétique des 20 derniers tickets avec catégories et tendances.",
     agent_type: "support",
     status: "backlog",
     history_events: [
@@ -104,12 +107,16 @@ const FULL_BOARD_TASKS: TeamTask[] = [
   makeTask({
     id: "task-004",
     title: "Brouillon réponse FAQ — prise de rendez-vous en ligne",
-    description: "Rédiger 5 réponses type pour les questions fréquentes sur la prise de RDV via l'application.",
+    description:
+      "Rédiger 5 réponses type pour les questions fréquentes sur la prise de RDV via l'application.",
     agent_type: "support",
     status: "in_progress",
     history_events: [
       makeHistoryEvent("created", "secretary-agent", TWO_DAYS_AGO, { from: null, to: "backlog" }),
-      makeHistoryEvent("transition", "secretary-agent", TWO_DAYS_AGO, { from: "backlog", to: "in_progress" }),
+      makeHistoryEvent("transition", "secretary-agent", TWO_DAYS_AGO, {
+        from: "backlog",
+        to: "in_progress",
+      }),
     ],
     updated_at: TWO_DAYS_AGO,
   }),
@@ -127,21 +134,28 @@ const FULL_BOARD_TASKS: TeamTask[] = [
     history_events: [
       makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
       makeHistoryEvent("transition", "admin", TWO_DAYS_AGO, { from: "backlog", to: "in_progress" }),
-      makeHistoryEvent("transition", "marketing-agent", YESTERDAY, { from: "in_progress", to: "review" }),
+      makeHistoryEvent("transition", "marketing-agent", YESTERDAY, {
+        from: "in_progress",
+        to: "review",
+      }),
     ],
     updated_at: YESTERDAY,
   }),
   makeTask({
     id: "task-006",
     title: "Texte d'accueil salle d'attente — écran digital",
-    description: "Rédiger le contenu rotatif affiché sur l'écran de la salle d'attente : présentation services, conseils santé, rappels RDV.",
+    description:
+      "Rédiger le contenu rotatif affiché sur l'écran de la salle d'attente : présentation services, conseils santé, rappels RDV.",
     agent_type: "marketing",
     status: "review",
     reviewer_agent_type: "clinic_admin",
     review_cycles: 0,
     history_events: [
       makeHistoryEvent("created", "receptionist-agent", YESTERDAY, { from: null, to: "backlog" }),
-      makeHistoryEvent("transition", "receptionist-agent", YESTERDAY, { from: "backlog", to: "in_progress" }),
+      makeHistoryEvent("transition", "receptionist-agent", YESTERDAY, {
+        from: "backlog",
+        to: "in_progress",
+      }),
       makeHistoryEvent("transition", "marketing-agent", NOW, { from: "in_progress", to: "review" }),
     ],
     created_at: YESTERDAY,
@@ -163,7 +177,10 @@ const FULL_BOARD_TASKS: TeamTask[] = [
     history_events: [
       makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
       makeHistoryEvent("transition", "admin", TWO_DAYS_AGO, { from: "backlog", to: "in_progress" }),
-      makeHistoryEvent("transition", "reminder-agent", YESTERDAY, { from: "in_progress", to: "review" }),
+      makeHistoryEvent("transition", "reminder-agent", YESTERDAY, {
+        from: "in_progress",
+        to: "review",
+      }),
       makeHistoryEvent("review", "doctor-agent", NOW, {
         from: "review",
         to: "changes_requested",
@@ -186,7 +203,10 @@ const FULL_BOARD_TASKS: TeamTask[] = [
     history_events: [
       makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
       makeHistoryEvent("transition", "admin", TWO_DAYS_AGO, { from: "backlog", to: "in_progress" }),
-      makeHistoryEvent("transition", "support-agent", YESTERDAY, { from: "in_progress", to: "review" }),
+      makeHistoryEvent("transition", "support-agent", YESTERDAY, {
+        from: "in_progress",
+        to: "review",
+      }),
       makeHistoryEvent("approved", "clinic-admin-agent", NOW, { from: "review", to: "done" }),
     ],
     created_at: TWO_DAYS_AGO,
@@ -195,14 +215,18 @@ const FULL_BOARD_TASKS: TeamTask[] = [
   makeTask({
     id: "task-009",
     title: "Annonce ouverture nouveau service dermatologie",
-    description: "Email + WhatsApp annonçant l'ouverture du service dermatologie et la disponibilité des premiers créneaux.",
+    description:
+      "Email + WhatsApp annonçant l'ouverture du service dermatologie et la disponibilité des premiers créneaux.",
     agent_type: "marketing",
     status: "done",
     review_cycles: 0,
     history_events: [
       makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
       makeHistoryEvent("transition", "admin", YESTERDAY, { from: "backlog", to: "in_progress" }),
-      makeHistoryEvent("transition", "marketing-agent", YESTERDAY, { from: "in_progress", to: "review" }),
+      makeHistoryEvent("transition", "marketing-agent", YESTERDAY, {
+        from: "in_progress",
+        to: "review",
+      }),
       makeHistoryEvent("approved", "admin", NOW, { from: "review", to: "done" }),
     ],
     created_at: TWO_DAYS_AGO,
@@ -213,13 +237,18 @@ const FULL_BOARD_TASKS: TeamTask[] = [
   makeTask({
     id: "task-010",
     title: "Sondage satisfaction post-consultation — test A/B",
-    description: "Test de deux versions d'un formulaire de satisfaction à envoyer 24h après chaque consultation.",
+    description:
+      "Test de deux versions d'un formulaire de satisfaction à envoyer 24h après chaque consultation.",
     agent_type: "support",
     status: "cancelled",
     history_events: [
       makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
       makeHistoryEvent("transition", "admin", YESTERDAY, { from: "backlog", to: "in_progress" }),
-      makeHistoryEvent("cancelled", "admin", NOW, { from: "in_progress", to: "cancelled", reason: "Hors périmètre sprint" }),
+      makeHistoryEvent("cancelled", "admin", NOW, {
+        from: "in_progress",
+        to: "cancelled",
+        reason: "Hors périmètre sprint",
+      }),
     ],
     created_at: TWO_DAYS_AGO,
     updated_at: NOW,
@@ -261,14 +290,18 @@ export const ReviewPending: Story = {
       makeTask({
         id: "rev-001",
         title: "Protocole de rappel post-opératoire — contenu médical",
-        description: "Instructions post-op rédigées par l'agent — nécessite validation du médecin avant envoi aux patients.",
+        description:
+          "Instructions post-op rédigées par l'agent — nécessite validation du médecin avant envoi aux patients.",
         agent_type: "reminder",
         status: "review",
         reviewer_agent_type: "doctor",
         review_cycles: 0,
         history_events: [
           makeHistoryEvent("created", "admin", YESTERDAY, { from: null, to: "backlog" }),
-          makeHistoryEvent("transition", "reminder-agent", NOW, { from: "in_progress", to: "review" }),
+          makeHistoryEvent("transition", "reminder-agent", NOW, {
+            from: "in_progress",
+            to: "review",
+          }),
         ],
         updated_at: NOW,
       }),
@@ -282,10 +315,23 @@ export const ReviewPending: Story = {
         review_cycles: 1,
         history_events: [
           makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
-          makeHistoryEvent("transition", "support-agent", YESTERDAY, { from: "in_progress", to: "review" }),
-          makeHistoryEvent("review", "doctor-agent", YESTERDAY, { from: "review", to: "changes_requested", comments: "Revoir la section sur le sel." }),
-          makeHistoryEvent("transition", "support-agent", NOW, { from: "changes_requested", to: "in_progress" }),
-          makeHistoryEvent("transition", "support-agent", NOW, { from: "in_progress", to: "review" }),
+          makeHistoryEvent("transition", "support-agent", YESTERDAY, {
+            from: "in_progress",
+            to: "review",
+          }),
+          makeHistoryEvent("review", "doctor-agent", YESTERDAY, {
+            from: "review",
+            to: "changes_requested",
+            comments: "Revoir la section sur le sel.",
+          }),
+          makeHistoryEvent("transition", "support-agent", NOW, {
+            from: "changes_requested",
+            to: "in_progress",
+          }),
+          makeHistoryEvent("transition", "support-agent", NOW, {
+            from: "in_progress",
+            to: "review",
+          }),
         ],
         updated_at: NOW,
       }),
@@ -301,8 +347,14 @@ export const ReviewPending: Story = {
         review_cycles: 1,
         history_events: [
           makeHistoryEvent("created", "admin", TWO_DAYS_AGO, { from: null, to: "backlog" }),
-          makeHistoryEvent("transition", "marketing-agent", YESTERDAY, { from: "in_progress", to: "review" }),
-          makeHistoryEvent("review", "clinic-admin", NOW, { from: "review", to: "changes_requested" }),
+          makeHistoryEvent("transition", "marketing-agent", YESTERDAY, {
+            from: "in_progress",
+            to: "review",
+          }),
+          makeHistoryEvent("review", "clinic-admin", NOW, {
+            from: "review",
+            to: "changes_requested",
+          }),
         ],
         updated_at: NOW,
       }),
@@ -330,16 +382,49 @@ export const WithEscalation: Story = {
           "3ème révision : les valeurs cibles HbA1c sont correctes mais la section sur l'insulinothérapie doit être validée par un endocrinologue. Escalade humaine requise.",
         review_cycles: 3,
         history_events: [
-          makeHistoryEvent("created", "admin", "2026-06-15T09:00:00.000Z", { from: null, to: "backlog" }),
-          makeHistoryEvent("transition", "admin", "2026-06-15T09:05:00.000Z", { from: "backlog", to: "in_progress" }),
-          makeHistoryEvent("transition", "support-agent", "2026-06-16T10:00:00.000Z", { from: "in_progress", to: "review" }),
-          makeHistoryEvent("review", "doctor-agent", "2026-06-16T14:00:00.000Z", { from: "review", to: "changes_requested", comments: "Révision 1: corriger les unités glycémiques." }),
-          makeHistoryEvent("transition", "support-agent", "2026-06-17T09:00:00.000Z", { from: "changes_requested", to: "in_progress" }),
-          makeHistoryEvent("transition", "support-agent", "2026-06-17T11:00:00.000Z", { from: "in_progress", to: "review" }),
-          makeHistoryEvent("review", "doctor-agent", "2026-06-17T16:00:00.000Z", { from: "review", to: "changes_requested", comments: "Révision 2: revoir section activité physique." }),
-          makeHistoryEvent("transition", "support-agent", "2026-06-18T09:00:00.000Z", { from: "changes_requested", to: "in_progress" }),
-          makeHistoryEvent("transition", "support-agent", "2026-06-18T11:30:00.000Z", { from: "in_progress", to: "review" }),
-          makeHistoryEvent("review", "doctor-agent", "2026-06-19T10:00:00.000Z", { from: "review", to: "changes_requested", comments: "Révision 3: section insuline nécessite endocrinologue." }),
+          makeHistoryEvent("created", "admin", "2026-06-15T09:00:00.000Z", {
+            from: null,
+            to: "backlog",
+          }),
+          makeHistoryEvent("transition", "admin", "2026-06-15T09:05:00.000Z", {
+            from: "backlog",
+            to: "in_progress",
+          }),
+          makeHistoryEvent("transition", "support-agent", "2026-06-16T10:00:00.000Z", {
+            from: "in_progress",
+            to: "review",
+          }),
+          makeHistoryEvent("review", "doctor-agent", "2026-06-16T14:00:00.000Z", {
+            from: "review",
+            to: "changes_requested",
+            comments: "Révision 1: corriger les unités glycémiques.",
+          }),
+          makeHistoryEvent("transition", "support-agent", "2026-06-17T09:00:00.000Z", {
+            from: "changes_requested",
+            to: "in_progress",
+          }),
+          makeHistoryEvent("transition", "support-agent", "2026-06-17T11:00:00.000Z", {
+            from: "in_progress",
+            to: "review",
+          }),
+          makeHistoryEvent("review", "doctor-agent", "2026-06-17T16:00:00.000Z", {
+            from: "review",
+            to: "changes_requested",
+            comments: "Révision 2: revoir section activité physique.",
+          }),
+          makeHistoryEvent("transition", "support-agent", "2026-06-18T09:00:00.000Z", {
+            from: "changes_requested",
+            to: "in_progress",
+          }),
+          makeHistoryEvent("transition", "support-agent", "2026-06-18T11:30:00.000Z", {
+            from: "in_progress",
+            to: "review",
+          }),
+          makeHistoryEvent("review", "doctor-agent", "2026-06-19T10:00:00.000Z", {
+            from: "review",
+            to: "changes_requested",
+            comments: "Révision 3: section insuline nécessite endocrinologue.",
+          }),
         ],
         created_at: "2026-06-15T09:00:00.000Z",
         updated_at: "2026-06-19T10:00:00.000Z",
@@ -347,7 +432,8 @@ export const WithEscalation: Story = {
       makeTask({
         id: "esc-002",
         title: "Campagne de rappel — mammographie annuelle",
-        description: "Message ciblé pour patientes de 40-69 ans — coordination avec agenda et radiologie.",
+        description:
+          "Message ciblé pour patientes de 40-69 ans — coordination avec agenda et radiologie.",
         agent_type: "marketing",
         status: "in_progress",
         history_events: [
@@ -394,12 +480,18 @@ export const HandoffTask: Story = {
         agent_type: "doctor",
         status: "in_progress",
         history_events: [
-          makeHistoryEvent("created", "receptionist-agent", YESTERDAY, { from: null, to: "backlog" }),
+          makeHistoryEvent("created", "receptionist-agent", YESTERDAY, {
+            from: null,
+            to: "backlog",
+          }),
           makeHistoryEvent("handoff", "receptionist-agent", YESTERDAY, {
             sourceAgentType: "receptionist",
             targetAgentType: "doctor",
           }),
-          makeHistoryEvent("transition", "doctor-agent", NOW, { from: "backlog", to: "in_progress" }),
+          makeHistoryEvent("transition", "doctor-agent", NOW, {
+            from: "backlog",
+            to: "in_progress",
+          }),
         ],
         updated_at: NOW,
       }),

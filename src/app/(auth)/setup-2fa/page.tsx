@@ -1,6 +1,14 @@
 "use client";
 
-import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download, ShieldAlert } from "lucide-react";
+import {
+  ShieldCheck,
+  Copy,
+  Check,
+  ArrowLeft,
+  AlertTriangle,
+  Download,
+  ShieldAlert,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -146,8 +154,7 @@ function Setup2FAInner() {
           <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
             <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
             <p className="text-amber-800 dark:text-amber-200">
-              L'authentification à deux facteurs est <strong>obligatoire</strong> pour votre
-              rôle. Sauvegardez ces codes avant de continuer.
+              {t(locale, "mfa.enforcementBackupNotice")}
             </p>
           </div>
         )}
@@ -214,9 +221,7 @@ function Setup2FAInner() {
             </div>
             <h2 className="text-xl font-bold mb-2">{t(locale, "mfa.enabled")}</h2>
             <p className="text-muted-foreground mb-6">{t(locale, "mfa.setupCompleteDesc")}</p>
-            <Button onClick={handleFinish}>
-              {t(locale, "mfa.goToDashboard")}
-            </Button>
+            <Button onClick={handleFinish}>{t(locale, "mfa.goToDashboard")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -229,9 +234,7 @@ function Setup2FAInner() {
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
           <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
           <p className="text-amber-800 dark:text-amber-200">
-            L'authentification à deux facteurs (2FA) est <strong>obligatoire</strong> pour les
-            comptes Super Admin et Admin Clinique. Veuillez configurer votre application
-            d'authentification pour continuer.
+            {t(locale, "mfa.enforcementSetupNotice")}
           </p>
         </div>
       )}
@@ -359,7 +362,6 @@ function Setup2FAInner() {
     </div>
   );
 }
-
 
 export default function Setup2FAPage() {
   return (

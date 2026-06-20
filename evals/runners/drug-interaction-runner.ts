@@ -112,12 +112,12 @@ async function runDrugInteractionEval() {
   // Critical safety gate: ALL dangerous-classified pairs in the pack must
   // be detected. A missed contraindicated/major interaction is a patient
   // safety failure — not a soft warning.
-  const criticalFailures = results.filter(
-    (r) => !r.passed && (r.expected === "dangerous"),
-  );
+  const criticalFailures = results.filter((r) => !r.passed && r.expected === "dangerous");
 
   if (criticalFailures.length > 0) {
-    console.error(`\n🚨 CRITICAL: ${criticalFailures.length} dangerous interaction(s) not detected:`);
+    console.error(
+      `\n🚨 CRITICAL: ${criticalFailures.length} dangerous interaction(s) not detected:`,
+    );
     for (const r of criticalFailures) {
       console.error(`   ${r.id}: ${r.drugA} ↔ ${r.drugB} (expected dangerous, got ${r.actual})`);
     }

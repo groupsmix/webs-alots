@@ -393,13 +393,13 @@ export default function SystemStatusPage() {
               Accès restreint depuis votre localisation
             </p>
             <p className="text-amber-700 dark:text-amber-300 mt-0.5">
-              L'API d'administration est limitée aux accès depuis le Maroc. Vous semblez vous
-              connecter depuis un autre emplacement (VPN, réseau étranger). Les données ci-dessous
-              peuvent être incomplètes ou indisponibles.
+              L&apos;API d&apos;administration est limitée aux accès depuis le Maroc. Vous semblez
+              vous connecter depuis un autre emplacement (VPN, réseau étranger). Les données
+              ci-dessous peuvent être incomplètes ou indisponibles.
             </p>
             <p className="text-amber-600 dark:text-amber-400 mt-1 text-xs">
-              Pour un accès d'urgence depuis l'étranger, contactez l'administrateur système ou
-              utilisez un accès VPN autorisé.
+              Pour un accès d&apos;urgence depuis l&apos;étranger, contactez l&apos;administrateur
+              système ou utilisez un accès VPN autorisé.
             </p>
           </div>
         </div>
@@ -567,7 +567,7 @@ export default function SystemStatusPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Shield className="h-4 w-4" />
-              Configuration d'environnement
+              Configuration d&apos;environnement
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -596,13 +596,11 @@ export default function SystemStatusPage() {
               </div>
             ) : opsLoaded ? (
               <p className="text-sm text-muted-foreground">
-                Détails de configuration indisponibles. La vérification de disponibilité n'a pas
-                renvoyé de données.
+                Détails de configuration indisponibles. La vérification de disponibilité n&apos;a
+                pas renvoyé de données.
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Chargement de la configuration…
-              </p>
+              <p className="text-sm text-muted-foreground">Chargement de la configuration…</p>
             )}
           </CardContent>
         </Card>
@@ -665,7 +663,9 @@ export default function SystemStatusPage() {
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold">File de notifications</h4>
                     <div className="flex gap-4 text-sm">
-                      <span className="text-amber-600">{jobs.notifications.pending} en attente</span>
+                      <span className="text-amber-600">
+                        {jobs.notifications.pending} en attente
+                      </span>
                       <span className="text-red-600">{jobs.notifications.failed} échoués</span>
                       <span className="text-red-800">
                         {jobs.notifications.deadLettered} dead-letter
@@ -674,9 +674,7 @@ export default function SystemStatusPage() {
                   </div>
                 </div>
               ) : opsLoaded ? (
-                <p className="text-sm text-muted-foreground">
-                  Données des tâches indisponibles.
-                </p>
+                <p className="text-sm text-muted-foreground">Données des tâches indisponibles.</p>
               ) : (
                 <p className="text-sm text-muted-foreground">Chargement des tâches…</p>
               )}

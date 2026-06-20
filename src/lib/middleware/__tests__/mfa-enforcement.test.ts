@@ -6,11 +6,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { enforceMfa } from "../mfa-enforcement";
 
 type Aal = { currentLevel: string | null; nextLevel: string | null };
+type Factor = { status: string };
 
-function mockSupabase(aal: Aal): SupabaseClient {
+function mockSupabase(aal: Aal, totpFactors: Factor[] = [{ status: "verified" }]): SupabaseClient {
   return {
     auth: {
       mfa: {
+        listFactors: vi.fn().mockResolvedValue({ data: { totp: totpFactors } }),
         getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: aal }),
       },
     },
@@ -72,6 +74,30 @@ describe("enforceMfa", () => {
       `${URL_BASE}/admin/settings`,
     );
     expect(result).toBeNull();
+  });
+
+  it("redirects super_admin to enrollment when no verified TOTP factor exists (R1)", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }, []),
+      "super_admin",
+      "/admin",
+      `${URL_BASE}/admin`,
+    );
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe(307);
+    expect(result?.headers.get("Location")).toMatch(/\/setup-2fa\?required=1&next=%2Fadmin$/);
+  });
+
+  it("treats an unverified (mid-enrolment) factor as not enrolled", async () => {
+    const result = await enforceMfa(
+      mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }, [{ status: "unverified" }]),
+      "clinic_admin",
+      "/admin/settings",
+      `${URL_BASE}/admin/settings`,
+    );
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe(307);
+    expect(result?.headers.get("Location")).toMatch(/\/setup-2fa\?required=1&next=/);
   });
 
   it("passes doctor without MFA (not required for role)", async () => {

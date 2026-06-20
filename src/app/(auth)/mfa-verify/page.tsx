@@ -187,14 +187,8 @@ function MfaVerifyInner() {
                   autoComplete="one-time-code"
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || code.length !== 6}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
+              <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Vérifier
               </Button>
               <div className="text-center">
@@ -227,14 +221,8 @@ function MfaVerifyInner() {
                   autoFocus
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading || backupCode.length < 8}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
+              <Button type="submit" className="w-full" disabled={loading || backupCode.length < 8}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Vérifier le code de secours
               </Button>
               <Button

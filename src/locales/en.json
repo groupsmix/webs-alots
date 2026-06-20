@@ -732,6 +732,8 @@
   "mfa.downloadCodes": "Download codes",
   "mfa.enable": "Enable 2FA",
   "mfa.enabled": "2FA enabled",
+  "mfa.enforcementBackupNotice": "Two-factor authentication is mandatory for your role. Save these codes before continuing.",
+  "mfa.enforcementSetupNotice": "Two-factor authentication (2FA) is mandatory for Super Admin and Clinic Admin accounts. Please set up your authenticator app to continue.",
   "mfa.goToDashboard": "Go to dashboard",
   "mfa.invalidCode": "Invalid code. Please try again.",
   "mfa.manualEntry": "Or enter this code manually",
