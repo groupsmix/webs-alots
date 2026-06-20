@@ -1,0 +1,18 @@
+# Oltigo Clinical Knowledge Pack — Support Ticket Triage Taxonomy
+# Version: 1.0.0 | Built: 2026-06-20
+# Must stay in sync with TRIAGE_TAGS in src/lib/ai/triage.ts
+# Columns: tag,label_fr,label_ar,description,urgency_weight
+# urgency_weight: 0.0 (low) → 1.0 (critical) — contributes to urgency scoring
+tag,label_fr,label_ar,description,urgency_weight
+billing,Facturation,الفاتورة,Questions et litiges concernant la facturation et les paiements,0.2
+technical,Problème technique,مشكلة تقنية,Dysfonctionnements techniques sur la plateforme Oltigo,0.4
+onboarding,Intégration / Inscription,تأهيل,Questions liées à l'inscription et à la configuration initiale,0.2
+whatsapp,WhatsApp,واتساب,Problèmes liés à l'intégration ou l'envoi de messages WhatsApp,0.3
+account_access,Accès au compte,الوصول للحساب,Impossibilité d'accéder au compte (mot de passe oublié verrou),0.5
+appointment,Rendez-vous,موعد,Questions relatives à la prise ou gestion de rendez-vous,0.2
+prescription,Ordonnance,وصفة طبية,Demandes et questions concernant les prescriptions médicales,0.4
+lab_results,Résultats d'analyses,نتائج التحاليل,Demandes de résultats de laboratoire ou d'examens complémentaires,0.4
+medical_urgent,Urgence médicale,طوارئ طبية,Signes d'urgence médicale nécessitant une intervention immédiate,1.0
+data_privacy,Confidentialité des données,الخصوصية,Questions relatives à la protection et la confidentialité des données,0.3
+feature_request,Demande de fonctionnalité,طلب ميزة,Suggestions d'amélioration ou demande de nouvelles fonctionnalités,0.1
+general,Général,عام,Questions générales ne correspondant pas aux catégories précédentes,0.1
