@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -43,7 +44,7 @@ import { useToast } from "@/components/ui/toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { logger } from "@/lib/logger";
 import { fetchBillingRecords, type BillingRecord } from "@/lib/super-admin-actions";
-import { getLocalDateStr } from "@/lib/utils";
+import { formatCurrency, formatNumber, getLocalDateStr } from "@/lib/utils";
 
 type StatusFilter = "all" | "paid" | "pending" | "overdue" | "cancelled";
 
@@ -76,9 +77,29 @@ export default function BillingPage() {
     };
   }, [loadRecords]);
 
-  const paidRecords = records.filter((r) => r.status === "paid");
-  const overdueRecords = records.filter((r) => r.status === "overdue");
-  const mrr = records
+  // Derive a human-readable invoice number from the payment UUID + invoice date.
+  // The raw UUID stays available via tooltip/detail for support lookups.
+  const formatInvoiceNumber = (id: string, invoiceDate: string) => {
+    const datePart = (invoiceDate ?? "").slice(0, 7); // YYYY-MM
+    const suffix = id.replace(/-/g, "").slice(-6).toUpperCase();
+    return datePart ? `INV-${datePart}-${suffix}` : `INV-${suffix}`;
+  };
+
+  const filtered = records.filter((r) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      r.clinicName.toLowerCase().includes(q) ||
+      r.id.toLowerCase().includes(q) ||
+      formatInvoiceNumber(r.id, r.invoiceDate).toLowerCase().includes(q);
+    return matchSearch && (statusFilter === "all" || r.status === statusFilter);
+  });
+
+  // KPI figures reflect the active filters/search so the cards stay in sync
+  // with the invoice table below.
+  const paidRecords = filtered.filter((r) => r.status === "paid");
+  const overdueRecords = filtered.filter((r) => r.status === "overdue");
+  const mrr = filtered
     .filter((r) => r.status !== "cancelled")
     .reduce((sum, r) => sum + r.amountDue, 0);
   const arr = mrr * 12;
@@ -87,12 +108,7 @@ export default function BillingPage() {
   const totalRevenue = paidRecords.reduce((sum, r) => sum + r.amountPaid, 0);
   const overdueAmount = overdueRecords.reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
 
-  const filtered = records.filter((r) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q || r.clinicName.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
-    return matchSearch && (statusFilter === "all" || r.status === statusFilter);
-  });
+  const isFilteredView = statusFilter !== "all" || search.trim().length > 0;
 
   function handleExportBillingCSV() {
     const rows = filtered.map((r) => ({
@@ -152,7 +168,10 @@ export default function BillingPage() {
       ),
     );
     setDetailRecord(null);
-    addToast(`Invoice ${record.id} marked as paid`, "success");
+    addToast(
+      `Invoice ${formatInvoiceNumber(record.id, record.invoiceDate)} marked as paid`,
+      "success",
+    );
   }
 
   const statusIcon = (status: string) => {
@@ -213,6 +232,11 @@ export default function BillingPage() {
       {!loading && (
         <>
           {/* KPI Cards */}
+          <p className="text-xs text-muted-foreground mb-2">
+            {isFilteredView
+              ? `Filtered view — ${filtered.length} invoice${filtered.length !== 1 ? "s" : ""} matching current filters`
+              : "Showing all invoices"}
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="p-4">
@@ -220,7 +244,7 @@ export default function BillingPage() {
                   <TrendingUp className="h-4 w-4 text-green-600" />
                   <span className="text-xs text-muted-foreground">MRR</span>
                 </div>
-                <p className="text-2xl font-bold">{mrr.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
                 <p className="text-xs text-muted-foreground">MAD / month</p>
               </CardContent>
             </Card>
@@ -230,7 +254,7 @@ export default function BillingPage() {
                   <DollarSign className="h-4 w-4 text-blue-600" />
                   <span className="text-xs text-muted-foreground">ARR</span>
                 </div>
-                <p className="text-2xl font-bold">{arr.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatNumber(arr)}</p>
                 <p className="text-xs text-muted-foreground">MAD / year</p>
               </CardContent>
             </Card>
@@ -240,7 +264,7 @@ export default function BillingPage() {
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <span className="text-xs text-muted-foreground">Collected</span>
                 </div>
-                <p className="text-2xl font-bold">{totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatNumber(totalRevenue)}</p>
                 <p className="text-xs text-muted-foreground">{paidCount} invoices paid</p>
               </CardContent>
             </Card>
@@ -250,7 +274,7 @@ export default function BillingPage() {
                   <AlertTriangle className="h-4 w-4 text-red-600" />
                   <span className="text-xs text-muted-foreground">Overdue</span>
                 </div>
-                <p className="text-2xl font-bold text-red-600">{overdueAmount.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-red-600">{formatNumber(overdueAmount)}</p>
                 <p className="text-xs text-muted-foreground">{overdueCount} invoices overdue</p>
               </CardContent>
             </Card>
@@ -311,7 +335,9 @@ export default function BillingPage() {
                     {filtered.map((record) => (
                       <tr key={record.id} className="border-b last:border-0 hover:bg-muted/50">
                         <td className="py-3 px-4">
-                          <p className="font-mono text-xs">{record.id}</p>
+                          <p className="font-mono text-xs" title={record.id}>
+                            {formatInvoiceNumber(record.id, record.invoiceDate)}
+                          </p>
                           <p className="text-xs text-muted-foreground md:hidden">
                             {record.dueDate}
                           </p>
@@ -324,11 +350,11 @@ export default function BillingPage() {
                         </td>
                         <td className="py-3 px-4">
                           <p className="font-medium">
-                            {record.amountDue.toLocaleString()} {record.currency}
+                            {formatCurrency(record.amountDue, "fr", record.currency)}
                           </p>
                           {record.amountPaid > 0 && record.amountPaid < record.amountDue && (
                             <p className="text-xs text-muted-foreground">
-                              Paid: {record.amountPaid.toLocaleString()}
+                              Paid: {formatCurrency(record.amountPaid, "fr", record.currency)}
                             </p>
                           )}
                         </td>
@@ -402,11 +428,17 @@ export default function BillingPage() {
         {detailRecord && (
           <DialogContent onClose={() => setDetailRecord(null)} className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Invoice {detailRecord.id}</DialogTitle>
+              <DialogTitle>
+                Invoice {formatInvoiceNumber(detailRecord.id, detailRecord.invoiceDate)}
+              </DialogTitle>
               <DialogDescription>Invoice details for {detailRecord.clinicName}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Reference:</span>{" "}
+                  <span className="font-mono text-xs break-all">{detailRecord.id}</span>
+                </div>
                 <div>
                   <span className="text-muted-foreground">Clinic:</span>{" "}
                   <span className="font-medium">{detailRecord.clinicName}</span>
@@ -420,13 +452,13 @@ export default function BillingPage() {
                 <div>
                   <span className="text-muted-foreground">Amount Due:</span>{" "}
                   <span className="font-medium">
-                    {detailRecord.amountDue.toLocaleString()} {detailRecord.currency}
+                    {formatCurrency(detailRecord.amountDue, "fr", detailRecord.currency)}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Amount Paid:</span>{" "}
                   <span className="font-medium">
-                    {detailRecord.amountPaid.toLocaleString()} {detailRecord.currency}
+                    {formatCurrency(detailRecord.amountPaid, "fr", detailRecord.currency)}
                   </span>
                 </div>
                 <div>
@@ -497,9 +529,11 @@ export default function BillingPage() {
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
               <p className="text-sm font-medium">{reminderRecord.clinicName}</p>
-              <p className="text-xs text-muted-foreground">Invoice: {reminderRecord.id}</p>
+              <p className="text-xs text-muted-foreground" title={reminderRecord.id}>
+                Invoice: {formatInvoiceNumber(reminderRecord.id, reminderRecord.invoiceDate)}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Amount: {reminderRecord.amountDue.toLocaleString()} {reminderRecord.currency}
+                Amount: {formatCurrency(reminderRecord.amountDue, "fr", reminderRecord.currency)}
               </p>
               <p className="text-xs text-red-600">Due: {reminderRecord.dueDate}</p>
             </div>

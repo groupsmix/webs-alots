@@ -56,7 +56,7 @@ import {
   type PricingTierRow,
   type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 type TabView = "tiers" | "features" | "promotions";
 type SystemFilter = "all" | SystemType;
@@ -220,8 +220,8 @@ export default function PricingPage() {
     active: subscriptions.filter((s) => s.status === "active").length,
     trial: subscriptions.filter((s) => s.status === "trial").length,
     pastDue: subscriptions.filter((s) => s.status === "past_due").length,
-    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended")
-      .length,
+    suspended: subscriptions.filter((s) => s.status === "suspended").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled").length,
     total: subscriptions.length,
   };
   const mrr = subscriptions
@@ -461,7 +461,7 @@ export default function PricingPage() {
               <DollarSign className="h-4 w-4 text-green-600" />
               <span className="text-xs text-muted-foreground">MRR</span>
             </div>
-            <p className="text-2xl font-bold">{mrr.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
             <p className="text-xs text-muted-foreground">MAD / mois</p>
           </CardContent>
         </Card>
@@ -492,7 +492,9 @@ export default function PricingPage() {
               <span className="text-xs text-muted-foreground">Impayés</span>
             </div>
             <p className="text-2xl font-bold text-red-600">{stats.pastDue}</p>
-            <p className="text-xs text-muted-foreground">{stats.cancelled} annulés</p>
+            <p className="text-xs text-muted-foreground">
+              {stats.suspended} suspendus, {stats.cancelled} annulés
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -655,7 +657,7 @@ export default function PricingPage() {
                       <CardTitle className="text-lg mt-2">
                         {price > 0 ? (
                           <>
-                            {price.toLocaleString()}{" "}
+                            {formatNumber(price)}{" "}
                             <span className="text-sm font-normal text-muted-foreground">
                               MAD/{billingCycle === "monthly" ? "mois" : "an"}
                             </span>
@@ -704,20 +706,34 @@ export default function PricingPage() {
                         {/* Limits */}
                         <div className="space-y-1.5 mb-3 text-xs text-muted-foreground">
                           <p>
-                            <span className="font-medium text-foreground">
-                              {tier.limits.maxDoctors === -1 ? "Illimité" : tier.limits.maxDoctors}
-                            </span>{" "}
-                            praticien{tier.limits.maxDoctors !== 1 ? "s" : ""}
+                            {tier.limits.maxDoctors === -1 ? (
+                              <span className="font-medium text-foreground">
+                                Praticiens illimités
+                              </span>
+                            ) : (
+                              <>
+                                <span className="font-medium text-foreground">
+                                  {tier.limits.maxDoctors}
+                                </span>{" "}
+                                praticien{tier.limits.maxDoctors !== 1 ? "s" : ""}
+                              </>
+                            )}
                           </p>
                           <p>
-                            <span className="font-medium text-foreground">
-                              {tier.limits.maxPatients === -1
-                                ? "Illimité"
-                                : tier.limits.maxPatients === 0
-                                  ? "—"
-                                  : tier.limits.maxPatients.toLocaleString()}
-                            </span>{" "}
-                            patients
+                            {tier.limits.maxPatients === -1 ? (
+                              <span className="font-medium text-foreground">
+                                Patients illimités
+                              </span>
+                            ) : (
+                              <>
+                                <span className="font-medium text-foreground">
+                                  {tier.limits.maxPatients === 0
+                                    ? "—"
+                                    : tier.limits.maxPatients.toLocaleString()}
+                                </span>{" "}
+                                patients
+                              </>
+                            )}
                           </p>
                           <p>
                             <span className="font-medium text-foreground">
