@@ -26,6 +26,7 @@ export function LiveIncidents() {
 
   useEffect(() => {
     let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     async function probe() {
       try {
@@ -50,11 +51,34 @@ export function LiveIncidents() {
       }
     }
 
-    probe();
-    const interval = setInterval(probe, 60_000);
+    function startPolling() {
+      if (interval) return;
+      probe();
+      interval = setInterval(probe, 60_000);
+    }
+
+    function stopPolling() {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    }
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 

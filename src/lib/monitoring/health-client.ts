@@ -40,7 +40,7 @@ export async function fetchCoreHealth(): Promise<CoreHealthSnapshot> {
   let responseTimeMs: number | null = null;
 
   try {
-    const res = await fetch("/api/admin/health");
+    const res = await fetch("/api/admin/health", { credentials: "include" });
     responseTimeMs = Math.round(performance.now() - start);
     if (res.ok) {
       const json = (await res.json()) as { ok?: boolean; data?: HealthApiData };
