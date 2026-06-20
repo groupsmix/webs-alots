@@ -165,7 +165,7 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
     // Fetch all doctors from active clinics
     const { data: doctors, error: doctorsError } = await supabase
       .from("users")
-      .select("id, name, phone, email, avatar_url, metadata, clinic_id")
+      .select("id, name, phone, avatar_url, metadata, clinic_id")
       .eq("role", "doctor")
       .order("name", { ascending: true });
 

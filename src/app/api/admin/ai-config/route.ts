@@ -1,18 +1,25 @@
 /**
  * Admin AI Configuration API
  *
- * GET  — list all provider configs, feature toggles, and usage stats
+ * GET  — list provider configs, feature toggles, and usage stats
  * PATCH — update a provider config (API key, active state, budget)
  * POST — update feature toggles
  *
- * GET is readable by super_admin and clinic_admin (the clinic admin AI pages
- * at /admin/ai-config and /admin/ai-routing render status, spend, and budget
- * data from it). Writes (PATCH/POST) stay super_admin only because provider
- * configs and feature toggles are platform-global, not per-clinic.
+ * GET is readable by super_admin and clinic_admin, but the response is
+ * role-scoped to prevent clinic admins from seeing platform financials:
+ *
+ *   super_admin  — full provider configs (budgets, usage, operational
+ *                  metadata, has_api_key) + feature toggles + usage aggregates.
+ *   clinic_admin — minimal provider listing (id, display_name, is_active,
+ *                  routing_tier only; no budgets, costs, or key metadata) +
+ *                  feature toggles. usage is always {}.
+ *
+ * Writes (PATCH/POST) stay super_admin only because provider configs and
+ * feature toggles are platform-global, not per-clinic.
  *
  * API keys are encrypted with AES-256-GCM (PHI_ENCRYPTION_KEY)
  * before insert/update via `encryptProviderKey`. Keys are never returned in
- * the GET response — only a `has_api_key` boolean.
+ * the GET response — only a `has_api_key` boolean (super_admin only).
  *
  * Any write invalidates the in-memory config cache so the next /api/ai call
  * picks up the new state immediately on the same instance.
@@ -27,30 +34,13 @@ import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
 
-// ── GET: List all AI configs ──
+// ── GET: List AI configs (role-scoped) ──
 
-async function handleGet(_req: NextRequest, _auth: AuthContext) {
+async function handleGet(_req: NextRequest, auth: AuthContext) {
   const supabase = createUntypedAdminClient("ai-config-list");
+  const isClinicAdmin = auth.profile.role === "clinic_admin";
 
-  const { data: providers, error: provErr } = await supabase // nosemgrep: semgrep.tenant-scoping
-    .from("ai_provider_configs")
-    .select(
-      "id, provider, display_name, api_key_encrypted, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, input_tokens_this_month, output_tokens_this_month, cost_this_month_cents, rate_limited_until, last_error, last_used_at, created_at, updated_at",
-    )
-    .order("routing_tier", { ascending: false });
-
-  if (provErr) {
-    // Table may not exist yet if migration hasn't run
-    if (provErr.code === "42P01" || provErr.message?.includes("does not exist")) {
-      return apiSuccess({ providers: [], toggles: [], usage: {} });
-    }
-    logger.error("Failed to fetch AI provider configs", {
-      context: "ai-config",
-      error: provErr.message,
-    });
-    return apiError("Failed to fetch AI configurations", 500);
-  }
-
+  // ── Feature toggles — returned to both roles ──
   const { data: toggles, error: toggleErr } = await supabase // nosemgrep: semgrep.tenant-scoping
     .from("ai_feature_toggles")
     .select("id, feature_key, display_name, description, is_enabled, min_tier")
@@ -62,6 +52,47 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
       error: toggleErr.message,
     });
     return apiError("Failed to fetch feature toggles", 500);
+  }
+
+  // ── clinic_admin: minimal provider listing, no platform financials ──
+  if (isClinicAdmin) {
+    const { data: providers, error: provErr } = await supabase // nosemgrep: semgrep.tenant-scoping
+      .from("ai_provider_configs")
+      .select("id, provider, display_name, is_active, routing_tier")
+      .order("routing_tier", { ascending: false });
+
+    if (provErr) {
+      if (provErr.code === "42P01" || provErr.message?.includes("does not exist")) {
+        return apiSuccess({ providers: [], toggles: toggles ?? [], usage: {} });
+      }
+      logger.error("Failed to fetch AI provider configs", {
+        context: "ai-config",
+        error: provErr.message,
+      });
+      return apiError("Failed to fetch AI configurations", 500);
+    }
+
+    return apiSuccess({ providers: providers ?? [], toggles: toggles ?? [], usage: {} });
+  }
+
+  // ── super_admin: full response including platform financials ──
+  const { data: providers, error: provErr } = await supabase // nosemgrep: semgrep.tenant-scoping
+    .from("ai_provider_configs")
+    .select(
+      "id, provider, display_name, api_key_encrypted, is_active, routing_tier, fallback_provider, monthly_budget_cents, requests_this_month, tokens_this_month, input_tokens_this_month, output_tokens_this_month, cost_this_month_cents, rate_limited_until, last_error, last_used_at, created_at, updated_at",
+    )
+    .order("routing_tier", { ascending: false });
+
+  if (provErr) {
+    // Table may not exist yet if migration hasn't run
+    if (provErr.code === "42P01" || provErr.message?.includes("does not exist")) {
+      return apiSuccess({ providers: [], toggles: toggles ?? [], usage: {} });
+    }
+    logger.error("Failed to fetch AI provider configs", {
+      context: "ai-config",
+      error: provErr.message,
+    });
+    return apiError("Failed to fetch AI configurations", 500);
   }
 
   // Aggregate per-provider usage stats for the current month from logs.
