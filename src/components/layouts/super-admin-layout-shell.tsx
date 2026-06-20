@@ -85,74 +85,74 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     key: "overview",
-    label: "Overview",
+    label: "Aperçu",
     icon: LayoutDashboard,
     items: [
-      { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/super-admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
       {
         href: "/super-admin/analytics",
         label: "Analytics",
         icon: BarChart3,
         children: [
-          { href: "/super-admin/analytics", label: "Overview", icon: BarChart3 },
+          { href: "/super-admin/analytics", label: "Vue d'ensemble", icon: BarChart3 },
           {
             href: "/super-admin/analytics/compare",
-            label: "Clinic Comparison",
+            label: "Comparaison cliniques",
             icon: GitCompareArrows,
           },
-          { href: "/super-admin/analytics/churn", label: "Churn Detection", icon: AlertTriangle },
+          { href: "/super-admin/analytics/churn", label: "Détection churn", icon: AlertTriangle },
         ],
       },
     ],
   },
   {
     key: "clinics",
-    label: "Clinics",
+    label: "Cliniques",
     icon: Building2,
     items: [
-      { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
-      { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
-      { href: "/super-admin/team", label: "Team", icon: Users },
+      { href: "/super-admin/clinics", label: "Toutes les cliniques", icon: Building2 },
+      { href: "/super-admin/onboarding", label: "Onboarding clients", icon: UserPlus },
+      { href: "/super-admin/team", label: "Équipe", icon: Users },
     ],
   },
   {
     key: "revenue",
-    label: "Revenue",
+    label: "Revenus",
     icon: CreditCard,
     items: [
       {
         href: "/super-admin/billing",
-        label: "Billing",
+        label: "Facturation",
         icon: CreditCard,
         children: [
           {
             href: "/super-admin/billing/revenue",
-            label: "Revenue Overview",
+            label: "Vue revenus",
             icon: TrendingUp,
           },
           {
             href: "/super-admin/billing/forecast",
-            label: "Forecast",
+            label: "Prévisions",
             icon: BarChart3,
           },
         ],
       },
-      { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
-      { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
-      { href: "/super-admin/referrals", label: "Medical Referrals", icon: Gift },
-      { href: "/super-admin/referral-program", label: "Referral Program", icon: Gift },
-      { href: "/super-admin/usage", label: "Usage Metrics", icon: Gauge },
-      { href: "/super-admin/usage-dashboard", label: "Usage Dashboard", icon: BarChart3 },
+      { href: "/super-admin/pricing", label: "Tarifs & Offres", icon: DollarSign },
+      { href: "/super-admin/subscriptions", label: "Abonnements", icon: Receipt },
+      { href: "/super-admin/referrals", label: "Références méd.", icon: Gift },
+      { href: "/super-admin/referral-program", label: "Prog. parrainage", icon: Gift },
+      { href: "/super-admin/usage", label: "Métriques usage", icon: Gauge },
+      { href: "/super-admin/usage-dashboard", label: "Dashboard usage", icon: BarChart3 },
     ],
   },
   {
     key: "content",
-    label: "Content",
+    label: "Contenu",
     icon: FileText,
     items: [
-      { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
-      { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
-      { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
+      { href: "/super-admin/announcements", label: "Annonces", icon: Megaphone },
+      { href: "/super-admin/templates", label: "Modèles", icon: FileText },
+      { href: "/super-admin/features", label: "Fonctionnalités", icon: ToggleRight },
       { href: "/super-admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
     ],
   },
@@ -162,23 +162,23 @@ const navGroups: NavGroup[] = [
     label: "Intelligence",
     icon: Bot,
     items: [
-      { href: "/super-admin/builder", label: "AI Builder", icon: Sparkles },
-      { href: "/super-admin/agents", label: "AI Agents", icon: Bot },
-      { href: "/super-admin/ai-team", label: "AI Team", icon: MessageSquare },
-      { href: "/super-admin/agent-builder", label: "Website Builder", icon: Wand2 },
+      { href: "/super-admin/builder", label: "Constructeur IA", icon: Sparkles },
+      { href: "/super-admin/agents", label: "Agents IA", icon: Bot },
+      { href: "/super-admin/ai-team", label: "Équipe IA", icon: MessageSquare },
+      { href: "/super-admin/agent-builder", label: "Constructeur web", icon: Wand2 },
       { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
-      { href: "/super-admin/settings/ai", label: "AI Settings", icon: Settings },
+      { href: "/super-admin/settings/ai", label: "Paramètres IA", icon: Settings },
     ],
   },
   {
     key: "operations",
-    label: "Operations",
+    label: "Opérations",
     icon: Activity,
     items: [
-      { href: "/super-admin/system", label: "System Status", icon: Activity },
-      { href: "/super-admin/system/health", label: "Health Metrics", icon: HeartPulse },
-      { href: "/super-admin/system/sla", label: "Uptime SLA", icon: Shield },
-      { href: "/super-admin/compliance", label: "Compliance", icon: Scale },
+      { href: "/super-admin/system", label: "Statut système", icon: Activity },
+      { href: "/super-admin/system/health", label: "Métriques santé", icon: HeartPulse },
+      { href: "/super-admin/system/sla", label: "SLA disponibilité", icon: Shield },
+      { href: "/super-admin/compliance", label: "Conformité", icon: Scale },
       { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
     ],
   },
@@ -404,10 +404,10 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
   const [cmdItems, setCmdItems] = useState<CommandPaletteItem[]>([]);
 
   const superAdminMobileTabs: MobileTabItem[] = [
-    { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/super-admin/clinics", label: "Clinics", icon: Building2 },
-    { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
-    { href: "/super-admin/subscriptions", label: "Subs", icon: Receipt },
+    { href: "/super-admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+    { href: "/super-admin/clinics", label: "Cliniques", icon: Building2 },
+    { href: "/super-admin/billing", label: "Facturation", icon: CreditCard },
+    { href: "/super-admin/subscriptions", label: "Abonnts", icon: Receipt },
   ];
   const mountedRef = useRef(true);
 
@@ -589,8 +589,8 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           <div className="flex items-center gap-2 mb-6">
             <OltigoMonogram size="sm" />
             <div>
-              <h2 className="text-sm font-semibold">Master Control</h2>
-              <p className="text-[10px] text-muted-foreground">Super Admin Panel</p>
+              <h2 className="text-sm font-semibold">Tableau de contrôle</h2>
+              <p className="text-[10px] text-muted-foreground">Super Admin</p>
             </div>
           </div>
 
@@ -753,7 +753,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <OltigoMonogram size="sm" />
-                Master Control
+                Tableau de contrôle
               </SheetTitle>
             </SheetHeader>
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}

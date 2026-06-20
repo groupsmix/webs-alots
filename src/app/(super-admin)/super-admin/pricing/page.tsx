@@ -21,6 +21,7 @@ import {
   History,
   Tag,
   Plus,
+  Copy,
   Trash2,
   Calendar,
   Percent,
@@ -57,6 +58,15 @@ import {
   type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 type TabView = "tiers" | "features" | "promotions";
 type SystemFilter = "all" | SystemType;
@@ -291,6 +301,32 @@ export default function PricingPage() {
 
   function cancelEditTier() {
     setEditingTierId(null);
+  }
+
+  // S9: duplicate a tier so admins can create a new tier based on an existing one
+  function duplicateTier(tier: PricingTierRow) {
+    const newId = `dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const duplicated: PricingTierRow = {
+      ...tier,
+      id: newId,
+      slug: `${tier.slug}-copie` as TierSlug,
+      name: `Copie de ${tier.name}`,
+      popular: false, // only one tier can be "Populaire"
+    };
+    setTiers((prev) => [...prev, duplicated]);
+    // immediately enter edit mode so the admin can rename & adjust price
+    setEditingTierId(newId);
+    setEditName(duplicated.name);
+    const price = duplicated.pricing[selectedSystem]?.[billingCycle] ?? 0;
+    setEditPriceMin(String(price));
+    setEditPriceMax(String(price));
+    setEditFeatures(
+      duplicated.features
+        .filter((f) => f.included)
+        .map((f) => f.label)
+        .join("\n"),
+    );
+    addToast(`Tier "Copie de ${tier.name}" créé — modifiez et enregistrez`, "success");
   }
 
   function requestSaveTier() {
@@ -578,6 +614,78 @@ export default function PricingPage() {
             </div>
           </div>
 
+          {/* S7: Price comparison bar chart — shows tier prices side-by-side for
+              the active system type + billing cycle. Helps admins instantly spot
+              tier positioning gaps and pricing outliers (e.g. SaaS < Premium). */}
+          {(() => {
+            const chartData = tiers
+              .filter((t) => (t.pricing[selectedSystem]?.[billingCycle] ?? 0) >= 0)
+              .map((t) => ({
+                name: t.name,
+                price: t.pricing[selectedSystem]?.[billingCycle] ?? 0,
+                popular: t.popular,
+                slug: t.slug,
+              }));
+            if (chartData.every((d) => d.price === 0)) return null;
+            return (
+              <div className="rounded-xl border bg-card p-4 mb-6">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
+                  Comparaison des prix —{" "}
+                  {systemTypeLabels[selectedSystem]} ·{" "}
+                  {billingCycle === "monthly" ? "Mensuel" : "Annuel"}
+                </p>
+                <ResponsiveContainer width="100%" height={130}>
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                    barCategoryGap="28%"
+                  >
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={46}
+                      tickFormatter={(v: number) =>
+                        v === 0 ? "Gratuit" : `${(v / 1000).toFixed(0)}k`
+                      }
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        value === 0 ? "Gratuit" : formatCurrency(value, "fr", "MAD"),
+                        "Prix",
+                      ]}
+                      labelStyle={{ fontSize: 11 }}
+                      contentStyle={{ fontSize: 11 }}
+                      cursor={{ fill: "hsl(var(--muted))" }}
+                    />
+                    <Bar dataKey="price" radius={[3, 3, 0, 0]}>
+                      {chartData.map((entry, i) => (
+                        <Cell
+                          key={`cell-${i}`}
+                          fill={
+                            entry.popular
+                              ? "hsl(var(--primary))"
+                              : "hsl(var(--primary) / 0.45)"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                  La barre en couleur pleine = tier{" "}
+                  <span className="font-medium">Populaire</span>
+                </p>
+              </div>
+            );
+          })()}
+
           {/* Pricing Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {tiers.map((tier) => {
@@ -614,15 +722,26 @@ export default function PricingPage() {
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-muted-foreground">{subCount} clients</span>
                         {!isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => startEditTier(tier)}
-                            title="Edit tier"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => duplicateTier(tier)}
+                              title="Dupliquer ce tier"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => startEditTier(tier)}
+                              title="Edit tier"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
