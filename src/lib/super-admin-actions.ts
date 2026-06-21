@@ -19,6 +19,7 @@ import {
 } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
+import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
@@ -111,6 +112,22 @@ export interface CreateUserInput {
   email?: string;
 }
 
+/**
+ * Result of {@link createUser}. Extends the raw DB row with onboarding-relevant
+ * status so the wizard can tell the operator the truth about each account:
+ *   - `authCreated`  — a Supabase Auth login account exists for this staff
+ *   - `inviteSent`   — the set-your-password invitation email was delivered
+ *   - `inviteError`  — why the invite could not be sent (when `inviteSent` is false)
+ *
+ * Staff DO NOT receive a shared/default password — they set their own via the
+ * invitation link. The wizard must therefore never display a password.
+ */
+export interface CreateUserResult extends UserRow {
+  authCreated: boolean;
+  inviteSent: boolean;
+  inviteError?: string;
+}
+
 export interface CreateServiceInput {
   clinic_id: string;
   name: string;
@@ -135,17 +152,26 @@ interface _CreateTimeSlotInput {
 export async function createClinic(input: CreateClinicInput): Promise<ClinicRow> {
   const supabase = await rawClient();
   const cfg = input.config ?? {};
+
+  // Validate the subdomain BEFORE inserting (Audit #5). This mirrors the DB
+  // trigger (migration 00171) but fails early with a clear, operator-facing
+  // message instead of leaking a raw Postgres constraint error to the UI.
+  if (input.subdomain) {
+    assertAllowedSubdomain(input.subdomain);
+  }
+
   const { data, error } = await supabase
     .from("clinics")
     .insert({
       name: input.name,
       type: input.type,
       tier: input.tier,
-      // QA root-cause fix: always persist the caller-supplied status so new
-      // clinics are created as 'active' by default, not the DB column default
-      // which is 'suspended'. Without this, every onboarding-created clinic
-      // immediately appeared suspended in the All Clinics list.
-      status: input.status ?? "active",
+      // Lifecycle (Audit #3): a freshly-created clinic is NOT live until its
+      // onboarding completes. We default to 'inactive' so an abandoned wizard
+      // never leaves a publicly-resolvable but empty tenant. The wizard calls
+      // `activateClinic()` on the final step to flip it to 'active'. Callers
+      // may still pass an explicit status to override (e.g. data imports).
+      status: input.status ?? "inactive",
       config: cfg as Json,
       subdomain: input.subdomain ?? null,
       // Also set direct columns so public branding queries work
@@ -159,7 +185,9 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to create clinic: ${error.message}`);
+  if (error) {
+    throw new Error(mapClinicWriteError(error, input.subdomain));
+  }
 
   await syncClinicOnboardingState({
     supabase,
@@ -174,6 +202,45 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
   });
 
   return data as ClinicRow;
+}
+
+/**
+ * Translate a Postgres error from a clinics INSERT/UPDATE into a clear,
+ * operator-facing message. Avoids the previous misleading "subdomain may
+ * already be in use" catch-all that masked CHECK-constraint (invalid type)
+ * and other failures (Audit #2).
+ */
+function mapClinicWriteError(
+  error: { code?: string; message: string },
+  subdomain?: string | null,
+): string {
+  // 23505 = unique_violation (subdomain already taken)
+  if (error.code === "23505" || /duplicate key|unique constraint/i.test(error.message)) {
+    return subdomain
+      ? `The subdomain "${subdomain}" is already in use. Please choose another.`
+      : "A clinic with these details already exists.";
+  }
+  // 23514 = check_violation (invalid type/tier/status, or reserved subdomain)
+  if (error.code === "23514" || /check constraint|violates check/i.test(error.message)) {
+    return "Invalid clinic details: the clinic type, tier, or subdomain is not allowed.";
+  }
+  return `Failed to create clinic: ${error.message}`;
+}
+
+/**
+ * Flip a clinic to 'active' — used by the onboarding wizard once setup is
+ * complete (Audit #3). Idempotent and restricted to super_admin via rawClient.
+ */
+export async function activateClinic(clinicId: string): Promise<void> {
+  const supabase = await rawClient();
+  const { data, error } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin activates a specific clinic by id
+    .update({ status: "active" })
+    .eq("id", clinicId)
+    .select("subdomain")
+    .single();
+  if (error) throw new Error(`Failed to activate clinic: ${error.message}`);
+  if (data?.subdomain) invalidateSubdomainCache(data.subdomain as string);
 }
 
 export async function fetchClinics(): Promise<ClinicRow[]> {
@@ -580,7 +647,7 @@ export async function updateSubscriptionStatus(
  * inserted into public.users (without auth_id) so onboarding doesn't break.
  * A warning is logged in that case.
  */
-export async function createUser(input: CreateUserInput): Promise<UserRow> {
+export async function createUser(input: CreateUserInput): Promise<CreateUserResult> {
   const supabase = await rawClient();
   let authId: string | null = null;
 
@@ -639,126 +706,164 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   // and no clinic. So whenever we created (or matched) an auth account above,
   // a users row for this auth_id ALREADY EXISTS and already holds this email.
   //
-  // Because users.email has a UNIQUE index (migration 00068 D-03,
-  // `users_email_lower_uq`), inserting a SECOND row with the same email would
-  // fail with a duplicate-key error — which, thrown from this Server Action,
-  // surfaces in the browser as the generic "An error occurred in the Server
-  // Components render" message in production.
+  // Because users.email has a UNIQUE index (migration 00068 D-03), inserting a
+  // SECOND row with the same email fails with a duplicate-key error. So we
+  // UPDATE the trigger-created row in place instead of inserting a duplicate.
   //
-  // The correct behaviour is therefore to UPDATE the trigger-created row in
-  // place with the staff's real role/clinic/name instead of inserting a
-  // duplicate. (A previous revision split this into two blocks, the first of
-  // which mis-classified the trigger row as "already taken by another user"
-  // and nulled authId, turning the update path into dead code and causing the
-  // duplicate INSERT — and the crash.)
+  // All paths below converge on a single `userRow`, after which we send EXACTLY
+  // ONE invitation email. (A previous revision returned early from the update
+  // and duplicate-recovery paths, so in production — where the service role key
+  // is set and the trigger path is taken — staff never received an invite email
+  // and could not log in. Audit #10.)
+  let userRow: UserRow;
+
+  let triggerRowId: string | null = null;
   if (authId) {
+    // nosemgrep: tenant-scoping -- auth_id-keyed lookup of the trigger-created row
     const { data: existingRow } = await supabase
       .from("users")
       .select("id")
       .eq("auth_id", authId)
       .maybeSingle();
+    triggerRowId = existingRow?.id ?? null;
+  }
 
-    if (existingRow) {
-      // The auth trigger inserts this row with clinic_id = NULL, so it cannot be
-      // filtered by clinic_id; the row is uniquely identified by the just-created
-      // auth_id. We are assigning the clinic here, not querying across tenants.
-      // nosemgrep: tenant-scoping
-      const { data: updated, error: updateError } = await supabase
-        .from("users")
-        .update({
-          clinic_id: input.clinic_id,
-          role: input.role,
-          name: input.name,
-          phone: input.phone ?? null,
-          email: input.email ?? null,
-        })
-        .eq("auth_id", authId)
-        .select()
-        .single();
+  if (authId && triggerRowId) {
+    // The auth trigger inserts this row with clinic_id = NULL, so it cannot be
+    // filtered by clinic_id; the row is uniquely identified by the just-created
+    // auth_id. We are assigning the clinic here, not querying across tenants.
+    // nosemgrep: tenant-scoping
+    const { data: updated, error: updateError } = await supabase
+      .from("users")
+      .update({
+        clinic_id: input.clinic_id,
+        role: input.role,
+        name: input.name,
+        phone: input.phone ?? null,
+        email: input.email ?? null,
+      })
+      .eq("auth_id", authId)
+      .select()
+      .single();
 
-      if (updateError) throw new Error(`Failed to update user: ${updateError.message}`);
-      return updated as UserRow;
+    if (updateError) throw new Error(`Failed to update user: ${updateError.message}`);
+    userRow = updated as UserRow;
+  } else {
+    const { data, error } = await supabase
+      .from("users")
+      .insert({
+        clinic_id: input.clinic_id,
+        role: input.role,
+        name: input.name,
+        phone: input.phone ?? null,
+        email: input.email ?? null,
+        ...(authId ? { auth_id: authId } : {}),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Recover gracefully if a row with this email already exists (e.g. the
+      // auth trigger created it, or the same staff email was onboarded before).
+      // Scoped to this clinic on purpose: we only relink a row that already
+      // belongs to input.clinic_id. If the email belongs to another tenant, the
+      // filter matches nothing and the original error is surfaced — we never
+      // reassign a user across clinics (tenant isolation, AGENTS.md rule #1).
+      const isDuplicate =
+        error.code === "23505" ||
+        /duplicate key|already exists|unique constraint/i.test(error.message);
+      let recovered: UserRow | null = null;
+      if (isDuplicate && input.email) {
+        const { data: updated } = await supabase
+          .from("users")
+          .update({
+            clinic_id: input.clinic_id,
+            role: input.role,
+            name: input.name,
+            phone: input.phone ?? null,
+            ...(authId ? { auth_id: authId } : {}),
+          })
+          .eq("email", input.email)
+          .eq("clinic_id", input.clinic_id)
+          .select()
+          .single();
+        recovered = (updated as UserRow | null) ?? null;
+      }
+      if (!recovered) throw new Error(`Failed to create user: ${error.message}`);
+      userRow = recovered;
+    } else {
+      userRow = data as UserRow;
     }
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .insert({
-      clinic_id: input.clinic_id,
-      role: input.role,
-      name: input.name,
-      phone: input.phone ?? null,
-      email: input.email ?? null,
-      ...(authId ? { auth_id: authId } : {}),
-    })
-    .select()
-    .single();
+  // ---- Send the set-your-password invitation email (exactly once) ----
+  // Staff set their OWN password via this link — there is no shared/default
+  // password. `inviteSent`/`inviteError` are surfaced to the wizard so the
+  // operator knows the real access state of each account (Audit #1/#10).
+  let inviteSent = false;
+  let inviteError: string | undefined;
 
-  if (error) {
-    // Recover gracefully if a row with this email already exists (e.g. the
-    // auth trigger created it, or the same staff email was onboarded before).
-    // The users.email UNIQUE index rejects the duplicate with code 23505;
-    // instead of crashing, update the existing row so onboarding is idempotent.
-    // Scoped to this clinic on purpose: we only relink a row that already
-    // belongs to input.clinic_id. If the email belongs to another tenant, the
-    // filter matches nothing and the original error is surfaced — we never
-    // reassign a user across clinics (tenant isolation, AGENTS.md rule #1).
-    const isDuplicate =
-      error.code === "23505" ||
-      /duplicate key|already exists|unique constraint/i.test(error.message);
-    if (isDuplicate && input.email) {
-      const { data: updated, error: updateError } = await supabase
-        .from("users")
-        .update({
-          clinic_id: input.clinic_id,
-          role: input.role,
-          name: input.name,
-          phone: input.phone ?? null,
-          ...(authId ? { auth_id: authId } : {}),
-        })
-        .eq("email", input.email)
-        .eq("clinic_id", input.clinic_id)
-        .select()
-        .single();
-
-      if (!updateError && updated) return updated as UserRow;
-    }
-    throw new Error(`Failed to create user: ${error.message}`);
-  }
-
-  // Send welcome/password-reset email so staff can set their own password
   if (input.email) {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
-      const admin = createAdminClient("super_admin");
-      const { data: resetLink } = await admin.auth.admin.generateLink({
-        type: "recovery",
-        email: input.email,
-        options: {
-          redirectTo: `${siteUrl}/login?reset=true`,
-        },
-      });
 
-      const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
+      // Resolve the real clinic name for the email (Audit #4 — previously the
+      // clinic UUID was passed as the clinic name).
+      const { data: clinicRow } = await supabase
+        .from("clinics") // nosemgrep: tenant-scoping — fetch the staff member's own clinic name by id
+        .select("name")
+        .eq("id", input.clinic_id)
+        .maybeSingle();
+      const clinicName = ((clinicRow?.name as string | undefined) || "").trim() || "your clinic";
 
-      const template = staffWelcomeEmail({
-        staffName: input.name,
-        clinicName: input.clinic_id,
-        email: input.email,
-        loginUrl,
-        role: input.role,
-      });
-      await sendEmail({ to: input.email, ...template });
+      if (!authId || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        inviteError = "Login is not enabled — set SUPABASE_SERVICE_ROLE_KEY to create accounts.";
+      } else {
+        const admin = createAdminClient("super_admin");
+        const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
+          type: "recovery",
+          email: input.email,
+          options: {
+            redirectTo: `${siteUrl}/login?reset=true`,
+          },
+        });
+
+        if (linkError) {
+          inviteError = linkError.message;
+        } else {
+          const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
+          const template = staffWelcomeEmail({
+            staffName: input.name,
+            clinicName,
+            email: input.email,
+            loginUrl,
+            role: input.role,
+          });
+          const result = await sendEmail({ to: input.email, ...template });
+          inviteSent = result.success;
+          if (!result.success) inviteError = result.error;
+        }
+      }
     } catch (emailErr) {
-      logger.warn("Failed to send welcome email to staff", {
+      inviteError =
+        emailErr instanceof Error ? emailErr.message : "Failed to send invitation email";
+    }
+
+    if (!inviteSent) {
+      logger.warn("Staff invitation email not sent", {
         context: "super-admin-actions",
         email: input.email,
-        error: emailErr,
+        error: inviteError,
       });
     }
   }
 
-  return data as UserRow;
+  return {
+    ...userRow,
+    authCreated: Boolean(authId),
+    inviteSent,
+    inviteError,
+  };
 }
 
 // ---------- Service CRUD ----------

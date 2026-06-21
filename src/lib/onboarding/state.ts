@@ -142,28 +142,20 @@ export async function syncClinicOnboardingState({
     payload.last_nudge_at = lastNudgeAt;
   }
 
-  if (existingRow) {
-    const { error: updateError } = await table.update(payload).eq("id", existingRow.id);
-    if (updateError) {
-      logger.warn("Failed to update onboarding state", {
-        context: "onboarding/state",
-        clinicId,
-        error: updateError.message,
-      });
-    }
-    return;
-  }
+  // Single race-safe write keyed on the unique clinic_id index (migration
+  // 00195). Concurrent calls can no longer create duplicate onboarding rows —
+  // the second becomes an UPDATE instead of a second INSERT (Audit #11). We
+  // still read `existingRow` above to merge completed_steps / nudge_count.
+  const { error: upsertError } = await table.upsert(
+    { ...payload, ...(existingRow ? {} : { created_at: now }) },
+    { onConflict: "clinic_id" },
+  );
 
-  const { error: insertError } = await table.insert({
-    ...payload,
-    created_at: now,
-  });
-
-  if (insertError) {
-    logger.warn("Failed to create onboarding state", {
+  if (upsertError) {
+    logger.warn("Failed to upsert onboarding state", {
       context: "onboarding/state",
       clinicId,
-      error: insertError.message,
+      error: upsertError.message,
     });
   }
 }
