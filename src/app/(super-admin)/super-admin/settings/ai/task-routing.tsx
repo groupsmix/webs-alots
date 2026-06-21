@@ -1,9 +1,10 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: same i18n posture as page.tsx */
 "use client";
 
-import { Loader2, Route } from "lucide-react";
+import { AlertTriangle, Loader2, Route } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -50,9 +51,11 @@ export function TaskRouting() {
   const [models, setModels] = useState<Record<string, string[]>>({});
   const [migrated, setMigrated] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    setLoadFailed(false);
     try {
       const res = await fetch("/api/admin/ai-task-config");
       const json = (await res.json()) as {
@@ -63,9 +66,11 @@ export function TaskRouting() {
         setTasks(json.data.tasks);
         setModels(json.data.models);
         setMigrated(json.data.migrated);
+      } else {
+        setLoadFailed(true);
       }
     } catch {
-      // degraded — section shows empty state
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -126,6 +131,42 @@ export function TaskRouting() {
             <p className="text-sm text-muted-foreground">
               The <span className="font-mono">ai_task_configs</span> migration has not been applied
               yet. Run <span className="font-mono">supabase db push</span> to enable task routing.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI-4: explicit failure/empty states instead of a blank section. */}
+      {loadFailed && (
+        <Card className="border-destructive/30">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="text-sm font-medium">Couldn&apos;t load task routing</p>
+                <p className="text-xs text-muted-foreground">
+                  The routing config service was unreachable (this can also be a region restriction
+                  on <span className="font-mono">/api/admin</span>). No routes can be shown or
+                  changed until it loads.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => void fetchData()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!loadFailed && migrated && tasks.length === 0 && (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Route className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm font-medium">No task routes configured</p>
+            <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+              Task routes are seeded with the <span className="font-mono">ai_task_configs</span>{" "}
+              migration. Once present, each task type appears here so you can pin a provider/model
+              or leave it on Auto.
             </p>
           </CardContent>
         </Card>
