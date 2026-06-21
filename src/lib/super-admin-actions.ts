@@ -380,6 +380,79 @@ export async function updateClinicStatus(
   }
 }
 
+/**
+ * Persist a subscription status change for the super-admin Subscriptions view.
+ *
+ * A "subscription" is derived from the clinic's lifecycle `status`
+ * (see `fetchClientSubscriptions`), so persisting a subscription action maps to
+ * the clinic's `status` column:
+ *   - `activate` -> `"active"`
+ *   - `suspend`  -> `"suspended"`
+ *   - `cancel`   -> `"inactive"` (rendered as "cancelled" in the subscriptions UI)
+ *
+ * Unlike `updateClinicStatus`, this intentionally does NOT send clinic-lifecycle
+ * emails: this is a billing/subscription admin operation (often run in bulk),
+ * and that helper's activate/suspend email branch would mislabel a "cancel" as
+ * an activation. The change is audit-logged to `activity_logs` and invalidates
+ * the subdomain cache so middleware reflects the new status immediately.
+ */
+export async function updateSubscriptionStatus(
+  clinicId: string,
+  action: "activate" | "suspend" | "cancel",
+): Promise<void> {
+  const supabase = await rawClient();
+
+  const STATUS_BY_ACTION = {
+    activate: "active",
+    suspend: "suspended",
+    cancel: "inactive",
+  } as const;
+  const AUDIT_BY_ACTION = {
+    activate: { action: "subscription_activated", verb: "activated" },
+    suspend: { action: "subscription_suspended", verb: "suspended" },
+    cancel: { action: "subscription_cancelled", verb: "cancelled" },
+  } as const;
+
+  const status = STATUS_BY_ACTION[action];
+
+  // Fetch clinic for cache invalidation + audit context.
+  const { data: clinic } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin updates a specific clinic by id
+    .select("id, name, subdomain")
+    .eq("id", clinicId)
+    .single();
+
+  const { error } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin updates a specific clinic by id
+    .update({ status })
+    .eq("id", clinicId);
+
+  if (error) throw new Error(`Failed to update subscription status: ${error.message}`);
+
+  // Invalidate subdomain cache so middleware picks up the new status.
+  if (clinic?.subdomain) {
+    invalidateSubdomainCache(clinic.subdomain);
+  }
+
+  // Audit log (non-blocking).
+  try {
+    await supabase.from("activity_logs").insert({
+      action: AUDIT_BY_ACTION[action].action,
+      description: `Subscription for "${clinic?.name ?? clinicId}" ${AUDIT_BY_ACTION[action].verb}`,
+      clinic_id: clinicId,
+      clinic_name: clinic?.name ?? null,
+      type: "admin",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      clinicId,
+      error: err,
+    });
+  }
+}
+
 // ---------- User CRUD ----------
 
 /**

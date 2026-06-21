@@ -54,6 +54,7 @@ import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
+  updateSubscriptionStatus,
   type ClientSubscription,
   type SystemType,
 } from "@/lib/super-admin-actions";
@@ -264,21 +265,54 @@ export default function SubscriptionsPage() {
     });
   }
 
-  function executeBulkAction(action: "activate" | "suspend" | "cancel") {
+  async function executeBulkAction(action: "activate" | "suspend" | "cancel") {
     const ids = [...selectedIds];
+    const targets = subscriptions.filter((s) => ids.includes(s.id));
     const newStatus: ClientSubscription["status"] =
       action === "activate" ? "active" : action === "suspend" ? "suspended" : "cancelled";
+
+    // Optimistic update for snappy UX; the canonical state is reloaded below.
     setSubscriptions((prev) =>
       prev.map((s) => (ids.includes(s.id) ? { ...s, status: newStatus } : s)),
     );
     setSelectedIds(new Set());
     setBulkConfirmOpen(false);
     setPendingBulkAction(null);
-    const past = action === "activate" ? "activés" : action === "suspend" ? "suspendus" : "annulés";
-    addToast(
-      `${ids.length} abonnement${ids.length > 1 ? "s" : ""} ${past}`,
-      action === "cancel" ? "error" : "success",
+
+    // Persist each change (maps to the clinic's lifecycle status server-side).
+    const results = await Promise.allSettled(
+      targets.map((s) => updateSubscriptionStatus(s.clinicId, action)),
     );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const succeeded = targets.length - failed;
+
+    if (failed > 0) {
+      logger.warn("Some subscription status updates failed", {
+        context: "page",
+        action,
+        failed,
+        succeeded,
+      });
+    }
+
+    // Reconcile with the server so the table reflects persisted state (and
+    // rolls back any optimistic change that did not actually persist).
+    await loadSubscriptions();
+
+    const past = action === "activate" ? "activés" : action === "suspend" ? "suspendus" : "annulés";
+    if (failed === 0) {
+      addToast(
+        `${succeeded} abonnement${succeeded > 1 ? "s" : ""} ${past}`,
+        action === "cancel" ? "info" : "success",
+      );
+    } else if (succeeded === 0) {
+      addToast(`Échec de la mise à jour de ${failed} abonnement${failed > 1 ? "s" : ""}`, "error");
+    } else {
+      addToast(
+        `${succeeded} mis à jour, ${failed} en échec — réessayez pour les abonnements restants`,
+        "error",
+      );
+    }
   }
 
   function handleBulkExport() {
