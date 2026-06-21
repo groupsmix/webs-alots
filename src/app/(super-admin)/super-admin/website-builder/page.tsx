@@ -308,7 +308,7 @@ function processUserMessage(
     if (nameMatch) applyName(nameMatch[1]);
 
     const specialtyMatch = input.match(
-      /\b(?:specialty|speciality|specialism|field)\b\s*(?:is|:)?\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]*?)["']?$/i,
+      /\b(?:specialty|speciality|specialism|field)\b(?:\s*(?:is|:))?\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]*?)["']?$/i,
     );
     if (specialtyMatch) {
       applySpecialty(specialtyMatch[1]);
@@ -319,12 +319,12 @@ function processUserMessage(
     }
 
     const cityMatch = input.match(
-      /\b(?:city|located in|location|ville)\b\s*(?:is|:)?\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]*?)["']?$/i,
+      /\b(?:city|located in|location|ville)\b(?:\s*(?:is|:))?\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]*?)["']?$/i,
     );
     if (cityMatch) applyCity(cityMatch[1]);
 
     const phoneMatch = input.match(
-      /\b(?:phone|tel|call|mobile|whatsapp)\b\s*(?:is|:)?\s*([+\d][\d\s()./-]{7,})/i,
+      /\b(?:phone|tel|call|mobile|whatsapp)\b(?:\s*(?:is|:))?\s*([+\d][\d\s()./-]{7,})/i,
     );
     if (phoneMatch) applyPhone(phoneMatch[1]);
   }
