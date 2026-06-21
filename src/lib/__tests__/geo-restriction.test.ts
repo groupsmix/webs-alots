@@ -106,4 +106,39 @@ describe("geo-restriction", () => {
     const req = createMockRequest("/admin/settings", { "cf-ipcountry": "MA" });
     expect(checkGeoRestriction(req)).toBeNull();
   });
+
+  it("returns an HTML page for blocked browser navigations (not a JSON blob)", async () => {
+    delete process.env.ADMIN_GEO_RESTRICTION_ENABLED;
+    process.env.GEO_RESTRICT_ADMIN = "MA";
+    const { checkGeoRestriction } = await import("@/lib/middleware/geo-restriction");
+    const req = createMockRequest("/dashboard", {
+      "cf-ipcountry": "US",
+      accept: "text/html,application/xhtml+xml",
+    });
+    const result = checkGeoRestriction(req);
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe(403);
+    expect(result?.headers.get("content-type")).toContain("text/html");
+    const body = await result!.text();
+    expect(body).toContain("<html");
+    expect(body).toContain("GEO_RESTRICTED");
+    // Surfaces the detected country so the operator understands the cause.
+    expect(body).toContain("US");
+  });
+
+  it("returns JSON for blocked API requests (client error-handling unchanged)", async () => {
+    delete process.env.ADMIN_GEO_RESTRICTION_ENABLED;
+    process.env.GEO_RESTRICT_ADMIN = "MA";
+    const { checkGeoRestriction } = await import("@/lib/middleware/geo-restriction");
+    const req = createMockRequest("/api/admin/usage", {
+      "cf-ipcountry": "US",
+      accept: "application/json",
+    });
+    const result = checkGeoRestriction(req);
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe(403);
+    expect(result?.headers.get("content-type")).toContain("application/json");
+    const json = await result!.json();
+    expect(json.code).toBe("GEO_RESTRICTED");
+  });
 });
