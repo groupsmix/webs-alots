@@ -41,12 +41,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
-import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
+import { checkSubdomain } from "@/lib/reserved-subdomains";
 import {
   createClinic,
   createUser,
   createService,
   createTimeSlotsForDoctor,
+  activateClinic,
   type CreateUserInput,
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
@@ -198,7 +199,15 @@ export default function OnboardingPage() {
   // Step 2: Users
   const [users, setUsers] = useState<UserFormData[]>([{ ...DEFAULT_USER }]);
   const [createdUsers, setCreatedUsers] = useState<
-    { id: string; name: string; role: string; email?: string }[]
+    {
+      id: string;
+      name: string;
+      role: string;
+      email?: string;
+      authCreated: boolean;
+      inviteSent: boolean;
+      inviteError?: string;
+    }[]
   >([]);
 
   // Step 3: Services
@@ -321,7 +330,8 @@ export default function OnboardingPage() {
           .replace(/[^a-z0-9\s-]/g, "")
           .trim()
           .replace(/\s+/g, "-")
-          .replace(/--+/g, "-");
+          .replace(/--+/g, "-")
+          .replace(/^-+|-+$/g, "");
       }
       return next;
     });
@@ -411,9 +421,17 @@ export default function OnboardingPage() {
       setError("Le sous-domaine est requis — la clinique a besoin d'une URL pour être accessible");
       return;
     }
-    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(clinicForm.subdomain)) {
+    // Shared validation (reserved-subdomains.ts) — same rules as the DB trigger
+    // (length 3–40, no reserved words, no hyphen abuse). Gives a clear message
+    // up front instead of a raw DB error after submit (Audit #5).
+    const subdomainRejection = checkSubdomain(clinicForm.subdomain);
+    if (subdomainRejection === "reserved") {
+      setError(`The subdomain "${clinicForm.subdomain}" is reserved. Please choose another.`);
+      return;
+    }
+    if (subdomainRejection === "invalid_format") {
       setError(
-        "Subdomain must contain only lowercase letters, numbers, and hyphens (cannot start or end with a hyphen)",
+        "Subdomain must be 3–40 characters: lowercase letters, numbers, and single hyphens only (cannot start or end with a hyphen).",
       );
       return;
     }
@@ -502,7 +520,15 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
     try {
-      const created: { id: string; name: string; role: string; email?: string }[] = [];
+      const created: {
+        id: string;
+        name: string;
+        role: string;
+        email?: string;
+        authCreated: boolean;
+        inviteSent: boolean;
+        inviteError?: string;
+      }[] = [];
       for (const u of validUsers) {
         const input: CreateUserInput = {
           clinic_id: createdClinicId,
@@ -517,10 +543,18 @@ export default function OnboardingPage() {
           name: user.name,
           role: user.role,
           email: user.email ?? undefined,
+          authCreated: user.authCreated,
+          inviteSent: user.inviteSent,
+          inviteError: user.inviteError,
         });
       }
       setCreatedUsers(created);
-      addToast(`${created.length} staff member(s) created`, "success");
+      const invited = created.filter((u) => u.inviteSent).length;
+      addToast(
+        `${created.length} staff member(s) created` +
+          (invited > 0 ? ` — ${invited} invitation email(s) sent` : ""),
+        "success",
+      );
 
       const doctors = created.filter((u) => u.role === "doctor" || u.role === "clinic_admin");
       setDoctorSlots(
@@ -673,6 +707,10 @@ export default function OnboardingPage() {
       }
       addToast("Time slots configured successfully", "success");
 
+      // Lifecycle (Audit #3): the clinic was created 'inactive'. Now that
+      // onboarding is complete, flip it to 'active' so its subdomain goes live.
+      await activateClinic(createdClinicId);
+
       // Save to recently onboarded
       addRecentClinic({
         id: createdClinicId,
@@ -693,16 +731,31 @@ export default function OnboardingPage() {
     }
   }
 
-  function handleSkipTimeSlots() {
+  async function handleSkipTimeSlots() {
     if (createdClinicId) {
-      addRecentClinic({
-        id: createdClinicId,
-        name: clinicForm.name,
-        type: clinicForm.type || "doctor",
-        tier: clinicForm.tier || "pro",
-        created_at: new Date().toISOString(),
-        status: "active",
-      });
+      setLoading(true);
+      setError(null);
+      try {
+        // Lifecycle (Audit #3): activate the clinic on completion even when
+        // time slots are skipped.
+        await activateClinic(createdClinicId);
+        addRecentClinic({
+          id: createdClinicId,
+          name: clinicForm.name,
+          type: clinicForm.type || "doctor",
+          tier: clinicForm.tier || "pro",
+          created_at: new Date().toISOString(),
+          status: "active",
+        });
+        setCompleted(true);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to activate clinic";
+        setError(msg);
+        addToast(msg, "error");
+      } finally {
+        setLoading(false);
+      }
+      return;
     }
     setCompleted(true);
   }
@@ -977,7 +1030,7 @@ export default function OnboardingPage() {
             <Separator className="my-6" />
             {/* Staff Login Credentials */}
             <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
-              <h3 className="font-semibold mb-3">Staff Login Credentials:</h3>
+              <h3 className="font-semibold mb-3">Staff Access:</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -985,7 +1038,7 @@ export default function OnboardingPage() {
                       <th className="text-left py-2 pr-4 font-medium">Role</th>
                       <th className="text-left py-2 pr-4 font-medium">Name</th>
                       <th className="text-left py-2 pr-4 font-medium">Email (Login)</th>
-                      <th className="text-left py-2 font-medium">Password</th>
+                      <th className="text-left py-2 font-medium">Access</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1000,11 +1053,15 @@ export default function OnboardingPage() {
                             <span className="text-amber-600 italic">No email — cannot log in</span>
                           )}
                         </td>
-                        <td className="py-2 font-mono text-xs">
-                          {u.email ? (
-                            STAFF_DEFAULT_PASSWORD
-                          ) : (
+                        <td className="py-2 text-xs">
+                          {!u.email ? (
                             <span className="text-muted-foreground">—</span>
+                          ) : u.inviteSent ? (
+                            <span className="text-green-600">Invitation email sent</span>
+                          ) : u.authCreated ? (
+                            <span className="text-amber-600">Account created — email not sent</span>
+                          ) : (
+                            <span className="text-destructive">Login not enabled</span>
                           )}
                         </td>
                       </tr>
@@ -1012,9 +1069,17 @@ export default function OnboardingPage() {
                   </tbody>
                 </table>
               </div>
-              {createdUsers.some((u) => u.email) && (
-                <p className="text-xs text-amber-600 mt-3 font-medium">
-                  Important: Please change the default passwords after first login.
+              {createdUsers.some((u) => u.inviteSent) && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Staff set their own password using the secure invitation link emailed to them —
+                  there is no shared default password.
+                </p>
+              )}
+              {createdUsers.some((u) => u.email && !u.inviteSent) && (
+                <p className="text-xs text-amber-600 mt-2 font-medium">
+                  Some invitation emails could not be sent (email provider or service role not
+                  configured). Use Admin → Staff to resend an invite or share a password-reset link
+                  manually.
                 </p>
               )}
               {createdUsers.some((u) => !u.email) && (
@@ -1052,7 +1117,7 @@ export default function OnboardingPage() {
                     >
                       {clinicForm.subdomain}.oltigo.com/login
                     </a>{" "}
-                    using the credentials above.
+                    using the invitation link emailed to them.
                   </p>
                 )}
                 <p>

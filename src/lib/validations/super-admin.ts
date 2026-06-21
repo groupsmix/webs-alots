@@ -13,21 +13,17 @@ const booleanish = z.preprocess((value: unknown) => {
 
 export const clinicProvisionSchema = z.object({
   clinic_name: z.string().min(1).max(200),
-  clinic_type: z.enum([
-    "doctor",
-    "dentist",
-    "pharmacy",
-    "clinic",
-    "hospital",
-    "laboratory",
-    "veterinary",
-    "restaurant",
-  ]),
-  tier: z.enum(["vitrine", "cabinet", "pro", "premium"]),
+  // The clinics.type column (and ClinicType) only supports these three
+  // "system types" — the feature/permission system is keyed off them. Verticals
+  // such as veterinary/laboratory are modelled separately via clinic_types, not
+  // clinics.type, so accepting them here only produced CHECK-constraint crashes
+  // (Audit #2). Keep this enum aligned with ClinicType in types/database.ts.
+  clinic_type: z.enum(["doctor", "dentist", "pharmacy"]),
+  tier: z.enum(["vitrine", "cabinet", "pro", "premium", "saas"]),
   subdomain: z
     .string()
-    .min(1)
-    .max(63)
+    .min(3)
+    .max(40)
     .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/),
   owner_name: z.string().min(1).max(200),
   owner_email: z.string().email().max(254),

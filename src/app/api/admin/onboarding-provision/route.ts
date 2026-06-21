@@ -12,8 +12,12 @@
 import { type NextRequest } from "next/server";
 import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
+import { sendEmail } from "@/lib/email";
+import { staffWelcomeEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
+import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
+import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
 import { safeParse } from "@/lib/validations/helpers";
@@ -24,11 +28,122 @@ const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
 const PROVISIONING_STEPS = [
   { key: "create_clinic", label: "Create clinic record" },
+  { key: "create_owner", label: "Create owner account" },
   { key: "configure_subdomain", label: "Configure subdomain" },
   { key: "setup_tables", label: "Setup database tables" },
   { key: "assign_whatsapp", label: "Assign WhatsApp number" },
   { key: "setup_payment", label: "Setup payment gateway" },
 ] as const;
+
+/**
+ * Create (or relink) the clinic owner's login account and send a
+ * set-your-password invitation. Uses the service-role admin client (RLS
+ * bypass) since this runs in a super-admin-gated route. Without this step a
+ * provisioned clinic had NO way to log in at all (Audit #6).
+ */
+async function provisionOwnerAccount(
+  typedAdmin: ReturnType<typeof createAdminClient>,
+  clinicId: string,
+  clinicName: string,
+  ownerName: string,
+  ownerEmail: string,
+  ownerPhone: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  let authId: string | null = null;
+  try {
+    const oneTimePassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
+    const { data: authUser, error: authError } = await typedAdmin.auth.admin.createUser({
+      email: ownerEmail,
+      password: oneTimePassword,
+      email_confirm: true,
+      user_metadata: {
+        name: ownerName,
+        role: "clinic_admin",
+        clinic_id: clinicId,
+        must_change_password: true,
+      },
+    });
+
+    if (authError) {
+      if (authError.message?.includes("already been registered")) {
+        const { data: list } = await typedAdmin.auth.admin.listUsers();
+        authId = list?.users?.find((u) => u.email === ownerEmail)?.id ?? null;
+      } else {
+        return { ok: false, error: authError.message };
+      }
+    } else {
+      authId = authUser?.user?.id ?? null;
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Auth creation failed" };
+  }
+
+  if (!authId) {
+    return { ok: false, error: "Could not resolve the owner auth account" };
+  }
+
+  // The auth trigger already inserted a users row for this auth_id; update it
+  // in place with the clinic/role rather than inserting a duplicate email.
+  // Service-role client bypasses RLS, so no tenant filter is needed here.
+  // nosemgrep: tenant-scoping -- auth_id-keyed lookup of the trigger-created row (service role)
+  const { data: existing } = await typedAdmin
+    .from("users")
+    .select("id")
+    .eq("auth_id", authId)
+    .maybeSingle();
+
+  if (existing) {
+    // nosemgrep: tenant-scoping -- update is keyed by the unique auth_id (service role)
+    const { error } = await typedAdmin
+      .from("users")
+      .update({
+        clinic_id: clinicId,
+        role: "clinic_admin",
+        name: ownerName,
+        phone: ownerPhone,
+        email: ownerEmail,
+      })
+      .eq("auth_id", authId);
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { error } = await typedAdmin.from("users").insert({
+      clinic_id: clinicId,
+      role: "clinic_admin",
+      name: ownerName,
+      phone: ownerPhone,
+      email: ownerEmail,
+      auth_id: authId,
+    });
+    if (error) return { ok: false, error: error.message };
+  }
+
+  // Send the set-your-password invitation (best effort — provisioning still
+  // succeeds even if the email provider is not configured).
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+    const { data: resetLink } = await typedAdmin.auth.admin.generateLink({
+      type: "recovery",
+      email: ownerEmail,
+      options: { redirectTo: `${siteUrl}/login?reset=true` },
+    });
+    const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
+    const template = staffWelcomeEmail({
+      staffName: ownerName,
+      clinicName,
+      email: ownerEmail,
+      loginUrl,
+      role: "clinic_admin",
+    });
+    await sendEmail({ to: ownerEmail, ...template });
+  } catch (err) {
+    logger.warn("Owner invitation email not sent", {
+      context: "onboarding-provision",
+      error: err,
+    });
+  }
+
+  return { ok: true };
+}
 
 async function updateStep(
   untypedClient: ReturnType<typeof createUntypedAdminClient>,
@@ -91,7 +206,17 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
     const untypedAdmin = createUntypedAdminClient("super_admin");
     let clinicId: string | null = null;
 
-    // Step 1: Create clinic record
+    // Validate the subdomain up front (Audit #5) — clear message instead of a
+    // raw DB trigger / constraint error surfaced later.
+    try {
+      assertAllowedSubdomain(subdomain);
+    } catch (err) {
+      return apiValidationError(err instanceof Error ? err.message : "Invalid subdomain");
+    }
+
+    // Step 1: Create clinic record (as 'inactive' — Audit #3. The clinic is
+    // only flipped to 'active' once all provisioning steps succeed, so a failed
+    // run never leaves a publicly-resolvable but broken tenant.)
     try {
       const { data: clinic, error: clinicError } = await typedAdmin
         .from("clinics")
@@ -100,7 +225,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           type: clinic_type,
           tier,
           subdomain,
-          status: "active",
+          status: "inactive",
           owner_name,
           owner_email,
           phone: owner_phone ?? null,
@@ -131,7 +256,21 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           context: "onboarding-provision",
           error: clinicError,
         });
-        return apiInternalError("Clinic creation failed — subdomain may already be in use");
+        // Map known constraint errors to clear messages instead of the previous
+        // misleading "subdomain may already be in use" catch-all (Audit #2).
+        if (
+          clinicError.code === "23505" ||
+          /duplicate key|unique constraint/i.test(clinicError.message)
+        ) {
+          return apiValidationError(`The subdomain "${subdomain}" is already in use.`);
+        }
+        if (
+          clinicError.code === "23514" ||
+          /check constraint|violates check/i.test(clinicError.message)
+        ) {
+          return apiValidationError("Invalid clinic type, tier, or subdomain.");
+        }
+        return apiInternalError("Clinic creation failed");
       }
 
       clinicId = clinic.id;
@@ -149,7 +288,27 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       await updateStep(untypedAdmin, clinicId, step.key, "pending");
     }
 
-    // Step 2: Configure subdomain
+    // Step 2: Create the clinic owner login account (Audit #6)
+    try {
+      await updateStep(untypedAdmin, clinicId, "create_owner", "in_progress");
+      const ownerResult = await provisionOwnerAccount(
+        typedAdmin,
+        clinicId,
+        clinic_name,
+        owner_name,
+        owner_email,
+        owner_phone ?? null,
+      );
+      if (ownerResult.ok) {
+        await updateStep(untypedAdmin, clinicId, "create_owner", "completed");
+      } else {
+        await updateStep(untypedAdmin, clinicId, "create_owner", "failed", ownerResult.error);
+      }
+    } catch (err) {
+      await updateStep(untypedAdmin, clinicId, "create_owner", "failed", String(err));
+    }
+
+    // Step 3: Configure subdomain
     try {
       await updateStep(untypedAdmin, clinicId, "configure_subdomain", "in_progress");
 
@@ -176,7 +335,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       await updateStep(untypedAdmin, clinicId, "configure_subdomain", "failed", String(err));
     }
 
-    // Step 3: Setup database tables (RLS context)
+    // Step 4: Setup database tables (RLS context)
     try {
       await updateStep(untypedAdmin, clinicId, "setup_tables", "in_progress");
       await updateStep(untypedAdmin, clinicId, "setup_tables", "completed");
@@ -184,7 +343,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       await updateStep(untypedAdmin, clinicId, "setup_tables", "failed", String(err));
     }
 
-    // Step 4: Assign WhatsApp number
+    // Step 5: Assign WhatsApp number
     try {
       await updateStep(untypedAdmin, clinicId, "assign_whatsapp", "in_progress");
 
@@ -207,7 +366,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       await updateStep(untypedAdmin, clinicId, "assign_whatsapp", "failed", String(err));
     }
 
-    // Step 5: Setup payment gateway
+    // Step 6: Setup payment gateway
     try {
       await updateStep(untypedAdmin, clinicId, "setup_payment", "in_progress");
 
@@ -254,6 +413,15 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
         ];
 
     if (clinicId) {
+      // Lifecycle (Audit #3): only flip the clinic to 'active' when every
+      // provisioning step succeeded. A run with failures stays 'inactive' so it
+      // is never publicly resolvable in a broken state.
+      if (!hasFailures) {
+        // nosemgrep: tenant-scoping -- super-admin activates a specific clinic by id (service role)
+        await typedAdmin.from("clinics").update({ status: "active" }).eq("id", clinicId);
+        invalidateSubdomainCache(subdomain);
+      }
+
       await syncClinicOnboardingState({
         supabase: untypedAdmin,
         clinicId,
@@ -330,4 +498,4 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
 }
 
 export const POST = withAuth(handlePost, ALLOWED_ROLES);
-export const GET = withAuth(handleGet, ALLOWED_ROLES, { failOpen: true });
+export const GET = withAuth(handleGet, ALLOWED_ROLES);

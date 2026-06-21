@@ -13,6 +13,7 @@ import {
   SkipForward,
   ArrowRight,
   ArrowLeft,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -43,6 +44,7 @@ interface ProvisioningStep {
 
 const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   create_clinic: Building2,
+  create_owner: Users,
   configure_subdomain: Globe,
   setup_tables: Database,
   assign_whatsapp: MessageSquare,
@@ -53,11 +55,6 @@ const CLINIC_TYPES = [
   { value: "doctor", label: "Médecin" },
   { value: "dentist", label: "Dentiste" },
   { value: "pharmacy", label: "Pharmacie" },
-  { value: "clinic", label: "Clinique" },
-  { value: "hospital", label: "Hôpital" },
-  { value: "laboratory", label: "Laboratoire" },
-  { value: "veterinary", label: "Vétérinaire" },
-  { value: "restaurant", label: "Restaurant" },
 ];
 
 const TIERS = [
@@ -65,6 +62,7 @@ const TIERS = [
   { value: "cabinet", label: "Cabinet" },
   { value: "pro", label: "Pro" },
   { value: "premium", label: "Premium" },
+  { value: "saas", label: "SaaS (Mensuel)" },
 ];
 
 const GATEWAYS = [
