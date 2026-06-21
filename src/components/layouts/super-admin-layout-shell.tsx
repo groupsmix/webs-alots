@@ -31,13 +31,11 @@ import {
   CheckCircle,
   Users,
   Activity,
-  Wand2,
   Store,
   Gift,
   Gauge,
   GitCompareArrows,
   MessageSquare,
-  Sparkles,
   HeartPulse,
 } from "lucide-react";
 import Link from "next/link";
@@ -162,10 +160,8 @@ const navGroups: NavGroup[] = [
     label: "Intelligence",
     icon: Bot,
     items: [
-      { href: "/super-admin/builder", label: "Constructeur IA", icon: Sparkles },
       { href: "/super-admin/agents", label: "Agents IA", icon: Bot },
       { href: "/super-admin/ai-team", label: "Équipe IA", icon: MessageSquare },
-      { href: "/super-admin/agent-builder", label: "Constructeur web", icon: Wand2 },
       { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
       { href: "/super-admin/settings/ai", label: "Paramètres IA", icon: Settings },
     ],

@@ -110,11 +110,9 @@ export async function middleware(request: NextRequest) {
   const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...nonceBytes));
   // Task 2.2: Strict CSP is now enforced. Legacy broad policy removed.
-  // TASK-009: Builder route gets a relaxed frame-src + script-src so the live
-  // preview iframe (blob:) and Babel/Tailwind CDN scripts can load.
-  // All other routes remain on the strict policy.
-  const isBuilderRoute = pathname.startsWith("/super-admin/builder");
-  const cspHeaders = buildCspHeaderValues(nonce, { isBuilderRoute });
+  // All routes use the single strict policy (the former relaxed Builder-route
+  // branch was removed with the in-app AI Builder).
+  const cspHeaders = buildCspHeaderValues(nonce);
 
   // --- F-A198 / F-A160: Sanctioned country block ---
   const sanctionBlock = checkSanctionedCountry(request);

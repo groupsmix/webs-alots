@@ -6,14 +6,12 @@
  * configured in wrangler.toml:
  *
  *   oltigo.com/api/copilotkit/*       → handleCopilotKit
- *   oltigo.com/api/builder/sandbox/*  → handleBuilderSandbox
  *
  * Anything else returns 404 — this Worker should never see other paths.
  *
  * Why a separate Worker? See workers/ai/README.md.
  */
 
-import { handleBuilderSandbox } from "./handlers/builder-sandbox";
 import { handleCopilotKit } from "./handlers/copilotkit";
 import { jsonResponse, type Env } from "./lib/supabase";
 
@@ -43,9 +41,6 @@ export default {
     try {
       if (path === "/api/copilotkit" || path.startsWith("/api/copilotkit/")) {
         return await handleCopilotKit(request, env);
-      }
-      if (path === "/api/builder/sandbox" || path.startsWith("/api/builder/sandbox/")) {
-        return await handleBuilderSandbox(request, env);
       }
       return jsonResponse({ error: "Not Found" }, 404);
     } catch (err) {

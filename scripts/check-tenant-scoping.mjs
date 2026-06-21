@@ -80,12 +80,11 @@ const ALLOWLIST = new Set([
   // AI router/feature-toggles helpers — cross-tenant reads of ai_* tables
   "src/lib/ai/router.ts",
   "src/lib/ai/feature-toggles.ts",
-  // AI Builder sandbox + CopilotKit runtime were moved to a separate
-  // Cloudflare Worker (workers/ai/) to keep the main bundle under the
-  // 10 MiB Workers Paid limit. The remaining stubs in
-  // src/app/api/copilotkit/route.ts and src/app/api/builder/sandbox/route.ts
-  // are no-op 501 responders with no Supabase calls — no allowlist entry
-  // needed. See workers/ai/README.md.
+  // The CopilotKit runtime was moved to a separate Cloudflare Worker
+  // (workers/ai/) to keep the main bundle under the 10 MiB Workers Paid
+  // limit. The remaining stub in src/app/api/copilotkit/route.ts is a no-op
+  // 501 responder with no Supabase calls — no allowlist entry needed.
+  // See workers/ai/README.md.
 ]);
 
 const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;

@@ -99,15 +99,6 @@ function getPlausibleHost(): string | null {
   }
 }
 
-interface BuildCspOptions {
-  /**
-   * When true, relaxes frame-src and script-src for the /super-admin/builder
-   * route so the live preview iframe (blob:) and Babel/Tailwind CDN scripts
-   * can load. ALL other routes continue to use the strict policy.
-   */
-  isBuilderRoute?: boolean;
-}
-
 /**
  * Build the strict Content-Security-Policy header value with a per-request
  * nonce.
@@ -125,9 +116,8 @@ interface BuildCspOptions {
  * (no inline/eval), so production is fail-closed against XSS via injected
  * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
  */
-function buildCsp(nonce: string, options?: BuildCspOptions): string {
+function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV !== "production";
-  const isBuilderRoute = options?.isBuilderRoute ?? false;
   const sbHost = getSupabaseHost();
   const plausibleHost = getPlausibleHost();
 
@@ -144,16 +134,13 @@ function buildCsp(nonce: string, options?: BuildCspOptions): string {
     ...(plausibleHost ? [`https://${plausibleHost}`] : []),
   ].join(" ");
 
-  const scriptSrc = isBuilderRoute
-    ? "'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com"
-    : (isDev
-        ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "'unsafe-eval'"]
-        : ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"]
-      ).join(" ");
+  const scriptSrc = (
+    isDev
+      ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "'unsafe-eval'"]
+      : ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"]
+  ).join(" ");
 
-  const frameSrc = isBuilderRoute
-    ? "'self' blob: https://*.e2b.app https://*.e2b.dev https://challenges.cloudflare.com"
-    : "'self' https://challenges.cloudflare.com";
+  const frameSrc = "'self' https://challenges.cloudflare.com";
 
   return [
     "default-src 'self'",
@@ -218,11 +205,8 @@ export interface CspHeaderValues {
  * unless `CSP_REPORT_ONLY=true` is set in production, in which case the
  * same policy is emitted on the Report-Only header for staged rollout.
  */
-export function buildCspHeaderValues(
-  nonce: string,
-  options?: { isBuilderRoute?: boolean },
-): CspHeaderValues {
-  const policy = buildCsp(nonce, { isBuilderRoute: options?.isBuilderRoute });
+export function buildCspHeaderValues(nonce: string): CspHeaderValues {
+  const policy = buildCsp(nonce);
   if (isCspReportOnly()) {
     return { enforce: "", reportOnly: policy };
   }
