@@ -2,18 +2,16 @@
 # Cloudflare Workers Configuration — webs-alots-ai
 # =============================================================================
 #
-# Second Cloudflare Worker for Oltigo Health. Handles the two AI routes
-# that pull in heavy server-side dependencies (CopilotKit runtime, Anthropic
-# SDK, ai SDK, @e2b SDK). Together those add ~1.1 MiB of compressed bundle
-# that previously pushed the main `webs-alots` Worker over Cloudflare's
-# 10 MiB Paid-plan limit.
+# Second Cloudflare Worker for Oltigo Health. Handles the CopilotKit AI route
+# that pulls in heavy server-side dependencies (CopilotKit runtime, Anthropic
+# SDK, ai SDK). Those add compressed bundle weight that previously pushed the
+# main `webs-alots` Worker over Cloudflare's 10 MiB Paid-plan limit.
 #
 # Architecture:
 #   browser → oltigo.com/api/copilotkit/*         → webs-alots-ai
-#   browser → oltigo.com/api/builder/sandbox/*    → webs-alots-ai
 #   browser → everything else                     → webs-alots
 #
-# Cloudflare zone routing prefers the more specific pattern, so the two
+# Cloudflare zone routing prefers the more specific pattern, so the
 # routes below win over the main Worker's `oltigo.com/*` catch-all.
 #
 # This Worker is intentionally NOT a Next.js app — it is a plain fetch
@@ -68,8 +66,6 @@ define = { "import.meta.url" = "\"file:///worker.mjs\"" }
 routes = [
   { pattern = "oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
   { pattern = "oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
-  { pattern = "oltigo.com/api/builder/sandbox", zone_name = "oltigo.com" },
-  { pattern = "oltigo.com/api/builder/sandbox/*", zone_name = "oltigo.com" },
 ]
 
 # ── Limits ────────────────────────────────────────────────────────────
@@ -94,8 +90,6 @@ define = { "import.meta.url" = "\"file:///worker.mjs\"" }
 routes = [
   { pattern = "staging.oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
   { pattern = "staging.oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
-  { pattern = "staging.oltigo.com/api/builder/sandbox", zone_name = "oltigo.com" },
-  { pattern = "staging.oltigo.com/api/builder/sandbox/*", zone_name = "oltigo.com" },
 ]
 
 [env.staging.limits]
@@ -111,8 +105,6 @@ define = { "import.meta.url" = "\"file:///worker.mjs\"" }
 routes = [
   { pattern = "oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
   { pattern = "oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
-  { pattern = "oltigo.com/api/builder/sandbox", zone_name = "oltigo.com" },
-  { pattern = "oltigo.com/api/builder/sandbox/*", zone_name = "oltigo.com" },
 ]
 
 [env.production.limits]

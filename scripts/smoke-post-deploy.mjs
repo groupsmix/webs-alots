@@ -42,8 +42,7 @@ const SMOKE_AI_EXPECT_STATUS = Number(process.env.SMOKE_AI_EXPECT_STATUS || 200)
 
 // Audit Task 14: paths that are 501 stubs in the main Worker and MUST be
 // zone-routed to the separate `webs-alots-ai` Worker in production. Comma-
-// separated; set empty to skip. /api/builder/sandbox can be added once its
-// unauthenticated GET behaviour is confirmed (it is POST-only today).
+// separated; set empty to skip.
 const SMOKE_AI_WORKER_PATHS = (process.env.SMOKE_AI_WORKER_PATHS || "/api/copilotkit")
   .split(",")
   .map((s) => s.trim())
@@ -310,10 +309,9 @@ async function checkAuthNoindex() {
 /**
  * Audit Task 14 — Layer 7: dual-Worker AI routing split.
  *
- * /api/copilotkit (and /api/builder/sandbox) are STUBS in the main
- * `webs-alots` Worker that return HTTP 501. In production, Cloudflare zone
- * routes must send these paths to the separate `webs-alots-ai` Worker BEFORE
- * the main Worker sees them. The built-in failure signature of a missing or
+ * /api/copilotkit is a STUB in the main `webs-alots` Worker that returns
+ * HTTP 501. In production, Cloudflare zone routes must send this path to the
+ * separate `webs-alots-ai` Worker BEFORE the main Worker sees it. The built-in failure signature of a missing or
  * misordered route is therefore a 501 served from the main Worker — exactly
  * what this probe catches. A correctly routed unauthenticated call is rejected
  * by the AI Worker (typically 401/403/405), never answered by the 501 stub.

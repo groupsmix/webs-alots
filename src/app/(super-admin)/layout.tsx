@@ -12,16 +12,14 @@
 // The CopilotKit *runtime* still exists, but as a standalone endpoint served by
 // the separate webs-alots-ai Worker (workers/ai/) and called directly by
 // clients — it is no longer mounted as a React provider here. The main app's
-// /api/copilotkit and /api/builder/sandbox routes are intentional 501 stubs
-// (Cloudflare zone routes send those paths to webs-alots-ai first).
+// /api/copilotkit route is an intentional 501 stub
+// (Cloudflare zone routes send that path to webs-alots-ai first).
 //
-// To bring the AI Builder / CopilotKit endpoints online (ops, not code):
-//   1. Set ANTHROPIC_API_KEY + E2B_API_KEY on webs-alots-ai (production + staging).
+// To bring the CopilotKit endpoint online (ops, not code):
+//   1. Set ANTHROPIC_API_KEY on webs-alots-ai (production + staging).
 //   2. Recreate the Cloudflare zone routes (see workers/ai/wrangler.toml):
 //        oltigo.com/api/copilotkit        -> webs-alots-ai
 //        oltigo.com/api/copilotkit/*      -> webs-alots-ai
-//        oltigo.com/api/builder/sandbox   -> webs-alots-ai
-//        oltigo.com/api/builder/sandbox/* -> webs-alots-ai
 // Reviving the in-app CopilotKit sidebar would mean re-creating the removed
 // <CopilotShell> component; prefer extending <AgentWidget> instead.
 import { Suspense } from "react";
