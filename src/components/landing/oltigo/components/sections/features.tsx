@@ -12,7 +12,11 @@ import { SectionHeading } from "./section-kit";
 
 export function Features() {
   const { dict } = useI18n();
-  const visuals = [<AgendaFace key="a" />, <DossierFace key="d" />, <WhatsappFace key="w" />];
+  const visuals = [
+    <AgendaFace key="a" />,
+    <DossierFace key="d" dict={dict} />,
+    <WhatsappFace key="w" dict={dict} />,
+  ];
 
   return (
     <section id="features" className="relative border-b border-hairline py-24 sm:py-32">

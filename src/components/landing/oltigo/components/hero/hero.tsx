@@ -106,7 +106,7 @@ export function Hero() {
 
         {/* Object — RIGHT */}
         <div className="relative">
-          {wide ? <Console3D onFocus={setFocus} /> : <ConsoleStatic />}
+          {wide ? <Console3D onFocus={setFocus} dict={dict} /> : <ConsoleStatic />}
 
           {/* Explode captions, synced to the focused layer */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">

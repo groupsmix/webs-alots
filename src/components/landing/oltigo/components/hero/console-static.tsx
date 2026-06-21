@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "../../i18n/context";
 import { AgendaFace, DossierFace, WhatsappFace } from "./faces";
 
 /**
@@ -8,6 +9,7 @@ import { AgendaFace, DossierFace, WhatsappFace } from "./faces";
  * soft contact shadow. No looping motion.
  */
 export function ConsoleStatic() {
+  const { dict } = useI18n();
   return (
     <div className="relative mx-auto w-full max-w-[330px] py-4">
       {/* matte floor contact shadow */}
@@ -21,10 +23,10 @@ export function ConsoleStatic() {
           <AgendaFace />
         </div>
         <div className="relative z-20 -mt-6 self-start" style={{ transform: "rotate(1.1deg)" }}>
-          <DossierFace />
+          <DossierFace dict={dict} />
         </div>
         <div className="relative z-10 -mt-6 self-end" style={{ transform: "rotate(-0.8deg)" }}>
-          <WhatsappFace />
+          <WhatsappFace dict={dict} />
         </div>
       </div>
     </div>

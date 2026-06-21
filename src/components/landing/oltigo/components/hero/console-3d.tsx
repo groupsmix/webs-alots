@@ -4,6 +4,7 @@ import { ContactShadows, Html, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Component, type ReactNode, useRef } from "react";
 import * as THREE from "three";
+import type { Dictionary } from "@/components/landing/oltigo/i18n/dictionaries";
 import { ConsoleStatic } from "./console-static";
 import { AgendaFace, DossierFace, WhatsappFace } from "./faces";
 
@@ -107,7 +108,7 @@ function FocusReporter({ onFocus }: { onFocus: (i: number) => void }) {
   return null;
 }
 
-function Rig({ onFocus }: { onFocus: (i: number) => void }) {
+function Rig({ onFocus, dict }: { onFocus: (i: number) => void; dict: Dictionary }) {
   const root = useRef<THREE.Group>(null);
 
   useFrame((state) => {
@@ -144,10 +145,10 @@ function Rig({ onFocus }: { onFocus: (i: number) => void }) {
           <AgendaFace />
         </Slab>
         <Slab index={1} baseY={0} xOff={-0.12} breatheRate={0.52} breathePhase={2.1}>
-          <DossierFace />
+          <DossierFace dict={dict} />
         </Slab>
         <Slab index={2} baseY={-1.55} xOff={-0.55} breatheRate={0.74} breathePhase={4.0}>
-          <WhatsappFace />
+          <WhatsappFace dict={dict} />
         </Slab>
       </group>
       {/* one large soft contact shadow on a matte floor */}
@@ -176,7 +177,13 @@ class WebGLBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-export default function Console3D({ onFocus }: { onFocus: (i: number) => void }) {
+export default function Console3D({
+  onFocus,
+  dict,
+}: {
+  onFocus: (i: number) => void;
+  dict: Dictionary;
+}) {
   return (
     <WebGLBoundary>
       <div className="h-[520px] w-full">
@@ -190,7 +197,7 @@ export default function Console3D({ onFocus }: { onFocus: (i: number) => void })
             gl.toneMappingExposure = 1.0;
           }}
         >
-          <Rig onFocus={onFocus} />
+          <Rig onFocus={onFocus} dict={dict} />
         </Canvas>
       </div>
     </WebGLBoundary>
