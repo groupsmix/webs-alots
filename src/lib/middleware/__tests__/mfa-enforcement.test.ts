@@ -76,28 +76,26 @@ describe("enforceMfa", () => {
     expect(result).toBeNull();
   });
 
-  it("redirects super_admin to enrollment when no verified TOTP factor exists (R1)", async () => {
+  it("passes super_admin with no enrolled factor (enrollment is optional)", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }, []),
       "super_admin",
       "/admin",
       `${URL_BASE}/admin`,
     );
-    expect(result).not.toBeNull();
-    expect(result?.status).toBe(307);
-    expect(result?.headers.get("Location")).toMatch(/\/setup-2fa\?required=1&next=%2Fadmin$/);
+    // Optional-enrollment model: an un-enrolled admin is NOT forced to /setup-2fa.
+    expect(result).toBeNull();
   });
 
-  it("treats an unverified (mid-enrolment) factor as not enrolled", async () => {
+  it("passes clinic_admin with only an unverified (mid-enrolment) factor", async () => {
     const result = await enforceMfa(
       mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }, [{ status: "unverified" }]),
       "clinic_admin",
       "/admin/settings",
       `${URL_BASE}/admin/settings`,
     );
-    expect(result).not.toBeNull();
-    expect(result?.status).toBe(307);
-    expect(result?.headers.get("Location")).toMatch(/\/setup-2fa\?required=1&next=/);
+    // No verified factor → Supabase reports nextLevel "aal1" → pass-through.
+    expect(result).toBeNull();
   });
 
   it("passes doctor without MFA (not required for role)", async () => {
