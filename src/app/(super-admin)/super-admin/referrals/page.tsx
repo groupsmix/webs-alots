@@ -1,7 +1,16 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
-import { Gift, Check, Clock, Users, Loader2, AlertTriangle, MapPin, RefreshCw } from "lucide-react";
+import {
+  CheckCheck,
+  Check,
+  Clock,
+  Users,
+  Loader2,
+  AlertTriangle,
+  MapPin,
+  RefreshCw,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -178,7 +187,7 @@ export default function ReferralsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Acceptées</CardTitle>
-            <Gift className="h-4 w-4 text-blue-600" />
+            <CheckCheck className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? "—" : accepted}</div>

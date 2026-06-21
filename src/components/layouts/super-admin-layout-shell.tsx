@@ -37,6 +37,7 @@ import {
   GitCompareArrows,
   MessageSquare,
   HeartPulse,
+  Stethoscope,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -137,10 +138,10 @@ const navGroups: NavGroup[] = [
       },
       { href: "/super-admin/pricing", label: "Tarifs & Offres", icon: DollarSign },
       { href: "/super-admin/subscriptions", label: "Abonnements", icon: Receipt },
-      { href: "/super-admin/referrals", label: "Références méd.", icon: Gift },
+      { href: "/super-admin/referrals", label: "Références méd.", icon: Stethoscope },
       { href: "/super-admin/referral-program", label: "Prog. parrainage", icon: Gift },
-      { href: "/super-admin/usage", label: "Métriques usage", icon: Gauge },
-      { href: "/super-admin/usage-dashboard", label: "Dashboard usage", icon: BarChart3 },
+      { href: "/super-admin/usage", label: "Activité cliniques", icon: Gauge },
+      { href: "/super-admin/usage-dashboard", label: "Coûts & quotas", icon: BarChart3 },
     ],
   },
   {
