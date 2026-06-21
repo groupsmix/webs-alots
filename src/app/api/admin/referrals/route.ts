@@ -18,8 +18,9 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     // nosemgrep: tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
+    // nosemgrep: tenant-scoping — super-admin cross-tenant referrals overview; spans all clinics, no single clinic_id
     const { data, error } = await supabase
-      .from("referrals") // nosemgrep: semgrep.tenant-scoping
+      .from("referrals")
       .select(
         "id, clinic_id, referring_doctor_id, referred_to_doctor_id, patient_id, reason, status, created_at, clinics(name)",
       )
@@ -50,10 +51,8 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     ];
     const nameById = new Map<string, string>();
     if (doctorIds.length > 0) {
-      const { data: doctors } = await supabase
-        .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin cross-tenant referral overview; resolves staff (doctor) names only, no patient PHI
-        .select("id, name")
-        .in("id", doctorIds);
+      // nosemgrep: tenant-scoping — super-admin cross-tenant referral overview; resolves staff (doctor) names only, no patient PHI
+      const { data: doctors } = await supabase.from("users").select("id, name").in("id", doctorIds);
       for (const d of doctors ?? []) nameById.set(d.id as string, d.name as string);
     }
     const enriched = rows.map((r) => ({
