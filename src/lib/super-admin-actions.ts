@@ -997,8 +997,8 @@ export async function updateFeatureDefinition(
   if (error) throw new Error(`Failed to update feature definition: ${error.message}`);
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
-      .from("activity_logs")
+    await supabase
+      .from("activity_logs") // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
       .insert({
         action: "feature_definition_updated",
         description: `Feature "${existing?.name ?? featureId}" updated`,
@@ -1041,8 +1041,8 @@ export async function bulkSetFeatureTier(tier: string, enabled: boolean): Promis
   }
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
-      .from("activity_logs")
+    await supabase
+      .from("activity_logs") // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
       .insert({
         action: "feature_tier_bulk_update",
         description: `All features ${enabled ? "enabled" : "disabled"} for tier "${tier}"`,
