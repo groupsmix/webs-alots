@@ -16,7 +16,6 @@ import {
   ChevronDown,
   FileSpreadsheet,
   FileText,
-  Info,
   AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -54,6 +53,8 @@ import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { logger } from "@/lib/logger";
 import {
   fetchFeatureDefinitions,
+  updateFeatureDefinition,
+  bulkSetFeatureTier,
   fetchClinics,
   type FeatureDefinition,
 } from "@/lib/super-admin-actions";
@@ -188,52 +189,74 @@ export default function FeatureTogglesPage() {
     }
   };
 
-  function toggleGlobal(featureId: string) {
+  async function toggleGlobal(featureId: string) {
     const feature = features.find((f) => f.id === featureId);
+    if (!feature) return;
+    const newValue = !feature.globalEnabled;
+    // Optimistic update; reconciled from the server on failure.
     setFeatures((prev) =>
-      prev.map((f) => (f.id === featureId ? { ...f, globalEnabled: !f.globalEnabled } : f)),
+      prev.map((f) => (f.id === featureId ? { ...f, globalEnabled: newValue } : f)),
     );
-    addToast(
-      `${feature?.name ?? "Fonctionnalité"} ${feature?.globalEnabled ? "désactivée" : "activée"} (aperçu — non enregistré)`,
-      "info",
-    );
+    try {
+      await updateFeatureDefinition(featureId, { globalEnabled: newValue });
+      addToast(`${feature.name} ${newValue ? "activée" : "désactivée"} globalement`, "success");
+    } catch (err) {
+      logger.warn("Failed to persist global toggle", { context: "page", error: err });
+      await loadFeatures();
+      addToast("Échec de l'enregistrement. Veuillez réessayer.", "error");
+    }
   }
 
-  function toggleTier(featureId: string, tier: string) {
+  async function toggleTier(featureId: string, tier: string) {
+    const feature = features.find((f) => f.id === featureId);
+    if (!feature) return;
+    const hasTier = feature.availableTiers.includes(tier);
+    const newTiers = hasTier
+      ? feature.availableTiers.filter((t) => t !== tier)
+      : [...feature.availableTiers, tier];
     setFeatures((prev) =>
-      prev.map((f) => {
-        if (f.id !== featureId) return f;
-        const hasTier = f.availableTiers.includes(tier);
-        return {
-          ...f,
-          availableTiers: hasTier
-            ? f.availableTiers.filter((t) => t !== tier)
-            : [...f.availableTiers, tier],
-        };
-      }),
+      prev.map((f) => (f.id === featureId ? { ...f, availableTiers: newTiers } : f)),
     );
+    try {
+      await updateFeatureDefinition(featureId, { availableTiers: newTiers });
+    } catch (err) {
+      logger.warn("Failed to persist tier toggle", { context: "page", error: err });
+      await loadFeatures();
+      addToast("Échec de l'enregistrement. Veuillez réessayer.", "error");
+    }
   }
 
-  function handleBulkAction() {
+  async function handleBulkAction() {
+    const tier = bulkTier;
+    const enable = bulkAction === "enable";
+    setBulkOpen(false);
+    // Optimistic update.
     setFeatures((prev) =>
       prev.map((f) => {
-        if (bulkAction === "enable") {
+        if (enable) {
           return {
             ...f,
-            availableTiers: f.availableTiers.includes(bulkTier)
+            availableTiers: f.availableTiers.includes(tier)
               ? f.availableTiers
-              : [...f.availableTiers, bulkTier],
+              : [...f.availableTiers, tier],
           };
-        } else {
-          return { ...f, availableTiers: f.availableTiers.filter((t) => t !== bulkTier) };
         }
+        return { ...f, availableTiers: f.availableTiers.filter((t) => t !== tier) };
       }),
     );
-    setBulkOpen(false);
-    addToast(
-      `Aperçu mis à jour : toutes les fonctionnalités ${bulkAction === "enable" ? "activées" : "désactivées"} pour le palier ${TIER_LABELS[bulkTier] ?? bulkTier} (non enregistré)`,
-      "info",
-    );
+    try {
+      await bulkSetFeatureTier(tier, enable);
+      // Reconcile from the server so the matrix reflects the persisted state.
+      await loadFeatures();
+      addToast(
+        `Toutes les fonctionnalités ${enable ? "activées" : "désactivées"} pour le palier ${TIER_LABELS[tier] ?? tier}`,
+        "success",
+      );
+    } catch (err) {
+      logger.warn("Failed to persist bulk tier update", { context: "page", error: err });
+      await loadFeatures();
+      addToast("Échec de la mise à jour groupée. Veuillez réessayer.", "error");
+    }
   }
 
   async function toggleClinicOverride(featureKey: string, enabled: boolean) {
@@ -451,21 +474,6 @@ export default function FeatureTogglesPage() {
         </TabsList>
 
         <TabsContent value="matrix">
-          {/* R1/R3: the global + per-tier toggles below are a non-persistent
-              preview — there is no write path for feature_definitions, so a
-              click changes only this view and is discarded on refresh. Make
-              that explicit so an operator never believes a tier-wide change
-              was rolled out to clinics. Persistent, per-clinic changes are
-              made in the "Dérogations cliniques" tab. */}
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <p className="text-amber-800 dark:text-amber-200">
-              Les bascules globales et par palier ci-dessous sont un aperçu et ne sont pas encore
-              enregistrées. Pour appliquer un changement persistant à une clinique, utilisez
-              l&apos;onglet « Dérogations cliniques ».
-            </p>
-          </div>
-
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1">
@@ -730,10 +738,9 @@ export default function FeatureTogglesPage() {
             <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs dark:bg-amber-900/20 dark:border-amber-700">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <p className="text-amber-800 dark:text-amber-200">
-                Cette action met à jour l&apos;aperçu de toutes les fonctionnalités du palier
-                sélectionné. Il s&apos;agit d&apos;un aperçu local : aucune modification n&apos;est
-                enregistrée ni propagée aux cliniques tant qu&apos;une persistance n&apos;est pas
-                disponible.
+                Cette action met à jour et enregistre la disponibilité de toutes les fonctionnalités
+                pour le palier sélectionné. Le changement s&apos;applique à toutes les cliniques de
+                ce palier.
               </p>
             </div>
             <div className="space-y-2">
