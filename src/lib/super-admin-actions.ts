@@ -380,6 +380,119 @@ export async function updateClinicStatus(
   }
 }
 
+// ---------- Promotions ----------
+
+export interface PromotionRow {
+  id: string;
+  name: string;
+  discount: number;
+  tiers: string[];
+  startDate: string;
+  endDate: string;
+  enabled: boolean;
+}
+
+// `promotions` (migration 00194) is not yet in the generated Supabase types.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UntypedClient = { from: (table: string) => any };
+
+interface PromotionDbRow {
+  id: string;
+  name: string | null;
+  discount_percent: number | null;
+  tiers: string[] | null;
+  start_date: string | null;
+  end_date: string | null;
+  enabled: boolean | null;
+}
+
+function mapPromotion(row: PromotionDbRow): PromotionRow {
+  return {
+    id: row.id,
+    name: row.name ?? "",
+    discount: row.discount_percent ?? 0,
+    tiers: row.tiers ?? [],
+    startDate: row.start_date ?? "",
+    endDate: row.end_date ?? "",
+    enabled: row.enabled ?? true,
+  };
+}
+
+const PROMOTION_COLS = "id, name, discount_percent, tiers, start_date, end_date, enabled";
+
+export async function fetchPromotions(): Promise<PromotionRow[]> {
+  const supabase = (await rawClient()) as unknown as UntypedClient;
+  const { data, error } = await supabase
+    .from("promotions")
+    .select(PROMOTION_COLS)
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return (data as PromotionDbRow[]).map(mapPromotion);
+}
+
+export async function createPromotion(input: {
+  name: string;
+  discount: number;
+  tiers: string[];
+  startDate: string;
+  endDate: string;
+}): Promise<PromotionRow> {
+  const supabase = (await rawClient()) as unknown as UntypedClient;
+  const { data, error } = await supabase
+    .from("promotions")
+    .insert({
+      name: input.name,
+      discount_percent: input.discount,
+      tiers: input.tiers,
+      start_date: input.startDate || null,
+      end_date: input.endDate || null,
+      enabled: true,
+    })
+    .select(PROMOTION_COLS)
+    .single();
+  if (error || !data) throw new Error(`Failed to create promotion: ${error?.message ?? "no data"}`);
+
+  try {
+    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
+      .from("activity_logs")
+      .insert({
+        action: "promotion_created",
+        description: `Promotion "${input.name}" created`,
+        type: "billing",
+        timestamp: new Date().toISOString(),
+      });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", error: err });
+  }
+
+  return mapPromotion(data as PromotionDbRow);
+}
+
+export async function setPromotionEnabled(id: string, enabled: boolean): Promise<void> {
+  const supabase = (await rawClient()) as unknown as UntypedClient;
+  const { error } = await supabase.from("promotions").update({ enabled }).eq("id", id);
+  if (error) throw new Error(`Failed to update promotion: ${error.message}`);
+}
+
+export async function deletePromotion(id: string): Promise<void> {
+  const supabase = (await rawClient()) as unknown as UntypedClient;
+  const { error } = await supabase.from("promotions").delete().eq("id", id);
+  if (error) throw new Error(`Failed to delete promotion: ${error.message}`);
+
+  try {
+    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
+      .from("activity_logs")
+      .insert({
+        action: "promotion_deleted",
+        description: `Promotion ${id} deleted`,
+        type: "billing",
+        timestamp: new Date().toISOString(),
+      });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", error: err });
+  }
+}
+
 // ---------- User CRUD ----------
 
 /**
