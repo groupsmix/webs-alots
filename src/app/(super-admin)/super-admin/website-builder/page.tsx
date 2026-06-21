@@ -9,6 +9,7 @@ import { presetPalettes } from "@/components/agent-builder/color-palette";
 import { DesignPreview } from "@/components/agent-builder/design-preview";
 import type { ClinicConfig, TemplateStyle } from "@/components/agent-builder/types";
 import { createEmptyConfig } from "@/components/agent-builder/types";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -581,9 +582,18 @@ export default function AgentBuilderPage() {
       <div className="flex flex-1 flex-col border-r lg:w-[60%]">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold">Website Builder</h1>
+          <div className="flex flex-col gap-1">
+            <Breadcrumb
+              className="mb-0"
+              items={[
+                { label: "Super Admin", href: "/super-admin/dashboard" },
+                { label: "Website Builder" },
+              ]}
+            />
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h1 className="text-lg font-semibold">Website Builder</h1>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={handleSaveDraft} title="Save Draft">
