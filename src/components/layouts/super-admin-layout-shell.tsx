@@ -498,17 +498,25 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
 
         const { data: profile } = await supabase
           .from("users")
-          .select("id")
+          .select("id, clinic_id")
           .eq("auth_id", user.id)
           .single();
         if (!profile || !mountedRef.current) return;
 
-        const { data } = await supabase
+        // F-A96-02 / AGENTS.md rule #1: scope by clinic_id for tenant
+        // isolation (defense-in-depth alongside RLS). user_id already pins
+        // the result to the current user; clinic_id is applied when the
+        // profile has one (super_admin has clinic_id = null and is unscoped).
+        let notifQuery = supabase
           .from("notifications")
           .select("id, title, body, sent_at, is_read")
-          .eq("user_id", profile.id)
-          .order("sent_at", { ascending: false })
-          .limit(10);
+          .eq("user_id", profile.id);
+
+        if (profile.clinic_id) {
+          notifQuery = notifQuery.eq("clinic_id", profile.clinic_id);
+        }
+
+        const { data } = await notifQuery.order("sent_at", { ascending: false }).limit(10);
 
         if (!mountedRef.current) return;
 
