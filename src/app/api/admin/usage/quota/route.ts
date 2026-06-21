@@ -56,7 +56,21 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
     }
 
     const allUsage = await getAllClinicsMonthlyUsage(supabase);
-    return apiSuccess({ usage: allUsage });
+
+    // Enrich with clinic names so the dashboard can show a human-readable
+    // label instead of a truncated UUID (which is meaningless to an operator).
+    const clinicIds = [...new Set(allUsage.map((r) => r.clinicId))];
+    const nameById = new Map<string, string>();
+    if (clinicIds.length > 0) {
+      const { data: clinics } = await supabase
+        .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin cross-tenant usage overview
+        .select("id, name")
+        .in("id", clinicIds);
+      for (const c of clinics ?? []) nameById.set(c.id as string, c.name as string);
+    }
+    const enriched = allUsage.map((r) => ({ ...r, clinicName: nameById.get(r.clinicId) ?? null }));
+
+    return apiSuccess({ usage: enriched });
   } catch (err) {
     logger.error("quota-api: unexpected error", { context: "quota-api", error: err });
     return apiInternalError("Failed to fetch quota data");

@@ -21,6 +21,7 @@ import { logger } from "@/lib/logger";
 
 interface ClinicUsageRow {
   clinicId: string;
+  clinicName?: string | null;
   resourceType: string;
   totalUnits: number;
   totalCostUsd: number;
@@ -142,13 +143,21 @@ export default function UsageDashboardPage() {
   // Aggregate usage by clinic
   const clinicTotals = allUsage.reduce(
     (acc, row) => {
-      if (!acc[row.clinicId]) acc[row.clinicId] = { totalCost: 0, resources: {} };
+      if (!acc[row.clinicId])
+        acc[row.clinicId] = { totalCost: 0, resources: {}, name: row.clinicName ?? null };
+      if (row.clinicName) acc[row.clinicId].name = row.clinicName;
       acc[row.clinicId].totalCost += row.totalCostUsd;
       acc[row.clinicId].resources[row.resourceType] = row.totalUnits;
       return acc;
     },
-    {} as Record<string, { totalCost: number; resources: Record<string, number> }>,
+    {} as Record<
+      string,
+      { totalCost: number; resources: Record<string, number>; name: string | null }
+    >,
   );
+
+  // Map of clinicId -> display name, for the detail header.
+  const clinicNameById = (id: string): string => clinicTotals[id]?.name ?? `${id.slice(0, 8)}…`;
 
   const topConsumers = Object.entries(clinicTotals)
     .sort(([, a], [, b]) => b.totalCost - a.totalCost)
@@ -283,7 +292,9 @@ export default function UsageDashboardPage() {
                   }`}
                 >
                   <div>
-                    <span className="font-mono text-sm">{clinicId.slice(0, 8)}…</span>
+                    <span className="text-sm font-medium">
+                      {data.name ?? `${clinicId.slice(0, 8)}…`}
+                    </span>
                     <div className="mt-1 flex gap-2">
                       {Object.entries(data.resources).map(([rt, units]) => (
                         <Badge key={rt} variant="secondary" className="text-xs">
@@ -304,7 +315,7 @@ export default function UsageDashboardPage() {
       {selectedClinic && (
         <Card>
           <CardHeader>
-            <CardTitle>Clinique : {selectedClinic.slice(0, 8)}…</CardTitle>
+            <CardTitle>Clinique : {clinicNameById(selectedClinic)}</CardTitle>
           </CardHeader>
           <CardContent>
             {detailLoading ? (
