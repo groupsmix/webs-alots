@@ -66,6 +66,14 @@ rules:
           #                             table with NO clinic_id column; RLS gives
           #                             super_admin full access and authenticated
           #                             users read-only on active rows.
+          #   - `feature_definitions`— platform-wide feature catalogue (global
+          #                             on/off + tier availability) managed by
+          #                             super_admin; NO clinic_id column. Per-
+          #                             clinic overrides live in the separate
+          #                             clinic_feature_overrides table.
+          #   - `pricing_tiers`      — platform-wide subscription tier catalogue
+          #                             managed by super_admin; NO clinic_id
+          #                             column.
           #
           # All other queue / processed-events tables (notification_queue,
           # processed_stripe_events, processed_whatsapp_messages,
@@ -80,7 +88,7 @@ rules:
           # annotated rather than whitelisted, so a future bare
           # .from("users").select("*") still triggers a warning.
           regex: |-
-            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements|demo_leads|document_templates)["']).*$
+            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements|demo_leads|document_templates|feature_definitions|pricing_tiers)["']).*$
       # Any .eq("clinic_id", ...) anywhere in the surrounding method chain
       # makes this query tenant-scoped. Semgrep normalises JS string quotes,
       # but both variants are kept for belt-and-suspenders parity with the

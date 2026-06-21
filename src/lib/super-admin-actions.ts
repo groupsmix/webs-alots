@@ -1058,12 +1058,14 @@ export async function updatePricingTier(
 
   // Audit log (non-blocking).
   try {
-    await supabase.from("activity_logs").insert({
-      action: "pricing_tier_updated",
-      description: `Pricing tier "${existing?.name ?? tierId}" updated`,
-      type: "billing",
-      timestamp: new Date().toISOString(),
-    });
+    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (pricing catalogue is platform-wide, no clinic context)
+      .from("activity_logs")
+      .insert({
+        action: "pricing_tier_updated",
+        description: `Pricing tier "${existing?.name ?? tierId}" updated`,
+        type: "billing",
+        timestamp: new Date().toISOString(),
+      });
   } catch (err) {
     logger.warn("Non-blocking audit log failed", {
       context: "super-admin-actions",
