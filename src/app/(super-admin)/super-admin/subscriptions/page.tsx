@@ -387,7 +387,7 @@ export default function SubscriptionsPage() {
         <Breadcrumb
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
-            { label: "Subscriptions" },
+            { label: "Abonnements" },
           ]}
         />
         <div className="mb-4">
@@ -432,10 +432,7 @@ export default function SubscriptionsPage() {
   return (
     <div>
       <Breadcrumb
-        items={[
-          { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Subscriptions" },
-        ]}
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Abonnements" }]}
       />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -482,7 +479,7 @@ export default function SubscriptionsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="h-4 w-4 text-green-600" />
-              <span className="text-xs text-muted-foreground">MRR</span>
+              <span className="text-xs text-muted-foreground">MRR (abonnements actifs)</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
             <p className="text-xs text-muted-foreground">MAD / mois</p>
