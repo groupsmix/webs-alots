@@ -35,6 +35,8 @@ interface Referral {
   clinic_id: string;
   referring_doctor_id: string;
   referred_to_doctor_id: string;
+  referring_doctor_name: string | null;
+  referred_to_doctor_name: string | null;
   patient_id: string;
   reason: string | null;
   status: ReferralStatus;
@@ -221,6 +223,8 @@ export default function ReferralsPage() {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left p-3 font-medium">Clinique</th>
+                <th className="text-left p-3 font-medium">Médecin référent</th>
+                <th className="text-left p-3 font-medium">Médecin destinataire</th>
                 <th className="text-left p-3 font-medium">Motif</th>
                 <th className="text-left p-3 font-medium">Statut</th>
                 <th className="text-left p-3 font-medium">Date</th>
@@ -229,7 +233,7 @@ export default function ReferralsPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
                     Chargement des références…
                   </td>
@@ -237,7 +241,7 @@ export default function ReferralsPage() {
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     {geoBlocked || fetchError
                       ? "Données indisponibles — voir le message ci-dessus."
                       : "Aucune référence trouvée."}
@@ -249,6 +253,8 @@ export default function ReferralsPage() {
                   <td className="p-3 font-medium">
                     {referral.clinics?.name ?? "Clinique inconnue"}
                   </td>
+                  <td className="p-3">{referral.referring_doctor_name ?? "—"}</td>
+                  <td className="p-3">{referral.referred_to_doctor_name ?? "—"}</td>
                   <td className="p-3 text-muted-foreground">{referral.reason ?? "—"}</td>
                   <td className="p-3">
                     <Badge variant={STATUS_VARIANTS[referral.status]} className="text-xs">
