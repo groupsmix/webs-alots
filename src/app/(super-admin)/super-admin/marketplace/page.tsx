@@ -1,7 +1,7 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
-import { Package, Search, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Package, Search, Loader2, CheckCircle2, XCircle, X } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -119,10 +119,20 @@ export default function MarketplacePage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search features..."
-            className="pl-10"
+            className="pl-10 pr-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           {categories.map((c) => (
@@ -147,8 +157,34 @@ export default function MarketplacePage() {
           <Loader2 className="h-6 w-6 animate-spin inline mr-2" />
           Loading features...
         </div>
+      ) : features.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Package className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-sm font-medium">No features in the catalogue yet</p>
+            <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+              The feature catalogue is defined by the platform (the{" "}
+              <span className="font-mono">feature_definitions</span> seed / migration). Once
+              features exist, they appear here so you can globally enable/disable them and manage
+              per-clinic overrides. If this is unexpectedly empty in a deployed environment, the
+              seed likely hasn&apos;t been applied.
+            </p>
+          </CardContent>
+        </Card>
       ) : filtered.length === 0 ? (
-        <div className="py-12 text-center text-muted-foreground">No features found.</div>
+        <div className="space-y-3 py-12 text-center text-muted-foreground">
+          <p className="text-sm">No features match your search or filter.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setCatFilter("all");
+            }}
+            className="rounded-full border border-border bg-background px-3 py-1 text-xs hover:bg-muted"
+          >
+            Clear search &amp; filters
+          </button>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((feature) => {

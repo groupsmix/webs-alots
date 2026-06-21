@@ -146,6 +146,7 @@ export default function AISettingsPage() {
   const [toggles, setToggles] = useState<FeatureToggle[]>([]);
   const [usage, setUsage] = useState<UsageByProvider>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
@@ -153,6 +154,7 @@ export default function AISettingsPage() {
   const { addToast } = useToast();
 
   const fetchData = useCallback(async () => {
+    setLoadError(false);
     try {
       const res = await fetch("/api/admin/ai-config");
       if (!res.ok) throw new Error("Failed to fetch");
@@ -164,9 +166,12 @@ export default function AISettingsPage() {
         setProviders(json.data.providers);
         setToggles(json.data.toggles);
         setUsage(json.data.usage);
+      } else {
+        throw new Error("Request not ok");
       }
     } catch (err) {
       logger.error("Failed to load AI config", { context: "ai-settings", error: err });
+      setLoadError(true);
       addToast("Failed to load AI configuration", "error");
     } finally {
       setLoading(false);
@@ -356,6 +361,28 @@ export default function AISettingsPage() {
         </Button>
       </div>
 
+      {/* Load error (AI-1 / AI-6): explicit, actionable state instead of silently empty sections. */}
+      {loadError && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+              <div>
+                <p className="text-sm font-medium">Couldn&apos;t load the AI configuration</p>
+                <p className="text-xs text-muted-foreground">
+                  Providers, task routing, and feature toggles below may be empty or stale until
+                  this loads. This usually means the config service is unreachable.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchData}>
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Emergency Kill Switch ── */}
       <EmergencyStop />
 
@@ -445,6 +472,20 @@ export default function AISettingsPage() {
         </h2>
 
         <div className="space-y-3">
+          {providers.length === 0 && !loadError && (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <Bot className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">No AI providers configured</p>
+                <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+                  The provider catalogue is provisioned by the platform (database seed / migration).
+                  If this list is empty in a deployed environment, the{" "}
+                  <span className="font-mono">ai_provider_configs</span> seed hasn&apos;t been
+                  applied yet. Once present, add an API key to a provider here to activate it.
+                </p>
+              </CardContent>
+            </Card>
+          )}
           {sortedProviders.map((prov, idx) => {
             const info = PROVIDER_INFO[prov.provider] ?? {
               icon: "🤖",
@@ -661,6 +702,19 @@ export default function AISettingsPage() {
           AI Features
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
+          {toggles.length === 0 && !loadError && (
+            <Card className="md:col-span-2">
+              <CardContent className="p-6 text-center">
+                <Settings className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">No AI features to configure yet</p>
+                <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+                  Feature toggles are seeded by the platform. If this stays empty in a deployed
+                  environment, the <span className="font-mono">ai_feature_toggles</span> seed
+                  hasn&apos;t been applied.
+                </p>
+              </CardContent>
+            </Card>
+          )}
           {toggles.map((toggle) => {
             const isSavingToggle = saving === toggle.feature_key;
             return (
