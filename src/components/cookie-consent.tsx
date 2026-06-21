@@ -262,25 +262,28 @@ export function persistConsent(prefs: CookiePreferences, now: number = Date.now(
 export function CookieConsent() {
   const [locale] = useLocale();
 
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const status = getConsentStatus();
-    return status.kind !== "fresh";
-  });
+  // SSR-stable initial state: both server and the first client render must
+  // produce identical markup (banner hidden) to avoid a hydration mismatch
+  // (React #418). The real consent status is read AFTER mount in the effect
+  // below, which then reveals the banner. Reading localStorage in a useState
+  // initializer here previously rendered the banner on the client but `null`
+  // on the server, corrupting hydration for the whole document.
+  const [visible, setVisible] = useState(false);
 
   const [showPreferences, setShowPreferences] = useState(false);
 
-  const [preferences, setPreferences] = useState<CookiePreferences>(() => {
-    if (typeof window === "undefined") return DEFAULT_PREFERENCES;
-    const status = getConsentStatus();
-    return status.kind === "fresh" ? status.preferences : DEFAULT_PREFERENCES;
-  });
+  const [preferences, setPreferences] = useState<CookiePreferences>(DEFAULT_PREFERENCES);
 
-  // A64: Apply analytics consent side-effect after hydration.
+  // Read stored consent after mount: reveal the banner when consent is not
+  // fresh, and apply analytics consent when it is. Runs once on the client
+  // only, so it can safely touch localStorage without breaking hydration.
   useEffect(() => {
     const status = getConsentStatus();
     if (status.kind === "fresh") {
+      setPreferences(status.preferences);
       applyAnalyticsConsent(status.preferences.analytics);
+    } else {
+      setVisible(true);
     }
   }, []);
 

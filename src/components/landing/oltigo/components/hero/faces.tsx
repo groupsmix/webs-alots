@@ -2,7 +2,7 @@
 
 import { Calendar, Check, CheckCheck, Fingerprint, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useI18n } from "@/components/landing/oltigo/i18n/context";
+import type { Dictionary } from "@/components/landing/oltigo/i18n/dictionaries";
 
 /* ===========================================================================
    The three console faces. Crisp DOM, reused by both the static fallback and
@@ -65,8 +65,7 @@ function FaceRow({ time, row }: { time: string; row: number[] }) {
 }
 
 /** 02 — Encrypted patient dossier with brushed-metal seal. */
-export function DossierFace() {
-  const { dict } = useI18n();
+export function DossierFace({ dict }: { dict: Dictionary }) {
   return (
     <div className="panel panel-high w-[300px] rounded-[14px] p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -110,8 +109,7 @@ export function DossierFace() {
 }
 
 /** 03 — WhatsApp Darija reminder tile, with a looping micro-conversation. */
-export function WhatsappFace() {
-  const { dict } = useI18n();
+export function WhatsappFace({ dict }: { dict: Dictionary }) {
   const [step, setStep] = useState(0); // 0 incoming · 1 reply · 2 ✓✓ confirmed
 
   useEffect(() => {
