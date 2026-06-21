@@ -54,7 +54,24 @@ interface DropdownMenuTriggerProps extends React.ComponentProps<"button"> {
   asChild?: boolean;
 }
 
-function DropdownMenuTrigger({ className, children, ...props }: DropdownMenuTriggerProps) {
+function DropdownMenuTrigger({ className, children, asChild, ...props }: DropdownMenuTriggerProps) {
+  // When `asChild` is set, merge the trigger's props (including the open/close
+  // onClick injected by <DropdownMenu>) onto the single child element instead
+  // of rendering our own <button>. Rendering a <button> here while the caller
+  // also passes a <button> child produces invalid nested <button><button>
+  // markup, which the browser reparents on hydration and triggers React #418
+  // (hydration mismatch) on every page using this trigger.
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement<React.ButtonHTMLAttributes<HTMLButtonElement>>;
+    return React.cloneElement(child, {
+      ...props,
+      className: cn(child.props.className, className),
+      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+        child.props.onClick?.(e);
+        props.onClick?.(e);
+      },
+    });
+  }
   return (
     <button type="button" className={cn("outline-none", className)} {...props}>
       {children}
