@@ -74,6 +74,10 @@ rules:
           #   - `pricing_tiers`      — platform-wide subscription tier catalogue
           #                             managed by super_admin; NO clinic_id
           #                             column.
+          #   - `promotions`         — platform-wide promotional discounts
+          #                             managed by super_admin (migration 00194);
+          #                             NO clinic_id column (targets tiers via
+          #                             the `tiers` array, not clinics).
           #
           # All other queue / processed-events tables (notification_queue,
           # processed_stripe_events, processed_whatsapp_messages,
@@ -88,7 +92,7 @@ rules:
           # annotated rather than whitelisted, so a future bare
           # .from("users").select("*") still triggers a warning.
           regex: |-
-            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements|demo_leads|document_templates|feature_definitions|pricing_tiers)["']).*$
+            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements|demo_leads|document_templates|feature_definitions|pricing_tiers|promotions)["']).*$
       # Any .eq("clinic_id", ...) anywhere in the surrounding method chain
       # makes this query tenant-scoped. Semgrep normalises JS string quotes,
       # but both variants are kept for belt-and-suspenders parity with the

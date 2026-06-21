@@ -54,6 +54,10 @@ import {
   fetchClientSubscriptions,
   fetchPricingTiers,
   fetchFeatureToggles,
+  fetchPromotions,
+  createPromotion,
+  setPromotionEnabled,
+  deletePromotion,
   updatePricingTier,
   type ClientSubscription,
   type PricingTierRow,
@@ -83,22 +87,7 @@ interface Promotion {
   enabled: boolean;
 }
 
-const STORAGE_KEY_PROMOS = "oltigo_promotions";
 const STORAGE_KEY_HISTORY = "oltigo_price_history";
-
-function isPromotion(v: unknown): v is Promotion {
-  if (typeof v !== "object" || v === null) return false;
-  const o = v as Record<string, unknown>;
-  return (
-    typeof o.id === "string" &&
-    typeof o.name === "string" &&
-    typeof o.discount === "number" &&
-    Array.isArray(o.tiers) &&
-    typeof o.startDate === "string" &&
-    typeof o.endDate === "string" &&
-    typeof o.enabled === "boolean"
-  );
-}
 
 function isHistoryEntry(v: unknown): v is PriceHistoryEntry {
   if (typeof v !== "object" || v === null) return false;
@@ -110,24 +99,6 @@ function isHistoryEntry(v: unknown): v is PriceHistoryEntry {
     typeof o.oldPrice === "number" &&
     typeof o.newPrice === "number"
   );
-}
-
-function loadPromos(): Promotion[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_PROMOS);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isPromotion);
-  } catch {
-    return [];
-  }
-}
-
-function savePromos(promos: Promotion[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY_PROMOS, JSON.stringify(promos));
 }
 
 function loadHistory(): PriceHistoryEntry[] {
@@ -191,14 +162,16 @@ export default function PricingPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [subs, tiersData, togglesData] = await Promise.all([
+      const [subs, tiersData, togglesData, promosData] = await Promise.all([
         fetchClientSubscriptions(),
         fetchPricingTiers(),
         fetchFeatureToggles(),
+        fetchPromotions(),
       ]);
       setSubscriptions(subs);
       setTiers(tiersData);
       setToggles(togglesData);
+      setPromotions(promosData);
     } catch (err) {
       logger.warn("Failed to load pricing page", { context: "page", error: err });
     } finally {
@@ -216,7 +189,6 @@ export default function PricingPage() {
 
   useEffect(() => {
     setPriceHistory(loadHistory());
-    setPromotions(loadPromos());
   }, []);
 
   const stats = {
@@ -412,37 +384,54 @@ export default function PricingPage() {
     setPromoFormOpen(true);
   }
 
-  function handleSavePromo() {
-    const newPromo: Promotion = {
-      id: `promo-${Date.now()}`,
-      name: promoName,
-      discount: Number(promoDiscount) || 0,
-      tiers: promoTiers,
-      startDate: promoStart,
-      endDate: promoEnd,
-      enabled: true,
-    };
-    const updated = [newPromo, ...promotions];
-    setPromotions(updated);
-    savePromos(updated);
+  async function handleSavePromo() {
     setPromoFormOpen(false);
-    addToast("Promotion créée (aperçu — non enregistré)", "info");
+    try {
+      const created = await createPromotion({
+        name: promoName,
+        discount: Number(promoDiscount) || 0,
+        tiers: promoTiers,
+        startDate: promoStart,
+        endDate: promoEnd,
+      });
+      setPromotions((prev) => [created, ...prev]);
+      addToast("Promotion créée", "success");
+    } catch (err) {
+      logger.warn("Failed to create promotion", { context: "page", error: err });
+      addToast("Échec de la création de la promotion. Veuillez réessayer.", "error");
+    }
   }
 
-  function togglePromoEnabled(id: string) {
-    const updated = promotions.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p));
-    setPromotions(updated);
-    savePromos(updated);
+  async function togglePromoEnabled(id: string) {
+    const target = promotions.find((p) => p.id === id);
+    if (!target) return;
+    const next = !target.enabled;
+    setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, enabled: next } : p)));
+    try {
+      await setPromotionEnabled(id, next);
+    } catch (err) {
+      logger.warn("Failed to toggle promotion", { context: "page", error: err });
+      // Roll back the optimistic change.
+      setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, enabled: !next } : p)));
+      addToast("Échec de la mise à jour de la promotion.", "error");
+    }
   }
 
-  function handleDeletePromo() {
+  async function handleDeletePromo() {
     if (!deletePromoItem) return;
-    const updated = promotions.filter((p) => p.id !== deletePromoItem.id);
-    setPromotions(updated);
-    savePromos(updated);
+    const removed = deletePromoItem;
+    setPromotions((prev) => prev.filter((p) => p.id !== removed.id));
     setDeletePromoOpen(false);
     setDeletePromoItem(null);
-    addToast("Promotion supprimée (aperçu — non enregistré)", "info");
+    try {
+      await deletePromotion(removed.id);
+      addToast("Promotion supprimée", "success");
+    } catch (err) {
+      logger.warn("Failed to delete promotion", { context: "page", error: err });
+      // Roll back the optimistic removal.
+      setPromotions((prev) => [removed, ...prev]);
+      addToast("Échec de la suppression de la promotion.", "error");
+    }
   }
 
   function togglePromoTier(slug: string) {
@@ -1251,7 +1240,7 @@ export default function PricingPage() {
                         <div className="flex items-center gap-2 shrink-0">
                           <Switch
                             checked={promo.enabled}
-                            onCheckedChange={() => togglePromoEnabled(promo.id)}
+                            onCheckedChange={() => void togglePromoEnabled(promo.id)}
                           />
                           <Button
                             variant="ghost"
@@ -1432,7 +1421,7 @@ export default function PricingPage() {
               Cancel
             </Button>
             <Button
-              onClick={handleSavePromo}
+              onClick={() => void handleSavePromo()}
               disabled={!promoName || !promoDiscount || !promoStart || !promoEnd}
             >
               Create Promotion
@@ -1462,7 +1451,7 @@ export default function PricingPage() {
               <Button variant="outline" onClick={() => setDeletePromoOpen(false)}>
                 Annuler
               </Button>
-              <Button variant="destructive" onClick={handleDeletePromo}>
+              <Button variant="destructive" onClick={() => void handleDeletePromo()}>
                 <Trash2 className="h-4 w-4 mr-1" />
                 Supprimer
               </Button>
