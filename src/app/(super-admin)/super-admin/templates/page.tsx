@@ -34,7 +34,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatDisplayDate } from "@/lib/utils";
 
 interface Template {
   id: string;
@@ -51,6 +51,22 @@ interface Template {
 
 type TypeFilter = "all" | Template["type"];
 type ClinicTypeFilter = "all" | "doctor" | "dentist" | "pharmacy";
+
+const TYPE_LABELS: Record<Template["type"], string> = {
+  prescription: "Ordonnance",
+  invoice: "Facture",
+  report: "Rapport",
+  certificate: "Certificat",
+  consent: "Consentement",
+  letter: "Lettre",
+};
+
+const CLINIC_TYPE_LABELS: Record<string, string> = {
+  all: "Toutes les cliniques",
+  doctor: "Médecin",
+  dentist: "Dentiste",
+  pharmacy: "Pharmacie",
+};
 
 export default function TemplateManagerPage() {
   const [locale] = useLocale();
@@ -83,7 +99,7 @@ export default function TemplateManagerPage() {
       if (!res.ok) throw new Error(json.error ?? `${res.status}`);
       setTemplates(json.data.templates ?? []);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load templates");
+      setLoadError(err instanceof Error ? err.message : "Échec du chargement des modèles");
       logger.warn("Failed to load document templates", { error: err });
     } finally {
       setLoading(false);
@@ -164,7 +180,7 @@ export default function TemplateManagerPage() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? `${res.status}`);
         setTemplates((prev) => prev.map((t) => (t.id === editItem.id ? json.data.template : t)));
-        addToast("Template updated", "success");
+        addToast("Modèle mis à jour", "success");
       } else {
         const res = await fetch("/api/super-admin/templates", {
           method: "POST",
@@ -180,12 +196,12 @@ export default function TemplateManagerPage() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? `${res.status}`);
         setTemplates((prev) => [json.data.template, ...prev]);
-        addToast("Template created", "success");
+        addToast("Modèle créé", "success");
       }
       setEditOpen(false);
     } catch (err) {
       logger.warn("Failed to save template", { error: err });
-      addToast("Failed to save template. Please try again.", "error");
+      addToast("Échec de l'enregistrement du modèle. Veuillez réessayer.", "error");
     } finally {
       setSaving(false);
     }
@@ -207,10 +223,10 @@ export default function TemplateManagerPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `${res.status}`);
       setTemplates((prev) => [json.data.template, ...prev]);
-      addToast(`"${item.name}" duplicated`, "success");
+      addToast(`« ${item.name} » dupliqué`, "success");
     } catch (err) {
       logger.warn("Failed to duplicate template", { error: err });
-      addToast("Failed to duplicate template.", "error");
+      addToast("Échec de la duplication du modèle.", "error");
     }
   }
 
@@ -223,10 +239,10 @@ export default function TemplateManagerPage() {
       });
       if (!res.ok) throw new Error(`${res.status}`);
       setTemplates((prev) => prev.filter((t) => t.id !== deleteItem.id));
-      addToast("Template deleted", "success");
+      addToast("Modèle supprimé", "success");
     } catch (err) {
       logger.warn("Failed to delete template", { error: err });
-      addToast("Failed to delete template.", "error");
+      addToast("Échec de la suppression du modèle.", "error");
     } finally {
       setDeleting(false);
       setDeleteOpen(false);
@@ -246,20 +262,20 @@ export default function TemplateManagerPage() {
         body: JSON.stringify({ id: item.id, active: !item.is_active }),
       });
       if (!res.ok) throw new Error(`${res.status}`);
-      addToast(item.is_active ? "Template deactivated" : "Template activated", "success");
+      addToast(item.is_active ? "Modèle désactivé" : "Modèle activé", "success");
     } catch (err) {
       logger.warn("Failed to toggle template", { error: err });
       setTemplates(previous);
-      addToast("Failed to update template.", "error");
+      addToast("Échec de la mise à jour du modèle.", "error");
     }
   }
 
-  if (loading) return <PageLoader message="Loading templates..." />;
+  if (loading) return <PageLoader message="Chargement des modèles…" />;
 
   if (loadError) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load templates.</p>
+        <p className="text-red-600 font-medium">Échec du chargement des modèles.</p>
         <p className="text-sm text-muted-foreground mt-1">{loadError}</p>
         <Button
           variant="outline"
@@ -269,7 +285,7 @@ export default function TemplateManagerPage() {
             void loadTemplates();
           }}
         >
-          Try again
+          Réessayer
         </Button>
       </div>
     );
@@ -278,31 +294,31 @@ export default function TemplateManagerPage() {
   return (
     <div>
       <Breadcrumb
-        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Templates" }]}
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Modèles" }]}
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Template Manager</h1>
+          <h1 className="text-2xl font-bold">Gestion des modèles</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage document templates for all clinic types
+            Gérez les modèles de documents pour tous les types de cliniques
           </p>
         </div>
         <Button onClick={openCreate}>
           <FilePlus className="h-4 w-4 mr-1" />
-          New Template
+          Nouveau modèle
         </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Total Templates</p>
+            <p className="text-xs text-muted-foreground mb-1">Total des modèles</p>
             <p className="text-2xl font-bold">{templates.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Active</p>
+            <p className="text-xs text-muted-foreground mb-1">Actifs</p>
             <p className="text-2xl font-bold text-green-600">
               {templates.filter((t) => t.is_active).length}
             </p>
@@ -310,13 +326,13 @@ export default function TemplateManagerPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Template Types</p>
+            <p className="text-xs text-muted-foreground mb-1">Types de modèles</p>
             <p className="text-2xl font-bold">6</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Total Usage</p>
+            <p className="text-xs text-muted-foreground mb-1">Utilisation totale</p>
             <p className="text-2xl font-bold">
               {formatNumber(
                 templates.reduce((s, t) => s + t.usage_count, 0),
@@ -332,7 +348,7 @@ export default function TemplateManagerPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search templates..."
+              placeholder="Rechercher des modèles…"
               className="pl-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -346,9 +362,9 @@ export default function TemplateManagerPage() {
                 variant={clinicTypeFilter === ct ? "default" : "outline"}
                 size="sm"
                 onClick={() => setClinicTypeFilter(ct)}
-                className="capitalize text-xs"
+                className="text-xs"
               >
-                {ct === "all" ? "All Clinics" : ct}
+                {CLINIC_TYPE_LABELS[ct] ?? ct}
               </Button>
             ))}
           </div>
@@ -370,9 +386,9 @@ export default function TemplateManagerPage() {
               variant={typeFilter === t ? "default" : "outline"}
               size="sm"
               onClick={() => setTypeFilter(t)}
-              className="capitalize text-xs"
+              className="text-xs"
             >
-              {t === "all" ? "All Types" : t}
+              {t === "all" ? "Tous les types" : TYPE_LABELS[t]}
             </Button>
           ))}
         </div>
@@ -389,7 +405,7 @@ export default function TemplateManagerPage() {
                 </div>
                 {!tpl.is_active && (
                   <Badge variant="outline" className="text-[10px]">
-                    Inactive
+                    Inactif
                   </Badge>
                 )}
               </div>
@@ -397,16 +413,16 @@ export default function TemplateManagerPage() {
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground">{tpl.description}</p>
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant="secondary" className="text-[10px] capitalize">
-                  {tpl.type}
+                <Badge variant="secondary" className="text-[10px]">
+                  {TYPE_LABELS[tpl.type] ?? tpl.type}
                 </Badge>
-                <Badge variant="outline" className="text-[10px] capitalize">
-                  {tpl.clinic_type === "all" ? "All Clinics" : tpl.clinic_type}
+                <Badge variant="outline" className="text-[10px]">
+                  {CLINIC_TYPE_LABELS[tpl.clinic_type] ?? tpl.clinic_type}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Used {formatNumber(tpl.usage_count, locale ?? "fr")} times</span>
-                <span>Updated {tpl.updated_at.slice(0, 10)}</span>
+                <span>Utilisé {formatNumber(tpl.usage_count, locale ?? "fr")} fois</span>
+                <span>Mis à jour {formatDisplayDate(tpl.updated_at, locale ?? "fr", "short")}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -414,7 +430,7 @@ export default function TemplateManagerPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    title="Preview"
+                    title="Aperçu"
                     onClick={() => {
                       setPreviewItem(tpl);
                       setPreviewOpen(true);
@@ -422,13 +438,13 @@ export default function TemplateManagerPage() {
                   >
                     <Eye className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" title="Edit" onClick={() => openEdit(tpl)}>
+                  <Button variant="ghost" size="sm" title="Modifier" onClick={() => openEdit(tpl)}>
                     <Edit className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    title="Duplicate"
+                    title="Dupliquer"
                     onClick={() => handleDuplicate(tpl)}
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -438,7 +454,7 @@ export default function TemplateManagerPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    title={tpl.is_active ? "Deactivate" : "Activate"}
+                    title={tpl.is_active ? "Désactiver" : "Activer"}
                     className={tpl.is_active ? "text-green-600" : "text-gray-400"}
                     onClick={() => toggleActive(tpl)}
                   >
@@ -447,7 +463,7 @@ export default function TemplateManagerPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    title="Delete"
+                    title="Supprimer"
                     className="text-red-500"
                     onClick={() => {
                       setDeleteItem(tpl);
@@ -466,8 +482,8 @@ export default function TemplateManagerPage() {
             <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>
               {templates.length === 0
-                ? "No templates yet. Create your first template."
-                : "No templates match your filter."}
+                ? "Aucun modèle pour le moment. Créez votre premier modèle."
+                : "Aucun modèle ne correspond à votre filtre."}
             </p>
           </div>
         )}
@@ -480,36 +496,36 @@ export default function TemplateManagerPage() {
           className="max-w-2xl max-h-[90vh] overflow-y-auto"
         >
           <DialogHeader>
-            <DialogTitle>{editItem ? "Edit Template" : "New Template"}</DialogTitle>
+            <DialogTitle>{editItem ? "Modifier le modèle" : "Nouveau modèle"}</DialogTitle>
             <DialogDescription>
               {editItem
-                ? "Update template details and content."
-                : "Create a new document template."}
+                ? "Mettez à jour les détails et le contenu du modèle."
+                : "Créez un nouveau modèle de document."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Template Name</Label>
+                <Label>Nom du modèle</Label>
                 <Input
-                  placeholder="e.g. Standard Prescription"
+                  placeholder="ex. Ordonnance standard"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Document Type</Label>
+                <Label>Type de document</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   value={formType}
                   onChange={(e) => setFormType(e.target.value as Template["type"])}
                 >
-                  <option value="prescription">Prescription</option>
-                  <option value="invoice">Invoice</option>
-                  <option value="report">Report</option>
-                  <option value="certificate">Certificate</option>
-                  <option value="consent">Consent Form</option>
-                  <option value="letter">Letter</option>
+                  <option value="prescription">Ordonnance</option>
+                  <option value="invoice">Facture</option>
+                  <option value="report">Rapport</option>
+                  <option value="certificate">Certificat</option>
+                  <option value="consent">Consentement</option>
+                  <option value="letter">Lettre</option>
                 </select>
               </div>
             </div>
@@ -517,34 +533,34 @@ export default function TemplateManagerPage() {
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Input
-                  placeholder="Brief description"
+                  placeholder="Brève description"
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Clinic Type</Label>
+                <Label>Type de clinique</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   value={formClinicType}
                   onChange={(e) => setFormClinicType(e.target.value as Template["clinic_type"])}
                 >
-                  <option value="all">All Clinic Types</option>
-                  <option value="doctor">Doctor</option>
-                  <option value="dentist">Dentist</option>
-                  <option value="pharmacy">Pharmacy</option>
+                  <option value="all">Tous les types de cliniques</option>
+                  <option value="doctor">Médecin</option>
+                  <option value="dentist">Dentiste</option>
+                  <option value="pharmacy">Pharmacie</option>
                 </select>
               </div>
             </div>
             <Separator />
             <div className="space-y-2">
-              <Label>Template Content</Label>
+              <Label>Contenu du modèle</Label>
               <p className="text-xs text-muted-foreground">
-                Use {`{{variable_name}}`} for dynamic placeholders.
+                Utilisez {`{{nom_variable}}`} pour les variables dynamiques.
               </p>
               <textarea
                 className="flex min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="Template content with {{placeholders}}..."
+                placeholder="Contenu du modèle avec {{variables}}…"
                 value={formContent}
                 onChange={(e) => setFormContent(e.target.value)}
               />
@@ -552,14 +568,14 @@ export default function TemplateManagerPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
-              Cancel
+              Annuler
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving || !formName.trim() || !formContent.trim()}
             >
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-              {editItem ? "Update Template" : "Create Template"}
+              {editItem ? "Mettre à jour le modèle" : "Créer le modèle"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -577,25 +593,29 @@ export default function TemplateManagerPage() {
             </DialogHeader>
             <div className="space-y-3 py-4">
               <div className="flex gap-2">
-                <Badge variant="secondary" className="capitalize">
-                  {previewItem.type}
+                <Badge variant="secondary">
+                  {TYPE_LABELS[previewItem.type] ?? previewItem.type}
                 </Badge>
-                <Badge variant="outline" className="capitalize">
-                  {previewItem.clinic_type === "all" ? "All Clinics" : previewItem.clinic_type}
+                <Badge variant="outline">
+                  {CLINIC_TYPE_LABELS[previewItem.clinic_type] ?? previewItem.clinic_type}
                 </Badge>
               </div>
               <div className="rounded-lg border bg-muted/30 p-4">
                 <pre className="text-sm whitespace-pre-wrap font-mono">{previewItem.content}</pre>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>Created: {previewItem.created_at.slice(0, 10)}</span>
-                <span>Updated: {previewItem.updated_at.slice(0, 10)}</span>
-                <span>Used: {formatNumber(previewItem.usage_count, locale ?? "fr")} times</span>
+                <span>
+                  Créé : {formatDisplayDate(previewItem.created_at, locale ?? "fr", "short")}
+                </span>
+                <span>
+                  Mis à jour : {formatDisplayDate(previewItem.updated_at, locale ?? "fr", "short")}
+                </span>
+                <span>Utilisé : {formatNumber(previewItem.usage_count, locale ?? "fr")} fois</span>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setPreviewOpen(false)}>
-                Close
+                Fermer
               </Button>
               <Button
                 onClick={() => {
@@ -604,7 +624,7 @@ export default function TemplateManagerPage() {
                 }}
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Edit
+                Modifier
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -616,21 +636,21 @@ export default function TemplateManagerPage() {
         {deleteItem && (
           <DialogContent onClose={() => setDeleteOpen(false)}>
             <DialogHeader>
-              <DialogTitle>Delete Template</DialogTitle>
+              <DialogTitle>Supprimer le modèle</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this template? This action cannot be undone.
+                Voulez-vous vraiment supprimer ce modèle ? Cette action est irréversible.
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deleteItem.name}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {deleteItem.type} · Used {formatNumber(deleteItem.usage_count, locale ?? "fr")}{" "}
-                times
+                {TYPE_LABELS[deleteItem.type] ?? deleteItem.type} · Utilisé{" "}
+                {formatNumber(deleteItem.usage_count, locale ?? "fr")} fois
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
-                Cancel
+                Annuler
               </Button>
               <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
                 {deleting ? (
@@ -638,7 +658,7 @@ export default function TemplateManagerPage() {
                 ) : (
                   <Trash2 className="h-4 w-4 mr-1" />
                 )}
-                Delete
+                Supprimer
               </Button>
             </DialogFooter>
           </DialogContent>

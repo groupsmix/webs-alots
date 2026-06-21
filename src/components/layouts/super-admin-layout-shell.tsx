@@ -249,7 +249,20 @@ const notifTypeColor: Record<NotificationType, string> = {
 };
 
 function SidebarNav({ pathname }: { pathname: string }) {
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => getExpandedGroups());
+  // B1 (hydration): seed with the SSR-stable default (all groups expanded) so
+  // the first client render matches the server. localStorage is unavailable
+  // during SSR, so reading it in the useState initializer makes the initial
+  // client render diverge from the server markup and triggers React hydration
+  // error #418. The persisted state is applied after mount instead.
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set(navGroups.map((g) => g.key)),
+  );
+
+  useEffect(() => {
+    // Mount-only: apply persisted expand/collapse state after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setExpandedGroups(getExpandedGroups());
+  }, []);
 
   const toggleGroup = useCallback((key: string) => {
     setExpandedGroups((prev) => {
