@@ -54,6 +54,7 @@ import {
   fetchClientSubscriptions,
   fetchPricingTiers,
   fetchFeatureToggles,
+  updatePricingTier,
   type ClientSubscription,
   type PricingTierRow,
   type FeatureToggleRow,
@@ -326,7 +327,7 @@ export default function PricingPage() {
     setConfirmSaveOpen(true);
   }
 
-  function confirmSaveTier() {
+  async function confirmSaveTier() {
     if (!editingTierId) return;
 
     const oldTier = tiers.find((t) => t.id === editingTierId);
@@ -335,54 +336,70 @@ export default function PricingPage() {
     const oldPrice = oldTier.pricing[selectedSystem]?.[billingCycle] ?? 0;
     const newPrice = Number(editPriceMin) || 0;
 
-    if (oldPrice !== newPrice) {
-      const cycleLabel: string = billingCycle === "yearly" ? "yearly" : "monthly";
-      const entry: PriceHistoryEntry = {
-        date: new Date().toISOString().split("T")[0] ?? "",
-        system: systemTypeLabels[selectedSystem],
-        cycle: cycleLabel,
-        oldPrice: Math.round(oldPrice),
-        newPrice: Math.round(newPrice),
-      };
-      const updated = [entry, ...priceHistory].slice(0, 50);
-      setPriceHistory(updated);
-      saveHistory(updated);
-    }
+    // Compute the updated tier fields (features + per-system pricing).
+    const newFeatureLabels = editFeatures
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const updatedFeatures = newFeatureLabels.map((label) => {
+      const existing = oldTier.features.find((f) => f.label === label);
+      return existing ?? { key: label.toLowerCase().replace(/\s+/g, "_"), label, included: true };
+    });
+    const removedFeatures = oldTier.features
+      .filter((f) => !newFeatureLabels.includes(f.label))
+      .map((f) => ({ ...f, included: false }));
+    const newFeatures = [...updatedFeatures, ...removedFeatures];
+    const existingForSystem = oldTier.pricing[selectedSystem] ?? { monthly: 0, yearly: 0 };
+    const newPricing = {
+      ...oldTier.pricing,
+      [selectedSystem]: { ...existingForSystem, [billingCycle]: newPrice },
+    };
 
+    const tierId = editingTierId;
+
+    // Optimistic update; reconciled from the server on failure.
     setTiers((prev) =>
-      prev.map((t) => {
-        if (t.id !== editingTierId) return t;
-        const newFeatureLabels = editFeatures
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean);
-        const updatedFeatures = newFeatureLabels.map((label) => {
-          const existing = t.features.find((f) => f.label === label);
-          return (
-            existing ?? { key: label.toLowerCase().replace(/\s+/g, "_"), label, included: true }
-          );
-        });
-        const removedFeatures = t.features
-          .filter((f) => !newFeatureLabels.includes(f.label))
-          .map((f) => ({ ...f, included: false }));
-        return {
-          ...t,
-          name: editName,
-          pricing: {
-            ...t.pricing,
-            [selectedSystem]: {
-              ...t.pricing[selectedSystem],
-              [billingCycle]: Number(editPriceMin) || 0,
-            },
-          },
-          features: [...updatedFeatures, ...removedFeatures],
-        };
-      }),
+      prev.map((t) =>
+        t.id === tierId ? { ...t, name: editName, pricing: newPricing, features: newFeatures } : t,
+      ),
     );
-
     setEditingTierId(null);
     setConfirmSaveOpen(false);
-    addToast("Tier updated successfully", "success");
+
+    try {
+      await updatePricingTier(tierId, {
+        name: editName,
+        pricing: newPricing,
+        features: newFeatures,
+      });
+
+      // Record the local price-change history only after a successful persist.
+      if (oldPrice !== newPrice) {
+        const cycleLabel: string = billingCycle === "yearly" ? "yearly" : "monthly";
+        const entry: PriceHistoryEntry = {
+          date: new Date().toISOString().split("T")[0] ?? "",
+          system: systemTypeLabels[selectedSystem],
+          cycle: cycleLabel,
+          oldPrice: Math.round(oldPrice),
+          newPrice: Math.round(newPrice),
+        };
+        const updated = [entry, ...priceHistory].slice(0, 50);
+        setPriceHistory(updated);
+        saveHistory(updated);
+      }
+
+      addToast("Tarif enregistré", "success");
+    } catch (err) {
+      logger.warn("Failed to persist pricing tier", { context: "page", error: err });
+      // Reconcile from the server so the UI never shows an unsaved price.
+      try {
+        const fresh = await fetchPricingTiers();
+        setTiers(fresh);
+      } catch {
+        /* leave optimistic state; the error toast tells the user to retry */
+      }
+      addToast("Échec de l'enregistrement du tarif. Veuillez réessayer.", "error");
+    }
   }
 
   // Promotion handlers
@@ -1284,7 +1301,7 @@ export default function PricingPage() {
             <Button variant="outline" onClick={() => setConfirmSaveOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmSaveTier}>
+            <Button onClick={() => void confirmSaveTier()}>
               <Save className="h-4 w-4 mr-1" />
               Confirm & Save
             </Button>

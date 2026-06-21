@@ -1020,6 +1020,59 @@ export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
   }));
 }
 
+/**
+ * Persist edits to a pricing tier (super-admin Pricing view).
+ *
+ * Updates the `pricing_tiers` row in place. Only the provided fields are
+ * written (name / per-system pricing JSON / features). Audit-logged to
+ * `activity_logs` with the `billing` type (pricing is a billing concern).
+ */
+export async function updatePricingTier(
+  tierId: string,
+  updates: {
+    name?: string;
+    pricing?: Record<string, { monthly: number; yearly: number }>;
+    features?: { key: string; label: string; included: boolean; limit?: string }[];
+  },
+): Promise<void> {
+  const supabase = await rawClient();
+
+  const payload: {
+    name?: string;
+    pricing?: Record<string, { monthly: number; yearly: number }>;
+    features?: { key: string; label: string; included: boolean; limit?: string }[];
+  } = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.pricing !== undefined) payload.pricing = updates.pricing;
+  if (updates.features !== undefined) payload.features = updates.features;
+  if (Object.keys(payload).length === 0) return;
+
+  const { data: existing } = await supabase
+    .from("pricing_tiers")
+    .select("id, name")
+    .eq("id", tierId)
+    .single();
+
+  const { error } = await supabase.from("pricing_tiers").update(payload).eq("id", tierId);
+  if (error) throw new Error(`Failed to update pricing tier: ${error.message}`);
+
+  // Audit log (non-blocking).
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "pricing_tier_updated",
+      description: `Pricing tier "${existing?.name ?? tierId}" updated`,
+      type: "billing",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      tierId,
+      error: err,
+    });
+  }
+}
+
 // ---------- Feature Toggles ----------
 
 export interface FeatureToggleRow {
