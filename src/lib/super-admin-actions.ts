@@ -1058,8 +1058,8 @@ export async function updatePricingTier(
 
   // Audit log (non-blocking).
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (pricing catalogue is platform-wide, no clinic context)
-      .from("activity_logs")
+    await supabase
+      .from("activity_logs") // nosemgrep: tenant-scoping — global super-admin audit event (pricing catalogue is platform-wide, no clinic context)
       .insert({
         action: "pricing_tier_updated",
         description: `Pricing tier "${existing?.name ?? tierId}" updated`,
