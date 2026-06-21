@@ -56,7 +56,7 @@ import {
   deleteAnnouncement,
   type Announcement,
 } from "@/lib/super-admin-actions";
-import { getLocalDateStr } from "@/lib/utils";
+import { getLocalDateStr, formatDisplayDate } from "@/lib/utils";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
 type StatusFilter = "all" | "active" | "expired" | "scheduled";
@@ -65,12 +65,20 @@ type ScheduleMode = "now" | "later";
 const EXAMPLE_TYPES = [
   {
     icon: ServerCrash,
-    label: "System Update",
-    description: "Notify clinics about platform changes",
+    label: "Mise à jour système",
+    description: "Informer les cliniques des changements de la plateforme",
   },
-  { icon: Wrench, label: "Maintenance Window", description: "Schedule downtime alerts" },
-  { icon: Sparkles, label: "New Feature", description: "Announce new capabilities" },
-  { icon: Bell, label: "General Notice", description: "Share important information" },
+  {
+    icon: Wrench,
+    label: "Fenêtre de maintenance",
+    description: "Planifier des alertes d'indisponibilité",
+  },
+  {
+    icon: Sparkles,
+    label: "Nouvelle fonctionnalité",
+    description: "Annoncer de nouvelles capacités",
+  },
+  { icon: Bell, label: "Avis général", description: "Partager une information importante" },
 ];
 
 const PRIORITY_CONFIG = {
@@ -81,13 +89,13 @@ const PRIORITY_CONFIG = {
     badge: "secondary" as const,
   },
   warning: {
-    label: "Warning",
+    label: "Avertissement",
     color: "text-amber-600",
     bg: "bg-amber-50 border-amber-200",
     badge: "warning" as const,
   },
   critical: {
-    label: "Critical",
+    label: "Critique",
     color: "text-red-600",
     bg: "bg-red-50 border-red-200",
     badge: "destructive" as const,
@@ -198,13 +206,13 @@ export default function AnnouncementsPage() {
 
   async function handleSave() {
     const targetLabels: Record<string, string> = {
-      all: "All Clinics",
-      basic: "Basic Plan",
-      standard: "Standard Plan",
-      premium: "Premium Plan",
+      all: "Toutes les cliniques",
+      basic: "Offre Basique",
+      standard: "Offre Standard",
+      premium: "Offre Premium",
     };
     if (!formTitle.trim() || !formMessage.trim()) {
-      addToast("Title and message are required", "error");
+      addToast("Le titre et le message sont obligatoires", "error");
       return;
     }
     const payload = {
@@ -219,7 +227,7 @@ export default function AnnouncementsPage() {
       if (editItem) {
         const updated = await updateAnnouncement(editItem.id, payload);
         setList((prev) => prev.map((a) => (a.id === editItem.id ? updated : a)));
-        addToast("Announcement updated", "success");
+        addToast("Annonce mise à jour", "success");
       } else {
         const created = await createAnnouncement({
           ...payload,
@@ -227,15 +235,15 @@ export default function AnnouncementsPage() {
             formScheduleMode === "later" && formScheduleDate ? formScheduleDate : getLocalDateStr(),
         });
         setList((prev) => [created, ...prev]);
-        addToast(
-          formScheduleMode === "later" ? "Announcement scheduled" : "Announcement published",
-          "success",
-        );
+        addToast(formScheduleMode === "later" ? "Annonce planifiée" : "Annonce publiée", "success");
       }
       setEditOpen(false);
     } catch (err) {
       logger.warn("Failed to save announcement", { context: "page", error: err });
-      addToast(err instanceof Error ? err.message : "Failed to save announcement", "error");
+      addToast(
+        err instanceof Error ? err.message : "Échec de l'enregistrement de l'annonce",
+        "error",
+      );
     }
   }
 
@@ -251,11 +259,14 @@ export default function AnnouncementsPage() {
     setDeleteItem(null);
     try {
       await deleteAnnouncement(target.id);
-      addToast("Announcement deleted", "success");
+      addToast("Annonce supprimée", "success");
     } catch (err) {
       setList(previous);
       logger.warn("Failed to delete announcement", { context: "page", error: err });
-      addToast(err instanceof Error ? err.message : "Failed to delete announcement", "error");
+      addToast(
+        err instanceof Error ? err.message : "Échec de la suppression de l'annonce",
+        "error",
+      );
     }
   }
 
@@ -265,11 +276,14 @@ export default function AnnouncementsPage() {
     setList((prev) => prev.map((a) => (a.id === item.id ? { ...a, active: next } : a)));
     try {
       await setAnnouncementActive(item.id, next);
-      addToast(next ? "Announcement activated" : "Announcement archived", "success");
+      addToast(next ? "Annonce activée" : "Annonce archivée", "success");
     } catch (err) {
       setList(previous);
       logger.warn("Failed to toggle announcement", { context: "page", error: err });
-      addToast(err instanceof Error ? err.message : "Failed to update announcement", "error");
+      addToast(
+        err instanceof Error ? err.message : "Échec de la mise à jour de l'annonce",
+        "error",
+      );
     }
   }
 
@@ -284,21 +298,18 @@ export default function AnnouncementsPage() {
   return (
     <div>
       <Breadcrumb
-        items={[
-          { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Announcements" },
-        ]}
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Annonces" }]}
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">System Announcements</h1>
+          <h1 className="text-2xl font-bold">Annonces système</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage announcements visible to clinic owners
+            Gérez les annonces visibles par les propriétaires de cliniques
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" />
-          New Announcement
+          Nouvelle annonce
         </Button>
       </div>
 
@@ -312,7 +323,7 @@ export default function AnnouncementsPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Active</p>
+            <p className="text-xs text-muted-foreground mb-1">Actives</p>
             <p className="text-2xl font-bold text-green-600">
               {list.filter((a) => a.active).length}
             </p>
@@ -320,7 +331,7 @@ export default function AnnouncementsPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Critical</p>
+            <p className="text-xs text-muted-foreground mb-1">Critiques</p>
             <p className="text-2xl font-bold text-red-600">
               {list.filter((a) => a.type === "critical").length}
             </p>
@@ -328,7 +339,7 @@ export default function AnnouncementsPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Expired</p>
+            <p className="text-xs text-muted-foreground mb-1">Expirées</p>
             <p className="text-2xl font-bold text-gray-400">
               {list.filter((a) => a.expiresAt && new Date(a.expiresAt) < new Date()).length}
             </p>
@@ -341,7 +352,7 @@ export default function AnnouncementsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search announcements..."
+            placeholder="Rechercher des annonces…"
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -354,9 +365,9 @@ export default function AnnouncementsPage() {
               variant={typeFilter === t ? "default" : "outline"}
               size="sm"
               onClick={() => setTypeFilter(t)}
-              className="capitalize text-xs"
+              className="text-xs"
             >
-              {t === "all" ? "All Types" : t}
+              {t === "all" ? "Tous les types" : PRIORITY_CONFIG[t].label}
             </Button>
           ))}
         </div>
@@ -364,17 +375,25 @@ export default function AnnouncementsPage() {
 
       {/* Status Filter */}
       <div className="flex items-center gap-1 mb-4">
-        {(["all", "active", "expired", "scheduled"] as StatusFilter[]).map((s) => (
-          <Button
-            key={s}
-            variant={statusFilter === s ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter(s)}
-            className="capitalize text-xs"
-          >
-            {s === "all" ? "All Status" : s}
-          </Button>
-        ))}
+        {(["all", "active", "expired", "scheduled"] as StatusFilter[]).map((s) => {
+          const STATUS_LABELS: Record<StatusFilter, string> = {
+            all: "Tous les statuts",
+            active: "Actives",
+            expired: "Expirées",
+            scheduled: "Planifiées",
+          };
+          return (
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+              className="text-xs"
+            >
+              {STATUS_LABELS[s]}
+            </Button>
+          );
+        })}
       </div>
 
       {/* Announcements List */}
@@ -391,11 +410,11 @@ export default function AnnouncementsPage() {
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold text-sm truncate">{item.title}</h3>
                         <Badge variant={PRIORITY_CONFIG[item.type].badge} className="text-[10px]">
-                          {item.type}
+                          {PRIORITY_CONFIG[item.type].label}
                         </Badge>
                         {status === "expired" && (
                           <Badge variant="outline" className="text-[10px]">
-                            Expired
+                            Expirée
                           </Badge>
                         )}
                         {!item.active && status !== "expired" && (
@@ -412,9 +431,11 @@ export default function AnnouncementsPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {item.publishedAt}
+                          {formatDisplayDate(item.publishedAt, "fr", "short")}
                         </span>
-                        {item.expiresAt && <span>Expires: {item.expiresAt}</span>}
+                        {item.expiresAt && (
+                          <span>Expire : {formatDisplayDate(item.expiresAt, "fr", "short")}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -422,7 +443,7 @@ export default function AnnouncementsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      title="Preview"
+                      title="Aperçu"
                       onClick={() => {
                         setPreviewItem(item);
                         setPreviewOpen(true);
@@ -430,13 +451,18 @@ export default function AnnouncementsPage() {
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" title="Edit" onClick={() => openEdit(item)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Modifier"
+                      onClick={() => openEdit(item)}
+                    >
                       <Edit className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      title={item.active ? "Archive" : "Activate"}
+                      title={item.active ? "Archiver" : "Activer"}
                       onClick={() => toggleActive(item)}
                     >
                       {item.active ? (
@@ -448,7 +474,7 @@ export default function AnnouncementsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      title="Delete"
+                      title="Supprimer"
                       className="text-red-500"
                       onClick={() => {
                         setDeleteItem(item);
@@ -469,12 +495,12 @@ export default function AnnouncementsPage() {
           <div className="py-8">
             <EmptyState
               icon={Megaphone}
-              title="No announcements yet"
-              description="Create announcements to notify clinic owners about system updates, maintenance windows, new features, and important notices."
+              title="Aucune annonce pour le moment"
+              description="Créez des annonces pour informer les propriétaires de cliniques des mises à jour système, fenêtres de maintenance, nouvelles fonctionnalités et avis importants."
               action={
                 <Button onClick={openCreate}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Create your first announcement
+                  Créer votre première annonce
                 </Button>
               }
             />
@@ -501,8 +527,8 @@ export default function AnnouncementsPage() {
         {filtered.length === 0 && list.length > 0 && (
           <EmptyState
             icon={Search}
-            title="No matching announcements"
-            description="Try adjusting your search or filters to find what you're looking for."
+            title="Aucune annonce correspondante"
+            description="Essayez d'ajuster votre recherche ou vos filtres pour trouver ce que vous cherchez."
           />
         )}
       </div>
@@ -511,7 +537,7 @@ export default function AnnouncementsPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent onClose={() => setEditOpen(false)} className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editItem ? "Edit Announcement" : "New Announcement"}</DialogTitle>
+            <DialogTitle>{editItem ? "Modifier l'annonce" : "Nouvelle annonce"}</DialogTitle>
             <DialogDescription>
               {editItem
                 ? "Modifier les détails de l'annonce."
@@ -522,9 +548,9 @@ export default function AnnouncementsPage() {
           {!showFormPreview ? (
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label>Title</Label>
+                <Label>Titre</Label>
                 <Input
-                  placeholder="Announcement title"
+                  placeholder="Titre de l'annonce"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                 />
@@ -532,7 +558,7 @@ export default function AnnouncementsPage() {
               <div className="space-y-2">
                 <Label>Message</Label>
                 <Textarea
-                  placeholder="Write the announcement message..."
+                  placeholder="Rédigez le message de l'annonce…"
                   className="min-h-[100px]"
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
@@ -540,14 +566,14 @@ export default function AnnouncementsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Priority</Label>
+                  <Label>Priorité</Label>
                   <Select
                     value={formType}
                     onValueChange={(v) => setFormType(v as "info" | "warning" | "critical")}
                   >
                     <SelectTrigger>
                       <SelectValue
-                        placeholder="Select priority"
+                        placeholder="Sélectionner une priorité"
                         value={PRIORITY_CONFIG[formType].label}
                       />
                     </SelectTrigger>
@@ -561,46 +587,46 @@ export default function AnnouncementsPage() {
                       <SelectItem value="warning">
                         <span className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-amber-500" />
-                          Warning
+                          Avertissement
                         </span>
                       </SelectItem>
                       <SelectItem value="critical">
                         <span className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-red-500" />
-                          Critical
+                          Critique
                         </span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Target Audience</Label>
+                  <Label>Public cible</Label>
                   <Select value={formTarget} onValueChange={setFormTarget}>
                     <SelectTrigger>
                       <SelectValue
-                        placeholder="Select audience"
+                        placeholder="Sélectionner un public"
                         value={
                           formTarget === "all"
-                            ? "All Clinics"
+                            ? "Toutes les cliniques"
                             : formTarget === "basic"
-                              ? "Basic Plan"
+                              ? "Offre Basique"
                               : formTarget === "standard"
-                                ? "Standard Plan"
-                                : "Premium Plan"
+                                ? "Offre Standard"
+                                : "Offre Premium"
                         }
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Clinics</SelectItem>
-                      <SelectItem value="basic">Basic Plan</SelectItem>
-                      <SelectItem value="standard">Standard Plan</SelectItem>
-                      <SelectItem value="premium">Premium Plan</SelectItem>
+                      <SelectItem value="all">Toutes les cliniques</SelectItem>
+                      <SelectItem value="basic">Offre Basique</SelectItem>
+                      <SelectItem value="standard">Offre Standard</SelectItem>
+                      <SelectItem value="premium">Offre Premium</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Schedule</Label>
+                <Label>Programmation</Label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -609,7 +635,7 @@ export default function AnnouncementsPage() {
                     onClick={() => setFormScheduleMode("now")}
                   >
                     <Send className="h-3.5 w-3.5 mr-1" />
-                    Send Now
+                    Envoyer maintenant
                   </Button>
                   <Button
                     type="button"
@@ -618,7 +644,7 @@ export default function AnnouncementsPage() {
                     onClick={() => setFormScheduleMode("later")}
                   >
                     <Clock className="h-3.5 w-3.5 mr-1" />
-                    Schedule
+                    Planifier
                   </Button>
                 </div>
                 {formScheduleMode === "later" && (
@@ -631,40 +657,47 @@ export default function AnnouncementsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Expiry Date (optional)</Label>
+                <Label>Date d&apos;expiration (facultatif)</Label>
                 <Input
                   type="date"
                   value={formExpires}
                   onChange={(e) => setFormExpires(e.target.value)}
                 />
+                {formExpires && (
+                  <p className="text-xs text-muted-foreground">
+                    Expire le {formatDisplayDate(formExpires, "fr", "short")}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
             <div className="py-4">
               <p className="text-xs text-muted-foreground mb-3">
-                This is how clinics will see the announcement:
+                Voici comment les cliniques verront l&apos;annonce :
               </p>
               <div className={`rounded-lg p-4 border ${PRIORITY_CONFIG[formType].bg}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {typeIcon(formType)}
-                  <h3 className="font-semibold text-sm">{formTitle || "Untitled"}</h3>
+                  <h3 className="font-semibold text-sm">{formTitle || "Sans titre"}</h3>
                   <Badge variant={PRIORITY_CONFIG[formType].badge} className="text-[10px]">
-                    {formType}
+                    {PRIORITY_CONFIG[formType].label}
                   </Badge>
                 </div>
-                <p className="text-sm">{formMessage || "No message provided."}</p>
+                <p className="text-sm">{formMessage || "Aucun message fourni."}</p>
                 <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {formTarget === "all" ? "All Clinics" : `${formTarget} Plan`}
+                    {formTarget === "all" ? "Toutes les cliniques" : `Offre ${formTarget}`}
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {formScheduleMode === "later" && formScheduleDate
-                      ? `Scheduled: ${formScheduleDate}`
-                      : "Immediate"}
+                      ? `Planifiée : ${formScheduleDate}`
+                      : "Immédiate"}
                   </span>
-                  {formExpires && <span>Expires: {formExpires}</span>}
+                  {formExpires && (
+                    <span>Expire : {formatDisplayDate(formExpires, "fr", "short")}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -679,11 +712,11 @@ export default function AnnouncementsPage() {
                 onClick={() => setShowFormPreview(!showFormPreview)}
               >
                 <Eye className="h-3.5 w-3.5 mr-1" />
-                {showFormPreview ? "Back to Edit" : "Preview"}
+                {showFormPreview ? "Retour à l'édition" : "Aperçu"}
               </Button>
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => setEditOpen(false)}>
-                  Cancel
+                  Annuler
                 </Button>
                 <Button onClick={handleSave} disabled={!formTitle || !formMessage}>
                   {editItem
@@ -712,14 +745,16 @@ export default function AnnouncementsPage() {
                 <p className="text-sm">{previewItem.message}</p>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>Target: {previewItem.targetLabel}</span>
-                <span>Published: {previewItem.publishedAt}</span>
-                {previewItem.expiresAt && <span>Expires: {previewItem.expiresAt}</span>}
+                <span>Cible : {previewItem.targetLabel}</span>
+                <span>Publiée : {formatDisplayDate(previewItem.publishedAt, "fr", "short")}</span>
+                {previewItem.expiresAt && (
+                  <span>Expire : {formatDisplayDate(previewItem.expiresAt, "fr", "short")}</span>
+                )}
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setPreviewOpen(false)}>
-                Close
+                Fermer
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -731,24 +766,24 @@ export default function AnnouncementsPage() {
         {deleteItem && (
           <DialogContent onClose={() => setDeleteOpen(false)}>
             <DialogHeader>
-              <DialogTitle>Delete Announcement</DialogTitle>
+              <DialogTitle>Supprimer l&apos;annonce</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this announcement? This action cannot be undone.
+                Voulez-vous vraiment supprimer cette annonce ? Cette action est irréversible.
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deleteItem.title}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {deleteItem.type} &middot; {deleteItem.targetLabel}
+                {PRIORITY_CONFIG[deleteItem.type].label} &middot; {deleteItem.targetLabel}
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-                Cancel
+                Annuler
               </Button>
               <Button variant="destructive" onClick={handleDelete}>
                 <Trash2 className="h-4 w-4 mr-1" />
-                Delete
+                Supprimer
               </Button>
             </DialogFooter>
           </DialogContent>
