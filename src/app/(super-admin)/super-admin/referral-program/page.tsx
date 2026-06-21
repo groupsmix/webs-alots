@@ -1,12 +1,23 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
-import { Gift, Users, CreditCard, TrendingUp, Award, Loader2, Check, X } from "lucide-react";
+import {
+  Gift,
+  Users,
+  CreditCard,
+  TrendingUp,
+  Award,
+  Loader2,
+  Check,
+  X,
+  MapPin,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
 import { formatCurrency } from "@/lib/utils";
 
@@ -49,9 +60,9 @@ type CreditStatus = ReferralCredit["status"];
 
 const STATUS_LABELS: Record<CreditStatus, string> = {
   pending: "En attente",
-  approved: "Approuve",
-  applied: "Applique",
-  rejected: "Refuse",
+  approved: "Approuvé",
+  applied: "Appliqué",
+  rejected: "Refusé",
 };
 
 const STATUS_VARIANTS: Record<CreditStatus, "default" | "secondary" | "destructive" | "warning"> = {
@@ -64,28 +75,37 @@ const STATUS_VARIANTS: Record<CreditStatus, "default" | "secondary" | "destructi
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SuperAdminReferralProgramPage() {
+  const { addToast } = useToast();
   const [data, setData] = useState<ReferralCreditsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [geoBlocked, setGeoBlocked] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setGeoBlocked(false);
     try {
       const res = await fetch("/api/super-admin/referral-credits");
       const json = await res.json();
-      if (json.ok) {
+      if (res.ok && json.ok) {
         setData(json.data as ReferralCreditsData);
       } else {
-        setError((json.error as string) ?? "Erreur lors du chargement");
+        const isGeo = json?.code === "GEO_RESTRICTED";
+        setGeoBlocked(isGeo);
+        setError(
+          isGeo
+            ? "Accès restreint depuis votre localisation"
+            : ((json.error as string) ?? "Erreur lors du chargement"),
+        );
         logger.warn("Failed to load referral credits", {
           context: "super-admin-referral-program",
           error: json.error,
         });
       }
     } catch (err) {
-      setError("Erreur reseau");
+      setError("Erreur réseau");
       logger.warn("Network error loading referral credits", {
         context: "super-admin-referral-program",
         error: err,
@@ -108,7 +128,7 @@ export default function SuperAdminReferralProgramPage() {
         body: JSON.stringify({ creditId, action }),
       });
       const json = await res.json();
-      if (json.ok) {
+      if (res.ok && json.ok) {
         setData((prev) => {
           if (!prev) return prev;
           return {
@@ -123,7 +143,18 @@ export default function SuperAdminReferralProgramPage() {
             ),
           };
         });
+        // A financial action — confirm explicitly so the operator knows the
+        // payout state actually changed server-side (not just in the UI).
+        addToast(action === "approve" ? "Versement approuvé" : "Versement refusé", "success");
       } else {
+        // Surface the failure instead of silently leaving the row pending.
+        const isGeo = json?.code === "GEO_RESTRICTED";
+        addToast(
+          isGeo
+            ? "Accès restreint depuis votre localisation"
+            : ((json.error as string) ?? "Échec de l'opération — le versement n'a pas changé"),
+          "error",
+        );
         logger.warn("Failed to process credit action", {
           context: "super-admin-referral-program",
           creditId,
@@ -132,6 +163,7 @@ export default function SuperAdminReferralProgramPage() {
         });
       }
     } catch (err) {
+      addToast("Erreur réseau — le versement n'a pas changé", "error");
       logger.warn("Network error processing credit action", {
         context: "super-admin-referral-program",
         creditId,
@@ -165,14 +197,29 @@ export default function SuperAdminReferralProgramPage() {
             { label: "Programme de parrainage" },
           ]}
         />
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-center">
-          <p className="text-destructive font-medium">
-            {error ?? "Impossible de charger les donnees"}
-          </p>
-          <Button variant="outline" className="mt-4" onClick={loadData}>
-            Reessayer
-          </Button>
-        </div>
+        {geoBlocked ? (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">
+                Accès restreint depuis votre localisation
+              </p>
+              <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                L&apos;API du programme de parrainage est limitée aux accès depuis le Maroc. Les
+                données ne peuvent pas être chargées depuis votre emplacement actuel.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-center">
+            <p className="text-destructive font-medium">
+              {error ?? "Impossible de charger les données"}
+            </p>
+            <Button variant="outline" className="mt-4" onClick={loadData}>
+              Réessayer
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -192,8 +239,8 @@ export default function SuperAdminReferralProgramPage() {
           Programme de parrainage — cliniques
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Acquisition de nouvelles cliniques via parrainage. Distinct des referencements
-          medecin-a-patient.
+          Acquisition de nouvelles cliniques via parrainage. Distinct des référencements
+          médecin-à-patient.
         </p>
       </div>
 
@@ -201,7 +248,7 @@ export default function SuperAdminReferralProgramPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Codes emis</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Codes émis</CardTitle>
             <Gift className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -212,7 +259,7 @@ export default function SuperAdminReferralProgramPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Inscriptions attribuees
+              Inscriptions attribuées
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -236,7 +283,7 @@ export default function SuperAdminReferralProgramPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Recompenses declenchees
+              Récompenses déclenchées
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -251,7 +298,7 @@ export default function SuperAdminReferralProgramPage() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Award className="h-4 w-4" />
-            Top referants (par inscriptions)
+            Top référents (par inscriptions)
           </CardTitle>
         </CardHeader>
         <div className="overflow-x-auto">
@@ -262,14 +309,14 @@ export default function SuperAdminReferralProgramPage() {
                 <th className="text-left p-3 font-medium">Clinique</th>
                 <th className="text-left p-3 font-medium">Code</th>
                 <th className="text-right p-3 font-medium">Inscriptions</th>
-                <th className="text-right p-3 font-medium">Credits gagnes</th>
+                <th className="text-right p-3 font-medium">Crédits gagnés</th>
               </tr>
             </thead>
             <tbody>
               {data.leaderboard.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                    Aucune donnee de parrainage disponible.
+                    Aucune donnée de parrainage disponible.
                   </td>
                 </tr>
               )}
@@ -384,7 +431,7 @@ export default function SuperAdminReferralProgramPage() {
                   <th className="text-right p-3 font-medium">Montant</th>
                   <th className="text-left p-3 font-medium">Statut</th>
                   <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-left p-3 font-medium">Applique le</th>
+                  <th className="text-left p-3 font-medium">Appliqué le</th>
                 </tr>
               </thead>
               <tbody>
