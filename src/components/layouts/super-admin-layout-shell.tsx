@@ -165,7 +165,7 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/builder", label: "Constructeur IA", icon: Sparkles },
       { href: "/super-admin/agents", label: "Agents IA", icon: Bot },
       { href: "/super-admin/ai-team", label: "Équipe IA", icon: MessageSquare },
-      { href: "/super-admin/agent-builder", label: "Constructeur web", icon: Wand2 },
+      { href: "/super-admin/website-builder", label: "Constructeur web", icon: Wand2 },
       { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
       { href: "/super-admin/settings/ai", label: "Paramètres IA", icon: Settings },
     ],
