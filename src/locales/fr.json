@@ -732,6 +732,8 @@
   "mfa.downloadCodes": "Télécharger les codes",
   "mfa.enable": "Activer la 2FA",
   "mfa.enabled": "2FA activée",
+  "mfa.enforcementBackupNotice": "L'authentification à deux facteurs est obligatoire pour votre rôle. Sauvegardez ces codes avant de continuer.",
+  "mfa.enforcementSetupNotice": "L'authentification à deux facteurs (2FA) est obligatoire pour les comptes Super Admin et Admin Clinique. Veuillez configurer votre application d'authentification pour continuer.",
   "mfa.goToDashboard": "Aller au tableau de bord",
   "mfa.invalidCode": "Code invalide. Veuillez réessayer.",
   "mfa.manualEntry": "Ou entrez ce code manuellement",
