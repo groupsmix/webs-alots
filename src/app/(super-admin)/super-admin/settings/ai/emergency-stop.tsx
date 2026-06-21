@@ -35,6 +35,7 @@ export function EmergencyStop() {
   const [state, setState] = useState<KillSwitchState | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [forceStopOpen, setForceStopOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [working, setWorking] = useState(false);
 
@@ -73,6 +74,7 @@ export function EmergencyStop() {
           enabled ? "success" : "error",
         );
         setDialogOpen(false);
+        setForceStopOpen(false);
         setConfirmText("");
         await fetchState();
       } else {
@@ -90,24 +92,90 @@ export function EmergencyStop() {
     // notice with a retry instead of an indefinite spinner.
     if (loadFailed) {
       return (
-        <Card className="border-destructive/30">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <div>
-                <p className="text-sm font-medium">AI emergency stop status unavailable</p>
-                <p className="text-xs text-muted-foreground">
-                  Couldn&apos;t reach the kill-switch service. The emergency stop can&apos;t be
-                  shown or toggled until this loads. If AI must be stopped now, set the{" "}
-                  <span className="font-mono">AI_DISABLED</span> environment variable.
-                </p>
+        <>
+          <Card className="border-destructive/30">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <div>
+                  <p className="text-sm font-medium">AI emergency stop status unavailable</p>
+                  <p className="text-xs text-muted-foreground">
+                    Couldn&apos;t reach the kill-switch service, so the current state is unknown.
+                    You can still force a stop below, or set the{" "}
+                    <span className="font-mono">AI_DISABLED</span> environment variable.
+                  </p>
+                </div>
               </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => void fetchState()}>
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => void fetchState()}>
+                  Retry
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setForceStopOpen(true)}
+                  disabled={working}
+                >
+                  <OctagonX className="mr-1 h-3.5 w-3.5" />
+                  Force emergency stop
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI-7: manual stop that works independently of the (failed) status check. */}
+          <Dialog
+            open={forceStopOpen}
+            onOpenChange={(open) => {
+              setForceStopOpen(open);
+              if (!open) setConfirmText("");
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Force emergency stop — all AI
+                </DialogTitle>
+                <DialogDescription>
+                  The current kill-switch state couldn&apos;t be loaded, but this still writes the
+                  platform-wide stop flag directly: every AI feature is disabled and all provider
+                  spend halts. If feature-flag storage is also unavailable, this will fail with a
+                  message telling you to use the <span className="font-mono">AI_DISABLED</span>{" "}
+                  environment variable instead.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  Type <span className="font-mono font-bold">STOP</span> to confirm:
+                </p>
+                <Input
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder="STOP"
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setForceStopOpen(false)}
+                  disabled={working}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => void flip(false)}
+                  disabled={working || confirmText.trim().toUpperCase() !== "STOP"}
+                >
+                  {working && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Stop all AI now
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       );
     }
     return (
