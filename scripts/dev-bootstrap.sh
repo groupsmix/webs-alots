@@ -58,11 +58,15 @@ ok "Supabase CLI: $($SUPABASE_CMD --version 2>/dev/null | head -1)"
 
 # ---- 2. install dependencies ----------------------------------------------
 info "Installing npm dependencies (this can take a minute)…"
-if [ -f package-lock.json ]; then
-  npm ci
-else
-  npm install
+# Use `npm ci` only: it installs strictly from the integrity-hashed
+# package-lock.json (a pinned, reproducible install). We deliberately do NOT
+# fall back to `npm install`, which resolves versions at runtime (unpinned) —
+# Scorecard Pinned-Dependencies flags that, and this repo always commits a
+# lockfile, so the fallback would never be the intended path anyway.
+if [ ! -f package-lock.json ]; then
+  fail "package-lock.json not found. Run this from a clean clone of the repo (the lockfile is committed)."
 fi
+npm ci
 ok "Dependencies installed"
 
 # ---- 3. start local Supabase ----------------------------------------------
