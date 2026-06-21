@@ -382,7 +382,7 @@ export default function PricingPage() {
 
     setEditingTierId(null);
     setConfirmSaveOpen(false);
-    addToast("Tier updated successfully", "success");
+    addToast("Offre mise à jour (aperçu — non enregistré)", "info");
   }
 
   // Promotion handlers
@@ -409,7 +409,7 @@ export default function PricingPage() {
     setPromotions(updated);
     savePromos(updated);
     setPromoFormOpen(false);
-    addToast("Promotion created", "success");
+    addToast("Promotion créée (aperçu — non enregistré)", "info");
   }
 
   function togglePromoEnabled(id: string) {
@@ -425,7 +425,7 @@ export default function PricingPage() {
     savePromos(updated);
     setDeletePromoOpen(false);
     setDeletePromoItem(null);
-    addToast("Promotion deleted", "success");
+    addToast("Promotion supprimée (aperçu — non enregistré)", "info");
   }
 
   function togglePromoTier(slug: string) {
@@ -440,13 +440,14 @@ export default function PricingPage() {
         <Breadcrumb
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
-            { label: "Pricing & Tiers" },
+            { label: "Tarifs & Offres" },
           ]}
         />
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Pricing & Tiers</h1>
+          <h1 className="text-2xl font-bold">Tarifs & Offres</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage subscription tiers, pricing, and feature toggles for all system types
+            Gérez les offres d&apos;abonnement, les tarifs et les fonctionnalités pour tous les
+            types de cabinets
           </p>
         </div>
         <CardSkeleton count={4} className="mb-6" />
@@ -470,14 +471,15 @@ export default function PricingPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Pricing & Tiers" },
+          { label: "Tarifs & Offres" },
         ]}
       />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Pricing & Tiers</h1>
+          <h1 className="text-2xl font-bold">Tarifs & Offres</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage subscription tiers, pricing, and feature toggles for all system types
+            Gérez les offres d&apos;abonnement, les tarifs et les fonctionnalités pour tous les
+            types de cabinets
           </p>
         </div>
       </div>
@@ -488,7 +490,7 @@ export default function PricingPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="text-xs text-muted-foreground">MRR</span>
+              <span className="text-xs text-muted-foreground">MRR (abonnements actifs)</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
             <p className="text-xs text-muted-foreground">MAD / mois</p>
@@ -544,7 +546,7 @@ export default function PricingPage() {
           onClick={() => setTab("features")}
         >
           <Settings className="h-4 w-4 mr-1" />
-          Feature Toggles
+          Fonctionnalités
         </Button>
         <Button
           variant={tab === "promotions" ? "default" : "outline"}
@@ -600,7 +602,7 @@ export default function PricingPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setHistoryOpen(true)}
-                title="Price change history"
+                title="Historique des changements de prix"
               >
                 <History className="h-4 w-4" />
               </Button>
@@ -656,15 +658,14 @@ export default function PricingPage() {
                       }
                       labelStyle={{ fontSize: 11 }}
                       contentStyle={{ fontSize: 11 }}
-                      cursor={{ fill: "hsl(var(--muted))" }}
+                      cursor={{ fill: "var(--muted)" }}
                     />
                     <Bar dataKey="price" radius={[3, 3, 0, 0]}>
                       {chartData.map((entry, i) => (
                         <Cell
                           key={`cell-${i}`}
-                          fill={
-                            entry.popular ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.45)"
-                          }
+                          fill="var(--primary)"
+                          fillOpacity={entry.popular ? 1 : 0.45}
                         />
                       ))}
                     </Bar>
@@ -728,7 +729,7 @@ export default function PricingPage() {
                               size="sm"
                               className="h-6 w-6 p-0"
                               onClick={() => startEditTier(tier)}
-                              title="Edit tier"
+                              title="Modifier l'offre"
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
@@ -739,7 +740,7 @@ export default function PricingPage() {
                     {isEditing ? (
                       <div className="mt-2 space-y-2">
                         <div>
-                          <Label className="text-[10px]">Price (MAD)</Label>
+                          <Label className="text-[10px]">Prix (MAD)</Label>
                           <div className="flex gap-1">
                             <Input
                               type="number"
@@ -760,7 +761,8 @@ export default function PricingPage() {
                         </div>
                         <p className="text-[10px] text-amber-600 flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" />
-                          This tier has {subCount} active clinic{subCount !== 1 ? "s" : ""}
+                          Cette offre compte {subCount} clinique{subCount !== 1 ? "s" : ""} active
+                          {subCount !== 1 ? "s" : ""}
                         </p>
                       </div>
                     ) : (
@@ -796,7 +798,7 @@ export default function PricingPage() {
 
                     {isEditing ? (
                       <div className="space-y-2">
-                        <Label className="text-[10px]">Features (one per line)</Label>
+                        <Label className="text-[10px]">Fonctionnalités (une par ligne)</Label>
                         <textarea
                           className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                           value={editFeatures}
@@ -809,7 +811,7 @@ export default function PricingPage() {
                             onClick={requestSaveTier}
                           >
                             <Save className="h-3 w-3 mr-1" />
-                            Save
+                            Enregistrer
                           </Button>
                           <Button
                             size="sm"
@@ -817,7 +819,7 @@ export default function PricingPage() {
                             className="h-7 text-xs"
                             onClick={cancelEditTier}
                           >
-                            Cancel
+                            Annuler
                           </Button>
                         </div>
                       </div>
@@ -1039,17 +1041,27 @@ export default function PricingPage() {
                 "advanced",
                 "pharmacy",
               ] as CategoryFilter[]
-            ).map((c) => (
-              <Button
-                key={c}
-                variant={categoryFilter === c ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCategoryFilter(c)}
-                className="capitalize text-xs"
-              >
-                {c === "all" ? "Toutes" : c}
-              </Button>
-            ))}
+            ).map((c) => {
+              const labels: Record<string, string> = {
+                all: "Toutes",
+                core: "Principales",
+                communication: "Communication",
+                integration: "Intégration",
+                advanced: "Avancées",
+                pharmacy: "Pharmacie",
+              };
+              return (
+                <Button
+                  key={c}
+                  variant={categoryFilter === c ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCategoryFilter(c)}
+                  className="text-xs"
+                >
+                  {labels[c] ?? c}
+                </Button>
+              );
+            })}
           </div>
 
           {/* Feature Toggle Matrix */}
@@ -1154,7 +1166,7 @@ export default function PricingPage() {
             </div>
             <Button onClick={openCreatePromo}>
               <Plus className="h-4 w-4 mr-1" />
-              New Promotion
+              Nouvelle promotion
             </Button>
           </div>
 
@@ -1250,10 +1262,10 @@ export default function PricingPage() {
       <Dialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
         <DialogContent onClose={() => setConfirmSaveOpen(false)}>
           <DialogHeader>
-            <DialogTitle>Confirm Price Change</DialogTitle>
+            <DialogTitle>Confirmer le changement de prix</DialogTitle>
             <DialogDescription>
-              Are you sure you want to update this tier? This change will affect pricing for the
-              selected system type and billing cycle.
+              Confirmez-vous la mise à jour de cette offre ? Le nouveau tarif s&apos;applique au
+              type de cabinet et au cycle de facturation sélectionnés.
             </DialogDescription>
           </DialogHeader>
           {editingTierId && (
@@ -1268,25 +1280,22 @@ export default function PricingPage() {
                 Nouveau prix :{" "}
                 <span className="font-semibold">{formatCurrency(Number(editPriceMin))}</span>
               </p>
+              {/* R5: tier pricing has no persistence path (no write API/server
+                  action) — be explicit so a price edit is never mistaken for a
+                  live change affecting active subscriptions. */}
               <p className="text-xs text-amber-600 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                {
-                  subscriptions.filter((s) => {
-                    const tier = tiers.find((t) => t.id === editingTierId);
-                    return tier && s.tierSlug === tier.slug;
-                  }).length
-                }{" "}
-                abonnements actifs seront affectés
+                Aperçu uniquement — modification non enregistrée (aucune persistance disponible)
               </p>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmSaveOpen(false)}>
-              Cancel
+              Annuler
             </Button>
             <Button onClick={confirmSaveTier}>
               <Save className="h-4 w-4 mr-1" />
-              Confirm & Save
+              Confirmer
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1340,7 +1349,7 @@ export default function PricingPage() {
       <Dialog open={promoFormOpen} onOpenChange={setPromoFormOpen}>
         <DialogContent onClose={() => setPromoFormOpen(false)} className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>New Promotion</DialogTitle>
+            <DialogTitle>Nouvelle promotion</DialogTitle>
             <DialogDescription>
               Create a new promotional offer with percentage discounts.
             </DialogDescription>
@@ -1427,25 +1436,25 @@ export default function PricingPage() {
         {deletePromoItem && (
           <DialogContent onClose={() => setDeletePromoOpen(false)}>
             <DialogHeader>
-              <DialogTitle>Delete Promotion</DialogTitle>
+              <DialogTitle>Supprimer la promotion</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this promotion? This action cannot be undone.
+                Voulez-vous vraiment supprimer cette promotion ? Cette action est irréversible.
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deletePromoItem.name}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {deletePromoItem.discount}% off &middot; {deletePromoItem.startDate} →{" "}
+                {deletePromoItem.discount}% de remise &middot; {deletePromoItem.startDate} →{" "}
                 {deletePromoItem.endDate}
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeletePromoOpen(false)}>
-                Cancel
+                Annuler
               </Button>
               <Button variant="destructive" onClick={handleDeletePromo}>
                 <Trash2 className="h-4 w-4 mr-1" />
-                Delete
+                Supprimer
               </Button>
             </DialogFooter>
           </DialogContent>

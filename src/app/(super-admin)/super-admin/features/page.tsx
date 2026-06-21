@@ -16,6 +16,8 @@ import {
   ChevronDown,
   FileSpreadsheet,
   FileText,
+  Info,
+  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +77,20 @@ interface ClinicOverride {
 }
 
 const tiers = ["basic", "standard", "premium"];
+
+const TIER_LABELS: Record<string, string> = {
+  basic: "Basique",
+  standard: "Standard",
+  premium: "Premium",
+};
+
+const CATEGORY_LABELS: Record<CategoryFilter, string> = {
+  all: "Toutes",
+  core: "Principales",
+  communication: "Communication",
+  integration: "Intégration",
+  advanced: "Avancées",
+};
 
 export default function FeatureTogglesPage() {
   const { addToast } = useToast();
@@ -178,8 +194,8 @@ export default function FeatureTogglesPage() {
       prev.map((f) => (f.id === featureId ? { ...f, globalEnabled: !f.globalEnabled } : f)),
     );
     addToast(
-      `${feature?.name ?? "Feature"} ${feature?.globalEnabled ? "disabled" : "enabled"} globally`,
-      "success",
+      `${feature?.name ?? "Fonctionnalité"} ${feature?.globalEnabled ? "désactivée" : "activée"} (aperçu — non enregistré)`,
+      "info",
     );
   }
 
@@ -215,8 +231,8 @@ export default function FeatureTogglesPage() {
     );
     setBulkOpen(false);
     addToast(
-      `All features ${bulkAction === "enable" ? "enabled" : "disabled"} for ${bulkTier} tier`,
-      "success",
+      `Aperçu mis à jour : toutes les fonctionnalités ${bulkAction === "enable" ? "activées" : "désactivées"} pour le palier ${TIER_LABELS[bulkTier] ?? bulkTier} (non enregistré)`,
+      "info",
     );
   }
 
@@ -246,12 +262,15 @@ export default function FeatureTogglesPage() {
           }
           return [...prev, newOverride];
         });
-        addToast(`Override set: ${featureKey} ${enabled ? "enabled" : "disabled"}`, "success");
+        addToast(
+          `Dérogation enregistrée : ${featureKey} ${enabled ? "activée" : "désactivée"}`,
+          "success",
+        );
       } else {
-        addToast("Failed to set override", "error");
+        addToast("Échec de l'enregistrement de la dérogation", "error");
       }
     } catch {
-      addToast("Failed to set override", "error");
+      addToast("Échec de l'enregistrement de la dérogation", "error");
     }
   }
 
@@ -268,12 +287,12 @@ export default function FeatureTogglesPage() {
       });
       if (res.ok) {
         setOverrides((prev) => prev.filter((o) => o.feature_key !== featureKey));
-        addToast(`Override cleared for ${featureKey}`, "success");
+        addToast(`Dérogation supprimée pour ${featureKey}`, "success");
       } else {
-        addToast("Failed to clear override", "error");
+        addToast("Échec de la suppression de la dérogation", "error");
       }
     } catch {
-      addToast("Failed to clear override", "error");
+      addToast("Échec de la suppression de la dérogation", "error");
     }
   }
 
@@ -297,7 +316,7 @@ export default function FeatureTogglesPage() {
       Premium: f.availableTiers.includes("premium") ? "Yes" : "No",
     }));
     exportToCSV(rows, `features-${getLocalDateStr()}.csv`);
-    addToast("Feature matrix CSV exported", "success");
+    addToast("Matrice des fonctionnalités exportée en CSV", "success");
   }
 
   function handleExportFeaturesPDF() {
@@ -309,7 +328,7 @@ export default function FeatureTogglesPage() {
       Standard: f.availableTiers.includes("standard") ? "Yes" : "No",
       Premium: f.availableTiers.includes("premium") ? "Yes" : "No",
     }));
-    exportToPDF("Feature Matrix \u2014 Oltigo Health", rows, [
+    exportToPDF("Matrice des fonctionnalités \u2014 Oltigo Health", rows, [
       "Feature",
       "Category",
       "Global",
@@ -317,7 +336,10 @@ export default function FeatureTogglesPage() {
       "Standard",
       "Premium",
     ]);
-    addToast("PDF generated \u2014 use Save as PDF in the print dialog", "success");
+    addToast(
+      "PDF généré \u2014 utilisez « Enregistrer au format PDF » dans la boîte d'impression",
+      "success",
+    );
   }
 
   const enabledCount = features.filter((f) => f.globalEnabled).length;
@@ -329,13 +351,13 @@ export default function FeatureTogglesPage() {
         <Breadcrumb
           items={[
             { label: "Super Admin", href: "/super-admin/dashboard" },
-            { label: "Feature Toggles" },
+            { label: "Fonctionnalités" },
           ]}
         />
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Feature Toggles</h1>
+          <h1 className="text-2xl font-bold">Fonctionnalités</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Control feature availability per tier and globally
+            Contrôlez la disponibilité des fonctionnalités par palier et globalement
           </p>
         </div>
         <CardSkeleton count={4} className="mb-6" />
@@ -349,14 +371,14 @@ export default function FeatureTogglesPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Feature Toggles" },
+          { label: "Fonctionnalités" },
         ]}
       />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Feature Toggles</h1>
+          <h1 className="text-2xl font-bold">Fonctionnalités</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Control feature availability per tier and globally
+            Contrôlez la disponibilité des fonctionnalités par palier et globalement
           </p>
         </div>
         <div className="flex gap-2">
@@ -364,24 +386,24 @@ export default function FeatureTogglesPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={filtered.length === 0}>
                 <Download className="h-4 w-4 mr-1" />
-                Export
+                Exporter
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleExportFeaturesCSV}>
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export CSV
+                Exporter en CSV
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportFeaturesPDF}>
                 <FileText className="h-4 w-4 mr-2" />
-                Export PDF
+                Exporter en PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" onClick={() => setBulkOpen(true)}>
             <ToggleLeft className="h-4 w-4 mr-1" />
-            Bulk Actions
+            Actions groupées
           </Button>
         </div>
       </div>
@@ -390,25 +412,25 @@ export default function FeatureTogglesPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Total Features</p>
+            <p className="text-xs text-muted-foreground mb-1">Total fonctionnalités</p>
             <p className="text-2xl font-bold">{features.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Globally Enabled</p>
+            <p className="text-xs text-muted-foreground mb-1">Activées globalement</p>
             <p className="text-2xl font-bold text-green-600">{enabledCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Categories</p>
+            <p className="text-xs text-muted-foreground mb-1">Catégories</p>
             <p className="text-2xl font-bold">4</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Clinics Affected</p>
+            <p className="text-xs text-muted-foreground mb-1">Cliniques concernées</p>
             <p className="text-2xl font-bold">{totalClinics}</p>
           </CardContent>
         </Card>
@@ -417,9 +439,9 @@ export default function FeatureTogglesPage() {
       {/* Tabs for Feature Matrix vs Clinic Overrides */}
       <Tabs defaultValue="matrix">
         <TabsList>
-          <TabsTrigger value="matrix">Feature Matrix</TabsTrigger>
+          <TabsTrigger value="matrix">Matrice des fonctionnalités</TabsTrigger>
           <TabsTrigger value="overrides">
-            Clinic Overrides
+            Dérogations cliniques
             {overrideCount > 0 && (
               <Badge variant="secondary" className="ml-2 text-[10px]">
                 {overrideCount}
@@ -429,12 +451,27 @@ export default function FeatureTogglesPage() {
         </TabsList>
 
         <TabsContent value="matrix">
+          {/* R1/R3: the global + per-tier toggles below are a non-persistent
+              preview — there is no write path for feature_definitions, so a
+              click changes only this view and is discarded on refresh. Make
+              that explicit so an operator never believes a tier-wide change
+              was rolled out to clinics. Persistent, per-clinic changes are
+              made in the "Dérogations cliniques" tab. */}
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <p className="text-amber-800 dark:text-amber-200">
+              Les bascules globales et par palier ci-dessous sont un aperçu et ne sont pas encore
+              enregistrées. Pour appliquer un changement persistant à une clinique, utilisez
+              l&apos;onglet « Dérogations cliniques ».
+            </p>
+          </div>
+
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search features..."
+                placeholder="Rechercher des fonctionnalités…"
                 className="pl-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -443,38 +480,44 @@ export default function FeatureTogglesPage() {
             <div className="flex items-center gap-1">
               {(
                 ["all", "core", "communication", "integration", "advanced"] as CategoryFilter[]
-              ).map((c) => (
-                <Button
-                  key={c}
-                  variant={catFilter === c ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCatFilter(c)}
-                  className="capitalize text-xs"
-                >
-                  {c === "all" ? "All" : c}
-                </Button>
-              ))}
+              ).map((c) => {
+                const count =
+                  c === "all" ? features.length : features.filter((f) => f.category === c).length;
+                return (
+                  <Button
+                    key={c}
+                    variant={catFilter === c ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCatFilter(c)}
+                    className="text-xs"
+                  >
+                    {CATEGORY_LABELS[c]} ({count})
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
           {/* Feature Matrix */}
           <Card>
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-base">Feature Matrix</CardTitle>
+              <CardTitle className="text-base">Matrice des fonctionnalités</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="table-mobile-scroll">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4 min-w-[250px]">Feature</th>
-                      <th className="text-center font-medium py-3 px-4">Global</th>
+                      <th className="text-left font-medium py-3 px-4 min-w-[250px]">
+                        Fonctionnalité
+                      </th>
+                      <th className="text-center font-medium py-3 px-4">Globale</th>
                       {tiers.map((tier) => (
-                        <th key={tier} className="text-center font-medium py-3 px-4 capitalize">
-                          {tier}
+                        <th key={tier} className="text-center font-medium py-3 px-4">
+                          {TIER_LABELS[tier] ?? tier}
                         </th>
                       ))}
-                      <th className="text-center font-medium py-3 px-4">Category</th>
+                      <th className="text-center font-medium py-3 px-4">Catégorie</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -517,8 +560,8 @@ export default function FeatureTogglesPage() {
                           </td>
                         ))}
                         <td className="py-3 px-4 text-center">
-                          <Badge variant="outline" className="capitalize text-[10px]">
-                            {feature.category}
+                          <Badge variant="outline" className="text-[10px]">
+                            {CATEGORY_LABELS[feature.category] ?? feature.category}
                           </Badge>
                         </td>
                       </tr>
@@ -526,7 +569,7 @@ export default function FeatureTogglesPage() {
                     {filtered.length === 0 && (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                          No features found.
+                          Aucune fonctionnalité trouvée.
                         </td>
                       </tr>
                     )}
@@ -544,11 +587,11 @@ export default function FeatureTogglesPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  Clinic Feature Overrides
+                  Dérogations de fonctionnalités par clinique
                 </CardTitle>
                 {selectedClinicId && overrideCount > 0 && (
                   <Badge variant="secondary">
-                    {overrideCount} override{overrideCount !== 1 ? "s" : ""}
+                    {overrideCount} dérogation{overrideCount !== 1 ? "s" : ""}
                   </Badge>
                 )}
               </div>
@@ -556,11 +599,11 @@ export default function FeatureTogglesPage() {
             <CardContent>
               <div className="mb-4">
                 {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- custom Select component */}
-                <label className="text-sm font-medium mb-2 block">Select Clinic</label>
+                <label className="text-sm font-medium mb-2 block">Sélectionner une clinique</label>
                 <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
                   <SelectTrigger className="w-full max-w-md">
                     <SelectValue
-                      placeholder="Choose a clinic..."
+                      placeholder="Choisir une clinique…"
                       value={clinics.find((c) => c.id === selectedClinicId)?.name}
                     />
                   </SelectTrigger>
@@ -584,10 +627,10 @@ export default function FeatureTogglesPage() {
                         <thead>
                           <tr className="border-b text-muted-foreground">
                             <th className="text-left font-medium py-3 px-4 min-w-[250px]">
-                              Feature
+                              Fonctionnalité
                             </th>
-                            <th className="text-center font-medium py-3 px-4">Status</th>
-                            <th className="text-center font-medium py-3 px-4">Override</th>
+                            <th className="text-center font-medium py-3 px-4">Statut</th>
+                            <th className="text-center font-medium py-3 px-4">Dérogation</th>
                             <th className="text-center font-medium py-3 px-4">Actions</th>
                           </tr>
                         </thead>
@@ -613,17 +656,17 @@ export default function FeatureTogglesPage() {
                                 <td className="py-3 px-4 text-center">
                                   {state === "inherited" && (
                                     <Badge variant="outline" className="text-[10px] text-gray-500">
-                                      Inherited
+                                      Hérité
                                     </Badge>
                                   )}
                                   {state === "enabled" && (
                                     <Badge className="text-[10px] bg-green-100 text-green-700 border-green-200">
-                                      Enabled
+                                      Activé
                                     </Badge>
                                   )}
                                   {state === "disabled" && (
                                     <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200">
-                                      Disabled
+                                      Désactivé
                                     </Badge>
                                   )}
                                 </td>
@@ -648,7 +691,7 @@ export default function FeatureTogglesPage() {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => clearClinicOverride(feature.key)}
-                                      title="Clear override (revert to tier default)"
+                                      title="Effacer la dérogation (revenir au défaut du palier)"
                                     >
                                       <RotateCcw className="h-3.5 w-3.5" />
                                     </Button>
@@ -666,7 +709,7 @@ export default function FeatureTogglesPage() {
 
               {!selectedClinicId && (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Select a clinic to manage feature overrides.
+                  Sélectionnez une clinique pour gérer les dérogations de fonctionnalités.
                 </p>
               )}
             </CardContent>
@@ -678,12 +721,21 @@ export default function FeatureTogglesPage() {
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
         <DialogContent onClose={() => setBulkOpen(false)}>
           <DialogHeader>
-            <DialogTitle>Bulk Feature Toggle</DialogTitle>
+            <DialogTitle>Activation groupée des fonctionnalités</DialogTitle>
             <DialogDescription>
-              Enable or disable all features for a specific tier at once.
+              Activez ou désactivez toutes les fonctionnalités pour un palier donné, en une fois.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs dark:bg-amber-900/20 dark:border-amber-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-amber-800 dark:text-amber-200">
+                Cette action met à jour l&apos;aperçu de toutes les fonctionnalités du palier
+                sélectionné. Il s&apos;agit d&apos;un aperçu local : aucune modification n&apos;est
+                enregistrée ni propagée aux cliniques tant qu&apos;une persistance n&apos;est pas
+                disponible.
+              </p>
+            </div>
             <div className="space-y-2">
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Action</label>
@@ -692,19 +744,19 @@ export default function FeatureTogglesPage() {
                 value={bulkAction}
                 onChange={(e) => setBulkAction(e.target.value as "enable" | "disable")}
               >
-                <option value="enable">Enable all features</option>
-                <option value="disable">Disable all features</option>
+                <option value="enable">Activer toutes les fonctionnalités</option>
+                <option value="disable">Désactiver toutes les fonctionnalités</option>
               </select>
             </div>
             <div className="space-y-2">
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
-              <label className="text-sm font-medium">Tier</label>
+              <label className="text-sm font-medium">Palier</label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                 value={bulkTier}
                 onChange={(e) => setBulkTier(e.target.value)}
               >
-                <option value="basic">Basic</option>
+                <option value="basic">Basique</option>
                 <option value="standard">Standard</option>
                 <option value="premium">Premium</option>
               </select>
@@ -712,11 +764,11 @@ export default function FeatureTogglesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkOpen(false)}>
-              Cancel
+              Annuler
             </Button>
             <Button onClick={handleBulkAction}>
               <ToggleLeft className="h-4 w-4 mr-1" />
-              Apply to All Features
+              Appliquer à toutes les fonctionnalités
             </Button>
           </DialogFooter>
         </DialogContent>

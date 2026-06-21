@@ -313,11 +313,11 @@ export default function BillingPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleExportBillingCSV} disabled={isExporting}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Export CSV
+              Exporter en CSV
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleExportBillingPDF} disabled={isExporting}>
               <FileText className="h-4 w-4 mr-2" />
-              Export PDF
+              Exporter en PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -344,7 +344,7 @@ export default function BillingPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-xs text-muted-foreground">MRR</span>
+                  <span className="text-xs text-muted-foreground">MRR (facturé)</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
                 <p className="text-xs text-muted-foreground">MAD / mois</p>
@@ -428,17 +428,14 @@ export default function BillingPage() {
                       }
                       labelStyle={{ fontSize: 11 }}
                       contentStyle={{ fontSize: 11 }}
-                      cursor={{ fill: "hsl(var(--muted))" }}
+                      cursor={{ fill: "var(--muted)" }}
                     />
                     <Bar dataKey="amount" radius={[3, 3, 0, 0]}>
                       {chartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={
-                            index === chartData.length - 1
-                              ? "hsl(var(--primary))"
-                              : "hsl(var(--primary) / 0.45)"
-                          }
+                          fill="var(--primary)"
+                          fillOpacity={index === chartData.length - 1 ? 1 : 0.45}
                         />
                       ))}
                     </Bar>
@@ -590,7 +587,7 @@ export default function BillingPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="View details"
+                              title="Voir les détails"
                               onClick={() => setDetailRecord(record)}
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -608,7 +605,7 @@ export default function BillingPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                title="Send reminder"
+                                title="Envoyer un rappel"
                                 className="text-orange-600"
                                 onClick={() => {
                                   setReminderRecord(record);
@@ -643,7 +640,7 @@ export default function BillingPage() {
           <DialogContent onClose={() => setDetailRecord(null)} className="max-w-lg">
             <DialogHeader>
               <DialogTitle>
-                Invoice {formatInvoiceNumber(detailRecord.id, detailRecord.invoiceDate)}
+                Facture {formatInvoiceNumber(detailRecord.id, detailRecord.invoiceDate)}
               </DialogTitle>
               <DialogDescription>
                 Détails de la facture pour {detailRecord.clinicName}
