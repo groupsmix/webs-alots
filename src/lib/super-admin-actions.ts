@@ -659,6 +659,10 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
       .maybeSingle();
 
     if (existingRow) {
+      // The auth trigger inserts this row with clinic_id = NULL, so it cannot be
+      // filtered by clinic_id; the row is uniquely identified by the just-created
+      // auth_id. We are assigning the clinic here, not querying across tenants.
+      // nosemgrep: tenant-scoping
       const { data: updated, error: updateError } = await supabase
         .from("users")
         .update({
@@ -695,6 +699,10 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     // auth trigger created it, or the same staff email was onboarded before).
     // The users.email UNIQUE index rejects the duplicate with code 23505;
     // instead of crashing, update the existing row so onboarding is idempotent.
+    // Scoped to this clinic on purpose: we only relink a row that already
+    // belongs to input.clinic_id. If the email belongs to another tenant, the
+    // filter matches nothing and the original error is surfaced — we never
+    // reassign a user across clinics (tenant isolation, AGENTS.md rule #1).
     const isDuplicate =
       error.code === "23505" ||
       /duplicate key|already exists|unique constraint/i.test(error.message);
@@ -709,6 +717,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
           ...(authId ? { auth_id: authId } : {}),
         })
         .eq("email", input.email)
+        .eq("clinic_id", input.clinic_id)
         .select()
         .single();
 
