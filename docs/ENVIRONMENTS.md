@@ -82,11 +82,29 @@ bash scripts/setup-worker-secrets.sh production
 
 It auto-generates the HMAC/encryption keys and prompts you to paste the
 external ones (Supabase service-role key, pooler URL, Stripe, etc.). The AI
-Worker has its own secrets — set them in `workers/ai/` (e.g. `GROQ_API_KEY`).
+Worker has its own secrets — set them with the companion helper:
+
+```bash
+bash scripts/setup-ai-worker-secrets.sh staging      # GROQ_API_KEY + Supabase + optional providers
+bash scripts/setup-ai-worker-secrets.sh production
+```
+
 Full reference: `docs/production-env-matrix.md`.
 
 > **Production only:** also set `SEED_PASSWORDS_ROTATED=true` — the app refuses
 > to start in production without it (a safety guard).
+
+### E. (Recommended) Require approval before production deploys
+
+`deploy.yml` records each deploy under a GitHub **Environment** (`production`
+on `main`, `staging` otherwise). To make production deploys pause for a manual
+approval click:
+
+1. GitHub → **Settings → Environments → `production`**.
+2. Add a **Required reviewers** rule (yourself / your team).
+
+Until you add the rule it is a no-op. Once added, every push to `main` waits
+for an approval in the Actions run before it ships to `oltigo.com`.
 
 ---
 
