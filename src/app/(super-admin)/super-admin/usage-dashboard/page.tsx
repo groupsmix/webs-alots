@@ -1,10 +1,19 @@
 /* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
-import { BarChart3, AlertTriangle, TrendingUp, Loader2, DollarSign } from "lucide-react";
+import {
+  BarChart3,
+  AlertTriangle,
+  TrendingUp,
+  Loader2,
+  DollarSign,
+  MapPin,
+  RefreshCw,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 
@@ -73,16 +82,35 @@ export default function UsageDashboardPage() {
   const [clinicDetail, setClinicDetail] = useState<ClinicDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  // I2: track failed/blocked top-level fetch so "no usage" isn't shown for a 403.
+  const [fetchError, setFetchError] = useState(false);
+  const [geoBlocked, setGeoBlocked] = useState(false);
 
   const loadAllUsage = useCallback(async () => {
+    setFetchError(false);
+    setGeoBlocked(false);
     try {
       const res = await fetch("/api/admin/usage/quota");
-      const json = (await res.json()) as { ok: boolean; data?: { usage: ClinicUsageRow[] } };
-      if (json.ok && json.data) {
-        setAllUsage(json.data.usage);
+      let isGeo = false;
+      try {
+        const json = (await res.json()) as {
+          ok: boolean;
+          code?: string;
+          data?: { usage: ClinicUsageRow[] };
+        };
+        if (res.ok && json.ok && json.data) {
+          setAllUsage(json.data.usage);
+          return;
+        }
+        isGeo = json?.code === "GEO_RESTRICTED";
+      } catch {
+        /* non-JSON error body */
       }
+      if (isGeo) setGeoBlocked(true);
+      else setFetchError(true);
     } catch (err) {
       logger.warn("Failed to load usage data", { context: "usage-dashboard", error: err });
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -143,7 +171,7 @@ export default function UsageDashboardPage() {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-        Loading usage data...
+        Chargement des données d&apos;utilisation…
       </div>
     );
   }
@@ -153,26 +181,60 @@ export default function UsageDashboardPage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Usage Dashboard" },
+          { label: "Tableau de bord usage" },
         ]}
       />
 
-      <h1 className="text-2xl font-bold">Usage Dashboard</h1>
+      <h1 className="text-2xl font-bold">Tableau de bord d&apos;utilisation</h1>
+
+      {/* I2: geo-block / failure banners */}
+      {geoBlocked && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-medium text-amber-800 dark:text-amber-200">
+              Accès restreint depuis votre localisation
+            </p>
+            <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+              L&apos;API d&apos;utilisation/quota est limitée aux accès depuis le Maroc. Les
+              montants affichés (zéro) ne reflètent pas la consommation réelle.
+            </p>
+          </div>
+        </div>
+      )}
+      {fetchError && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/5 px-4 py-3 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+          <span className="flex-1 text-destructive">
+            Impossible de charger les données d&apos;utilisation (erreur réseau ou API
+            indisponible).
+          </span>
+          <Button variant="outline" size="sm" onClick={() => loadAllUsage()}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Réessayer
+          </Button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cost (MTD)</CardTitle>
+            {/* B6: this is the raw AI/infra provider cost, billed in USD — labelled
+                explicitly so it isn't mistaken for a MAD platform-revenue figure. */}
+            <CardTitle className="text-sm font-medium">
+              Coût fournisseur (USD, mois en cours)
+            </CardTitle>
             <DollarSign className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${totalCostAllClinics.toFixed(4)}</div>
+            <p className="text-muted-foreground text-xs">Coût des fournisseurs (USD), hors MAD</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Clinics</CardTitle>
+            <CardTitle className="text-sm font-medium">Cliniques actives</CardTitle>
             <BarChart3 className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
@@ -189,7 +251,7 @@ export default function UsageDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatUnits(rt, v.units)}</div>
-                <p className="text-muted-foreground text-xs">${v.cost.toFixed(4)} cost</p>
+                <p className="text-muted-foreground text-xs">${v.cost.toFixed(4)} (USD)</p>
               </CardContent>
             </Card>
           ))}
@@ -200,12 +262,16 @@ export default function UsageDashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Top Consumers (This Month)
+            Plus gros consommateurs (ce mois-ci)
           </CardTitle>
         </CardHeader>
         <CardContent>
           {topConsumers.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No usage recorded this month.</p>
+            <p className="text-muted-foreground text-sm">
+              {geoBlocked || fetchError
+                ? "Données indisponibles — voir le message ci-dessus."
+                : "Aucune consommation enregistrée ce mois-ci."}
+            </p>
           ) : (
             <div className="space-y-2">
               {topConsumers.map(([clinicId, data]) => (
@@ -238,23 +304,23 @@ export default function UsageDashboardPage() {
       {selectedClinic && (
         <Card>
           <CardHeader>
-            <CardTitle>Clinic: {selectedClinic.slice(0, 8)}…</CardTitle>
+            <CardTitle>Clinique : {selectedClinic.slice(0, 8)}…</CardTitle>
           </CardHeader>
           <CardContent>
             {detailLoading ? (
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                <Loader2 className="h-4 w-4 animate-spin" /> Chargement…
               </div>
             ) : clinicDetail ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Plan:</span>
+                  <span className="text-sm font-medium">Offre :</span>
                   <Badge>{clinicDetail.tier}</Badge>
                 </div>
 
                 {/* Quota Status */}
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold">Quota Status</h3>
+                  <h3 className="mb-2 text-sm font-semibold">État des quotas</h3>
                   <div className="grid gap-2 md:grid-cols-2">
                     {Object.entries(clinicDetail.quota).map(([rt, q]) => {
                       const pct = quotaPercent(q);
@@ -284,9 +350,11 @@ export default function UsageDashboardPage() {
 
                 {/* Usage Breakdown */}
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold">Usage This Month</h3>
+                  <h3 className="mb-2 text-sm font-semibold">Consommation ce mois-ci</h3>
                   {clinicDetail.usage.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No usage recorded.</p>
+                    <p className="text-muted-foreground text-sm">
+                      Aucune consommation enregistrée.
+                    </p>
                   ) : (
                     <div className="space-y-1">
                       {clinicDetail.usage.map((u) => (
@@ -296,9 +364,9 @@ export default function UsageDashboardPage() {
                         >
                           <span>{resourceLabel(u.resourceType)}</span>
                           <div className="flex gap-4">
-                            <span>{formatUnits(u.resourceType, u.totalUnits)} units</span>
+                            <span>{formatUnits(u.resourceType, u.totalUnits)} unités</span>
                             <span className="font-mono">${u.totalCostUsd.toFixed(4)}</span>
-                            <span className="text-muted-foreground">{u.eventCount} events</span>
+                            <span className="text-muted-foreground">{u.eventCount} événements</span>
                           </div>
                         </div>
                       ))}
@@ -307,7 +375,7 @@ export default function UsageDashboardPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No data available.</p>
+              <p className="text-muted-foreground text-sm">Aucune donnée disponible.</p>
             )}
           </CardContent>
         </Card>

@@ -10,11 +10,15 @@ import {
   ArrowUpDown,
   Loader2,
   ExternalLink,
+  AlertTriangle,
+  MapPin,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 
@@ -59,18 +63,32 @@ export default function UsagePage() {
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("appointments");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  // I2: surface a failed/blocked fetch instead of a misleading "no data" state.
+  const [fetchError, setFetchError] = useState(false);
+  const [geoBlocked, setGeoBlocked] = useState(false);
 
   const loadUsage = useCallback(async () => {
+    setFetchError(false);
+    setGeoBlocked(false);
     try {
       const res = await fetch("/api/admin/usage");
-      const json = await res.json();
-      if (json.ok) {
-        setClinics(json.data.clinics);
-      } else {
-        logger.warn("Failed to load usage data", { context: "usage-page", error: json.error });
+      let isGeo = false;
+      try {
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          setClinics(json.data.clinics);
+          return;
+        }
+        isGeo = json?.code === "GEO_RESTRICTED";
+        logger.warn("Failed to load usage data", { context: "usage-page", error: json?.error });
+      } catch {
+        /* non-JSON error body */
       }
+      if (isGeo) setGeoBlocked(true);
+      else setFetchError(true);
     } catch (err) {
       logger.warn("Failed to load usage data", { context: "usage-page", error: err });
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -123,30 +141,59 @@ export default function UsagePage() {
       <Breadcrumb
         items={[
           { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Usage Metrics" },
+          { label: "Métriques usage" },
         ]}
       />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Usage Metrics</h1>
+        <h1 className="text-2xl font-bold">Métriques d&apos;utilisation</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Per-clinic usage tracking: appointments, users, and activity
+          Suivi de l&apos;utilisation par clinique : rendez-vous, utilisateurs et activité
         </p>
       </div>
+
+      {/* I2: geo-block / failure banners */}
+      {geoBlocked && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:bg-amber-900/20 dark:border-amber-700">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-medium text-amber-800 dark:text-amber-200">
+              Accès restreint depuis votre localisation
+            </p>
+            <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+              L&apos;API d&apos;utilisation est limitée aux accès depuis le Maroc. Les chiffres
+              affichés (zéro) ne reflètent pas l&apos;activité réelle.
+            </p>
+          </div>
+        </div>
+      )}
+      {fetchError && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/5 px-4 py-3 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+          <span className="flex-1 text-destructive">
+            Impossible de charger les données d&apos;utilisation (erreur réseau ou API
+            indisponible). Les chiffres affichés peuvent être incomplets.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => loadUsage()}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Réessayer
+          </Button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Clinics
+              Total des cliniques
             </CardTitle>
             <Building2 className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? "—" : totals.clinics}</div>
             <p className="text-xs text-muted-foreground">
-              {loading ? "" : `${totals.active} active`}
+              {loading ? "" : `${totals.active} actives`}
             </p>
           </CardContent>
         </Card>
@@ -154,31 +201,33 @@ export default function UsagePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Appointments
+              Total des rendez-vous
             </CardTitle>
             <CalendarCheck className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? "—" : totals.appointments}</div>
-            <p className="text-xs text-muted-foreground">all time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? "—" : totals.users}</div>
-            <p className="text-xs text-muted-foreground">across all clinics</p>
+            <p className="text-xs text-muted-foreground">depuis le début</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Avg. per Clinic
+              Total des utilisateurs
+            </CardTitle>
+            <Users className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : totals.users}</div>
+            <p className="text-xs text-muted-foreground">toutes cliniques confondues</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Moy. par clinique
             </CardTitle>
             <CalendarCheck className="h-4 w-4 text-orange-600" />
           </CardHeader>
@@ -188,7 +237,7 @@ export default function UsagePage() {
                 ? "—"
                 : Math.round(totals.appointments / totals.clinics)}
             </div>
-            <p className="text-xs text-muted-foreground">appointments</p>
+            <p className="text-xs text-muted-foreground">rendez-vous</p>
           </CardContent>
         </Card>
       </div>
@@ -196,7 +245,7 @@ export default function UsagePage() {
       {/* Per-Clinic Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Per-Clinic Usage</CardTitle>
+          <CardTitle className="text-base">Utilisation par clinique</CardTitle>
         </CardHeader>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -208,19 +257,19 @@ export default function UsagePage() {
                     className="inline-flex items-center hover:text-foreground"
                     onClick={() => handleSort("name")}
                   >
-                    Clinic
+                    Clinique
                     <SortIcon columnKey="name" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
                 <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Status</th>
+                <th className="text-left p-3 font-medium">Statut</th>
                 <th className="text-right p-3 font-medium">
                   <button
                     type="button"
                     className="inline-flex items-center hover:text-foreground"
                     onClick={() => handleSort("appointments")}
                   >
-                    Appointments
+                    Rendez-vous
                     <SortIcon columnKey="appointments" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
@@ -230,26 +279,28 @@ export default function UsagePage() {
                     className="inline-flex items-center hover:text-foreground"
                     onClick={() => handleSort("users")}
                   >
-                    Users
+                    Utilisateurs
                     <SortIcon columnKey="users" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
-                <th className="p-3 font-medium">Detail</th>
+                <th className="p-3 font-medium">Détail</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
-                    Loading usage data...
+                    Chargement des données d&apos;utilisation…
                   </td>
                 </tr>
               )}
               {!loading && sortedClinics.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No clinic data found.
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    {geoBlocked || fetchError
+                      ? "Données indisponibles — voir le message ci-dessus."
+                      : "Aucune donnée de clinique trouvée."}
                   </td>
                 </tr>
               )}
@@ -262,7 +313,7 @@ export default function UsagePage() {
                       variant={clinic.status === "active" ? "default" : "secondary"}
                       className="text-xs"
                     >
-                      {clinic.status}
+                      {clinic.status === "active" ? "Actif" : clinic.status}
                     </Badge>
                   </td>
                   <td className="p-3 text-right">{clinic.appointments}</td>
