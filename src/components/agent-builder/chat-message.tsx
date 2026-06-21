@@ -14,6 +14,19 @@ interface ChatMessageProps {
   message: ChatMessageData;
 }
 
+/**
+ * Render a plain-text string with lightweight inline **bold** support.
+ * Splits on `**...**` segments and renders them as <strong>. No HTML is
+ * injected (no dangerouslySetInnerHTML), so this is XSS-safe; newlines are
+ * preserved by the parent's `whitespace-pre-wrap`.
+ */
+function renderContent(text: string) {
+  return text.split(/(\*\*[^*\n]+\*\*)/g).map((part, i) => {
+    const bold = /^\*\*([^*\n]+)\*\*$/.exec(part);
+    return bold ? <strong key={i}>{bold[1]}</strong> : <span key={i}>{part}</span>;
+  });
+}
+
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
@@ -33,7 +46,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
         )}
       >
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        <div className="whitespace-pre-wrap">{renderContent(message.content)}</div>
         <div
           className={cn(
             "mt-1 text-[10px]",

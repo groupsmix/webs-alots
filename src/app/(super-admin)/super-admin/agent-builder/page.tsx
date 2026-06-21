@@ -10,7 +10,16 @@ import { DesignPreview } from "@/components/agent-builder/design-preview";
 import type { ClinicConfig, TemplateStyle } from "@/components/agent-builder/types";
 import { createEmptyConfig } from "@/components/agent-builder/types";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/toast";
 
 const GREETING_MESSAGE =
   "Hi! I can help you create a new clinic website. Just give me the customer info (name, specialty, city, phone) and I'll design their site.";
@@ -120,6 +129,57 @@ function inferClinicType(specialty: string): ClinicType {
 
 const EMAIL_RE = /^[\w.-]+@[\w.-]+\.\w+$/;
 
+/** Single-word tokens that name a medical specialty (substring match). */
+const SPECIALTY_HINTS = [
+  "dent",
+  "pharma",
+  "cardio",
+  "heart",
+  "derma",
+  "skin",
+  "pediatr",
+  "child",
+  "general",
+  "généralist",
+  "generalist",
+  "vet",
+  "lab",
+  "hospital",
+  "hôpital",
+  "ophtalmo",
+  "ophthalmo",
+  "gyneco",
+  "gynéco",
+  "ortho",
+  "neuro",
+  "gastro",
+  "radio",
+  "uro",
+  "nephro",
+  "pneumo",
+  "rhumato",
+  "endocrino",
+  "psychi",
+];
+
+function looksLikeEmail(s: string): boolean {
+  return /[\w.-]+@[\w.-]+\.\w+/.test(s);
+}
+
+function looksLikePhone(s: string): boolean {
+  const t = s.trim();
+  // Only phone-shaped characters, and at least 8 digits.
+  return /^[+\d\s()./-]+$/.test(t) && t.replace(/\D/g, "").length >= 8;
+}
+
+/** A single-word token that names a medical specialty (e.g. "dental"). */
+function isSpecialtyToken(s: string): boolean {
+  const t = s.trim();
+  if (t.split(/\s+/).length !== 1) return false;
+  const lower = t.toLowerCase();
+  return SPECIALTY_HINTS.some((k) => lower.includes(k));
+}
+
 /**
  * Return the list of human-readable fields still required before the design
  * can be deployed. The provisioning API requires name, subdomain, owner email
@@ -168,66 +228,107 @@ function processUserMessage(
   const config = { ...currentConfig };
   const updates: string[] = [];
 
-  // Extract name
-  const nameMatch = input.match(
-    /(?:name|clinic|called|named)\s*(?:is|:)?\s*["']?([A-Z][A-Za-z\s&'.]+)/i,
-  );
-  if (nameMatch) {
-    config.name = nameMatch[1].trim();
-    config.subdomain = slugify(config.name);
+  const applyName = (raw: string) => {
+    const name = raw.trim();
+    if (!name) return;
+    config.name = name;
+    config.subdomain = slugify(name);
     updates.push(`clinic name: **${config.name}**`);
     updates.push(`subdomain: ${config.subdomain}.oltigo.com`);
-  }
-
-  // Extract specialty
-  const specialtyMatch = input.match(
-    /(?:specialty|speciality|type|specializ|field)\s*(?:is|:)?\s*["']?([A-Za-z\s]+)/i,
-  );
-  if (specialtyMatch) {
-    config.specialty = specialtyMatch[1].trim();
-    config.colors = inferSpecialtyColors(config.specialty);
-    config.services = inferServices(config.specialty);
+  };
+  const applySpecialty = (raw: string) => {
+    const sp = raw.trim();
+    if (!sp) return;
+    config.specialty = sp;
+    config.colors = inferSpecialtyColors(sp);
+    config.services = inferServices(sp);
     updates.push(`specialty: **${config.specialty}**`);
-    updates.push(`suggested palette for ${config.specialty}`);
     updates.push(`auto-generated ${config.services.length} services`);
-  } else if (lower.includes("dental") || lower.includes("dentist")) {
-    config.specialty = "Dental";
-    config.colors = presetPalettes.dental;
-    config.services = inferServices("dental");
-    updates.push(`specialty: **Dental**`);
-  } else if (lower.includes("pharmacy") || lower.includes("pharmacie")) {
-    config.specialty = "Pharmacy";
-    config.colors = presetPalettes.pharmacy;
-    config.services = inferServices("pharmacy");
-    updates.push(`specialty: **Pharmacy**`);
-  }
-
-  // Extract city
-  const cityMatch = input.match(
-    /(?:city|location|located|ville|in)\s*(?:is|:)?\s*["']?([A-Z][A-Za-z\s-]+)/i,
-  );
-  if (cityMatch && !cityMatch[1].toLowerCase().startsWith("a ")) {
-    config.city = cityMatch[1].trim();
+  };
+  const applyCity = (raw: string) => {
+    const city = raw.trim();
+    if (!city) return;
+    config.city = city;
     updates.push(`city: **${config.city}**`);
-  }
-
-  // Extract phone
-  const phoneMatch = input.match(
-    /(?:phone|tel|call|mobile|whatsapp)\s*(?:is|:)?\s*["']?([+\d\s()-]{8,})/i,
-  );
-  if (phoneMatch) {
-    config.phone = phoneMatch[1].trim();
+  };
+  const applyPhone = (raw: string) => {
+    const phone = raw.trim();
+    if (!phone) return;
+    config.phone = phone;
     updates.push(`phone: ${config.phone}`);
-  }
+  };
 
-  // Extract email
+  // Email can appear anywhere in the message.
   const emailMatch = input.match(/[\w.-]+@[\w.-]+\.\w+/);
   if (emailMatch) {
     config.email = emailMatch[0];
     updates.push(`email: ${config.email}`);
   }
 
-  // Template selection
+  // ── Primary path: comma-separated "Name, specialty, city, phone[, email]" ──
+  // This is the format the greeting asks for and is the most reliable to parse.
+  // (Fixes the prior regex parser, where the /i flag defeated the [A-Z] anchor
+  // and unbounded keywords like "in" matched INSIDE words — e.g. the "in" of
+  // "Clinique" — capturing "ique Dentaire Smile" as the city and dropping the
+  // real city after the comma.)
+  const parts = input
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    const textParts: string[] = [];
+    for (const part of parts) {
+      if (looksLikeEmail(part)) continue; // handled above
+      if (looksLikePhone(part)) {
+        if (!config.phone) applyPhone(part);
+        continue;
+      }
+      if (isSpecialtyToken(part)) {
+        applySpecialty(part);
+        continue;
+      }
+      textParts.push(part);
+    }
+    // Remaining free-text tokens are, in order, the clinic name then the city.
+    if (textParts[0]) applyName(textParts[0]);
+    if (textParts[1]) applyCity(textParts[1]);
+  } else {
+    // ── Fallback: conversational single-field edits ("name is X", "city: Y") ──
+    // Keywords are anchored with \b so they never match INSIDE a word.
+    let nameMatch = input.match(
+      /\b(?:clinic name|name)\b\s*(?:is|:)\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\s&'.-]*?)["']?$/i,
+    );
+    if (!nameMatch) {
+      nameMatch = input.match(
+        /\b(?:called|named)\b\s+["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\s&'.-]*?)["']?$/i,
+      );
+    }
+    if (nameMatch) applyName(nameMatch[1]);
+
+    const specialtyMatch = input.match(
+      /\b(?:specialty|speciality|specialism|field)\b\s*(?:is|:)?\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]*?)["']?$/i,
+    );
+    if (specialtyMatch) {
+      applySpecialty(specialtyMatch[1]);
+    } else if (lower.includes("dental") || lower.includes("dentist")) {
+      applySpecialty("Dental");
+    } else if (lower.includes("pharmacy") || lower.includes("pharmacie")) {
+      applySpecialty("Pharmacy");
+    }
+
+    const cityMatch = input.match(
+      /\b(?:city|located in|location|ville)\b\s*(?:is|:)?\s*["']?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s-]*?)["']?$/i,
+    );
+    if (cityMatch) applyCity(cityMatch[1]);
+
+    const phoneMatch = input.match(
+      /\b(?:phone|tel|call|mobile|whatsapp)\b\s*(?:is|:)?\s*([+\d][\d\s()./-]{7,})/i,
+    );
+    if (phoneMatch) applyPhone(phoneMatch[1]);
+  }
+
+  // ── Template selection (any path) ──
   if (lower.includes("modern")) {
     config.template = "modern" as TemplateStyle;
     updates.push("template: **Modern**");
@@ -239,7 +340,7 @@ function processUserMessage(
     updates.push("template: **Minimal**");
   }
 
-  // Color keywords
+  // ── Color keywords (any path) ──
   if (lower.includes("green")) {
     config.colors = presetPalettes.pharmacy;
     updates.push("applied green color scheme");
@@ -254,7 +355,7 @@ function processUserMessage(
     updates.push("applied neutral color scheme");
   }
 
-  // Build response
+  // ── Build response ──
   let response: string;
   if (updates.length > 0) {
     response = "Got it! I've updated the design:\n\n" + updates.map((u) => `• ${u}`).join("\n");
@@ -269,7 +370,7 @@ function processUserMessage(
       response += `\n\nI still need: ${missing.join(", ")}. Feel free to provide them!`;
     } else {
       response +=
-        "\n\nThe design looks complete! You can adjust colors, template style, or click **Deploy Site** when ready.";
+        "\n\nThe design looks complete! You can adjust colors, template style, or click **Deploy** when ready.";
     }
   } else if (
     lower.includes("create") ||
@@ -278,10 +379,10 @@ function processUserMessage(
     lower.includes("make")
   ) {
     response =
-      "I'd love to help! Please provide:\n\n• Clinic name\n• Specialty (dental, pharmacy, general, etc.)\n• City\n• Phone number\n• Email (optional)\n\nYou can share all at once or one by one.";
+      "I'd love to help! Please provide:\n\n• Clinic name\n• Specialty (dental, pharmacy, general, etc.)\n• City\n• Phone number\n• Email (optional)\n\nThe quickest way is one line: **Name, specialty, city, phone**.";
   } else {
     response =
-      "I'm not sure what to update. Try telling me the clinic name, specialty, city, phone, or email — or ask me to change the template or colors!";
+      "I'm not sure what to update. Try a single line like **Smile Dental, dental, Casablanca, +212 600 000 000** — or tell me the clinic name, specialty, city, phone, or email.";
   }
 
   return { response, config };
@@ -325,7 +426,10 @@ export default function AgentBuilderPage() {
     () => loadDraft()?.config ?? createEmptyConfig(),
   );
   const [deploying, setDeploying] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [deployConfirmOpen, setDeployConfirmOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { addToast } = useToast();
 
   const pushAssistantMessage = useCallback((content: string) => {
     setMessages((prev) => [
@@ -368,7 +472,12 @@ export default function AgentBuilderPage() {
   );
 
   const handleSaveDraft = () => {
-    sessionStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ config, messages }));
+    try {
+      sessionStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ config, messages }));
+      addToast("Draft saved for this session", "success");
+    } catch {
+      addToast("Couldn't save the draft (storage unavailable)", "error");
+    }
   };
 
   const handleExportConfig = () => {
@@ -452,6 +561,20 @@ export default function AgentBuilderPage() {
     }
   }, [config, deploying, pushAssistantMessage]);
 
+  const requestDeploy = useCallback(() => {
+    if (deploying) return;
+    const missing = missingForDeploy(config);
+    if (missing.length > 0) {
+      pushAssistantMessage(
+        `Before I can deploy, I still need: ${missing.join(", ")}. Add ${
+          missing.length > 1 ? "those" : "that"
+        } and click **Deploy** again.`,
+      );
+      return;
+    }
+    setDeployConfirmOpen(true);
+  }, [config, deploying, pushAssistantMessage]);
+
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
       {/* Chat Panel */}
@@ -471,7 +594,12 @@ export default function AgentBuilderPage() {
               <Download className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs">Export</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleStartOver} title="Start Over">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setResetConfirmOpen(true)}
+              title="Start Over"
+            >
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs">Reset</span>
             </Button>
@@ -479,7 +607,7 @@ export default function AgentBuilderPage() {
               variant="default"
               size="sm"
               title="Deploy Site"
-              onClick={handleDeploy}
+              onClick={requestDeploy}
               disabled={deploying}
             >
               <Rocket className={`mr-1 h-3.5 w-3.5 ${deploying ? "animate-pulse" : ""}`} />
@@ -541,6 +669,70 @@ export default function AgentBuilderPage() {
       <div className="flex-1 lg:w-[40%]">
         <DesignPreview config={config} onConfigChange={setConfig} />
       </div>
+
+      {/* Reset confirmation (WB-6 / WB-R2: no accidental data loss) */}
+      <Dialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start over?</DialogTitle>
+            <DialogDescription>
+              This clears the current conversation and design and reverts to a blank template. Any
+              unsaved progress will be lost. Use Save first if you want to keep it.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                handleStartOver();
+                setResetConfirmOpen(false);
+              }}
+            >
+              Reset everything
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deploy confirmation (WB-R1: no accidental publish to a live subdomain) */}
+      <Dialog open={deployConfirmOpen} onOpenChange={setDeployConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publish this website?</DialogTitle>
+            <DialogDescription>
+              This provisions a live clinic at{" "}
+              <span className="font-mono font-semibold">
+                {config.subdomain || "clinic"}.oltigo.com
+              </span>{" "}
+              for <span className="font-semibold">{config.name || "this clinic"}</span>. It creates
+              a real clinic record and subdomain. You can refine content afterwards from the
+              clinic&apos;s admin dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeployConfirmOpen(false)}
+              disabled={deploying}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setDeployConfirmOpen(false);
+                void handleDeploy();
+              }}
+              disabled={deploying}
+            >
+              <Rocket className="mr-1 h-3.5 w-3.5" />
+              Deploy now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -33,17 +33,24 @@ interface KillSwitchState {
 export function EmergencyStop() {
   const { addToast } = useToast();
   const [state, setState] = useState<KillSwitchState | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [working, setWorking] = useState(false);
 
   const fetchState = useCallback(async () => {
+    setLoadFailed(false);
     try {
       const res = await fetch("/api/admin/ai-kill-switch");
       const json = (await res.json()) as { ok: boolean; data?: KillSwitchState };
-      if (json.ok && json.data) setState(json.data);
+      if (res.ok && json.ok && json.data) {
+        setState(json.data);
+      } else {
+        // Resolve to a failed state so the section never spins forever.
+        setLoadFailed(true);
+      }
     } catch {
-      // Leave state null — section renders a degraded notice
+      setLoadFailed(true);
     }
   }, []);
 
@@ -79,6 +86,30 @@ export function EmergencyStop() {
   };
 
   if (!state) {
+    // Could not load the kill-switch status: show an actionable degraded
+    // notice with a retry instead of an indefinite spinner.
+    if (loadFailed) {
+      return (
+        <Card className="border-destructive/30">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="text-sm font-medium">AI emergency stop status unavailable</p>
+                <p className="text-xs text-muted-foreground">
+                  Couldn&apos;t reach the kill-switch service. The emergency stop can&apos;t be
+                  shown or toggled until this loads. If AI must be stopped now, set the{" "}
+                  <span className="font-mono">AI_DISABLED</span> environment variable.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => void fetchState()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card className="border-destructive/30">
         <CardContent className="flex items-center gap-3 p-4">
