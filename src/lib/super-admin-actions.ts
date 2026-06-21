@@ -997,12 +997,14 @@ export async function updateFeatureDefinition(
   if (error) throw new Error(`Failed to update feature definition: ${error.message}`);
 
   try {
-    await supabase.from("activity_logs").insert({
-      action: "feature_definition_updated",
-      description: `Feature "${existing?.name ?? featureId}" updated`,
-      type: "feature",
-      timestamp: new Date().toISOString(),
-    });
+    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
+      .from("activity_logs")
+      .insert({
+        action: "feature_definition_updated",
+        description: `Feature "${existing?.name ?? featureId}" updated`,
+        type: "feature",
+        timestamp: new Date().toISOString(),
+      });
   } catch (err) {
     logger.warn("Non-blocking audit log failed", {
       context: "super-admin-actions",
@@ -1039,12 +1041,14 @@ export async function bulkSetFeatureTier(tier: string, enabled: boolean): Promis
   }
 
   try {
-    await supabase.from("activity_logs").insert({
-      action: "feature_tier_bulk_update",
-      description: `All features ${enabled ? "enabled" : "disabled"} for tier "${tier}"`,
-      type: "feature",
-      timestamp: new Date().toISOString(),
-    });
+    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
+      .from("activity_logs")
+      .insert({
+        action: "feature_tier_bulk_update",
+        description: `All features ${enabled ? "enabled" : "disabled"} for tier "${tier}"`,
+        type: "feature",
+        timestamp: new Date().toISOString(),
+      });
   } catch (err) {
     logger.warn("Non-blocking audit log failed", {
       context: "super-admin-actions",
