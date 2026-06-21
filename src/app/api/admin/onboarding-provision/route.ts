@@ -14,6 +14,7 @@ import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-resp
 import { logAuditEvent } from "@/lib/audit-log";
 import { sendEmail } from "@/lib/email";
 import { staffWelcomeEmail } from "@/lib/email-templates";
+import { getSiteUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
@@ -120,7 +121,7 @@ async function provisionOwnerAccount(
   // Send the set-your-password invitation (best effort — provisioning still
   // succeeds even if the email provider is not configured).
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+    const siteUrl = getSiteUrl() || "https://oltigo.com";
     const { data: resetLink } = await typedAdmin.auth.admin.generateLink({
       type: "recovery",
       email: ownerEmail,
@@ -202,6 +203,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       template_id,
     } = result.data;
 
+    // nosemgrep: admin-client-guard -- super-admin provisioning intentionally uses a service-role client (RLS bypass) for cross-table writes
     const typedAdmin = createAdminClient("super_admin");
     const untypedAdmin = createUntypedAdminClient("super_admin");
     let clinicId: string | null = null;
