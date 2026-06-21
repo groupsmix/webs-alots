@@ -969,6 +969,91 @@ export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
   }));
 }
 
+/**
+ * Persist a feature-definition change (super-admin Feature Matrix).
+ *
+ * Writes the global on/off flag and/or the tier availability list to the
+ * `feature_definitions` row. Only the provided fields are updated. Audit-logged
+ * to `activity_logs` with the `feature` type.
+ */
+export async function updateFeatureDefinition(
+  featureId: string,
+  updates: { globalEnabled?: boolean; availableTiers?: string[] },
+): Promise<void> {
+  const supabase = await rawClient();
+
+  const payload: { global_enabled?: boolean; available_tiers?: string[] } = {};
+  if (updates.globalEnabled !== undefined) payload.global_enabled = updates.globalEnabled;
+  if (updates.availableTiers !== undefined) payload.available_tiers = updates.availableTiers;
+  if (Object.keys(payload).length === 0) return;
+
+  const { data: existing } = await supabase
+    .from("feature_definitions")
+    .select("id, name")
+    .eq("id", featureId)
+    .single();
+
+  const { error } = await supabase.from("feature_definitions").update(payload).eq("id", featureId);
+  if (error) throw new Error(`Failed to update feature definition: ${error.message}`);
+
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "feature_definition_updated",
+      description: `Feature "${existing?.name ?? featureId}" updated`,
+      type: "feature",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      featureId,
+      error: err,
+    });
+  }
+}
+
+/**
+ * Bulk-set a single tier across all feature definitions (Feature Matrix bulk
+ * action). Adds or removes `tier` from every feature's `available_tiers`.
+ * Writes a single `feature` audit-log entry rather than one per feature.
+ */
+export async function bulkSetFeatureTier(tier: string, enabled: boolean): Promise<void> {
+  const supabase = await rawClient();
+
+  const { data: rows, error: readError } = await supabase
+    .from("feature_definitions")
+    .select("id, available_tiers");
+  if (readError) throw new Error(`Failed to read feature definitions: ${readError.message}`);
+  if (!rows) return;
+
+  for (const row of rows) {
+    const current: string[] = row.available_tiers ?? [];
+    const has = current.includes(tier);
+    if (enabled === has) continue; // already in desired state
+    const next = enabled ? [...current, tier] : current.filter((t) => t !== tier);
+    const { error } = await supabase
+      .from("feature_definitions")
+      .update({ available_tiers: next })
+      .eq("id", row.id);
+    if (error) throw new Error(`Failed to update feature ${row.id}: ${error.message}`);
+  }
+
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "feature_tier_bulk_update",
+      description: `All features ${enabled ? "enabled" : "disabled"} for tier "${tier}"`,
+      type: "feature",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      tier,
+      error: err,
+    });
+  }
+}
+
 // ---------- Pricing Tiers ----------
 
 export interface PricingTierRow {
