@@ -20,22 +20,20 @@ import { createServerClient } from "@supabase/ssr";
 export interface Env {
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
-  // ── AI Builder provider secrets ───────────────────────────────────────
-  // The AI Builder routes to whichever provider the super_admin activates in
-  // /admin/ai-config (see handlers/builder-sandbox.ts → BUILDER_PROVIDERS).
-  // Each active provider needs its matching secret here; the handler returns
-  // a clear 503 naming the missing secret if one is selected but unset.
-  // GROQ is the default/fallback (free tier), so it is the only required one.
+  // ── AI provider secrets ───────────────────────────────────────────────
+  // CopilotKit (handlers/copilotkit.ts) consumes ANTHROPIC_API_KEY only.
+  // The other provider keys below were used solely by the now-removed AI
+  // Builder and are currently unused — safe to drop in a follow-up once the
+  // deploy/secrets tooling stops provisioning them.
   GROQ_API_KEY: string;
-  ANTHROPIC_API_KEY?: string; // also used by the dormant CopilotKit runtime
+  ANTHROPIC_API_KEY?: string; // consumed by the CopilotKit runtime
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
   OPENAI_API_KEY?: string;
   DEEPSEEK_API_KEY?: string;
   MISTRAL_API_KEY?: string;
   XAI_API_KEY?: string;
-  // Optional: the builder no longer creates an E2B sandbox per request
-  // (generated code is rendered client-side). Retained for when real
-  // server-side code execution is wired back into builder-sandbox.ts.
+  // Unused since the AI Builder was removed (it rendered generated code
+  // client-side and only reserved this for future server-side execution).
   E2B_API_KEY?: string;
 }
 
@@ -88,8 +86,7 @@ export function createSupabaseClient(request: Request, env: Env) {
  * Returns the user record on success, or a Response (401/403) to return
  * immediately on failure.
  *
- * Mirrors the auth check in the original src/app/api/copilotkit/route.ts
- * and src/app/api/builder/sandbox/route.ts.
+ * Mirrors the auth check in the original src/app/api/copilotkit/route.ts.
  */
 export async function requireSuperAdmin(
   request: Request,
