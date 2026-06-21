@@ -633,12 +633,24 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     }
   }
 
-  // If we resolved an existing auth_id, check whether a public.users row
-  // already references it.  The users.auth_id column has a UNIQUE constraint,
-  // so blindly inserting would fail with a duplicate-key error.  In that
-  // scenario we create the new staff row without linking auth_id — the
-  // email still allows the user to be identified, and onboarding doesn't
-  // break.
+  // The auth trigger (`handle_new_auth_user`, migrations 00028/00068) fires
+  // automatically when an auth account is created and inserts a public.users
+  // row for the new auth_id — as role='patient', with the auth user's email
+  // and no clinic. So whenever we created (or matched) an auth account above,
+  // a users row for this auth_id ALREADY EXISTS and already holds this email.
+  //
+  // Because users.email has a UNIQUE index (migration 00068 D-03,
+  // `users_email_lower_uq`), inserting a SECOND row with the same email would
+  // fail with a duplicate-key error — which, thrown from this Server Action,
+  // surfaces in the browser as the generic "An error occurred in the Server
+  // Components render" message in production.
+  //
+  // The correct behaviour is therefore to UPDATE the trigger-created row in
+  // place with the staff's real role/clinic/name instead of inserting a
+  // duplicate. (A previous revision split this into two blocks, the first of
+  // which mis-classified the trigger row as "already taken by another user"
+  // and nulled authId, turning the update path into dead code and causing the
+  // duplicate INSERT — and the crash.)
   if (authId) {
     const { data: existingRow } = await supabase
       .from("users")
@@ -647,31 +659,6 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
       .maybeSingle();
 
     if (existingRow) {
-      // auth_id is already taken by another users row — don't link it
-      logger.warn(
-        "auth_id already linked to another users row — creating staff without auth link",
-        {
-          context: "super-admin-actions",
-          email: input.email,
-          authId,
-          existingUserId: existingRow.id,
-        },
-      );
-      authId = null;
-    }
-  }
-
-  // If the auth trigger already created a row for this auth_id (race condition),
-  // update it with the correct role and clinic_id instead of failing.
-  if (authId) {
-    const { data: triggerRow } = await supabase
-      .from("users")
-      .select("id")
-      .eq("auth_id", authId)
-      .maybeSingle();
-
-    if (triggerRow) {
-      // The trigger already inserted a row — update it with correct values
       const { data: updated, error: updateError } = await supabase
         .from("users")
         .update({
@@ -703,7 +690,32 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to create user: ${error.message}`);
+  if (error) {
+    // Recover gracefully if a row with this email already exists (e.g. the
+    // auth trigger created it, or the same staff email was onboarded before).
+    // The users.email UNIQUE index rejects the duplicate with code 23505;
+    // instead of crashing, update the existing row so onboarding is idempotent.
+    const isDuplicate =
+      error.code === "23505" ||
+      /duplicate key|already exists|unique constraint/i.test(error.message);
+    if (isDuplicate && input.email) {
+      const { data: updated, error: updateError } = await supabase
+        .from("users")
+        .update({
+          clinic_id: input.clinic_id,
+          role: input.role,
+          name: input.name,
+          phone: input.phone ?? null,
+          ...(authId ? { auth_id: authId } : {}),
+        })
+        .eq("email", input.email)
+        .select()
+        .single();
+
+      if (!updateError && updated) return updated as UserRow;
+    }
+    throw new Error(`Failed to create user: ${error.message}`);
+  }
 
   // Send welcome/password-reset email so staff can set their own password
   if (input.email) {
