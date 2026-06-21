@@ -345,7 +345,7 @@ export async function updateClinicStatus(
       description: `Clinic "${clinic?.name ?? clinicId}" status changed to ${status}`,
       clinic_id: clinicId,
       clinic_name: clinic?.name ?? null,
-      type: "admin",
+      type: "clinic",
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -441,7 +441,7 @@ export async function updateSubscriptionStatus(
       description: `Subscription for "${clinic?.name ?? clinicId}" ${AUDIT_BY_ACTION[action].verb}`,
       clinic_id: clinicId,
       clinic_name: clinic?.name ?? null,
-      type: "admin",
+      type: "billing",
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

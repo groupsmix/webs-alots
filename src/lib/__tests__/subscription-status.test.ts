@@ -72,7 +72,7 @@ describe("updateSubscriptionStatus", () => {
         action: "subscription_activated",
         clinic_id: "c1",
         clinic_name: "Clinic A",
-        type: "admin",
+        type: "billing",
       }),
     );
   });
