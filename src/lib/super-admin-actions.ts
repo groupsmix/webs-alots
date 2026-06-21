@@ -453,8 +453,8 @@ export async function createPromotion(input: {
   if (error || !data) throw new Error(`Failed to create promotion: ${error?.message ?? "no data"}`);
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
-      .from("activity_logs")
+    await supabase
+      .from("activity_logs") // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
       .insert({
         action: "promotion_created",
         description: `Promotion "${input.name}" created`,
@@ -480,8 +480,8 @@ export async function deletePromotion(id: string): Promise<void> {
   if (error) throw new Error(`Failed to delete promotion: ${error.message}`);
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
-      .from("activity_logs")
+    await supabase
+      .from("activity_logs") // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
       .insert({
         action: "promotion_deleted",
         description: `Promotion ${id} deleted`,
