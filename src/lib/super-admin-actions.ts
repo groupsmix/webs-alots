@@ -17,6 +17,7 @@ import {
   clinicSuspendedEmail,
   clinicActivatedEmail,
 } from "@/lib/email-templates";
+import { getSiteUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
@@ -805,7 +806,7 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
 
   if (input.email) {
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+      const siteUrl = getSiteUrl() || "https://oltigo.com";
 
       // Resolve the real clinic name for the email (Audit #4 — previously the
       // clinic UUID was passed as the clinic name).
@@ -816,9 +817,13 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
         .maybeSingle();
       const clinicName = ((clinicRow?.name as string | undefined) || "").trim() || "your clinic";
 
-      if (!authId || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      if (!authId) {
+        // authId is only set when the auth account was created/matched above
+        // (which requires SUPABASE_SERVICE_ROLE_KEY). A null authId therefore
+        // means a login account could not be enabled for this staff member.
         inviteError = "Login is not enabled — set SUPABASE_SERVICE_ROLE_KEY to create accounts.";
       } else {
+        // nosemgrep: admin-client-guard -- super-admin generates a one-time recovery link for this staff member
         const admin = createAdminClient("super_admin");
         const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
           type: "recovery",
