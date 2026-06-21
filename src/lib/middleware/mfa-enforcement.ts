@@ -8,20 +8,17 @@ import { isMfaEnabled } from "@/lib/env";
 import { secureRedirect } from "@/lib/middleware/security-headers";
 
 /**
- * Enforce MFA requirements for privileged roles.
+ * §3.5 — MFA step-up for privileged roles (optional-enrollment model).
  *
- * Two-stage check for `super_admin` and `clinic_admin`:
+ * 2FA enrollment is **optional**: privileged users (`super_admin` /
+ * `clinic_admin`) are NOT forced to enrol. Enrolment is offered as a
+ * self-service action from the dashboard (links to `/setup-2fa`).
  *
- * 1. **Enrollment gate** — if no verified TOTP factor exists at all, redirect
- *    to `/setup-2fa?required=1&next=<pathname>` so the admin is forced to
- *    enrol before accessing privileged routes. This closes the gap identified
- *    in QA risk R1: an account with no authenticator enrolled had
- *    `nextLevel = "aal1"` (not "aal2"), so the old level-only check never
- *    fired and password-only login succeeded with zero MFA challenge.
- *
- * 2. **Session level gate** — if a verified factor exists but the current
- *    session is at AAL1 (factor not yet used this session), redirect to
- *    `/mfa-verify?next=<pathname>` for step-up authentication.
+ * What is still enforced: **step-up for users who have already enrolled.**
+ * `getAuthenticatorAssuranceLevel()` reports `nextLevel === "aal2"` only when
+ * a verified factor exists, so an admin who voluntarily enabled 2FA is still
+ * challenged at `/mfa-verify` when their session is only at AAL1, while an
+ * un-enrolled admin (`nextLevel === "aal1"`) passes through untouched.
  *
  * Returns `null` when no redirect is needed (pass-through).
  */
@@ -31,29 +28,15 @@ export async function enforceMfa(
   pathname: string,
   requestUrl: string,
 ): Promise<Response | null> {
-  // Allow disabling via env var; defaults to true (enforced). Read through the
-  // centralised env module (src/lib/env.ts) rather than process.env directly.
+  // Allow disabling all MFA logic via env var; defaults to true. Read through
+  // the centralised env module (src/lib/env.ts) rather than process.env.
   if (!isMfaEnabled()) return null;
 
   if (role === "super_admin" || role === "clinic_admin") {
-    // --- Stage 1: enrollment check ---
-    // listFactors() is a lightweight read that does not count against
-    // sign-in rate limits. We filter to verified factors only; an
-    // unverified (mid-enrolment) factor is not yet usable as an MFA factor.
-    const { data: factorsData } = await supabase.auth.mfa.listFactors();
-    const verifiedTotp = (factorsData?.totp ?? []).filter((f) => f.status === "verified");
-
-    if (verifiedTotp.length === 0) {
-      // No verified authenticator — force enrolment first.
-      const redirectUrl = new URL("/setup-2fa", requestUrl);
-      redirectUrl.searchParams.set("required", "1");
-      redirectUrl.searchParams.set("next", pathname);
-      return secureRedirect(redirectUrl);
-    }
-
-    // --- Stage 2: session level check ---
-    // The user has an authenticator enrolled; check whether they have
-    // already used it this session (AAL2) or need a step-up challenge.
+    // Step-up only — never force enrolment. When the user has a verified
+    // factor, `nextLevel` is "aal2"; if the session has not yet used it
+    // (currentLevel "aal1"), require a step-up challenge. Un-enrolled users
+    // report `nextLevel === "aal1"` and fall through with no redirect.
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (aalData?.nextLevel === "aal2" && aalData?.currentLevel !== "aal2") {
       const redirectUrl = new URL("/mfa-verify", requestUrl);

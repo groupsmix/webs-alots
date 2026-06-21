@@ -17,6 +17,7 @@ import {
   ArrowDown,
   Percent,
   Download,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -272,6 +273,14 @@ export default function SuperAdminDashboardPage() {
             <Button variant="outline" size="sm">
               <Megaphone className="h-4 w-4 mr-1" />
               {t(locale, "superAdmin.announce")}
+            </Button>
+          </Link>
+          {/* Optional 2FA: enrolment is no longer forced at login — admins can
+              enable two-factor authentication from here at any time. */}
+          <Link href="/setup-2fa?next=%2Fsuper-admin%2Fdashboard">
+            <Button variant="outline" size="sm">
+              <ShieldCheck className="h-4 w-4 mr-1" />
+              Sécurité (2FA)
             </Button>
           </Link>
         </div>
