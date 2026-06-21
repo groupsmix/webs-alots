@@ -382,7 +382,7 @@ export default function PricingPage() {
 
     setEditingTierId(null);
     setConfirmSaveOpen(false);
-    addToast("Tier mis à jour avec succès", "success");
+    addToast("Offre mise à jour (aperçu — non enregistré)", "info");
   }
 
   // Promotion handlers
@@ -409,7 +409,7 @@ export default function PricingPage() {
     setPromotions(updated);
     savePromos(updated);
     setPromoFormOpen(false);
-    addToast("Promotion créée", "success");
+    addToast("Promotion créée (aperçu — non enregistré)", "info");
   }
 
   function togglePromoEnabled(id: string) {
@@ -425,7 +425,7 @@ export default function PricingPage() {
     savePromos(updated);
     setDeletePromoOpen(false);
     setDeletePromoItem(null);
-    addToast("Promotion supprimée", "success");
+    addToast("Promotion supprimée (aperçu — non enregistré)", "info");
   }
 
   function togglePromoTier(slug: string) {
@@ -1262,10 +1262,10 @@ export default function PricingPage() {
       <Dialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
         <DialogContent onClose={() => setConfirmSaveOpen(false)}>
           <DialogHeader>
-            <DialogTitle>Confirm Price Change</DialogTitle>
+            <DialogTitle>Confirmer le changement de prix</DialogTitle>
             <DialogDescription>
-              Are you sure you want to update this tier? This change will affect pricing for the
-              selected system type and billing cycle.
+              Confirmez-vous la mise à jour de cette offre ? Le nouveau tarif s&apos;applique au
+              type de cabinet et au cycle de facturation sélectionnés.
             </DialogDescription>
           </DialogHeader>
           {editingTierId && (
@@ -1280,25 +1280,22 @@ export default function PricingPage() {
                 Nouveau prix :{" "}
                 <span className="font-semibold">{formatCurrency(Number(editPriceMin))}</span>
               </p>
+              {/* R5: tier pricing has no persistence path (no write API/server
+                  action) — be explicit so a price edit is never mistaken for a
+                  live change affecting active subscriptions. */}
               <p className="text-xs text-amber-600 flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                {
-                  subscriptions.filter((s) => {
-                    const tier = tiers.find((t) => t.id === editingTierId);
-                    return tier && s.tierSlug === tier.slug;
-                  }).length
-                }{" "}
-                abonnements actifs seront affectés
+                Aperçu uniquement — modification non enregistrée (aucune persistance disponible)
               </p>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmSaveOpen(false)}>
-              Cancel
+              Annuler
             </Button>
             <Button onClick={confirmSaveTier}>
               <Save className="h-4 w-4 mr-1" />
-              Confirm & Save
+              Confirmer
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1439,25 +1436,25 @@ export default function PricingPage() {
         {deletePromoItem && (
           <DialogContent onClose={() => setDeletePromoOpen(false)}>
             <DialogHeader>
-              <DialogTitle>Delete Promotion</DialogTitle>
+              <DialogTitle>Supprimer la promotion</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this promotion? This action cannot be undone.
+                Voulez-vous vraiment supprimer cette promotion ? Cette action est irréversible.
               </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deletePromoItem.name}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {deletePromoItem.discount}% off &middot; {deletePromoItem.startDate} →{" "}
+                {deletePromoItem.discount}% de remise &middot; {deletePromoItem.startDate} →{" "}
                 {deletePromoItem.endDate}
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeletePromoOpen(false)}>
-                Cancel
+                Annuler
               </Button>
               <Button variant="destructive" onClick={handleDeletePromo}>
                 <Trash2 className="h-4 w-4 mr-1" />
-                Delete
+                Supprimer
               </Button>
             </DialogFooter>
           </DialogContent>

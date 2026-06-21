@@ -276,8 +276,8 @@ export default function SubscriptionsPage() {
     setPendingBulkAction(null);
     const past = action === "activate" ? "activés" : action === "suspend" ? "suspendus" : "annulés";
     addToast(
-      `${ids.length} abonnement${ids.length > 1 ? "s" : ""} ${past}`,
-      action === "cancel" ? "error" : "success",
+      `${ids.length} abonnement${ids.length > 1 ? "s" : ""} ${past} (aperçu — non enregistré)`,
+      "info",
     );
   }
 
@@ -1209,7 +1209,7 @@ export default function SubscriptionsPage() {
             <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
               <p className="text-sm font-medium">{reminderSub.clinicName}</p>
               <p className="text-xs text-muted-foreground">
-                Tier: {reminderSub.tierName} —{" "}
+                Offre : {reminderSub.tierName} —{" "}
                 {formatCurrency(reminderSub.amount, "fr", reminderSub.currency)}
               </p>
               <p className="text-xs text-red-600">Statut: {statusLabel(reminderSub.status)}</p>
@@ -1220,8 +1220,15 @@ export default function SubscriptionsPage() {
               </Button>
               <Button
                 onClick={() => {
+                  const name = reminderSub.clinicName;
                   setReminderOpen(false);
                   setReminderSub(null);
+                  // R5: no reminder-send API is wired yet — be honest rather than
+                  // silently doing nothing on confirm.
+                  addToast(
+                    `Rappel pour ${name} non envoyé : fonctionnalité non encore disponible`,
+                    "info",
+                  );
                 }}
               >
                 <Send className="h-4 w-4 mr-1" />
@@ -1246,6 +1253,16 @@ export default function SubscriptionsPage() {
               . Cette opération est réversible sauf annulation.
             </DialogDescription>
           </DialogHeader>
+          {/* R5: subscription status changes are not yet persisted (no mutation
+              API exists) — make that explicit so an operator never believes a
+              suspension/cancellation was applied to billing. */}
+          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs dark:bg-amber-900/20 dark:border-amber-700">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+            <span className="text-amber-800 dark:text-amber-200">
+              Aperçu uniquement : aucune persistance n&apos;est disponible, la modification
+              n&apos;est pas enregistrée ni propagée à la facturation.
+            </span>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
