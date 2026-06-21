@@ -5,9 +5,12 @@ import { Package, Search, Loader2, CheckCircle2, XCircle, X } from "lucide-react
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
+import { updateFeatureDefinition } from "@/lib/super-admin-actions";
 
 interface Feature {
   id: string;
@@ -35,6 +38,10 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const { addToast } = useToast();
 
   const loadFeatures = useCallback(async () => {
     try {
@@ -70,9 +77,80 @@ export default function MarketplacePage() {
         (f.description ?? "").toLowerCase().includes(q) ||
         f.key.toLowerCase().includes(q);
       const matchCat = catFilter === "all" || (f.category ?? "core") === catFilter;
-      return matchSearch && matchCat;
+      const matchStatus =
+        statusFilter === "all" ||
+        (statusFilter === "enabled" ? f.global_enabled : !f.global_enabled);
+      return matchSearch && matchCat && matchStatus;
     });
-  }, [features, search, catFilter]);
+  }, [features, search, catFilter, statusFilter]);
+
+  // Keep the selection in sync with what's currently visible.
+  const visibleIds = useMemo(() => filtered.map((f) => f.id), [filtered]);
+  const selectedVisible = useMemo(
+    () => visibleIds.filter((id) => selected.has(id)),
+    [visibleIds, selected],
+  );
+  const allVisibleSelected = visibleIds.length > 0 && selectedVisible.length === visibleIds.length;
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        visibleIds.forEach((id) => next.delete(id));
+      } else {
+        visibleIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelected(new Set());
+
+  // MK-7: bulk enable/disable selected features (global_enabled), with optimistic
+  // update + reconcile-on-failure via the super_admin-gated server action.
+  const bulkSetEnabled = async (enabled: boolean) => {
+    const ids = visibleIds.filter((id) => selected.has(id));
+    if (ids.length === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    const prev = features;
+    setFeatures((cur) =>
+      cur.map((f) => (selected.has(f.id) ? { ...f, global_enabled: enabled } : f)),
+    );
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => updateFeatureDefinition(id, { globalEnabled: enabled })),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed === 0) {
+        addToast(
+          `${ids.length} feature${ids.length === 1 ? "" : "s"} ${enabled ? "enabled" : "disabled"}`,
+          "success",
+        );
+        clearSelection();
+      } else {
+        addToast(
+          `${ids.length - failed} updated, ${failed} failed — reloading`,
+          failed === ids.length ? "error" : "warning",
+        );
+        await loadFeatures();
+      }
+    } catch (err) {
+      logger.warn("Bulk feature update failed", { context: "marketplace-page", error: err });
+      addToast("Bulk update failed", "error");
+      setFeatures(prev);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   const totalFeatures = features.length;
   const enabledFeatures = features.filter((f) => f.global_enabled).length;
@@ -148,8 +226,64 @@ export default function MarketplacePage() {
               {c === "all" ? "All" : c}
             </button>
           ))}
+          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+          {(["all", "enabled", "disabled"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                statusFilter === s
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background hover:bg-muted border-border"
+              }`}
+            >
+              {s === "all" ? "All status" : s === "enabled" ? "Enabled" : "Disabled"}
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* MK-7: bulk selection + enable/disable */}
+      {!loading && filtered.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleSelectAllVisible}
+              className="h-4 w-4 rounded border-border"
+            />
+            Select all ({visibleIds.length})
+          </label>
+          {selectedVisible.length > 0 && (
+            <>
+              <span className="text-xs font-medium">{selectedVisible.length} selected</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkBusy}
+                  onClick={() => void bulkSetEnabled(true)}
+                >
+                  {bulkBusy && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+                  Enable
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkBusy}
+                  onClick={() => void bulkSetEnabled(false)}
+                >
+                  Disable
+                </Button>
+                <Button size="sm" variant="ghost" onClick={clearSelection} disabled={bulkBusy}>
+                  Clear
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Feature Grid */}
       {loading ? (
@@ -190,10 +324,20 @@ export default function MarketplacePage() {
           {filtered.map((feature) => {
             const cat = feature.category ?? "core";
             return (
-              <Card key={feature.id} className="relative overflow-hidden">
+              <Card
+                key={feature.id}
+                className={`relative overflow-hidden ${selected.has(feature.id) ? "ring-2 ring-primary" : ""}`}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(feature.id)}
+                        onChange={() => toggleSelect(feature.id)}
+                        aria-label={`Select ${feature.name}`}
+                        className="h-4 w-4 rounded border-border"
+                      />
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                         <Package className="h-5 w-5 text-primary" />
                       </div>

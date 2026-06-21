@@ -471,6 +471,38 @@ export default function AISettingsPage() {
           </span>
         </h2>
 
+        {/* AI-8: first-run guidance when the catalogue is present but nothing is active yet. */}
+        {providers.length > 0 && activeCount === 0 && !loadError && (
+          <Card className="mb-3 border-primary/30 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <Zap className="mt-0.5 h-5 w-5 text-primary" />
+                <div className="text-sm">
+                  <p className="font-medium">Get started — activate your first AI provider</p>
+                  <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-muted-foreground">
+                    <li>
+                      Pick a provider below and click <span className="font-medium">Get Key</span>{" "}
+                      to create an API key on their site.
+                    </li>
+                    <li>
+                      Paste the key into the provider&apos;s field and press{" "}
+                      <span className="font-medium">Save</span>.
+                    </li>
+                    <li>
+                      Flip the <span className="font-medium">Active</span> switch, then optionally
+                      set a monthly budget.
+                    </li>
+                  </ol>
+                  <p className="mt-1 text-muted-foreground">
+                    <span className="font-medium">Cloudflare Workers AI</span> needs no key — it
+                    stays available as the free fallback while you configure the rest.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="space-y-3">
           {providers.length === 0 && !loadError && (
             <Card>
