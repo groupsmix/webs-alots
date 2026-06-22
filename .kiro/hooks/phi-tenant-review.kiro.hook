@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "PHI & tenant security review",
+  "description": "After a spec task completes, the agent reviews that task's diff for the security issues husky + CI can't catch semantically: tenant scoping, mass-assignment, PHI in logs/Sentry, missing audit, non-idempotent webhooks/payments, SEALED-layer edits. Lint, typecheck, tests and secret-scanning are already covered by .husky/ and CI. Agent action = consumes credits, runs once per completed task. To run on demand instead, change when.type to \"userTriggered\".",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review ONLY the files changed in this task against AGENTS.md, .ai/TASK-ROUTER.md, and .kiro/steering/oltigo-kiro.md. Report PASS, FAIL, or N/A for each item with file:line and a one-line fix when FAIL. Do not pad passing items.\n1. Tenant isolation: every supabase query scoped with .eq(\"clinic_id\", clinicId); clinicId only from requireTenant(); no trust of x-clinic-id.\n2. No mass-assignment: no .insert({ ...body }) / .update(body); explicit fields only.\n3. SEALED layers untouched: no edits to src/middleware.ts, src/lib/auth/, src/lib/tenant.ts, src/lib/tenant-context.ts, existing RLS policies, or existing booking/payments routes (new files instead). If any were modified, FAIL and say which.\n4. Validation: every API input validated by a Zod schema from @/lib/validations before any DB call.\n5. PHI/secrets: nothing that could send PHI, tokens, or secrets to logs, Sentry, or analytics; @/lib/logger used; apiError messages are generic.\n6. Audit: every state-changing operation calls logAuditEvent() from @/lib/audit-log.\n7. Webhooks/payments: signature verified before parsing AND idempotent (keyed on provider event id); clinic_id resolved from payload or processing skipped.\n8. Migrations: new tables have a clinic_id-scoped RLS policy + index; PHI soft-deleted (deleted_at), never hard-deleted.\n9. Tests: real handler/function tests (no tautologies); schema tests paired with route-handler tests; coverage floor not lowered.\n10. i18n: new user-facing strings have French + Arabic (RTL); WhatsApp notifications have a Darija template.\nEnd with one line: SAFE TO SHIP, or NEEDS FIXES (n issues)."
+  }
+}
