@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Staff invitations — API access control", () => {
   test("GET /api/staff-invitations returns 401 without auth", async ({ request }) => {
     const response = await request.get("/api/staff-invitations");
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/staff-invitations rejects unauthenticated invite", async ({ request }) => {
@@ -20,7 +20,7 @@ test.describe("Staff invitations — API access control", () => {
         role: "receptionist",
       },
     });
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 

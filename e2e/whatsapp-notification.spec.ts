@@ -249,7 +249,7 @@ test.describe("WhatsApp notification — trigger API access control", () => {
         recipients: [{ id: "some-user-id", channels: ["whatsapp"] }],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/notifications rejects unauthenticated dispatch", async ({ request }) => {
@@ -265,19 +265,19 @@ test.describe("WhatsApp notification — trigger API access control", () => {
         channels: ["whatsapp", "in_app"],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("GET /api/notifications rejects unauthenticated access", async ({ request }) => {
     const response = await request.get("/api/notifications");
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("GET /api/notifications with userId param rejects unauthenticated access", async ({
     request,
   }) => {
     const response = await request.get("/api/notifications?userId=other-user-id");
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
@@ -302,7 +302,7 @@ test.describe("WhatsApp notification — supported triggers validation", () => {
           recipients: [{ id: "user-id", channels: ["whatsapp"] }],
         },
       });
-      expect([401, 403, 404, 405]).toContain(response.status());
+      expect([401, 403]).toContain(response.status());
     });
   }
 });

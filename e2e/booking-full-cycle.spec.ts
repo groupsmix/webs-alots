@@ -42,9 +42,14 @@ test.describe("Booking full cycle", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/book");
     await expect(page.locator("body")).not.toBeEmpty();
-    // Content should not overflow horizontally
-    const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
-    expect(bodyWidth).toBeLessThanOrEqual(376);
+    // Content should not overflow horizontally — compare against the actual
+    // viewport width (with 1px tolerance for sub-pixel rounding) rather than a
+    // hardcoded magic number.
+    const { scrollWidth, viewportWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
   });
 
   test("booking page does not expose server errors", async ({ page }) => {

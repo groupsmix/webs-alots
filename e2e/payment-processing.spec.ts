@@ -332,7 +332,7 @@ test.describe("Payment — booking payment flow access control", () => {
         amount: 200,
       },
     });
-    expect([401, 403, 404, 405, 500]).toContain(response.status());
+    expect([401, 403, 404, 405]).toContain(response.status());
   });
 
   test("POST /api/booking/payment/confirm requires auth context", async ({ request }) => {
@@ -342,7 +342,7 @@ test.describe("Payment — booking payment flow access control", () => {
         reference: "test-ref",
       },
     });
-    expect([401, 403, 404, 405, 500]).toContain(response.status());
+    expect([401, 403, 404, 405]).toContain(response.status());
   });
 
   test("POST /api/booking/payment/refund requires auth context", async ({ request }) => {
@@ -352,7 +352,7 @@ test.describe("Payment — booking payment flow access control", () => {
         reason: "Test refund",
       },
     });
-    expect([401, 403, 404, 405, 500]).toContain(response.status());
+    expect([401, 403, 404, 405]).toContain(response.status());
   });
 });
 

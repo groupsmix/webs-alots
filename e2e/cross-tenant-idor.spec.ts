@@ -71,6 +71,8 @@ test.describe("TC-01 — Tenant header injection attacks", () => {
       // Must not return Clinic B's data
       expect(body.clinicId).not.toBe(CLINIC_B_ID);
       expect(body.id).not.toBe(CLINIC_B_ID);
+      // Branding may not echo the injected id anywhere in the payload.
+      expect(JSON.stringify(body)).not.toContain(CLINIC_B_ID);
     } else {
       expect(DENIED_STATUSES).toContain(res.status());
     }
@@ -87,6 +89,10 @@ test.describe("TC-01 — Tenant header injection attacks", () => {
     if (res.status() === 200) {
       const body = await res.json().catch(() => ({}));
       expect(body.clinicId).not.toBe(CLINIC_B_ID);
+      // Neither the injected id nor the injected name may leak into the body.
+      const serialized = JSON.stringify(body);
+      expect(serialized).not.toContain(CLINIC_B_ID);
+      expect(serialized).not.toContain("Attacker Clinic");
     } else {
       expect(DENIED_STATUSES).toContain(res.status());
     }

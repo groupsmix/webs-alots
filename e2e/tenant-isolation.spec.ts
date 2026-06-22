@@ -26,8 +26,11 @@ test.describe("Tenant isolation — header injection prevention", () => {
     // the attacker-specified clinic's branding.
     expect(response.status()).toBe(200);
     const body = await response.json();
-    // The branding should NOT include the attacker's clinic ID
-    expect(body.clinicId).not.toBe("attacker-injected-clinic-id");
+    // Branding derives the tenant from the host, never from headers. The
+    // injected clinic ID must not appear anywhere in the response payload.
+    // (apiSuccess wraps data as { ok: true, data: {...} }, so check the
+    // whole serialized body rather than a top-level field that never exists.)
+    expect(JSON.stringify(body)).not.toContain("attacker-injected-clinic-id");
   });
 
   test("middleware strips injected x-tenant-clinic-name header", async ({ request }) => {
@@ -39,7 +42,11 @@ test.describe("Tenant isolation — header injection prevention", () => {
     });
     expect(response.status()).toBe(200);
     const body = await response.json();
-    expect(body.name).not.toBe("Attacker Clinic");
+    const data = body.data ?? body;
+    expect(data.name).not.toBe("Attacker Clinic");
+    // Neither the injected name nor the injected id may appear anywhere.
+    expect(JSON.stringify(body)).not.toContain("Attacker Clinic");
+    expect(JSON.stringify(body)).not.toContain("fake-id-12345");
   });
 
   test("middleware strips all x-tenant-* headers from incoming requests", async ({ request }) => {
@@ -55,28 +62,36 @@ test.describe("Tenant isolation — header injection prevention", () => {
     });
     expect(response.status()).toBe(200);
     const body = await response.json();
-    // None of the injected values should appear in the response
-    expect(body.clinicId).not.toBe("injected-id");
+    // None of the injected values should appear anywhere in the response.
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain("injected-id");
+    expect(serialized).not.toContain("Injected Name");
+    expect(serialized).not.toContain("injected-subdomain");
+    expect(serialized).not.toContain("injected-type");
+    expect(serialized).not.toContain("injected-tier");
   });
 });
 
 test.describe("Tenant isolation — API data scoping", () => {
-  test("GET /api/patients returns auth error without credentials", async ({ request }) => {
-    // Without auth, the API should reject — not leak cross-tenant data
-    const response = await request.get("/api/patients");
-    expect([401, 403, 404, 405]).toContain(response.status());
+  test("GET /api/patient/timeline returns auth error without credentials", async ({ request }) => {
+    // There is no `/api/patients` collection — patient data is served by the
+    // auth-gated `/api/patient/*` routes. Without auth, the API must reject
+    // rather than leak cross-tenant data.
+    const response = await request.get("/api/patient/timeline");
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/patients rejects unauthenticated cross-tenant creation", async ({ request }) => {
-    const response = await request.post("/api/patients", {
+  test("POST /api/patient/insurance-profile rejects unauthenticated cross-tenant write", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/patient/insurance-profile", {
       data: {
-        name: "Cross-Tenant Patient",
-        email: "cross-tenant@example.com",
-        phone: "+212600000000",
+        insurance_type: "CNSS",
+        policy_number: "CROSS-TENANT",
         clinic_id: "other-clinic-uuid",
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("notification dispatch API rejects unauthenticated requests", async ({ request }) => {
@@ -91,7 +106,7 @@ test.describe("Tenant isolation — API data scoping", () => {
         channels: ["in_app"],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("notification trigger API rejects unauthenticated requests", async ({ request }) => {
@@ -102,7 +117,7 @@ test.describe("Tenant isolation — API data scoping", () => {
         recipients: [{ id: "some-user-id", channels: ["in_app"] }],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 

@@ -188,12 +188,14 @@ test.describe("RBAC — specialist role routes require authentication", () => {
       const response = await page.goto(route);
       const url = page.url();
       const status = response?.status() ?? 0;
+      // A 5xx must NOT count as "protected" — a crashing dashboard is a bug,
+      // not access control. Accept only a login/auth redirect or 401/403/404.
       const isProtected =
         url.includes("/login") ||
         url.includes("/auth") ||
         status === 401 ||
         status === 403 ||
-        status >= 500;
+        status === 404;
       expect(isProtected).toBe(true);
     });
   }
@@ -209,7 +211,7 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
         channels: ["in_app"],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/notifications/trigger requires staff auth", async ({ request }) => {
@@ -220,7 +222,7 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
         recipients: [{ id: "user-id", channels: ["whatsapp"] }],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/payments/create-checkout requires staff auth", async ({ request }) => {
@@ -231,7 +233,7 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
         description: "Test Payment",
       },
     });
-    expect([401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403, 503]).toContain(response.status());
   });
 
   test("POST /api/payments/cmi requires staff auth", async ({ request }) => {
@@ -241,22 +243,22 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
         description: "Test CMI Payment",
       },
     });
-    expect([401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403, 503]).toContain(response.status());
   });
 
   test("GET /api/notifications requires auth", async ({ request }) => {
     const response = await request.get("/api/notifications");
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("DELETE /api/patient/delete-account requires auth", async ({ request }) => {
     const response = await request.delete("/api/patient/delete-account");
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("GET /api/patient/export requires auth", async ({ request }) => {
     const response = await request.get("/api/patient/export");
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
