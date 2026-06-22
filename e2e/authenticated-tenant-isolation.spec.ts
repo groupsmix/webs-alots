@@ -17,6 +17,20 @@ async function loginAsDemoClinicAdmin(page: Page): Promise<void> {
 }
 
 test.describe("Authenticated tenant isolation", () => {
+  // Always runs (CI included): a tenant-scoped API must reject unauthenticated
+  // access with an auth error — never 200 with another tenant's data. This
+  // guarantees the file registers at least one test in CI, where the richer
+  // authenticated cross-subdomain check below is skipped (no second seeded
+  // clinic auth user).
+  test("tenant-scoped API rejects unauthenticated access (no cross-tenant leak)", async ({
+    request,
+  }) => {
+    const res = await request.get("/api/waiting-queue");
+    expect([401, 403]).toContain(res.status());
+    // A leak would surface as 200 with a payload — assert it never does.
+    expect(res.status()).not.toBe(200);
+  });
+
   if (RUN_DEMO_SEED_TESTS) {
     test("clinic session is rejected on a different tenant subdomain", async ({ page }) => {
       await loginAsDemoClinicAdmin(page);
