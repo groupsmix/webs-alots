@@ -7,6 +7,8 @@ import type { UserRole } from "@/lib/types/database";
 type AgentWidgetMountProps = {
   agentType: SiteTeamAgentType;
   position?: "bottom-right" | "bottom-left" | "sidebar";
+  /** When false, the floating launcher is hidden and the panel opens from nav. */
+  showLauncher?: boolean;
 };
 
 const ROLE_TO_AGENT: Record<UserRole, SiteTeamAgentType> = {
@@ -26,6 +28,7 @@ function canMountAgent(role: UserRole, agentType: SiteTeamAgentType): boolean {
 export async function AgentWidgetMount({
   agentType,
   position = "bottom-right",
+  showLauncher = true,
 }: AgentWidgetMountProps) {
   const supabase = await createClient();
   const {
@@ -59,6 +62,7 @@ export async function AgentWidgetMount({
       userId={profile.id}
       clinicName={tenant?.clinicName}
       position={position}
+      showLauncher={showLauncher}
     />
   );
 }

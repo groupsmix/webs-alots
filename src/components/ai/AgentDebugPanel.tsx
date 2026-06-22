@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable i18next/no-literal-string -- Super-admin-only AI debugging surface. */
-import { Activity, DatabaseZap, ShieldCheck } from "lucide-react";
+import { Activity, DatabaseZap, ShieldCheck, ChevronDown } from "lucide-react";
 import { ToolCall } from "@/components/ui/tool-call";
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";
 
@@ -23,12 +23,13 @@ export function AgentDebugPanel({
   if (agentType !== "super_admin") return null;
 
   return (
-    <div className="border-t bg-muted/20 p-3 text-xs">
-      <div className="mb-2 flex items-center gap-2 font-medium">
+    <details className="group border-t bg-muted/20 text-xs">
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-3 font-medium text-muted-foreground transition-colors hover:text-foreground">
         <Activity className="h-3.5 w-3.5 text-primary" />
         Debug IA
-      </div>
-      <div className="grid gap-2">
+        <ChevronDown className="ml-auto h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="grid gap-2 px-3 pb-3">
         <div className="flex items-center gap-2 text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" />
           Tenant + RBAC enforced by API route
@@ -43,6 +44,6 @@ export function AgentDebugPanel({
           description={enableDataTools ? "Read-only tools enabled" : "Tools disabled for this role"}
         />
       </div>
-    </div>
+    </details>
   );
 }

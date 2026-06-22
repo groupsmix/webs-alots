@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Chat } from "@/components/ui/chat";
 import { PromptSuggestions } from "@/components/ui/prompt-suggestions";
 import { getAgentApiBodyConfig, getAgentRoleConfig } from "@/config/agent.config";
+import { ASSISTANT_OPEN_EVENT, ASSISTANT_TOGGLE_EVENT } from "@/lib/ai/assistant-launch";
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,12 @@ interface AgentWidgetProps {
   clinicName?: string;
   position?: "bottom-right" | "bottom-left" | "sidebar";
   defaultOpen?: boolean;
+  /**
+   * Whether to render the floating launcher button when the panel is closed.
+   * When `false`, the panel is opened from the sidebar "Assistant IA" entry
+   * (via the assistant-launch window events) instead of a permanent bubble.
+   */
+  showLauncher?: boolean;
 }
 
 export function AgentWidget({
@@ -47,6 +54,7 @@ export function AgentWidget({
   clinicName,
   position = "bottom-right",
   defaultOpen = false,
+  showLauncher = true,
 }: AgentWidgetProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -64,6 +72,18 @@ export function AgentWidget({
 
   useEffect(() => {
     return () => abortRef.current?.abort();
+  }, []);
+
+  // Open/toggle the panel in response to the sidebar "Assistant IA" entry.
+  useEffect(() => {
+    const toggle = () => setIsOpen((value) => !value);
+    const open = () => setIsOpen(true);
+    window.addEventListener(ASSISTANT_TOGGLE_EVENT, toggle);
+    window.addEventListener(ASSISTANT_OPEN_EVENT, open);
+    return () => {
+      window.removeEventListener(ASSISTANT_TOGGLE_EVENT, toggle);
+      window.removeEventListener(ASSISTANT_OPEN_EVENT, open);
+    };
   }, []);
 
   const roleConfig = getAgentRoleConfig(agentType);
@@ -200,6 +220,9 @@ export function AgentWidget({
   }
 
   if (!isOpen) {
+    // When the launcher is hidden the panel is opened from the sidebar
+    // "Assistant IA" entry, so render nothing while closed.
+    if (!showLauncher) return null;
     return (
       <div className={cn(position === "sidebar" ? "" : "fixed", positionClasses[position], "z-50")}>
         <Button

@@ -38,6 +38,7 @@ import {
   MessageSquare,
   HeartPulse,
   Stethoscope,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -63,6 +64,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { toggleAssistant } from "@/lib/ai/assistant-launch";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
 import { fetchClinics } from "@/lib/super-admin-actions";
@@ -276,6 +278,15 @@ function SidebarNav({ pathname }: { pathname: string }) {
 
   return (
     <nav className="space-y-2 overflow-y-auto flex-1">
+      <button
+        type="button"
+        onClick={() => toggleAssistant()}
+        className="flex w-full items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+      >
+        <Bot className="h-4 w-4" />
+        <span className="flex-1 text-left">Assistant IA</span>
+        <Sparkles className="h-3.5 w-3.5 opacity-70" />
+      </button>
       {navGroups.map((group) => {
         const isExpanded = expandedGroups.has(group.key);
         return (

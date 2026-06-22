@@ -35,7 +35,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
       <SuperAdminLayoutShell>
         <Suspense fallback={<SuperAdminLoading />}>{children}</Suspense>
         <Suspense fallback={null}>
-          <AgentWidgetMount agentType="super_admin" />
+          <AgentWidgetMount agentType="super_admin" showLauncher={false} />
         </Suspense>
       </SuperAdminLayoutShell>
     </>
