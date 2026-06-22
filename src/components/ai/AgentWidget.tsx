@@ -101,13 +101,18 @@ export function AgentWidget({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentType,
-          clinicId,
-          conversationId,
+          // Only include these when present — sending an explicit `null`
+          // (e.g. a super_admin with no clinic, or no conversation yet) made
+          // the request fail schema validation.
+          ...(clinicId ? { clinicId } : {}),
+          ...(conversationId ? { conversationId } : {}),
           ...apiBodyConfig,
-          messages: nextMessages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
+          messages: nextMessages
+            .filter((message) => message.content.trim().length > 0)
+            .map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
         }),
         signal: controller.signal,
       });
@@ -170,11 +175,12 @@ export function AgentWidget({
       if (err instanceof DOMException && err.name === "AbortError") return;
       const message = err instanceof Error ? err.message : "Erreur IA";
       setError(message);
+      // Remove the empty assistant placeholder so the error is shown once
+      // (in the styled error line below) instead of twice.
       setMessages((current: ChatMessage[]) =>
-        current.map((chatMessage: ChatMessage) =>
-          chatMessage.id === assistantMessageId && !chatMessage.content
-            ? { ...chatMessage, content: message }
-            : chatMessage,
+        current.filter(
+          (chatMessage: ChatMessage) =>
+            !(chatMessage.id === assistantMessageId && !chatMessage.content),
         ),
       );
     } finally {

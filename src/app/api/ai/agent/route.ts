@@ -65,9 +65,22 @@ const messageSchema = z.object({
 
 const agentRequestSchema = z.object({
   agentType: z.enum(SITE_TEAM_AGENT_TYPES as [SiteTeamAgentType, ...SiteTeamAgentType[]]),
-  clinicId: z.string().uuid().optional(),
+  // The widget sends `clinicId: null` / `conversationId: null` from its initial
+  // React state (a super_admin has no clinic, and there is no conversation yet
+  // before the first reply). `JSON.stringify` keeps explicit nulls, so accept
+  // null/undefined here and normalise to `undefined` for the handler — using a
+  // plain `.optional()` rejected null with "expected string, received null".
+  clinicId: z
+    .string()
+    .uuid()
+    .nullish()
+    .transform((value) => value ?? undefined),
   messages: z.array(messageSchema).min(1).max(20),
-  conversationId: z.string().uuid().optional(),
+  conversationId: z
+    .string()
+    .uuid()
+    .nullish()
+    .transform((value) => value ?? undefined),
 });
 
 type AgentMessage = z.infer<typeof messageSchema>;
