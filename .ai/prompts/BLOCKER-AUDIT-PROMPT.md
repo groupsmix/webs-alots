@@ -39,6 +39,7 @@ severity using the project's existing scale (`P0` = launch blocker, `P1` = must-
 GA). Anything `P2`/`P3` is NOT a blocker — leave it out.
 
 **P0 — hard launch blockers**
+
 1. **Cross-tenant data leak**: any DB query (`.from(...).select/insert/update/delete`) that
    is not scoped by `clinic_id`, trusts a client-supplied `clinic_id`/`x-clinic-id` header,
    or bypasses `requireTenant()` / `requireTenantWithConfig()`. (See AGENTS.md "Tenant Isolation".)
@@ -56,6 +57,7 @@ GA). Anything `P2`/`P3` is NOT a blocker — leave it out.
    mis-attribute payments across tenants.
 
 **P1 — must-fix-before-GA blockers**
+
 8. **Mass-assignment**: `.insert({...body})` / `.insert(body)` instead of explicit fields.
 9. **Missing input validation** on mutation routes (no Zod schema via `@/lib/validations`).
 10. **Failing/flaky required CI gates**: `lint`, `typecheck`, `test`, bundle-budget, E2E.
@@ -109,20 +111,23 @@ Use this exact structure:
 - **Commit:** <git rev-parse --short HEAD>
 - **Auditor:** <model/agent name>
 - **Verdict:** READY ✅ | NOT READY — CONDITIONAL ⚠️ | NOT READY ❌
-- **Blocker count:** P0: <n>  |  P1: <n>
+- **Blocker count:** P0: <n> | P1: <n>
 
 ## Gate results
-| Gate | Command | Result | Notes |
-| --- | --- | --- | --- |
-| Typecheck | `npm run typecheck` | pass/fail | ... |
-| Lint | `npm run lint` | pass/fail | ... |
-| Unit tests | `npm run test` | pass/fail | ... |
-| Build | `npm run build` | pass/fail | ... |
+
+| Gate       | Command             | Result    | Notes |
+| ---------- | ------------------- | --------- | ----- |
+| Typecheck  | `npm run typecheck` | pass/fail | ...   |
+| Lint       | `npm run lint`      | pass/fail | ...   |
+| Unit tests | `npm run test`      | pass/fail | ...   |
+| Build      | `npm run build`     | pass/fail | ...   |
 
 ## Blockers
+
 > One entry per finding, ordered P0 first. No non-blockers.
 
-### [BLK-01] <short title>  — P0
+### [BLK-01] <short title> — P0
+
 - **Category:** Tenant leak | PHI | AuthZ | Webhook | Build | Migration | Payment | Mass-assignment | Validation | CI | Audit-log
 - **Location:** `path/to/file.ts:LINE` (+ related files)
 - **Evidence:** exact code snippet or command output proving the issue
@@ -135,9 +140,11 @@ Use this exact structure:
 ### [BLK-02] ...
 
 ## Explicitly checked & NOT blocking
+
 > Short list of high-risk areas you verified are fine, so reviewers know coverage.
 
 ## Out of scope / deferred
+
 > Anything you noticed that is real but NOT a blocker (P2/P3, experimental flagged
 > features). One line each. Do not expand these into fixes.
 ```
@@ -169,6 +176,7 @@ Use this exact structure:
    reviewable PRs — never `git add .`, never touch SEALED files without sign-off).
 
 ### Optional tweaks
-- **Faster scope:** add a line restricting it to a path, e.g. *"Only audit `src/app/api/booking/**`."*
+
+- **Faster scope:** add a line restricting it to a path, e.g. _"Only audit `src/app/api/booking/**`."_
 - **Pre-PR gate:** ask the AI to also run the audit against the current branch diff only.
 - **CI integration:** the same prompt works as a manual checklist before tagging a release.

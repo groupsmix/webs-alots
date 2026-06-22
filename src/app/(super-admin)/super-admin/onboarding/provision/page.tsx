@@ -49,15 +49,13 @@ const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   setup_payment: CreditCard,
 };
 
+// Audit #2: only these system types satisfy the `clinics.type` CHECK
+// constraint (migration 00001). Offering unsupported types caused the
+// provisioning INSERT to fail and surface a misleading error.
 const CLINIC_TYPES = [
   { value: "doctor", label: "Médecin" },
   { value: "dentist", label: "Dentiste" },
   { value: "pharmacy", label: "Pharmacie" },
-  { value: "clinic", label: "Clinique" },
-  { value: "hospital", label: "Hôpital" },
-  { value: "laboratory", label: "Laboratoire" },
-  { value: "veterinary", label: "Vétérinaire" },
-  { value: "restaurant", label: "Restaurant" },
 ];
 
 const TIERS = [
@@ -65,6 +63,7 @@ const TIERS = [
   { value: "cabinet", label: "Cabinet" },
   { value: "pro", label: "Pro" },
   { value: "premium", label: "Premium" },
+  { value: "saas", label: "SaaS" },
 ];
 
 const GATEWAYS = [

@@ -13,17 +13,16 @@ const booleanish = z.preprocess((value: unknown) => {
 
 export const clinicProvisionSchema = z.object({
   clinic_name: z.string().min(1).max(200),
-  clinic_type: z.enum([
-    "doctor",
-    "dentist",
-    "pharmacy",
-    "clinic",
-    "hospital",
-    "laboratory",
-    "veterinary",
-    "restaurant",
-  ]),
-  tier: z.enum(["vitrine", "cabinet", "pro", "premium"]),
+  // Audit #2: `clinics.type` has a CHECK constraint that only allows these
+  // three system types (see migration 00001). Offering more here meant the
+  // INSERT failed the CHECK constraint and the route mislabelled it as a
+  // "subdomain may already be in use" error. Keep this enum in lockstep with
+  // the `ClinicType` union in src/lib/types/database.ts and the DB constraint.
+  clinic_type: z.enum(["doctor", "dentist", "pharmacy"]),
+  // Audit #8: `clinics.tier` allows `saas` (migration 00001) and `ClinicTier`
+  // includes it, but it was missing here so super-admins could not provision a
+  // SaaS-tier clinic.
+  tier: z.enum(["vitrine", "cabinet", "pro", "premium", "saas"]),
   subdomain: z
     .string()
     .min(1)

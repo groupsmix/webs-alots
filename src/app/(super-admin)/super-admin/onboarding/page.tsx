@@ -41,13 +41,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
-import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import {
   createClinic,
   createUser,
   createService,
   createTimeSlotsForDoctor,
+  activateClinic,
   type CreateUserInput,
+  type CreateUserAccess,
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
 
@@ -198,7 +199,7 @@ export default function OnboardingPage() {
   // Step 2: Users
   const [users, setUsers] = useState<UserFormData[]>([{ ...DEFAULT_USER }]);
   const [createdUsers, setCreatedUsers] = useState<
-    { id: string; name: string; role: string; email?: string }[]
+    { id: string; name: string; role: string; email?: string; access?: CreateUserAccess }[]
   >([]);
 
   // Step 3: Services
@@ -502,7 +503,13 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
     try {
-      const created: { id: string; name: string; role: string; email?: string }[] = [];
+      const created: {
+        id: string;
+        name: string;
+        role: string;
+        email?: string;
+        access?: CreateUserAccess;
+      }[] = [];
       for (const u of validUsers) {
         const input: CreateUserInput = {
           clinic_id: createdClinicId,
@@ -517,6 +524,7 @@ export default function OnboardingPage() {
           name: user.name,
           role: user.role,
           email: user.email ?? undefined,
+          access: user.access,
         });
       }
       setCreatedUsers(created);
@@ -647,6 +655,21 @@ export default function OnboardingPage() {
     }
   }
 
+  // Audit #3: clinics are created `inactive` and only go live once onboarding
+  // finishes. Activating here (and on skip) flips the clinic to `active`. On
+  // failure the clinic safely stays inactive and can be activated from Admin.
+  async function activateCreatedClinic(): Promise<void> {
+    if (!createdClinicId) return;
+    try {
+      await activateClinic(createdClinicId);
+    } catch {
+      addToast(
+        "Clinic set up but could not be activated automatically — activate it from All Clinics.",
+        "error",
+      );
+    }
+  }
+
   async function handleStep4() {
     if (!createdClinicId) {
       setError("No clinic created yet.");
@@ -673,6 +696,9 @@ export default function OnboardingPage() {
       }
       addToast("Time slots configured successfully", "success");
 
+      // Audit #3: clinic onboarding is complete — make it live.
+      await activateCreatedClinic();
+
       // Save to recently onboarded
       addRecentClinic({
         id: createdClinicId,
@@ -693,8 +719,10 @@ export default function OnboardingPage() {
     }
   }
 
-  function handleSkipTimeSlots() {
+  async function handleSkipTimeSlots() {
     if (createdClinicId) {
+      // Audit #3: clinic onboarding is complete (slots skipped) — make it live.
+      await activateCreatedClinic();
       addRecentClinic({
         id: createdClinicId,
         name: clinicForm.name,
@@ -985,7 +1013,7 @@ export default function OnboardingPage() {
                       <th className="text-left py-2 pr-4 font-medium">Role</th>
                       <th className="text-left py-2 pr-4 font-medium">Name</th>
                       <th className="text-left py-2 pr-4 font-medium">Email (Login)</th>
-                      <th className="text-left py-2 font-medium">Password</th>
+                      <th className="text-left py-2 font-medium">Access</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1000,11 +1028,25 @@ export default function OnboardingPage() {
                             <span className="text-amber-600 italic">No email — cannot log in</span>
                           )}
                         </td>
-                        <td className="py-2 font-mono text-xs">
-                          {u.email ? (
-                            STAFF_DEFAULT_PASSWORD
+                        <td className="py-2 text-xs">
+                          {!u.email ? (
+                            <span className="text-amber-600 italic">No email — cannot log in</span>
+                          ) : u.access?.inviteSent ? (
+                            <span className="text-green-600">Invitation email sent</span>
+                          ) : u.access?.authCreated ? (
+                            <span
+                              className="text-amber-600"
+                              title={u.access?.inviteError ?? undefined}
+                            >
+                              Account created — email not sent
+                            </span>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span
+                              className="text-destructive"
+                              title={u.access?.inviteError ?? undefined}
+                            >
+                              Login not enabled
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -1012,9 +1054,17 @@ export default function OnboardingPage() {
                   </tbody>
                 </table>
               </div>
-              {createdUsers.some((u) => u.email) && (
-                <p className="text-xs text-amber-600 mt-3 font-medium">
-                  Important: Please change the default passwords after first login.
+              {createdUsers.some((u) => u.access?.inviteSent) && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Staff shown as Invitation email sent will receive a secure link to set their own
+                  password and log in. No password is displayed here because none is shared.
+                </p>
+              )}
+              {createdUsers.some((u) => u.email && !u.access?.inviteSent) && (
+                <p className="text-xs text-amber-600 mt-2 font-medium">
+                  Some staff have a login but did not receive an invitation email (no email provider
+                  configured). They can use the Forgot password link on the login page, or you can
+                  configure an email provider and re-send the invite from Admin.
                 </p>
               )}
               {createdUsers.some((u) => !u.email) && (

@@ -14,7 +14,9 @@ import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-resp
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
+import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
+import { createUser } from "@/lib/super-admin-actions";
 import type { UserRole } from "@/lib/types/database";
 import { safeParse } from "@/lib/validations/helpers";
 import { clinicProvisionSchema } from "@/lib/validations/super-admin";
@@ -24,6 +26,7 @@ const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
 const PROVISIONING_STEPS = [
   { key: "create_clinic", label: "Create clinic record" },
+  { key: "create_owner_login", label: "Create owner login" },
   { key: "configure_subdomain", label: "Configure subdomain" },
   { key: "setup_tables", label: "Setup database tables" },
   { key: "assign_whatsapp", label: "Assign WhatsApp number" },
@@ -87,6 +90,14 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       template_id,
     } = result.data;
 
+    // Audit #5: enforce the shared subdomain policy (length, reserved words,
+    // hyphen abuse, punycode) before any INSERT, not just the DB trigger.
+    try {
+      assertAllowedSubdomain(subdomain);
+    } catch (err) {
+      return apiValidationError(err instanceof Error ? err.message : "Invalid subdomain");
+    }
+
     const typedAdmin = createAdminClient("super_admin");
     const untypedAdmin = createUntypedAdminClient("super_admin");
     let clinicId: string | null = null;
@@ -100,7 +111,11 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           type: clinic_type,
           tier,
           subdomain,
-          status: "active",
+          // Audit #3: provisioned clinics start `inactive` and are only flipped
+          // to `active` once every provisioning step has succeeded (see the
+          // activation block below), so a partially-provisioned clinic is never
+          // publicly resolvable.
+          status: "inactive",
           owner_name,
           owner_email,
           phone: owner_phone ?? null,
@@ -131,7 +146,20 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
           context: "onboarding-provision",
           error: clinicError,
         });
-        return apiInternalError("Clinic creation failed — subdomain may already be in use");
+        // Audit #2: map DB constraint violations to precise, actionable
+        // messages instead of the previous misleading "subdomain may already be
+        // in use" (which was wrong for, e.g., an unsupported clinic type/tier).
+        if (clinicError.code === "23505") {
+          return apiValidationError(
+            "A clinic with this subdomain already exists — please choose another.",
+          );
+        }
+        if (clinicError.code === "23514") {
+          return apiValidationError("Unsupported clinic type or tier for this clinic.");
+        }
+        return apiInternalError(
+          "Clinic creation failed — please review the details and try again.",
+        );
       }
 
       clinicId = clinic.id;
@@ -147,6 +175,36 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
     // Initialize remaining steps as pending
     for (const step of PROVISIONING_STEPS.slice(1)) {
       await updateStep(untypedAdmin, clinicId, step.key, "pending");
+    }
+
+    // Step 2: Create the clinic owner's login + invitation (Audit #6).
+    // Previously the auto-provision route created a clinic with NO way to log
+    // in. We now create the owner as a `clinic_admin` with a real Supabase Auth
+    // login and a "set your password" invite. If a login cannot be created
+    // (e.g. SUPABASE_SERVICE_ROLE_KEY / email provider not configured) the step
+    // is marked failed so the clinic stays inactive until an owner can log in.
+    try {
+      await updateStep(untypedAdmin, clinicId, "create_owner_login", "in_progress");
+      const ownerResult = await createUser({
+        clinic_id: clinicId,
+        role: "clinic_admin",
+        name: owner_name,
+        phone: owner_phone ?? undefined,
+        email: owner_email,
+      });
+      if (ownerResult.access.authCreated) {
+        await updateStep(untypedAdmin, clinicId, "create_owner_login", "completed");
+      } else {
+        await updateStep(
+          untypedAdmin,
+          clinicId,
+          "create_owner_login",
+          "failed",
+          ownerResult.access.inviteError ?? "Owner login could not be created",
+        );
+      }
+    } catch (err) {
+      await updateStep(untypedAdmin, clinicId, "create_owner_login", "failed", String(err));
     }
 
     // Step 2: Configure subdomain
@@ -270,6 +328,22 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       });
     }
 
+    // Audit #3: only flip the clinic live when EVERY provisioning step
+    // succeeded. A clinic with a failed step (including a missing owner login)
+    // stays `inactive` and is never publicly resolvable until resolved.
+    if (clinicId && !hasFailures) {
+      const { error: activateError } = await typedAdmin
+        .from("clinics")
+        .update({ status: "active" })
+        .eq("id", clinicId);
+      if (activateError) {
+        logger.error("Failed to activate provisioned clinic", {
+          context: "onboarding-provision",
+          error: activateError,
+        });
+      }
+    }
+
     // Audit log
     await logAuditEvent({
       supabase: auth.supabase,
@@ -330,4 +404,4 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
 }
 
 export const POST = withAuth(handlePost, ALLOWED_ROLES);
-export const GET = withAuth(handleGet, ALLOWED_ROLES, { failOpen: true });
+export const GET = withAuth(handleGet, ALLOWED_ROLES);

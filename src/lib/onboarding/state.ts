@@ -154,16 +154,23 @@ export async function syncClinicOnboardingState({
     return;
   }
 
-  const { error: insertError } = await table.insert({
-    ...payload,
-    created_at: now,
-  });
+  // Audit #11: no existing row was found, but a concurrent sync for the same
+  // clinic may insert one first. With the UNIQUE index on clinic_id (migration
+  // 00195), upsert on that key so a race resolves to a single row instead of a
+  // duplicate-key error or duplicate onboarding rows.
+  const { error: upsertError } = await table.upsert(
+    {
+      ...payload,
+      created_at: now,
+    },
+    { onConflict: "clinic_id" },
+  );
 
-  if (insertError) {
-    logger.warn("Failed to create onboarding state", {
+  if (upsertError) {
+    logger.warn("Failed to upsert onboarding state", {
       context: "onboarding/state",
       clinicId,
-      error: insertError.message,
+      error: upsertError.message,
     });
   }
 }
