@@ -3,6 +3,7 @@ node_modules/
 .open-next/
 coverage/
 dist/
+.kiro/
 supabase/migrations/
 src/lib/types/database.ts
 pnpm-lock.yaml
