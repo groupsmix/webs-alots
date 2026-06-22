@@ -41,6 +41,8 @@ export function PricingContent() {
             return (
               <div
                 key={plan.id}
+                data-testid="pricing-plan-card"
+                data-plan-id={plan.id}
                 className={`relative flex flex-col rounded-2xl border p-8 ${
                   isPopular
                     ? "border-blue-600 shadow-lg shadow-blue-600/10 ring-1 ring-blue-600"
@@ -48,7 +50,10 @@ export function PricingContent() {
                 }`}
               >
                 {isPopular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-4 py-1 text-xs font-semibold text-white">
+                  <div
+                    data-testid="pricing-popular-badge"
+                    className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-4 py-1 text-xs font-semibold text-white"
+                  >
                     {t("pricing.popular")}
                   </div>
                 )}
@@ -150,7 +155,11 @@ export function PricingContent() {
           </h2>
           <div className="space-y-6">
             {faqKeys.map(({ q, a }) => (
-              <div key={q} className="rounded-xl border border-gray-100 p-6">
+              <div
+                key={q}
+                data-testid="pricing-faq-item"
+                className="rounded-xl border border-gray-100 p-6"
+              >
                 <h3 className="font-semibold text-gray-900">{t(q)}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">{t(a)}</p>
               </div>
