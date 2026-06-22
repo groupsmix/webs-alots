@@ -26,8 +26,11 @@ test.describe("Tenant isolation — header injection prevention", () => {
     // the attacker-specified clinic's branding.
     expect(response.status()).toBe(200);
     const body = await response.json();
-    // The branding should NOT include the attacker's clinic ID
-    expect(body.clinicId).not.toBe("attacker-injected-clinic-id");
+    // Branding derives the tenant from the host, never from headers. The
+    // injected clinic ID must not appear anywhere in the response payload.
+    // (apiSuccess wraps data as { ok: true, data: {...} }, so check the
+    // whole serialized body rather than a top-level field that never exists.)
+    expect(JSON.stringify(body)).not.toContain("attacker-injected-clinic-id");
   });
 
   test("middleware strips injected x-tenant-clinic-name header", async ({ request }) => {
@@ -39,7 +42,11 @@ test.describe("Tenant isolation — header injection prevention", () => {
     });
     expect(response.status()).toBe(200);
     const body = await response.json();
-    expect(body.name).not.toBe("Attacker Clinic");
+    const data = body.data ?? body;
+    expect(data.name).not.toBe("Attacker Clinic");
+    // Neither the injected name nor the injected id may appear anywhere.
+    expect(JSON.stringify(body)).not.toContain("Attacker Clinic");
+    expect(JSON.stringify(body)).not.toContain("fake-id-12345");
   });
 
   test("middleware strips all x-tenant-* headers from incoming requests", async ({ request }) => {
@@ -55,8 +62,13 @@ test.describe("Tenant isolation — header injection prevention", () => {
     });
     expect(response.status()).toBe(200);
     const body = await response.json();
-    // None of the injected values should appear in the response
-    expect(body.clinicId).not.toBe("injected-id");
+    // None of the injected values should appear anywhere in the response.
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain("injected-id");
+    expect(serialized).not.toContain("Injected Name");
+    expect(serialized).not.toContain("injected-subdomain");
+    expect(serialized).not.toContain("injected-type");
+    expect(serialized).not.toContain("injected-tier");
   });
 });
 

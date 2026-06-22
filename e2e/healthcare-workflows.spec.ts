@@ -62,7 +62,7 @@ test.describe("Healthcare API — GET individual resources", () => {
 });
 
 test.describe("Healthcare pages — No server errors", () => {
-  const pages = ["/", "/booking", "/login"];
+  const pages = ["/", "/book", "/login"];
 
   for (const path of pages) {
     test(`${path} does not expose server errors`, async ({ page }) => {

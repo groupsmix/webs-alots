@@ -188,12 +188,14 @@ test.describe("RBAC — specialist role routes require authentication", () => {
       const response = await page.goto(route);
       const url = page.url();
       const status = response?.status() ?? 0;
+      // A 5xx must NOT count as "protected" — a crashing dashboard is a bug,
+      // not access control. Accept only a login/auth redirect or 401/403/404.
       const isProtected =
         url.includes("/login") ||
         url.includes("/auth") ||
         status === 401 ||
         status === 403 ||
-        status >= 500;
+        status === 404;
       expect(isProtected).toBe(true);
     });
   }

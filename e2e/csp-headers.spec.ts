@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 
 const CRITICAL_PAGES = [
   { name: "homepage", path: "/" },
-  { name: "booking", path: "/booking" },
+  { name: "booking", path: "/book" },
   { name: "login", path: "/login" },
 ];
 

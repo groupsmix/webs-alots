@@ -95,7 +95,7 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
   });
 
   test("booking page has no critical a11y violations", async ({ page }) => {
-    await stableGoto(page, "/booking");
+    await stableGoto(page, "/book");
     const results = await analyzeWithRetry(page);
     expect(results.violations).toEqual([]);
   });
