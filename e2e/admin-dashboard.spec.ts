@@ -41,25 +41,29 @@ test.describe("Admin dashboard — access control", () => {
   });
 });
 
-test.describe("Admin API — CRUD access control", () => {
-  test("GET /api/patients returns 401 without auth", async ({ request }) => {
-    const response = await request.get("/api/patients");
-    expect([401, 403, 404, 405]).toContain(response.status());
+test.describe("Admin API — patient-data access control", () => {
+  // NOTE: there is no `/api/patients` REST collection — staff patient data is
+  // served by the auth-gated `/api/patient/*` routes. These tests target the
+  // real endpoints so a regression in their auth gating is actually caught.
+  test("GET /api/patient/timeline returns auth error without auth", async ({ request }) => {
+    const response = await request.get("/api/patient/timeline");
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/patients rejects unauthenticated request", async ({ request }) => {
-    const response = await request.post("/api/patients", {
+  test("GET /api/patient/insurance-profile requires auth", async ({ request }) => {
+    const response = await request.get("/api/patient/insurance-profile");
+    expect([401, 403]).toContain(response.status());
+  });
+
+  test("POST /api/patient/insurance-profile rejects unauthenticated request", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/patient/insurance-profile", {
       data: {
-        name: "Test Patient",
-        email: "test@example.com",
-        phone: "+1234567890",
+        insurance_type: "CNSS",
+        policy_number: "TEST123",
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
-  });
-
-  test("DELETE /api/patients rejects unauthenticated request", async ({ request }) => {
-    const response = await request.delete("/api/patients/fake-id");
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });

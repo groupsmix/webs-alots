@@ -73,22 +73,25 @@ test.describe("Tenant isolation — header injection prevention", () => {
 });
 
 test.describe("Tenant isolation — API data scoping", () => {
-  test("GET /api/patients returns auth error without credentials", async ({ request }) => {
-    // Without auth, the API should reject — not leak cross-tenant data
-    const response = await request.get("/api/patients");
-    expect([401, 403, 404, 405]).toContain(response.status());
+  test("GET /api/patient/timeline returns auth error without credentials", async ({ request }) => {
+    // There is no `/api/patients` collection — patient data is served by the
+    // auth-gated `/api/patient/*` routes. Without auth, the API must reject
+    // rather than leak cross-tenant data.
+    const response = await request.get("/api/patient/timeline");
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/patients rejects unauthenticated cross-tenant creation", async ({ request }) => {
-    const response = await request.post("/api/patients", {
+  test("POST /api/patient/insurance-profile rejects unauthenticated cross-tenant write", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/patient/insurance-profile", {
       data: {
-        name: "Cross-Tenant Patient",
-        email: "cross-tenant@example.com",
-        phone: "+212600000000",
+        insurance_type: "CNSS",
+        policy_number: "CROSS-TENANT",
         clinic_id: "other-clinic-uuid",
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("notification dispatch API rejects unauthenticated requests", async ({ request }) => {
