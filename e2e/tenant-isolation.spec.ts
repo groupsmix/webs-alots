@@ -103,7 +103,7 @@ test.describe("Tenant isolation — API data scoping", () => {
         channels: ["in_app"],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("notification trigger API rejects unauthenticated requests", async ({ request }) => {
@@ -114,7 +114,7 @@ test.describe("Tenant isolation — API data scoping", () => {
         recipients: [{ id: "some-user-id", channels: ["in_app"] }],
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 

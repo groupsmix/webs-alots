@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 test.describe("ADT — Admissions API access control", () => {
   test("GET /api/admissions returns 401 without auth", async ({ request }) => {
     const response = await request.get("/api/admissions");
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/admissions rejects unauthenticated request", async ({ request }) => {
@@ -20,7 +20,7 @@ test.describe("ADT — Admissions API access control", () => {
         diagnosis: "Test admission",
       },
     });
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("PATCH /api/admissions/:id rejects unauthenticated discharge", async ({ request }) => {

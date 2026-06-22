@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Insurance claims — API access control", () => {
   test("GET /api/insurance-claims returns 401 without auth", async ({ request }) => {
     const response = await request.get("/api/insurance-claims");
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/insurance-claims rejects unauthenticated request", async ({ request }) => {
@@ -22,7 +22,7 @@ test.describe("Insurance claims — API access control", () => {
         line_items: [{ description: "Consultation", quantity: 1, unit_price_centimes: 50000 }],
       },
     });
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("PATCH /api/insurance-claims/:id rejects unauthenticated review", async ({ request }) => {
