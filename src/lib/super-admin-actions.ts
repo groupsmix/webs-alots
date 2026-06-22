@@ -19,6 +19,7 @@ import {
 } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
+import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
@@ -111,6 +112,23 @@ export interface CreateUserInput {
   email?: string;
 }
 
+/**
+ * Per-staff access state returned by {@link createUser} so the onboarding
+ * wizard can report the *true* login status (Audit #1/#10) instead of showing
+ * a fake shared password that never matches the real random auth password.
+ */
+export interface CreateUserAccess {
+  /** A Supabase Auth login exists (was created or already existed) for this staff member. */
+  authCreated: boolean;
+  /** The "set your password" invitation email was sent successfully. */
+  inviteSent: boolean;
+  /** Human-readable reason when a login or invite could not be provided. */
+  inviteError?: string;
+}
+
+/** {@link createUser} result: the persisted row plus its real access state. */
+export type CreateUserResult = UserRow & { access: CreateUserAccess };
+
 export interface CreateServiceInput {
   clinic_id: string;
   name: string;
@@ -135,17 +153,28 @@ interface _CreateTimeSlotInput {
 export async function createClinic(input: CreateClinicInput): Promise<ClinicRow> {
   const supabase = await rawClient();
   const cfg = input.config ?? {};
+
+  // Audit #5: validate the subdomain through the shared helper (length,
+  // reserved words, hyphen abuse, punycode) BEFORE the INSERT, instead of
+  // relying solely on the DB trigger. Throws a clear, operator-facing message
+  // that the wizard surfaces to the user.
+  if (input.subdomain) {
+    assertAllowedSubdomain(input.subdomain);
+  }
+
   const { data, error } = await supabase
     .from("clinics")
     .insert({
       name: input.name,
       type: input.type,
       tier: input.tier,
-      // QA root-cause fix: always persist the caller-supplied status so new
-      // clinics are created as 'active' by default, not the DB column default
-      // which is 'suspended'. Without this, every onboarding-created clinic
-      // immediately appeared suspended in the All Clinics list.
-      status: input.status ?? "active",
+      // Audit #3/#9: onboarding-created clinics start `inactive` and are flipped
+      // to `active` only once onboarding completes (see `activateClinic`). This
+      // stops an abandoned or half-finished onboarding from leaving a
+      // publicly-resolvable, empty/broken tenant live. `inactive` satisfies the
+      // earlier QA concern too: it is distinct from the scary `suspended` state
+      // (the DB column default) and the clinic becomes `active` on completion.
+      status: input.status ?? "inactive",
       config: cfg as Json,
       subdomain: input.subdomain ?? null,
       // Also set direct columns so public branding queries work
@@ -174,6 +203,59 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
   });
 
   return data as ClinicRow;
+}
+
+/**
+ * Mark a clinic `active` once its onboarding is complete (Audit #3).
+ *
+ * Clinics are created `inactive` (see `createClinic`) so that an abandoned or
+ * half-finished onboarding never leaves a publicly-resolvable, broken tenant
+ * live. The onboarding wizard calls this on its final step (and the
+ * auto-provision route activates only when every provisioning step succeeds).
+ *
+ * Invalidates the subdomain cache so the tenant-resolution middleware picks up
+ * the new status immediately, and writes a non-blocking audit-log entry.
+ */
+export async function activateClinic(clinicId: string): Promise<void> {
+  const supabase = await rawClient();
+
+  const { data: clinic, error: fetchError } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin activates a specific clinic by id
+    .select("id, name, subdomain, status")
+    .eq("id", clinicId)
+    .single();
+
+  if (fetchError) throw new Error(`Failed to load clinic for activation: ${fetchError.message}`);
+
+  const { error } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin activates a specific clinic by id
+    .update({ status: "active" })
+    .eq("id", clinicId);
+
+  if (error) throw new Error(`Failed to activate clinic: ${error.message}`);
+
+  // Invalidate the subdomain cache so middleware serves the now-active tenant.
+  if (clinic?.subdomain) {
+    invalidateSubdomainCache(clinic.subdomain);
+  }
+
+  // Audit log (non-blocking).
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "clinic_activated",
+      description: `Clinic "${clinic?.name ?? clinicId}" activated on onboarding completion`,
+      clinic_id: clinicId,
+      clinic_name: clinic?.name ?? null,
+      type: "clinic",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      clinicId,
+      error: err,
+    });
+  }
 }
 
 export async function fetchClinics(): Promise<ClinicRow[]> {
@@ -569,98 +651,51 @@ export async function updateSubscriptionStatus(
 // ---------- User CRUD ----------
 
 /**
- * Create a staff user with a real Supabase Auth login account.
+ * Resolve a clinic's display name for staff-facing emails (Audit #4).
  *
- * When a valid email is provided and SUPABASE_SERVICE_ROLE_KEY is configured,
- * this function:
- *   1. Creates a Supabase Auth user (email + default password, auto-confirmed)
- *   2. Inserts a row in public.users linked via auth_id
- *
- * If the service role key is missing or auth creation fails, the user is still
- * inserted into public.users (without auth_id) so onboarding doesn't break.
- * A warning is logged in that case.
+ * The welcome email previously used `clinic_id` (a raw UUID) as the clinic
+ * name. This fetches the real name; if the lookup fails it falls back to a
+ * neutral label rather than leaking the UUID.
  */
-export async function createUser(input: CreateUserInput): Promise<UserRow> {
-  const supabase = await rawClient();
-  let authId: string | null = null;
+async function fetchClinicName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId: string,
+): Promise<string> {
+  const { data } = await supabase
+    .from("clinics") // nosemgrep: tenant-scoping — super-admin reads one clinic's name by id for a staff invite
+    .select("name")
+    .eq("id", clinicId)
+    .maybeSingle();
+  const name = data?.name?.trim();
+  return name && name.length > 0 ? name : "your clinic";
+}
 
-  // Attempt to create a Supabase Auth account if email is provided
-  if (input.email && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      const admin = createAdminClient("super_admin");
-      // Audit P1 #12: Generate a secure random one-time password for new staff
-      // so we don't rely on a shared static STAFF_DEFAULT_PASSWORD constant.
-      const secureOneTimePassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
-      const { data: authUser, error: authError } = await admin.auth.admin.createUser({
-        email: input.email,
-        password: secureOneTimePassword,
-        email_confirm: true,
-        user_metadata: {
-          name: input.name,
-          role: input.role,
-          clinic_id: input.clinic_id,
-          must_change_password: true,
-        },
-      });
-
-      if (authError) {
-        // If user already exists, try to look up their auth_id
-        if (authError.message?.includes("already been registered")) {
-          const { data: listData } = await admin.auth.admin.listUsers();
-          const existing = listData?.users?.find((u) => u.email === input.email);
-          if (existing) {
-            authId = existing.id;
-          }
-        } else {
-          logger.warn(
-            "Failed to create auth account for staff — user will be created without login",
-            {
-              context: "super-admin-actions",
-              email: input.email,
-              error: authError.message,
-            },
-          );
-        }
-      } else if (authUser?.user) {
-        authId = authUser.user.id;
-      }
-    } catch (err) {
-      logger.warn("Auth account creation threw — user will be created without login", {
-        context: "super-admin-actions",
-        email: input.email,
-        error: err,
-      });
-    }
-  }
-
-  // The auth trigger (`handle_new_auth_user`, migrations 00028/00068) fires
-  // automatically when an auth account is created and inserts a public.users
-  // row for the new auth_id — as role='patient', with the auth user's email
-  // and no clinic. So whenever we created (or matched) an auth account above,
-  // a users row for this auth_id ALREADY EXISTS and already holds this email.
-  //
-  // Because users.email has a UNIQUE index (migration 00068 D-03,
-  // `users_email_lower_uq`), inserting a SECOND row with the same email would
-  // fail with a duplicate-key error — which, thrown from this Server Action,
-  // surfaces in the browser as the generic "An error occurred in the Server
-  // Components render" message in production.
-  //
-  // The correct behaviour is therefore to UPDATE the trigger-created row in
-  // place with the staff's real role/clinic/name instead of inserting a
-  // duplicate. (A previous revision split this into two blocks, the first of
-  // which mis-classified the trigger row as "already taken by another user"
-  // and nulled authId, turning the update path into dead code and causing the
-  // duplicate INSERT — and the crash.)
+/**
+ * Persist (or reconcile) the public.users row for a staff member.
+ *
+ * The auth trigger (`handle_new_auth_user`, migrations 00028/00068) inserts a
+ * public.users row (role='patient') the moment an auth account is created, and
+ * users.email is UNIQUE (migration 00068 D-03). So when an auth account exists
+ * we UPDATE the trigger-created row in place rather than inserting a duplicate
+ * (which would 23505 and surface as an opaque Server Component crash). The
+ * insert path additionally recovers from a duplicate-email race by updating the
+ * existing row, keeping onboarding idempotent.
+ */
+async function persistStaffUserRow(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  input: CreateUserInput,
+  authId: string | null,
+): Promise<UserRow> {
   if (authId) {
     const { data: existingRow } = await supabase
-      .from("users")
+      .from("users") // nosemgrep: tenant-scoping — super-admin reconciles the staff row by auth_id; clinic_id is written below
       .select("id")
       .eq("auth_id", authId)
       .maybeSingle();
 
     if (existingRow) {
       const { data: updated, error: updateError } = await supabase
-        .from("users")
+        .from("users") // nosemgrep: tenant-scoping — super-admin sets this staff member's clinic_id/role on the trigger-created row
         .update({
           clinic_id: input.clinic_id,
           role: input.role,
@@ -690,66 +725,198 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     .select()
     .single();
 
-  if (error) {
-    // Recover gracefully if a row with this email already exists (e.g. the
-    // auth trigger created it, or the same staff email was onboarded before).
-    // The users.email UNIQUE index rejects the duplicate with code 23505;
-    // instead of crashing, update the existing row so onboarding is idempotent.
-    const isDuplicate =
-      error.code === "23505" ||
-      /duplicate key|already exists|unique constraint/i.test(error.message);
-    if (isDuplicate && input.email) {
-      const { data: updated, error: updateError } = await supabase
-        .from("users")
-        .update({
-          clinic_id: input.clinic_id,
-          role: input.role,
-          name: input.name,
-          phone: input.phone ?? null,
-          ...(authId ? { auth_id: authId } : {}),
-        })
-        .eq("email", input.email)
-        .select()
-        .single();
+  if (!error) return data as UserRow;
 
-      if (!updateError && updated) return updated as UserRow;
-    }
-    throw new Error(`Failed to create user: ${error.message}`);
+  // Recover gracefully from a duplicate-email row (auth trigger or a prior
+  // onboarding of the same email). users.email is UNIQUE (23505) — update the
+  // existing row so onboarding is idempotent instead of crashing.
+  const isDuplicate =
+    error.code === "23505" || /duplicate key|already exists|unique constraint/i.test(error.message);
+  if (isDuplicate && input.email) {
+    const { data: updated, error: updateError } = await supabase
+      .from("users") // nosemgrep: tenant-scoping — super-admin recovers a duplicate-email staff row and sets its clinic_id/role
+      .update({
+        clinic_id: input.clinic_id,
+        role: input.role,
+        name: input.name,
+        phone: input.phone ?? null,
+        ...(authId ? { auth_id: authId } : {}),
+      })
+      .eq("email", input.email)
+      .select()
+      .single();
+
+    if (!updateError && updated) return updated as UserRow;
   }
 
-  // Send welcome/password-reset email so staff can set their own password
-  if (input.email) {
+  throw new Error(`Failed to create user: ${error.message}`);
+}
+
+/**
+ * Send the "set your password" invitation to a staff member who has a login.
+ *
+ * Returns whether the email was actually sent (Audit #10) and never throws, so
+ * the caller can report the true access state to the wizard.
+ */
+async function sendStaffInvite(params: {
+  email: string;
+  name: string;
+  role: string;
+  clinicName: string;
+}): Promise<{ inviteSent: boolean; inviteError?: string }> {
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+    const admin = createAdminClient("super_admin");
+    const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email: params.email,
+      options: { redirectTo: `${siteUrl}/login?reset=true` },
+    });
+
+    if (linkError) {
+      logger.warn("Failed to generate staff invite link", {
+        context: "super-admin-actions",
+        email: params.email,
+        error: linkError.message,
+      });
+      return { inviteSent: false, inviteError: linkError.message };
+    }
+
+    const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
+    const template = staffWelcomeEmail({
+      staffName: params.name,
+      clinicName: params.clinicName,
+      email: params.email,
+      loginUrl,
+      role: params.role,
+    });
+    const result = await sendEmail({ to: params.email, ...template });
+
+    if (!result.success) {
+      logger.warn("Staff invite email not sent", {
+        context: "super-admin-actions",
+        email: params.email,
+        error: result.error,
+      });
+    }
+    return { inviteSent: result.success, inviteError: result.success ? undefined : result.error };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "invite send failed";
+    logger.warn("Failed to send welcome email to staff", {
+      context: "super-admin-actions",
+      email: params.email,
+      error: err,
+    });
+    return { inviteSent: false, inviteError: message };
+  }
+}
+
+/**
+ * Create a staff user with a real Supabase Auth login account.
+ *
+ * When a valid email is provided and SUPABASE_SERVICE_ROLE_KEY is configured:
+ *   1. Creates (or matches an existing) Supabase Auth user, auto-confirmed.
+ *   2. Persists the public.users row (reconciling the auth-trigger row).
+ *   3. Sends a "set your password" invitation email so the staff member can
+ *      log in — on EVERY success path (Audit #10), using the real clinic name
+ *      (Audit #4).
+ *
+ * If the service-role key is missing or auth creation fails, the user is still
+ * inserted into public.users (without a login) so onboarding does not break,
+ * and the returned `access` state honestly reflects that no login was enabled
+ * (Audit #1/#10) — the wizard reports this instead of showing a fake password.
+ */
+export async function createUser(input: CreateUserInput): Promise<CreateUserResult> {
+  const supabase = await rawClient();
+  let authId: string | null = null;
+  let authError: string | undefined;
+  const serviceRoleConfigured = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  // Attempt to create (or match) a Supabase Auth login when possible.
+  if (input.email && serviceRoleConfigured) {
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
       const admin = createAdminClient("super_admin");
-      const { data: resetLink } = await admin.auth.admin.generateLink({
-        type: "recovery",
+      // Audit P1 #12: random one-time password; staff set their own via the
+      // recovery invite below, so this value is never shown to anyone.
+      const secureOneTimePassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
+      const { data: authUser, error: createErr } = await admin.auth.admin.createUser({
         email: input.email,
-        options: {
-          redirectTo: `${siteUrl}/login?reset=true`,
+        password: secureOneTimePassword,
+        email_confirm: true,
+        user_metadata: {
+          name: input.name,
+          role: input.role,
+          clinic_id: input.clinic_id,
+          must_change_password: true,
         },
       });
 
-      const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
-
-      const template = staffWelcomeEmail({
-        staffName: input.name,
-        clinicName: input.clinic_id,
-        email: input.email,
-        loginUrl,
-        role: input.role,
-      });
-      await sendEmail({ to: input.email, ...template });
-    } catch (emailErr) {
-      logger.warn("Failed to send welcome email to staff", {
+      if (createErr) {
+        if (createErr.message?.includes("already been registered")) {
+          const { data: listData } = await admin.auth.admin.listUsers();
+          const existing = listData?.users?.find((u) => u.email === input.email);
+          if (existing) {
+            authId = existing.id;
+          } else {
+            authError = createErr.message;
+          }
+        } else {
+          authError = createErr.message;
+          logger.warn("Failed to create auth account for staff — user created without login", {
+            context: "super-admin-actions",
+            email: input.email,
+            error: createErr.message,
+          });
+        }
+      } else if (authUser?.user) {
+        authId = authUser.user.id;
+      }
+    } catch (err) {
+      authError = err instanceof Error ? err.message : "auth account creation failed";
+      logger.warn("Auth account creation threw — user will be created without login", {
         context: "super-admin-actions",
         email: input.email,
-        error: emailErr,
+        error: err,
       });
     }
   }
 
-  return data as UserRow;
+  // Persist the public.users row regardless of whether a login was created.
+  const userRow = await persistStaffUserRow(supabase, input, authId);
+
+  // Audit #1/#10: compute and return the TRUE access state on every path.
+  let access: CreateUserAccess;
+  if (!input.email) {
+    access = {
+      authCreated: false,
+      inviteSent: false,
+      inviteError: "No email provided — this staff member cannot log in.",
+    };
+  } else if (!authId) {
+    access = {
+      authCreated: false,
+      inviteSent: false,
+      inviteError: serviceRoleConfigured
+        ? (authError ?? "Login could not be enabled for this staff member.")
+        : "Login not enabled — requires SUPABASE_SERVICE_ROLE_KEY and an email provider.",
+    };
+  } else {
+    // Audit #4: use the real clinic name (not the clinic UUID) in the invite.
+    const clinicName = await fetchClinicName(supabase, input.clinic_id);
+    const invite = await sendStaffInvite({
+      email: input.email,
+      name: input.name,
+      role: input.role,
+      clinicName,
+    });
+    access = {
+      authCreated: true,
+      inviteSent: invite.inviteSent,
+      inviteError: invite.inviteError,
+    };
+  }
+
+  return { ...userRow, access };
 }
 
 // ---------- Service CRUD ----------
