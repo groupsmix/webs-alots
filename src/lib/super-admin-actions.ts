@@ -17,6 +17,7 @@ import {
   clinicSuspendedEmail,
   clinicActivatedEmail,
 } from "@/lib/email-templates";
+import { getSiteUrl, getSupabaseServiceRoleKey } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
@@ -687,15 +688,17 @@ async function persistStaffUserRow(
   authId: string | null,
 ): Promise<UserRow> {
   if (authId) {
+    // nosemgrep: tenant-scoping — super-admin reconciles the staff row by auth_id; clinic_id is written below. Intentionally cross-tenant (see AGENTS.md super-admin exception)
     const { data: existingRow } = await supabase
-      .from("users") // nosemgrep: tenant-scoping — super-admin reconciles the staff row by auth_id; clinic_id is written below
+      .from("users")
       .select("id")
       .eq("auth_id", authId)
       .maybeSingle();
 
     if (existingRow) {
+      // nosemgrep: tenant-scoping — super-admin sets this staff member's clinic_id/role on the trigger-created row. Intentionally cross-tenant (see AGENTS.md super-admin exception)
       const { data: updated, error: updateError } = await supabase
-        .from("users") // nosemgrep: tenant-scoping — super-admin sets this staff member's clinic_id/role on the trigger-created row
+        .from("users")
         .update({
           clinic_id: input.clinic_id,
           role: input.role,
@@ -733,8 +736,9 @@ async function persistStaffUserRow(
   const isDuplicate =
     error.code === "23505" || /duplicate key|already exists|unique constraint/i.test(error.message);
   if (isDuplicate && input.email) {
+    // nosemgrep: tenant-scoping — super-admin recovers a duplicate-email staff row by email and (re)assigns its clinic_id/role; intentionally cross-tenant, so no clinic_id filter (see AGENTS.md super-admin exception)
     const { data: updated, error: updateError } = await supabase
-      .from("users") // nosemgrep: tenant-scoping — super-admin recovers a duplicate-email staff row and sets its clinic_id/role
+      .from("users")
       .update({
         clinic_id: input.clinic_id,
         role: input.role,
@@ -765,7 +769,8 @@ async function sendStaffInvite(params: {
   clinicName: string;
 }): Promise<{ inviteSent: boolean; inviteError?: string }> {
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+    const siteUrl = getSiteUrl() || "https://oltigo.com";
+    // nosemgrep: admin-client-guard — super-admin GoTrue auth-admin op (generateLink); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
     const admin = createAdminClient("super_admin");
     const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
       type: "recovery",
@@ -830,11 +835,12 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
   const supabase = await rawClient();
   let authId: string | null = null;
   let authError: string | undefined;
-  const serviceRoleConfigured = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const serviceRoleConfigured = Boolean(getSupabaseServiceRoleKey());
 
   // Attempt to create (or match) a Supabase Auth login when possible.
   if (input.email && serviceRoleConfigured) {
     try {
+      // nosemgrep: admin-client-guard — super-admin GoTrue auth-admin op (createUser); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
       const admin = createAdminClient("super_admin");
       // Audit P1 #12: random one-time password; staff set their own via the
       // recovery invite below, so this value is never shown to anyone.
