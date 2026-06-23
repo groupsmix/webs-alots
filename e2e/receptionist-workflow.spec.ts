@@ -55,19 +55,21 @@ test.describe("Receptionist Workflow Test", () => {
       await expect(todayTab).toHaveAttribute("aria-selected", "true");
 
       // 3. Mark an appointment as arrived (Checked In)
-      // Find the first "Check In" button for a scheduled appointment.
+      // The demo seed provisions at least one scheduled appointment, so the
+      // "Mark Arrived" control must be present. Assert it (instead of guarding
+      // with `if isVisible`, which would let the test pass without checking
+      // anyone in) and then exercise the check-in flow.
       const checkInButton = page.getByTitle("Mark Arrived").first();
-      if (await checkInButton.isVisible()) {
-        await checkInButton.click();
+      await expect(checkInButton).toBeVisible();
+      await checkInButton.click();
 
-        // Navigate to "Checked In" tab
-        await page.locator('button[role="tab"]', { hasText: "Checked In" }).click();
+      // Navigate to "Checked In" tab
+      await page.locator('button[role="tab"]', { hasText: "Checked In" }).click();
 
-        // Verify that at least one appointment is visible in the checked in list
-        await expect(page.locator('[role="tabpanel"][data-state="active"]')).toContainText(
-          "Checked In",
-        );
-      }
+      // Verify that at least one appointment is visible in the checked in list
+      await expect(page.locator('[role="tabpanel"][data-state="active"]')).toContainText(
+        "Checked In",
+      );
     });
   }
 });
