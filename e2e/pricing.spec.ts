@@ -20,7 +20,9 @@ test.describe("Pricing page", () => {
   });
 
   test("displays all four subscription plans", async ({ page }) => {
-    // Each plan card has a plan name heading
+    // Four plan cards, identified by a stable test id (not styling).
+    await expect(page.locator('[data-testid="pricing-plan-card"]')).toHaveCount(4);
+    // Plan names are fixed English brand names (locale-independent).
     const planNames = ["Free", "Starter", "Professional", "Enterprise"];
     for (const name of planNames) {
       await expect(page.locator("h3").filter({ hasText: name })).toBeVisible();
@@ -28,9 +30,12 @@ test.describe("Pricing page", () => {
   });
 
   test("highlights the Professional plan as popular", async ({ page }) => {
-    // The "Populaire" / "Popular" badge should appear on the Professional card
-    const popularBadge = page.locator("text=/Populaire|Popular|الأكثر شعبية/");
-    await expect(popularBadge).toBeVisible();
+    // Locale-agnostic: assert the badge element on the professional card,
+    // rather than matching translated "Populaire"/"Popular" text.
+    const popularCard = page.locator(
+      '[data-testid="pricing-plan-card"][data-plan-id="professional"]',
+    );
+    await expect(popularCard.locator('[data-testid="pricing-popular-badge"]')).toBeVisible();
   });
 
   test("free plan has a signup CTA", async ({ page }) => {
@@ -40,8 +45,7 @@ test.describe("Pricing page", () => {
   });
 
   test("FAQ section is visible", async ({ page }) => {
-    // The FAQ section should have at least 4 questions
-    const faqItems = page.locator(".rounded-xl.border.border-gray-100.p-6");
-    await expect(faqItems).toHaveCount(4);
+    // The FAQ section should have exactly four questions (stable test id).
+    await expect(page.locator('[data-testid="pricing-faq-item"]')).toHaveCount(4);
   });
 });

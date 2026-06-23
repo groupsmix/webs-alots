@@ -11,51 +11,51 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Stripe checkout — access control", () => {
-  test("POST /api/payments/create-checkout rejects unauthenticated request", async ({
+  // create-checkout is withAuthValidation(..., STAFF_ROLES), but it is NOT a
+  // CSRF-exempt route. Playwright's request API sends no Origin header, so the
+  // CSRF middleware (src/lib/middleware/csrf.ts) rejects the mutation with 403
+  // before the route's auth/validation/config even run. An authenticated
+  // browser request would instead be gated by withAuth (401). Either way the
+  // unauthenticated caller is denied (401/403) and never reaches validation
+  // (422) or the Stripe-config (503) path — those are covered in the unit
+  // tests (src/app/api/__tests__/payment-routes.test.ts).
+  test("POST /api/payments/create-checkout requires authentication", async ({ request }) => {
+    const response = await request.post("/api/payments/create-checkout", {
+      data: { amount: 50000, currency: "mad", description: "Consultation payment" },
+    });
+    expect([401, 403]).toContain(response.status());
+  });
+
+  test("POST /api/payments/create-checkout requires auth even with empty body", async ({
     request,
   }) => {
-    const response = await request.post("/api/payments/create-checkout", {
-      data: {
-        amount: 50000,
-        currency: "mad",
-        description: "Consultation payment",
-      },
-    });
-    // Should return 401 (not authenticated) or 503 (Stripe not configured)
-    expect([401, 403, 404, 405, 503]).toContain(response.status());
+    // Origin-less mutation → CSRF 403 (or 401 if it reached auth); never 422.
+    const response = await request.post("/api/payments/create-checkout", { data: {} });
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/create-checkout rejects empty body", async ({ request }) => {
+  test("POST /api/payments/create-checkout requires auth even with an invalid amount", async ({
+    request,
+  }) => {
+    // Denied (CSRF 403 / auth 401) before amount validation runs; the
+    // amount-validation teeth live in the unit tests.
     const response = await request.post("/api/payments/create-checkout", {
-      data: {},
+      data: { amount: -100, currency: "mad", description: "Negative amount test" },
     });
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
-  });
-
-  test("POST /api/payments/create-checkout rejects negative amount", async ({ request }) => {
-    const response = await request.post("/api/payments/create-checkout", {
-      data: {
-        amount: -100,
-        currency: "mad",
-        description: "Negative amount test",
-      },
-    });
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
-  });
-
-  test("POST /api/payments/create-checkout rejects zero amount", async ({ request }) => {
-    const response = await request.post("/api/payments/create-checkout", {
-      data: {
-        amount: 0,
-        currency: "mad",
-        description: "Zero amount test",
-      },
-    });
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
 test.describe("Stripe webhook — signature verification", () => {
+  // The webhook endpoint has NO user-auth layer, so it never returns 401/403.
+  // When STRIPE_SECRET_KEY is unset (the CI default) it returns 503 before
+  // reading the body; when configured, an invalid/forged/expired signature is
+  // rejected with 400. The security-critical invariant is uniform: an
+  // unsigned or badly-signed event must NEVER be accepted (200). The exact
+  // signature-verification logic is unit-tested in
+  // src/app/api/__tests__/stripe-webhook.test.ts with the secret configured.
+  const WEBHOOK_REJECTED = [400, 503];
+
   test("rejects webhook without stripe-signature header", async ({ request }) => {
     const payload = JSON.stringify({
       type: "checkout.session.completed",
@@ -73,8 +73,8 @@ test.describe("Stripe webhook — signature verification", () => {
       headers: { "content-type": "application/json" },
       data: payload,
     });
-    // Missing stripe-signature header → 400 or 503
-    expect([400, 401, 403, 503]).toContain(response.status());
+    expect(response.status()).not.toBe(200);
+    expect(WEBHOOK_REJECTED).toContain(response.status());
   });
 
   test("rejects webhook with invalid stripe-signature", async ({ request }) => {
@@ -96,8 +96,8 @@ test.describe("Stripe webhook — signature verification", () => {
       },
       data: payload,
     });
-    // Invalid signature → 400
-    expect([400, 401, 403, 503]).toContain(response.status());
+    expect(response.status()).not.toBe(200);
+    expect(WEBHOOK_REJECTED).toContain(response.status());
   });
 
   test("rejects webhook with expired timestamp in signature", async ({ request }) => {
@@ -121,7 +121,8 @@ test.describe("Stripe webhook — signature verification", () => {
       },
       data: payload,
     });
-    expect([400, 401, 403, 503]).toContain(response.status());
+    expect(response.status()).not.toBe(200);
+    expect(WEBHOOK_REJECTED).toContain(response.status());
   });
 
   test("rejects webhook with missing timestamp in signature", async ({ request }) => {
@@ -142,11 +143,13 @@ test.describe("Stripe webhook — signature verification", () => {
       },
       data: payload,
     });
-    expect([400, 401, 403, 503]).toContain(response.status());
+    expect(response.status()).not.toBe(200);
+    expect(WEBHOOK_REJECTED).toContain(response.status());
   });
 
   test("rejects checkout.session.completed with forged clinic_id", async ({ request }) => {
-    // An attacker tries to mark a payment as completed for another clinic
+    // An attacker tries to mark a payment as completed for another clinic.
+    // Signature verification rejects the forged event before metadata is read.
     const payload = JSON.stringify({
       type: "checkout.session.completed",
       data: {
@@ -169,8 +172,8 @@ test.describe("Stripe webhook — signature verification", () => {
       },
       data: payload,
     });
-    // Signature validation should catch this
-    expect([400, 401, 403, 503]).toContain(response.status());
+    expect(response.status()).not.toBe(200);
+    expect(WEBHOOK_REJECTED).toContain(response.status());
   });
 
   test("rejects payment_intent.payment_failed with invalid signature", async ({ request }) => {
@@ -196,41 +199,44 @@ test.describe("Stripe webhook — signature verification", () => {
       },
       data: payload,
     });
-    expect([400, 401, 403, 503]).toContain(response.status());
+    expect(response.status()).not.toBe(200);
+    expect(WEBHOOK_REJECTED).toContain(response.status());
   });
 });
 
 test.describe("CMI payment gateway — access control", () => {
-  test("POST /api/payments/cmi rejects unauthenticated request", async ({ request }) => {
+  // /api/payments/cmi is withAuthValidation(..., STAFF_ROLES) and is NOT
+  // CSRF-exempt, so an origin-less POST is rejected by the CSRF middleware
+  // (403) before auth/validation/config run; an unauthenticated browser
+  // request would be gated by withAuth (401). Either way it's denied (401/403),
+  // never 422/503. Amount validation is unit-tested.
+  test("POST /api/payments/cmi requires authentication", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
-      data: {
-        amount: 200,
-        description: "Consultation",
-      },
+      data: { amount: 200, description: "Consultation" },
     });
-    // Should return 401 (not authenticated) or 503 (CMI not configured)
-    expect([401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi rejects empty body", async ({ request }) => {
-    const response = await request.post("/api/payments/cmi", {
-      data: {},
-    });
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
+  test("POST /api/payments/cmi requires auth even with empty body", async ({ request }) => {
+    const response = await request.post("/api/payments/cmi", { data: {} });
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi rejects negative amount", async ({ request }) => {
+  test("POST /api/payments/cmi requires auth even with an invalid amount", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
-      data: {
-        amount: -50,
-        description: "Negative CMI test",
-      },
+      data: { amount: -50, description: "Negative CMI test" },
     });
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
 test.describe("CMI callback — hash verification", () => {
+  // The CMI callback is unauthenticated (server-to-server) but HMAC-verified.
+  // A bad/missing/tampered hash is rejected with 400 (invalid callback /
+  // invalid fields), or 403 when an optional source-IP allowlist is set. It
+  // must NEVER return a 2xx success for an unverified hash.
+  const CMI_REJECTED = [400, 403, 422];
+
   test("POST /api/payments/cmi/callback rejects invalid hash", async ({ request }) => {
     const formData = new URLSearchParams();
     formData.append("oid", "ord_test_123");
@@ -243,8 +249,9 @@ test.describe("CMI callback — hash verification", () => {
       data: formData.toString(),
       headers: { "content-type": "application/x-www-form-urlencoded" },
     });
-    // Invalid hash → 400
-    expect([400, 401, 403]).toContain(response.status());
+    // An unverified hash must be rejected, never accepted as success (2xx).
+    expect(response.status()).toBeGreaterThanOrEqual(400);
+    expect(CMI_REJECTED).toContain(response.status());
   });
 
   test("POST /api/payments/cmi/callback rejects missing hash", async ({ request }) => {
@@ -257,11 +264,12 @@ test.describe("CMI callback — hash verification", () => {
       data: formData.toString(),
       headers: { "content-type": "application/x-www-form-urlencoded" },
     });
-    expect([400, 401, 403]).toContain(response.status());
+    expect(CMI_REJECTED).toContain(response.status());
   });
 
   test("POST /api/payments/cmi/callback rejects tampered amount", async ({ request }) => {
-    // Attacker modifies the amount after CMI processes the payment
+    // Attacker modifies the amount after CMI processes the payment; the hash
+    // computed over the original amount no longer matches → rejected.
     const formData = new URLSearchParams();
     formData.append("oid", "ord_test_tampered");
     formData.append("amount", "99999.00"); // Tampered from original 200.00
@@ -273,8 +281,7 @@ test.describe("CMI callback — hash verification", () => {
       data: formData.toString(),
       headers: { "content-type": "application/x-www-form-urlencoded" },
     });
-    // Hash mismatch due to tampered amount → 400
-    expect([400, 401, 403]).toContain(response.status());
+    expect(CMI_REJECTED).toContain(response.status());
   });
 
   test("POST /api/payments/cmi/callback rejects declined payment hash", async ({ request }) => {
@@ -288,15 +295,19 @@ test.describe("CMI callback — hash verification", () => {
       data: formData.toString(),
       headers: { "content-type": "application/x-www-form-urlencoded" },
     });
-    expect([400, 401, 403]).toContain(response.status());
+    expect(CMI_REJECTED).toContain(response.status());
   });
 });
 
 test.describe("Payment — open redirect prevention", () => {
-  test("POST /api/payments/create-checkout rejects cross-origin successUrl", async ({
+  // NOTE: both routes are auth-gated and not CSRF-exempt, so an origin-less
+  // caller is rejected (403 by CSRF, or 401 by auth) before successUrl/cancelUrl
+  // validation runs. These confirm the gate; the same-origin redirect sanitiser
+  // (validateRedirectUrl) is unit-tested directly in
+  // src/app/api/__tests__/payment-routes.test.ts.
+  test("POST /api/payments/create-checkout requires auth (cross-origin successUrl)", async ({
     request,
   }) => {
-    // The validateRedirectUrl function should reject external URLs
     const response = await request.post("/api/payments/create-checkout", {
       data: {
         amount: 10000,
@@ -306,11 +317,10 @@ test.describe("Payment — open redirect prevention", () => {
         cancelUrl: "https://attacker.com/cancel",
       },
     });
-    // Should either reject (auth) or fall back to safe default URL
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi rejects cross-origin successUrl", async ({ request }) => {
+  test("POST /api/payments/cmi requires auth (cross-origin successUrl)", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
       data: {
         amount: 200,
@@ -319,8 +329,7 @@ test.describe("Payment — open redirect prevention", () => {
         failUrl: "https://attacker.com/fail",
       },
     });
-    // Should either reject (auth) or fall back to safe default URL
-    expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
@@ -357,17 +366,23 @@ test.describe("Payment — booking payment flow access control", () => {
 });
 
 test.describe("Payment — body size limits", () => {
-  test("rejects extremely large webhook payloads", async ({ request }) => {
-    // The middleware enforces a 25 MB body size limit.
-    // Send a content-length header advertising a huge payload.
+  test("does not crash on a webhook advertising an oversized content-length", async ({
+    request,
+  }) => {
+    // NOTE: Playwright recomputes Content-Length from the actual body, so the
+    // server sees a 2-byte payload here — this does NOT exercise the 413
+    // payload-too-large path (that is unit-tested against readWebhookBody).
+    // What this asserts: a spoofed oversized Content-Length header does not
+    // crash the endpoint (no 5xx beyond the expected unconfigured-503) and is
+    // never accepted as a valid event.
     const response = await request.post("/api/payments/webhook", {
       headers: {
         "content-type": "application/json",
-        "content-length": "50000000", // 50 MB
+        "content-length": "50000000", // 50 MB (advertised, not sent)
       },
       data: "{}",
     });
-    // Should reject with 413 (payload too large) or similar
+    expect(response.status()).not.toBe(200);
     expect([400, 413, 503]).toContain(response.status());
   });
 });

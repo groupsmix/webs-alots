@@ -26,7 +26,15 @@ function buildStripeSignature(payload: string, secret: string, timestamp?: numbe
 
 // ── CMI callback helpers ────────────────────────────────────────────
 
-/** Build a CMI-compatible HMAC hash for callback verification. */
+/**
+ * Build a CMI-compatible HMAC hash for callback verification.
+ *
+ * NOTE: This mirrors the CMI hashing shape for documentation purposes, but in
+ * CI the real CMI_STORE_KEY is not configured, so a hash built here will NOT
+ * match the server's expected value. Callbacks in this suite are therefore
+ * expected to be REJECTED (400/403) — the tests assert rejection/determinism,
+ * not acceptance. Acceptance + the real hash algorithm are unit-tested.
+ */
 function buildCmiHash(params: Record<string, string>, storeKey: string): string {
   // CMI hashes are computed over sorted field values + storeKey
   const sortedKeys = Object.keys(params)
@@ -41,9 +49,12 @@ function buildCmiHash(params: Record<string, string>, storeKey: string): string 
 test.describe("Stripe webhook — event flow", () => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "whsec_test_secret";
 
-  test("accepts checkout.session.completed with valid signature when Stripe is configured", async ({
-    request,
-  }) => {
+  test("does not 5xx on a well-formed checkout.session.completed event", async ({ request }) => {
+    // In CI, STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET are unset, so this returns
+    // 503 (not configured) — we cannot reach a real 200 acceptance here. The
+    // assertion therefore only guarantees the endpoint handles the event type
+    // gracefully (no crash). Genuine acceptance + DB side-effects are covered
+    // by src/app/api/__tests__/stripe-webhook.test.ts with the secret mocked.
     const payload = JSON.stringify({
       id: "evt_test_checkout_complete",
       type: "checkout.session.completed",
@@ -76,7 +87,7 @@ test.describe("Stripe webhook — event flow", () => {
     expect([200, 400, 503]).toContain(response.status());
   });
 
-  test("handles payment_intent.payment_failed event", async ({ request }) => {
+  test("does not 5xx on a payment_intent.payment_failed event", async ({ request }) => {
     const payload = JSON.stringify({
       id: "evt_test_payment_failed",
       type: "payment_intent.payment_failed",
@@ -110,7 +121,7 @@ test.describe("Stripe webhook — event flow", () => {
     expect([200, 400, 503]).toContain(response.status());
   });
 
-  test("handles charge.refunded event", async ({ request }) => {
+  test("does not 5xx on a charge.refunded event", async ({ request }) => {
     const payload = JSON.stringify({
       id: "evt_test_refund",
       type: "charge.refunded",
@@ -140,7 +151,11 @@ test.describe("Stripe webhook — event flow", () => {
     expect([200, 400, 503]).toContain(response.status());
   });
 
-  test("idempotency — duplicate event ID returns same result", async ({ request }) => {
+  test("responds deterministically to a duplicate event delivery", async ({ request }) => {
+    // True idempotency (dedup so a replayed event is processed only once) is
+    // verified in src/app/api/__tests__/webhooks-dedup.test.ts. Here — without
+    // a configured webhook secret — both deliveries are rejected identically,
+    // so we assert determinism: same status AND same body for a replay.
     const eventId = "evt_test_idempotent_001";
     const payload = JSON.stringify({
       id: eventId,
@@ -172,8 +187,9 @@ test.describe("Stripe webhook — event flow", () => {
       data: payload,
     });
 
-    // Both should return the same status (either success or config error)
+    // Deterministic: identical status AND identical body for a replayed event.
     expect(response1.status()).toBe(response2.status());
+    expect(await response1.text()).toBe(await response2.text());
   });
 
   test("rejects empty JSON payload", async ({ request }) => {
@@ -231,7 +247,10 @@ test.describe("Stripe webhook — event flow", () => {
 test.describe("CMI callback — payment flow", () => {
   const cmiStoreKey = process.env.CMI_STORE_KEY || "test_cmi_store_key";
 
-  test("processes successful payment callback", async ({ request }) => {
+  test("does not 5xx on an approved-payment callback shape", async ({ request }) => {
+    // Without the real CMI store key this is rejected (400/403); with it
+    // configured it returns 200. We only assert it handles the shape without
+    // crashing. Real approval + DB side-effects are unit-tested.
     const params: Record<string, string> = {
       oid: "ord_e2e_success_001",
       amount: "500.00",
@@ -252,7 +271,7 @@ test.describe("CMI callback — payment flow", () => {
     expect([200, 400, 403]).toContain(response.status());
   });
 
-  test("handles declined payment callback", async ({ request }) => {
+  test("does not 5xx on a declined-payment callback shape", async ({ request }) => {
     const params: Record<string, string> = {
       oid: "ord_e2e_declined_001",
       amount: "300.00",
@@ -272,7 +291,11 @@ test.describe("CMI callback — payment flow", () => {
     expect([200, 400, 403]).toContain(response.status());
   });
 
-  test("idempotency — duplicate order ID handled gracefully", async ({ request }) => {
+  test("responds deterministically to a duplicate callback delivery", async ({ request }) => {
+    // True replay protection (cmi_callbacks_seen dedup) requires the real
+    // CMI store key and is unit-tested. Here the hash won't match the server's
+    // key, so both deliveries are rejected identically — assert determinism:
+    // same status AND same body, and never a 2xx success for an unverified hash.
     const params: Record<string, string> = {
       oid: "ord_e2e_idempotent_001",
       amount: "200.00",
@@ -296,8 +319,8 @@ test.describe("CMI callback — payment flow", () => {
       headers,
     });
 
-    // Both should respond consistently
     expect(response1.status()).toBe(response2.status());
+    expect(await response1.text()).toBe(await response2.text());
   });
 
   test("rejects callback with empty body", async ({ request }) => {

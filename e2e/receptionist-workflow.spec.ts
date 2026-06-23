@@ -16,8 +16,9 @@ import { test, expect } from "@playwright/test";
 const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 
 test.describe("Receptionist Workflow Test", () => {
-  // Use the demo subdomain for all requests in this block
-  test.use({ baseURL: "http://demo.localhost:3000" });
+  // Use the demo subdomain for all requests in this block (CI sets
+  // E2E_BASE_URL to the demo subdomain; fall back to demo.localhost locally).
+  test.use({ baseURL: process.env.E2E_BASE_URL || "http://demo.localhost:3000" });
 
   // Always runs (CI included) so this file isn't a no-op when the demo seed is
   // absent: the receptionist dashboard must not be reachable without auth.

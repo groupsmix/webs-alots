@@ -22,6 +22,13 @@ import { test, expect } from "@playwright/test";
 
 const LOGIN_PATH = "/login";
 
+// Respect the configured target (CI sets E2E_BASE_URL to the demo subdomain).
+// page.url() returns "about:blank" before the first navigation, so we need an
+// explicit origin to build absolute URLs against — derive it from the same
+// base the rest of the suite uses instead of hardcoding localhost.
+const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
+const BASE_HOST = new URL(BASE_URL).hostname;
+
 // Payloads that must NOT redirect outside the origin.
 const MALICIOUS_REDIRECTS = [
   { label: "protocol-relative", value: "//evil.example.com" },
@@ -50,8 +57,8 @@ test.describe("Open Redirect Prevention", () => {
     for (const { label, value } of MALICIOUS_REDIRECTS) {
       test(`rejects ${label}`, async ({ page }) => {
         // page.url() returns "about:blank" before first navigation, which is
-        // not a valid URL base — use the explicit dev-server origin instead.
-        const loginUrl = new URL(LOGIN_PATH, "http://localhost:3000");
+        // not a valid URL base — use the explicit configured origin instead.
+        const loginUrl = new URL(LOGIN_PATH, BASE_URL);
         loginUrl.searchParams.set("redirect", value);
 
         const response = await page.goto(loginUrl.toString());
@@ -80,7 +87,7 @@ test.describe("Open Redirect Prevention", () => {
   test.describe("Legitimate redirect paths are preserved", () => {
     for (const { label, value } of SAFE_REDIRECTS) {
       test(`preserves ${label} (${value})`, async ({ page }) => {
-        const loginUrl = new URL(LOGIN_PATH, "http://localhost:3000");
+        const loginUrl = new URL(LOGIN_PATH, BASE_URL);
         loginUrl.searchParams.set("redirect", value);
 
         await page.goto(loginUrl.toString());
@@ -105,7 +112,7 @@ test.describe("Open Redirect Prevention", () => {
         // If the middleware stripped the param entirely for a safe path,
         // that's also acceptable — the test just verifies no open redirect.
         const finalHostname = new URL(page.url()).hostname;
-        expect(finalHostname).toBe("localhost");
+        expect(finalHostname).toBe(BASE_HOST);
       });
     }
   });

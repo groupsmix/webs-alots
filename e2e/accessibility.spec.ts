@@ -15,10 +15,18 @@ import { test, expect } from "@playwright/test";
  * requirements. See docs/accessibility-conformance.md for the full
  * conformance statement and roadmap.
  *
- * Known exclusions:
- * - aria-prohibited-attr: shadcn/radix components set aria-describedby
- *   on elements where axe 4.11 considers it prohibited. Upstream fix
- *   tracked; excluded here to avoid false positives.
+ * Known exclusions (EXCLUDED_RULES) — each must be justified here:
+ * - color-contrast: clinic admins can set arbitrary brand colors at runtime,
+ *   so contrast cannot be asserted statically against fixed expected values in
+ *   this generic crawl. The server enforces WCAG AA contrast via
+ *   `meetsWCAG_AA` + `WCAG_SAFE_DEFAULTS` (src/lib/contrast.ts), which is
+ *   unit-tested. Re-enable here once tests run against a fixed-palette tenant.
+ * - aria-prohibited-attr: shadcn/radix components set aria-describedby on
+ *   elements where axe 4.11 considers it prohibited (upstream false positive).
+ * - aria-valid-attr-value: same shadcn/radix source; transient values during
+ *   hydration trip this rule before the DOM settles.
+ *
+ * TODO(a11y): track removing these exclusions in docs/accessibility-conformance.md.
  */
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];

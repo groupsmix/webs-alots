@@ -24,8 +24,9 @@ import { test, expect } from "@playwright/test";
 const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 
 test.describe("Demo Clinic Smoke Test", () => {
-  // Use the demo subdomain for all requests in this block
-  test.use({ baseURL: "http://demo.localhost:3000" });
+  // Use the demo subdomain for all requests in this block (CI sets
+  // E2E_BASE_URL to the demo subdomain; fall back to demo.localhost locally).
+  test.use({ baseURL: process.env.E2E_BASE_URL || "http://demo.localhost:3000" });
 
   if (RUN_DEMO_SEED_TESTS) {
     test("Public landing page loads correctly", async ({ page }) => {
