@@ -72,12 +72,14 @@ test.describe("Registration flow", () => {
   });
 
   test("email field validates format", async ({ page }) => {
-    const emailInput = page.locator('input[type="email"], input[name="email"]');
-    if ((await emailInput.count()) > 0) {
-      await emailInput.fill("not-an-email");
-      // Check browser-level validity on the email input itself
-      const isInvalid = await emailInput.evaluate((el) => !(el as HTMLInputElement).validity.valid);
-      expect(isInvalid).toBe(true);
-    }
+    // The registration form always renders a type="email" input; assert it is
+    // present (rather than guarding with `if count > 0`, which would silently
+    // pass if the field were missing) and then verify native format validation.
+    const emailInput = page.locator('input[type="email"]').first();
+    await expect(emailInput).toBeVisible();
+    await emailInput.fill("not-an-email");
+    // Check browser-level validity on the email input itself
+    const isInvalid = await emailInput.evaluate((el) => !(el as HTMLInputElement).validity.valid);
+    expect(isInvalid).toBe(true);
   });
 });

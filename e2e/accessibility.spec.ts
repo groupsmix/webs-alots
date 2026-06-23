@@ -152,11 +152,13 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
     }
     await page.waitForFunction(() => document.readyState === "complete");
 
-    // Scope analysis to the consent banner
+    // Scope analysis to the consent banner. We cleared consent and reloaded
+    // above, so the banner MUST be present — assert its visibility rather than
+    // guarding the analysis behind an `if`, which would let the test pass
+    // without checking anything if the banner ever stopped rendering.
     const banner = page.locator("#cookie-consent-banner");
-    if (await banner.isVisible()) {
-      const results = await analyzeWithRetry(page, { include: "#cookie-consent-banner" });
-      expect(results.violations).toEqual([]);
-    }
+    await expect(banner).toBeVisible();
+    const results = await analyzeWithRetry(page, { include: "#cookie-consent-banner" });
+    expect(results.violations).toEqual([]);
   });
 });
