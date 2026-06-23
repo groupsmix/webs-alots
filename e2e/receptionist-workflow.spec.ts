@@ -31,6 +31,17 @@ test.describe("Receptionist Workflow Test", () => {
     expect(isProtected).toBe(true);
   });
 
+  // Always runs (CI included) so this file isn't a no-op when the demo seed is
+  // absent: the receptionist dashboard must not be reachable without auth.
+  test("receptionist dashboard requires authentication", async ({ page }) => {
+    const response = await page.goto("/receptionist/dashboard");
+    const url = page.url();
+    const status = response?.status() ?? 0;
+    const isProtected =
+      url.includes("/login") || url.includes("/auth") || status === 401 || status === 403;
+    expect(isProtected).toBe(true);
+  });
+
   if (RUN_DEMO_SEED_TESTS) {
     test("Receptionist can check in a patient from the appointment board", async ({ page }) => {
       // 1. Login as receptionist
