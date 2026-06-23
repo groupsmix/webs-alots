@@ -9,9 +9,9 @@
  * producing a final answer. Replaces the single-shot ToolPlan approach.
  */
 
-import { tool as aiTool } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { MAX_AGENT_STEPS, assertAgentAllowed } from "@/lib/ai/agent-config";
 import { incrementAgentTokenUsage, saveAgentConversationTurn } from "@/lib/ai/chat-history";
 import { retrieveMemories, formatMemoryBlock } from "@/lib/ai/memory";
 import {
@@ -27,12 +27,7 @@ import {
   AllProvidersFailedError,
 } from "@/lib/ai/router";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
-import {
-  executeAgentTool,
-  getAgentTools,
-  type AgentToolContext,
-  type AgentToolDefinition,
-} from "@/lib/ai/tools";
+import { buildSDKTools, getAgentTools, type AgentToolContext } from "@/lib/ai/tools";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -49,9 +44,6 @@ import type { UserRole } from "@/lib/types/database";
 import { withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
 
 // ── Constants ──
-
-/** Maximum tool execution steps before forcing a final answer (Task A5). */
-const MAX_AGENT_STEPS = 5;
 
 /** Maximum total tokens per agent request (hard budget). */
 const MAX_REQUEST_TOKENS = 8000;
@@ -85,14 +77,6 @@ const agentRequestSchema = z.object({
 
 type AgentMessage = z.infer<typeof messageSchema>;
 
-const ROLE_TO_AGENT: Record<UserRole, SiteTeamAgentType> = {
-  super_admin: "super_admin",
-  clinic_admin: "clinic_admin",
-  receptionist: "secretary",
-  doctor: "doctor",
-  patient: "patient",
-};
-
 // ── SSE helpers ──
 
 function sseHeaders(): HeadersInit {
@@ -122,12 +106,6 @@ function streamError(message: string, status = 500, code = "AI_AGENT_ERROR"): Ne
 
 // ── Auth helpers ──
 
-function assertAgentAllowed(role: UserRole, agentType: SiteTeamAgentType): boolean {
-  const expectedAgent = ROLE_TO_AGENT[role];
-  if (expectedAgent === agentType) return true;
-  return role === "receptionist" && agentType === "receptionist";
-}
-
 function historyToPrompt(messages: AgentMessage[]): string {
   return messages
     .slice(-12)
@@ -135,51 +113,6 @@ function historyToPrompt(messages: AgentMessage[]): string {
       (message) => `${message.role === "user" ? "Utilisateur" : "Assistant"}: ${message.content}`,
     )
     .join("\n");
-}
-
-type AgentToolSet = Record<string, unknown>;
-
-// ── AI SDK tool conversion (Task A5) ──
-
-/**
- * Convert the existing AgentToolDefinitions to AI SDK `tool()` definitions
- * with zod schemas. The `execute` functions delegate to the existing
- * `executeAgentTool()` so RBAC scoping, read-only guard, and tenant
- * context are unchanged.
- */
-function buildSDKTools(toolDefs: AgentToolDefinition[], ctx: AgentToolContext): AgentToolSet {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tools: Record<string, any> = {};
-
-  for (const def of toolDefs) {
-    const shape: Record<string, z.ZodTypeAny> = {};
-    for (const [key, prop] of Object.entries(def.input_schema.properties)) {
-      const p = prop as { type?: string; description?: string; enum?: string[] };
-      if (p.enum) {
-        shape[key] = z.enum(p.enum as [string, ...string[]]).describe(p.description ?? key);
-      } else {
-        shape[key] = z.string().describe(p.description ?? key);
-      }
-    }
-
-    const required = new Set(def.input_schema.required ?? []);
-    for (const key of Object.keys(shape)) {
-      if (!required.has(key)) {
-        shape[key] = shape[key].optional();
-      }
-    }
-
-    tools[def.name] = aiTool({
-      description: def.description,
-      inputSchema: z.object(shape),
-      execute: async (input: Record<string, unknown>) => {
-        const result = await executeAgentTool(def.name, input, ctx);
-        return result;
-      },
-    });
-  }
-
-  return tools;
 }
 
 // ── Main handler ──

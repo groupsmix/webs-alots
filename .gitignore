@@ -51,6 +51,7 @@ next-env.d.ts
 
 # AI eval results (generated, uploaded as CI artifacts)
 evals/results/
+evals/baselines/
 
 # Supabase CLI ephemeral files
 supabase/.temp/

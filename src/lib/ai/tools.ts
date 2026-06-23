@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { tool as aiTool } from "ai";
+import { z } from "zod";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
@@ -242,6 +244,54 @@ export function getAgentTools(agentType: SiteTeamAgentType): AgentToolDefinition
   };
 
   return dedupeTools(toolMap[agentType] ?? commonTools);
+}
+
+export type AgentToolSet = Record<string, unknown>;
+
+/**
+ * Convert {@link AgentToolDefinition}s into AI SDK `tool()` definitions with
+ * zod input schemas. Required properties stay required; everything else is
+ * marked optional. The `execute` functions delegate to {@link executeAgentTool}
+ * so RBAC scoping, the read-only guard, and tenant context are unchanged.
+ *
+ * Exported so the evaluation harness can assert the generated schema honours
+ * the `required` contract without re-implementing the conversion.
+ */
+export function buildSDKTools(
+  toolDefs: AgentToolDefinition[],
+  ctx: AgentToolContext,
+): AgentToolSet {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tools: Record<string, any> = {};
+
+  for (const def of toolDefs) {
+    const shape: Record<string, z.ZodTypeAny> = {};
+    for (const [key, prop] of Object.entries(def.input_schema.properties)) {
+      const p = prop as { type?: string; description?: string; enum?: string[] };
+      if (p.enum) {
+        shape[key] = z.enum(p.enum as [string, ...string[]]).describe(p.description ?? key);
+      } else {
+        shape[key] = z.string().describe(p.description ?? key);
+      }
+    }
+
+    const required = new Set(def.input_schema.required ?? []);
+    for (const key of Object.keys(shape)) {
+      if (!required.has(key)) {
+        shape[key] = shape[key].optional();
+      }
+    }
+
+    tools[def.name] = aiTool({
+      description: def.description,
+      inputSchema: z.object(shape),
+      execute: async (input: Record<string, unknown>) => {
+        return executeAgentTool(def.name, input, ctx);
+      },
+    });
+  }
+
+  return tools;
 }
 
 export async function executeAgentTool(

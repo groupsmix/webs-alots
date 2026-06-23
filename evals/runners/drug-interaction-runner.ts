@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { checkRegression } from "../utils/regression-detector";
+import { writeSuiteResult } from "../utils/results-io";
 
 /**
  * Drug interaction evaluation runner — Phase E4.
@@ -104,10 +106,14 @@ async function runDrugInteractionEval() {
   }
 
   const total = results.length;
-  const passRate = ((passed / total) * 100).toFixed(1);
+  const passRate = (passed / total) * 100;
 
   console.log(`\n===========================================`);
-  console.log(`Total: ${total} | Passed: ${passed} | Failed: ${failed} | Rate: ${passRate}%`);
+  console.log(
+    `Total: ${total} | Passed: ${passed} | Failed: ${failed} | Rate: ${passRate.toFixed(1)}%`,
+  );
+
+  writeSuiteResult({ suite: "drug-interaction", total, passed, failed, passRate });
 
   // Critical safety gate: ALL dangerous-classified pairs in the pack must
   // be detected. A missed contraindicated/major interaction is a patient
@@ -122,6 +128,12 @@ async function runDrugInteractionEval() {
       console.error(`   ${r.id}: ${r.drugA} ↔ ${r.drugB} (expected dangerous, got ${r.actual})`);
     }
     console.error("❌ Drug Interaction evaluation FAILED — safety regression.");
+    process.exit(1);
+  }
+
+  const reg = checkRegression("drug-interaction", passRate, total);
+  if (!reg.passed) {
+    console.error(`❌ Drug Interaction regression gate failed: ${reg.reason}`);
     process.exit(1);
   }
 
