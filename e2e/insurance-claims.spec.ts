@@ -26,15 +26,17 @@ test.describe("Insurance claims — API access control", () => {
   });
 
   test("PATCH /api/insurance-claims/:id rejects unauthenticated review", async ({ request }) => {
+    // withAuth short-circuits to 401 (or 403) before the id/validation logic
+    // runs, so a missing route (404) would be a real regression — assert tightly.
     const response = await request.patch("/api/insurance-claims/fake-id", {
       data: { status: "approved", approved_amount_centimes: 50000 },
     });
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("GET /api/insurance-claims/:id rejects unauthenticated access", async ({ request }) => {
     const response = await request.get("/api/insurance-claims/fake-id");
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 

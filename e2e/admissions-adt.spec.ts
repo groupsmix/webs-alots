@@ -24,15 +24,17 @@ test.describe("ADT — Admissions API access control", () => {
   });
 
   test("PATCH /api/admissions/:id rejects unauthenticated discharge", async ({ request }) => {
+    // withAuth short-circuits to 401 (or 403) before the id/validation logic
+    // runs, so a missing route (404) would be a real regression — assert tightly.
     const response = await request.patch("/api/admissions/fake-id", {
       data: { action: "discharge" },
     });
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("GET /api/admissions/:id rejects unauthenticated access", async ({ request }) => {
     const response = await request.get("/api/admissions/fake-id");
-    expect([401, 403, 404]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
