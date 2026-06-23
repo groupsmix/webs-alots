@@ -23,6 +23,12 @@ import { test, expect } from "@playwright/test";
 //   case always runs because it does not depend on seed data.
 const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 
+// Seed credentials come from env vars (fallbacks are the documented demo-seed
+// defaults from scripts/seed.ts). They only work under E2E_DEMO_SEED=true and
+// are blocked in production by the seed-user guard (see AGENTS.md).
+const DEMO_DOCTOR_EMAIL = process.env.E2E_DEMO_DOCTOR_EMAIL || "doctor@demo-clinic.com";
+const DEMO_DOCTOR_PASSWORD = process.env.E2E_DEMO_DOCTOR_PASSWORD || "Doctor123!";
+
 test.describe("Demo Clinic Smoke Test", () => {
   // Use the demo subdomain for all requests in this block (CI sets
   // E2E_BASE_URL to the demo subdomain; fall back to demo.localhost locally).
@@ -46,8 +52,8 @@ test.describe("Demo Clinic Smoke Test", () => {
   if (RUN_DEMO_SEED_TESTS) {
     test("Doctor can login", async ({ page }) => {
       await page.goto("/login");
-      await page.fill('input[name="email"]', "doctor@demo-clinic.com");
-      await page.fill('input[name="password"]', "Doctor123!");
+      await page.fill('input[name="email"]', DEMO_DOCTOR_EMAIL);
+      await page.fill('input[name="password"]', DEMO_DOCTOR_PASSWORD);
       await page.click('button[type="submit"]');
 
       await page.waitForURL("**/dashboard**");

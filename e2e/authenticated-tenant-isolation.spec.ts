@@ -8,10 +8,17 @@ const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 const DEMO_SUBDOMAIN_URL = process.env.E2E_BASE_URL || "http://demo.localhost:3000";
 const OTHER_SUBDOMAIN_URL = "http://sourire-dental.localhost:3000";
 
+// Seed credentials are sourced from env vars so they are not hardcoded in the
+// repo. The fallbacks are the documented demo-seed defaults (see
+// supabase/seeds/00003_seed_data.sql); they only work when E2E_DEMO_SEED=true
+// and are blocked in production by the seed-user guard (see AGENTS.md).
+const DEMO_ADMIN_EMAIL = process.env.E2E_DEMO_ADMIN_EMAIL || "admin@demo-clinic.com";
+const DEMO_ADMIN_PASSWORD = process.env.E2E_DEMO_ADMIN_PASSWORD || "ClinicAdmin123!";
+
 async function loginAsDemoClinicAdmin(page: Page): Promise<void> {
   await page.goto(`${DEMO_SUBDOMAIN_URL}/login`);
-  await page.fill('input[name="email"]', "admin@demo-clinic.com");
-  await page.fill('input[name="password"]', "ClinicAdmin123!");
+  await page.fill('input[name="email"]', DEMO_ADMIN_EMAIL);
+  await page.fill('input[name="password"]', DEMO_ADMIN_PASSWORD);
   await page.click('button[type="submit"]');
   await page.waitForURL("**/dashboard**");
 }
@@ -37,7 +44,10 @@ test.describe("Authenticated tenant isolation", () => {
 
       const sameTenantResponse = await page.goto(`${DEMO_SUBDOMAIN_URL}/api/waiting-queue`);
       expect(sameTenantResponse).not.toBeNull();
-      expect([200, 500]).toContain(sameTenantResponse!.status());
+      // The clinic's own session must be served its own tenant's queue. An
+      // empty queue is still a 200, so a crash (5xx) is a real bug here and
+      // must NOT count as a pass — assert success outright.
+      expect(sameTenantResponse!.status()).toBe(200);
 
       const crossTenantResponse = await page.goto(`${OTHER_SUBDOMAIN_URL}/api/waiting-queue`);
       expect(crossTenantResponse).not.toBeNull();

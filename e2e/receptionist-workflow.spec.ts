@@ -15,6 +15,12 @@ import { test, expect } from "@playwright/test";
 // registration at module top-level.
 const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 
+// Seed credentials come from env vars (fallbacks are the documented demo-seed
+// defaults from supabase/seeds/00003_seed_data.sql). They only work under
+// E2E_DEMO_SEED=true and are blocked in production by the seed-user guard.
+const DEMO_RECEPTION_EMAIL = process.env.E2E_DEMO_RECEPTION_EMAIL || "reception@demo-clinic.com";
+const DEMO_RECEPTION_PASSWORD = process.env.E2E_DEMO_RECEPTION_PASSWORD || "Reception123!";
+
 test.describe("Receptionist Workflow Test", () => {
   // Use the demo subdomain for all requests in this block (CI sets
   // E2E_BASE_URL to the demo subdomain; fall back to demo.localhost locally).
@@ -35,8 +41,8 @@ test.describe("Receptionist Workflow Test", () => {
     test("Receptionist can check in a patient from the appointment board", async ({ page }) => {
       // 1. Login as receptionist
       await page.goto("/login");
-      await page.fill('input[name="email"]', "reception@demo-clinic.com");
-      await page.fill('input[name="password"]', "Reception123!");
+      await page.fill('input[name="email"]', DEMO_RECEPTION_EMAIL);
+      await page.fill('input[name="password"]', DEMO_RECEPTION_PASSWORD);
       await page.click('button[type="submit"]');
 
       // Wait for redirect to receptionist dashboard
