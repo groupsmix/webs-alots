@@ -301,24 +301,33 @@ test.describe("RBAC — public routes remain accessible", () => {
 
 test.describe("RBAC — login redirect includes return path", () => {
   test("protected route redirect includes redirect query param", async ({ page }) => {
-    await page.goto("/admin/dashboard");
+    const response = await page.goto("/admin/dashboard");
     const url = page.url();
-    // When redirected to login, the original path should be preserved
-    // as a query parameter so the user can be sent back after login
+    const status = response?.status() ?? 0;
+    // The protected route must never render for an anonymous user — assert
+    // this unconditionally so the test can't silently no-op when the URL
+    // doesn't match the branch below.
+    const isProtected =
+      url.includes("/login") || url.includes("/auth") || [401, 403].includes(status);
+    expect(isProtected).toBe(true);
+    // When the guard redirects to login, the original path must be preserved
+    // as a query parameter so the user can be sent back after login.
     if (url.includes("/login")) {
-      const urlObj = new URL(url);
-      const redirect = urlObj.searchParams.get("redirect");
+      const redirect = new URL(url).searchParams.get("redirect");
       expect(redirect).toBeTruthy();
       expect(redirect).toContain("/admin");
     }
   });
 
   test("patient route redirect includes redirect query param", async ({ page }) => {
-    await page.goto("/patient/dashboard");
+    const response = await page.goto("/patient/dashboard");
     const url = page.url();
+    const status = response?.status() ?? 0;
+    const isProtected =
+      url.includes("/login") || url.includes("/auth") || [401, 403].includes(status);
+    expect(isProtected).toBe(true);
     if (url.includes("/login")) {
-      const urlObj = new URL(url);
-      const redirect = urlObj.searchParams.get("redirect");
+      const redirect = new URL(url).searchParams.get("redirect");
       expect(redirect).toBeTruthy();
       expect(redirect).toContain("/patient");
     }
