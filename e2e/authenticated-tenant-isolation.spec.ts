@@ -5,7 +5,7 @@ import { test, expect, type Page } from "@playwright/test";
 // clinic auth user, so we only register the test when explicitly opted in.
 const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 
-const DEMO_SUBDOMAIN_URL = "http://demo.localhost:3000";
+const DEMO_SUBDOMAIN_URL = process.env.E2E_BASE_URL || "http://demo.localhost:3000";
 const OTHER_SUBDOMAIN_URL = "http://sourire-dental.localhost:3000";
 
 async function loginAsDemoClinicAdmin(page: Page): Promise<void> {

@@ -10,19 +10,20 @@ import { test, expect } from "@playwright/test";
 test.describe("Public pages — smoke tests", () => {
   test("homepage loads and has a meaningful title", async ({ page }) => {
     const response = await page.goto("/");
-    expect(response?.status()).toBeLessThan(500);
+    expect(response?.status()).toBeLessThan(400);
+    await expect(page).toHaveTitle(/\S/);
     await expect(page.locator("body")).not.toBeEmpty();
   });
 
   test("booking page loads", async ({ page }) => {
     const response = await page.goto("/book");
-    expect(response?.status()).toBeLessThan(500);
+    expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).not.toBeEmpty();
   });
 
   test("login page loads", async ({ page }) => {
     const response = await page.goto("/login");
-    expect(response?.status()).toBeLessThan(500);
+    expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).not.toBeEmpty();
   });
 });
