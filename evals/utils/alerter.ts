@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export async function sendSlackAlert(message: string) {
+export async function sendSlackAlert(message: string): Promise<void> {
   // nosemgrep: semgrep.env-access - Test execution only
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) {
@@ -18,10 +17,18 @@ export async function sendSlackAlert(message: string) {
   }
 }
 
-export async function alertOnFailure(metrics: any) {
+interface AlertMetrics {
+  total: number;
+  passed: number;
+  failed: number;
+  passRate?: number;
+}
+
+export async function alertOnFailure(metrics: AlertMetrics): Promise<void> {
   if (metrics.failed > 0) {
+    const rate = typeof metrics.passRate === "number" ? ` (${metrics.passRate.toFixed(1)}%)` : "";
     await sendSlackAlert(
-      `Evaluation Failed! ${metrics.failed} test cases failed out of ${metrics.total}.`,
+      `Evaluation Failed! ${metrics.failed} of ${metrics.total} cases failed${rate}.`,
     );
   }
 }

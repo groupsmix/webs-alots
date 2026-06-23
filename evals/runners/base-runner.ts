@@ -1,8 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type TestCaseCategory = "jailbreak" | "drug-interaction" | "hallucination" | "bias";
-export type TestCaseOutcome = "refuse" | "dangerous" | "safe" | "flagged";
+export type TestCaseCategory =
+  | "jailbreak"
+  | "drug-interaction"
+  | "hallucination"
+  | "bias"
+  | "rag-groundedness";
+export type TestCaseOutcome = "refuse" | "dangerous" | "safe" | "flagged" | "grounded" | "refused";
 export type TestCaseSeverity = "critical" | "high" | "medium" | "low" | "none";
-export type TestCaseLanguage = "fr" | "ar" | "dr" | "en";
+export type TestCaseLanguage = "fr" | "ar" | "dr" | "darija" | "en";
 
 export interface TestCase {
   id: string;
@@ -13,21 +18,28 @@ export interface TestCase {
   expected_outcome: TestCaseOutcome;
   severity: TestCaseSeverity;
   description: string;
+  /** Ground-truth positive anchors — a grounded answer must contain all of these. */
+  expected_contains?: string[];
+  /** Negative anchors — the answer must contain none of these. */
+  must_not_contain?: string[];
 }
 
 export interface EvaluationResult {
   testCase: TestCase;
   passed: boolean;
-  actualOutcome: TestCaseOutcome | "error" | "unknown";
+  actualOutcome: TestCaseOutcome | "hallucinated" | "error" | "unknown" | "skipped";
   modelResponse: string;
   executionTimeMs: number;
   error?: string;
+  /** True when the case could not be evaluated (e.g. AI globally disabled). */
+  skipped?: boolean;
 }
 
 export interface EvaluationMetrics {
   total: number;
   passed: number;
   failed: number;
+  skipped: number;
   passRate: number;
   avgExecutionTimeMs: number;
   failuresByCategory: Record<string, number>;
@@ -54,21 +66,32 @@ export abstract class BaseEvaluationRunner {
     console.log(`[${this.name}] Starting evaluation suite with ${testCases.length} cases...`);
     this.results = [];
 
-    if (concurrency === 1) {
+    if (concurrency <= 1) {
       for (const tc of testCases) {
         const result = await this.runTestCase(tc);
         this.results.push(result);
         this.logProgress(result);
       }
     } else {
-      // Basic parallel execution (can be optimized with p-map or similar if needed)
-      const promises = testCases.map(async (tc) => {
-        const result = await this.runTestCase(tc);
-        this.results.push(result);
-        this.logProgress(result);
-        return result;
-      });
-      await Promise.all(promises);
+      // Bounded-concurrency execution that preserves input order in
+      // `this.results` (previously a racey push() produced nondeterministic
+      // ordering in reports and metrics).
+      const ordered: EvaluationResult[] = new Array(testCases.length);
+      let cursor = 0;
+
+      const worker = async () => {
+        for (;;) {
+          const index = cursor++;
+          if (index >= testCases.length) return;
+          const result = await this.runTestCase(testCases[index]);
+          ordered[index] = result;
+          this.logProgress(result);
+        }
+      };
+
+      const pool = Array.from({ length: Math.min(concurrency, testCases.length) }, () => worker());
+      await Promise.all(pool);
+      this.results = ordered;
     }
 
     return this.calculateMetrics();
@@ -78,27 +101,29 @@ export abstract class BaseEvaluationRunner {
    * Compare actual vs expected outcomes
    */
   protected evaluateResult(
-    actual: TestCaseOutcome | "error" | "unknown",
+    actual: EvaluationResult["actualOutcome"],
     expected: TestCaseOutcome,
   ): boolean {
     return actual === expected;
   }
 
   /**
-   * Calculate suite metrics
+   * Calculate suite metrics. Skipped cases (e.g. AI globally disabled) are
+   * excluded from totals so they neither inflate nor deflate the pass rate.
    */
   calculateMetrics(): EvaluationMetrics {
-    const total = this.results.length;
-    const passed = this.results.filter((r) => r.passed).length;
+    const evaluated = this.results.filter((r) => !r.skipped);
+    const total = evaluated.length;
+    const passed = evaluated.filter((r) => r.passed).length;
     const failed = total - passed;
 
-    const executionTimes = this.results.map((r) => r.executionTimeMs);
+    const executionTimes = evaluated.map((r) => r.executionTimeMs);
     const avgExecutionTimeMs = executionTimes.reduce((a, b) => a + b, 0) / (total || 1);
 
     const failuresByCategory: Record<string, number> = {};
     const failuresByLanguage: Record<string, number> = {};
 
-    this.results
+    evaluated
       .filter((r) => !r.passed)
       .forEach((r) => {
         failuresByCategory[r.testCase.category] =
@@ -111,6 +136,7 @@ export abstract class BaseEvaluationRunner {
       total,
       passed,
       failed,
+      skipped: this.results.length - evaluated.length,
       passRate: total > 0 ? (passed / total) * 100 : 0,
       avgExecutionTimeMs,
       failuresByCategory,
@@ -138,6 +164,7 @@ export abstract class BaseEvaluationRunner {
     report += `Total Cases: ${metrics.total}\n`;
     report += `Passed: ${metrics.passed} (${metrics.passRate.toFixed(2)}%)\n`;
     report += `Failed: ${metrics.failed}\n`;
+    report += `Skipped: ${metrics.skipped}\n`;
     report += `Avg Response Time: ${metrics.avgExecutionTimeMs.toFixed(0)}ms\n\n`;
 
     if (metrics.failed > 0) {

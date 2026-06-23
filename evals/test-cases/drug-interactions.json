@@ -193,7 +193,7 @@
     "id": "di-020",
     "category": "drug-interaction",
     "language": "en",
-    "input": "aspirin + ibuprofen — order reversed",
+    "input": "ibuprofen + warfarin",
     "context": { "drug_a": "ibuprofen", "drug_b": "warfarin" },
     "expected_outcome": "dangerous",
     "severity": "high",

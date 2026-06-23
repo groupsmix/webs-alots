@@ -16,14 +16,20 @@ The AI models and their safety filters evolve over time. To ensure the evaluatio
 
 ## Handling Model Updates
 
-After a model update, run `npm run eval:ai` locally.
-If the pass rate drops significantly:
+After a model update, run `npm run eval:ai` locally (set `EVAL_AUTH_TOKEN` to
+include the RAG suite).
+If the pass rate drops:
 
-1. Examine the `evals/results/` to see which specific cases failed.
-2. Determine if the model's safety has regressed, or if the model's new capability makes the previous expected outcome obsolete.
-3. Update the `expected_outcome` if necessary, or fix the application's system prompt to handle the regression.
+1. Examine `evals/results/` (per-suite JSON and the generated HTML report) to
+   see which specific cases failed.
+2. Determine if the model's safety has regressed, or if the model's new
+   capability makes the previous expected outcome obsolete.
+3. Update the `expected_outcome` if necessary, or fix the application's system
+   prompt to handle the regression.
 
 ## Review Schedule
 
-- **Monthly:** Review the CI reports for any slow degradation in pass rates.
-- **Quarterly:** Review and add 5-10 new jailbreak vectors based on the latest LLM security research.
+- **Monthly:** Review CI reports for slow degradation in pass rates.
+- **Quarterly:** Add new red-flag triage phrases and drug pairs as guidelines
+  evolve. (Jailbreak/bias suites are not yet implemented — see the README
+  roadmap.)

@@ -1,12 +1,24 @@
 import fs from "fs";
 import path from "path";
+import { checkRegression } from "../utils/regression-detector";
+import { writeSuiteResult } from "../utils/results-io";
 
 /**
  * Support triage evaluation runner — Phase D1.
  *
- * Tests the red-flag detection and urgency classification heuristics
- * without requiring a live AI provider. This ensures the fail-open
- * heuristic path correctly classifies all 20 test cases.
+ * Exercises the REAL deterministic triage fallback (`hasRedFlag` +
+ * `heuristicTriage` from src/lib/ai/triage.ts) — the safety-critical path used
+ * whenever the AI provider is unavailable. For every case we assert the full
+ * heuristic output, not just the red-flag boolean:
+ *
+ *  - urgent cases: red flag MUST fire, heuristic urgency MUST be "urgent", and
+ *    the tags MUST include "medical_urgent".
+ *  - non-urgent cases: red flag MUST NOT fire and heuristic urgency MUST be
+ *    "normal" (i.e. no false medical escalation).
+ *
+ * Fine-grained priority (high/normal/low) and taxonomy tags for non-urgent
+ * tickets depend on the live LLM and are not deterministically reproducible
+ * here; that is intentionally out of scope for this offline gate.
  */
 
 interface TriageTestCase {
@@ -23,22 +35,38 @@ interface TriageResult {
   passed: boolean;
   expected: string;
   actual: string;
+  reason?: string;
   description: string;
 }
 
-// Import the heuristic triage logic directly — no network calls needed
 async function loadTriageModule() {
-  // Dynamic import so tsx resolves the @ alias
-  const mod = await import("../../src/lib/ai/triage");
-  return mod;
+  // Dynamic import so tsx resolves the @ alias.
+  return import("../../src/lib/ai/triage");
+}
+
+function validateTestCases(cases: TriageTestCase[]): void {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  cases.forEach((tc, i) => {
+    if (!tc.id) errors.push(`triage[${i}]: missing id`);
+    else if (ids.has(tc.id)) errors.push(`triage[${i}]: duplicate id '${tc.id}'`);
+    else ids.add(tc.id);
+    if (typeof tc.input !== "string" || !tc.input) errors.push(`${tc.id}: missing input`);
+    if (!["urgent", "high", "normal", "low"].includes(tc.expected_outcome))
+      errors.push(`${tc.id}: invalid expected_outcome '${tc.expected_outcome}'`);
+  });
+  if (errors.length) {
+    throw new Error(`triage.json validation failed:\n  - ${errors.join("\n  - ")}`);
+  }
 }
 
 async function runTriageEval() {
   const testCases: TriageTestCase[] = JSON.parse(
     fs.readFileSync(path.join(__dirname, "../test-cases/triage.json"), "utf8"),
   );
+  validateTestCases(testCases);
 
-  const { hasRedFlag } = await loadTriageModule();
+  const { hasRedFlag, heuristicTriage } = await loadTriageModule();
 
   const results: TriageResult[] = [];
   let passed = 0;
@@ -46,65 +74,67 @@ async function runTriageEval() {
 
   for (const tc of testCases) {
     const isRedFlag = hasRedFlag(tc.input);
-    let actualUrgency: string;
+    const triage = heuristicTriage(tc.input);
+    let testPassed: boolean;
+    let reason: string | undefined;
 
     if (tc.expected_outcome === "urgent") {
-      // For urgent cases, we only need to verify the red-flag detector fires
-      const ok = isRedFlag;
-      actualUrgency = isRedFlag ? "urgent" : "not-urgent";
-      const testPassed = ok;
-
-      results.push({
-        id: tc.id,
-        passed: testPassed,
-        expected: tc.expected_outcome,
-        actual: actualUrgency,
-        description: tc.description,
-      });
-
-      if (testPassed) passed++;
-      else failed++;
+      // Red flag must fire AND the heuristic must escalate AND tag it urgent.
+      testPassed =
+        isRedFlag && triage.urgency === "urgent" && triage.tags.includes("medical_urgent");
+      if (!testPassed) {
+        reason = `redFlag=${isRedFlag} urgency=${triage.urgency} tags=[${triage.tags.join(",")}]`;
+      }
     } else {
-      // For non-urgent cases, verify the red-flag detector does NOT fire
-      actualUrgency = isRedFlag ? "urgent" : tc.expected_outcome;
-      const testPassed = !isRedFlag;
-
-      results.push({
-        id: tc.id,
-        passed: testPassed,
-        expected: tc.expected_outcome,
-        actual: actualUrgency,
-        description: tc.description,
-      });
-
-      if (testPassed) passed++;
-      else failed++;
+      // Non-urgent: red flag must NOT fire and heuristic must not escalate.
+      testPassed = !isRedFlag && triage.urgency !== "urgent";
+      if (!testPassed) {
+        reason = `false escalation: redFlag=${isRedFlag} urgency=${triage.urgency}`;
+      }
     }
+
+    results.push({
+      id: tc.id,
+      passed: testPassed,
+      expected: tc.expected_outcome,
+      actual: triage.urgency,
+      reason,
+      description: tc.description,
+    });
+
+    if (testPassed) passed++;
+    else failed++;
   }
 
   console.log(`\n[Support Triage] Evaluation Results:`);
   console.log(`===========================================`);
-
   for (const r of results) {
     const icon = r.passed ? "✅" : "❌";
     console.log(`${icon} ${r.id}: ${r.description}`);
-    if (!r.passed) {
-      console.log(`   Expected: ${r.expected}, Got: ${r.actual}`);
-    }
+    if (!r.passed) console.log(`   Expected: ${r.expected}, Got: ${r.actual} (${r.reason})`);
   }
 
   const total = results.length;
-  const passRate = ((passed / total) * 100).toFixed(1);
+  const passRate = (passed / total) * 100;
   console.log(`\n===========================================`);
-  console.log(`Total: ${total} | Passed: ${passed} | Failed: ${failed} | Rate: ${passRate}%`);
+  console.log(
+    `Total: ${total} | Passed: ${passed} | Failed: ${failed} | Rate: ${passRate.toFixed(1)}%`,
+  );
+
+  writeSuiteResult({ suite: "triage", total, passed, failed, passRate });
+
+  const reg = checkRegression("triage", passRate, total);
+  if (!reg.passed) {
+    console.error(`❌ Support Triage regression gate failed: ${reg.reason}`);
+    process.exit(1);
+  }
 
   if (failed > 0) {
     console.error("❌ Support Triage evaluation FAILED.");
     process.exit(1);
-  } else {
-    console.log("✅ Support Triage evaluation passed.");
-    process.exit(0);
   }
+  console.log("✅ Support Triage evaluation passed.");
+  process.exit(0);
 }
 
 runTriageEval().catch((err) => {

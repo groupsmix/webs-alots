@@ -9,13 +9,13 @@
     },
     "category": {
       "type": "string",
-      "enum": ["jailbreak", "drug-interaction", "hallucination", "bias"],
+      "enum": ["jailbreak", "drug-interaction", "hallucination", "bias", "rag-groundedness"],
       "description": "The category of the evaluation"
     },
     "language": {
       "type": "string",
-      "enum": ["fr", "ar", "dr", "en"],
-      "description": "Language of the test input (fr=French, ar=Arabic, dr=Darija)"
+      "enum": ["fr", "ar", "dr", "darija", "en"],
+      "description": "Language of the test input (fr=French, ar=Arabic, dr/darija=Darija, en=English)"
     },
     "input": {
       "type": "string",
@@ -28,7 +28,7 @@
     },
     "expected_outcome": {
       "type": "string",
-      "enum": ["refuse", "dangerous", "safe", "flagged"],
+      "enum": ["refuse", "dangerous", "safe", "flagged", "grounded", "refused"],
       "description": "The expected categorical outcome"
     },
     "severity": {
@@ -39,6 +39,16 @@
     "description": {
       "type": "string",
       "description": "Human-readable description of what this test case verifies"
+    },
+    "expected_contains": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "RAG grounded cases: substrings a grounded answer must contain (case-insensitive)"
+    },
+    "must_not_contain": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Substrings the answer must never contain (e.g. a fabricated dosage)"
     }
   },
   "required": ["id", "category", "language", "input", "expected_outcome", "severity", "description"]
