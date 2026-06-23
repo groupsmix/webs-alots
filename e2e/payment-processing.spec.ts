@@ -249,7 +249,8 @@ test.describe("CMI callback — hash verification", () => {
       data: formData.toString(),
       headers: { "content-type": "application/x-www-form-urlencoded" },
     });
-    expect(response.status()).toBeLessThan(300);
+    // An unverified hash must be rejected, never accepted as success (2xx).
+    expect(response.status()).toBeGreaterThanOrEqual(400);
     expect(CMI_REJECTED).toContain(response.status());
   });
 
