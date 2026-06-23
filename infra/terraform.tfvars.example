@@ -14,9 +14,12 @@ cloudflare_zone_id    = "replace-with-oltigo-com-zone-id"
 # staging_uploads_bucket_name             = "webs-alots-uploads-staging"
 # production_notification_queue_name      = "notification-queue"
 # production_notification_dlq_name        = "notification-queue-dlq"
-# staging_notification_queue_name         = "notification-queue-staging"
+# staging_notification_queue_name        = "notification-queue-staging"
 # staging_notification_dlq_name           = "notification-queue-staging-dlq"
-# manage_queue_consumers                  = true
+# Routes and queue consumers are owned by wrangler.toml by default. Only set
+# these to true after removing the matching blocks from wrangler.toml.
+# manage_queue_consumers                  = false
+# manage_worker_routes                    = false
 # r2_bucket_location                      = null
 # r2_bucket_jurisdiction                  = null
 # r2_storage_class                        = null

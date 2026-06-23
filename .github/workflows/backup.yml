@@ -102,18 +102,20 @@ jobs:
       - name: Determine backup type
         if: steps.preflight.outputs.secrets_ok == 'true'
         id: backup_type
+        env:
+          INPUT_BACKUP_TYPE: ${{ github.event.inputs.backup_type }}
         run: |
-          if [ "${{ github.event.inputs.backup_type }}" != "" ]; then
-            echo "type=${{ github.event.inputs.backup_type }}" >> $GITHUB_OUTPUT
+          if [ "${INPUT_BACKUP_TYPE}" != "" ]; then
+            echo "type=${INPUT_BACKUP_TYPE}" >> "$GITHUB_OUTPUT"
           else
             DOW=$(date +%u)
             DOM=$(date +%d)
             if [ "$DOM" -eq "1" ]; then
-              echo "type=monthly" >> $GITHUB_OUTPUT
+              echo "type=monthly" >> "$GITHUB_OUTPUT"
             elif [ "$DOW" -eq "7" ]; then
-              echo "type=weekly" >> $GITHUB_OUTPUT
+              echo "type=weekly" >> "$GITHUB_OUTPUT"
             else
-              echo "type=daily" >> $GITHUB_OUTPUT
+              echo "type=daily" >> "$GITHUB_OUTPUT"
             fi
           fi
 

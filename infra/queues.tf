@@ -1,11 +1,22 @@
 resource "cloudflare_queue" "notification_production" {
   account_id = var.cloudflare_account_id
   queue_name = var.production_notification_queue_name
+
+  # Renaming a queue is a destroy+recreate. Guard the production queue and its
+  # DLQ so an accidental rename or `terraform destroy` cannot drop in-flight or
+  # dead-lettered notification messages.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "cloudflare_queue" "notification_production_dlq" {
   account_id = var.cloudflare_account_id
   queue_name = var.production_notification_dlq_name
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "cloudflare_queue" "notification_staging" {

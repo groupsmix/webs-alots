@@ -169,7 +169,9 @@ services:
   # configure a webhook notification to http://host.docker.internal:3000/api/webhooks/uptime-kuma
   # with header x-webhook-secret: <your-secret>.
   uptime-kuma:
-    image: louislam/uptime-kuma:2
+    # A32-2: Pinned by digest for reproducible builds (was floating `:2` tag).
+    # To update: docker pull louislam/uptime-kuma:2 && docker inspect --format='{{index .RepoDigests 0}}' louislam/uptime-kuma:2
+    image: louislam/uptime-kuma:2@sha256:91e963bfda569ba115206e843febb446f473ab525add4e08b2b9e3beffa16985
     container_name: uptime-kuma
     ports:
       # Bind to localhost only — internal monitoring tool
