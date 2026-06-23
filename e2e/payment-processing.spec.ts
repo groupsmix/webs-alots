@@ -334,6 +334,9 @@ test.describe("Payment — open redirect prevention", () => {
 });
 
 test.describe("Payment — booking payment flow access control", () => {
+  // These routes exist (src/app/api/booking/payment/*) and are auth-gated +
+  // not CSRF-exempt, so an origin-less anonymous POST is denied (401/403)
+  // before any handler logic runs. 404/405 would indicate a real regression.
   test("POST /api/booking/payment/initiate requires auth context", async ({ request }) => {
     const response = await request.post("/api/booking/payment/initiate", {
       data: {
@@ -341,7 +344,7 @@ test.describe("Payment — booking payment flow access control", () => {
         amount: 200,
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/booking/payment/confirm requires auth context", async ({ request }) => {
@@ -351,7 +354,7 @@ test.describe("Payment — booking payment flow access control", () => {
         reference: "test-ref",
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/booking/payment/refund requires auth context", async ({ request }) => {
@@ -361,7 +364,7 @@ test.describe("Payment — booking payment flow access control", () => {
         reason: "Test refund",
       },
     });
-    expect([401, 403, 404, 405]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
