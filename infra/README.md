@@ -9,7 +9,34 @@ This scaffold manages the durable Cloudflare resources that back the current `wr
 - Workers KV namespaces used for distributed rate limiting
 - R2 buckets for encrypted uploads
 - Cloudflare Queues and dead-letter queues for notifications
-- Worker route bindings for production and staging domains
+- Worker route bindings for production and staging domains (opt-in — see below)
+
+### Ownership boundary with `wrangler.toml`
+
+`wrangler.toml` is the live source of truth for **routes** and **queue consumers**:
+`wrangler deploy` reasserts them on every CI run. To avoid a two-owner fight
+where Terraform and wrangler continuously revert each other, Terraform does
+**not** manage those by default:
+
+- `manage_queue_consumers` defaults to `false`
+- `manage_worker_routes` defaults to `false`
+
+Only flip these to `true` if you first remove the corresponding
+`[[queues.consumers]]` / `[[routes]]` blocks from `wrangler.toml` and make
+Terraform the single source of truth for them.
+
+### Destroy protection
+
+Production data-bearing resources carry `lifecycle { prevent_destroy = true }`:
+
+- the production R2 uploads bucket (encrypted PHI),
+- the production rate-limit KV namespace, and
+- the production notification queue and its DLQ.
+
+This blocks both `terraform destroy` and any plan that would _replace_ them
+(for example, changing an immutable R2 attribute like `jurisdiction`). Staging
+equivalents are intentionally left unguarded so they can be reprovisioned.
+Removing a guard requires a deliberate, reviewed migration plan.
 
 ## Intentionally out of scope for this first pass
 
@@ -56,12 +83,22 @@ The defaults in this directory match the repo-grounded names already present in 
 - Production routes: `oltigo.com/*`, `*.oltigo.com/*`
 - Staging routes: `staging.oltigo.com/*`, `*.staging.oltigo.com/*`
 
+## Remote state (required before apply)
+
+State for this directory can contain sensitive resource attributes and must be
+locked and encrypted. **Local state is not acceptable here** — see `backend.tf`
+for a ready-to-fill Cloudflare R2 (S3-compatible) backend with native state
+locking. `*.tfstate*`, `.terraform/`, and `*.tfvars` are gitignored at the repo
+root so state and identifiers cannot be accidentally committed
+(`*.tfvars.example` is intentionally kept).
+
 ## Prerequisites
 
-- Terraform `>= 1.6`
+- Terraform `>= 1.6` (`>= 1.11` recommended for native S3-backend state locking)
 - Cloudflare API token with permissions for Workers KV, R2, Queues, and Workers Routes
 - `CLOUDFLARE_API_TOKEN` exported in your shell or injected by CI
 - `terraform.tfvars` created from `terraform.tfvars.example`
+- A configured remote backend (see `backend.tf`)
 
 ## Bootstrap
 
@@ -101,7 +138,9 @@ For routes and queues, obtain the existing resource IDs from the Cloudflare dash
 2. Add DNS records and origin/service bindings where appropriate
 3. Add Logpush / audit-log retention plumbing
 4. Decide whether to manage Workers secrets through a future Cloudflare Secrets Store flow or keep them operationally managed
-5. Add CI for `terraform fmt -check` and `terraform validate`
+
+> `terraform fmt -check` and `terraform validate` already run in CI via
+> `.github/workflows/terraform.yml`.
 
 ## Safety notes
 

@@ -90,7 +90,30 @@ variable "staging_notification_dlq_name" {
 }
 
 variable "manage_queue_consumers" {
-  description = "Whether Terraform should also manage the worker queue consumers."
+  description = <<-EOT
+    Whether Terraform should also manage the worker queue consumers.
+
+    Defaults to false because wrangler.toml already declares
+    [[queues.consumers]] for both environments, and `wrangler deploy` reasserts
+    that config on every CI deploy. Letting Terraform manage consumers too
+    creates a two-owner fight (each apply/deploy reverts the other). Keep this
+    false unless you remove the consumer blocks from wrangler.toml and make
+    Terraform the single source of truth for queue consumers.
+  EOT
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "manage_worker_routes" {
+  description = <<-EOT
+    Whether Terraform should manage the Worker route bindings.
+
+    Defaults to false for the same reason as manage_queue_consumers:
+    wrangler.toml already declares routes for both environments and
+    `wrangler deploy` reasserts them on every CI run. Enabling this without
+    removing the [[routes]] / [[env.*.routes]] blocks from wrangler.toml causes
+    Terraform and wrangler to continuously overwrite each other.
+  EOT
+  type        = bool
+  default     = false
 }

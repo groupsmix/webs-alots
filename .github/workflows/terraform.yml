@@ -46,7 +46,7 @@ jobs:
       # `terraform init -plugin-dir` never touches the registry.
       - name: Download Cloudflare Terraform provider
         run: |
-          PROVIDER_VERSION="5.20.0"
+          PROVIDER_VERSION="5.21.0"
           PLATFORM="linux_amd64"
           PLUGIN_DIR="${HOME}/.terraform.d/plugins/registry.terraform.io/cloudflare/cloudflare/${PROVIDER_VERSION}/${PLATFORM}"
           mkdir -p "${PLUGIN_DIR}"
