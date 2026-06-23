@@ -60,8 +60,12 @@ test.describe("CSP header enforcement", () => {
   }
 
   test("CSP nonce rotates per request", async ({ page }) => {
+    // Bust the HTTP cache per navigation so each request actually reaches the
+    // server. Without a unique query param the second goto could be served
+    // from the browser cache and return the *same* nonce, masking a real
+    // "nonce never rotates" regression.
     const extractNonce = async () => {
-      const response = await page.goto("/");
+      const response = await page.goto(`/?cb=${Date.now()}-${Math.random()}`);
       const csp = response!.headers()["content-security-policy"] ?? "";
       const match = csp.match(/'nonce-([^']+)'/);
       return match?.[1] ?? "";

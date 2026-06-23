@@ -9,16 +9,21 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Healthcare API — Response shape consistency", () => {
-  test("all new endpoints return standard { ok, error } on 401", async ({ request }) => {
+  test("all new endpoints deny anonymous access with a standard { ok, error } shape", async ({
+    request,
+  }) => {
     const endpoints = ["/api/admissions", "/api/staff-invitations", "/api/insurance-claims"];
 
     for (const endpoint of endpoints) {
       const response = await request.get(endpoint);
-      const status = response.status();
-      if (status === 401 || status === 403) {
-        const body = await response.json();
-        expect(body).toHaveProperty("error");
-      }
+      // Tenant-scoped collections MUST deny an anonymous caller. Assert this
+      // unconditionally — a 200 (data leak) or 5xx (crash) is a real failure,
+      // not a case to silently skip. Without this guard the body-shape check
+      // below would never run on a leaking endpoint, masking the exact bug
+      // this suite exists to catch.
+      expect([401, 403]).toContain(response.status());
+      const body = await response.json();
+      expect(body).toHaveProperty("error");
     }
   });
 
