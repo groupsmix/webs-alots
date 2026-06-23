@@ -11,37 +11,38 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Stripe checkout — access control", () => {
-  // create-checkout is withAuthValidation(..., STAFF_ROLES). The auth check
-  // runs BEFORE body validation and BEFORE the Stripe-config check, so an
-  // unauthenticated caller always gets 401 — never a validation (422) or
-  // config (503) response. Amount/body validation is exercised in the unit
-  // tests (src/app/api/__tests__/payment-routes.test.ts) where a session can
-  // be mocked; here we can only prove the route is auth-gated.
-  test("POST /api/payments/create-checkout requires authentication (401)", async ({ request }) => {
+  // create-checkout is withAuthValidation(..., STAFF_ROLES), but it is NOT a
+  // CSRF-exempt route. Playwright's request API sends no Origin header, so the
+  // CSRF middleware (src/lib/middleware/csrf.ts) rejects the mutation with 403
+  // before the route's auth/validation/config even run. An authenticated
+  // browser request would instead be gated by withAuth (401). Either way the
+  // unauthenticated caller is denied (401/403) and never reaches validation
+  // (422) or the Stripe-config (503) path — those are covered in the unit
+  // tests (src/app/api/__tests__/payment-routes.test.ts).
+  test("POST /api/payments/create-checkout requires authentication", async ({ request }) => {
     const response = await request.post("/api/payments/create-checkout", {
       data: { amount: 50000, currency: "mad", description: "Consultation payment" },
     });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/payments/create-checkout requires auth even with empty body", async ({
     request,
   }) => {
-    // Auth precedes validation, so an empty body still yields 401 (not 422).
+    // Origin-less mutation → CSRF 403 (or 401 if it reached auth); never 422.
     const response = await request.post("/api/payments/create-checkout", { data: {} });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/payments/create-checkout requires auth even with an invalid amount", async ({
     request,
   }) => {
-    // A negative amount cannot be tested for rejection here because auth
-    // (401) short-circuits before amount validation. This asserts the gate;
+    // Denied (CSRF 403 / auth 401) before amount validation runs; the
     // amount-validation teeth live in the unit tests.
     const response = await request.post("/api/payments/create-checkout", {
       data: { amount: -100, currency: "mad", description: "Negative amount test" },
     });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
@@ -204,26 +205,28 @@ test.describe("Stripe webhook — signature verification", () => {
 });
 
 test.describe("CMI payment gateway — access control", () => {
-  // /api/payments/cmi is withAuthValidation(..., STAFF_ROLES): auth runs
-  // before validation and before the CMI-config check, so an unauthenticated
-  // caller always gets 401 (never 422/503). Amount validation is unit-tested.
-  test("POST /api/payments/cmi requires authentication (401)", async ({ request }) => {
+  // /api/payments/cmi is withAuthValidation(..., STAFF_ROLES) and is NOT
+  // CSRF-exempt, so an origin-less POST is rejected by the CSRF middleware
+  // (403) before auth/validation/config run; an unauthenticated browser
+  // request would be gated by withAuth (401). Either way it's denied (401/403),
+  // never 422/503. Amount validation is unit-tested.
+  test("POST /api/payments/cmi requires authentication", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
       data: { amount: 200, description: "Consultation" },
     });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/payments/cmi requires auth even with empty body", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", { data: {} });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/payments/cmi requires auth even with an invalid amount", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
       data: { amount: -50, description: "Negative CMI test" },
     });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 
@@ -296,10 +299,11 @@ test.describe("CMI callback — hash verification", () => {
 });
 
 test.describe("Payment — open redirect prevention", () => {
-  // NOTE: both routes are auth-gated, so an unauthenticated caller is rejected
-  // with 401 before successUrl/cancelUrl validation runs. These tests confirm
-  // the gate; the same-origin redirect sanitiser (validateRedirectUrl) is
-  // unit-tested directly in src/app/api/__tests__/payment-routes.test.ts.
+  // NOTE: both routes are auth-gated and not CSRF-exempt, so an origin-less
+  // caller is rejected (403 by CSRF, or 401 by auth) before successUrl/cancelUrl
+  // validation runs. These confirm the gate; the same-origin redirect sanitiser
+  // (validateRedirectUrl) is unit-tested directly in
+  // src/app/api/__tests__/payment-routes.test.ts.
   test("POST /api/payments/create-checkout requires auth (cross-origin successUrl)", async ({
     request,
   }) => {
@@ -312,7 +316,7 @@ test.describe("Payment — open redirect prevention", () => {
         cancelUrl: "https://attacker.com/cancel",
       },
     });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 
   test("POST /api/payments/cmi requires auth (cross-origin successUrl)", async ({ request }) => {
@@ -324,7 +328,7 @@ test.describe("Payment — open redirect prevention", () => {
         failUrl: "https://attacker.com/fail",
       },
     });
-    expect([401]).toContain(response.status());
+    expect([401, 403]).toContain(response.status());
   });
 });
 

@@ -176,7 +176,9 @@ test.describe("TC-01 — Cross-tenant write and role escalation", () => {
   test("POST /api/v1/appointments with cross-clinic doctor_id is rejected", async ({ request }) => {
     // The v1 appointments schema is snake_case and strict; a camelCase /
     // clinic-spoofing body fails validation (422). A well-formed body would
-    // still require a valid API key (401). Either way: never 200/5xx.
+    // still require a valid API key (401). And because this route is not
+    // CSRF-exempt, an origin-less POST is rejected by the CSRF middleware (403)
+    // before any of that. Either way: never 200/5xx.
     const res = await request.post("/api/v1/appointments", {
       data: {
         doctorId: DOCTOR_B_ID,
@@ -187,7 +189,7 @@ test.describe("TC-01 — Cross-tenant write and role escalation", () => {
         duration: 30,
       },
     });
-    expect([401, 422]).toContain(res.status());
+    expect([401, 403, 422]).toContain(res.status());
   });
 
   test("POST /api/v1/register-clinic never assigns role=super_admin (D-02)", async ({
