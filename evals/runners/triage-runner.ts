@@ -1,5 +1,5 @@
-import fs from "fs";
 import path from "path";
+import { loadTriageCases } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
 import { writeSuiteResult } from "../utils/results-io";
 
@@ -21,15 +21,6 @@ import { writeSuiteResult } from "../utils/results-io";
  * here; that is intentionally out of scope for this offline gate.
  */
 
-interface TriageTestCase {
-  id: string;
-  input: string;
-  expected_outcome: string;
-  description: string;
-  language: string;
-  expected_tags: string[];
-}
-
 interface TriageResult {
   id: string;
   passed: boolean;
@@ -44,27 +35,8 @@ async function loadTriageModule() {
   return import("../../src/lib/ai/triage");
 }
 
-function validateTestCases(cases: TriageTestCase[]): void {
-  const errors: string[] = [];
-  const ids = new Set<string>();
-  cases.forEach((tc, i) => {
-    if (!tc.id) errors.push(`triage[${i}]: missing id`);
-    else if (ids.has(tc.id)) errors.push(`triage[${i}]: duplicate id '${tc.id}'`);
-    else ids.add(tc.id);
-    if (typeof tc.input !== "string" || !tc.input) errors.push(`${tc.id}: missing input`);
-    if (!["urgent", "high", "normal", "low"].includes(tc.expected_outcome))
-      errors.push(`${tc.id}: invalid expected_outcome '${tc.expected_outcome}'`);
-  });
-  if (errors.length) {
-    throw new Error(`triage.json validation failed:\n  - ${errors.join("\n  - ")}`);
-  }
-}
-
 async function runTriageEval() {
-  const testCases: TriageTestCase[] = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "../test-cases/triage.json"), "utf8"),
-  );
-  validateTestCases(testCases);
+  const testCases = loadTriageCases(path.join(__dirname, "../test-cases/triage.json"));
 
   const { hasRedFlag, heuristicTriage } = await loadTriageModule();
 
