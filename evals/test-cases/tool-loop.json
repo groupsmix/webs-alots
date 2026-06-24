@@ -57,31 +57,30 @@
   },
   {
     "id": "tool-loop-009",
-    "description": "buildSDKTools converts tool definitions with required params",
+    "description": "buildSDKTools enforces required params (lookup_patient.query rejects empty input)",
     "test_type": "tool_schema",
-    "tool_name": "get_appointments",
-    "expected_has_schema": true,
-    "expected_has_execute": true
+    "agentType": "doctor",
+    "tool_name": "lookup_patient",
+    "expect_required_rejects_empty": true
   },
   {
     "id": "tool-loop-010",
-    "description": "buildSDKTools handles optional parameters",
+    "description": "buildSDKTools allows all-optional params (get_today_appointments accepts empty input)",
     "test_type": "tool_schema",
-    "tool_name": "search_patients",
-    "expected_has_schema": true,
-    "expected_has_execute": true
+    "agentType": "secretary",
+    "tool_name": "get_today_appointments",
+    "expect_required_rejects_empty": false
   },
   {
     "id": "tool-loop-011",
-    "description": "Multi-step loop: agent route supports maxSteps parameter",
+    "description": "Multi-step loop: agent route uses MAX_AGENT_STEPS=5 for multi-step tool calling",
     "test_type": "config_check",
     "expected_max_steps": 5,
     "description_detail": "The agent route should use maxSteps=5 for multi-step tool calling"
   },
   {
     "id": "tool-loop-012",
-    "description": "Tool definitions include read-only guard",
-    "test_type": "readonly_check",
-    "expected_readonly_tools_exist": true
+    "description": "No agent role exposes a mutating (delete/cancel/drop) tool — read-only guard",
+    "test_type": "readonly_check"
   }
 ]

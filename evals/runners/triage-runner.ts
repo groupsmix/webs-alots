@@ -1,5 +1,5 @@
-import fs from "fs";
 import path from "path";
+import { loadTriageCases } from "../utils/load-cases";
 
 /**
  * Support triage evaluation runner — Phase D1.
@@ -8,15 +8,6 @@ import path from "path";
  * without requiring a live AI provider. This ensures the fail-open
  * heuristic path correctly classifies all 20 test cases.
  */
-
-interface TriageTestCase {
-  id: string;
-  input: string;
-  expected_outcome: string;
-  description: string;
-  language: string;
-  expected_tags: string[];
-}
 
 interface TriageResult {
   id: string;
@@ -34,9 +25,7 @@ async function loadTriageModule() {
 }
 
 async function runTriageEval() {
-  const testCases: TriageTestCase[] = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "../test-cases/triage.json"), "utf8"),
-  );
+  const testCases = loadTriageCases(path.join(__dirname, "../test-cases/triage.json"));
 
   const { hasRedFlag } = await loadTriageModule();
 
