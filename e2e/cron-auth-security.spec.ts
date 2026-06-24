@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, readFileSync } from "fs";
+import { join } from "path";
 import { test, expect } from "@playwright/test";
 
 /**
@@ -21,63 +23,149 @@ import { test, expect } from "@playwright/test";
  * (billing charges, GDPR deletions, etc.) in a staging environment.
  * Success paths are covered by the cron route unit tests in
  * src/app/api/__tests__/cron-*.test.ts and src/lib/__tests__/cron-auth.test.ts.
+ *
+ * ── Route discovery (TC-03 hardening) ──────────────────────────────────────
+ * The cron route list is NO LONGER hardcoded. A hardcoded list silently
+ * drifts: new cron routes (e.g. ai-embed-faqs, ai-memory-consolidate,
+ * trial-lifecycle, usage-snapshots, support-sla-check, onboarding-nudges)
+ * were added under src/app/api/cron/ without being added to the test, leaving
+ * destructive/PHI-touching endpoints unverified for auth. We now discover
+ * every cron route from the filesystem and detect each route's REAL exported
+ * HTTP method, so:
+ *   - every cron route is auth-tested automatically, forever, and
+ *   - we exercise the route's actual entrypoint (e.g. payment-reminders is
+ *     POST-only — a GET would return 405 and prove nothing about auth).
  */
 
-// All cron routes that must be auth-protected (matches CRON_ROUTES in worker-cron-handler.ts)
-const CRON_ROUTES = [
-  "/api/cron/uptime-monitor",
-  "/api/cron/notifications",
-  "/api/cron/audit-log-flush",
-  "/api/cron/reminders",
-  "/api/cron/r2-cleanup",
-  "/api/cron/feedback",
-  "/api/cron/rebooking-reminders",
-  "/api/cron/billing",
-  "/api/cron/gdpr-purge",
-  "/api/cron/dedup-purge",
-  "/api/cron/stripe-reconcile",
-  "/api/cron/data-retention",
-  "/api/cron/daily-briefing",
-  "/api/cron/nps-survey",
-  "/api/cron/payment-reminders",
-  "/api/cron/retry-webhooks",
-];
+// Playwright runs with cwd = project root (testDir: "./e2e"), so resolve the
+// cron directory relative to the working directory.
+const CRON_DIR = join(process.cwd(), "src", "app", "api", "cron");
 
-// ── Unauthenticated requests ────────────────────────────────────────────────
+type HttpMethod = "GET" | "POST";
 
-test.describe("TC-03 — Cron routes reject unauthenticated GET requests", () => {
-  for (const route of CRON_ROUTES) {
-    test(`GET ${route} without Authorization header → 401`, async ({ request }) => {
-      const res = await request.get(route);
-      expect(res.status()).toBe(401);
-    });
+interface CronRoute {
+  /** Request path, e.g. "/api/cron/billing". */
+  path: string;
+  /** HTTP methods the route actually exports (GET, POST, or both). */
+  methods: HttpMethod[];
+}
+
+/**
+ * Discover every cron route by scanning src/app/api/cron/<name>/route.ts and
+ * detecting which HTTP method handlers it exports. Supports both
+ * `export const GET = ...` and `export (async) function GET()` forms.
+ */
+function discoverCronRoutes(): CronRoute[] {
+  const entries = readdirSync(CRON_DIR, { withFileTypes: true });
+  const routes: CronRoute[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+
+    const routeFile = join(CRON_DIR, entry.name, "route.ts");
+    if (!existsSync(routeFile)) continue;
+
+    const src = readFileSync(routeFile, "utf8");
+    const methods: HttpMethod[] = [];
+    for (const method of ["GET", "POST"] as const) {
+      const constForm = new RegExp(`export\\s+const\\s+${method}\\b`);
+      const fnForm = new RegExp(`export\\s+(?:async\\s+)?function\\s+${method}\\b`);
+      if (constForm.test(src) || fnForm.test(src)) {
+        methods.push(method);
+      }
+    }
+
+    // A cron folder with no HTTP handler is not a routable entrypoint — skip.
+    if (methods.length === 0) continue;
+
+    routes.push({ path: `/api/cron/${entry.name}`, methods });
+  }
+
+  return routes.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+const CRON_ROUTES = discoverCronRoutes();
+
+// ── Discovery sanity guard ──────────────────────────────────────────────────
+// If the cron directory moves or discovery breaks, CRON_ROUTES would be empty
+// and every for-loop below would register ZERO tests — a silent no-op that
+// hides the entire suite. Assert a sane floor so a broken path fails loudly.
+// (There are 20+ cron routes today; 16 is a conservative lower bound.)
+test.describe("TC-03 — Cron route discovery", () => {
+  test("discovers the full set of cron routes from the filesystem", () => {
+    expect(CRON_ROUTES.length).toBeGreaterThanOrEqual(16);
+    // Spot-check that destructive/sensitive routes are present so a future
+    // refactor that drops them from discovery is caught.
+    const paths = CRON_ROUTES.map((r) => r.path);
+    for (const required of [
+      "/api/cron/billing",
+      "/api/cron/gdpr-purge",
+      "/api/cron/trial-lifecycle",
+      "/api/cron/payment-reminders",
+    ]) {
+      expect(paths).toContain(required);
+    }
+  });
+});
+
+/** Issue an unauthenticated request using the given method. */
+async function requestUnauthenticated(
+  request: import("@playwright/test").APIRequestContext,
+  method: HttpMethod,
+  path: string,
+  headers?: Record<string, string>,
+) {
+  return method === "GET"
+    ? request.get(path, { headers })
+    : request.post(path, { data: {}, headers });
+}
+
+// ── Unauthenticated requests (real exported method) ────────────────────────
+
+test.describe("TC-03 — Cron routes reject unauthenticated requests", () => {
+  for (const { path, methods } of CRON_ROUTES) {
+    for (const method of methods) {
+      test(`${method} ${path} without Authorization header → 401`, async ({ request }) => {
+        const res = await requestUnauthenticated(request, method, path);
+        // verifyCronSecret runs before any method/body logic, so the route's
+        // real entrypoint must reject the anonymous caller with 401. A 200
+        // (job ran) or 5xx (crash) is a security failure.
+        expect(res.status()).toBe(401);
+      });
+    }
   }
 });
 
-test.describe("TC-03 — Cron routes reject unauthenticated POST requests", () => {
-  for (const route of CRON_ROUTES) {
-    test(`POST ${route} without Authorization header → 401`, async ({ request }) => {
-      const res = await request.post(route, { data: {} });
-      // Some cron routes only accept GET — 405 is also acceptable (method check after auth check
-      // would return 401 regardless; method-check first returns 405). Either is fine:
-      // what matters is that 200 is never returned.
+// ── Unsupported method must never run the job ───────────────────────────────
+
+test.describe("TC-03 — Cron routes reject the unsupported method", () => {
+  for (const { path, methods } of CRON_ROUTES) {
+    const unsupported: HttpMethod = methods.includes("GET") ? "POST" : "GET";
+    // Only assert when the route genuinely does not export this method.
+    if (methods.includes(unsupported)) continue;
+
+    test(`${unsupported} ${path} (unsupported) is never accepted`, async ({ request }) => {
+      const res = await requestUnauthenticated(request, unsupported, path);
+      // Either 405 (method not allowed) or 401 (auth runs first) — but never
+      // 200 (job executed) or 5xx (crash).
       expect([401, 405]).toContain(res.status());
+      expect(res.status()).not.toBe(200);
     });
   }
 });
 
-// ── Wrong token ─────────────────────────────────────────────────────────────
+// ── Wrong token (real exported method) ──────────────────────────────────────
 
 test.describe("TC-03 — Cron routes reject wrong Bearer token", () => {
-  for (const route of CRON_ROUTES) {
-    test(`GET ${route} with wrong token → 401`, async ({ request }) => {
-      const res = await request.get(route, {
-        headers: {
+  for (const { path, methods } of CRON_ROUTES) {
+    for (const method of methods) {
+      test(`${method} ${path} with wrong token → 401`, async ({ request }) => {
+        const res = await requestUnauthenticated(request, method, path, {
           Authorization: "Bearer wrong-secret-that-is-definitely-incorrect-value-for-ci",
-        },
+        });
+        expect(res.status()).toBe(401);
       });
-      expect(res.status()).toBe(401);
-    });
+    }
   }
 });
 

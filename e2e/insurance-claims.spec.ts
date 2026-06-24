@@ -44,12 +44,14 @@ test.describe("Insurance claims — Page smoke tests", () => {
   test("admin insurance claims page requires authentication", async ({ page }) => {
     const response = await page.goto("/admin/insurance-claims");
     const url = page.url();
+    // /admin/* is a PROTECTED_PREFIXES route, so middleware redirects an
+    // anonymous caller to /login before a 404 can be returned. 404 is
+    // rejected so a prefix-protection regression can't pass silently.
     const isProtected =
       url.includes("/login") ||
       url.includes("/auth") ||
       response?.status() === 401 ||
-      response?.status() === 403 ||
-      response?.status() === 404;
+      response?.status() === 403;
     expect(isProtected).toBeTruthy();
   });
 });
