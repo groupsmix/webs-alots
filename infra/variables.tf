@@ -52,10 +52,29 @@ variable "r2_bucket_location" {
 }
 
 variable "r2_bucket_jurisdiction" {
-  description = "Optional R2 data jurisdiction, for example default or eu."
+  description = <<-EOT
+    R2 data jurisdiction. Accepted values: default, eu, fedramp.
+
+    For Oltigo Health, this is set to "eu" — the closest available
+    jurisdiction to Morocco and the one already recorded in
+    docs/data-residency.md and ADR-0008. Cloudflare offers no
+    Africa/Morocco jurisdiction, so "eu" provides the nearest data-
+    residency guarantee compatible with Moroccan Law 09-08 and the
+    Cloudflare DPA.
+
+    IMPORTANT: jurisdiction is ForceNew (immutable). The production
+    bucket also has prevent_destroy = true, so changing this value
+    after the first apply requires a deliberate, reviewed migration plan.
+    Do NOT change this default without updating ADR-0008.
+  EOT
   type        = string
-  default     = null
-  nullable    = true
+  default     = "eu"
+  nullable    = false
+
+  validation {
+    condition     = contains(["default", "eu", "fedramp"], var.r2_bucket_jurisdiction)
+    error_message = "r2_bucket_jurisdiction must be one of: default, eu, fedramp."
+  }
 }
 
 variable "r2_storage_class" {
