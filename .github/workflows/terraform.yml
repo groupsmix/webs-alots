@@ -40,6 +40,20 @@ jobs:
       - name: Terraform fmt check
         run: terraform fmt -check -diff -recursive infra
 
+      # Guard against applying with local state. Local state is unacceptable
+      # for this configuration (PHI-adjacent resources, no locking). This step
+      # enforces the rule technically — backend.tf comments alone cannot.
+      - name: Check remote backend configured
+        working-directory: infra
+        run: |
+          if [ -f terraform.tfstate ]; then
+            echo "ERROR: terraform.tfstate found in infra/ — local state is not"
+            echo "       permitted for this configuration. Configure the remote"
+            echo "       backend in backend.tf and re-run terraform init."
+            exit 1
+          fi
+          echo "No local state file found — backend check passed."
+
       # Pre-download the Cloudflare provider from GitHub Releases to avoid
       # intermittent 502s from registry.terraform.io. The binary is fetched
       # directly and placed in a local filesystem mirror so that
