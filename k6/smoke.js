@@ -41,13 +41,26 @@ export function setup() {
       "BASE_URL is required. Example: k6 run --env BASE_URL=https://staging.oltigo.com k6/smoke.js",
     );
   }
+
+  // Parse the URL to inspect the hostname directly — substring matching on the
+  // raw string is unsafe (e.g. "https://evil.com/oltigo.com" passes includes()).
+  let parsed;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    throw new Error(`BASE_URL is not a valid URL: ${baseUrl}`);
+  }
+  const hostname = parsed.hostname; // e.g. "staging.oltigo.com"
   const isProd =
-    baseUrl.includes("oltigo.com") &&
-    !baseUrl.includes("staging") &&
-    !baseUrl.includes("preview") &&
-    !baseUrl.includes("localhost");
+    (hostname === "oltigo.com" || hostname.endsWith(".oltigo.com")) &&
+    !hostname.startsWith("staging") &&
+    !hostname.startsWith("preview") &&
+    hostname !== "localhost";
+
   if (isProd && __ENV.ALLOW_PROD !== "true") {
-    throw new Error("BASE_URL looks like a production host. Set --env ALLOW_PROD=true to confirm.");
+    throw new Error(
+      `BASE_URL resolves to a production host (${hostname}). Set --env ALLOW_PROD=true to confirm.`,
+    );
   }
   return { baseUrl };
 }
