@@ -189,13 +189,13 @@ test.describe("RBAC — specialist role routes require authentication", () => {
       const url = page.url();
       const status = response?.status() ?? 0;
       // A 5xx must NOT count as "protected" — a crashing dashboard is a bug,
-      // not access control. Accept only a login/auth redirect or 401/403/404.
+      // not access control. 404 is also rejected: every specialist prefix is
+      // in PROTECTED_PREFIXES (src/lib/middleware/routes.ts), so middleware
+      // redirects an anonymous caller to /login BEFORE Next.js can resolve a
+      // 404 — even for a route whose page file doesn't exist. Accepting 404
+      // here would let a removed/renamed (and thus unguarded) route pass.
       const isProtected =
-        url.includes("/login") ||
-        url.includes("/auth") ||
-        status === 401 ||
-        status === 403 ||
-        status === 404;
+        url.includes("/login") || url.includes("/auth") || status === 401 || status === 403;
       expect(isProtected).toBe(true);
     });
   }

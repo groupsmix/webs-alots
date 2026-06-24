@@ -28,12 +28,15 @@ test.describe("Staff invitations — Page smoke tests", () => {
   test("admin staff invitations page requires authentication", async ({ page }) => {
     const response = await page.goto("/admin/staff");
     const url = page.url();
+    // /admin/* is a PROTECTED_PREFIXES route, so middleware redirects an
+    // anonymous caller to /login before Next.js can resolve a 404. Rejecting
+    // 404 keeps this a real access-control assertion rather than a route-
+    // existence check.
     const isProtected =
       url.includes("/login") ||
       url.includes("/auth") ||
       response?.status() === 401 ||
-      response?.status() === 403 ||
-      response?.status() === 404;
+      response?.status() === 403;
     expect(isProtected).toBeTruthy();
   });
 });

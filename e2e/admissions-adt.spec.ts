@@ -42,12 +42,15 @@ test.describe("ADT — Page smoke tests", () => {
   test("admin admissions page requires authentication", async ({ page }) => {
     const response = await page.goto("/admin/admissions");
     const url = page.url();
+    // /admin/* is a PROTECTED_PREFIXES route, so middleware redirects an
+    // anonymous caller to /login before Next.js can return a 404. Do NOT
+    // accept 404 — that would mask the page being unguarded if the prefix
+    // protection ever regressed.
     const isProtected =
       url.includes("/login") ||
       url.includes("/auth") ||
       response?.status() === 401 ||
-      response?.status() === 403 ||
-      response?.status() === 404;
+      response?.status() === 403;
     expect(isProtected).toBeTruthy();
   });
 });
