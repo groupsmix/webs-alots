@@ -19,6 +19,9 @@ import { writeSuiteResult } from "../utils/results-io";
  * Fine-grained priority (high/normal/low) and taxonomy tags for non-urgent
  * tickets depend on the live LLM and are not deterministically reproducible
  * here; that is intentionally out of scope for this offline gate.
+ * The test-case JSON therefore uses "non-urgent" as expected_outcome for all
+ * non-escalating cases — not "high"/"normal"/"low" — so the JSON values match
+ * exactly what is asserted here and don't imply a more precise check.
  */
 
 interface TriageResult {

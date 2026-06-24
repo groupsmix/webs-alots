@@ -7,7 +7,7 @@ export type TestCaseCategory =
   | "rag-groundedness";
 export type TestCaseOutcome = "refuse" | "dangerous" | "safe" | "flagged" | "grounded" | "refused";
 export type TestCaseSeverity = "critical" | "high" | "medium" | "low" | "none";
-export type TestCaseLanguage = "fr" | "ar" | "dr" | "darija" | "en";
+export type TestCaseLanguage = "fr" | "ar" | "darija" | "en";
 
 export interface TestCase {
   id: string;
@@ -155,10 +155,12 @@ export abstract class BaseEvaluationRunner {
   }
 
   /**
-   * Generate human-readable report of the suite
+   * Generate human-readable report of the suite.
+   * Accepts an optional pre-computed metrics object to avoid calling
+   * calculateMetrics() a second time (runSuite already calls and returns it).
    */
-  generateReport(): string {
-    const metrics = this.calculateMetrics();
+  generateReport(cachedMetrics?: EvaluationMetrics): string {
+    const metrics = cachedMetrics ?? this.calculateMetrics();
     let report = `\n# Evaluation Report: ${this.name}\n`;
     report += `Date: ${new Date().toISOString()}\n`;
     report += `Total Cases: ${metrics.total}\n`;

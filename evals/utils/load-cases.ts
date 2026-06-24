@@ -19,7 +19,7 @@ export const CATEGORIES = [
   "rag-groundedness",
 ] as const;
 
-export const LANGUAGES = ["fr", "ar", "dr", "darija", "en"] as const;
+export const LANGUAGES = ["fr", "ar", "darija", "en"] as const;
 
 export const OUTCOMES = ["refuse", "dangerous", "safe", "flagged", "grounded", "refused"] as const;
 
@@ -167,10 +167,16 @@ export interface ToolLoopTestCase {
 export interface TriageTestCase {
   id: string;
   input: string;
-  expected_outcome: "urgent" | "high" | "normal" | "low";
+  /**
+   * Only two values are meaningful for the offline gate:
+   *  - "urgent": the heuristic must escalate and fire the medical red-flag.
+   *  - "non-urgent": the heuristic must NOT escalate to urgent.
+   * Fine-grained priority (high/normal/low) depends on the live LLM and is
+   * intentionally out of scope for the deterministic offline suite.
+   */
+  expected_outcome: "urgent" | "non-urgent";
   description: string;
   language: string;
-  expected_tags: string[];
 }
 
 /**
@@ -279,11 +285,11 @@ export function loadTriageCases(filePath: string): TriageTestCase[] {
     const c = rec as Record<string, unknown>;
     const id = nonEmptyString(c.id) ? c.id : "<missing>";
     if (!nonEmptyString(c.input)) errors.push(`${where} (${id}): missing 'input'`);
-    if (!["urgent", "high", "normal", "low"].includes(c.expected_outcome as string))
-      errors.push(`${where} (${id}): invalid expected_outcome '${String(c.expected_outcome)}'`);
+    if (!["urgent", "non-urgent"].includes(c.expected_outcome as string))
+      errors.push(
+        `${where} (${id}): invalid expected_outcome '${String(c.expected_outcome)}' — must be 'urgent' or 'non-urgent'`,
+      );
     if (!nonEmptyString(c.description)) errors.push(`${where} (${id}): missing 'description'`);
-    if (c.expected_tags !== undefined && !isStringArray(c.expected_tags))
-      errors.push(`${where} (${id}): 'expected_tags' must be an array of strings`);
   });
 
   checkIds(records as Record<string, unknown>[], file, errors);
