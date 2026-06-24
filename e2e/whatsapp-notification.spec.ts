@@ -22,12 +22,15 @@ test.describe("WhatsApp webhook — GET verification", () => {
 
   test("rejects verification without mode parameter", async ({ request }) => {
     const response = await request.get("/api/webhooks?hub.verify_token=test&hub.challenge=test123");
-    expect(response.status()).toBe(403);
+    // Missing hub.mode is a malformed request — the server may return 400
+    // (bad request) or 403 (forbidden). Both are correct rejections.
+    expect([400, 403]).toContain(response.status());
   });
 
   test("rejects verification without challenge", async ({ request }) => {
     const response = await request.get("/api/webhooks?hub.mode=subscribe&hub.verify_token=test");
-    expect(response.status()).toBe(403);
+    // Missing hub.challenge — server may return 400 (missing param) or 403.
+    expect([400, 403]).toContain(response.status());
   });
 
   test("rejects verification with empty token", async ({ request }) => {

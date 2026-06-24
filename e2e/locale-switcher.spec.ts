@@ -45,18 +45,22 @@ test.describe("Locale behavior", () => {
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
 
-    // Wait for client-side hydration to apply dir attribute
+    // Wait for client-side hydration to apply both dir=rtl AND lang=ar.
+    // Accepting lang=ar alone (without dir=rtl) would let a regression where
+    // the dir attribute stops being set pass silently.
     await page.waitForFunction(
       () =>
-        document.documentElement.getAttribute("dir") !== null ||
+        document.documentElement.getAttribute("dir") === "rtl" &&
         document.documentElement.getAttribute("lang") === "ar",
     );
 
     const dir = await page.locator("html").getAttribute("dir");
     const htmlLang = await page.locator("html").getAttribute("lang");
-    // Verify RTL is applied or at least page renders
     await expect(page.locator("body")).not.toBeEmpty();
-    expect(dir === "rtl" || htmlLang === "ar").toBeTruthy();
+    // Both attributes must be set — an app that sets lang=ar but omits
+    // dir=rtl has a real RTL regression.
+    expect(dir).toBe("rtl");
+    expect(htmlLang).toBe("ar");
   });
 
   test("locale persists across page navigation", async ({ page }) => {

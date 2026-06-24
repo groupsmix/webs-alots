@@ -56,6 +56,15 @@ interface CronRoute {
  * `export const GET = ...` and `export (async) function GET()` forms.
  */
 function discoverCronRoutes(): CronRoute[] {
+  if (!existsSync(CRON_DIR)) {
+    // Fail loudly rather than silently returning an empty array that
+    // lets every test loop register zero cases (a silent no-op).
+    throw new Error(
+      `[cron-auth-security] Cron route directory not found: ${CRON_DIR}\n` +
+        `  CWD: ${process.cwd()}\n` +
+        `  Ensure Playwright runs from the project root (testDir: "./e2e").`,
+    );
+  }
   const entries = readdirSync(CRON_DIR, { withFileTypes: true });
   const routes: CronRoute[] = [];
 
