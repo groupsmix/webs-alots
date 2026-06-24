@@ -40,20 +40,53 @@ jobs:
       - name: Terraform fmt check
         run: terraform fmt -check -diff -recursive infra
 
+      # Guard against applying with local state. Local state is unacceptable
+      # for this configuration (PHI-adjacent resources, no locking). This step
+      # enforces the rule technically — backend.tf comments alone cannot.
+      - name: Check remote backend configured
+        working-directory: infra
+        run: |
+          if [ -f terraform.tfstate ]; then
+            echo "ERROR: terraform.tfstate found in infra/ — local state is not"
+            echo "       permitted for this configuration. Configure the remote"
+            echo "       backend in backend.tf and re-run terraform init."
+            exit 1
+          fi
+          echo "No local state file found — backend check passed."
+
       # Pre-download the Cloudflare provider from GitHub Releases to avoid
       # intermittent 502s from registry.terraform.io. The binary is fetched
       # directly and placed in a local filesystem mirror so that
       # `terraform init -plugin-dir` never touches the registry.
-      - name: Download Cloudflare Terraform provider
+      #
+      # Supply-chain hardening: download the SHA256SUMS file from the same
+      # release, then verify the zip's SHA256 against it before unzipping.
+      # Even though `terraform init -plugin-dir` would catch a tampered binary
+      # via the lock-file h1: hashes, verifying before unzip fails faster and
+      # makes the supply-chain intent explicit in the pipeline log.
+      - name: Download and verify Cloudflare Terraform provider
         run: |
+          set -euo pipefail
           PROVIDER_VERSION="5.21.0"
           PLATFORM="linux_amd64"
+          BASE_URL="https://github.com/cloudflare/terraform-provider-cloudflare/releases/download/v${PROVIDER_VERSION}"
+          ZIP_NAME="terraform-provider-cloudflare_${PROVIDER_VERSION}_${PLATFORM}.zip"
+          ZIP_FILE="/tmp/${ZIP_NAME}"
+          SUMS_FILE="/tmp/cf-provider-SHA256SUMS"
           PLUGIN_DIR="${HOME}/.terraform.d/plugins/registry.terraform.io/cloudflare/cloudflare/${PROVIDER_VERSION}/${PLATFORM}"
+
           mkdir -p "${PLUGIN_DIR}"
-          curl -fsSL \
-            "https://github.com/cloudflare/terraform-provider-cloudflare/releases/download/v${PROVIDER_VERSION}/terraform-provider-cloudflare_${PROVIDER_VERSION}_${PLATFORM}.zip" \
-            -o /tmp/cf-provider.zip
-          unzip -j /tmp/cf-provider.zip -d "${PLUGIN_DIR}"
+
+          # Download the provider zip and the authoritative SHA256SUMS file
+          curl -fsSL "${BASE_URL}/${ZIP_NAME}" -o "${ZIP_FILE}"
+          curl -fsSL "${BASE_URL}/terraform-provider-cloudflare_${PROVIDER_VERSION}_SHA256SUMS" \
+            -o "${SUMS_FILE}"
+
+          # Verify the zip against the checksums file — abort if it does not match
+          (cd /tmp && grep "${ZIP_NAME}" "${SUMS_FILE}" | sha256sum --check --strict)
+          echo "SHA256 verified for ${ZIP_NAME}"
+
+          unzip -j "${ZIP_FILE}" -d "${PLUGIN_DIR}"
           chmod +x "${PLUGIN_DIR}"/terraform-provider-cloudflare_v*
           echo "PLUGIN_DIR=${HOME}/.terraform.d/plugins" >> "$GITHUB_ENV"
 

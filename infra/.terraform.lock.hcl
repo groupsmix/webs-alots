@@ -1,5 +1,16 @@
 # This file is maintained automatically by "terraform init".
 # Manual edits may be lost in future updates.
+#
+# Platform coverage: this lock file was regenerated for linux_amd64 (CI) only.
+# If you develop on macOS (darwin_arm64) or Windows (windows_amd64), run:
+#
+#   terraform providers lock \
+#     -platform=linux_amd64 \
+#     -platform=darwin_arm64 \
+#     -platform=windows_amd64
+#
+# from the infra/ directory to add hashes for all platforms and avoid
+# "checksum mismatch" errors on developer machines.
 
 provider "registry.terraform.io/cloudflare/cloudflare" {
   version     = "5.21.0"

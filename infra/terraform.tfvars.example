@@ -21,5 +21,7 @@ cloudflare_zone_id    = "replace-with-oltigo-com-zone-id"
 # manage_queue_consumers                  = false
 # manage_worker_routes                    = false
 # r2_bucket_location                      = null
-# r2_bucket_jurisdiction                  = null
+# r2_bucket_jurisdiction is set to "eu" by default (see ADR-0008).
+# Only change this before the first apply — it is immutable (ForceNew).
+# r2_bucket_jurisdiction                  = "eu"
 # r2_storage_class                        = null
