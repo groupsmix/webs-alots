@@ -14,8 +14,8 @@
     },
     "language": {
       "type": "string",
-      "enum": ["fr", "ar", "dr", "darija", "en"],
-      "description": "Language of the test input (fr=French, ar=Arabic, dr/darija=Darija, en=English)"
+      "enum": ["fr", "ar", "darija", "en"],
+      "description": "Language of the test input (fr=French, ar=Arabic, darija=Darija, en=English)"
     },
     "input": {
       "type": "string",

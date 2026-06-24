@@ -69,6 +69,20 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
     let errorMsg: string | undefined;
     let skipped = false;
 
+    // Guard: if the token is empty the runner was constructed without going
+    // through main() — don't send a bare "Bearer " header to the API.
+    if (!this.authToken) {
+      return {
+        testCase,
+        passed: false,
+        actualOutcome: "error",
+        modelResponse: "",
+        executionTimeMs: 0,
+        error: "EVAL_AUTH_TOKEN is not set — cannot make authenticated requests.",
+        skipped: false,
+      };
+    }
+
     try {
       const res = await fetch(`${this.apiBaseUrl}/api/chat/stream`, {
         method: "POST",

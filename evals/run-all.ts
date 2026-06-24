@@ -20,10 +20,32 @@ async function runScript(scriptPath: string): Promise<boolean> {
     // Run via the current Node binary + tsx loader — cross-platform, no shell
     // (avoids the .cmd-on-Windows spawn restriction and the shell-escaping
     // deprecation warning).
+    //
+    // Security: forward only the env vars the runners actually need, not the
+    // entire process.env (which includes all secrets at runtime).
+    // nosemgrep: semgrep.env-access - Test execution only; explicit allowlist
     const child = spawn(process.execPath, ["--import", "tsx", path.join(__dirname, scriptPath)], {
       stdio: "inherit",
-      // nosemgrep: semgrep.env-access - Test execution only
-      env: process.env,
+      env: {
+        // Runtime — Node.js + tsx resolution
+        PATH: process.env.PATH,
+        NODE_PATH: process.env.NODE_PATH,
+        NODE_ENV: process.env.NODE_ENV,
+        // RAG runner
+        EVAL_AUTH_TOKEN: process.env.EVAL_AUTH_TOKEN,
+        API_BASE_URL: process.env.API_BASE_URL,
+        // Alerter
+        SLACK_WEBHOOK_URL: process.env.SLACK_WEBHOOK_URL,
+        // OS path resolution (cross-platform)
+        PATHEXT: process.env.PATHEXT,
+        USERPROFILE: process.env.USERPROFILE,
+        HOME: process.env.HOME,
+        TMPDIR: process.env.TMPDIR,
+        TMP: process.env.TMP,
+        TEMP: process.env.TEMP,
+        // tsconfig path aliases (needed by tsx for @ imports)
+        TS_NODE_PROJECT: process.env.TS_NODE_PROJECT,
+      },
     });
 
     child.on("close", (code) => resolve(code === 0));

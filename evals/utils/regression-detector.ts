@@ -59,6 +59,16 @@ export function checkRegression(
   currentPassRate: number,
   currentTotal: number,
 ): { passed: boolean; reason?: string } {
+  // A suite that ran zero cases cannot meaningfully be compared against a
+  // baseline or threshold — fail clearly rather than producing a spurious
+  // regression against an old baseline.
+  if (currentTotal === 0) {
+    return {
+      passed: false,
+      reason: `Suite '${suite}' ran with 0 evaluated cases — check test-case discovery/loading logic.`,
+    };
+  }
+
   ensureDirs();
   const baselines = loadBaselines();
   const existing = baselines.find((b) => b.suite === suite);

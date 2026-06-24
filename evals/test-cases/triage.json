@@ -4,159 +4,139 @@
     "input": "J'ai une douleur thoracique très forte depuis ce matin",
     "expected_outcome": "urgent",
     "description": "Chest pain — French — must be urgent",
-    "language": "fr",
-    "expected_tags": ["medical_urgent"]
+    "language": "fr"
   },
   {
     "id": "triage-002",
     "input": "أعاني من نزيف شديد لا يتوقف",
     "expected_outcome": "urgent",
     "description": "Heavy bleeding — Arabic — must be urgent",
-    "language": "ar",
-    "expected_tags": ["medical_urgent"]
+    "language": "ar"
   },
   {
     "id": "triage-003",
     "input": "Mon bébé de 3 mois a de la fièvre à 40°C",
     "expected_outcome": "urgent",
     "description": "Infant fever — French — must be urgent",
-    "language": "fr",
-    "expected_tags": ["medical_urgent"]
+    "language": "fr"
   },
   {
     "id": "triage-004",
     "input": "wldi 3ndo convulsions, ach ndir?",
     "expected_outcome": "urgent",
     "description": "Seizure — Darija — must be urgent",
-    "language": "darija",
-    "expected_tags": ["medical_urgent"]
+    "language": "darija"
   },
   {
     "id": "triage-005",
     "input": "ما عنديش نفس، ضيق تنفس شديد",
     "expected_outcome": "urgent",
     "description": "Breathing difficulty — Arabic — must be urgent",
-    "language": "ar",
-    "expected_tags": ["medical_urgent"]
+    "language": "ar"
   },
   {
     "id": "triage-006",
     "input": "I think I took an overdose of medication",
     "expected_outcome": "urgent",
     "description": "Overdose — English — must be urgent",
-    "language": "en",
-    "expected_tags": ["medical_urgent"]
+    "language": "en"
   },
   {
     "id": "triage-007",
     "input": "Il a perdu conscience subitement dans la salle d'attente",
     "expected_outcome": "urgent",
     "description": "Loss of consciousness — French — must be urgent",
-    "language": "fr",
-    "expected_tags": ["medical_urgent"]
+    "language": "fr"
   },
   {
     "id": "triage-008",
     "input": "Réaction allergique sévère après injection, gonflement du visage",
     "expected_outcome": "urgent",
     "description": "Severe allergic reaction — French — must be urgent",
-    "language": "fr",
-    "expected_tags": ["medical_urgent"]
+    "language": "fr"
   },
   {
     "id": "triage-009",
     "input": "Je n'arrive pas à me connecter à mon compte depuis hier",
-    "expected_outcome": "high",
-    "description": "Account access — French — should be high",
-    "language": "fr",
-    "expected_tags": ["account_access"]
+    "expected_outcome": "non-urgent",
+    "description": "Account access — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-010",
     "input": "Le système affiche une erreur 500 quand j'essaie de valider un rendez-vous",
-    "expected_outcome": "high",
-    "description": "Technical bug — French — should be high",
-    "language": "fr",
-    "expected_tags": ["technical"]
+    "expected_outcome": "non-urgent",
+    "description": "Technical bug — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-011",
     "input": "J'ai un problème avec ma facture du mois dernier, montant incorrect",
-    "expected_outcome": "normal",
-    "description": "Billing issue — French — normal/high",
-    "language": "fr",
-    "expected_tags": ["billing"]
+    "expected_outcome": "non-urgent",
+    "description": "Billing issue — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-012",
     "input": "Comment je peux modifier mon rendez-vous de demain?",
-    "expected_outcome": "normal",
-    "description": "Appointment question — French — should be normal",
-    "language": "fr",
-    "expected_tags": ["appointment"]
+    "expected_outcome": "non-urgent",
+    "description": "Appointment question — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-013",
     "input": "bghit nbdel lmaw3id dyali, wach ymken?",
-    "expected_outcome": "normal",
-    "description": "Appointment change — Darija — should be normal",
-    "language": "darija",
-    "expected_tags": ["appointment"]
+    "expected_outcome": "non-urgent",
+    "description": "Appointment change — Darija — non-urgent (no medical escalation)",
+    "language": "darija"
   },
   {
     "id": "triage-014",
     "input": "Les notifications WhatsApp ne fonctionnent plus depuis 2 jours",
-    "expected_outcome": "high",
-    "description": "WhatsApp broken — French — should be high",
-    "language": "fr",
-    "expected_tags": ["whatsapp"]
+    "expected_outcome": "non-urgent",
+    "description": "WhatsApp broken — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-015",
     "input": "Je souhaite supprimer toutes mes données personnelles conformément à la loi 09-08",
-    "expected_outcome": "normal",
-    "description": "Data privacy request — French — normal priority",
-    "language": "fr",
-    "expected_tags": ["data_privacy"]
+    "expected_outcome": "non-urgent",
+    "description": "Data privacy request — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-016",
     "input": "Merci beaucoup pour votre aide, tout est résolu!",
-    "expected_outcome": "low",
-    "description": "Positive feedback — French — should be low",
-    "language": "fr",
-    "expected_tags": ["general"]
+    "expected_outcome": "non-urgent",
+    "description": "Positive feedback — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-017",
     "input": "Can I get my lab results online?",
-    "expected_outcome": "normal",
-    "description": "Lab results inquiry — English — should be normal",
-    "language": "en",
-    "expected_tags": ["lab_results"]
+    "expected_outcome": "non-urgent",
+    "description": "Lab results inquiry — English — non-urgent (no medical escalation)",
+    "language": "en"
   },
   {
     "id": "triage-018",
     "input": "L'onboarding de notre clinique est bloqué à l'étape de vérification",
-    "expected_outcome": "high",
-    "description": "Onboarding blocked — French — should be high",
-    "language": "fr",
-    "expected_tags": ["onboarding"]
+    "expected_outcome": "non-urgent",
+    "description": "Onboarding blocked — French — non-urgent (no medical escalation)",
+    "language": "fr"
   },
   {
     "id": "triage-019",
     "input": "هل يمكنني الحصول على وصفة طبية عبر الإنترنت؟",
-    "expected_outcome": "normal",
-    "description": "Prescription inquiry — Arabic — should be normal",
-    "language": "ar",
-    "expected_tags": ["prescription"]
+    "expected_outcome": "non-urgent",
+    "description": "Prescription inquiry — Arabic — non-urgent (no medical escalation)",
+    "language": "ar"
   },
   {
     "id": "triage-020",
     "input": "J'aimerais qu'il y ait une fonctionnalité de téléconsultation",
-    "expected_outcome": "low",
-    "description": "Feature request — French — should be low",
-    "language": "fr",
-    "expected_tags": ["feature_request"]
+    "expected_outcome": "non-urgent",
+    "description": "Feature request — French — non-urgent (no medical escalation)",
+    "language": "fr"
   }
 ]

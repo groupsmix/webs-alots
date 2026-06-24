@@ -6,6 +6,30 @@ export async function sendSlackAlert(message: string): Promise<void> {
     return;
   }
 
+  // Validate the URL before posting — sending failure details to an unintended
+  // endpoint (e.g. a mis-set env var) would silently exfiltrate eval metadata.
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(webhookUrl);
+  } catch {
+    console.error("SLACK_WEBHOOK_URL is not a valid URL — skipping alert to prevent exfiltration.");
+    return;
+  }
+  if (parsedUrl.protocol !== "https:") {
+    console.error(
+      `SLACK_WEBHOOK_URL uses protocol '${parsedUrl.protocol}' — only HTTPS is permitted. Skipping alert.`,
+    );
+    return;
+  }
+  if (
+    !parsedUrl.hostname.endsWith("slack.com") &&
+    !parsedUrl.hostname.endsWith("hooks.slack.com")
+  ) {
+    console.warn(
+      `SLACK_WEBHOOK_URL hostname '${parsedUrl.hostname}' is not a known Slack host — verify this is intentional.`,
+    );
+  }
+
   try {
     await fetch(webhookUrl, {
       method: "POST",
