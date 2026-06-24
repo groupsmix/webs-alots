@@ -1,9 +1,9 @@
-import fs from "fs";
 import path from "path";
 import { assertAgentAllowed, MAX_AGENT_STEPS } from "../../src/lib/ai/agent-config";
 import type { SiteTeamAgentType } from "../../src/lib/ai/prompts";
 import { buildSDKTools, getAgentTools, type AgentToolContext } from "../../src/lib/ai/tools";
 import type { UserRole } from "../../src/lib/types/database";
+import { loadToolLoopCases, type ToolLoopTestCase } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
 import { writeSuiteResult } from "../utils/results-io";
 
@@ -19,19 +19,6 @@ import { writeSuiteResult } from "../utils/results-io";
  *  4. Read-only guard: asserts no agent tool across any role is a mutating
  *     (delete/remove/cancel/drop) operation.
  */
-
-interface ToolLoopTestCase {
-  id: string;
-  description: string;
-  role?: string;
-  agentType?: string;
-  expected_allowed?: boolean;
-  test_type?: string;
-  expected_max_steps?: number;
-  tool_name?: string;
-  // true when calling the tool with `{}` must be REJECTED (required params)
-  expect_required_rejects_empty?: boolean;
-}
 
 const MUTATION_VERBS = /(delete|remove|cancel|drop|destroy|purge|wipe)/i;
 
@@ -107,9 +94,7 @@ function checkReadOnly(): { ok: boolean; reason?: string } {
 }
 
 function runToolLoopEval() {
-  const testCases: ToolLoopTestCase[] = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "../test-cases/tool-loop.json"), "utf8"),
-  );
+  const testCases = loadToolLoopCases(path.join(__dirname, "../test-cases/tool-loop.json"));
 
   let passed = 0;
   let failed = 0;

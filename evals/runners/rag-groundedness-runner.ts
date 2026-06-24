@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import path from "path";
-import { loadStandardCases } from "../utils/load-cases";
+import { loadRagCases } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
 import { writeSuiteResult } from "../utils/results-io";
 import { BaseEvaluationRunner, TestCase, EvaluationResult } from "./base-runner";
@@ -184,6 +184,28 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
   }
 }
 
+/**
+ * Refuse to send the bearer token to a non-HTTPS, non-local host. Prevents the
+ * EVAL_AUTH_TOKEN leaking in cleartext if API_BASE_URL is pointed at an
+ * untrusted/plaintext endpoint.
+ */
+function assertSafeEndpoint(apiBaseUrl: string): void {
+  let url: URL;
+  try {
+    url = new URL(apiBaseUrl);
+  } catch {
+    throw new Error(`Invalid API_BASE_URL: '${apiBaseUrl}'`);
+  }
+  const isLocal =
+    url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
+  if (!isLocal && url.protocol !== "https:") {
+    throw new Error(
+      `Refusing to send EVAL_AUTH_TOKEN to non-HTTPS, non-local host '${url.host}'. ` +
+        `Use HTTPS or a localhost API_BASE_URL.`,
+    );
+  }
+}
+
 async function main() {
   // Skip gracefully when EVAL_AUTH_TOKEN is not configured (no live provider).
   // nosemgrep: semgrep.env-access - Test execution only
@@ -200,8 +222,13 @@ async function main() {
     process.exit(0);
   }
 
+  // Refuse to send the bearer token to a non-HTTPS, non-local host — prevents
+  // EVAL_AUTH_TOKEN leaking in cleartext if API_BASE_URL points elsewhere.
+  // nosemgrep: semgrep.env-access - Test execution only
+  assertSafeEndpoint(process.env.API_BASE_URL || "http://localhost:3000");
+
   const runner = new RAGGroundednessRunner();
-  const testCases = loadStandardCases(
+  const testCases = loadRagCases(
     path.join(__dirname, "../test-cases/rag-groundedness.json"),
   ) as TestCase[];
 

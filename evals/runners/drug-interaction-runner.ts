@@ -1,5 +1,5 @@
-import fs from "fs";
 import path from "path";
+import { loadDrugInteractionCases } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
 import { writeSuiteResult } from "../utils/results-io";
 
@@ -18,17 +18,6 @@ import { writeSuiteResult } from "../utils/results-io";
  * All expected_outcome="dangerous" cases MUST pass (100% threshold).
  * The CI gate uses this to prevent regressions in critical safety data.
  */
-
-interface DrugInteractionTestCase {
-  id: string;
-  category: string;
-  language: string;
-  input: string;
-  context: { drug_a: string; drug_b: string };
-  expected_outcome: "dangerous" | "flagged" | "safe";
-  severity: "critical" | "high" | "medium" | "low" | "none";
-  description: string;
-}
 
 interface RunResult {
   id: string;
@@ -58,8 +47,8 @@ async function loadKnowledgeModule() {
 }
 
 async function runDrugInteractionEval() {
-  const testCases: DrugInteractionTestCase[] = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "../test-cases/drug-interactions.json"), "utf8"),
+  const testCases = loadDrugInteractionCases(
+    path.join(__dirname, "../test-cases/drug-interactions.json"),
   );
 
   const { lookupDrugInteraction, PACK_VERSION } = await loadKnowledgeModule();
