@@ -21,10 +21,7 @@ export async function sendSlackAlert(message: string): Promise<void> {
     );
     return;
   }
-  if (
-    !parsedUrl.hostname.endsWith("slack.com") &&
-    !parsedUrl.hostname.endsWith("hooks.slack.com")
-  ) {
+  if (parsedUrl.hostname !== "hooks.slack.com" && !parsedUrl.hostname.endsWith(".slack.com")) {
     console.warn(
       `SLACK_WEBHOOK_URL hostname '${parsedUrl.hostname}' is not a known Slack host — verify this is intentional.`,
     );
