@@ -103,7 +103,7 @@ export function ClinicDashboardLayout({
   );
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       {/* Mobile header bar */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
         <button
@@ -158,7 +158,7 @@ export function ClinicDashboardLayout({
 
       <main
         id="main-content"
-        className={`flex-1 ${config.mobileTabs ? "p-4 pt-16 pb-20 md:p-6 md:pb-6" : "p-6 pt-16 md:pt-6"}`}
+        className={`flex-1 min-w-0 ${config.mobileTabs ? "p-4 pt-16 pb-20 md:p-6 md:pb-6" : "p-6 pt-16 md:pt-6"}`}
       >
         {content}
       </main>

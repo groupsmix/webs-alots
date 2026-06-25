@@ -146,9 +146,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent horizontal overflow at the document level. Content that
+       legitimately needs to scroll horizontally (e.g. data tables) must
+       use overflow-x: auto on its own scroll container. */
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;
+    overflow-x: hidden;
   }
 }
 

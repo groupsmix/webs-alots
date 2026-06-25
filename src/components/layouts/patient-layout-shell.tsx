@@ -78,7 +78,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
   ];
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
         <div className="flex items-center gap-2 mb-6">
@@ -111,7 +111,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
       </aside>
 
       {/* Mobile Header */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0">
         <header className="flex items-center justify-between border-b p-3 md:hidden">
           <div className="flex items-center gap-2">
             <OltigoMonogram size="sm" />
@@ -171,7 +171,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
           </MobileMenuOverlay>
         )}
 
-        <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
+        <main id="main-content" className="flex-1 min-w-0 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
           {children}
         </main>
