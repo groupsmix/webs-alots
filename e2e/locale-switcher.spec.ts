@@ -33,11 +33,18 @@ test.describe("Locale behavior", () => {
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
 
+    // Wait for client-side hydration to pick up the localStorage value and
+    // apply it to the html element. Simply checking `toBeTruthy()` on the
+    // lang attribute would pass even if the locale was never changed (e.g.
+    // it could still be "fr"). Assert the exact expected value so a
+    // regression where localStorage is silently ignored is caught.
+    await page.waitForFunction(() => document.documentElement.getAttribute("lang") === "en", {
+      timeout: 5_000,
+    });
+
     const htmlLang = await page.locator("html").getAttribute("lang");
-    // The app may or may not pick up localStorage for html lang on SSR;
-    // verify at least the body renders without errors
     await expect(page.locator("body")).not.toBeEmpty();
-    expect(htmlLang).toBeTruthy();
+    expect(htmlLang).toBe("en");
   });
 
   test("Arabic locale sets RTL direction via localStorage", async ({ page }) => {

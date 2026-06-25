@@ -566,7 +566,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       {/* Impersonation Banner */}
       <ImpersonationBanner />
 
@@ -589,7 +589,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Top Bar */}
           <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6">
             <Button
@@ -726,7 +726,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
             </DropdownMenu>
           </header>
 
-          <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
+          <main id="main-content" className="flex-1 min-w-0 p-4 pb-20 md:p-6 md:pb-6">
             {children}
           </main>
         </div>

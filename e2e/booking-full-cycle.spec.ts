@@ -58,9 +58,20 @@ test.describe("Booking full cycle", () => {
   });
 
   test("booking page shows clinic branding", async ({ page }) => {
-    // The page should contain some text or branding element
+    // The page must have loaded successfully (2xx) — a textContent check
+    // alone would pass on a Next.js error page or a redirect to /login.
+    // Re-navigate to capture the response code rather than relying on the
+    // beforeEach goto which swallows the status.
+    const response = await page.goto("/book");
+    expect(response?.status()).toBeLessThan(400);
+
+    // The page should contain a meaningful amount of visible text — an
+    // error page would either be blank or contain only an error message,
+    // so >50 chars gives a real signal. Use a specific clinic-branding
+    // element when available; this generic guard catches regressions in
+    // environments where the branded element selector is not yet known.
     const textContent = await page.locator("body").textContent();
     expect(textContent).toBeTruthy();
-    expect(textContent!.length).toBeGreaterThan(10);
+    expect(textContent!.trim().length).toBeGreaterThan(50);
   });
 });

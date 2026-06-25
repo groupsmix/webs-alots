@@ -75,6 +75,12 @@ test.describe("TC-01 — Unauthenticated cross-tenant resource access", () => {
     expect(res.status()).toBeLessThan(500);
     expect(res.status()).not.toBe(200);
     expect([400, 401, 403]).toContain(res.status());
+
+    // Defense-in-depth: even if status were somehow 200, the injected
+    // CLINIC_B_ID must not appear anywhere in the response body, confirming
+    // the tenant was derived from the host (subdomain) not the query param.
+    const body = await res.text();
+    expect(body).not.toContain(CLINIC_B_ID);
   });
 });
 

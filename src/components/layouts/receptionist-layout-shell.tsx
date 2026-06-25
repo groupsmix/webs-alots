@@ -71,7 +71,7 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
   ];
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:block">
         <div className="flex items-center gap-2 mb-6">
@@ -84,7 +84,7 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0">
         {/* Mobile Header */}
         <header className="flex items-center justify-between border-b p-3 md:hidden">
           <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
           </div>
         )}
 
-        <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
+        <main id="main-content" className="flex-1 min-w-0 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
           {children}
         </main>

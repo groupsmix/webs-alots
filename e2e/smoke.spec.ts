@@ -38,4 +38,19 @@ test.describe("API health checks", () => {
     expect(body).toHaveProperty("data");
     expect(body.data).toHaveProperty("name");
   });
+
+  test("GET /api/health returns 200 with a valid structured body", async ({ request }) => {
+    const response = await request.get("/api/health");
+    expect(response.status()).toBe(200);
+
+    // The body must be parseable JSON. A plain-text "OK" or empty response
+    // would not be caught by downstream monitoring that expects structured output.
+    const body = await response.json().catch(() => null);
+    expect(body).not.toBeNull();
+
+    // The health endpoint must explicitly report ok:true. A 200 with
+    // { ok: false } (e.g. degraded DB connectivity) must be surfaced so
+    // alerting tools that only check the HTTP status don't miss it.
+    expect(body).toHaveProperty("ok", true);
+  });
 });

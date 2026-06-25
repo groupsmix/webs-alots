@@ -230,7 +230,7 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
 
   return (
     <OnboardingProvider>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         {/* Skip to content link for keyboard accessibility */}
         <a
           href="#main-content"
@@ -281,7 +281,7 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
         </aside>
 
         <AdminHeaderBar />
-        <main id="main-content" className="flex-1 p-4 pt-16 pb-20 md:p-6 md:pb-6 md:pt-18">
+        <main id="main-content" className="flex-1 min-w-0 p-4 pt-16 pb-20 md:p-6 md:pb-6 md:pt-18">
           <AutoBreadcrumb />
           {children}
         </main>
