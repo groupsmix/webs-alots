@@ -1,24 +1,26 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * E2E tests for the patient booking flow.
+ * E2E smoke tests for the patient booking page.
  *
- * These tests cover the core appointment booking journey that patients
- * go through on the public-facing website.
+ * These are the minimal "is the page alive?" checks. For deeper booking-flow
+ * assertions (multi-step, mobile viewport, branding) see booking-full-cycle.spec.ts.
  */
 
-test.describe("Booking flow", () => {
+test.describe("Booking flow — smoke", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/book");
   });
 
-  test("booking page shows service selection or appointment form", async ({ page }) => {
-    // The booking page should render either a service picker or a
-    // date/time selector — the exact UI depends on clinic config.
-    const body = page.locator("body");
-    await expect(body).not.toBeEmpty();
+  test("booking page loads with a 2xx status and has interactive elements", async ({ page }) => {
+    // Re-navigate to capture the response code (beforeEach swallows it).
+    const response = await page.goto("/book");
+    expect(response?.status()).toBeLessThan(400);
 
-    // Should have at least one interactive element (button, input, or select)
+    await expect(page.locator("body")).not.toBeEmpty();
+
+    // The page must render at least one interactive element — a blank or
+    // error page would have none.
     const interactiveCount = await page.locator("button, input, select, [role='button']").count();
     expect(interactiveCount).toBeGreaterThan(0);
   });

@@ -310,6 +310,96 @@ test.describe("WhatsApp notification — supported triggers validation", () => {
   }
 });
 
+test.describe("WhatsApp webhook — replay attack prevention", () => {
+  test("rejects a replayed webhook with an old x-hub-signature-256 and stale payload", async ({
+    request,
+  }) => {
+    // A replay attack replays a previously captured, legitimately-signed
+    // request. The WhatsApp webhook handler must reject this by validating
+    // the signature against the current WHATSAPP_APP_SECRET. Without the
+    // real secret, the signature here is invalid and the server must return
+    // 401. With the real secret, the HMAC still won't match because the
+    // payload below uses a hardcoded "old" message id — not a live one.
+    // Either way: never 200.
+    const replayedPayload = JSON.stringify({
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "old-waba-id",
+          changes: [
+            {
+              value: {
+                messaging_product: "whatsapp",
+                metadata: { display_phone_number: "+212600000000", phone_number_id: "old-pid" },
+                messages: [
+                  {
+                    from: "+212600000000",
+                    id: "wamid.replayed-old-message-id",
+                    timestamp: String(Math.floor(Date.now() / 1000) - 3600), // 1 hour ago
+                    text: { body: "CONFIRM" },
+                    type: "text",
+                  },
+                ],
+              },
+              field: "messages",
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request.post("/api/webhooks", {
+      headers: {
+        // Signature computed for a different (stale) payload — will not match
+        "x-hub-signature-256": "sha256=replayed_invalid_signature_from_hour_ago",
+        "content-type": "application/json",
+      },
+      data: replayedPayload,
+    });
+
+    // Must reject the replayed / invalid-signature request
+    expect(response.status()).toBe(401);
+  });
+
+  test("same payload sent twice gets the same rejection (deterministic auth)", async ({
+    request,
+  }) => {
+    // Determinism: identical requests must produce identical responses.
+    // If the first call returned 401 and a replay returned 200, that would
+    // indicate a non-deterministic auth check (e.g. timing side-channel or
+    // state mutation that unlocks a subsequent call).
+    const payload = JSON.stringify({
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                messages: [{ from: "+212600000000", text: { body: "CONFIRM" }, type: "text" }],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const headers = {
+      "x-hub-signature-256": "sha256=determinism_test_invalid_sig",
+      "content-type": "application/json",
+    };
+
+    const [res1, res2] = await Promise.all([
+      request.post("/api/webhooks", { headers, data: payload }),
+      request.post("/api/webhooks", { headers, data: payload }),
+    ]);
+
+    // Both must be rejected identically — same status, same body structure.
+    expect(res1.status()).toBe(401);
+    expect(res2.status()).toBe(401);
+    expect(res1.status()).toBe(res2.status());
+  });
+});
+
 test.describe("WhatsApp webhook — status update processing", () => {
   test("rejects status update webhook without valid signature", async ({ request }) => {
     // Simulate a delivery status update from Meta

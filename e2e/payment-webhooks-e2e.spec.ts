@@ -47,7 +47,12 @@ function buildCmiHash(params: Record<string, string>, storeKey: string): string 
 // ── Stripe webhook flow tests ───────────────────────────────────────
 
 test.describe("Stripe webhook — event flow", () => {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "whsec_test_secret";
+  // Use the real secret when configured; fall back to empty string (not a
+  // hardcoded sentinel) so that buildStripeSignature produces a signature
+  // that the server will REJECT (400/503), keeping tests safe against
+  // accidentally firing real webhook side-effects on a staging environment
+  // that might have "whsec_test_secret" configured.
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 
   test("does not 5xx on a well-formed checkout.session.completed event", async ({ request }) => {
     // In CI, STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET are unset, so this returns
@@ -245,7 +250,11 @@ test.describe("Stripe webhook — event flow", () => {
 // ── CMI callback flow tests ─────────────────────────────────────────
 
 test.describe("CMI callback — payment flow", () => {
-  const cmiStoreKey = process.env.CMI_STORE_KEY || "test_cmi_store_key";
+  // Use the real CMI store key when configured; fall back to empty string (not
+  // a hardcoded sentinel) so that buildCmiHash produces a hash that the server
+  // will REJECT (400/403), keeping tests safe against accidentally triggering
+  // real payment side-effects on a staging environment.
+  const cmiStoreKey = process.env.CMI_STORE_KEY ?? "";
 
   test("does not 5xx on an approved-payment callback shape", async ({ request }) => {
     // Without the real CMI store key this is rejected (400/403); with it

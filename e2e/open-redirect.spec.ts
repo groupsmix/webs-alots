@@ -91,28 +91,41 @@ test.describe("Open Redirect Prevention", () => {
         loginUrl.searchParams.set("redirect", value);
 
         await page.goto(loginUrl.toString());
+        await page.waitForLoadState("domcontentloaded");
 
-        // The login page should render (200) and show the redirect param.
-        // We can't verify the actual post-login redirect without credentials,
-        // but we can confirm the page loaded and the param is present in the
-        // URL (middleware preserved it rather than stripping it).
-        const response = await page.waitForLoadState("domcontentloaded");
-        void response; // domcontentloaded resolves void
+        // The final page must still be on the same origin — no off-site bounce.
+        const finalHostname = new URL(page.url()).hostname;
+        expect(finalHostname).toBe(BASE_HOST);
 
         // Check that the redirect param survived to the login page.
         const currentUrl = new URL(page.url());
         const redirectParam = currentUrl.searchParams.get("redirect");
 
-        // Safe paths should be preserved as-is (or normalised but still valid).
         if (redirectParam !== null) {
-          // Must start with a single slash that is NOT followed by another slash
-          // (rejects "//evil.com" protocol-relative attacks while accepting "/" root).
+          // The preserved value must start with a single slash NOT followed by
+          // another slash — this rejects "//evil.com" protocol-relative payloads
+          // while accepting legitimate paths like "/" and "/dashboard".
           expect(redirectParam).toMatch(/^\/(?!\/)/);
+
+          // Critical: the preserved param must still encode the original safe path.
+          // If the middleware strips a safe path entirely that's a UX regression,
+          // not just "acceptable" — the user will lose their intended destination
+          // after login. Verify the preserved value contains the expected path.
+          // We normalize trailing slashes for comparison.
+          const normalizedParam = redirectParam.replace(/\/$/, "");
+          const normalizedValue = value.replace(/\/$/, "");
+          expect(normalizedParam).toBe(normalizedValue);
+        } else {
+          // The middleware stripped the redirect param entirely for a safe path.
+          // This is a UX regression: the user will land on the default post-login
+          // page instead of where they intended to go. Fail loudly so the
+          // middleware's safeRedirectPath() function can be corrected.
+          throw new Error(
+            `Safe redirect path "${value}" was stripped by middleware — ` +
+              `users will lose their post-login destination. ` +
+              `Fix safeRedirectPath() to preserve legitimate paths.`,
+          );
         }
-        // If the middleware stripped the param entirely for a safe path,
-        // that's also acceptable — the test just verifies no open redirect.
-        const finalHostname = new URL(page.url()).hostname;
-        expect(finalHostname).toBe(BASE_HOST);
       });
     }
   });

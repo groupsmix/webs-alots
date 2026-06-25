@@ -235,28 +235,44 @@ test.describe("TC-03 — Cron route auth is consistent across all routes", () =>
     // If some routes use a different auth mechanism (e.g. check token AFTER parsing body),
     // the 401 response time or shape might differ. We sample a destructive and non-destructive
     // route and verify both are protected identically.
-    const [billingRes, remindersRes, gdprRes] = await Promise.all([
-      request.get("/api/cron/billing"),
-      request.get("/api/cron/reminders"),
-      request.get("/api/cron/gdpr-purge"),
-    ]);
+    //
+    // Routes are derived from CRON_ROUTES (filesystem discovery) rather than hardcoded strings
+    // so a renamed or deleted route does not cause a silent 404 that would mask auth regressions.
+    // We pick the first GET-capable route from three well-known categories if present, or fall
+    // back to the first three discovered routes to guarantee the test always exercises real paths.
+    const getRoutes = CRON_ROUTES.filter((r) => r.methods.includes("GET")).map((r) => r.path);
 
-    expect(billingRes.status()).toBe(401);
-    expect(remindersRes.status()).toBe(401);
-    expect(gdprRes.status()).toBe(401);
+    // Prefer specific high-value routes for the sample if they exist (these are the most
+    // destructive: billing charges money, gdpr-purge deletes PHI, reminders fans out to patients).
+    const preferred = ["/api/cron/billing", "/api/cron/gdpr-purge", "/api/cron/reminders"];
+    const sample = preferred.filter((p) => getRoutes.includes(p));
+
+    // Fall back: pick any three GET routes if preferred set is incomplete.
+    if (sample.length < 3) {
+      for (const route of getRoutes) {
+        if (!sample.includes(route)) sample.push(route);
+        if (sample.length === 3) break;
+      }
+    }
+
+    // Need at least 2 routes to make a meaningful "consistency" comparison.
+    expect(sample.length).toBeGreaterThanOrEqual(2);
+
+    const responses = await Promise.all(sample.map((path) => request.get(path)));
+
+    for (const res of responses) {
+      expect(res.status()).toBe(401);
+    }
 
     // Response bodies should be structurally similar (both JSON with error field)
-    const [billingBody, remindersBody, gdprBody] = await Promise.all([
-      billingRes.json().catch(() => null),
-      remindersRes.json().catch(() => null),
-      gdprRes.json().catch(() => null),
-    ]);
+    const bodies = await Promise.all(responses.map((r) => r.json().catch(() => null)));
 
-    if (billingBody && remindersBody && gdprBody) {
+    const nonNull = bodies.filter((b) => b !== null);
+    if (nonNull.length > 0) {
       // All should have an error field — no different disclosure between routes
-      expect(typeof billingBody.error).toBe("string");
-      expect(typeof remindersBody.error).toBe("string");
-      expect(typeof gdprBody.error).toBe("string");
+      for (const body of nonNull) {
+        expect(typeof body.error).toBe("string");
+      }
     }
   });
 

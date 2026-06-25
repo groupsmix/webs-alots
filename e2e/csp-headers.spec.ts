@@ -66,6 +66,31 @@ test.describe("CSP header enforcement", () => {
     // "nonce never rotates" regression.
     const extractNonce = async () => {
       const response = await page.goto(`/?cb=${Date.now()}-${Math.random()}`);
+      expect(response).not.toBeNull();
+
+      // Verify the response was not served from a CDN/browser cache. A cached
+      // response would carry the same nonce, making the rotation comparison
+      // useless. Cloudflare Workers sets Cache-Control on HTML responses; if
+      // the header says "private" or "no-store" we know the server generated
+      // this response fresh.
+      const cacheControl = response!.headers()["cache-control"] ?? "";
+      const xCacheStatus = (
+        response!.headers()["cf-cache-status"] ??
+        response!.headers()["x-cache"] ??
+        ""
+      ).toLowerCase();
+
+      // If the response was served from cache (HIT), the nonce comparison is
+      // meaningless. Warn but don't hard-fail — the CDN layer is not present
+      // in most test environments; the check is a safety net for CI runs
+      // against production-like targets.
+      if (xCacheStatus === "hit") {
+        console.warn(
+          "CSP nonce rotation: response served from CDN cache — nonce may not have rotated. " +
+            "Ensure the HTML page is configured as Cache-Control: private or no-store.",
+        );
+      }
+
       const csp = response!.headers()["content-security-policy"] ?? "";
       const match = csp.match(/'nonce-([^']+)'/);
       return match?.[1] ?? "";
