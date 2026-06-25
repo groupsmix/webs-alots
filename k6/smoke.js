@@ -38,6 +38,46 @@ import { Rate } from "k6/metrics";
  */
 const httpAvailability = new Rate("http_availability");
 
+// ── Allowed host allowlist ───────────────────────────────────────────────────
+
+/**
+ * Only these hostnames (and their subdomains) are recognised as known
+ * Oltigo hosts. Any other host is rejected to prevent accidentally running
+ * a load test against an attacker-controlled URL or a typo'd domain.
+ *
+ * Fix #1: replaces the old `endsWith(".oltigo.com")` check which could be
+ * bypassed by a crafted hostname such as "staging.oltigo.com.evil.com".
+ */
+const ALLOWED_HOSTS = ["oltigo.com", "staging.oltigo.com", "preview.oltigo.com", "localhost"];
+
+function classifyHost(hostname) {
+  // Loopback is always local.
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+    return "local";
+  }
+  // Exact match against a known host.
+  if (ALLOWED_HOSTS.includes(hostname)) {
+    return hostname.startsWith("staging") || hostname.startsWith("preview") ? "non-prod" : "prod";
+  }
+  // Subdomain of a known host (e.g. "pr-42.preview.oltigo.com").
+  for (const allowed of ALLOWED_HOSTS) {
+    if (allowed === "localhost") continue;
+    if (hostname.endsWith(`.${allowed}`)) {
+      // A demo/staging/preview-prefixed subdomain of oltigo.com is non-prod.
+      if (
+        allowed === "oltigo.com" &&
+        (hostname.startsWith("staging") ||
+          hostname.startsWith("preview") ||
+          hostname.startsWith("demo"))
+      ) {
+        return "non-prod";
+      }
+      return allowed === "oltigo.com" ? "prod" : "non-prod";
+    }
+  }
+  return "unknown";
+}
+
 // ── Setup: validate environment ──────────────────────────────────────────────
 
 export function setup() {
@@ -58,10 +98,12 @@ export function setup() {
   }
 
   const hostname = parsed.hostname;
+  const hostClass = classifyHost(hostname);
+  const isLocal = hostClass === "local";
 
-  // #2 — HTTPS enforcement: reject plaintext URLs so auth cookies and tokens
-  // are never sent over the wire unencrypted, even on "internal" networks.
-  const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  // Fix #2 — HTTPS enforcement: reject plaintext URLs so auth cookies and
+  // tokens are never sent over the wire unencrypted, even on "internal"
+  // networks. Localhost/loopback is exempt for local dev.
   if (!isLocal && parsed.protocol !== "https:") {
     throw new Error(
       `BASE_URL must use HTTPS (got '${parsed.protocol}'). ` +
@@ -69,36 +111,18 @@ export function setup() {
     );
   }
 
-  // #1 — Production guard with allowlist.
-  //
-  // A hostname is "production oltigo.com" if it IS oltigo.com, or if it ends
-  // with a dot-separated segment that is exactly "oltigo.com" — i.e. the
-  // ".oltigo.com" suffix is preceded by another label, not by an unrelated TLD
-  // (e.g. "evil.com.oltigo.com" is still caught; "staging.oltigo.com" is
-  // excluded by the startsWith checks below).
-  //
-  // The remaining risk is a crafted hostname like "staging.oltigo.com.evil.com"
-  // — that does NOT end with ".oltigo.com", so the isProd flag stays false and
-  // the guard does not fire. However, the request is still going to an unknown
-  // host. We address this with an explicit allowlist: if the host is not a
-  // recognised oltigo.com variant AND not localhost, we refuse to run.
-  const isOltigoHost = hostname === "oltigo.com" || hostname.endsWith(".oltigo.com");
-
-  if (!isLocal && !isOltigoHost) {
-    // The host is neither localhost nor a known oltigo.com subdomain — refuse
-    // outright rather than silently hammering an unknown server.
+  // Fix #1 — allowlist-based host classification replaces the fragile substring
+  // match. An unrecognised host (e.g. "staging.oltigo.com.evil.com") is refused
+  // outright rather than silently hammering an unknown server.
+  if (hostClass === "unknown") {
     throw new Error(
-      `BASE_URL hostname '${hostname}' is not a recognised oltigo.com host or localhost. ` +
-        `If this is intentional, edit the allowlist in k6/smoke.js.`,
+      `BASE_URL hostname '${hostname}' is not a recognised Oltigo host. ` +
+        `Allowed hosts: ${ALLOWED_HOSTS.join(", ")} (and their subdomains). ` +
+        `If this is intentional, add it to the ALLOWED_HOSTS list in k6/smoke.js.`,
     );
   }
 
-  const isProd =
-    isOltigoHost &&
-    !hostname.startsWith("staging") &&
-    !hostname.startsWith("preview") &&
-    !hostname.startsWith("demo");
-
+  const isProd = hostClass === "prod";
   if (isProd && __ENV.ALLOW_PROD !== "true") {
     throw new Error(
       `BASE_URL resolves to a production host (${hostname}). Set --env ALLOW_PROD=true to confirm.`,
@@ -152,14 +176,23 @@ export const options = {
  * Parse a JSON response body with a diagnostic log on failure.
  * Returns the parsed object on success, or null on failure so callers can
  * distinguish a parse error from a deliberate null value.
+ *
+ * Fix #5 / Fix #6: used for assertion-only checks kept separate from the
+ * HTTP-layer availability metric, and emits a diagnostic warning (including
+ * the Content-Type) so malformed bodies aren't silently masked as check=false.
  */
 function parseJsonBody(r, label) {
+  const ct = r.headers["Content-Type"] || "?";
+  if (!ct.includes("application/json")) {
+    console.warn(
+      `[${label}] unexpected Content-Type '${ct}' (status=${r.status}) — expected application/json`,
+    );
+  }
   try {
     return JSON.parse(r.body);
   } catch (e) {
-    // #6 — Log the root cause so failures aren't silently masked as check=false.
     console.warn(
-      `[${label}] JSON.parse failed (status=${r.status} content-type=${r.headers["Content-Type"] || "?"}): ${e.message}`,
+      `[${label}] JSON.parse failed (status=${r.status} content-type=${ct}): ${e.message}`,
     );
     return null;
   }
@@ -167,8 +200,8 @@ function parseJsonBody(r, label) {
 
 // ── Main scenario ─────────────────────────────────────────────────────────────
 
-// #4 — Per-request timeout budget. If the server hangs beyond this window the
-// test fails fast rather than waiting up to the 60 s k6 default.
+// Fix #4 — Per-request timeout budget. If the server hangs beyond this window
+// the test fails fast rather than waiting up to the 60 s k6 default.
 const REQUEST_PARAMS = { timeout: "5s" };
 
 export default function (data) {
@@ -238,7 +271,7 @@ export default function (data) {
   });
   httpAvailability.add(landingHttpOk);
 
-  // #3 — Jitter on think time to avoid synchronised request waves.
+  // Fix #3 — Jitter on think time to avoid synchronised request waves.
   // Range: 0.5 s – 2.5 s (uniform random).
   sleep(Math.random() * 2 + 0.5);
 }
