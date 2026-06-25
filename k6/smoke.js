@@ -17,9 +17,9 @@
  *   k6 run --env BASE_URL=https://oltigo.com --env ALLOW_PROD=true k6/smoke.js
  *
  * Thresholds enforced:
- *   - availability (custom Rate):  > 99.9 % across user-facing probes
- *   - http_req_failed:             < 0.1 %  (k6 built-in)
- *   - per-endpoint p95 durations:  ping < 300ms, status/health < 500ms, landing < 800ms
+ *   - http_availability (custom Rate): > 99.9% HTTP-layer health (2xx/503)
+ *   - http_req_failed:                 < 0.1%  (k6 built-in)
+ *   - per-endpoint p95 durations:      ping < 300ms, status/health < 500ms, landing < 800ms
  */
 
 /* eslint-disable import/no-anonymous-default-export */
@@ -30,12 +30,13 @@ import { Rate } from "k6/metrics";
 // ── Custom metrics ──────────────────────────────────────────────────────────
 
 /**
- * Tracks HTTP-layer availability only (2xx/503 as expected).
- * JSON-body assertion failures are tracked separately and do NOT
- * trip the availability SLO so that a malformed body doesn't mask
- * a healthy HTTP layer.
+ * HTTP-layer availability: tracks whether the endpoint returned an expected
+ * HTTP status (2xx or the documented 503 for degraded). This is intentionally
+ * separated from JSON-body assertion checks so a malformed response body does
+ * not falsely trip the availability SLO — the HTTP layer may be healthy even
+ * when the JSON shape is wrong, and those are different failure modes.
  */
-const availability = new Rate("availability");
+const httpAvailability = new Rate("http_availability");
 
 // ── Allowed host allowlist ───────────────────────────────────────────────────
 
@@ -50,17 +51,27 @@ const availability = new Rate("availability");
 const ALLOWED_HOSTS = ["oltigo.com", "staging.oltigo.com", "preview.oltigo.com", "localhost"];
 
 function classifyHost(hostname) {
-  // Exact match
-  if (ALLOWED_HOSTS.includes(hostname)) {
-    return hostname === "localhost"
-      ? "local"
-      : hostname.startsWith("staging") || hostname.startsWith("preview")
-        ? "non-prod"
-        : "prod";
+  // Loopback is always local.
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+    return "local";
   }
-  // Subdomain of a known host (e.g. "pr-42.preview.oltigo.com")
+  // Exact match against a known host.
+  if (ALLOWED_HOSTS.includes(hostname)) {
+    return hostname.startsWith("staging") || hostname.startsWith("preview") ? "non-prod" : "prod";
+  }
+  // Subdomain of a known host (e.g. "pr-42.preview.oltigo.com").
   for (const allowed of ALLOWED_HOSTS) {
+    if (allowed === "localhost") continue;
     if (hostname.endsWith(`.${allowed}`)) {
+      // A demo/staging/preview-prefixed subdomain of oltigo.com is non-prod.
+      if (
+        allowed === "oltigo.com" &&
+        (hostname.startsWith("staging") ||
+          hostname.startsWith("preview") ||
+          hostname.startsWith("demo"))
+      ) {
+        return "non-prod";
+      }
       return allowed === "oltigo.com" ? "prod" : "non-prod";
     }
   }
@@ -77,7 +88,8 @@ export function setup() {
     );
   }
 
-  // Fix #2: enforce HTTPS (except localhost which may use http for local dev).
+  // Parse the URL to inspect the scheme and hostname directly — substring
+  // matching on the raw string is unsafe and bypassable.
   let parsed;
   try {
     parsed = new URL(baseUrl);
@@ -86,21 +98,25 @@ export function setup() {
   }
 
   const hostname = parsed.hostname;
-  const scheme = parsed.protocol; // "https:" or "http:"
+  const hostClass = classifyHost(hostname);
+  const isLocal = hostClass === "local";
 
-  if (scheme !== "https:" && hostname !== "localhost") {
+  // Fix #2 — HTTPS enforcement: reject plaintext URLs so auth cookies and
+  // tokens are never sent over the wire unencrypted, even on "internal"
+  // networks. Localhost/loopback is exempt for local dev.
+  if (!isLocal && parsed.protocol !== "https:") {
     throw new Error(
-      `BASE_URL must use HTTPS (got "${scheme}"). Plaintext HTTP risks exposing auth cookies. ` +
-        `Use: https://${hostname}${parsed.port ? `:${parsed.port}` : ""}${parsed.pathname}`,
+      `BASE_URL must use HTTPS (got '${parsed.protocol}'). ` +
+        `Plaintext URLs are not permitted — even on staging, credentials travel over the wire.`,
     );
   }
 
-  // Fix #1: allowlist-based host classification replaces fragile substring match.
-  const hostClass = classifyHost(hostname);
-
+  // Fix #1 — allowlist-based host classification replaces the fragile substring
+  // match. An unrecognised host (e.g. "staging.oltigo.com.evil.com") is refused
+  // outright rather than silently hammering an unknown server.
   if (hostClass === "unknown") {
     throw new Error(
-      `BASE_URL hostname "${hostname}" is not a recognised Oltigo host. ` +
+      `BASE_URL hostname '${hostname}' is not a recognised Oltigo host. ` +
         `Allowed hosts: ${ALLOWED_HOSTS.join(", ")} (and their subdomains). ` +
         `If this is intentional, add it to the ALLOWED_HOSTS list in k6/smoke.js.`,
     );
@@ -140,8 +156,8 @@ export const options = {
     main: isLoadMode ? loadScenario : smokeScenario,
   },
   thresholds: {
-    // Availability SLO: > 99.9% of user-facing probes must succeed.
-    availability: ["rate>0.999"],
+    // HTTP-layer availability SLO: > 99.9% of probes must get an expected status.
+    http_availability: ["rate>0.999"],
 
     // Overall error rate < 0.1%.
     http_req_failed: ["rate<0.001"],
@@ -154,46 +170,42 @@ export const options = {
   },
 };
 
-// ── Request params ────────────────────────────────────────────────────────────
-
-/**
- * Fix #4: per-request timeout so a hanging server fails fast instead of
- * blocking a VU for the full 60-second k6 default.
- */
-const REQUEST_PARAMS = { timeout: "5s" };
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
- * Fix #5 / Fix #6: parse JSON body defensively.
- * Returns the parsed object on success, or null on failure — and emits a
- * diagnostic console.warn so malformed bodies are visible in the k6 summary
- * without silently returning false from a check.
+ * Parse a JSON response body with a diagnostic log on failure.
+ * Returns the parsed object on success, or null on failure so callers can
+ * distinguish a parse error from a deliberate null value.
  *
- * Callers use this for assertion-only checks that are kept separate from the
- * HTTP-layer availability metric so a bad body doesn't trip the SLO.
+ * Fix #5 / Fix #6: used for assertion-only checks kept separate from the
+ * HTTP-layer availability metric, and emits a diagnostic warning (including
+ * the Content-Type) so malformed bodies aren't silently masked as check=false.
  */
-function parseJsonBody(r) {
-  const ct = r.headers["Content-Type"] || "";
+function parseJsonBody(r, label) {
+  const ct = r.headers["Content-Type"] || "?";
   if (!ct.includes("application/json")) {
-    console.warn(`[warn] ${r.url} returned Content-Type "${ct}" — expected application/json`);
+    console.warn(
+      `[${label}] unexpected Content-Type '${ct}' (status=${r.status}) — expected application/json`,
+    );
   }
   try {
     return JSON.parse(r.body);
   } catch (e) {
-    console.warn(`[warn] ${r.url} body is not valid JSON: ${e.message}`);
+    console.warn(
+      `[${label}] JSON.parse failed (status=${r.status} content-type=${ct}): ${e.message}`,
+    );
     return null;
   }
 }
 
 // ── Main scenario ─────────────────────────────────────────────────────────────
 
+// Fix #4 — Per-request timeout budget. If the server hangs beyond this window
+// the test fails fast rather than waiting up to the 60 s k6 default.
+const REQUEST_PARAMS = { timeout: "5s" };
+
 export default function (data) {
   const BASE_URL = data.baseUrl;
-
-  // Fix #3: randomised think time (0.5 – 2.5 s) to avoid synchronised request
-  // waves and produce a more realistic load distribution.
-  const thinkTime = Math.random() * 2 + 0.5;
 
   // ── /api/ping — liveness probe ────────────────────────────────────────────
   // Must be 200. Any other status = hard failure.
@@ -201,11 +213,11 @@ export default function (data) {
     ...REQUEST_PARAMS,
     tags: { endpoint: "ping" },
   });
-  // HTTP-layer check drives the availability SLO.
+  // HTTP-layer SLO: 200 expected.
   const pingHttpOk = check(ping, {
     "ping 200": (r) => r.status === 200,
   });
-  availability.add(pingHttpOk);
+  httpAvailability.add(pingHttpOk);
 
   // ── /api/status — platform status ─────────────────────────────────────────
   // Accepts 200 (all ok) and 503 (degraded but intentionally reported).
@@ -216,16 +228,15 @@ export default function (data) {
     tags: { endpoint: "status" },
     responseCallback: http.expectedStatuses(200, 503),
   });
-  // Fix #5: HTTP availability and JSON body assertion tracked separately.
+  // HTTP-layer SLO: 200 or 503 both count as the endpoint being reachable.
   const statusHttpOk = check(status, {
     "status 200 or 503": (r) => r.status === 200 || r.status === 503,
   });
-  availability.add(statusHttpOk);
-  // Body assertion — failure here is surfaced as a check failure but does NOT
-  // affect the availability SLO metric.
-  const statusBody = parseJsonBody(status);
-  check(statusBody, {
-    "status has status field": (b) => b !== null && typeof b.status === "string",
+  httpAvailability.add(statusHttpOk);
+  // JSON-body assertion (separate from SLO — a bad body ≠ an unavailable service).
+  const statusBody = parseJsonBody(status, "status");
+  check(status, {
+    "status has status field": () => statusBody !== null && typeof statusBody.status === "string",
   });
 
   // ── /api/health — readiness probe ─────────────────────────────────────────
@@ -235,14 +246,16 @@ export default function (data) {
     tags: { endpoint: "health" },
     responseCallback: http.expectedStatuses(200, 503),
   });
-  // Fix #5: HTTP availability and JSON body assertion tracked separately.
+  // HTTP-layer SLO: 200 or 503.
   const healthHttpOk = check(health, {
     "health 200 or 503": (r) => r.status === 200 || r.status === 503,
   });
-  availability.add(healthHttpOk);
-  const healthBody = parseJsonBody(health);
-  check(healthBody, {
-    "health has status value": (b) => b !== null && (b.status === "ok" || b.status === "degraded"),
+  httpAvailability.add(healthHttpOk);
+  // JSON-body assertion (separate from SLO).
+  const healthBody = parseJsonBody(health, "health");
+  check(health, {
+    "health has status value": () =>
+      healthBody !== null && (healthBody.status === "ok" || healthBody.status === "degraded"),
   });
 
   // ── / — landing page ──────────────────────────────────────────────────────
@@ -253,10 +266,12 @@ export default function (data) {
     tags: { endpoint: "landing" },
     responseCallback: http.expectedStatuses({ min: 200, max: 399 }),
   });
-  const landingOk = check(landing, {
+  const landingHttpOk = check(landing, {
     "landing 2xx or 3xx": (r) => r.status >= 200 && r.status <= 399,
   });
-  availability.add(landingOk);
+  httpAvailability.add(landingHttpOk);
 
-  sleep(thinkTime);
+  // Fix #3 — Jitter on think time to avoid synchronised request waves.
+  // Range: 0.5 s – 2.5 s (uniform random).
+  sleep(Math.random() * 2 + 0.5);
 }

@@ -3,6 +3,24 @@ variable "cloudflare_account_id" {
   type        = string
 }
 
+variable "cloudflare_api_token" {
+  description = <<-EOT
+    Cloudflare API token passed to the provider.
+
+    Required permissions:
+      - Account / Workers KV Storage: Edit
+      - Account / R2 Storage: Edit
+      - Account / Queues: Edit
+      - Zone / Workers Routes: Edit  (only when manage_worker_routes = true)
+
+    IMPORTANT: Never set this in terraform.tfvars or any file committed to git.
+    Inject it via the environment variable TF_VAR_cloudflare_api_token in CI,
+    or use a secrets manager at plan/apply time.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
 variable "cloudflare_zone_id" {
   description = "Cloudflare zone ID for oltigo.com routes."
   type        = string

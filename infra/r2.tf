@@ -21,4 +21,12 @@ resource "cloudflare_r2_bucket" "uploads_staging" {
   location      = var.r2_bucket_location
   jurisdiction  = var.r2_bucket_jurisdiction
   storage_class = var.r2_storage_class
+
+  # Staging may hold PHI-equivalent test data tied to CI pipelines. Guard it
+  # against accidental `terraform destroy` — reprovisioning during an active
+  # CI run would break pipeline artifact references. Remove deliberately if a
+  # clean staging reprovision is actually needed.
+  lifecycle {
+    prevent_destroy = true
+  }
 }

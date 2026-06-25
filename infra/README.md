@@ -95,8 +95,8 @@ root so state and identifiers cannot be accidentally committed
 ## Prerequisites
 
 - Terraform `>= 1.6` (`>= 1.11` recommended for native S3-backend state locking)
-- Cloudflare API token with permissions for Workers KV, R2, Queues, and Workers Routes
-- `CLOUDFLARE_API_TOKEN` exported in your shell or injected by CI
+- Cloudflare API token with permissions for Workers KV, R2, Queues, and Workers Routes — see `providers.tf` for the full permission list
+- Pass the token via `TF_VAR_cloudflare_api_token` (never in `terraform.tfvars` or any committed file)
 - `terraform.tfvars` created from `terraform.tfvars.example`
 - A configured remote backend (see `backend.tf`)
 
@@ -131,6 +131,22 @@ Known namespace IDs already recorded in `wrangler.toml`:
 - staging preview `RATE_LIMIT_KV`: `4965f9300c924de3afc0407679ff775b`
 
 For routes and queues, obtain the existing resource IDs from the Cloudflare dashboard or API, then import them before the first apply.
+
+## DLQ monitoring
+
+The production notification queue is configured with `max_retries = 3`. After three failed delivery attempts a message is forwarded to `notification-queue-dlq`. A growing DLQ means patients are not receiving WhatsApp/SMS/email notifications — it is a patient-safety signal, not just an operational noise.
+
+**Current gap:** There is no Terraform-managed Logpush rule or alerting policy watching DLQ depth. Until one is added:
+
+1. Check the DLQ message count manually via the Cloudflare dashboard → **Queues** → `notification-queue-dlq` → **Messages**.
+2. Alternatively, query the Queues REST API: `GET /accounts/{id}/queues/{id}/messages` with `?visible=true&status=delayed`.
+3. For incidents involving missed patient notifications, treat a non-empty DLQ as a P1.
+
+**Recommended follow-up:** Add a `cloudflare_logpush_job` resource that ships queue metrics to your SIEM/alerting layer, or configure a Cloudflare notification policy on queue message count.
+
+## Wildcard routing
+
+The production route patterns include `*.oltigo.com/*`, which routes all subdomains to the application Worker. This is intentional for the multi-tenant subdomain architecture (ADR-0007). Any new subdomain that should **not** be served by the application Worker must use a separate Cloudflare zone or a different account. Do not create internal/admin subdomains under `*.oltigo.com` without reviewing this routing first.
 
 ## Suggested next iterations
 
