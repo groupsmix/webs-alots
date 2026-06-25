@@ -70,9 +70,7 @@ test.describe("CSRF — cross-origin requests are blocked", () => {
 });
 
 test.describe("CSRF — same-origin requests reach auth layer (not blocked by CSRF)", () => {
-  test("POST with valid same-origin Origin is not blocked by CSRF middleware", async ({
-    page,
-  }) => {
+  test("POST with valid same-origin Origin is not blocked by CSRF middleware", async ({ page }) => {
     // Navigate to the app first so we're on the same origin, then POST via
     // fetch — this gives us a real same-origin Origin header.
     // We expect 401 (auth required, no session) — NOT 403 (CSRF blocked).
