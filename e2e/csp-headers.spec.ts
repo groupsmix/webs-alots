@@ -73,7 +73,6 @@ test.describe("CSP header enforcement", () => {
       // useless. Cloudflare Workers sets Cache-Control on HTML responses; if
       // the header says "private" or "no-store" we know the server generated
       // this response fresh.
-      const cacheControl = response!.headers()["cache-control"] ?? "";
       const xCacheStatus = (
         response!.headers()["cf-cache-status"] ??
         response!.headers()["x-cache"] ??
