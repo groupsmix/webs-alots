@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createClient } from "@/lib/supabase-server";
+import { TenantContextPermissionError } from "@/lib/tenant-context";
 import { withAuth, withAuthAnyRole, type AuthContext } from "../with-auth";
 
 vi.mock("@/lib/supabase-server", () => ({
@@ -23,10 +24,16 @@ vi.mock("@/lib/tenant", () => ({
 // new fail-closed 503 behavior. Individual tests that need to exercise the
 // fail-closed path override `setTenantContext` per-call.
 const setTenantContextMock = vi.fn().mockResolvedValue(undefined);
-vi.mock("@/lib/tenant-context", () => ({
-  setTenantContext: (...args: unknown[]) => setTenantContextMock(...args),
-  logTenantContext: vi.fn(),
-}));
+vi.mock("@/lib/tenant-context", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/tenant-context")>();
+  return {
+    setTenantContext: (...args: unknown[]) => setTenantContextMock(...args),
+    logTenantContext: vi.fn(),
+    // Re-export the real error class so withAuth's `instanceof` check resolves
+    // against the same type the production code throws.
+    TenantContextPermissionError: actual.TenantContextPermissionError,
+  };
+});
 
 // Per-user rate limiter is backed by the shared distributed limiter. Mock it
 // so tests can drive the allow/deny decision deterministically and assert the
@@ -309,6 +316,34 @@ describe("withAuth", () => {
       expect(handler).not.toHaveBeenCalled();
     });
 
+    it("does NOT 503 when setTenantContext is permission-denied — RLS still enforces isolation", async () => {
+      // Regression guard: set_tenant_context is service_role-only, so the
+      // authenticated user client can never set the app.current_clinic_id GUC.
+      // That permission-denied is EXPECTED and must not fail the request
+      // closed — isolation is enforced by RLS (get_user_clinic_id + the
+      // x-clinic-id tenant client). The handler must still run.
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "clinic_admin", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      setTenantContextMock.mockRejectedValueOnce(
+        new TenantContextPermissionError(
+          "Tenant context error: failed to set app.current_clinic_id: permission denied for function set_tenant_context",
+        ),
+      );
+
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const wrappedHandler = withAuth(handler, ["clinic_admin"]);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(handler).toHaveBeenCalled();
+      expect(response.status).toBe(200);
+    });
+
     it("returns 503 from withAuthAnyRole when setTenantContext throws (fail-closed default)", async () => {
       const mockSupabase = createMockSupabase(
         { id: "user-1" },
@@ -326,6 +361,29 @@ describe("withAuth", () => {
       expect(response.status).toBe(503);
       expect(body.error).toBe("Tenant context unavailable");
       expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("does NOT 503 from withAuthAnyRole when setTenantContext is permission-denied", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "patient", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      setTenantContextMock.mockRejectedValueOnce(
+        new TenantContextPermissionError(
+          "Tenant context error: failed to set app.current_clinic_id: permission denied for function set_tenant_context",
+        ),
+      );
+
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const wrappedHandler = withAuthAnyRole(handler);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(handler).toHaveBeenCalled();
+      expect(response.status).toBe(200);
     });
 
     it("invokes the handler when failOpen=true even if setTenantContext throws", async () => {

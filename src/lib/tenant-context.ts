@@ -30,6 +30,26 @@ export function isValidClinicId(clinicId: string): boolean {
 }
 
 /**
+ * Thrown when `set_tenant_context` is rejected because the current Postgres
+ * role lacks EXECUTE on it (the function is restricted to `service_role`).
+ *
+ * This is the EXPECTED outcome for the anon/authenticated user client: the
+ * `app.current_clinic_id` GUC is best-effort defense-in-depth only, and real
+ * tenant isolation is enforced by RLS (`get_user_clinic_id()` and the
+ * `x-clinic-id` header on the tenant client). Callers that have already
+ * authenticated the user and scope data through RLS may treat this as benign
+ * and continue, instead of failing the request closed. It is surfaced as a
+ * distinct type so callers can tell it apart from genuine, fail-closed-worthy
+ * failures (e.g. the RPC being unreachable).
+ */
+export class TenantContextPermissionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TenantContextPermissionError";
+  }
+}
+
+/**
  * Set the tenant context on a Supabase client by setting the PostgreSQL
  * session variable `app.current_clinic_id`.
  *
@@ -74,7 +94,15 @@ export async function setTenantContext(
       clinicId,
       error,
     });
-    throw new Error(`Tenant context error: failed to set app.current_clinic_id: ${message}`);
+    const detail = `Tenant context error: failed to set app.current_clinic_id: ${message}`;
+    // Permission denied is the EXPECTED result for the anon/authenticated
+    // role (set_tenant_context is service_role-only). Surface it as a typed
+    // error so wrappers like withAuth can continue safely — RLS still enforces
+    // isolation — instead of failing the whole request closed with a 503.
+    if (isPermissionDenied) {
+      throw new TenantContextPermissionError(detail);
+    }
+    throw new Error(detail);
   }
 }
 

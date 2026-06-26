@@ -26,6 +26,16 @@ import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import type { UserRole } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database";
 
+/**
+ * True when `setTenantContext` failed because the current Postgres role lacks
+ * EXECUTE on the service_role-only `set_tenant_context` function — the EXPECTED
+ * outcome for the authenticated user client. Detected by error name (not
+ * `instanceof`) so it stays correct under module mocking and minification.
+ */
+function isTenantContextPermissionError(err: unknown): boolean {
+  return (err as { name?: string } | null | undefined)?.name === "TenantContextPermissionError";
+}
+
 interface AuthenticatedUser {
   id: string;
   email?: string | null;
@@ -192,16 +202,31 @@ export function withAuth<RouteCtx = unknown>(
         try {
           await setTenantContext(supabase, profile.clinic_id);
         } catch (tenantErr) {
-          logger.error("Failed to set tenant context in withAuth", {
-            context: "with-auth",
-            clinicId: profile.clinic_id,
-            failOpen,
-            error: tenantErr,
-          });
-          if (!failOpen) {
-            return finalize(
-              NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 }),
+          if (isTenantContextPermissionError(tenantErr)) {
+            // Expected: the authenticated user role cannot set the
+            // app.current_clinic_id GUC (set_tenant_context is service_role-only).
+            // This is NOT a reason to fail closed — tenant isolation is enforced
+            // by RLS (get_user_clinic_id + the x-clinic-id tenant client), not by
+            // this best-effort session variable. Log at debug and continue.
+            logger.debug(
+              "Tenant GUC not set (expected for authenticated role); RLS enforces isolation",
+              {
+                context: "with-auth",
+                clinicId: profile.clinic_id,
+              },
             );
+          } else {
+            logger.error("Failed to set tenant context in withAuth", {
+              context: "with-auth",
+              clinicId: profile.clinic_id,
+              failOpen,
+              error: tenantErr,
+            });
+            if (!failOpen) {
+              return finalize(
+                NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 }),
+              );
+            }
           }
         }
       }
@@ -383,16 +408,29 @@ export function withAuthAnyRole<RouteCtx = unknown>(
         try {
           await setTenantContext(supabase, profile.clinic_id);
         } catch (tenantErr) {
-          logger.error("Failed to set tenant context in withAuthAnyRole", {
-            context: "with-auth",
-            clinicId: profile.clinic_id,
-            failOpen,
-            error: tenantErr,
-          });
-          if (!failOpen) {
-            return finalize(
-              NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 }),
+          if (isTenantContextPermissionError(tenantErr)) {
+            // Expected for the authenticated user role (set_tenant_context is
+            // service_role-only). RLS — not this GUC — enforces isolation, so
+            // continue instead of failing the request closed.
+            logger.debug(
+              "Tenant GUC not set (expected for authenticated role); RLS enforces isolation",
+              {
+                context: "with-auth-any-role",
+                clinicId: profile.clinic_id,
+              },
             );
+          } else {
+            logger.error("Failed to set tenant context in withAuthAnyRole", {
+              context: "with-auth",
+              clinicId: profile.clinic_id,
+              failOpen,
+              error: tenantErr,
+            });
+            if (!failOpen) {
+              return finalize(
+                NextResponse.json({ error: "Tenant context unavailable" }, { status: 503 }),
+              );
+            }
           }
         }
       }
