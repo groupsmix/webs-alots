@@ -239,30 +239,20 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   }
 
   // --- SMART: Cloudflare Workers AI (free) ---
-  if (intelligence === "smart") {
-    // In the Cloudflare Workers runtime (via @opennextjs/cloudflare), secrets
-    // are stored on getCloudflareContext().env, NOT on process.env. Using
-    // process.env here ALWAYS returned undefined in production, silently
-    // disabling the smart tier and falling back to keyword matching for every
-    // chatbot message. Use getWorkerBinding() with a process.env fallback for
-    // local dev — same pattern as router.ts isWorkersAIConfigured().
-    const cfAccountId =
-      (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
-      ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
-    const cfApiToken =
-      (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
-      ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
-      ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
-      ?? process.env.CLOUDFLARE_AI_TOKEN;
+  // Read CF AI credentials via getWorkerBinding (not process.env — see fix
+  // above). If not configured, skip the smart tier and fall through to the
+  // advanced tier (AI router: groq, openai, etc.) so the chatbot still gets
+  // real AI responses instead of degrading to keyword matching.
+  const cfAccountId =
+    (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
+    ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
+  const cfApiToken =
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
+    ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
+    ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
+    ?? process.env.CLOUDFLARE_AI_TOKEN;
 
-    if (!cfAccountId || !cfApiToken) {
-      const reply = getBasicResponse(lastMessage.content, ctx);
-      return apiSuccess({
-        message: { role: "assistant" as const, content: reply },
-        disclaimer: getAIDisclaimer(),
-      });
-    }
-
+  if (intelligence === "smart" && cfAccountId && cfApiToken) {
     const systemPrompt = buildSystemPrompt(ctx);
     const cfMessages = [{ role: "system" as const, content: systemPrompt }, ...sanitizedMessages];
 
@@ -331,12 +321,9 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       });
     }
 
-    // Fallback to basic keyword matching when AI is unavailable
-    const reply = getBasicResponse(lastMessage.content, ctx);
-    return apiSuccess({
-      message: { role: "assistant" as const, content: reply },
-      disclaimer: getAIDisclaimer(),
-    });
+    // CF AI failed or returned no content — fall through to the advanced tier
+    // (AI router: groq, openai, etc.) instead of degrading to basic keyword
+    // matching. The chatbot should always attempt real AI before giving up.
   }
 
   // --- ADVANCED: OpenAI-compatible API (paid) ---
