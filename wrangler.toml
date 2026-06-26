@@ -74,6 +74,14 @@ binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
+# FEATURE_FLAGS_KV — backs super-admin feature toggles (e.g. ai.enabled global
+# kill switch). Without this binding, PUT /api/super-admin/feature-flags returns
+# 503 KV_UNAVAILABLE and the toggle silently fails in the UI. Namespace
+# provisioned 2026-06 to fix that.
+[[kv_namespaces]]
+binding = "FEATURE_FLAGS_KV"
+id = "223443c0631c4046b72ca8426f733f3c"
+
 # O4 (DEFERRED — provisioning task, not code): Application cache for clinic
 # configs, feature flags, AI status. features.ts prefers this namespace and
 # falls back to a direct Supabase read when the binding is absent, so leaving
@@ -249,6 +257,12 @@ bucket_name = "webs-alots-uploads"
 binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
+
+# FEATURE_FLAGS_KV (production) — see top-level note. Required so the
+# super-admin global AI kill-switch toggle persists instead of 503-ing.
+[[env.production.kv_namespaces]]
+binding = "FEATURE_FLAGS_KV"
+id = "223443c0631c4046b72ca8426f733f3c"
 
 # Uncomment after provisioning APP_CACHE_KV for production:
 # [[env.production.kv_namespaces]]

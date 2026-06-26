@@ -29,6 +29,8 @@ export interface Env {
   ANTHROPIC_API_KEY?: string; // consumed by the CopilotKit runtime
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
   OPENAI_API_KEY?: string;
+  OPENAI_BASE_URL?: string; // OpenAI-compatible endpoint (e.g. mimo)
+  OPENAI_MODEL?: string; // model id for the OpenAI-compatible provider
   DEEPSEEK_API_KEY?: string;
   MISTRAL_API_KEY?: string;
   XAI_API_KEY?: string;
