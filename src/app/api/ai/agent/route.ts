@@ -221,7 +221,7 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
       try {
         // ── Provider selection ──
         const configs = await loadProviderConfigs(planningClient);
-        const provider = selectAvailableProvider(configs);
+        const provider = await selectAvailableProvider(configs);
         if (!provider) {
           controller.enqueue(
             encoder.encode(
