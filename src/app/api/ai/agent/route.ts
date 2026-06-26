@@ -265,7 +265,7 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
         }
 
         // ── Stream with multi-step tool loop (Task A4 + A5) ──
-        const streamResult = callProviderStream(
+        const streamResult = await callProviderStream(
           provider,
           {
             task: "conversation",

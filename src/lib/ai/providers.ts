@@ -253,12 +253,12 @@ export async function callProvider(
  *
  * Token usage is available after the stream completes via `result.usage`.
  */
-export function callProviderStream(
+export async function callProviderStream(
   provider: AIProvider,
   req: AIRequest,
   apiKey: string | null,
   options?: { tools?: unknown; maxSteps?: number },
-): ProviderStreamResult {
+): Promise<ProviderStreamResult> {
   logger.debug("Streaming AI provider", {
     context: "ai-provider",
     provider,

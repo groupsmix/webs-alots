@@ -117,7 +117,7 @@ export function createStreamingChatResponse(
           .map((m) => m.content)
           .join("\n");
 
-        const streamResult = callProviderStream(
+        const streamResult = await callProviderStream(
           provider,
           {
             task: "conversation",
