@@ -1,11 +1,22 @@
 version: 2
 updates:
-  # Enable automated npm dependency updates
+  # npm dependencies.
+  #
+  # Batched MONTHLY and GROUPED so routine minor/patch bumps arrive as a
+  # single rolled-up PR (with auto-merge) instead of ~10 separate PRs every
+  # week. This keeps CVE coverage without the constant churn that made the
+  # repo feel like an endless stream of "blockers". Majors still come through
+  # individually so they get deliberate review.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # CI-004: Allow patch/minor CVE updates for framework deps. Only ignore
       # major bumps which require manual migration work.
@@ -19,12 +30,18 @@ updates:
       - "dependencies"
       - "security"
 
-  # Enable automated GitHub Actions updates
+  # GitHub Actions — batched MONTHLY and grouped into one PR.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      github-actions-all:
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
     labels:
       - "dependencies"
       - "github_actions"
