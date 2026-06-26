@@ -30,6 +30,7 @@ import {
   getAICircuitBreakerSnapshot,
 } from "@/lib/ai/circuit-breaker";
 import { AI_DISCLAIMER_FR } from "@/lib/ai-disclaimer";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
@@ -134,7 +135,7 @@ export async function resolveAIConfig(): Promise<
 
   // One selection path: same rules as routeAIRequest(), restricted to
   // providers the legacy OpenAI-wire-format callers can actually talk to.
-  const provider = selectAvailableProvider(
+  const provider = await selectAvailableProvider(
     configs,
     (p) => p === "workers_ai" || p in OPENAI_COMPAT_BASE_URLS,
   );
@@ -143,7 +144,7 @@ export async function resolveAIConfig(): Promise<
     return { ok: false, reason: NOT_CONFIGURED_REASON, statusCode: 503 };
   }
 
-  return buildProviderConfig(provider, configs);
+  return await buildProviderConfig(provider, configs);
 }
 
 /**
@@ -197,10 +198,10 @@ async function loadEffectiveConfigs(): Promise<Map<AIProvider, ProviderConfig>> 
 }
 
 /** Build the validated AIConfig for the provider the router selected. */
-function buildProviderConfig(
+async function buildProviderConfig(
   provider: AIProvider,
   configs: Map<AIProvider, ProviderConfig>,
-): { ok: true; config: AIConfig } | { ok: false; reason: string; statusCode: number } {
+): Promise<{ ok: true; config: AIConfig } | { ok: false; reason: string; statusCode: number }> {
   // F-AI-14: Per-request seed for OpenAI-compatible reproducibility.
   // Callers should pass this as `seed` in the API request and log it in
   // audit events so any problematic output can be reproduced.
@@ -208,8 +209,17 @@ function buildProviderConfig(
 
   if (provider === "workers_ai") {
     // Free always-last fallback via the Workers AI OpenAI-compatible endpoint.
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime cred for Workers AI fallback
-    const aiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — runtime cred for Workers AI fallback
+    // Use getWorkerBinding() — in CF Workers runtime, secrets live on
+    // getCloudflareContext().env, NOT on process.env. Falling back to
+    // process.env keeps local dev working.
+    const accountId =
+      (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
+      ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
+    const aiToken =
+      (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
+      ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
+      ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
+      ?? process.env.CLOUDFLARE_AI_TOKEN;
     if (!accountId || !aiToken) {
       // selectAvailableProvider() only returns workers_ai when configured;
       // this guards against env changes between check and build.

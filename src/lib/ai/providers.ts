@@ -24,7 +24,7 @@ import {
   recordAICircuitBreakerFailure,
   recordAICircuitBreakerSuccess,
 } from "@/lib/ai/circuit-breaker";
-import { getWorkersAiConfig } from "@/lib/env";
+import { getWorkersAiConfigAsync } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { PROVIDER_MODELS } from "./models";
 import type { AIProvider, AIRequest, TaskComplexity } from "./types";
@@ -90,11 +90,11 @@ export class ProviderError extends Error {
 
 // ── SDK model factory ──
 
-export function createModel(
+export async function createModel(
   provider: AIProvider,
   apiKey: string | null,
   modelOverride?: string,
-): unknown {
+): Promise<unknown> {
   // modelOverride comes from per-task pins (task-config.ts) and is already
   // validated against ALLOWED_MODELS before it reaches this point.
   const modelId = modelOverride ?? PROVIDER_MODELS[provider]?.model ?? "";
@@ -123,7 +123,7 @@ export function createModel(
 
     case "workers_ai": {
       // Workers AI uses the OpenAI-compatible endpoint via @ai-sdk/openai-compatible.
-      const { accountId, apiToken } = getWorkersAiConfig();
+      const { accountId, apiToken } = await getWorkersAiConfigAsync();
       const aiToken = apiToken ?? apiKey;
 
       if (!accountId || !aiToken) {
@@ -196,7 +196,7 @@ export async function callProvider(
   });
 
   try {
-    const model = createModel(provider, apiKey, modelOverride);
+    const model = await createModel(provider, apiKey, modelOverride);
 
     const messages: Array<{ role: "system" | "user"; content: string }> = [];
     if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });
@@ -268,7 +268,7 @@ export function callProviderStream(
 
   const gate = assertAICircuitBreakerAllowsRequests();
 
-  const model = createModel(provider, apiKey);
+  const model = await createModel(provider, apiKey);
 
   const messages: Array<{ role: "system" | "user"; content: string }> = [];
   if (req.systemPrompt) messages.push({ role: "system", content: req.systemPrompt });

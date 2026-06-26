@@ -1278,16 +1278,43 @@ export function getCloudflareApiConfig(): {
 /**
  * Cloudflare Workers AI credentials (OpenAI-compatible endpoint used by
  * src/lib/ai/providers.ts).
+ *
+ * NOTE: In the Cloudflare Workers runtime these values are stored as secrets
+ * on getCloudflareContext().env, NOT in process.env. Use getWorkersAiConfigAsync()
+ * in async request handlers instead of this sync version.
+ * This sync version is kept for backwards compatibility with callers that
+ * cannot be made async (e.g. non-CF environments, tests).
  */
 export function getWorkersAiConfig(): {
   accountId: string | undefined;
   apiToken: string | undefined;
 } {
   return {
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID, // nosemgrep: semgrep.env-access — sync fallback, prefer getWorkersAiConfigAsync in CF runtime
     // CLOUDFLARE_AI_TOKEN is the legacy variable name — kept as a fallback
     // for deployments configured before CLOUDFLARE_AI_API_TOKEN existed.
-    apiToken: process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN,
+    apiToken: process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN, // nosemgrep: semgrep.env-access — sync fallback
+  };
+}
+
+/**
+ * Async version of getWorkersAiConfig — reads from getCloudflareContext().env
+ * first (CF Workers runtime) then falls back to process.env (local dev/tests).
+ */
+export async function getWorkersAiConfigAsync(): Promise<{
+  accountId: string | undefined;
+  apiToken: string | undefined;
+}> {
+  const { getWorkerBinding } = await import("@/lib/cf-bindings");
+  return {
+    accountId:
+      (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
+      ?? process.env.CLOUDFLARE_ACCOUNT_ID, // nosemgrep: semgrep.env-access — local dev fallback
+    apiToken:
+      (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
+      ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
+      ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
+      ?? process.env.CLOUDFLARE_AI_TOKEN,
   };
 }
 

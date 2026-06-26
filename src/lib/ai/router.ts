@@ -16,6 +16,7 @@
  * column (not a quadratic estimate of token counts).
  */
 
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 import { getCachedConfigs, invalidateConfigCache, setCachedConfigs } from "./config-cache";
 import { PROVIDER_MODELS, PROVIDER_PRIORITY, RATE_LIMIT_WINDOW_MS } from "./models";
@@ -96,10 +97,24 @@ async function persistRateLimit(
 // The "always available" fallback isn't actually available if the Cloudflare
 // credentials aren't configured. Check at availability-check time, not just
 // when the call is attempted, so the router can skip it cleanly.
+//
+// IMPORTANT: In the Cloudflare Workers runtime (via @opennextjs/cloudflare),
+// secrets are stored on getCloudflareContext().env, NOT on process.env.
+// Using process.env for secrets always returns undefined in production,
+// causing isWorkersAIConfigured() to return false and silently disabling
+// the Workers AI fallback for every request. Use getWorkerBinding() instead.
 
-function isWorkersAIConfigured(): boolean {
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
-  const apiToken = process.env.CLOUDFLARE_AI_API_TOKEN ?? process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — runtime cred check for built-in fallback provider
+async function isWorkersAIConfigured(): Promise<boolean> {
+  // Try CF binding context first (production Workers runtime)
+  const accountId = await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID")
+    // nosemgrep: semgrep.env-access — fallback for local dev / non-CF runtimes
+    ?? process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken =
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
+    // nosemgrep: semgrep.env-access — fallback for local dev / non-CF runtimes
+    ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
+    ?? process.env.CLOUDFLARE_AI_API_TOKEN
+    ?? process.env.CLOUDFLARE_AI_TOKEN;
   return !!accountId && !!apiToken;
 }
 
@@ -110,12 +125,12 @@ interface ProviderAvailability {
   reason?: string;
 }
 
-function checkProviderAvailable(
+async function checkProviderAvailable(
   provider: AIProvider,
   configs: Map<AIProvider, ProviderConfig>,
-): ProviderAvailability {
+): Promise<ProviderAvailability> {
   if (provider === "workers_ai") {
-    if (!isWorkersAIConfigured()) {
+    if (!(await isWorkersAIConfigured())) {
       return { available: false, reason: "cloudflare_not_configured" };
     }
     return { available: true };
@@ -173,13 +188,13 @@ function buildPriorityList(configs: Map<AIProvider, ProviderConfig>): AIProvider
  * selection system. `isEligible` lets callers restrict candidates (e.g. to
  * OpenAI-wire-compatible providers).
  */
-export function selectAvailableProvider(
+export async function selectAvailableProvider(
   configs: Map<AIProvider, ProviderConfig>,
   isEligible: (provider: AIProvider) => boolean = () => true,
-): AIProvider | null {
+): Promise<AIProvider | null> {
   for (const provider of buildPriorityList(configs)) {
     if (!isEligible(provider)) continue;
-    if (checkProviderAvailable(provider, configs).available) return provider;
+    if ((await checkProviderAvailable(provider, configs)).available) return provider;
   }
   return null;
 }
@@ -234,7 +249,7 @@ export async function routeAIRequest(
   }
 
   for (const provider of priority) {
-    const availability = checkProviderAvailable(provider, configs);
+    const availability = await checkProviderAvailable(provider, configs);
 
     if (!availability.available) {
       logger.debug("AI provider skipped", {
@@ -373,7 +388,7 @@ async function tryProviderWithFallback(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase?: any,
 ): Promise<AIResponse> {
-  const availability = checkProviderAvailable(provider, configs);
+  const availability = await checkProviderAvailable(provider, configs);
 
   if (availability.available) {
     try {
@@ -415,7 +430,7 @@ async function tryProviderWithFallback(
   }
 
   // Fallback to Workers AI — only if configured
-  if (provider !== "workers_ai" && isWorkersAIConfigured()) {
+  if (provider !== "workers_ai" && (await isWorkersAIConfigured())) {
     const providerStart = Date.now();
     const result = await callProvider("workers_ai", request, null);
     const latencyMs = Date.now() - providerStart;
