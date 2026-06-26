@@ -29,6 +29,8 @@ export interface Env {
   ANTHROPIC_API_KEY?: string; // consumed by the CopilotKit runtime
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
   OPENAI_API_KEY?: string;
+  OPENAI_BASE_URL?: string; // OpenAI-compatible endpoint (e.g. mimo)
+  OPENAI_MODEL?: string; // model id for the OpenAI-compatible provider
   DEEPSEEK_API_KEY?: string;
   MISTRAL_API_KEY?: string;
   XAI_API_KEY?: string;
@@ -115,9 +117,20 @@ export async function requireSuperAdmin(
   }
 
   // super_admin users have no clinic_id; this query fetches the calling
-  // user's own role, scoped by their auth UID. (Mirrors the // nosemgrep
-  // annotation in the original handler.)
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  // user's own role, scoped by their auth UID.
+  //
+  // BUGFIX: the auth UID (auth.users.id / user.id) maps to the public.users
+  // `auth_id` column, NOT the `users.id` primary key. Querying `.eq("id",
+  // user.id)` matched zero rows for every account (no row has id == auth_id),
+  // so this returned 403 Forbidden for ALL callers — including valid
+  // super_admins — silently breaking the CopilotKit endpoint even when keys
+  // were configured. The rest of the app (with-auth.ts, AgentWidgetMount)
+  // correctly keys on `auth_id`.
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single();
 
   if (profile?.role !== "super_admin") {
     return {

@@ -25,28 +25,55 @@ let cachedRuntimeModule: any = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let cachedServiceAdapter: any = null;
 
-async function loadRuntime() {
+async function loadRuntime(env: Env) {
   if (cachedRuntimeModule) {
     return { runtimeModule: cachedRuntimeModule, serviceAdapter: cachedServiceAdapter };
   }
   // Dynamic import — see header comment.
   const runtimeModule = await import("@copilotkit/runtime");
-  const serviceAdapter = new runtimeModule.AnthropicAdapter();
+
+  // Provider selection (handler guard guarantees at least one key is set):
+  //   • OPENAI_API_KEY → OpenAI-compatible adapter. Works with ANY
+  //     OpenAI-compatible endpoint via OPENAI_BASE_URL (e.g. mimo, OpenAI,
+  //     groq). OPENAI_MODEL selects the model id.
+  //   • else ANTHROPIC_API_KEY → original Anthropic adapter.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let serviceAdapter: any;
+  if (env.OPENAI_API_KEY) {
+    const { default: OpenAI } = await import("openai");
+    const openai = new OpenAI({
+      apiKey: env.OPENAI_API_KEY,
+      ...(env.OPENAI_BASE_URL ? { baseURL: env.OPENAI_BASE_URL } : {}),
+    });
+    serviceAdapter = new runtimeModule.OpenAIAdapter({
+      openai,
+      ...(env.OPENAI_MODEL ? { model: env.OPENAI_MODEL } : {}),
+    });
+  } else {
+    serviceAdapter = new runtimeModule.AnthropicAdapter();
+  }
+
   cachedRuntimeModule = runtimeModule;
   cachedServiceAdapter = serviceAdapter;
   return { runtimeModule, serviceAdapter };
 }
 
 export async function handleCopilotKit(request: Request, env: Env): Promise<Response> {
-  if (!env.ANTHROPIC_API_KEY) {
-    return jsonResponse({ error: "ANTHROPIC_API_KEY is not configured on webs-alots-ai" }, 500);
+  if (!env.OPENAI_API_KEY && !env.ANTHROPIC_API_KEY) {
+    return jsonResponse(
+      {
+        error:
+          "No AI provider configured on webs-alots-ai (set OPENAI_API_KEY [+ OPENAI_BASE_URL/OPENAI_MODEL] or ANTHROPIC_API_KEY)",
+      },
+      500,
+    );
   }
 
   const authResult = await requireSuperAdmin(request, env);
   if (!authResult.ok) return authResult.response;
   const { userId, userEmail } = authResult;
 
-  const { runtimeModule, serviceAdapter } = await loadRuntime();
+  const { runtimeModule, serviceAdapter } = await loadRuntime(env);
   const { CopilotRuntime, copilotRuntimeNextJSAppRouterEndpoint } = runtimeModule;
 
   const runtime = new CopilotRuntime({
