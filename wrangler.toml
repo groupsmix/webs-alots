@@ -215,6 +215,18 @@ RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in production per SECURITY.md.
 NEXT_PUBLIC_DATA_MASKING = "partial"
 NEXT_PUBLIC_PLAUSIBLE_HOST = "plausible.io"
+# Tenant routing + cron self-invocation. Without ROOT_DOMAIN, extractSubdomain()
+# returns null for every *.oltigo.com host, so clinic subdomains (e.g.
+# demo.oltigo.com) collapse to the marketing site instead of resolving to a
+# tenant, and unknown subdomains never 404. The cron handler also derives its
+# self-base-URL from ROOT_DOMAIN, so without it scheduled jobs refuse to fire.
+ROOT_DOMAIN = "oltigo.com"
+# Seed-account safety. Verified 2026-06: zero seed users in production
+# auth.users / public.users (9 blocklist entries present). These flags only
+# silence the startup seed-guard warnings; the runtime block is the DB
+# seed_user_blocklist, unaffected by them.
+SEED_PASSWORDS_ROTATED = "true"
+SEED_USERS_DELETED = "true"
 
 [[env.production.queues.producers]]
 binding = "NOTIFICATION_QUEUE"
@@ -318,6 +330,8 @@ RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in staging as well.
 NEXT_PUBLIC_DATA_MASKING = "partial"
 NEXT_PUBLIC_PLAUSIBLE_HOST = "plausible.io"
+# Tenant routing on the staging host: clinic.staging.oltigo.com -> "clinic".
+ROOT_DOMAIN = "staging.oltigo.com"
 
 # INF-003: Staging uses a separate R2 bucket to prevent cross-environment
 # PHI contamination. Create with: wrangler r2 bucket create webs-alots-uploads-staging
