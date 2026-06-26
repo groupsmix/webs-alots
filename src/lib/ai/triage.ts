@@ -132,7 +132,7 @@ export async function triageTicket(
   try {
     const supabase = createUntypedAdminClient("ai-triage");
     const configs = await loadProviderConfigs(supabase);
-    const provider = selectAvailableProvider(configs);
+    const provider = await selectAvailableProvider(configs);
 
     if (!provider) {
       logger.warn("No AI provider available for triage", { context: "ai-triage" });

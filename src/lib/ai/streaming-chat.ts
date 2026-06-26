@@ -95,7 +95,7 @@ export function createStreamingChatResponse(
 
         const supabase = createUntypedAdminClient("streaming-chat");
         const configs = await loadProviderConfigs(supabase);
-        const provider = selectAvailableProvider(configs);
+        const provider = await selectAvailableProvider(configs);
         if (!provider) {
           controller.enqueue(
             encoder.encode(

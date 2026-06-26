@@ -63,7 +63,7 @@ export async function extractMemoryFacts(
     const pseudoContent = pseudoObj.text as string;
 
     const configs = await loadProviderConfigs(supabase);
-    const provider = selectAvailableProvider(configs);
+    const provider = await selectAvailableProvider(configs);
     if (!provider) return result;
 
     const config = configs.get(provider);
@@ -292,7 +292,7 @@ export async function consolidateMemories(
     if (remaining.length < 2) return stats;
 
     const configs = await loadProviderConfigs(supabase);
-    const provider = selectAvailableProvider(configs);
+    const provider = await selectAvailableProvider(configs);
     if (!provider) return stats;
 
     const config = configs.get(provider);

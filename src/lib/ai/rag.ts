@@ -186,7 +186,7 @@ async function gradeRelevance(
   if (borderline.length > 0) {
     try {
       const configs = await loadProviderConfigs(supabase);
-      const provider = selectAvailableProvider(configs);
+      const provider = await selectAvailableProvider(configs);
       if (!provider) return chunks;
 
       const config = configs.get(provider);
@@ -237,7 +237,7 @@ async function rewriteQuery(
 ): Promise<string | null> {
   try {
     const configs = await loadProviderConfigs(supabase);
-    const provider = selectAvailableProvider(configs);
+    const provider = await selectAvailableProvider(configs);
     if (!provider) return null;
 
     const config = configs.get(provider);
