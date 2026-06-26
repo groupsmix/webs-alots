@@ -190,7 +190,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   }
 
   // Determine intelligence level
-  const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
+  const intelligence = ctx.chatbotConfig?.intelligence ?? "smart";
 
   // --- BASIC: keyword matching, no AI ---
   // Basic tier is allowed without authentication since it uses no AI

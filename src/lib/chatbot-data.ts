@@ -137,7 +137,7 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
     chatbotConfig: configRes.data
       ? {
           enabled: configRes.data.enabled ?? true,
-          intelligence: (configRes.data.intelligence ?? "basic") as "basic" | "smart" | "advanced",
+          intelligence: (configRes.data.intelligence ?? "smart") as "basic" | "smart" | "advanced",
           greeting: configRes.data.greeting ?? "",
           language: configRes.data.language ?? "fr",
         }
