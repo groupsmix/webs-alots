@@ -202,6 +202,13 @@ NODE_ENV = "production"
 # gdpr-purge, stripe-reconcile, dedup-purge) consult this to refuse to
 # run in staging unless ALLOW_STAGING_DESTRUCTIVE_CRONS=true is set.
 WORKER_ENV = "production"
+# Upload storage: R2 bucket name used by the presigned upload/download URL
+# signer (src/lib/r2.ts). The R2_* credentials are set as Worker secrets, but
+# R2_BUCKET_NAME is non-sensitive and was missing — without it
+# getR2PresignConfig() returns null, isR2Configured() is false, and every
+# /api/upload request 503s ("R2 storage not configured"). Must match the
+# UPLOADS_BUCKET binding's bucket_name below.
+R2_BUCKET_NAME = "webs-alots-uploads"
 # FIXED: KV binding now resolved correctly via getWorkerBinding().
 # Rate limiter is distributed, protected in production.
 RATE_LIMIT_BACKEND = "kv"
@@ -303,6 +310,9 @@ NODE_ENV = "production"
 # return 503 instead of running. Override on a per-Worker basis with
 # ALLOW_STAGING_DESTRUCTIVE_CRONS=true via wrangler secret.
 WORKER_ENV = "staging"
+# Upload storage: staging R2 bucket name for the presigned URL signer.
+# Mirrors the production block; must match the staging UPLOADS_BUCKET binding.
+R2_BUCKET_NAME = "webs-alots-uploads-staging"
 # FIXED: KV binding now resolved correctly via getWorkerBinding().
 RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in staging as well.
