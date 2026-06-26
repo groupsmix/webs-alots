@@ -8,6 +8,7 @@ import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
+import { getWorkerBinding } from "@/lib/cf-bindings";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
@@ -239,8 +240,20 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
   // --- SMART: Cloudflare Workers AI (free) ---
   if (intelligence === "smart") {
-    const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const cfApiToken = process.env.CLOUDFLARE_AI_API_TOKEN;
+    // In the Cloudflare Workers runtime (via @opennextjs/cloudflare), secrets
+    // are stored on getCloudflareContext().env, NOT on process.env. Using
+    // process.env here ALWAYS returned undefined in production, silently
+    // disabling the smart tier and falling back to keyword matching for every
+    // chatbot message. Use getWorkerBinding() with a process.env fallback for
+    // local dev — same pattern as router.ts isWorkersAIConfigured().
+    const cfAccountId =
+      (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
+      ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
+    const cfApiToken =
+      (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
+      ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
+      ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
+      ?? process.env.CLOUDFLARE_AI_TOKEN;
 
     if (!cfAccountId || !cfApiToken) {
       const reply = getBasicResponse(lastMessage.content, ctx);
