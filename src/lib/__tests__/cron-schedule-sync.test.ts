@@ -47,7 +47,8 @@ function getHandlerCrons(): string[] {
 describe("Cron schedule synchronization", () => {
   it("wrangler.toml uses the custom worker entrypoint", () => {
     const content = readWranglerToml();
-    expect(content).toMatch(/\nmain\s*=\s*"worker-cron-handler\.ts"\n/);
+    // Use \r? to tolerate both CRLF (Windows) and LF (Unix) line endings.
+    expect(content).toMatch(/\r?\nmain\s*=\s*"worker-cron-handler\.ts"\r?\n/);
   });
 
   it("wrangler.toml crons match CRON_ROUTES keys exactly", () => {

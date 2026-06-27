@@ -65,6 +65,15 @@ export function ChatbotProvider({
     };
   }, []);
 
+  interface ChatJsonResponse {
+    ok: boolean;
+    data?: {
+      message?: { role: string; content: string };
+      disclaimer?: string;
+      language?: string;
+    };
+  }
+
   const sendMessage = useCallback(
     async (content: string) => {
       const trimmed = content.trim();
@@ -125,12 +134,15 @@ export function ChatbotProvider({
 
           let accumulated = "";
 
+          let lineBuffer = "";
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+            lineBuffer += decoder.decode(value, { stream: true });
+            const lines = lineBuffer.split("\n");
+            lineBuffer = lines.pop() ?? "";
 
             for (const line of lines) {
               if (line === "data: [DONE]") continue;
@@ -157,11 +169,11 @@ export function ChatbotProvider({
           }
         } else {
           // Handle JSON response (basic / smart mode)
-          const data = await response.json();
+          const data = (await response.json()) as ChatJsonResponse;
           const assistantMsg: ChatMessage = {
             id: `msg-${Date.now()}-assistant`,
             role: "assistant",
-            content: data.message?.content || "Sorry, I could not process your request.",
+            content: data.data?.message?.content || t(locale, "chatbot.error"),
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, assistantMsg]);

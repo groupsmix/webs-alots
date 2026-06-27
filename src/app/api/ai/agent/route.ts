@@ -19,7 +19,7 @@ import {
   SITE_TEAM_AGENT_TYPES,
   type SiteTeamAgentType,
 } from "@/lib/ai/prompts";
-import { callProviderStream } from "@/lib/ai/providers";
+import { callProviderStream, callProvider } from "@/lib/ai/providers";
 import { createPseudonymMap, depseudonymise } from "@/lib/ai/pseudonymise";
 import {
   loadProviderConfigs,
@@ -282,12 +282,17 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
 
         let fullContent = "";
         let stepIndex = 0;
+        // Track whether any text-delta chunk was streamed inline. When false,
+        // safeOutput (from the fallback synthesis guard) must be emitted as a
+        // text event after validation — it was never sent over SSE.
+        let textDeltaEmitted = false;
 
         // Stream text and tool events to client
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         for await (const chunk of (streamResult.raw as any).fullStream) {
           if (chunk.type === "text-delta") {
             fullContent += chunk.text;
+            textDeltaEmitted = true;
             controller.enqueue(encoder.encode(sseChunk("text", { content: chunk.text })));
           } else if (chunk.type === "tool-call") {
             stepIndex++;
@@ -336,6 +341,41 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
           }
         }
 
+        // ── Fallback synthesis when tool loop produced no text ──
+        // Bug 2 fix: if the multi-step tool loop terminated with no text-delta
+        // chunks (e.g. Workers AI / Llama ends on a tool-result step),
+        // call the provider once more in non-streaming mode to synthesise
+        // a plain-text summary of the tool results.
+        if (!fullContent.trim()) {
+          try {
+            const fallbackResult = await callProvider(
+              provider,
+              {
+                task: "conversation",
+                complexity: "medium",
+                prompt: `${prompt}\n\n[System: Les outils ont été exécutés. Résume les résultats en une réponse concise à l'utilisateur.]`,
+                systemPrompt,
+                maxTokens: 512,
+                temperature: 0.3,
+                context: "site-team-agent-fallback",
+              },
+              apiKey,
+            );
+            fullContent = fallbackResult.text;
+          } catch (fallbackErr) {
+            logger.warn("Agent fallback text generation failed", {
+              context: "site-team-agent",
+              agentType,
+              clinicId,
+              error: fallbackErr,
+            });
+            // Hard French fallback so validateAIOutput receives a non-empty string
+            // and the user exits the "Réflexion…" state with a useful message.
+            fullContent =
+              "J'ai exécuté les outils demandés. Je n'ai pas pu générer un résumé textuel. Veuillez réessayer.";
+          }
+        }
+
         // ── Output validation ──
         const validatedOutput = validateAIOutput(fullContent);
         const safeOutput = validatedOutput ? depseudonymise(validatedOutput, pseudonymMap) : null;
@@ -352,6 +392,18 @@ async function handlePost(req: NextRequest, auth: AuthContext): Promise<NextResp
           controller.enqueue(encoder.encode(sseChunk("done")));
           controller.close();
           return;
+        }
+
+        // ── Emit fallback synthesis as a text event (Bug 2 fix — Part 2) ──
+        // When the for-await loop above emitted only tool events (no text-delta
+        // chunks), fullContent was populated by the fallback callProvider() call
+        // and safeOutput holds the validated version. Neither was ever sent over
+        // SSE, so we emit it now as a single text event.
+        // When the loop DID produce text-delta events they were already streamed
+        // inline, so we must NOT re-emit them — only emit here when streaming
+        // produced no text.
+        if (!textDeltaEmitted) {
+          controller.enqueue(encoder.encode(sseChunk("text", { content: safeOutput })));
         }
 
         // ── Usage tracking ──
