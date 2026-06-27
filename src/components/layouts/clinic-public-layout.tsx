@@ -1,3 +1,4 @@
+import { Chatbot } from "@/components/chatbot";
 import { DynamicFooter } from "@/components/public/dynamic-footer";
 import { DynamicHeader } from "@/components/public/dynamic-header";
 import { PublicFooter } from "@/components/public/footer";
@@ -58,6 +59,7 @@ export async function ClinicPublicLayout({ children }: { children: React.ReactNo
           template={template}
         />
       )}
+      <Chatbot />
     </div>
   );
 }
