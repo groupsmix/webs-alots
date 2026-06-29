@@ -7,8 +7,8 @@ import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
-import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { getWorkerBinding } from "@/lib/cf-bindings";
+import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
@@ -244,13 +244,12 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   // advanced tier (AI router: groq, openai, etc.) so the chatbot still gets
   // real AI responses instead of degrading to keyword matching.
   const cfAccountId =
-    (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
-    ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
+    (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID")) ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
   const cfApiToken =
-    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
-    ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
-    ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
-    ?? process.env.CLOUDFLARE_AI_TOKEN;
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
+    process.env.CLOUDFLARE_AI_API_TOKEN ?? // nosemgrep: semgrep.env-access — local dev fallback
+    process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — local dev fallback
 
   if (intelligence === "smart" && cfAccountId && cfApiToken) {
     const systemPrompt = buildSystemPrompt(ctx);

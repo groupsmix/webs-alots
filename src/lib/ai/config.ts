@@ -213,13 +213,13 @@ async function buildProviderConfig(
     // getCloudflareContext().env, NOT on process.env. Falling back to
     // process.env keeps local dev working.
     const accountId =
-      (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
-      ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
+      (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID")) ??
+      process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
     const aiToken =
-      (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
-      ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
-      ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
-      ?? process.env.CLOUDFLARE_AI_TOKEN;
+      (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
+      (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
+      process.env.CLOUDFLARE_AI_API_TOKEN ?? // nosemgrep: semgrep.env-access — local dev fallback
+      process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — local dev fallback
     if (!accountId || !aiToken) {
       // selectAvailableProvider() only returns workers_ai when configured;
       // this guards against env changes between check and build.
