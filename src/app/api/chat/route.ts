@@ -249,7 +249,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
     (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
     process.env.CLOUDFLARE_AI_API_TOKEN ?? // nosemgrep: semgrep.env-access — local dev fallback
-    process.env.CLOUDFLARE_AI_TOKEN;
+    process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — local dev fallback
 
   if (intelligence === "smart" && cfAccountId && cfApiToken) {
     const systemPrompt = buildSystemPrompt(ctx);

@@ -219,7 +219,7 @@ async function buildProviderConfig(
       (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
       (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
       process.env.CLOUDFLARE_AI_API_TOKEN ?? // nosemgrep: semgrep.env-access — local dev fallback
-      process.env.CLOUDFLARE_AI_TOKEN;
+      process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — local dev fallback
     if (!accountId || !aiToken) {
       // selectAvailableProvider() only returns workers_ai when configured;
       // this guards against env changes between check and build.

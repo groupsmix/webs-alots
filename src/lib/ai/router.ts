@@ -112,10 +112,9 @@ async function isWorkersAIConfigured(): Promise<boolean> {
     process.env.CLOUDFLARE_ACCOUNT_ID;
   const apiToken =
     (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
-    // nosemgrep: semgrep.env-access — fallback for local dev / non-CF runtimes
     (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
-    process.env.CLOUDFLARE_AI_API_TOKEN ??
-    process.env.CLOUDFLARE_AI_TOKEN;
+    process.env.CLOUDFLARE_AI_API_TOKEN ?? // nosemgrep: semgrep.env-access — local dev fallback
+    process.env.CLOUDFLARE_AI_TOKEN; // nosemgrep: semgrep.env-access — local dev fallback
   return !!accountId && !!apiToken;
 }
 
