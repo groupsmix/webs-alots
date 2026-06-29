@@ -106,15 +106,16 @@ async function persistRateLimit(
 
 async function isWorkersAIConfigured(): Promise<boolean> {
   // Try CF binding context first (production Workers runtime)
-  const accountId = await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID")
+  const accountId =
+    (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID")) ??
     // nosemgrep: semgrep.env-access — fallback for local dev / non-CF runtimes
-    ?? process.env.CLOUDFLARE_ACCOUNT_ID;
+    process.env.CLOUDFLARE_ACCOUNT_ID;
   const apiToken =
-    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
     // nosemgrep: semgrep.env-access — fallback for local dev / non-CF runtimes
-    ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
-    ?? process.env.CLOUDFLARE_AI_API_TOKEN
-    ?? process.env.CLOUDFLARE_AI_TOKEN;
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
+    process.env.CLOUDFLARE_AI_API_TOKEN ??
+    process.env.CLOUDFLARE_AI_TOKEN;
   return !!accountId && !!apiToken;
 }
 

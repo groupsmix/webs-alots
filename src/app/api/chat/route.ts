@@ -244,13 +244,12 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
   // advanced tier (AI router: groq, openai, etc.) so the chatbot still gets
   // real AI responses instead of degrading to keyword matching.
   const cfAccountId =
-    (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID"))
-    ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
+    (await getWorkerBinding<string>("CLOUDFLARE_ACCOUNT_ID")) ?? process.env.CLOUDFLARE_ACCOUNT_ID; // nosemgrep: semgrep.env-access — local dev fallback
   const cfApiToken =
-    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN"))
-    ?? (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN"))
-    ?? process.env.CLOUDFLARE_AI_API_TOKEN // nosemgrep: semgrep.env-access — local dev fallback
-    ?? process.env.CLOUDFLARE_AI_TOKEN;
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_API_TOKEN")) ??
+    (await getWorkerBinding<string>("CLOUDFLARE_AI_TOKEN")) ??
+    process.env.CLOUDFLARE_AI_API_TOKEN ?? // nosemgrep: semgrep.env-access — local dev fallback
+    process.env.CLOUDFLARE_AI_TOKEN;
 
   if (intelligence === "smart" && cfAccountId && cfApiToken) {
     const systemPrompt = buildSystemPrompt(ctx);
