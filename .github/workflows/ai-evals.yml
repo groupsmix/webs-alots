@@ -91,13 +91,21 @@ jobs:
 
       # Always run the full suite. Offline suites gate the PR; the RAG suite
       # runs only when a server + token are present (otherwise it self-skips
-      # and is excluded from totals). EVAL_AUTH_TOKEN is passed through empty
-      # when the secret is absent, which triggers the runner's graceful skip.
+      # and is excluded from totals).
+      #
+      # EVAL_AUTH_TOKEN is forwarded ONLY when the preflight confirmed the
+      # complete live setup (secrets_ok == 'true') — i.e. exactly when the
+      # background server above was actually started. The RAG runner keys its
+      # graceful skip on an empty EVAL_AUTH_TOKEN, so gating the token on
+      # secrets_ok keeps the two conditions in lockstep. Otherwise a partial
+      # secret config (e.g. EVAL_AUTH_TOKEN set but TEST_DATABASE_URL /
+      # OPENAI_API_KEY absent) would run the live RAG suite against a server
+      # that was never booted, and all 15 cases would fail on a dead endpoint.
       - name: Run AI Evaluations
         run: npm run eval:ai
         env:
           API_BASE_URL: http://localhost:3000
-          EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
+          EVAL_AUTH_TOKEN: ${{ steps.preflight.outputs.secrets_ok == 'true' && secrets.EVAL_AUTH_TOKEN || '' }}
 
       - name: Upload Evaluation Results
         if: always()
