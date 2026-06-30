@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import {
-  buildApprovedAdminSql,
+  buildApprovedAdminRpcCall,
   getApprovedAdminQueries,
   selectApprovedAdminQuery,
 } from "@/lib/ai/owner-analytics";
@@ -42,16 +42,13 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
     return apiValidationError("This query template does not support clinic_id filtering");
   }
 
-  const sql = buildApprovedAdminSql(template, {
+  const rpcCall = buildApprovedAdminRpcCall(template, {
     clinicId: parsed.data.clinic_id ?? null,
     limit: parsed.data.limit,
   });
 
   try {
-    const { data, error } = await auth.supabase.rpc(
-      "execute_admin_query" as never,
-      { p_sql: sql } as never,
-    );
+    const { data, error } = await auth.supabase.rpc(rpcCall.fn as never, rpcCall.args as never);
 
     if (error) {
       logger.error("Approved admin query execution failed", {

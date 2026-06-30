@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildApprovedAdminSql,
+  buildApprovedAdminRpcCall,
   buildPlatformAlerts,
   clampAdminQueryLimit,
   computeHealthScoreRecords,
@@ -64,17 +64,29 @@ describe("owner analytics helpers", () => {
     expect(template?.id).toBe("critical_platform_alerts");
   });
 
-  it("builds approved SQL with clamped limit and clinic filter", () => {
+  it("builds an approved RPC call with clamped limit and clinic filter", () => {
     const template = selectApprovedAdminQuery("Top cliniques à risque");
     expect(template).not.toBeNull();
 
-    const sql = buildApprovedAdminSql(template!, {
+    const call = buildApprovedAdminRpcCall(template!, {
       clinicId: "123e4567-e89b-12d3-a456-426614174000",
       limit: 500,
     });
 
     expect(clampAdminQueryLimit(500)).toBe(50);
-    expect(sql).toContain("LIMIT 50");
-    expect(sql).toContain("123e4567-e89b-12d3-a456-426614174000");
+    expect(call.fn).toBe("admin_top_at_risk_clinics");
+    expect(call.args.p_limit).toBe(50);
+    expect(call.args.p_clinic_id).toBe("123e4567-e89b-12d3-a456-426614174000");
+  });
+
+  it("omits the clinic param for templates that do not support clinic filtering", () => {
+    const template = selectApprovedAdminQuery("backlog support de l'équipe");
+    expect(template?.id).toBe("support_backlog");
+
+    const call = buildApprovedAdminRpcCall(template!, { clinicId: "should-be-ignored", limit: 5 });
+
+    expect(call.fn).toBe("admin_support_backlog");
+    expect(call.args.p_limit).toBe(5);
+    expect(call.args).not.toHaveProperty("p_clinic_id");
   });
 });

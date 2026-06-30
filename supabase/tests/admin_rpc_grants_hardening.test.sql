@@ -6,7 +6,8 @@
 -- Migration 00185 removes an undocumented prod-only function
 -- (debug_request_headers) and revokes the stray `anon` EXECUTE grant from four
 -- admin RPCs, while preserving each function's intended caller:
---   - execute_admin_query(text)            -> authenticated
+--   - execute_admin_query(text)            -> DROPPED in 00200 (replaced by the
+--                                             typed admin_* analytics RPCs)
 --   - approve_refund(uuid, uuid)           -> authenticated
 --   - get_super_admin_dashboard_stats()    -> authenticated
 --   - get_all_clinic_signals()             -> service_role ONLY (00169)
@@ -38,13 +39,14 @@ SELECT ok(
 );
 
 -- 2-5. anon cannot EXECUTE any of the four admin RPCs (any overload).
+-- execute_admin_query was DROPPED in 00200, so the strongest invariant is that
+-- it no longer exists at all (and therefore is callable by nobody).
 SELECT ok(
   NOT EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = 'execute_admin_query'
-      AND has_function_privilege('anon', p.oid, 'EXECUTE')
   ),
-  'anon cannot EXECUTE execute_admin_query'
+  'execute_admin_query has been dropped (superseded by the parameterized admin_* RPCs in 00200)'
 );
 
 SELECT ok(
@@ -75,13 +77,15 @@ SELECT ok(
 );
 
 -- 6-8. The intended authenticated callers retain EXECUTE.
+-- (execute_admin_query is gone; its replacement admin_top_at_risk_clinics must
+--  be authenticated-callable instead.)
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'execute_admin_query'
+    WHERE n.nspname = 'public' AND p.proname = 'admin_top_at_risk_clinics'
       AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
   ),
-  'authenticated retains EXECUTE on execute_admin_query'
+  'authenticated retains EXECUTE on admin_top_at_risk_clinics (replaces execute_admin_query)'
 );
 
 SELECT ok(

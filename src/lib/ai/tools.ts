@@ -697,37 +697,9 @@ async function runAnalyticsQuery(input: ToolInput, ctx: AgentToolContext): Promi
   }
 
   if (queryType === "top_at_risk_clinics") {
-    const sql = `
-WITH latest_scores AS (
-  SELECT DISTINCT ON (clinic_id)
-    clinic_id,
-    score,
-    grade,
-    churn_risk,
-    trend,
-    top_risk_signal,
-    computed_at
-  FROM clinic_health_scores
-  ORDER BY clinic_id, computed_at DESC
-)
-SELECT
-  c.id,
-  c.name,
-  c.tier,
-  c.status,
-  ls.score,
-  ls.grade,
-  ls.churn_risk,
-  ls.trend,
-  ls.top_risk_signal,
-  ls.computed_at
-FROM latest_scores ls
-JOIN clinics c ON c.id = ls.clinic_id
-WHERE c.deleted_at IS NULL
-ORDER BY ls.score ASC, ls.computed_at DESC
-LIMIT 10`;
-
-    const { data, error } = await ctx.supabase.rpc("execute_admin_query", { p_sql: sql });
+    // Parameterized SECURITY DEFINER RPC (migration 00200) — replaces the
+    // former raw-SQL execute_admin_query primitive.
+    const { data, error } = await ctx.supabase.rpc("admin_top_at_risk_clinics", { p_limit: 10 });
     if (error) return { ok: false, error: "Analytics query failed", code: "ANALYTICS_ERROR" };
 
     return {

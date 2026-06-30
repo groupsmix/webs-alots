@@ -93,13 +93,28 @@ export type ApprovedAdminQueryId =
   | "critical_platform_alerts"
   | "support_backlog";
 
+/** Names of the typed, parameterized SECURITY DEFINER RPCs (migration 00200). */
+export type AdminAnalyticsRpc =
+  | "admin_top_at_risk_clinics"
+  | "admin_best_performing_clinics"
+  | "admin_stalled_onboardings"
+  | "admin_critical_platform_alerts"
+  | "admin_support_backlog";
+
 export interface ApprovedAdminQueryDefinition {
   id: ApprovedAdminQueryId;
   title: string;
   description: string;
   keywords: string[];
   supportsClinicFilter: boolean;
-  buildSql: (params: { limit: number; clinicId?: string | null }) => string;
+  /** The parameterized RPC invoked for this query (replaces raw SQL). */
+  rpc: AdminAnalyticsRpc;
+}
+
+/** Arguments passed to an approved analytics RPC. */
+export interface ApprovedAdminRpcCall {
+  fn: AdminAnalyticsRpc;
+  args: { p_limit: number; p_clinic_id?: string | null };
 }
 
 const APPROVED_ADMIN_QUERIES: ApprovedAdminQueryDefinition[] = [
@@ -109,35 +124,7 @@ const APPROVED_ADMIN_QUERIES: ApprovedAdminQueryDefinition[] = [
     description: "Liste les cliniques avec le plus faible health score récent.",
     keywords: ["risk", "risque", "churn", "watch", "danger", "critique", "declin"],
     supportsClinicFilter: true,
-    buildSql: ({ limit, clinicId }) => `
-WITH latest_scores AS (
-  SELECT DISTINCT ON (clinic_id)
-    clinic_id,
-    score,
-    grade,
-    churn_risk,
-    trend,
-    top_risk_signal,
-    computed_at
-  FROM clinic_health_scores
-  ORDER BY clinic_id, computed_at DESC
-)
-SELECT
-  c.id,
-  c.name,
-  c.tier,
-  c.status,
-  ls.score,
-  ls.grade,
-  ls.churn_risk,
-  ls.trend,
-  ls.top_risk_signal,
-  ls.computed_at
-FROM latest_scores ls
-JOIN clinics c ON c.id = ls.clinic_id
-WHERE c.deleted_at IS NULL${buildClinicFilter("c.id", clinicId)}
-ORDER BY ls.score ASC, ls.computed_at DESC
-LIMIT ${limit}`,
+    rpc: "admin_top_at_risk_clinics",
   },
   {
     id: "best_performing_clinics",
@@ -145,35 +132,7 @@ LIMIT ${limit}`,
     description: "Liste les cliniques avec le meilleur health score récent.",
     keywords: ["best", "healthy", "healthiest", "perform", "meilleures", "fortes", "top"],
     supportsClinicFilter: true,
-    buildSql: ({ limit, clinicId }) => `
-WITH latest_scores AS (
-  SELECT DISTINCT ON (clinic_id)
-    clinic_id,
-    score,
-    grade,
-    churn_risk,
-    trend,
-    top_strength_signal,
-    computed_at
-  FROM clinic_health_scores
-  ORDER BY clinic_id, computed_at DESC
-)
-SELECT
-  c.id,
-  c.name,
-  c.tier,
-  c.status,
-  ls.score,
-  ls.grade,
-  ls.churn_risk,
-  ls.trend,
-  ls.top_strength_signal,
-  ls.computed_at
-FROM latest_scores ls
-JOIN clinics c ON c.id = ls.clinic_id
-WHERE c.deleted_at IS NULL${buildClinicFilter("c.id", clinicId)}
-ORDER BY ls.score DESC, ls.computed_at DESC
-LIMIT ${limit}`,
+    rpc: "admin_best_performing_clinics",
   },
   {
     id: "stalled_onboardings",
@@ -181,23 +140,7 @@ LIMIT ${limit}`,
     description: "Cliniques en onboarding bloqué depuis plus de 3 jours.",
     keywords: ["onboarding", "stuck", "bloque", "pending", "nudge", "activation"],
     supportsClinicFilter: true,
-    buildSql: ({ limit, clinicId }) => `
-SELECT
-  co.id,
-  co.clinic_id,
-  co.clinic_name,
-  co.specialty,
-  co.status,
-  co.current_step,
-  co.completion_percentage,
-  co.nudge_count,
-  co.step_entered_at,
-  co.last_nudge_at
-FROM clinic_onboardings co
-WHERE co.status IN ('pending', 'in_progress')
-  AND co.step_entered_at < now() - interval '3 days'${buildClinicFilter("co.clinic_id", clinicId)}
-ORDER BY co.step_entered_at ASC
-LIMIT ${limit}`,
+    rpc: "admin_stalled_onboardings",
   },
   {
     id: "critical_platform_alerts",
@@ -205,20 +148,7 @@ LIMIT ${limit}`,
     description: "Alertes plateforme critiques non lues par clinique.",
     keywords: ["alert", "alerte", "incident", "warning", "critical", "urgent"],
     supportsClinicFilter: true,
-    buildSql: ({ limit, clinicId }) => `
-SELECT
-  pa.id,
-  pa.clinic_id,
-  c.name AS clinic_name,
-  pa.alert_type,
-  pa.severity,
-  pa.created_at
-FROM platform_alerts pa
-LEFT JOIN clinics c ON c.id = pa.clinic_id
-WHERE pa.is_read = false
-  AND pa.severity = 'critical'${buildClinicFilter("pa.clinic_id", clinicId)}
-ORDER BY pa.created_at DESC
-LIMIT ${limit}`,
+    rpc: "admin_critical_platform_alerts",
   },
   {
     id: "support_backlog",
@@ -226,26 +156,9 @@ LIMIT ${limit}`,
     description: "Charge support en cours par membre de l'équipe interne.",
     keywords: ["support", "ticket", "backlog", "team", "equipe", "assignment", "triage"],
     supportsClinicFilter: false,
-    buildSql: ({ limit }) => `
-SELECT
-  tm.id AS team_member_id,
-  tm.name,
-  tm.role,
-  tm.is_available,
-  tm.current_ticket_count,
-  COUNT(st.id) FILTER (WHERE st.status IN ('open', 'in_progress')) AS open_tickets,
-  COUNT(st.id) FILTER (WHERE st.ai_priority IN ('critical', 'high')) AS urgent_ai_tickets
-FROM team_members tm
-LEFT JOIN support_tickets st ON st.assigned_team_member_id = tm.id
-GROUP BY tm.id, tm.name, tm.role, tm.is_available, tm.current_ticket_count
-ORDER BY open_tickets DESC, tm.current_ticket_count DESC, tm.name ASC
-LIMIT ${limit}`,
+    rpc: "admin_support_backlog",
   },
 ];
-
-function buildClinicFilter(column: string, clinicId?: string | null): string {
-  return clinicId ? `\n  AND ${column} = '${clinicId}'` : "";
-}
 
 function clampScore(value: number | null | undefined): number {
   const numeric = Number(value ?? 0);
@@ -521,12 +434,13 @@ export function selectApprovedAdminQuery(question: string): ApprovedAdminQueryDe
   return bestScore > 0 ? bestMatch : null;
 }
 
-export function buildApprovedAdminSql(
+export function buildApprovedAdminRpcCall(
   definition: ApprovedAdminQueryDefinition,
   params: { limit?: number | null; clinicId?: string | null },
-): string {
-  return definition.buildSql({
-    limit: clampAdminQueryLimit(params.limit),
-    clinicId: params.clinicId ?? null,
-  });
+): ApprovedAdminRpcCall {
+  const p_limit = clampAdminQueryLimit(params.limit);
+  if (definition.supportsClinicFilter) {
+    return { fn: definition.rpc, args: { p_limit, p_clinic_id: params.clinicId ?? null } };
+  }
+  return { fn: definition.rpc, args: { p_limit } };
 }
