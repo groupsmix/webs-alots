@@ -15,7 +15,14 @@ const wrangler = readFileSync("wrangler.toml", "utf8");
 
 function extractBindings(content: string): string[] {
   const bindings: string[] = [];
-  for (const m of content.matchAll(/binding\s*=\s*"([^"]+)"/g)) {
+  // Strip full-line and trailing TOML comments so commented-out example
+  // bindings (e.g. the not-yet-provisioned APP_CACHE_KV / SUBDOMAIN_KV blocks)
+  // are not mistaken for declared bindings.
+  const active = content
+    .split("\n")
+    .map((line) => line.replace(/(^|\s)#.*$/, "$1"))
+    .join("\n");
+  for (const m of active.matchAll(/binding\s*=\s*"([^"]+)"/g)) {
     bindings.push(m[1]);
   }
   return [...new Set(bindings)];

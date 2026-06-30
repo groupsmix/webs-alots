@@ -51,7 +51,7 @@ NEXT STEPS
 2. Replace the placeholders with the IDs printed above.
 3. Run:
 
-       bun run scripts/check-kv-namespace-collision.mjs
+       npx tsx scripts/check-kv-isolation.ts --strict
 
    to confirm prod and staging IDs differ.
 4. Commit and merge. Staging deploys will succeed again.
