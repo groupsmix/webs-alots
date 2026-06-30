@@ -137,6 +137,11 @@ export default function AIAgentsPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Platform AI capabilities available to {clinicCount > 0 ? clinicCount : "all"} clinics
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            This is the platform-wide capability catalogue (what AI features exist and their rollout
+            status). For the live per-clinic AI team that runs day to day (Marketing, Support,
+            Reminder), see <span className="font-medium">AI Team</span> in the clinic admin area.
+          </p>
         </div>
       </div>
 

@@ -23,6 +23,44 @@ interface KillSwitchState {
 }
 
 /**
+ * Last-known kill-switch state, persisted to localStorage. When the live
+ * status check fails, an admin should not be acting fully blind: we surface
+ * the most recent confirmed state (and when it was seen) alongside the
+ * degraded notice, while still making the unknown state loud.
+ */
+const LAST_KNOWN_KEY = "oltigo:ai-kill-switch:last-known";
+
+interface LastKnown {
+  ai_enabled: boolean;
+  at: string; // ISO timestamp of when this state was last confirmed
+}
+
+function readLastKnown(): LastKnown | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LAST_KNOWN_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<LastKnown>;
+    if (typeof parsed.ai_enabled !== "boolean" || typeof parsed.at !== "string") return null;
+    return { ai_enabled: parsed.ai_enabled, at: parsed.at };
+  } catch {
+    return null;
+  }
+}
+
+function writeLastKnown(ai_enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      LAST_KNOWN_KEY,
+      JSON.stringify({ ai_enabled, at: new Date().toISOString() }),
+    );
+  } catch {
+    // Storage unavailable (private mode / quota) — degrade silently.
+  }
+}
+
+/**
  * Emergency AI kill switch.
  *
  * Stops ALL AI traffic platform-wide by flipping the `ai.enabled` flag in
@@ -34,6 +72,10 @@ export function EmergencyStop() {
   const { addToast } = useToast();
   const [state, setState] = useState<KillSwitchState | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  // Lazy initializer hydrates the last-known state from localStorage on first
+  // render (client-side; readLastKnown returns null under SSR). Doing it here
+  // rather than in an effect avoids a synchronous setState-in-effect.
+  const [lastKnown, setLastKnown] = useState<LastKnown | null>(() => readLastKnown());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [forceStopOpen, setForceStopOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -46,6 +88,9 @@ export function EmergencyStop() {
       const json = (await res.json()) as { ok: boolean; data?: KillSwitchState };
       if (res.ok && json.ok && json.data) {
         setState(json.data);
+        // Persist the confirmed state so a later failure isn't fully blind.
+        writeLastKnown(json.data.ai_enabled);
+        setLastKnown({ ai_enabled: json.data.ai_enabled, at: new Date().toISOString() });
       } else {
         // Resolve to a failed state so the section never spins forever.
         setLoadFailed(true);
@@ -73,6 +118,10 @@ export function EmergencyStop() {
           enabled ? "AI re-enabled platform-wide" : "EMERGENCY STOP — all AI is now disabled",
           enabled ? "success" : "error",
         );
+        // The flip itself is a confirmed state transition — record it even if
+        // the follow-up status read later fails.
+        writeLastKnown(enabled);
+        setLastKnown({ ai_enabled: enabled, at: new Date().toISOString() });
         setDialogOpen(false);
         setForceStopOpen(false);
         setConfirmText("");
@@ -104,6 +153,28 @@ export function EmergencyStop() {
                     You can still force a stop below, or set the{" "}
                     <span className="font-mono">AI_DISABLED</span> environment variable.
                   </p>
+                  {lastKnown ? (
+                    <p className="mt-1 text-xs">
+                      <span className="text-muted-foreground">Last confirmed state: </span>
+                      <span
+                        className={
+                          lastKnown.ai_enabled
+                            ? "font-medium text-green-600 dark:text-green-400"
+                            : "font-medium text-destructive"
+                        }
+                      >
+                        {lastKnown.ai_enabled ? "AI was ENABLED" : "AI was STOPPED"}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        as of {new Date(lastKnown.at).toLocaleString()} (may be stale).
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No previously confirmed state is cached on this device.
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">

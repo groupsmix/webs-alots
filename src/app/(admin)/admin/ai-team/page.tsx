@@ -779,6 +779,11 @@ function AITeamDashboard() {
             <p className="text-xs text-muted-foreground">
               Votre équipe virtuelle d&apos;agents IA pour gérer votre clinique
             </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Les agents actifs au quotidien de votre clinique (Marketing, Support, Rappels). Le
+              catalogue des capacités IA de la plateforme se trouve dans «&nbsp;AI Agents&nbsp;»
+              côté super-admin.
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">

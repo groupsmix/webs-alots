@@ -36,6 +36,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function MarketplacePage() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinguishes a geo-restricted 403 (the catalogue *can't be read* from
+  // here) from a genuinely empty catalogue (seed not applied). Without this,
+  // an admin reading from outside Morocco sees "the seed likely hasn't been
+  // applied" — a misdiagnosis, since the same feature_definitions table is
+  // read fine by the (non-geo-fenced) server actions on the Features page.
+  const [accessBlocked, setAccessBlocked] = useState(false);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "enabled" | "disabled">("all");
@@ -44,8 +50,17 @@ export default function MarketplacePage() {
   const { addToast } = useToast();
 
   const loadFeatures = useCallback(async () => {
+    setAccessBlocked(false);
     try {
       const res = await fetch("/api/admin/marketplace");
+      // 403 here is the admin geo-restriction, not an empty catalogue.
+      if (res.status === 403) {
+        setAccessBlocked(true);
+        logger.warn("Marketplace catalogue is geo-restricted from this location", {
+          context: "marketplace-page",
+        });
+        return;
+      }
       const json = await res.json();
       if (json.ok) {
         setFeatures(json.data.features);
@@ -291,6 +306,23 @@ export default function MarketplacePage() {
           <Loader2 className="h-6 w-6 animate-spin inline mr-2" />
           Loading features...
         </div>
+      ) : accessBlocked ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Package className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <p className="text-sm font-medium">Catalogue unavailable from this location</p>
+            <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+              Admin endpoints are geo-restricted to Morocco, so the marketplace catalogue
+              couldn&apos;t be read from here. This does <strong>not</strong> mean the catalogue is
+              empty or that the <span className="font-mono">feature_definitions</span> seed is
+              missing — the data is read normally from an allowed location. Retry from Morocco, or
+              use the emergency-access path.
+            </p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => loadFeatures()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : features.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
