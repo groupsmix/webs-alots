@@ -1,3 +1,8 @@
+# Abort the commit as soon as any check below fails. Without `set -e` the hook's
+# exit status would be that of the LAST command only, so lint-staged / tsc
+# failures would be silently ignored and the commit would still succeed.
+set -e
+
 npx lint-staged
 NODE_OPTIONS="--max-old-space-size=6144" npx tsc --noEmit
 

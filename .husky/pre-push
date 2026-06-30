@@ -1,3 +1,24 @@
-# Q-53: Run typecheck on changed files before push to catch type errors early
-npx tsc --noEmit 2>&1 | head -50
-npx vitest run --changed --passWithNoTests
+# Abort the push as soon as any check below fails.
+set -e
+
+# Q-53: Run a typecheck before pushing to catch type errors early.
+# NOTE: tsc --noEmit checks the whole project (per tsconfig), not just changed
+# files. Previously this was `tsc --noEmit 2>&1 | head -50`, which reported the
+# exit status of `head` (always 0), so type errors never blocked the push.
+NODE_OPTIONS="--max-old-space-size=6144" npx tsc --noEmit
+
+# Run tests affected by the commits being pushed. `vitest --changed` with no
+# base compares against uncommitted working-tree changes (none at push time, so
+# it would run nothing). Diff against the upstream tracking branch instead,
+# falling back to origin/main, and only when that ref exists locally.
+base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
+if [ -z "$base" ]; then
+  base="origin/main"
+fi
+
+if git rev-parse --verify --quiet "$base" > /dev/null 2>&1; then
+  npx vitest run --changed "$base" --passWithNoTests
+else
+  echo "pre-push: base ref '$base' not found locally — running the full test suite instead"
+  npx vitest run --passWithNoTests
+fi
