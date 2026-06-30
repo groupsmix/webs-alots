@@ -743,8 +743,10 @@ jobs:
   # outside the Next.js tsconfig (which excludes supabase/functions), so this
   # is the only gate covering them — including parse-medical-document, which
   # decrypts and parses PHI. All three functions type-check clean today.
-  # Starts non-blocking (continue-on-error) so the gate cannot block the
-  # pipeline on its first real run; promote to blocking once it is green in CI.
+  # BLOCKING: verified green (deno check exits 0 against all three index.ts),
+  # so a type error in an edge function — the only typecheck covering the
+  # PHI-handling parse-medical-document — now fails the PR instead of being
+  # silently advisory.
   edge-functions:
     runs-on: ubuntu-latest
     name: Edge Functions Type Check (Deno)
@@ -763,7 +765,6 @@ jobs:
         # artifacts), so a committed lockfile would cause spurious integrity
         # failures. Imports are version-pinned in the URLs instead.
         run: deno check --no-lock -c supabase/functions/deno.json supabase/functions/*/index.ts
-        continue-on-error: true
 
   # F-009 / F-054: Dedicated RLS integration test job that runs in parallel
   # with `ci` — never skipped due to lint or build failures. This is the
