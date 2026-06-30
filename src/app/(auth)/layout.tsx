@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { HeroVideo } from "@/components/hero-video";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { t, type Locale } from "@/lib/i18n";
 
@@ -59,18 +60,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* ── Left hero panel (hidden on mobile) ── */}
       <div className="relative hidden lg:flex lg:w-[480px] xl:w-[520px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#005a3b] via-[#00795a] to-[#009e74] text-white">
         {/* Looping background video (decorative). The container gradient acts as
-            a fallback while the video loads or if autoplay is blocked. */}
-        <video
-          className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover motion-reduce:hidden"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          aria-hidden="true"
-        >
-          <source src="/login-bg.mp4" type="video/mp4" />
-        </video>
+            a fallback while the video loads or if autoplay is blocked.
+            HeroVideo is a client component that force-plays the muted loop so
+            it doesn't sit frozen on browsers that block silent autoplay. */}
+        <HeroVideo />
         {/* Brand tint over the video: light enough to let the loop show
             clearly, with a stronger bottom scrim so the white text and
             feature copy stay legible over the brighter video frames. */}
