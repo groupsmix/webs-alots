@@ -461,7 +461,7 @@ export async function calculateUsageBill(
 
   // Use untyped admin client — tenant_usage_log is not yet in generated DB types
   const { createUntypedAdminClient: createAdmin } = await import("@/lib/supabase-server");
-  // nosemgrep: tenant-scoping — scoped below by .eq("clinic_id", clinicId)
+  // nosemgrep: semgrep.tenant-scoping — scoped below by .eq("clinic_id", clinicId)
   const supabase = createAdmin("subscription-billing");
 
   const now = new Date();

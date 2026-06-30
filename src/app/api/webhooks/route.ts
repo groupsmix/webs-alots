@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     // R-07: Use admin client for notification_log updates — webhooks have no
     // user session, so the anon client would silently match 0 rows under RLS.
-    // nosemgrep: admin-client-guard
+    // nosemgrep: semgrep.admin-client-guard
     const admin = createAdminClient("webhook");
 
     for (const entry of entries) {

@@ -31,7 +31,7 @@ interface TierBreakdown {
 
 async function handleGet(_request: NextRequest, _auth: AuthContext) {
   try {
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     // 1. Chatbot adoption overview

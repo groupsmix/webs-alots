@@ -24,7 +24,7 @@ async function handler(_request: NextRequest, auth: AuthContext) {
       // database connectivity. No patient data is returned (head:true, count only).
       // Access is restricted to super_admin role via withAuth.
       const { error: fallbackError } = await auth.supabase
-        .from("users") // nosemgrep: tenant-scoping
+        .from("users") // nosemgrep: semgrep.tenant-scoping
         .select("id", { count: "exact", head: true });
       databaseStatus = fallbackError ? "disconnected" : "connected";
     } else {

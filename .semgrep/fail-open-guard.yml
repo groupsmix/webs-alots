@@ -1,19 +1,25 @@
 rules:
-  # B-03: Require a FAIL_OPEN_REASON comment on any `failOpen: true` usage.
-  # Passing failOpen: true to withAuth/withAuthAnyRole weakens tenant
-  # isolation by allowing requests to proceed when setTenantContext fails.
-  # Each usage must be a deliberate, audited decision with a documented reason.
+  # B-03: Flag every `failOpen: true` usage so each one is a deliberate,
+  # audited decision. Passing failOpen: true to withAuth/withAuthAnyRole
+  # weakens tenant isolation by allowing requests to proceed when
+  # setTenantContext fails.
+  #
+  # NOTE: a `pattern-not-inside` that matched a `// FAIL_OPEN_REASON:` comment
+  # was removed — Semgrep matches against the AST and ignores comments, so that
+  # exception never worked (it silently suppressed nothing / everything). The
+  # idiomatic, working mechanism is an inline suppression: keep a documented
+  # `// FAIL_OPEN_REASON: <why>` line for humans AND a
+  # `// nosemgrep: semgrep.fail-open-guard` on the same line as the reviewed,
+  # intentional usage.
   - id: fail-open-guard
-    patterns:
-      - pattern: "failOpen: true"
-      - pattern-not-inside: |
-          // FAIL_OPEN_REASON: ...
-          ...
+    pattern: "failOpen: true"
     message: >
-      `failOpen: true` detected without a `// FAIL_OPEN_REASON: ...` comment.
-      Passing failOpen weakens tenant isolation — each usage must include a
-      comment explaining why fail-open is safe for this specific route.
-      Add `// FAIL_OPEN_REASON: <explanation>` on the line above.
+      `failOpen: true` detected. Passing failOpen weakens tenant isolation —
+      it lets a request continue even when the tenant session variable that RLS
+      depends on could not be set. Use it ONLY for explicit, read-only routes
+      that never touch tenant data. Document the reason with a
+      `// FAIL_OPEN_REASON: <explanation>` comment and, once reviewed, suppress
+      this finding with `// nosemgrep: semgrep.fail-open-guard`.
     severity: WARNING
     languages: [typescript, javascript]
     paths:

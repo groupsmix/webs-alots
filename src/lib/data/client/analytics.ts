@@ -264,7 +264,7 @@ export async function fetchAnalytics(
       .eq("status", "completed")
       .gte("created_at", `${periodStart}T00:00:00`)
       .lte("created_at", `${periodEnd}T23:59:59`),
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     supabase
       .from("reviews")
       .select("id, stars, created_at")

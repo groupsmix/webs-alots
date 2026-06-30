@@ -47,7 +47,7 @@ export const POST = withAuthValidation(
 
     // Fetch appointment details — scoped to clinic
     const { data: appointment, error: apptError } = await supabase
-      // nosemgrep: tenant-scoping
+      // nosemgrep: semgrep.tenant-scoping
       .from("appointments")
       .select("id, patient_id, doctor_id, status, slot_start")
       .eq("clinic_id", clinicId)
@@ -69,14 +69,14 @@ export const POST = withAuthValidation(
     // Fetch doctor and patient names for the claim
     const [{ data: doctor }, { data: patient }] = await Promise.all([
       supabase
-        // nosemgrep: tenant-scoping
+        // nosemgrep: semgrep.tenant-scoping
         .from("users")
         .select("full_name")
         .eq("id", appointment.doctor_id)
         .eq("clinic_id", clinicId)
         .single(),
       supabase
-        // nosemgrep: tenant-scoping
+        // nosemgrep: semgrep.tenant-scoping
         .from("users")
         .select("full_name")
         .eq("id", appointment.patient_id)

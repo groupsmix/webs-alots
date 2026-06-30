@@ -6,11 +6,11 @@ import { logger } from "@/lib/logger";
 import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
 import type { Database } from "@/lib/types/database";
 
-// Local require-env helper. Uses computed-key access (process.env[name])
-// rather than dot access, so semgrep.env-access does not match. The
-// individual variables it reads are all owned by getters in src/lib/env.ts
-// (see getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey) —
-// the canonical reader is env.ts.
+// Local require-env helper. Reads via computed-key access (process.env[name]).
+// The individual variables it reads are all owned by getters in src/lib/env.ts
+// (see getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey) — the
+// canonical reader is env.ts. The env-access rule also matches bracket access,
+// so the suppressions below are intentional and documented.
 // nosemgrep: semgrep.env-access
 function requireEnv(name: string): string {
   // nosemgrep: semgrep.env-access
@@ -22,20 +22,28 @@ function requireEnv(name: string): string {
 }
 
 /**
- * Get the Supabase URL for server operations.
+ * Get the HTTP base URL for the supabase-js clients below.
  *
- * Priority: SUPABASE_POOLER_URL (Cloudflare Workers + connection pooling)
- *         > NEXT_PUBLIC_SUPABASE_URL (direct connection)
+ * IMPORTANT: `createServerClient` / `createClient` (supabase-js) talk to
+ * PostgREST, GoTrue and Realtime over **HTTPS** — they never open a raw
+ * Postgres TCP connection. The Supabase transaction pooler
+ * (`postgresql://…@…pooler.supabase.com:6543/postgres`) is a Postgres
+ * wire-protocol endpoint for *direct* DB drivers (migrations, backups via
+ * `SUPABASE_DB_URL`), so it must NOT be used as the base URL here — doing so
+ * would point every REST/Auth call at an invalid origin and break the app.
+ * PostgREST already pools connections server-side (Supavisor), so supabase-js
+ * gains nothing from the pooler URL. See `src/lib/connection-pooling.ts`.
  *
- * Audit finding #8: Workers have no persistent TCP connections. Direct
- * connections to Supabase port 5432 exhaust the database connection limit.
- * The pooler (port 6543, transaction mode) prevents this at scale.
- *
- * Set SUPABASE_POOLER_URL as a Cloudflare Workers secret. Format:
- *   postgresql://postgres.xxx@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
+ * For backward compatibility we still honour `SUPABASE_POOLER_URL` if (and
+ * only if) it was set to an HTTP(S) origin; any `postgresql://` value is
+ * ignored in favour of the canonical `NEXT_PUBLIC_SUPABASE_URL`.
  */
 function getSupabaseUrl(): string {
-  return getSupabasePoolerUrl() || requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const poolerUrl = getSupabasePoolerUrl();
+  if (poolerUrl && /^https?:\/\//i.test(poolerUrl)) {
+    return poolerUrl;
+  }
+  return requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 }
 
 /**
@@ -289,7 +297,7 @@ export function createUntypedAdminClient(auditLabel: AdminAuditLabel, clinicId?:
  * The raw `createAdminClient()` should only be used for truly cross-tenant
  * operations (e.g. iterating all clinics, super-admin actions).
  *
- * @param purpose - Audit label for the admin client usage
+ * @param auditLabel - Audit label for the admin client usage
  * @param clinicId - The clinic UUID to scope operations to
  * @throws Error if clinicId is missing or invalid
  */
@@ -378,28 +386,7 @@ function applyChaos<T>(supabase: T): T {
       if (prop === "from") {
         return (table: string) => {
           // @ts-expect-error Proxying complex Supabase types is hard
-          const builder = target.from(table);
-
-          // Wrap .select(), .insert(), .update(), .delete()
-          return new Proxy(builder, {
-            get(builderTarget, builderProp) {
-              const original = builderTarget[builderProp];
-
-              if (
-                typeof original === "function" &&
-                ["select", "insert", "update", "delete"].includes(String(builderProp))
-              ) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                return async function (...args: any[]) {
-                  return withChaos("database_timeout", async () => {
-                    return original.apply(builderTarget, args);
-                  });
-                };
-              }
-
-              return original;
-            },
-          });
+          return wrapChaosBuilder(target.from(table));
         };
       }
 
@@ -407,4 +394,53 @@ function applyChaos<T>(supabase: T): T {
       return target[prop];
     },
   });
+}
+
+/**
+ * Wrap a PostgREST query builder so chaos is injected at execution time
+ * (when the builder's thenable resolves) instead of around each chain method.
+ *
+ * The previous implementation wrapped `.select()/.insert()/.update()/.delete()`
+ * in `async` functions, which turned them into Promises and broke every
+ * filtered chain (`.select(...).eq(...)` → "eq is not a function"). Supabase
+ * builders are thenable and most filter methods return the same builder, so we
+ * intercept `then` and re-wrap any builder a method returns, keeping the full
+ * chain intact while still simulating timeouts/failures on the final await.
+ */
+function wrapChaosBuilder<T extends object>(builder: T): T {
+  return new Proxy(builder, {
+    get(target, prop, receiver) {
+      if (prop === "then") {
+        // Execute the real query inside the chaos wrapper on await.
+        return (
+          onFulfilled?: (value: unknown) => unknown,
+          onRejected?: (reason: unknown) => unknown,
+        ) =>
+          withChaos("database_timeout", () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const thenable = target as unknown as PromiseLike<any>;
+            return Promise.resolve(thenable);
+          }).then(onFulfilled, onRejected);
+      }
+
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === "function") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (...args: any[]) => {
+          const result = (value as (...a: unknown[]) => unknown).apply(target, args);
+          // Re-wrap chainable builders (objects that are still thenable) so
+          // chaos continues to apply no matter how deep the chain goes.
+          if (
+            result &&
+            typeof result === "object" &&
+            typeof (result as { then?: unknown }).then === "function"
+          ) {
+            return wrapChaosBuilder(result as object);
+          }
+          return result;
+        };
+      }
+      return value;
+    },
+  }) as T;
 }

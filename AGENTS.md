@@ -8,6 +8,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Oltigo Health — Agent Guide
 
+> **Before editing code, read [`.ai/TASK-ROUTER.md`](.ai/TASK-ROUTER.md)** — it maps each task
+> type to the exact files to edit and the SEALED files to never touch. For UI work, also read
+> [`.ai/skills/ui-ux/SKILL.md`](.ai/skills/ui-ux/SKILL.md). A self-contained launch-blocker
+> audit prompt lives at [`.ai/prompts/BLOCKER-AUDIT-PROMPT.md`](.ai/prompts/BLOCKER-AUDIT-PROMPT.md).
+
 ## Architecture Overview
 
 Oltigo Health is a **multi-tenant SaaS** healthcare platform for Moroccan clinics.

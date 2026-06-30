@@ -1,14 +1,16 @@
 /**
- * Vertical Definitions — Plugin architecture for business verticals.
+ * Vertical identifiers for the supported business verticals
+ * (healthcare, beauty, restaurant, fitness, veterinary).
  *
- * Each vertical (healthcare, beauty, restaurant, fitness, veterinary)
- * defines its own config in ONE place: terminology, default features,
- * default services, template presets, and category mappings.
+ * This module is intentionally just the `VerticalId` union — the single source
+ * of truth for which verticals exist. There is no `VerticalDefinition` type,
+ * no `src/lib/config/verticals/` directory, and no `vertical-registry.ts`.
  *
- * Adding a new vertical is a 15-minute config task:
- * 1. Create a new file in src/lib/config/verticals/
- * 2. Export a VerticalDefinition
- * 3. Import it in vertical-registry.ts
+ * Adding a new vertical:
+ * 1. Add its id to the `VerticalId` union below.
+ * 2. Wire up its vertical-specific config in the files that key off `VerticalId`:
+ *    `src/lib/template-presets.ts`, `src/lib/config/clinic-types.ts`,
+ *    `src/lib/config/default-services.ts`, and `src/lib/features.ts`.
  */
 
 /** Vertical ID — each business vertical has a unique string identifier. */

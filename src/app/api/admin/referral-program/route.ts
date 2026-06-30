@@ -34,7 +34,7 @@ async function handleGet(_request: NextRequest, auth: AuthContext) {
   }
 
   try {
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     const referralData = await getOrCreateReferralCode(supabase, clinicId, profile.id);
@@ -140,7 +140,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
   const { code } = parsed.data;
 
   try {
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     const result = await applyReferralCode(supabase, code, clinicId);

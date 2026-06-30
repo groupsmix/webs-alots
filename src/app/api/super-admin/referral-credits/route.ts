@@ -26,7 +26,7 @@ const patchSchema = z.object({
 
 async function handleGet(_request: NextRequest, _auth: AuthContext) {
   try {
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     // Fetch pending credits joined with clinic name
@@ -191,7 +191,7 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
   const now = new Date().toISOString();
 
   try {
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     // Fetch the credit to verify it exists and is pending

@@ -42,7 +42,7 @@ export default function ProfilePage() {
       if (!user) return;
 
       const { data: userRow } = await supabase
-        .from("users") // nosemgrep: tenant-scoping — super-admin querying own profile by auth_id
+        .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin querying own profile by auth_id
         .select("name, role")
         .eq("auth_id", user.id)
         .single();
@@ -75,7 +75,7 @@ export default function ProfilePage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // nosemgrep: tenant-scoping — super-admin updating own profile by auth_id
+      // nosemgrep: semgrep.tenant-scoping — super-admin updating own profile by auth_id
       await supabase.from("users").update({ name: name.trim() }).eq("auth_id", user.id);
 
       await supabase.auth.updateUser({
