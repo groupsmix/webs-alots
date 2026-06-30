@@ -31,6 +31,11 @@ export default function ApiDocsPage() {
           layout: "modern",
           hideModels: false,
           hideDownloadButton: false,
+          // Use system fonts instead of fetching from fonts.scalar.com, which the
+          // app's strict CSP (font-src 'self') blocks — that produced ~14 console
+          // errors and fell back to default fonts anyway. Self-hosting avoids both
+          // the CSP violations and the external dependency.
+          withDefaultFonts: false,
         }}
       />
     </div>
