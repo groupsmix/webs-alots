@@ -108,7 +108,7 @@ export const POST = withAuthValidation(
         // Rollback: release the slot claim if patient resolution fails
         await supabase
           .from("emergency_slots")
-          // nosemgrep: tenant-scoping — clinic_id filter is on the next line
+          // nosemgrep: semgrep.tenant-scoping — clinic_id filter is on the next line
           .update({ is_booked: false })
           .eq("id", body.slotId)
           .eq("clinic_id", clinicId);
@@ -144,7 +144,7 @@ export const POST = withAuthValidation(
         // Rollback: release the slot claim if appointment creation fails
         await supabase
           .from("emergency_slots")
-          // nosemgrep: tenant-scoping — clinic_id filter is on the next line
+          // nosemgrep: semgrep.tenant-scoping — clinic_id filter is on the next line
           .update({ is_booked: false })
           .eq("id", body.slotId)
           .eq("clinic_id", clinicId);

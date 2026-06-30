@@ -597,7 +597,7 @@ export async function createConsentForm(
   data: { consentType: string; consentText: string },
 ): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("photo_consent_forms")
     .insert({
@@ -683,7 +683,7 @@ export async function createConsultationPhoto(
   data: { bodyArea: string; notes: string; photoUrl?: string },
 ): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("consultation_photos")
     .insert({
@@ -829,7 +829,7 @@ export async function createDialysisSession(
   },
 ): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("dialysis_sessions")
     .insert({
@@ -1001,7 +1001,7 @@ export async function createIVFCycle(
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
     .eq("patient_id", patientId);
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("ivf_cycles")
     .insert({
@@ -1104,7 +1104,7 @@ export async function createIVFProtocol(
   },
 ): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("ivf_protocols")
     .insert({
@@ -1243,7 +1243,7 @@ export async function createTreatmentPackage(
   },
 ): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("treatment_packages")
     .insert({
@@ -1389,7 +1389,7 @@ export async function createProstheticOrder(
     .split(/[,\s]+/)
     .map((t) => parseInt(t.trim()))
     .filter((n) => Number.isFinite(n) && n > 0);
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("prosthetic_orders")
     .insert({

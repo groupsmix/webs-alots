@@ -1154,7 +1154,11 @@ export function enforceEmailProviderExclusivity(): void {
 // This ensures validateEnv() validation runs at startup before any accessor
 // is called, and avoids spreading raw process.env reads across the codebase.
 
-/** Supabase public URL. Always set; throws if missing in production. */
+/**
+ * Supabase public URL (HTTPS PostgREST origin). Returns "" when unset so
+ * callers can guard with `if (url)`; `validateEnv()` enforces presence in
+ * production at startup. This is a non-throwing accessor by design.
+ */
 export function getSupabaseUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 }
@@ -1187,16 +1191,6 @@ export function getPhiEncryptionKey(): string | undefined {
 /** Stripe secret key. */
 export function getStripeSecretKey(): string | undefined {
   return process.env.STRIPE_SECRET_KEY;
-}
-
-/**
- * External EHR API key. Used by the `http-resilience-example.ts` illustrative
- * patterns. Returns undefined when not configured; callers should null-check
- * before use. No central validation entry: the EHR integration is opt-in and
- * the example file documents the pattern even when the key is not set.
- */
-export function getExternalEhrApiKey(): string | undefined {
-  return process.env.EXTERNAL_EHR_API_KEY;
 }
 
 /** Stripe webhook secret. */
@@ -1471,16 +1465,6 @@ export function getAnthropicApiKey(): string | undefined {
 /** E2B sandbox API key for AI Builder code execution. */
 export function getE2bApiKey(): string | undefined {
   return process.env.E2B_API_KEY;
-}
-
-/** Drug database provider. */
-export function getDrugDbProvider(): string {
-  return process.env.DRUG_DB_PROVIDER ?? "openfda";
-}
-
-/** Vidal API Key. */
-export function getVidalApiKey(): string | undefined {
-  return process.env.VIDAL_API_KEY;
 }
 
 /** Insurance provider. */

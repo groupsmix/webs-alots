@@ -21,7 +21,7 @@ export const GET = withAuth(async () => {
 
     try {
       // prettier-ignore
-      // nosemgrep: tenant-scoping
+      // nosemgrep: semgrep.tenant-scoping
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webhooksResult = await supabase.from("webhook_retry_queue" as any).select("status").in("status", ["pending", "failed"]);
 
@@ -44,7 +44,7 @@ export const GET = withAuth(async () => {
 
     try {
       // prettier-ignore
-      // nosemgrep: tenant-scoping
+      // nosemgrep: semgrep.tenant-scoping
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const notificationsResult = await supabase.from("notification_queue" as any).select("status, next_attempt_at").in("status", ["pending", "failed"]);
 

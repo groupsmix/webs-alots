@@ -107,7 +107,7 @@ async function insertDocument(
   // is clinic-keyed; every read path filters .eq("clinic_id", ...). The insert
   // passes a variable, not an inline { clinic_id, ... } literal, so the
   // tenant-scoping matcher can't see the key, so suppress that false positive.
-  // nosemgrep: tenant-scoping
+  // nosemgrep: semgrep.tenant-scoping
   const { data, error } = await supabase
     .from("patient_files")
     .insert(row)

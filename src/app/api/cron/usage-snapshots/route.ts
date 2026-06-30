@@ -31,7 +31,7 @@ async function handler(request: NextRequest) {
   const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
   // Fetch all active clinics
-  // nosemgrep: tenant-scoping — intentional cross-tenant query for cron job
+  // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant query for cron job
   const { data: clinics, error: clinicsError } = await supabase
     .from("clinics")
     .select("id, name, is_active")

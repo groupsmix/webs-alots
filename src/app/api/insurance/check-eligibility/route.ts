@@ -32,7 +32,7 @@ export const POST = withAuthValidation(
 
     // Verify patient belongs to this clinic
     const { data: patient, error: patientError } = await supabase
-      // nosemgrep: tenant-scoping
+      // nosemgrep: semgrep.tenant-scoping
       .from("users")
       .select("id, clinic_id")
       .eq("id", patient_id)

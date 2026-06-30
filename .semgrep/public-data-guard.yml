@@ -1,13 +1,18 @@
 rules:
-  # R-16: Ban createAdminClient in public data files (sitemap, robots).
-  # These files should only use anon/public clients to prevent leaking
-  # private data into publicly-crawlable endpoints.
+  # R-16: Ban service-role Supabase clients in public data files (sitemap,
+  # robots). These files are publicly crawlable and must only use anon/public
+  # clients (createPublicAnonClient) to prevent leaking private, RLS-protected
+  # data. All service-role factories are banned here, not just createAdminClient.
   - id: public-data-no-admin-client
-    patterns:
+    pattern-either:
       - pattern: createAdminClient(...)
+      - pattern: createUntypedAdminClient(...)
+      - pattern: createScopedAdminClient(...)
+      - pattern: createServiceClient(...)
     message: >
-      createAdminClient() is banned in sitemap/robots files. Use
-      createPublicAnonClient() instead to prevent leaking private data
+      Service-role Supabase client (createAdminClient / createUntypedAdminClient /
+      createScopedAdminClient / createServiceClient) is banned in sitemap/robots
+      files. Use createPublicAnonClient() instead to prevent leaking private data
       into publicly-crawlable endpoints.
     severity: ERROR
     languages: [typescript, javascript]
