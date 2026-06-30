@@ -19,13 +19,15 @@
 #   R2_BACKUP_BUCKET         — R2 bucket name for backups
 #
 # Optional environment variables:
-#   BACKUP_ENCRYPTION_KEY    — passphrase to encrypt backups (AES-256-CBC via
-#                              openssl enc + PBKDF2). NOTE: openssl's `enc`
-#                              utility does not support AEAD modes (GCM/CCM),
-#                              so integrity is enforced separately by verifying
-#                              the gzip stream (gunzip -t) after decryption and
-#                              before any restore — a corrupt/tampered backup
-#                              is rejected instead of being loaded into psql.
+#   BACKUP_ENCRYPTION_KEY    — passphrase to encrypt backups. The dump is
+#                              encrypted with AES-256-CBC (openssl enc +
+#                              PBKDF2) and authenticated with an HMAC-SHA256
+#                              sidecar (Encrypt-then-MAC), since openssl's
+#                              `enc` does not support AEAD modes. The HMAC is
+#                              verified before decryption, so corrupt/tampered
+#                              backups are rejected rather than restored.
+#                              Backups created before this change have no
+#                              sidecar and fall back to a gzip integrity check.
 #   BACKUP_RETENTION_DAYS    — Number of days to retain (default: 30)
 #   SLACK_BACKUP_WEBHOOK_URL — Slack webhook for failure alerts
 #   BACKUP_ALERT_EMAIL       — Email address for failure alerts
@@ -51,6 +53,56 @@ NC='\033[0m'
 log_info()  { echo -e "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] ${GREEN}[INFO]${NC}  $1"; }
 log_warn()  { echo -e "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] ${YELLOW}[WARN]${NC}  $1"; }
 log_error() { echo -e "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] ${RED}[ERROR]${NC} $1"; }
+
+# ── Authenticated encryption (Encrypt-then-MAC) ──────────────
+#
+# openssl's `enc` cannot do AEAD (GCM/CCM), so we authenticate the AES-256-CBC
+# ciphertext ourselves with an HMAC-SHA256 sidecar (<file>.hmac). The MAC is
+# verified BEFORE decryption (the correct Encrypt-then-MAC order), so a
+# corrupt or tampered backup is rejected without ever being decrypted/loaded.
+#
+# The MAC key is derived from BACKUP_ENCRYPTION_KEY via HMAC over a fixed,
+# public domain-separation label. The passphrase is fed to openssl on STDIN
+# (never as a command-line argument), so it does not leak via the process list.
+
+derive_mac_key() {
+  printf '%s' "${BACKUP_ENCRYPTION_KEY}" \
+    | openssl dgst -sha256 -hmac "oltigo-backup-hmac-v1" \
+    | awk '{print $NF}'
+}
+
+# hmac_file <path> — print the hex HMAC-SHA256 of a file.
+hmac_file() {
+  local key
+  key="$(derive_mac_key)"
+  openssl dgst -sha256 -hmac "${key}" "$1" | awk '{print $NF}'
+}
+
+# write_hmac <ciphertext> — write <ciphertext>.hmac alongside the ciphertext.
+write_hmac() {
+  hmac_file "$1" > "$1.hmac"
+}
+
+# authenticate_ciphertext <ciphertext> <sidecar|""> — verify integrity.
+# Returns 0 if authenticated (or if the file is a legacy backup with no
+# sidecar, in which case it warns and lets the caller fall back to the gzip
+# integrity check so old backups stay restorable during a DR).
+authenticate_ciphertext() {
+  local enc="$1" sidecar="$2"
+  if [[ -z "${sidecar}" || ! -s "${sidecar}" ]]; then
+    log_warn "No HMAC sidecar found — legacy unauthenticated backup. Falling back to gzip integrity check only."
+    return 0
+  fi
+  local expected actual
+  expected="$(tr -d '[:space:]' < "${sidecar}")"
+  actual="$(hmac_file "${enc}")"
+  if [[ -z "${actual}" || "${expected}" != "${actual}" ]]; then
+    log_error "HMAC authentication FAILED — backup is corrupt or tampered. Refusing to decrypt."
+    return 1
+  fi
+  log_info "HMAC-SHA256 authentication passed."
+  return 0
+}
 
 # ── Alert helpers ────────────────────────────────────────────
 
@@ -88,7 +140,8 @@ trap_handler() {
     send_failure_alert "Script exited with code ${EXIT_CODE}"
   fi
   # Clean up temp files
-  rm -f "/tmp/backup_"*.sql.gz "/tmp/backup_"*.sql.gz.enc "/tmp/verify_backup_"*.sql.gz 2>/dev/null || true
+  rm -f "/tmp/backup_"*.sql.gz "/tmp/backup_"*.sql.gz.enc "/tmp/backup_"*.sql.gz.enc.hmac \
+        "/tmp/verify_backup_"*.sql.gz "/tmp/verify_backup_"*.hmac "/tmp/restore_"* 2>/dev/null || true
 }
 trap trap_handler EXIT
 
@@ -196,12 +249,21 @@ if [[ "${BACKUP_TYPE}" == "verify" ]]; then
       rm -f "${VERIFY_FILE}"
       exit 1
     fi
-    DECRYPTED_FILE="${VERIFY_FILE%.enc}"
+    # Download the HMAC sidecar (if any) and authenticate the ciphertext
+    # BEFORE decrypting.
+    SIDECAR_FILE="${VERIFY_FILE}.hmac"
+    aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/${LATEST}.hmac" \
+      "${SIDECAR_FILE}" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null || SIDECAR_FILE=""
+    if ! authenticate_ciphertext "${VERIFY_FILE}" "${SIDECAR_FILE}"; then
+      rm -f "${VERIFY_FILE}" "${SIDECAR_FILE:-}"
+      exit 1
+    fi
+    DECRYPTED_FILE="${VERIFY_FILE}.dec"
     openssl enc -aes-256-cbc -d -pbkdf2 \
       -in "${VERIFY_FILE}" \
       -out "${DECRYPTED_FILE}" \
       -pass "env:BACKUP_ENCRYPTION_KEY"
-    rm -f "${VERIFY_FILE}"
+    rm -f "${VERIFY_FILE}" "${SIDECAR_FILE:-}"
     VERIFY_FILE="${DECRYPTED_FILE}"
   fi
 
@@ -267,12 +329,21 @@ if [[ "${BACKUP_TYPE}" == "restore" ]]; then
       rm -f "${RESTORE_FILE}"
       exit 1
     fi
-    DECRYPTED_FILE="${RESTORE_FILE%.enc}"
+    # Download the HMAC sidecar (if any) and authenticate the ciphertext
+    # BEFORE decrypting.
+    SIDECAR_FILE="${RESTORE_FILE}.hmac"
+    aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/${RESTORE_TARGET}.hmac" \
+      "${SIDECAR_FILE}" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null || SIDECAR_FILE=""
+    if ! authenticate_ciphertext "${RESTORE_FILE}" "${SIDECAR_FILE}"; then
+      rm -f "${RESTORE_FILE}" "${SIDECAR_FILE:-}"
+      exit 1
+    fi
+    DECRYPTED_FILE="${RESTORE_FILE}.dec"
     openssl enc -aes-256-cbc -d -pbkdf2 \
       -in "${RESTORE_FILE}" \
       -out "${DECRYPTED_FILE}" \
       -pass "env:BACKUP_ENCRYPTION_KEY"
-    rm -f "${RESTORE_FILE}"
+    rm -f "${RESTORE_FILE}" "${SIDECAR_FILE:-}"
     RESTORE_FILE="${DECRYPTED_FILE}"
   fi
 
@@ -326,9 +397,11 @@ if [[ -n "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
     -out "${ENC_FILEPATH}" \
     -pass "env:BACKUP_ENCRYPTION_KEY"
   rm -f "${FILEPATH}"
+  # Encrypt-then-MAC: authenticate the ciphertext with an HMAC-SHA256 sidecar.
+  write_hmac "${ENC_FILEPATH}"
   FILEPATH="${ENC_FILEPATH}"
   FILENAME="${FILENAME}.enc"
-  log_info "Backup encrypted with AES-256-CBC (integrity verified via gzip check on restore)"
+  log_info "Backup encrypted (AES-256-CBC) and authenticated (HMAC-SHA256 sidecar)"
 else
   log_warn "BACKUP_ENCRYPTION_KEY not set — backup stored unencrypted."
 fi
@@ -341,6 +414,13 @@ aws s3 cp "${FILEPATH}" \
   "s3://${R2_BACKUP_BUCKET}/backups/${BACKUP_TYPE}/${FILENAME}" \
   --endpoint-url "${R2_ENDPOINT}"
 
+# Upload the HMAC sidecar alongside an encrypted backup.
+if [[ -f "${FILEPATH}.hmac" ]]; then
+  aws s3 cp "${FILEPATH}.hmac" \
+    "s3://${R2_BACKUP_BUCKET}/backups/${BACKUP_TYPE}/${FILENAME}.hmac" \
+    --endpoint-url "${R2_ENDPOINT}"
+fi
+
 log_info "Upload complete."
 
 # ── Rotate old backups ──────────────────────────────────────
@@ -351,15 +431,23 @@ rotate_backups() {
 
   log_info "Rotating ${TYPE} backups (keeping last ${KEEP})..."
 
+  # Count only primary backup objects (ignore .hmac sidecars), then delete
+  # each rotated-out backup together with its sidecar.
   aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/" \
     --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+    | awk '{print $4}' \
+    | grep -v '\.hmac$' \
+    | grep -v '^$' \
     | sort -r \
     | tail -n +$((KEEP + 1)) \
-    | while read -r _ _ _ KEY; do
+    | while read -r KEY; do
         if [[ -n "${KEY}" ]]; then
           log_warn "Deleting old backup: ${KEY}"
           aws s3 rm "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/${KEY}" \
             --endpoint-url "${R2_ENDPOINT}"
+          # Remove the HMAC sidecar too, if present.
+          aws s3 rm "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/${KEY}.hmac" \
+            --endpoint-url "${R2_ENDPOINT}" 2>/dev/null || true
         fi
       done
 }
@@ -371,5 +459,5 @@ rotate_backups "monthly" 6
 
 # ── Cleanup ──────────────────────────────────────────────────
 
-rm -f "${FILEPATH}"
+rm -f "${FILEPATH}" "${FILEPATH}.hmac"
 log_info "Backup complete: backups/${BACKUP_TYPE}/${FILENAME}"

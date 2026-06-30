@@ -34,6 +34,41 @@ log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_step()  { echo -e "\n${BLUE}══════════════════════════════════════════${NC}"; echo -e "${BLUE}  $1${NC}"; echo -e "${BLUE}══════════════════════════════════════════${NC}"; }
 
+# ── Authenticated-backup helpers (Encrypt-then-MAC) ──────────
+# Mirror scripts/backup.sh: verify the HMAC-SHA256 sidecar over the AES-256-CBC
+# ciphertext before decrypting. The passphrase is fed to openssl on STDIN, so
+# it never appears in the process list. Legacy backups without a sidecar fall
+# back to the gzip integrity check so they remain restorable in a DR.
+
+derive_mac_key() {
+  printf '%s' "${BACKUP_ENCRYPTION_KEY}" \
+    | openssl dgst -sha256 -hmac "oltigo-backup-hmac-v1" \
+    | awk '{print $NF}'
+}
+
+hmac_file() {
+  local key
+  key="$(derive_mac_key)"
+  openssl dgst -sha256 -hmac "${key}" "$1" | awk '{print $NF}'
+}
+
+authenticate_ciphertext() {
+  local enc="$1" sidecar="$2"
+  if [[ -z "${sidecar}" || ! -s "${sidecar}" ]]; then
+    log_warn "No HMAC sidecar found — legacy unauthenticated backup. Falling back to gzip integrity check only."
+    return 0
+  fi
+  local expected actual
+  expected="$(tr -d '[:space:]' < "${sidecar}")"
+  actual="$(hmac_file "${enc}")"
+  if [[ -z "${actual}" || "${expected}" != "${actual}" ]]; then
+    log_error "HMAC authentication FAILED — backup is corrupt or tampered. Refusing to decrypt."
+    return 1
+  fi
+  log_info "HMAC-SHA256 authentication passed."
+  return 0
+}
+
 SKIP_DB=false
 SKIP_SEED=false
 RESTORE_DB=false
@@ -203,13 +238,21 @@ if [[ "${RESTORE_DB}" == "true" ]]; then
       rm -f "${RESTORE_FILE}"
       exit 1
     fi
+    # Download the HMAC sidecar (if any) and authenticate BEFORE decrypting.
+    SIDECAR_FILE="${RESTORE_FILE}.hmac"
+    aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${RESTORE_PREFIX}/${LATEST}.hmac" \
+      "${SIDECAR_FILE}" --endpoint-url "${R2_ENDPOINT}" 2>/dev/null || SIDECAR_FILE=""
+    if ! authenticate_ciphertext "${RESTORE_FILE}" "${SIDECAR_FILE}"; then
+      rm -f "${RESTORE_FILE}" "${SIDECAR_FILE:-}"
+      exit 1
+    fi
     log_info "Decrypting backup..."
     DECRYPTED_FILE="${RESTORE_FILE%.enc}"
     openssl enc -aes-256-cbc -d -pbkdf2 \
       -in "${RESTORE_FILE}" \
       -out "${DECRYPTED_FILE}" \
       -pass "env:BACKUP_ENCRYPTION_KEY"
-    rm -f "${RESTORE_FILE}"
+    rm -f "${RESTORE_FILE}" "${SIDECAR_FILE:-}"
     RESTORE_FILE="${DECRYPTED_FILE}"
   fi
 

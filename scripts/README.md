@@ -51,14 +51,16 @@ or `manual` (operator-run).
 
 ## Backup & disaster recovery
 
-| Script       | Language | Run by  | Purpose                                                                                           |
-| ------------ | -------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `backup.sh`  | Bash     | CI/cron | `pg_dump` the database, optionally encrypt, upload to R2, rotate. Also `list`/`verify`/`restore`. |
-| `r2-sync.sh` | Bash     | manual  | Replicate the primary R2 bucket to a replica bucket (`--verify` to compare counts).               |
-| `recover.sh` | Bash     | manual  | One-click disaster recovery (schema push, seed, deploy, secrets, restore).                        |
+| Script       | Language | Run by  | Purpose                                                                                                                               |
+| ------------ | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `backup.sh`  | Bash     | CI/cron | `pg_dump` the database, optionally encrypt (AES-256-CBC + HMAC-SHA256 sidecar), upload to R2, rotate. Also `list`/`verify`/`restore`. |
+| `r2-sync.sh` | Bash     | manual  | Replicate the primary R2 bucket to a replica bucket (`--verify` to compare counts).                                                   |
+| `recover.sh` | Bash     | manual  | One-click disaster recovery (schema push, seed, deploy, secrets, restore).                                                            |
 
 > Note: `backup.sh` backs up the **database only**. R2 object replication is a
-> separate concern handled by `r2-sync.sh`.
+> separate concern handled by `r2-sync.sh`. Encrypted backups are authenticated
+> (Encrypt-then-MAC): the HMAC sidecar is verified before decryption on
+> `verify`/`restore`, so a tampered or corrupt backup is rejected rather than loaded.
 
 ## Seeding & local dev
 
