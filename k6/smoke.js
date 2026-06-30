@@ -37,11 +37,13 @@ import { Rate } from "k6/metrics";
 // ── Custom metrics ──────────────────────────────────────────────────────────
 
 /**
- * HTTP-layer availability: tracks whether the endpoint returned an expected
- * HTTP status (2xx or the documented 503 for degraded). This is intentionally
- * separated from JSON-body assertion checks so a malformed response body does
- * not falsely trip the availability SLO — the HTTP layer may be healthy even
- * when the JSON shape is wrong, and those are different failure modes.
+ * HTTP-layer availability: tracks whether each endpoint returned an expected
+ * HTTP status. "Expected" is per-endpoint: ping must be exactly 200; status and
+ * health accept 200 or the documented 503; landing accepts any 2xx/3xx. This is
+ * intentionally separated from JSON-body assertion checks so a malformed
+ * response body does not falsely trip the availability SLO — the HTTP layer may
+ * be healthy even when the JSON shape is wrong, and those are different failure
+ * modes.
  */
 const httpAvailability = new Rate("http_availability");
 
