@@ -72,16 +72,14 @@ export function EmergencyStop() {
   const { addToast } = useToast();
   const [state, setState] = useState<KillSwitchState | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [lastKnown, setLastKnown] = useState<LastKnown | null>(null);
+  // Lazy initializer hydrates the last-known state from localStorage on first
+  // render (client-side; readLastKnown returns null under SSR). Doing it here
+  // rather than in an effect avoids a synchronous setState-in-effect.
+  const [lastKnown, setLastKnown] = useState<LastKnown | null>(() => readLastKnown());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [forceStopOpen, setForceStopOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [working, setWorking] = useState(false);
-
-  // Hydrate last-known state on mount so a first-load failure still has context.
-  useEffect(() => {
-    setLastKnown(readLastKnown());
-  }, []);
 
   const fetchState = useCallback(async () => {
     setLoadFailed(false);
