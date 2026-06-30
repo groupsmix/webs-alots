@@ -16,14 +16,31 @@
  */
 import { readFileSync } from "node:fs";
 
-const fr = JSON.parse(readFileSync("src/locales/fr.json", "utf8"));
-const baseline = JSON.parse(readFileSync(".i18n-coverage-baseline.json", "utf8"));
+/** Read + parse a JSON file, failing with a clear message instead of a stack trace. */
+function readJson(path) {
+  let raw;
+  try {
+    raw = readFileSync(path, "utf8");
+  } catch {
+    console.error(`::error::Required file not found: ${path}`);
+    process.exit(1);
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error(`::error::Invalid JSON in ${path}: ${err?.message ?? err}`);
+    process.exit(1);
+  }
+}
+
+const fr = readJson("src/locales/fr.json");
+const baseline = readJson(".i18n-coverage-baseline.json");
 
 const TARGET_LOCALES = Object.keys(baseline);
 
 /** Keys non-empty in fr but empty/missing in the target locale. */
 function untranslatedKeys(locale) {
-  const dict = JSON.parse(readFileSync(`src/locales/${locale}.json`, "utf8"));
+  const dict = readJson(`src/locales/${locale}.json`);
   const missing = [];
   for (const [key, value] of Object.entries(fr)) {
     if (value === "" || value == null) continue; // fr itself empty — ignore

@@ -20,7 +20,7 @@ Status legend: `[ ]` pending · `[x]` done · `(n/a)` not applicable.
 - [ ] Paste the printed `id` and `preview_id` into `wrangler.toml`
       under `[[env.staging.kv_namespaces]]`, replacing the
       `REPLACE_BEFORE_STAGING_DEPLOY_*` placeholders.
-- [ ] Run `bun run scripts/check-kv-namespace-collision.mjs --strict`
+- [ ] Run `npx tsx scripts/check-kv-isolation.ts --strict`
       locally to confirm. Commit and merge.
 
 ## 2. Cloudflare Notifications — billing-anomaly alert (HIGH, #2)

@@ -19,7 +19,13 @@
 #   R2_BACKUP_BUCKET         — R2 bucket name for backups
 #
 # Optional environment variables:
-#   BACKUP_ENCRYPTION_KEY    — AES-256-CBC key to encrypt backups
+#   BACKUP_ENCRYPTION_KEY    — passphrase to encrypt backups (AES-256-CBC via
+#                              openssl enc + PBKDF2). NOTE: openssl's `enc`
+#                              utility does not support AEAD modes (GCM/CCM),
+#                              so integrity is enforced separately by verifying
+#                              the gzip stream (gunzip -t) after decryption and
+#                              before any restore — a corrupt/tampered backup
+#                              is rejected instead of being loaded into psql.
 #   BACKUP_RETENTION_DAYS    — Number of days to retain (default: 30)
 #   SLACK_BACKUP_WEBHOOK_URL — Slack webhook for failure alerts
 #   BACKUP_ALERT_EMAIL       — Email address for failure alerts
@@ -92,8 +98,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "${SCRIPT_DIR}")"
 
 if [[ -f "${PROJECT_ROOT}/.env" ]]; then
-  # shellcheck disable=SC1091
-  source "${PROJECT_ROOT}/.env"
+  # Load .env to fill gaps ONLY — values already present in the environment
+  # (e.g. CI secrets or values passed on the command line) take precedence and
+  # must not be clobbered by a stale .env on the backup host.
+  set -a
+  # shellcheck disable=SC1090,SC1091
+  source <(
+    while IFS= read -r line; do
+      case "${line}" in
+        ''|\#*) continue ;;
+      esac
+      key="${line%%=*}"
+      key="${key#export }"
+      key="${key// /}"
+      [[ "${key}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+      # Skip keys that are already set in the environment.
+      [[ -n "${!key:-}" ]] && continue
+      printf '%s\n' "${line}"
+    done < "${PROJECT_ROOT}/.env"
+  )
+  set +a
 fi
 
 # ── Validate environment ─────────────────────────────────────
@@ -260,6 +284,13 @@ if [[ "${BACKUP_TYPE}" == "restore" ]]; then
     exit 0
   fi
 
+  # Integrity gate: never load a corrupt/truncated/tampered dump into the DB.
+  if ! gunzip -t "${RESTORE_FILE}" 2>/dev/null; then
+    log_error "Backup failed gzip integrity check — refusing to restore a corrupt backup."
+    rm -f "${RESTORE_FILE}"
+    exit 1
+  fi
+
   log_info "Restoring database..."
   gunzip -c "${RESTORE_FILE}" | psql "${SUPABASE_DB_URL}"
 
@@ -297,7 +328,7 @@ if [[ -n "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
   rm -f "${FILEPATH}"
   FILEPATH="${ENC_FILEPATH}"
   FILENAME="${FILENAME}.enc"
-  log_info "Backup encrypted with AES-256-CBC"
+  log_info "Backup encrypted with AES-256-CBC (integrity verified via gzip check on restore)"
 else
   log_warn "BACKUP_ENCRYPTION_KEY not set — backup stored unencrypted."
 fi

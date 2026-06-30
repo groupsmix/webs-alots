@@ -3,8 +3,13 @@
 /**
  * A147-01: Weekly orphan subdomain detection.
  *
- * Compares active clinic subdomains (from Supabase) against Cloudflare DNS
- * wildcard resolution to detect orphaned subdomains that could be hijacked.
+ * Subdomains are served by a single wildcard route (*.oltigo.com), so every
+ * possible subdomain "resolves" in DNS — a DNS probe would flag everything and
+ * is therefore useless here. Instead this compares the set of inactive/deleted
+ * clinic subdomains against the set of active ones (both from Supabase) and
+ * reports subdomains that are no longer owned by an active clinic yet would
+ * still be served by the wildcard route — i.e. candidates for hijack/reuse
+ * that need an explicit deny rule or tenant cleanup.
  *
  * Usage:
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/check-orphan-subdomains.mjs
@@ -59,7 +64,7 @@ async function alertSlack(orphans) {
   const text = [
     ":warning: *Orphan Subdomain Alert (A147-01)*",
     "",
-    `Found ${orphans.length} orphaned subdomain(s) that are inactive/deleted but still DNS-resolvable:`,
+    `Found ${orphans.length} orphaned subdomain(s) that are inactive/deleted but still served by the wildcard route:`,
     ...orphans.map((s) => `• \`${s}.oltigo.com\``),
     "",
     "Action: Verify these subdomains are safe or add explicit DNS deny rules.",

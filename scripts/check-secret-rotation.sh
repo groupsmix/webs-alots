@@ -51,9 +51,11 @@ echo ""
 for SECRET in "${!CADENCE[@]}"; do
   MAX_AGE_DAYS=${CADENCE[$SECRET]}
 
-  # Find the most recent rotation date for this secret in the log
+  # Find the most recent rotation date for this secret in the log.
+  # Use -oE (POSIX ERE) rather than -oP (GNU/PCRE-only) so this also works
+  # on the BSD grep shipped with macOS.
   LAST_DATE=$(grep -i "$SECRET" "$LOG_FILE" 2>/dev/null | \
-    grep -oP '\d{4}-\d{2}-\d{2}' | \
+    grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | \
     sort -r | head -1 || true)
 
   if [ -z "$LAST_DATE" ]; then

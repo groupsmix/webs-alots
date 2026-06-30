@@ -167,20 +167,33 @@ if [[ "${RESTORE_DB}" == "true" ]]; then
   export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
   export AWS_DEFAULT_REGION="auto"
 
-  # Find the latest backup
+  # Find the latest backup, falling back daily -> weekly -> monthly.
+  RESTORE_PREFIX="daily"
   LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/daily/" \
     --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
     | sort -r | head -1 | awk '{print $4}')
 
   if [[ -z "${LATEST}" ]]; then
-    log_error "No backups found in R2 bucket."
+    for P in weekly monthly; do
+      LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${P}/" \
+        --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+        | sort -r | head -1 | awk '{print $4}')
+      if [[ -n "${LATEST}" ]]; then
+        RESTORE_PREFIX="${P}"
+        break
+      fi
+    done
+  fi
+
+  if [[ -z "${LATEST}" ]]; then
+    log_error "No backups found in R2 bucket (checked daily, weekly, monthly)."
     exit 1
   fi
 
-  log_info "Found latest backup: ${LATEST}"
+  log_info "Found latest backup: ${RESTORE_PREFIX}/${LATEST}"
   RESTORE_FILE="/tmp/restore_${LATEST}"
 
-  aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/daily/${LATEST}" \
+  aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${RESTORE_PREFIX}/${LATEST}" \
     "${RESTORE_FILE}" --endpoint-url "${R2_ENDPOINT}"
 
   # Check if backup is encrypted
@@ -201,6 +214,27 @@ if [[ "${RESTORE_DB}" == "true" ]]; then
   fi
 
   log_info "Restoring database (this may take a few minutes)..."
+
+  # Integrity gate: refuse to load a corrupt/truncated dump into the DB.
+  if ! gunzip -t "${RESTORE_FILE}" 2>/dev/null; then
+    log_error "Backup failed gzip integrity check — refusing to restore a corrupt backup."
+    rm -f "${RESTORE_FILE}"
+    exit 1
+  fi
+
+  # Destructive: confirm before overwriting. Set FORCE_RESTORE=true for
+  # unattended DR runs (e.g. from an automated runbook).
+  log_warn "This will OVERWRITE the database at SUPABASE_DB_URL with backup '${LATEST}'."
+  if [[ "${FORCE_RESTORE:-}" != "true" ]]; then
+    log_warn "Type 'yes' to continue (or re-run with FORCE_RESTORE=true to skip this prompt):"
+    read -r CONFIRM
+    if [[ "${CONFIRM}" != "yes" ]]; then
+      log_info "Restore cancelled."
+      rm -f "${RESTORE_FILE}"
+      exit 0
+    fi
+  fi
+
   gunzip -c "${RESTORE_FILE}" | psql "${SUPABASE_DB_URL}"
 
   rm -f "${RESTORE_FILE}"

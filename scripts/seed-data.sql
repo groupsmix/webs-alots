@@ -8,13 +8,13 @@
 -- 1. Sample Clinics (one per type)
 -- ============================================================
 
-INSERT INTO clinics (id, name, subdomain, clinic_type, tier, is_active, settings)
+INSERT INTO clinics (id, name, subdomain, type, clinic_type_key, tier, is_active, config)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'Cabinet Dr. Ahmed', 'dr-ahmed', 'doctor', 'pro', true,
+  ('00000000-0000-0000-0000-000000000001', 'Cabinet Dr. Ahmed Benali', 'demo', 'doctor', 'general_medicine', 'pro', true,
    '{"primary_color":"#2563eb","secondary_color":"#1e40af","timezone":"Africa/Casablanca","ramadan_mode":false}'::jsonb),
-  ('00000000-0000-0000-0000-000000000002', 'Clinique Dentaire Sourire', 'sourire-dental', 'dentist', 'cabinet', true,
+  ('00000000-0000-0000-0000-000000000002', 'Clinique Dentaire Sourire de Casablanca', 'sourire-dental', 'dentist', 'dental_clinic', 'pro', true,
    '{"primary_color":"#0891b2","secondary_color":"#0e7490","timezone":"Africa/Casablanca"}'::jsonb),
-  ('00000000-0000-0000-0000-000000000003', 'Pharmacie Centrale', 'pharmacie-centrale', 'pharmacy', 'vitrine', true,
+  ('00000000-0000-0000-0000-000000000003', 'Pharmacie Centrale Rabat', 'pharmacie-centrale', 'pharmacy', 'pharmacy', 'cabinet', true,
    '{"primary_color":"#16a34a","secondary_color":"#15803d","timezone":"Africa/Casablanca"}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 
@@ -58,7 +58,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 -- After seeding, you can log in with the test accounts above.
 -- The subdomain routing in development uses:
---   http://dr-ahmed.localhost:3000  -> Doctor dashboard
+--   http://demo.localhost:3000  -> Doctor dashboard
 --   http://sourire-dental.localhost:3000 -> Dentist dashboard
 --   http://pharmacie-centrale.localhost:3000 -> Pharmacy dashboard
 --
