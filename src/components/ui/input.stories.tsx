@@ -40,7 +40,7 @@ export const Search: Story = {
 };
 
 export const Disabled: Story = {
-  args: { disabled: true, placeholder: "Champ désactivé", value: "Non modifiable" },
+  args: { disabled: true, placeholder: "Champ désactivé", defaultValue: "Non modifiable" },
 };
 
 export const WithLabel: Story = {

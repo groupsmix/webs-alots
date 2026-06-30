@@ -1,12 +1,47 @@
 /* eslint-disable i18next/no-literal-string -- Storybook stories are dev-only, no i18n needed */
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useEffect, type ReactNode } from "react";
 import { AITeamKanban } from "./ai-team-kanban";
 import type { TeamTask } from "./ai-team-kanban";
+
+/**
+ * Stubs `window.fetch` for the task-transition endpoint so the action buttons
+ * (approve / request changes / cancel / retry) resolve successfully inside
+ * Storybook instead of failing with "Erreur réseau" (there is no backend in
+ * the preview). The original fetch is restored on unmount. This is intentionally
+ * dependency-free rather than pulling in MSW.
+ */
+function MockTransitionApi({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/ai/team/tasks")) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return originalFetch(input, init);
+    }) as typeof window.fetch;
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+  return <>{children}</>;
+}
 
 const meta: Meta<typeof AITeamKanban> = {
   title: "Admin/AITeamKanban",
   component: AITeamKanban,
   tags: ["autodocs"],
+  decorators: [
+    (Story) => (
+      <MockTransitionApi>
+        <Story />
+      </MockTransitionApi>
+    ),
+  ],
   parameters: {
     layout: "fullscreen",
     docs: {

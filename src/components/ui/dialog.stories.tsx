@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "./button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -25,14 +24,17 @@ type Story = StoryObj<typeof Dialog>;
 function DefaultDialogDemo() {
   const [open, setOpen] = useState(true);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger onClick={() => setOpen(true)}>
-        <Button variant="outline">Ouvrir le dialogue</Button>
-      </DialogTrigger>
-      {open && (
-        <DialogContent onClose={() => setOpen(false)}>
+    <>
+      {/* Trigger lives OUTSIDE <Dialog> — the Dialog renders nothing while
+          closed, so keeping the trigger here is what lets the dialog be
+          reopened after it has been dismissed. */}
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        Ouvrir le dialogue
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent onClose={() => setOpen(false)} aria-labelledby="confirm-cancel-title">
           <DialogHeader>
-            <DialogTitle>Confirmer l&apos;annulation</DialogTitle>
+            <DialogTitle id="confirm-cancel-title">Confirmer l&apos;annulation</DialogTitle>
             <DialogDescription>
               Êtes-vous sûr de vouloir annuler ce rendez-vous ? Le patient sera notifié par
               WhatsApp.
@@ -47,8 +49,8 @@ function DefaultDialogDemo() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      )}
-    </Dialog>
+      </Dialog>
+    </>
   );
 }
 
@@ -59,14 +61,12 @@ export const Default: Story = {
 function WithFormDialogDemo() {
   const [open, setOpen] = useState(true);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger onClick={() => setOpen(true)}>
-        <Button>Nouveau patient</Button>
-      </DialogTrigger>
-      {open && (
-        <DialogContent onClose={() => setOpen(false)}>
+    <>
+      <Button onClick={() => setOpen(true)}>Nouveau patient</Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent onClose={() => setOpen(false)} aria-labelledby="add-patient-title">
           <DialogHeader>
-            <DialogTitle>Ajouter un patient</DialogTitle>
+            <DialogTitle id="add-patient-title">Ajouter un patient</DialogTitle>
             <DialogDescription>Remplissez les informations du nouveau patient.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -90,8 +90,8 @@ function WithFormDialogDemo() {
             <Button onClick={() => setOpen(false)}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
-      )}
-    </Dialog>
+      </Dialog>
+    </>
   );
 }
 

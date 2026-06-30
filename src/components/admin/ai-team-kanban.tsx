@@ -169,6 +169,7 @@ function TaskCard({
 
         {/* History timeline toggle */}
         <button
+          type="button"
           className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
           onClick={() => setHistoryOpen(!historyOpen)}
         >
@@ -179,7 +180,7 @@ function TaskCard({
         {historyOpen && (task.history_events ?? []).length > 0 && (
           <div className="mt-1 space-y-1 border-l-2 border-muted pl-2">
             {(task.history_events ?? []).map((evt, i) => (
-              <div key={i} className="text-[10px] text-muted-foreground">
+              <div key={`${evt.at}-${evt.type}-${i}`} className="text-[10px] text-muted-foreground">
                 <span className="font-medium">{evt.type}</span>
                 {typeof evt.payload?.from === "string" && typeof evt.payload?.to === "string" && (
                   <span>
