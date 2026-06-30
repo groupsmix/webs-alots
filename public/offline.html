@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -57,9 +57,41 @@
   <body>
     <div class="container">
       <div class="icon">&#128268;</div>
-      <h1>Vous êtes hors connexion</h1>
-      <p>Veuillez vérifier votre connexion Internet et réessayer.</p>
-      <button onclick="window.location.reload()">Réessayer</button>
+      <h1 id="title">Vous êtes hors connexion</h1>
+      <p id="message">Veuillez vérifier votre connexion Internet et réessayer.</p>
+      <button id="retry" type="button">Réessayer</button>
     </div>
+
+    <!--
+      The retry handler is attached via addEventListener instead of an inline
+      onclick attribute so it never depends on CSP `'unsafe-inline'` /
+      `'unsafe-hashes'`. This page is also excluded from the middleware CSP
+      matcher (see src/middleware.ts), so it remains a robust offline fallback.
+
+      Locale awareness: the static shell defaults to French, then swaps to
+      Arabic (RTL) when the browser's primary language is Arabic, mirroring the
+      app's fr/ar i18n without needing a server round-trip.
+    -->
+    <script>
+      (function () {
+        var retry = document.getElementById("retry");
+        if (retry) {
+          retry.addEventListener("click", function () {
+            window.location.reload();
+          });
+        }
+
+        var lang = (navigator.language || "fr").toLowerCase();
+        if (lang.indexOf("ar") === 0) {
+          document.documentElement.lang = "ar";
+          document.documentElement.dir = "rtl";
+          document.title = "غير متصل — Oltigo";
+          document.getElementById("title").textContent = "أنت غير متصل بالإنترنت";
+          document.getElementById("message").textContent =
+            "يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.";
+          retry.textContent = "إعادة المحاولة";
+        }
+      })();
+    </script>
   </body>
 </html>
