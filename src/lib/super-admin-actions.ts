@@ -25,6 +25,7 @@ import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
+import { isKnownJunkSubdomain } from "@/lib/validations/known-junk-tenants";
 
 /**
  * Server-side Supabase client scoped to super_admin operations.
@@ -1600,6 +1601,14 @@ export interface ClientSubscription {
   trialEndsAt?: string;
   cancelledAt?: string;
   invoices: ClientInvoice[];
+  /**
+   * True when this clinic is one of the known-junk / test tenants that
+   * migration 00173 quarantined (status set to 'suspended'). Lets the UI
+   * separate quarantined keyboard-mash from real suspensions so the
+   * suspended count is not read as catastrophic churn (Audit F-2 item 2).
+   * Optional: treat undefined as false.
+   */
+  isQuarantinedJunk?: boolean;
 }
 
 const TIER_NAMES: Record<string, string> = {
@@ -1695,7 +1704,7 @@ export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> 
   const supabase = await rawClient();
 
   const [clinicsRes, paymentsRes] = await Promise.all([
-    supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
+    supabase.from("clinics").select("id, name, type, tier, status, subdomain, config, created_at"),
     supabase
       .from("payments")
       .select("id, clinic_id, amount, status, created_at")
@@ -1772,6 +1781,7 @@ export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> 
       paymentMethod: "Carte bancaire",
       autoRenew: c.status === "active",
       invoices,
+      isQuarantinedJunk: isKnownJunkSubdomain(c.subdomain),
     };
   });
 }
