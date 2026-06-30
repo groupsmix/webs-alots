@@ -2,6 +2,15 @@
 
 > Frozen on **2026-05-30** as part of cleanup wave C1.
 
+> **Note (historical snapshot):** The numbers below record the state at freeze
+> time and are intentionally _not_ updated as the codebase changes. The live,
+> CI-enforced values are the source of truth and currently are: ESLint warning
+> baseline **3,457** (`.eslint-warning-baseline`); coverage floors
+> **14% statements / 11% branches / 14% lines / 11% functions**
+> (`.vitest-coverage-floor.json`); i18n coverage baseline **0 / 0** EN/AR
+> (`.i18n-coverage-baseline.json`). Refer to those files, not this snapshot, for
+> the current gates.
+
 ## Baseline Commit
 
 | Field       | Value                                      |
