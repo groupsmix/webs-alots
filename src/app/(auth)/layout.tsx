@@ -58,8 +58,24 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* ── Left hero panel (hidden on mobile) ── */}
       <div className="relative hidden lg:flex lg:w-[480px] xl:w-[520px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#005a3b] via-[#00795a] to-[#009e74] text-white">
+        {/* Looping background video (decorative). The container gradient acts as
+            a fallback while the video loads or if autoplay is blocked. */}
+        <video
+          className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover motion-reduce:hidden"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        >
+          <source src="/login-bg.mp4" type="video/mp4" />
+        </video>
+        {/* Tint overlay over the video to keep the white text legible */}
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-[#005a3b]/85 via-[#00795a]/75 to-[#009e74]/85" />
+
         {/* Decorative background shapes */}
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 z-0">
           <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-white/[0.06]" />
           <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/[0.04]" />
           <div className="absolute top-1/2 right-10 h-48 w-48 rounded-full bg-white/[0.05]" />
