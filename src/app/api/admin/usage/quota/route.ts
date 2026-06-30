@@ -23,7 +23,7 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
   try {
     const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinic_id");
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     // Single clinic: return quota status + usage breakdown

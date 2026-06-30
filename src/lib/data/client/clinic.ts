@@ -199,7 +199,7 @@ export async function createHoliday(
   data: { name: string; date: string; type: string; recurring: boolean },
 ): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await (supabase as unknown as SupabaseUntyped)
     .from("clinic_holidays")
     .insert({

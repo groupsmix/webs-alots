@@ -15,7 +15,7 @@ const ALLOWED_ROLES: UserRole[] = ["super_admin"];
 
 async function handleGet(_request: NextRequest, _auth: AuthContext) {
   try {
-    // nosemgrep: tenant-scoping
+    // nosemgrep: semgrep.tenant-scoping
     const supabase = createUntypedAdminClient("super_admin");
 
     // Fetch all clinics

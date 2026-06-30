@@ -16,6 +16,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { verifyProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { perUserLimiter } from "@/lib/rate-limit";
@@ -262,7 +263,7 @@ export function withAuth<RouteCtx = unknown>(
           /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(
             pathname,
           );
-        const shouldLog = process.env.NODE_ENV !== "production" || isPhiEndpoint;
+        const shouldLog = !isProduction() || isPhiEndpoint;
         if (shouldLog) {
           // INJ-02: Sanitize pathname to prevent log injection via CRLF/tab
           const safePath = pathname.replace(/[\r\n\t]/g, "?");

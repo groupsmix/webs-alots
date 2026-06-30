@@ -17,9 +17,9 @@ export function SuperAdminSupportBadge() {
     try {
       const supabase = createClient();
       // Super-admin intentionally queries across all tenants for cross-clinic view.
-      // nosemgrep: tenant-scoping — this is a deliberate cross-tenant super-admin query.
+      // nosemgrep: semgrep.tenant-scoping — this is a deliberate cross-tenant super-admin query.
       const { count: c } = await supabase
-        .from("support_tickets") // nosemgrep: tenant-scoping
+        .from("support_tickets") // nosemgrep: semgrep.tenant-scoping
         .select("id", { count: "exact", head: true })
         .in("status", ["open", "in_progress"]);
       if (mountedRef.current) setCount(c ?? 0);

@@ -160,7 +160,7 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
   //    profile already owns, otherwise the insert fails with a duplicate key.
   if (authId) {
     const { data: existingRow } = await supabase
-      .from("users") // nosemgrep: tenant-scoping — intentional cross-tenant auth_id uniqueness check; users.auth_id is a global Supabase Auth identity, not clinic-scoped
+      .from("users") // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant auth_id uniqueness check; users.auth_id is a global Supabase Auth identity, not clinic-scoped
       .select("id")
       .eq("auth_id", authId)
       .maybeSingle();
@@ -185,7 +185,7 @@ export async function createClinicUser(input: CreateClinicUserInput): Promise<Cl
   };
 
   const { data, error } = await supabase
-    .from("users") // nosemgrep: tenant-scoping — clinic_id is inside insertPayload (derived from authenticated profile); INSERT has no .eq() chain by design
+    .from("users") // nosemgrep: semgrep.tenant-scoping — clinic_id is inside insertPayload (derived from authenticated profile); INSERT has no .eq() chain by design
     .insert(insertPayload as TablesInsert<"users">)
     .select()
     .single();
@@ -323,7 +323,7 @@ export async function createClinicService(
   };
 
   const { data, error } = await supabase
-    .from("services") // nosemgrep: tenant-scoping — clinic_id is inside insertPayload (derived from authenticated profile); INSERT has no .eq() chain by design
+    .from("services") // nosemgrep: semgrep.tenant-scoping — clinic_id is inside insertPayload (derived from authenticated profile); INSERT has no .eq() chain by design
     .insert(insertPayload as TablesInsert<"services">)
     .select()
     .single();

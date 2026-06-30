@@ -47,7 +47,7 @@ async function handleGet(_request: NextRequest, _auth: AuthContext) {
     // Deliberate cross-tenant super_admin read: this route is gated to
     // super_admin (ALLOWED_ROLES) and aggregates metrics across all clinics.
     // The per-table reads below are annotated for the same reason.
-    // nosemgrep: admin-client-guard
+    // nosemgrep: semgrep.admin-client-guard
     const admin = createAdminClient("super_admin");
 
     const now = Date.now();

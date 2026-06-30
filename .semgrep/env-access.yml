@@ -17,7 +17,9 @@ rules:
   #
   # If you need a new env var, add it to src/lib/env.ts first.
   - id: env-access
-    pattern: process.env.$VAR
+    pattern-either:
+      - pattern: process.env.$VAR
+      - pattern: process.env[$KEY]
     message: >
       Direct `process.env` access outside centralized env module.
       Read environment variables through `src/lib/env.ts` instead.
@@ -32,11 +34,11 @@ rules:
         - "sentry.*.config.ts"
         - next.config.ts
         - vitest.config.ts
-        - "scripts/*"
+        - "scripts/**"
         - "**/*.test.ts"
         - "**/*.test.tsx"
         - worker-cron-handler.ts
-        - "e2e/*"
+        - "e2e/**"
         - "evals/**"
         - playwright.config.ts
     metadata:

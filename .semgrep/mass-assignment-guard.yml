@@ -27,8 +27,9 @@ rules:
           # High-signal names for a raw/parsed HTTP request body. Deliberately
           # narrow: generic names like `data`/`payload`/`input` are excluded
           # because the typed data-access layer legitimately forwards
-          # already-validated objects under those names.
-          regex: ^(body|reqBody|requestBody|rawBody|req\.body|request\.body|parsedBody)$
+          # already-validated objects under those names. Inline cases like
+          # `.insert(await req.json())` should be destructured before the write.
+          regex: ^(body|reqBody|requestBody|rawBody|req\.body|request\.body|parsedBody|jsonBody|bodyJson|untrustedBody|userInput|rawInput|requestData)$
     message: >
       Possible mass-assignment: `$METHOD` is being passed `$BODY` directly or
       via spread. Never spread a request body into a DB write — destructure and

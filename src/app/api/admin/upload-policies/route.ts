@@ -37,7 +37,7 @@ async function handleGet(_request: NextRequest, auth: AuthContext) {
   const db = auth.supabase as any;
 
   try {
-    // nosemgrep: tenant-scoping -- scoped by .eq("clinic_id", clinicId) below; the
+    // nosemgrep: semgrep.tenant-scoping -- scoped by .eq("clinic_id", clinicId) below; the
     // `as any` cast (upload_policies not in generated types) hides it from the matcher.
     const { data, error } = await db
       .from("upload_policies")
@@ -118,7 +118,7 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
 
   try {
     // Upsert: create or update the policy for this (clinic, category) pair
-    // nosemgrep: tenant-scoping -- clinic_id is set in the upsert payload below; the
+    // nosemgrep: semgrep.tenant-scoping -- clinic_id is set in the upsert payload below; the
     // `as any` cast (upload_policies not in generated types) hides it from the matcher.
     const { data, error } = await db
       .from("upload_policies")
@@ -200,7 +200,7 @@ async function handleDelete(request: NextRequest, auth: AuthContext) {
   const db = auth.supabase as any;
 
   try {
-    // nosemgrep: tenant-scoping -- scoped by .eq("clinic_id", clinicId) below; the
+    // nosemgrep: semgrep.tenant-scoping -- scoped by .eq("clinic_id", clinicId) below; the
     // `as any` cast (upload_policies not in generated types) hides it from the matcher.
     const { error } = await db
       .from("upload_policies")

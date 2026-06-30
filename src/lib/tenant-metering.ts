@@ -158,7 +158,7 @@ export async function getAllClinicsMonthlyUsage(
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
 
-  // nosemgrep: tenant-scoping — intentional cross-tenant query for super-admin overview
+  // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant query for super-admin overview
   const { data, error } = await supabase
     .from("tenant_usage_log")
     .select("clinic_id, resource_type, unit_count, cost_usd")

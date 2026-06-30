@@ -273,7 +273,7 @@ async function handlePut(req: NextRequest, auth: AuthContext) {
       // Upsert WA templates
       if (d.templates && d.templates.length > 0) {
         for (const tpl of d.templates) {
-          // nosemgrep: tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
+          // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
           await db.from("whatsapp_templates").upsert(
             {
               id: tpl.id.startsWith("t") ? undefined : tpl.id, // allow generated UUIDs only

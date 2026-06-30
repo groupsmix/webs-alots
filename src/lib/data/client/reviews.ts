@@ -68,7 +68,7 @@ export async function createReview(data: {
   comment: string;
 }): Promise<{ id: string }> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the insert payload below (INSERT has no .eq() chain)
   const { data: row, error } = await supabase
     .from("reviews")
     .insert({
@@ -100,7 +100,7 @@ export async function upsertNotificationPreferences(data: {
   prescriptionUpdates: boolean;
 }): Promise<void> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
+  // nosemgrep: semgrep.tenant-scoping — clinic_id is set in the upsert payload below (UPSERT has no .eq() chain)
   const { error } = await (supabase as unknown as SupabaseUntyped)
     .from("notification_preferences")
     .upsert(
@@ -128,7 +128,7 @@ export async function fetchNotificationPreferences(userId: string): Promise<{
   prescriptionUpdates: boolean;
 } | null> {
   const supabase = createClient();
-  // nosemgrep: tenant-scoping — notification_preferences is user-keyed (unique on user_id); RLS scopes rows to the authenticated user
+  // nosemgrep: semgrep.tenant-scoping — notification_preferences is user-keyed (unique on user_id); RLS scopes rows to the authenticated user
   const { data, error } = await (supabase as unknown as SupabaseUntyped)
     .from("notification_preferences")
     .select(

@@ -35,7 +35,7 @@ async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
-  // nosemgrep: tenant-scoping — service-role client for cron, scoped per-clinic below
+  // nosemgrep: semgrep.tenant-scoping — service-role client for cron, scoped per-clinic below
   const supabase = createAdminClient("cron");
 
   const now = new Date();
@@ -46,7 +46,7 @@ async function handler(request: NextRequest) {
 
   // ── 1. WARN: trials expiring within 3 days ─────────────────────────────
 
-  // nosemgrep: tenant-scoping — intentional cross-tenant query for cron job
+  // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant query for cron job
   const { data: warnClinics, error: warnError } = await untyped(supabase)
     .from("clinics")
     .select("id, name, tier, trial_ends_at")
@@ -119,7 +119,7 @@ async function handler(request: NextRequest) {
 
   // ── 2. EXPIRE: trials that have ended ─────────────────────────────────
 
-  // nosemgrep: tenant-scoping — intentional cross-tenant query for cron job
+  // nosemgrep: semgrep.tenant-scoping — intentional cross-tenant query for cron job
   const { data: expiredClinics, error: expiredError } = await untyped(supabase)
     .from("clinics")
     .select("id, name, tier, trial_ends_at")
