@@ -17,6 +17,22 @@ locals {
     "*.staging.oltigo.com/*",
   ])
 
+  # AI Worker (webs-alots-ai) routes. These are MORE SPECIFIC than the
+  # application Worker's catch-all above, and Cloudflare zone routing prefers
+  # the more specific pattern (see workers/ai/wrangler.toml). If Terraform owns
+  # routes (manage_worker_routes = true) but omits these, the catch-all
+  # "oltigo.com/*" would swallow /api/copilotkit/* and break the AI Worker.
+  # Keep these in lockstep with workers/ai/wrangler.toml.
+  ai_production_route_patterns = toset([
+    "oltigo.com/api/copilotkit",
+    "oltigo.com/api/copilotkit/*",
+  ])
+
+  ai_staging_route_patterns = toset([
+    "staging.oltigo.com/api/copilotkit",
+    "staging.oltigo.com/api/copilotkit/*",
+  ])
+
   queue_consumer_settings = {
     batch_size       = 25
     max_wait_time_ms = 30000

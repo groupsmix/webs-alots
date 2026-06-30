@@ -6,6 +6,11 @@ output "rate_limit_namespace_ids" {
   }
 }
 
+output "feature_flags_namespace_id" {
+  description = "KV namespace ID backing production super-admin feature flags."
+  value       = cloudflare_workers_kv_namespace.feature_flags_production.id
+}
+
 output "uploads_bucket_names" {
   description = "R2 bucket names for encrypted uploads."
   value = {
@@ -25,9 +30,11 @@ output "notification_queue_names" {
 }
 
 output "worker_routes" {
-  description = "Worker route patterns managed by Terraform."
+  description = "Worker route patterns managed by Terraform (empty unless manage_worker_routes = true)."
   value = {
-    production = sort([for pattern, route in cloudflare_workers_route.production : route.pattern])
-    staging    = sort([for pattern, route in cloudflare_workers_route.staging : route.pattern])
+    production    = sort([for pattern, route in cloudflare_workers_route.production : route.pattern])
+    staging       = sort([for pattern, route in cloudflare_workers_route.staging : route.pattern])
+    ai_production = sort([for pattern, route in cloudflare_workers_route.ai_production : route.pattern])
+    ai_staging    = sort([for pattern, route in cloudflare_workers_route.ai_staging : route.pattern])
   }
 }

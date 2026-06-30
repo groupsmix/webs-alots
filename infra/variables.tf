@@ -22,8 +22,17 @@ variable "cloudflare_api_token" {
 }
 
 variable "cloudflare_zone_id" {
-  description = "Cloudflare zone ID for oltigo.com routes."
+  description = <<-EOT
+    Cloudflare zone ID for oltigo.com routes.
+
+    Only required when manage_worker_routes = true. Routes are owned by
+    wrangler.toml by default (manage_worker_routes = false), so this is
+    optional and defaults to null. A precondition in routes.tf fails the plan
+    if routes are managed but this is left unset.
+  EOT
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "production_worker_name" {
@@ -38,6 +47,18 @@ variable "staging_worker_name" {
   default     = "webs-alots-staging"
 }
 
+variable "ai_worker_name" {
+  description = "Production AI Worker script name (handles /api/copilotkit/*)."
+  type        = string
+  default     = "webs-alots-ai"
+}
+
+variable "ai_worker_staging_name" {
+  description = "Staging AI Worker script name."
+  type        = string
+  default     = "webs-alots-ai-staging"
+}
+
 variable "production_rate_limit_namespace_title" {
   description = "Production KV namespace title for distributed rate limiting."
   type        = string
@@ -48,6 +69,20 @@ variable "staging_rate_limit_namespace_title" {
   description = "Staging KV namespace title for distributed rate limiting."
   type        = string
   default     = "RATE_LIMIT_KV_STAGING"
+}
+
+variable "production_feature_flags_namespace_title" {
+  description = <<-EOT
+    Production KV namespace title for super-admin feature flags
+    (FEATURE_FLAGS_KV). Backs the global AI kill-switch toggle. This namespace
+    already exists in production (id 223443c0631c4046b72ca8426f733f3c) and MUST
+    be imported before the first apply — see infra/README.md.
+
+    There is no staging FEATURE_FLAGS_KV binding in wrangler.toml, so only the
+    production namespace is managed here.
+  EOT
+  type        = string
+  default     = "FEATURE_FLAGS_KV"
 }
 
 variable "production_uploads_bucket_name" {
@@ -69,29 +104,58 @@ variable "r2_bucket_location" {
   nullable    = true
 }
 
-variable "r2_bucket_jurisdiction" {
+variable "production_r2_bucket_jurisdiction" {
   description = <<-EOT
-    R2 data jurisdiction. Accepted values: default, eu, fedramp.
+    R2 data jurisdiction for the PRODUCTION uploads bucket.
+    Accepted values: default, eu, fedramp.
 
-    For Oltigo Health, this is set to "eu" — the closest available
-    jurisdiction to Morocco and the one already recorded in
-    docs/data-residency.md and ADR-0008. Cloudflare offers no
-    Africa/Morocco jurisdiction, so "eu" provides the nearest data-
-    residency guarantee compatible with Moroccan Law 09-08 and the
-    Cloudflare DPA.
+    Target value is "eu" — the closest available jurisdiction to Morocco and
+    the one recorded in docs/data-residency.md and ADR-0012 (R2 bucket
+    jurisdiction set to EU). Cloudflare offers no Africa/Morocco jurisdiction,
+    so "eu" provides the nearest data-residency guarantee compatible with
+    Moroccan Law 09-08 and the Cloudflare DPA.
 
-    IMPORTANT: jurisdiction is ForceNew (immutable). The production
-    bucket also has prevent_destroy = true, so changing this value
-    after the first apply requires a deliberate, reviewed migration plan.
-    Do NOT change this default without updating ADR-0008.
+    IMPORTANT: jurisdiction is ForceNew (immutable) AND the production bucket
+    has prevent_destroy = true, so Terraform cannot flip it in place. The
+    production bucket `webs-alots-uploads` ALREADY EXISTS (see wrangler.toml).
+    A bucket created with `wrangler r2 bucket create` lives in the "default"
+    jurisdiction, and a default-jurisdiction bucket cannot be imported or
+    addressed as "eu" — they are separate namespaces.
+
+    Therefore, to manage the existing bucket you must EITHER:
+      (a) run the EU-migration runbook in infra/README.md
+          ("R2 jurisdiction migration") to recreate it under "eu", then keep
+          this at "eu"; OR
+      (b) temporarily set this to the bucket's CURRENT jurisdiction ("default")
+          to import it as-is, then schedule the migration.
+
+    Do NOT change this default without updating ADR-0012.
   EOT
   type        = string
   default     = "eu"
   nullable    = false
 
   validation {
-    condition     = contains(["default", "eu", "fedramp"], var.r2_bucket_jurisdiction)
-    error_message = "r2_bucket_jurisdiction must be one of: default, eu, fedramp."
+    condition     = contains(["default", "eu", "fedramp"], var.production_r2_bucket_jurisdiction)
+    error_message = "production_r2_bucket_jurisdiction must be one of: default, eu, fedramp."
+  }
+}
+
+variable "staging_r2_bucket_jurisdiction" {
+  description = <<-EOT
+    R2 data jurisdiction for the STAGING uploads bucket.
+    Accepted values: default, eu, fedramp. Defaults to "eu" to match the
+    production residency posture (ADR-0012). Same ForceNew immutability caveat
+    as production applies; staging carries no prevent_destroy guard, so it can
+    be reprovisioned if the jurisdiction must change.
+  EOT
+  type        = string
+  default     = "eu"
+  nullable    = false
+
+  validation {
+    condition     = contains(["default", "eu", "fedramp"], var.staging_r2_bucket_jurisdiction)
+    error_message = "staging_r2_bucket_jurisdiction must be one of: default, eu, fedramp."
   }
 }
 

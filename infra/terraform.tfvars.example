@@ -3,7 +3,11 @@
 # treating as repository-visible metadata.
 
 cloudflare_account_id = "replace-with-cloudflare-account-id"
-cloudflare_zone_id    = "replace-with-oltigo-com-zone-id"
+
+# cloudflare_zone_id — OPTIONAL. Only required when manage_worker_routes = true
+# (routes are owned by wrangler.toml by default). Leave commented/unset unless
+# you are making Terraform the source of truth for Worker routes.
+# cloudflare_zone_id = "replace-with-oltigo-com-zone-id"
 
 # cloudflare_api_token — NEVER set this here. Pass it via the environment
 # variable TF_VAR_cloudflare_api_token so the secret stays out of any file
@@ -11,24 +15,35 @@ cloudflare_zone_id    = "replace-with-oltigo-com-zone-id"
 # See providers.tf and variables.tf for the required token permissions.
 
 # Optional overrides
-# production_worker_name                 = "webs-alots"
-# staging_worker_name                    = "webs-alots-staging"
-# production_rate_limit_namespace_title  = "RATE_LIMIT_KV"
-# staging_rate_limit_namespace_title     = "RATE_LIMIT_KV_STAGING"
-# production_uploads_bucket_name         = "webs-alots-uploads"
-# staging_uploads_bucket_name            = "webs-alots-uploads-staging"
-# production_notification_queue_name     = "notification-queue"
-# production_notification_dlq_name       = "notification-queue-dlq"
-# staging_notification_queue_name        = "notification-queue-staging"
-# staging_notification_dlq_name          = "notification-queue-staging-dlq"
+# production_worker_name                    = "webs-alots"
+# staging_worker_name                       = "webs-alots-staging"
+# ai_worker_name                            = "webs-alots-ai"
+# ai_worker_staging_name                    = "webs-alots-ai-staging"
+# production_rate_limit_namespace_title     = "RATE_LIMIT_KV"
+# staging_rate_limit_namespace_title        = "RATE_LIMIT_KV_STAGING"
+# production_feature_flags_namespace_title  = "FEATURE_FLAGS_KV"
+# production_uploads_bucket_name            = "webs-alots-uploads"
+# staging_uploads_bucket_name               = "webs-alots-uploads-staging"
+# production_notification_queue_name        = "notification-queue"
+# production_notification_dlq_name          = "notification-queue-dlq"
+# staging_notification_queue_name           = "notification-queue-staging"
+# staging_notification_dlq_name             = "notification-queue-staging-dlq"
 
 # Routes and queue consumers are owned by wrangler.toml by default. Only set
-# these to true after removing the matching blocks from wrangler.toml.
-# manage_queue_consumers                 = false
-# manage_worker_routes                   = false
+# these to true after removing the matching blocks from BOTH wrangler.toml and
+# workers/ai/wrangler.toml (the AI Worker routes are managed here too).
+# Setting manage_worker_routes = true also requires cloudflare_zone_id above.
+# manage_queue_consumers                    = false
+# manage_worker_routes                      = false
 
-# r2_bucket_location                     = null
-# r2_bucket_jurisdiction is set to "eu" by default (see ADR-0012).
-# Only change this before the first apply — it is immutable (ForceNew).
-# r2_bucket_jurisdiction                 = "eu"
-# r2_storage_class                       = null
+# r2_bucket_location                        = null
+# r2_storage_class                          = null
+
+# R2 data jurisdiction (ADR-0012). Both default to "eu". jurisdiction is
+# immutable (ForceNew); the production bucket also has prevent_destroy. The
+# production bucket already exists — see the "R2 jurisdiction migration"
+# runbook in infra/README.md before importing/applying. To import an existing
+# default-jurisdiction bucket as-is, temporarily set the production value to
+# its real jurisdiction (e.g. "default").
+# production_r2_bucket_jurisdiction         = "eu"
+# staging_r2_bucket_jurisdiction            = "eu"

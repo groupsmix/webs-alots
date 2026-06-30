@@ -40,19 +40,32 @@ jobs:
       - name: Terraform fmt check
         run: terraform fmt -check -diff -recursive infra
 
-      # Guard against applying with local state. Local state is unacceptable
-      # for this configuration (PHI-adjacent resources, no locking). This step
-      # enforces the rule technically — backend.tf comments alone cannot.
-      - name: Check remote backend configured
+      # Guard against committed/local Terraform state. Local state is
+      # unacceptable for this configuration (PHI-adjacent resources, no
+      # locking). Any *.tfstate* artifact in infra/ means state escaped the
+      # remote backend, so fail hard. This catches committed/leftover local
+      # state; it does NOT prove a remote backend is configured (CI only runs
+      # validate with -backend=false and never applies). Apply remains gated by
+      # the documented backend.tf setup + review, not by this check alone.
+      - name: Guard against committed local state
         working-directory: infra
         run: |
-          if [ -f terraform.tfstate ]; then
-            echo "ERROR: terraform.tfstate found in infra/ — local state is not"
-            echo "       permitted for this configuration. Configure the remote"
-            echo "       backend in backend.tf and re-run terraform init."
+          set -euo pipefail
+          state_files="$(find . -name 'terraform.tfstate' -o -name 'terraform.tfstate.backup' -o -name '*.tfstate' 2>/dev/null || true)"
+          if [ -n "${state_files}" ]; then
+            echo "ERROR: Terraform state file(s) found in infra/:"
+            echo "${state_files}"
+            echo "Local/committed state is not permitted for this configuration."
+            echo "Configure the remote backend in backend.tf and remove local state."
             exit 1
           fi
-          echo "No local state file found — backend check passed."
+          if grep -Eq '^[[:space:]]*backend[[:space:]]+"|^[[:space:]]*cloud[[:space:]]*\{' backend.tf; then
+            echo "Remote backend block is uncommented in backend.tf."
+          else
+            echo "NOTICE: No active remote backend block in backend.tf."
+            echo "        'terraform apply' is intentionally blocked until one is configured."
+          fi
+          echo "Local-state guard passed."
 
       # Pre-download the Cloudflare provider from GitHub Releases to avoid
       # intermittent 502s from registry.terraform.io. The binary is fetched
@@ -67,7 +80,15 @@ jobs:
       - name: Download and verify Cloudflare Terraform provider
         run: |
           set -euo pipefail
-          PROVIDER_VERSION="5.21.0"
+          # Single source of truth: read the pinned provider version from the
+          # committed lock file instead of hardcoding it here. This prevents the
+          # workflow, .terraform.lock.hcl, and versions.tf from drifting apart.
+          PROVIDER_VERSION="$(sed -n 's/^[[:space:]]*version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' infra/.terraform.lock.hcl | head -n1)"
+          if [ -z "${PROVIDER_VERSION}" ]; then
+            echo "ERROR: could not read provider version from infra/.terraform.lock.hcl"
+            exit 1
+          fi
+          echo "Pinned Cloudflare provider version (from lock file): ${PROVIDER_VERSION}"
           PLATFORM="linux_amd64"
           BASE_URL="https://github.com/cloudflare/terraform-provider-cloudflare/releases/download/v${PROVIDER_VERSION}"
           ZIP_NAME="terraform-provider-cloudflare_${PROVIDER_VERSION}_${PLATFORM}.zip"
