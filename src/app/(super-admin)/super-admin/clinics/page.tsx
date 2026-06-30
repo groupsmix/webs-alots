@@ -1160,7 +1160,7 @@ export default function AllClinicsPage() {
         <div>
           <h1 className="text-2xl font-bold">All Clinics</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage all {list.length} registered clinics
+            {loadingData ? "Loading clinics…" : `Manage all ${list.length} registered clinics`}
           </p>
         </div>
         <div className="flex gap-2">
