@@ -70,7 +70,18 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+              cookieStore.set(name, value, {
+                ...options,
+                // Harden auth/session cookies: only sent over HTTPS in
+                // production (left off for http://localhost dev), and pinned to
+                // SameSite=Lax + root path. NOTE: these stay non-HttpOnly on
+                // purpose — the @supabase/ssr browser client reads them via
+                // document.cookie; HttpOnly would break client-side auth and
+                // needs the larger server-session refactor instead.
+                secure: process.env.NODE_ENV === "production",
+                sameSite: options?.sameSite ?? "lax",
+                path: options?.path ?? "/",
+              }),
             );
           } catch (err) {
             logger.warn("Cookie setAll called from Server Component", {
@@ -120,7 +131,18 @@ export async function createTenantClient(clinicId: string) {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+              cookieStore.set(name, value, {
+                ...options,
+                // Harden auth/session cookies: only sent over HTTPS in
+                // production (left off for http://localhost dev), and pinned to
+                // SameSite=Lax + root path. NOTE: these stay non-HttpOnly on
+                // purpose — the @supabase/ssr browser client reads them via
+                // document.cookie; HttpOnly would break client-side auth and
+                // needs the larger server-session refactor instead.
+                secure: process.env.NODE_ENV === "production",
+                sameSite: options?.sameSite ?? "lax",
+                path: options?.path ?? "/",
+              }),
             );
           } catch (err) {
             logger.warn("Cookie setAll called from Server Component", {
