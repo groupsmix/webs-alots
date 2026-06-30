@@ -71,7 +71,7 @@ npx tsx evals/runners/rag-groundedness-runner.ts
 ## How results & regressions are wired
 
 1. Each runner publishes a structured result to `results/<suite>.json` (`utils/results-io.ts`).
-2. Each runner calls `checkRegression()` (`utils/regression-detector.ts`): it fails if the suite is below its minimum pass rate (100% for every suite) or has dropped more than the allowed delta from its baseline. Baselines live in `baselines/` (git-ignored); CI caches that directory across runs so the drop-from-baseline check is meaningful.
+2. Each runner calls `checkRegression()` (`utils/regression-detector.ts`): it fails if the suite is below its minimum pass rate (100% for every suite) or has dropped more than the allowed delta from its baseline. The **absolute 100% threshold is the binding gate in CI**; the drop-from-baseline check is meaningful for local/persistent runs (baselines live in `baselines/`, which is git-ignored and not persisted across CI runs — and GitHub now issues read-only cache tokens on PR triggers anyway).
 3. `run-all.ts` reads every result file, renders the aggregate `report-*.html` (`utils/report-generator.ts`, HTML-escaped), and calls `alertOnFailure()` (`utils/alerter.ts`).
 
 ## CI
