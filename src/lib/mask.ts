@@ -28,11 +28,24 @@ export type MaskLevel = "full" | "partial" | "none";
 export const MASKING_BUILD_MARKER = "__OLTIGO_MASKING_BUILD__";
 export const MASKING_BUILD_LEVEL: string = process.env.NEXT_PUBLIC_DATA_MASKING || "unset";
 
-/** Read the masking level from the environment (defaults to "none"). */
+/**
+ * Read the masking level from the environment.
+ *
+ * Fail-safe default: when the env var is absent or malformed we return
+ * "partial" (NOT "none"), so any code path that reaches getMaskLevel() before
+ * the build-time NEXT_PUBLIC_DATA_MASKING inlining (e.g. local dev, SSR paths,
+ * tests) still masks PHI by default. This mirrors the build/runtime defaults
+ * in next.config.ts (env fallback "partial"), wrangler.toml [vars], and the
+ * production guard in env.ts (enforcePhiMaskingPolicy throws on "none").
+ * Decision recorded in ADR-0008 ("partial PHI masking by default").
+ *
+ * Returning "none" requires explicitly setting NEXT_PUBLIC_DATA_MASKING="none"
+ * (which is itself blocked in production unless ALLOW_UNMASKED_PHI=true).
+ */
 export function getMaskLevel(): MaskLevel {
   const raw = process.env.NEXT_PUBLIC_DATA_MASKING;
-  if (raw === "full" || raw === "partial") return raw;
-  return "none";
+  if (raw === "full" || raw === "partial" || raw === "none") return raw;
+  return "partial";
 }
 
 /** Mask a Moroccan phone number. */
