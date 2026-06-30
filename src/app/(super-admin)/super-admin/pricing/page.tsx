@@ -160,30 +160,40 @@ export default function PricingPage() {
   const [deletePromoOpen, setDeletePromoOpen] = useState(false);
   const [deletePromoItem, setDeletePromoItem] = useState<Promotion | null>(null);
 
-  const loadData = useCallback(async () => {
-    try {
-      const [subs, tiersData, togglesData, promosData] = await Promise.all([
-        fetchClientSubscriptions(),
-        fetchPricingTiers(),
-        fetchFeatureToggles(),
-        fetchPromotions(),
-      ]);
-      setSubscriptions(subs);
-      setTiers(tiersData);
-      setToggles(togglesData);
-      setPromotions(promosData);
-    } catch (err) {
-      logger.warn("Failed to load pricing page", { context: "page", error: err });
-    } finally {
-      setLoading(false);
-    }
+  const loadData = useCallback(async (isActive: () => boolean) => {
+    // Each section loads independently: a single slow or failing action must not
+    // blank the whole page or flash a misleading "Failed to load" — we render
+    // whatever resolved and only warn on the parts that didn't. isActive() guards
+    // against applying results after the component has unmounted.
+    const [subsRes, tiersRes, togglesRes, promosRes] = await Promise.allSettled([
+      fetchClientSubscriptions(),
+      fetchPricingTiers(),
+      fetchFeatureToggles(),
+      fetchPromotions(),
+    ]);
+    if (!isActive()) return;
+
+    if (subsRes.status === "fulfilled") setSubscriptions(subsRes.value);
+    else logger.warn("Failed to load subscriptions", { context: "page", error: subsRes.reason });
+
+    if (tiersRes.status === "fulfilled") setTiers(tiersRes.value);
+    else logger.warn("Failed to load pricing tiers", { context: "page", error: tiersRes.reason });
+
+    if (togglesRes.status === "fulfilled") setToggles(togglesRes.value);
+    else
+      logger.warn("Failed to load feature toggles", { context: "page", error: togglesRes.reason });
+
+    if (promosRes.status === "fulfilled") setPromotions(promosRes.value);
+    else logger.warn("Failed to load promotions", { context: "page", error: promosRes.reason });
+
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadData();
+    let active = true;
+    loadData(() => active);
     return () => {
-      controller.abort();
+      active = false;
     };
   }, [loadData]);
 
@@ -496,10 +506,10 @@ export default function PricingPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="text-xs text-muted-foreground">MRR (abonnements actifs)</span>
+              <span className="text-xs text-muted-foreground">MRR</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
-            <p className="text-xs text-muted-foreground">MAD / mois</p>
+            <p className="text-xs text-muted-foreground">MAD / mois — abonnements actifs</p>
           </CardContent>
         </Card>
         <Card>

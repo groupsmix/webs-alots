@@ -344,20 +344,26 @@ export default function BillingPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-xs text-muted-foreground">MRR (facturé)</span>
+                  <span className="text-xs text-muted-foreground">Facturé ce mois</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
-                <p className="text-xs text-muted-foreground">MAD / mois</p>
+                <p className="text-xs text-muted-foreground">
+                  MAD — total facturé, pas le MRR. Voir{" "}
+                  <a href="/super-admin/subscriptions" className="underline hover:text-foreground">
+                    Abonnements
+                  </a>{" "}
+                  pour le MRR récurrent.
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="h-4 w-4 text-blue-600" />
-                  <span className="text-xs text-muted-foreground">ARR</span>
+                  <span className="text-xs text-muted-foreground">Facturé annualisé</span>
                 </div>
                 <p className="text-2xl font-bold">{formatNumber(arr)}</p>
-                <p className="text-xs text-muted-foreground">MAD / an</p>
+                <p className="text-xs text-muted-foreground">MAD / an (facturé × 12)</p>
               </CardContent>
             </Card>
             <Card>
