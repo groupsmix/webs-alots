@@ -74,7 +74,7 @@ export async function updateFamilyMember(
   input: { name: string; relationship: string; phone?: string | null },
 ): Promise<MutationResult<FamilyMemberView>> {
   const supabase = createClient();
-  const { data, error } = await supabase // nosemgrep: tenant-scoping — clinic_id not yet in generated types (migration 00068); row scoped by primary_user_id below + family_members_manage_own RLS
+  const { data, error } = await supabase // nosemgrep: semgrep.tenant-scoping — clinic_id not yet in generated types (migration 00068); row scoped by primary_user_id below + family_members_manage_own RLS
     .from("family_members")
     .update({
       name: input.name,
@@ -105,7 +105,7 @@ export async function deleteFamilyMember(
   primaryUserId: string,
 ): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { error } = await supabase // nosemgrep: tenant-scoping — clinic_id not yet in generated types (migration 00068); row scoped by primary_user_id below + family_members_manage_own RLS
+  const { error } = await supabase // nosemgrep: semgrep.tenant-scoping — clinic_id not yet in generated types (migration 00068); row scoped by primary_user_id below + family_members_manage_own RLS
     .from("family_members")
     .delete()
     .eq("id", id)

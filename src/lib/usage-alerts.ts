@@ -188,7 +188,7 @@ export async function checkAndSendUsageAlerts(
 
     // Check dedup: has an alert already been sent this month for this resource+threshold?
     // Uses type column which encodes the full dedup identity.
-    // nosemgrep: tenant-scoping — notifications already scoped via typeKey which includes clinicId
+    // nosemgrep: semgrep.tenant-scoping — notifications already scoped via typeKey which includes clinicId
     const { data: existing } = await untyped(supabase)
       .from("notifications")
       .select("id")

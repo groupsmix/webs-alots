@@ -25,9 +25,9 @@ async function handleGet(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("clinic_id query parameter is required");
     }
 
-    const supabase = createAdminClient("super_admin"); // nosemgrep: admin-client-guard
+    const supabase = createAdminClient("super_admin"); // nosemgrep: semgrep.admin-client-guard
     const { data, error } = await supabase
-      .from("clinic_feature_overrides") // nosemgrep: tenant-scoping
+      .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping
       .select("id, clinic_id, feature_key, enabled, created_at, updated_at")
       .eq("clinic_id", clinicId);
 
@@ -75,9 +75,9 @@ async function handlePost(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("enabled is required and must be a boolean");
     }
 
-    const supabase = createAdminClient("super_admin"); // nosemgrep: admin-client-guard
+    const supabase = createAdminClient("super_admin"); // nosemgrep: semgrep.admin-client-guard
     const { data, error } = await supabase
-      .from("clinic_feature_overrides") // nosemgrep: tenant-scoping
+      .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping
       .upsert(
         {
           clinic_id,
@@ -131,9 +131,9 @@ async function handleDelete(request: NextRequest, _auth: AuthContext) {
       return apiValidationError("feature_key is required and must be a string");
     }
 
-    const supabase = createAdminClient("super_admin"); // nosemgrep: admin-client-guard
+    const supabase = createAdminClient("super_admin"); // nosemgrep: semgrep.admin-client-guard
     const { error } = await supabase
-      .from("clinic_feature_overrides") // nosemgrep: tenant-scoping
+      .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping
       .delete()
       .eq("clinic_id", clinic_id)
       .eq("feature_key", feature_key);
@@ -158,6 +158,6 @@ async function handleDelete(request: NextRequest, _auth: AuthContext) {
   }
 }
 
-export const GET = withAuth(handleGet, ALLOWED_ROLES, { failOpen: true });
+export const GET = withAuth(handleGet, ALLOWED_ROLES);
 export const POST = withAuth(handlePost, ALLOWED_ROLES);
 export const DELETE = withAuth(handleDelete, ALLOWED_ROLES);

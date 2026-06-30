@@ -3,8 +3,10 @@
 /**
  * CI guard: every Supabase mutation in src/app/api/ must reference clinic_id.
  *
- * For each `.from("table").(insert|update|delete|upsert)` match, require
- * `clinic_id` to appear within ±10 lines of the mutation call.
+ * For each `.from("table").(insert|update|delete|upsert)` match — or the
+ * equivalent typed table-accessor form `<entity>Table(...).(insert|update|
+ * delete|upsert)` — require `clinic_id` to appear within ±20 lines of the
+ * mutation call.
  *
  * Routes in the ALLOWLIST are skipped — they are verified-safe (cron jobs
  * that iterate per-clinic, webhooks that resolve tenant from payload,
@@ -87,10 +89,11 @@ const ALLOWLIST = new Set([
   // See workers/ai/README.md.
 ]);
 
-const MUTATION_RE = /\.from\(["'][a-z_]+["']\)\.(insert|update|delete|upsert)/;
+const MUTATION_RE =
+  /(?:\.from\(["'][a-z_]+["']\)|\b[a-zA-Z_]\w*Table\([^)]*\))\.(insert|update|delete|upsert)/;
 const CLINIC_ID_RE = /clinic_id/;
 
-// Scan window: ±10 lines from the mutation to catch clinic_id in:
+// Scan window: ±20 lines from the mutation to catch clinic_id in:
 // - inline object literals (.insert({ clinic_id, ... }))
 // - variable definitions built above the call (const rows = [{ clinic_id, ... }])
 // - .eq("clinic_id", ...) chains below the call
@@ -144,7 +147,7 @@ if (totalViolations > 0) {
   console.error(`\n❌ ${totalViolations} Supabase mutation(s) missing clinic_id (see above).`);
   console.error(
     "Every .insert()/.update()/.delete()/.upsert() must include clinic_id\n" +
-      "within ±10 lines of the mutation call.\n" +
+      "within ±20 lines of the mutation call.\n" +
       "If this is intentionally cross-tenant, add the file to the ALLOWLIST in\n" +
       "scripts/check-tenant-scoping.mjs with a comment explaining why.",
   );

@@ -222,7 +222,7 @@ export async function activateClinic(clinicId: string): Promise<void> {
   const supabase = await rawClient();
 
   const { data: clinic, error: fetchError } = await supabase
-    .from("clinics") // nosemgrep: tenant-scoping — super-admin activates a specific clinic by id
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin activates a specific clinic by id
     .select("id, name, subdomain, status")
     .eq("id", clinicId)
     .single();
@@ -230,7 +230,7 @@ export async function activateClinic(clinicId: string): Promise<void> {
   if (fetchError) throw new Error(`Failed to load clinic for activation: ${fetchError.message}`);
 
   const { error } = await supabase
-    .from("clinics") // nosemgrep: tenant-scoping — super-admin activates a specific clinic by id
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin activates a specific clinic by id
     .update({ status: "active" })
     .eq("id", clinicId);
 
@@ -274,7 +274,7 @@ export async function fetchClinics(): Promise<ClinicRow[]> {
 export async function fetchClinicById(clinicId: string): Promise<ClinicRow | null> {
   const supabase = await rawClient();
   const { data, error } = await supabase
-    .from("clinics") // nosemgrep: tenant-scoping — super-admin fetches specific clinic by id
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin fetches specific clinic by id
     .select("id, name, type, config, tier, status, subdomain, created_at")
     .eq("id", clinicId)
     .single();
@@ -291,7 +291,7 @@ export async function fetchClinicById(clinicId: string): Promise<ClinicRow | nul
 export async function fetchClinicAdminUserId(clinicId: string): Promise<string | null> {
   const supabase = await rawClient();
   const { data } = await supabase
-    .from("users") // nosemgrep: tenant-scoping — super-admin resolves admin for specific clinic
+    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin resolves admin for specific clinic
     .select("id")
     .eq("clinic_id", clinicId)
     .eq("role", "clinic_admin")
@@ -315,7 +315,7 @@ export async function fetchClinicFeatureOverrides(
 ): Promise<ClinicFeatureOverride[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
-    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin reads overrides for specific clinic
+    .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping — super-admin reads overrides for specific clinic
     .select("id, clinic_id, feature_key, enabled, created_at")
     .eq("clinic_id", clinicId);
 
@@ -330,7 +330,7 @@ export async function upsertClinicFeatureOverride(
 ): Promise<void> {
   const supabase = await rawClient();
   const { error } = await supabase
-    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin upserts override for specific clinic
+    .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping — super-admin upserts override for specific clinic
     .upsert(
       { clinic_id: clinicId, feature_key: featureId, enabled },
       { onConflict: "clinic_id,feature_key" },
@@ -345,7 +345,7 @@ export async function deleteClinicFeatureOverride(
 ): Promise<void> {
   const supabase = await rawClient();
   const { error } = await supabase
-    .from("clinic_feature_overrides") // nosemgrep: tenant-scoping — super-admin deletes override for specific clinic
+    .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping — super-admin deletes override for specific clinic
     .delete()
     .eq("clinic_id", clinicId)
     .eq("feature_key", featureId);
@@ -356,7 +356,7 @@ export async function deleteClinicFeatureOverride(
 export async function fetchClinicStaffCount(clinicId: string): Promise<number> {
   const supabase = await rawClient();
   const { count, error } = await supabase
-    .from("users") // nosemgrep: tenant-scoping — super-admin counts staff for specific clinic
+    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin counts staff for specific clinic
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
     .in("role", ["clinic_admin", "receptionist", "doctor"]);
@@ -368,7 +368,7 @@ export async function fetchClinicStaffCount(clinicId: string): Promise<number> {
 export async function fetchClinicPatientCount(clinicId: string): Promise<number> {
   const supabase = await rawClient();
   const { count, error } = await supabase
-    .from("users") // nosemgrep: tenant-scoping — super-admin counts patients for specific clinic
+    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin counts patients for specific clinic
     .select("id", { count: "exact", head: true })
     .eq("clinic_id", clinicId)
     .eq("role", "patient");
@@ -380,7 +380,7 @@ export async function fetchClinicPatientCount(clinicId: string): Promise<number>
 export async function fetchClinicActivityLogs(clinicId: string): Promise<ActivityLog[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
-    .from("activity_logs") // nosemgrep: tenant-scoping — super-admin reads activity for specific clinic
+    .from("activity_logs") // nosemgrep: semgrep.tenant-scoping — super-admin reads activity for specific clinic
     .select("id, action, description, clinic_id, clinic_name, created_at, actor, type")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false })
@@ -537,7 +537,7 @@ export async function createPromotion(input: {
   if (error || !data) throw new Error(`Failed to create promotion: ${error?.message ?? "no data"}`);
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
+    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
       .from("activity_logs")
       .insert({
         action: "promotion_created",
@@ -564,7 +564,7 @@ export async function deletePromotion(id: string): Promise<void> {
   if (error) throw new Error(`Failed to delete promotion: ${error.message}`);
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
+    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
       .from("activity_logs")
       .insert({
         action: "promotion_deleted",
@@ -614,13 +614,13 @@ export async function updateSubscriptionStatus(
 
   // Fetch clinic for cache invalidation + audit context.
   const { data: clinic } = await supabase
-    .from("clinics") // nosemgrep: tenant-scoping — super-admin updates a specific clinic by id
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin updates a specific clinic by id
     .select("id, name, subdomain")
     .eq("id", clinicId)
     .single();
 
   const { error } = await supabase
-    .from("clinics") // nosemgrep: tenant-scoping — super-admin updates a specific clinic by id
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin updates a specific clinic by id
     .update({ status })
     .eq("id", clinicId);
 
@@ -664,7 +664,7 @@ async function fetchClinicName(
   clinicId: string,
 ): Promise<string> {
   const { data } = await supabase
-    .from("clinics") // nosemgrep: tenant-scoping — super-admin reads one clinic's name by id for a staff invite
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin reads one clinic's name by id for a staff invite
     .select("name")
     .eq("id", clinicId)
     .maybeSingle();
@@ -689,7 +689,7 @@ async function persistStaffUserRow(
   authId: string | null,
 ): Promise<UserRow> {
   if (authId) {
-    // nosemgrep: tenant-scoping — super-admin reconciles the staff row by auth_id; clinic_id is written below. Intentionally cross-tenant (see AGENTS.md super-admin exception)
+    // nosemgrep: semgrep.tenant-scoping — super-admin reconciles the staff row by auth_id; clinic_id is written below. Intentionally cross-tenant (see AGENTS.md super-admin exception)
     const { data: existingRow } = await supabase
       .from("users")
       .select("id")
@@ -697,7 +697,7 @@ async function persistStaffUserRow(
       .maybeSingle();
 
     if (existingRow) {
-      // nosemgrep: tenant-scoping — super-admin sets this staff member's clinic_id/role on the trigger-created row. Intentionally cross-tenant (see AGENTS.md super-admin exception)
+      // nosemgrep: semgrep.tenant-scoping — super-admin sets this staff member's clinic_id/role on the trigger-created row. Intentionally cross-tenant (see AGENTS.md super-admin exception)
       const { data: updated, error: updateError } = await supabase
         .from("users")
         .update({
@@ -737,7 +737,7 @@ async function persistStaffUserRow(
   const isDuplicate =
     error.code === "23505" || /duplicate key|already exists|unique constraint/i.test(error.message);
   if (isDuplicate && input.email) {
-    // nosemgrep: tenant-scoping — super-admin recovers a duplicate-email staff row by email and (re)assigns its clinic_id/role; intentionally cross-tenant, so no clinic_id filter (see AGENTS.md super-admin exception)
+    // nosemgrep: semgrep.tenant-scoping — super-admin recovers a duplicate-email staff row by email and (re)assigns its clinic_id/role; intentionally cross-tenant, so no clinic_id filter (see AGENTS.md super-admin exception)
     const { data: updated, error: updateError } = await supabase
       .from("users")
       .update({
@@ -771,7 +771,7 @@ async function sendStaffInvite(params: {
 }): Promise<{ inviteSent: boolean; inviteError?: string }> {
   try {
     const siteUrl = getSiteUrl() || "https://oltigo.com";
-    // nosemgrep: admin-client-guard — super-admin GoTrue auth-admin op (generateLink); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
+    // nosemgrep: semgrep.admin-client-guard — super-admin GoTrue auth-admin op (generateLink); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
     const admin = createAdminClient("super_admin");
     const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
       type: "recovery",
@@ -841,7 +841,7 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
   // Attempt to create (or match) a Supabase Auth login when possible.
   if (input.email && serviceRoleConfigured) {
     try {
-      // nosemgrep: admin-client-guard — super-admin GoTrue auth-admin op (createUser); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
+      // nosemgrep: semgrep.admin-client-guard — super-admin GoTrue auth-admin op (createUser); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
       const admin = createAdminClient("super_admin");
       // Audit P1 #12: random one-time password; staff set their own via the
       // recovery invite below, so this value is never shown to anyone.
@@ -1169,7 +1169,7 @@ async function logAnnouncementActivity(
   description: string,
 ): Promise<void> {
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event; announcements are platform-wide (no clinic_id) so this audit row is not clinic-scoped
+    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event; announcements are platform-wide (no clinic_id) so this audit row is not clinic-scoped
       .from("activity_logs")
       .insert({
         action,
@@ -1369,7 +1369,7 @@ export async function updateFeatureDefinition(
   if (error) throw new Error(`Failed to update feature definition: ${error.message}`);
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
+    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
       .from("activity_logs")
       .insert({
         action: "feature_definition_updated",
@@ -1413,7 +1413,7 @@ export async function bulkSetFeatureTier(tier: string, enabled: boolean): Promis
   }
 
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
+    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
       .from("activity_logs")
       .insert({
         action: "feature_tier_bulk_update",
@@ -1519,7 +1519,7 @@ export async function updatePricingTier(
 
   // Audit log (non-blocking).
   try {
-    await supabase // nosemgrep: tenant-scoping — global super-admin audit event (pricing catalogue is platform-wide, no clinic context)
+    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (pricing catalogue is platform-wide, no clinic context)
       .from("activity_logs")
       .insert({
         action: "pricing_tier_updated",

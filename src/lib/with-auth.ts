@@ -23,6 +23,7 @@ import {
   apiNotFound,
   apiUnauthorized,
 } from "@/lib/api-response";
+import { isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { verifyProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { perUserLimiter } from "@/lib/rate-limit";
@@ -226,7 +227,9 @@ export function withAuth<RouteCtx = unknown>(
               error: tenantErr,
             });
             if (!failOpen) {
-              return finalize(apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE"));
+              return finalize(
+                apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE"),
+              );
             }
           }
         }
@@ -243,9 +246,7 @@ export function withAuth<RouteCtx = unknown>(
       // Workers fleet instead of being per-isolate. Falls back to in-memory
       // only when no distributed backend is configured (dev / single host).
       if (!(await perUserLimiter.check(`user:${profile.id}`))) {
-        return finalize(
-          apiError("Too many requests. Please slow down.", 429, "USER_RATE_LIMIT"),
-        );
+        return finalize(apiError("Too many requests. Please slow down.", 429, "USER_RATE_LIMIT"));
       }
 
       // F-A93-04: Log 100% of read access for PHI-bearing endpoints.
@@ -260,7 +261,7 @@ export function withAuth<RouteCtx = unknown>(
           /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(
             pathname,
           );
-        const shouldLog = process.env.NODE_ENV !== "production" || isPhiEndpoint;
+        const shouldLog = !isProduction() || isPhiEndpoint;
         if (shouldLog) {
           // INJ-02: Sanitize pathname to prevent log injection via CRLF/tab
           const safePath = pathname.replace(/[\r\n\t]/g, "?");
@@ -423,7 +424,9 @@ export function withAuthAnyRole<RouteCtx = unknown>(
               error: tenantErr,
             });
             if (!failOpen) {
-              return finalize(apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE"));
+              return finalize(
+                apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE"),
+              );
             }
           }
         }

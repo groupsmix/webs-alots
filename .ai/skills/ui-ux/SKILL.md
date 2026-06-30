@@ -14,7 +14,7 @@ in `data/` and follow these reasoning rules.
 ### 1. Component Hierarchy
 
 - Use existing shadcn/ui components from `src/components/ui/` before creating new ones
-- Match the existing Tailwind 4 design tokens (see `tailwind.config.ts` and `src/app/globals.css`)
+- Match the existing Tailwind 4 design tokens — defined CSS-first via the `@theme` block in `src/app/globals.css` (this project has no `tailwind.config.ts`)
 - Dashboard pages follow the Card + Grid pattern from analytics pages
 
 ### 2. Healthcare SaaS Context

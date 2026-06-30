@@ -14,9 +14,9 @@ rules:
           export function createUntypedAdminClient(...) { ... }
     message: >
       Direct createAdminClient() usage detected — prefer
-      createScopedAdminClient(purpose, clinicId) for single-tenant
+      createScopedAdminClient(auditLabel, clinicId) for single-tenant
       operations. If cross-tenant access is intentional, suppress with
-      `// nosemgrep: admin-client-guard`.
+      `// nosemgrep: semgrep.admin-client-guard`.
     severity: WARNING
     languages: [typescript, javascript]
     paths:

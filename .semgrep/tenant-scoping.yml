@@ -30,6 +30,15 @@ rules:
   #   - Admin client queries (createAdminClient) used for cross-tenant ops
   #   - Auth/registration flows before a clinic_id exists
   #
+  # KNOWN BLIND SPOT (defense-in-depth, not caught here):
+  #   Queries that hide `.from(...)` behind a typed table-accessor helper —
+  #   e.g. `invoicesTable(supabase).select(...).eq("clinic_id", id)` — are
+  #   invisible to this rule because the pattern keys on `$CLIENT.from(...)`.
+  #   Those accessors MUST still scope by clinic_id at the call site; they are
+  #   covered by manual review and by the runtime tenant context (x-clinic-id
+  #   header + RLS). The CI backstop scripts/check-tenant-scoping.mjs also
+  #   matches `<entity>Table(...).<mutation>(...)` for the mutation case.
+  #
   - id: tenant-scoping
     patterns:
       - pattern: |

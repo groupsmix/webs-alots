@@ -175,7 +175,7 @@ export default function SystemStatusPage() {
         // to display total platform user count. No PII is returned (head:true, count only).
         // Page is restricted to super_admin role via layout auth guard.
         const { count } = await supabase
-          .from("users") // nosemgrep: tenant-scoping
+          .from("users") // nosemgrep: semgrep.tenant-scoping
           .select("id", { count: "exact", head: true });
         userCount = count ?? 0;
       } catch {
