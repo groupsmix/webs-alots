@@ -137,8 +137,11 @@ const PUBLIC_API_ROUTES = [
   "/api/checkin/qr-scan",
   // NPS survey response — patients submit via WhatsApp link without session
   "/api/nps/respond",
-  // Waiting queue — public display on waiting room screens
-  "/api/waiting-queue",
+  // NOTE: /api/waiting-queue is intentionally NOT public. Despite serving
+  // waiting-room screens, the payload exposes patient_id, doctor_id and
+  // check-in timestamps (PHI). The handler enforces withAuth(receptionist+),
+  // and it is kept under the middleware deny-by-default gate so the session
+  // check is not the handler's sole line of defence (S-1).
   // Public chatbot — basic (keyword) tier serves anonymous clinic visitors
   "/api/chat",
   // Demo-request lead capture — prospective clinics submit from the public

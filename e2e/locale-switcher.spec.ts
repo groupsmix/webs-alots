@@ -12,6 +12,13 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Locale behavior", () => {
+  // E-1: Pin the base URL to a tenant subdomain. Public-locale behavior
+  // (preferred-locale localStorage + html lang/dir) is exercised on the clinic
+  // public page, which only renders on a tenant subdomain — not the root SaaS
+  // landing. CI sets E2E_BASE_URL to the demo subdomain; fall back to
+  // demo.localhost locally so the suite doesn't fail against the root domain.
+  test.use({ baseURL: process.env.E2E_BASE_URL || "http://demo.localhost:3000" });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => localStorage.removeItem("preferred-locale"));

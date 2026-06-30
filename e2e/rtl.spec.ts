@@ -4,10 +4,18 @@ import { test, expect } from "@playwright/test";
 // RTL is exercised across environments. Hardcoding domain "localhost" meant the
 // cookie was never sent when E2E_BASE_URL targeted a subdomain (CI uses
 // demo.localhost) or a remote host, silently skipping the SSR path.
-const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
+//
+// E-1: The RTL assertions on "/" (public page) describe the clinic public site,
+// which only renders on a tenant subdomain. Fall back to demo.localhost (not the
+// root domain) so the suite targets a tenant locally, matching CI's E2E_BASE_URL.
+const BASE_URL = process.env.E2E_BASE_URL || "http://demo.localhost:3000";
 const BASE_HOST = new URL(BASE_URL).hostname;
 
 test.describe("RTL (Arabic) Layout Smoke Tests", () => {
+  // Pin the base URL so page.goto() targets the same tenant origin the
+  // storageState cookie/localStorage below are scoped to.
+  test.use({ baseURL: BASE_URL });
+
   // Set both cookie and localStorage to trigger Arabic locale.
   // The server reads the cookie for SSR; the client reads localStorage.
   test.use({
