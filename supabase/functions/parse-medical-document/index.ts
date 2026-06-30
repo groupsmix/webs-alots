@@ -44,6 +44,22 @@ const ANTHROPIC_TIMEOUT_MS = 90_000;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Compares two secrets without leaking length/content via timing.
+ * Returns false on length mismatch (token lengths are fixed, so this does
+ * not leak meaningful information) and otherwise accumulates byte diffs so
+ * the loop always runs to completion.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  if (ab.length === 0 || ab.length !== bb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
+
 // ── Extraction prompt ─────────────────────────────────────────────────────────
 
 const EXTRACTION_PROMPT = `Tu es un expert en analyse de documents médicaux marocains.
@@ -204,7 +220,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-  if (!serviceKey || token !== serviceKey) {
+  if (!serviceKey || !timingSafeEqual(token, serviceKey)) {
     return json({ error: "Unauthorized" }, 401);
   }
 
