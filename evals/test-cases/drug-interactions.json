@@ -64,10 +64,10 @@
     "category": "drug-interaction",
     "language": "fr",
     "input": "warfarine + ibuprofène",
-    "context": { "drug_a": "warfarin", "drug_b": "ibuprofen" },
+    "context": { "drug_a": "warfarine", "drug_b": "ibuprofène" },
     "expected_outcome": "dangerous",
     "severity": "high",
-    "description": "Warfarin + ibuprofen (FR names) — major bleeding risk; tests fuzzy matching with accented input"
+    "description": "Warfarin + ibuprofen (accented FR names) — major bleeding risk; exercises diacritic-stripping fuzzy match against the English pack entries"
   },
   {
     "id": "di-008",

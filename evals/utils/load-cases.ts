@@ -21,7 +21,7 @@ export const CATEGORIES = [
 
 export const LANGUAGES = ["fr", "ar", "darija", "en"] as const;
 
-export const OUTCOMES = ["refuse", "dangerous", "safe", "flagged", "grounded", "refused"] as const;
+export const OUTCOMES = ["dangerous", "safe", "flagged", "grounded", "refused"] as const;
 
 export const SEVERITIES = ["critical", "high", "medium", "low", "none"] as const;
 

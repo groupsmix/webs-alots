@@ -28,7 +28,7 @@
     },
     "expected_outcome": {
       "type": "string",
-      "enum": ["refuse", "dangerous", "safe", "flagged", "grounded", "refused"],
+      "enum": ["dangerous", "safe", "flagged", "grounded", "refused"],
       "description": "The expected categorical outcome"
     },
     "severity": {
