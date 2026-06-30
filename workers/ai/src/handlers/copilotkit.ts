@@ -16,17 +16,27 @@
  *
  *   We cache the loaded module + adapter in module-scope variables so the
  *   import cost is paid once per isolate, not per request.
+ *
+ *   NOTE: the `import type` below and the `typeof import(...)` alias are both
+ *   fully erased at build time (they emit NO runtime require), so they restore
+ *   type-safety without re-introducing the top-level evaluation problem above.
  */
 
+import type { CopilotServiceAdapter } from "@copilotkit/runtime";
+import type OpenAIClient from "openai";
+
 import { requireSuperAdmin, jsonResponse, type Env } from "../lib/supabase";
+import { checkRateLimit } from "../lib/rate-limit";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedRuntimeModule: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedServiceAdapter: any = null;
+type RuntimeModule = typeof import("@copilotkit/runtime");
 
-async function loadRuntime(env: Env) {
-  if (cachedRuntimeModule) {
+let cachedRuntimeModule: RuntimeModule | null = null;
+let cachedServiceAdapter: CopilotServiceAdapter | null = null;
+
+async function loadRuntime(
+  env: Env,
+): Promise<{ runtimeModule: RuntimeModule; serviceAdapter: CopilotServiceAdapter }> {
+  if (cachedRuntimeModule && cachedServiceAdapter) {
     return { runtimeModule: cachedRuntimeModule, serviceAdapter: cachedServiceAdapter };
   }
   // Dynamic import — see header comment.
@@ -37,11 +47,10 @@ async function loadRuntime(env: Env) {
   //     OpenAI-compatible endpoint via OPENAI_BASE_URL (e.g. mimo, OpenAI,
   //     groq). OPENAI_MODEL selects the model id.
   //   • else ANTHROPIC_API_KEY → original Anthropic adapter.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let serviceAdapter: any;
+  let serviceAdapter: CopilotServiceAdapter;
   if (env.OPENAI_API_KEY) {
     const { default: OpenAI } = await import("openai");
-    const openai = new OpenAI({
+    const openai: OpenAIClient = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
       ...(env.OPENAI_BASE_URL ? { baseURL: env.OPENAI_BASE_URL } : {}),
     });
@@ -71,19 +80,28 @@ export async function handleCopilotKit(request: Request, env: Env): Promise<Resp
 
   const authResult = await requireSuperAdmin(request, env);
   if (!authResult.ok) return authResult.response;
-  const { userId, userEmail } = authResult;
+  const { userId } = authResult;
+
+  // Defense-in-depth: cap how fast a single super_admin session can drive the
+  // upstream AI provider. See lib/rate-limit.ts for the per-isolate caveat.
+  const limit = checkRateLimit(`copilotkit:${userId}`);
+  if (!limit.allowed) {
+    return jsonResponse({ error: "Too Many Requests" }, 429, {
+      "Retry-After": String(limit.retryAfterSec),
+    });
+  }
 
   const { runtimeModule, serviceAdapter } = await loadRuntime(env);
   const { CopilotRuntime, copilotRuntimeNextJSAppRouterEndpoint } = runtimeModule;
 
-  const runtime = new CopilotRuntime({
-    middleware: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onBeforeRequest: async ({ properties }: { properties: Record<string, any> }) => {
-        return { ...properties, userId, userEmail };
-      },
-    },
-  });
+  // NOTE: we intentionally do NOT use CopilotRuntime's `middleware.onBeforeRequest`
+  // to inject the caller identity. In @copilotkit/runtime@1.59.5 that hook is
+  // deprecated, the runtime IGNORES its return value, and the `properties` it
+  // receives is a throwaway copy of the request body — so per-user context
+  // injected there does not reach server actions. Access control for this
+  // endpoint is enforced upstream by requireSuperAdmin(); there are currently
+  // no server-side actions that consume the caller identity.
+  const runtime = new CopilotRuntime();
 
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
     runtime,
@@ -94,6 +112,5 @@ export async function handleCopilotKit(request: Request, env: Env): Promise<Resp
   // copilotRuntimeNextJSAppRouterEndpoint returns a Web-API-compatible
   // handler. NextRequest is a strict superset of Request, so a plain
   // Request works at runtime even though the type signature is narrower.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return handleRequest(request as any);
+  return handleRequest(request as unknown as Parameters<typeof handleRequest>[0]);
 }

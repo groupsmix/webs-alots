@@ -14,38 +14,42 @@
 
 import { handleCopilotKit } from "./handlers/copilotkit";
 import { jsonResponse, type Env } from "./lib/supabase";
+import { withCors } from "./lib/cors";
+
+/**
+ * Core routing. CORS is applied centrally by the fetch() wrapper below, so
+ * route handlers never have to think about it (the previous version only
+ * added CORS to the preflight + error paths, never the success stream).
+ */
+async function route(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  // Method guard: the route is POST-only (matches the original Next.js route
+  // handler which only exported `export async function POST`).
+  if (request.method !== "POST") {
+    // Allow OPTIONS for CORS preflight. withCors() attaches the actual
+    // Access-Control-* headers when the Origin is allowed.
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204 });
+    }
+    return jsonResponse({ error: "Method Not Allowed" }, 405, { Allow: "POST, OPTIONS" });
+  }
+
+  if (path === "/api/copilotkit" || path.startsWith("/api/copilotkit/")) {
+    return await handleCopilotKit(request, env);
+  }
+  return jsonResponse({ error: "Not Found" }, 404);
+}
 
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    // Method guard: both routes are POST-only (matches the original Next.js
-    // route handlers which only exported `export async function POST`).
-    if (request.method !== "POST") {
-      // Allow OPTIONS for CORS preflight if a client decides to send one.
-      if (request.method === "OPTIONS") {
-        return new Response(null, {
-          status: 204,
-          headers: {
-            "Access-Control-Allow-Origin": url.origin,
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie",
-            "Access-Control-Allow-Credentials": "true",
-          },
-        });
-      }
-      return jsonResponse({ error: "Method Not Allowed" }, 405, { Allow: "POST" });
-    }
-
     try {
-      if (path === "/api/copilotkit" || path.startsWith("/api/copilotkit/")) {
-        return await handleCopilotKit(request, env);
-      }
-      return jsonResponse({ error: "Not Found" }, 404);
+      const response = await route(request, env);
+      return withCors(response, request);
     } catch (err) {
       console.error("[webs-alots-ai] unhandled error", err);
-      return jsonResponse({ error: "Internal Server Error" }, 500);
+      return withCors(jsonResponse({ error: "Internal Server Error" }, 500), request);
     }
   },
 } satisfies ExportedHandler<Env>;

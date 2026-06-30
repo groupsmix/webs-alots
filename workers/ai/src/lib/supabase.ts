@@ -21,22 +21,17 @@ export interface Env {
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
   // ── AI provider secrets ───────────────────────────────────────────────
-  // CopilotKit (handlers/copilotkit.ts) consumes ANTHROPIC_API_KEY only.
-  // The other provider keys below were used solely by the now-removed AI
-  // Builder and are currently unused — safe to drop in a follow-up once the
-  // deploy/secrets tooling stops provisioning them.
-  GROQ_API_KEY: string;
-  ANTHROPIC_API_KEY?: string; // consumed by the CopilotKit runtime
-  GOOGLE_GENERATIVE_AI_API_KEY?: string;
+  // The CopilotKit handler (handlers/copilotkit.ts) uses exactly one of these
+  // provider configs — at least one MUST be set:
+  //   • OPENAI_API_KEY (+ optional OPENAI_BASE_URL / OPENAI_MODEL) for any
+  //     OpenAI-compatible endpoint, OR
+  //   • ANTHROPIC_API_KEY for the Anthropic adapter.
+  // No other provider keys are consumed by this Worker (the GROQ/Google/
+  // DeepSeek/Mistral/xAI/E2B keys belonged to the removed AI Builder).
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string; // OpenAI-compatible endpoint (e.g. mimo)
   OPENAI_MODEL?: string; // model id for the OpenAI-compatible provider
-  DEEPSEEK_API_KEY?: string;
-  MISTRAL_API_KEY?: string;
-  XAI_API_KEY?: string;
-  // Unused since the AI Builder was removed (it rendered generated code
-  // client-side and only reserved this for future server-side execution).
-  E2B_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string; // consumed by the CopilotKit Anthropic adapter
 }
 
 interface ParsedCookie {
@@ -56,9 +51,19 @@ function parseCookieHeader(cookieHeader: string | null): ParsedCookie[] {
       const eq = pair.indexOf("=");
       if (eq === -1) return null;
       const name = pair.slice(0, eq).trim();
-      const value = pair.slice(eq + 1).trim();
+      const rawValue = pair.slice(eq + 1).trim();
       if (!name) return null;
-      return { name, value: decodeURIComponent(value) };
+      // Cookie values are percent-encoded by @supabase/ssr when set, but a
+      // malformed value (e.g. a stray "%" that isn't a valid escape) would make
+      // decodeURIComponent throw URIError and 500 the whole request. Fall back
+      // to the raw value rather than crashing on a single bad cookie.
+      let value: string;
+      try {
+        value = decodeURIComponent(rawValue);
+      } catch {
+        value = rawValue;
+      }
+      return { name, value };
     })
     .filter((c): c is ParsedCookie => c !== null);
 }
@@ -98,7 +103,6 @@ export async function requireSuperAdmin(
       ok: true;
       userId: string;
       userEmail: string | undefined;
-      supabase: ReturnType<typeof createSupabaseClient>;
     }
   | { ok: false; response: Response }
 > {
@@ -126,11 +130,25 @@ export async function requireSuperAdmin(
   // super_admins — silently breaking the CopilotKit endpoint even when keys
   // were configured. The rest of the app (with-auth.ts, AgentWidgetMount)
   // correctly keys on `auth_id`.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("users")
     .select("role")
     .eq("auth_id", user.id)
     .single();
+
+  // Distinguish "no matching user / not a super_admin" (legitimate 403) from a
+  // real backend failure (500). .single() returns PGRST116 when zero rows
+  // match — that means the auth user has no profile row, which is a Forbidden
+  // case. Any OTHER error is an infrastructure fault and must NOT be masked as
+  // a permission denial (the previous code ignored the error entirely and
+  // returned 403 for transient DB outages).
+  if (profileError) {
+    if (profileError.code === "PGRST116") {
+      return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
+    }
+    console.error("[webs-alots-ai] role lookup failed", profileError);
+    return { ok: false, response: jsonResponse({ error: "Internal Server Error" }, 500) };
+  }
 
   if (profile?.role !== "super_admin") {
     return {
@@ -139,7 +157,7 @@ export async function requireSuperAdmin(
     };
   }
 
-  return { ok: true, userId: user.id, userEmail: user.email, supabase };
+  return { ok: true, userId: user.id, userEmail: user.email };
 }
 
 export function jsonResponse(body: unknown, status = 200, extraHeaders: HeadersInit = {}) {
