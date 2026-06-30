@@ -10,6 +10,7 @@
  * All operations require the authenticated user to have role = "super_admin".
  */
 
+import { assertClinicId } from "@/lib/assert-tenant";
 import { requireRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import {
@@ -462,6 +463,101 @@ export async function updateClinicStatus(
       });
     }
   }
+}
+
+// ---------- Clinic deletion ----------
+
+/**
+ * Permanently delete a clinic and all of its tenant data.
+ *
+ * **IRREVERSIBLE.** Most clinic-scoped tables reference `clinics(id)` with
+ * `ON DELETE CASCADE`, so removing the clinic row also removes its patients,
+ * appointments, payments, uploaded files, etc. To stop an operator from wiping
+ * a real practice's PHI by accident, deletion is **refused when the clinic
+ * still has patient records** unless `force: true` is explicitly passed (the UI
+ * gates this behind a "type the clinic name" confirmation and an extra
+ * checkbox). Empty / junk clinics (zero patients) delete without `force`.
+ *
+ * Security: super_admin only (enforced by `requireRole`). The actual DELETE
+ * runs through the service-role client so the cross-tenant cascade is not
+ * blocked by RLS — the clinic id is validated first and the operation is
+ * audit-logged. The audit row is written WITHOUT a `clinic_id` so the cascade
+ * does not delete the very record that proves the deletion happened.
+ *
+ * @returns the number of patient records that were erased alongside the clinic.
+ */
+export async function deleteClinic(
+  clinicId: string,
+  options: { force?: boolean } = {},
+): Promise<{ deleted: true; patientCount: number }> {
+  const profile = await requireRole("super_admin");
+  // Runtime UUID validation before the service-role client touches anything.
+  assertClinicId(clinicId, "super-admin.deleteClinic");
+
+  const supabase = await createClient();
+
+  const { data: clinic, error: fetchError } = await supabase
+    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin deletes a specific clinic by id
+    .select("id, name, subdomain")
+    .eq("id", clinicId)
+    .single();
+
+  if (fetchError || !clinic) {
+    throw new Error(`Clinic not found: ${fetchError?.message ?? clinicId}`);
+  }
+
+  // Guard: never destroy real patient PHI unless the caller explicitly forces it.
+  const { count: patientCountRaw } = await supabase
+    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin counts patients for a specific clinic before deletion
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId)
+    .eq("role", "patient");
+
+  const patientCount = patientCountRaw ?? 0;
+  if (patientCount > 0 && !options.force) {
+    throw new Error(
+      `Refusing to delete "${clinic.name}": it still has ${patientCount} patient record(s). ` +
+        `Confirm again with the "erase patient data" option to permanently remove it.`,
+    );
+  }
+
+  // Audit FIRST (clinic_id intentionally null so the cascade keeps this row).
+  try {
+    await supabase // nosemgrep: semgrep.tenant-scoping — platform-level audit row (no clinic_id) so it survives the clinic's cascade delete
+      .from("activity_logs")
+      .insert({
+        action: "clinic_deleted",
+        description:
+          `Clinic "${clinic.name}" (id ${clinic.id}, subdomain ${clinic.subdomain ?? "—"}) ` +
+          `permanently deleted by ${profile.name ?? "super_admin"}` +
+          (patientCount > 0 ? ` — ${patientCount} patient record(s) erased` : ""),
+        type: "clinic",
+        timestamp: new Date().toISOString(),
+      });
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", {
+      context: "super-admin-actions",
+      clinicId,
+      error: err,
+    });
+  }
+
+  // Cross-tenant delete via service-role client (RLS would otherwise block the
+  // cascade). Caller is super_admin-gated and the id is validated above.
+  // nosemgrep: semgrep.admin-client-guard — super-admin cross-tenant clinic deletion; id validated, role-gated, audit-logged above
+  const admin = createAdminClient("super_admin");
+  const { error: deleteError } = await admin.from("clinics").delete().eq("id", clinicId);
+
+  if (deleteError) {
+    throw new Error(`Failed to delete clinic: ${deleteError.message}`);
+  }
+
+  // Stop middleware from resolving the now-deleted tenant.
+  if (clinic.subdomain) {
+    invalidateSubdomainCache(clinic.subdomain);
+  }
+
+  return { deleted: true, patientCount };
 }
 
 // ---------- Promotions ----------
