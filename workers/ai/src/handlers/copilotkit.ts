@@ -24,9 +24,8 @@
 
 import type { CopilotServiceAdapter } from "@copilotkit/runtime";
 import type OpenAIClient from "openai";
-
-import { requireSuperAdmin, jsonResponse, type Env } from "../lib/supabase";
 import { checkRateLimit } from "../lib/rate-limit";
+import { requireSuperAdmin, jsonResponse, type Env } from "../lib/supabase";
 
 type RuntimeModule = typeof import("@copilotkit/runtime");
 

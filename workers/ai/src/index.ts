@@ -13,8 +13,8 @@
  */
 
 import { handleCopilotKit } from "./handlers/copilotkit";
-import { jsonResponse, type Env } from "./lib/supabase";
 import { withCors } from "./lib/cors";
+import { jsonResponse, type Env } from "./lib/supabase";
 
 /**
  * Core routing. CORS is applied centrally by the fetch() wrapper below, so
