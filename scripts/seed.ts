@@ -503,6 +503,29 @@ async function seedTimeSlots() {
   console.log(`  ✓ ${slots.length} time slots seeded`);
 }
 
+/**
+ * Build the appointment time columns from a start instant + duration.
+ *
+ * `slot_start`/`slot_end` are the canonical TIMESTAMPTZ columns, but the app
+ * (cancel, reschedule, double-booking index, calendar views) reads the derived
+ * `appointment_date`/`start_time`/`end_time` columns. Migration 00019 backfills
+ * those for pre-existing rows, but it runs BEFORE this seed, so seeded rows
+ * would otherwise have them NULL — which makes cancel fail with "Appointment is
+ * missing date or time information". We derive them here with the SAME UTC-based
+ * rule as 00019 so seeded appointments match ones created via the booking RPC.
+ */
+function appointmentSlot(startMs: number, durationMin: number) {
+  const startIso = new Date(startMs).toISOString();
+  const endIso = new Date(startMs + durationMin * 60 * 1000).toISOString();
+  return {
+    slot_start: startIso,
+    slot_end: endIso,
+    appointment_date: startIso.slice(0, 10), // YYYY-MM-DD (UTC)
+    start_time: startIso.slice(11, 19), // HH:MM:SS (UTC)
+    end_time: endIso.slice(11, 19), // HH:MM:SS (UTC)
+  };
+}
+
 async function seedAppointments() {
   console.log("Seeding appointments...");
   const now = new Date();
@@ -516,8 +539,7 @@ async function seedAppointments() {
       doctor_id: USER_IDS.doctor,
       clinic_id: CLINIC_IDS.drAhmed,
       service_id: SERVICE_IDS.consultationGenerale,
-      slot_start: new Date(tomorrow.getTime()).toISOString(),
-      slot_end: new Date(tomorrow.getTime() + 30 * 60 * 1000).toISOString(),
+      ...appointmentSlot(tomorrow.getTime(), 30),
       status: "confirmed",
       is_first_visit: false,
       insurance_flag: true,
@@ -529,8 +551,7 @@ async function seedAppointments() {
       doctor_id: USER_IDS.doctor,
       clinic_id: CLINIC_IDS.drAhmed,
       service_id: SERVICE_IDS.suiviChronique,
-      slot_start: new Date(tomorrow.getTime() + 60 * 60 * 1000).toISOString(),
-      slot_end: new Date(tomorrow.getTime() + 60 * 60 * 1000 + 20 * 60 * 1000).toISOString(),
+      ...appointmentSlot(tomorrow.getTime() + 60 * 60 * 1000, 20),
       status: "pending",
       is_first_visit: true,
       insurance_flag: false,
@@ -542,8 +563,7 @@ async function seedAppointments() {
       doctor_id: USER_IDS.dentist,
       clinic_id: CLINIC_IDS.sourireDental,
       service_id: SERVICE_IDS.detartrage,
-      slot_start: new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-      slot_end: new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000 + 45 * 60 * 1000).toISOString(),
+      ...appointmentSlot(tomorrow.getTime() + 2 * 60 * 60 * 1000, 45),
       status: "confirmed",
       is_first_visit: false,
       insurance_flag: true,
@@ -554,8 +574,7 @@ async function seedAppointments() {
       doctor_id: USER_IDS.doctor2,
       clinic_id: CLINIC_IDS.polycliniqueAtlas,
       service_id: SERVICE_IDS.echoAbdominale,
-      slot_start: new Date(tomorrow.getTime() + 3 * 60 * 60 * 1000).toISOString(),
-      slot_end: new Date(tomorrow.getTime() + 3 * 60 * 60 * 1000 + 30 * 60 * 1000).toISOString(),
+      ...appointmentSlot(tomorrow.getTime() + 3 * 60 * 60 * 1000, 30),
       status: "pending",
       is_first_visit: true,
       insurance_flag: false,
