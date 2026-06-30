@@ -41,10 +41,13 @@
  *   (counted, not failed). Point it at a DISPOSABLE load-test clinic only.
  *
  *   AUTH journey (opt-in: --env SESSION_COOKIE="sb-...=...; ..."):
- *     6. GET /api/ping with the supplied cookie (liveness of an authed request)
- *   Because sessions are cookie-only, k6 cannot mint one; supply a cookie
- *   captured from a logged-in browser/Playwright run if you want an authed leg.
- *   Upload/cancel are intentionally NOT automated here — see CAVEATS at bottom.
+ *     6. GET ${AUTH_PATH} with the supplied cookie (default
+ *        /api/patient/documents) — a real cookie-protected read.
+ *   Sessions are cookie-only (@supabase/ssr) and k6 cannot mint one: login is
+ *   rate limited (5/min/IP) and Turnstile-gated, and /api/auth/demo-login only
+ *   returns a magic-link token_hash the CLIENT must exchange — it does not set
+ *   cookies. So capture a session cookie ONCE and reuse it (see HOW TO CAPTURE
+ *   below). Upload/cancel are intentionally NOT automated here — see CAVEATS.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * Usage
@@ -61,6 +64,19 @@
  *
  *   # Quick functional check (tiny ramp), any environment:
  *   k6 run --env BASE_URL=https://staging.oltigo.com --env PROFILE=smoke k6/booking-flow.js
+ *
+ *   # Include an authenticated read leg (reuses one captured session):
+ *   k6 run --env BASE_URL=https://staging.oltigo.com \
+ *          --env SESSION_COOKIE="$(cat session-cookie.txt)" k6/booking-flow.js
+ *
+ * HOW TO CAPTURE SESSION_COOKIE (one-time, robust — no library coupling):
+ *   - Browser: log in on staging, open DevTools → Application → Cookies, copy
+ *     every cookie whose name starts with "sb-" (incl. any ".0"/".1" chunks)
+ *     as a single "name=value; name2=value2" string.
+ *   - Playwright: reuse an authenticated storageState's cookies (the e2e suite
+ *     already logs in via /login) and join them into the same header string.
+ *   Set AUTH_PATH to a route the captured session's role can read (default
+ *   /api/patient/documents expects a patient session).
  *
  * Profiles (--env PROFILE=...):
  *   load  (default) — 2m→50, 5m→100, 2m→0   (read journey SLOs)
@@ -84,6 +100,12 @@ const PROFILE = (__ENV.PROFILE || "load").toLowerCase();
 const BOOKING_WRITE = __ENV.BOOKING_WRITE === "true";
 const BOOKING_PATH = __ENV.BOOKING_PATH || "/book";
 const SESSION_COOKIE = __ENV.SESSION_COOKIE || "";
+// Cookie-protected READ endpoint exercised by the optional authed leg. Default
+// targets the patient's own document list (GET /api/patient/documents — patient
+// role, no required query params, scoped to the session user). Override to match
+// the role of whatever session you captured (e.g. a clinic_admin cookie →
+// "/api/patient/timeline?patientId=<uuid>").
+const AUTH_PATH = __ENV.AUTH_PATH || "/api/patient/documents";
 // A phone the verify endpoint will accept (syntactic check only today). Use an
 // obviously-fake test number so any created bookings are easy to identify.
 const TEST_PHONE = __ENV.BOOKING_PHONE || "+212600000000";
@@ -302,13 +324,36 @@ function writeJourney(BASE_URL) {
 
 // ── Optional authenticated leg (opt-in) ───────────────────────────────────────
 
+// Authenticated-read availability — only meaningful when SESSION_COOKIE is set.
+const authAvailability = new Rate("auth_availability");
+
 function authJourney(BASE_URL) {
-  const res = http.get(`${BASE_URL}/api/ping`, {
+  // Exercise a real cookie-protected read with the supplied session. Reusing a
+  // single captured session across all VUs is intentional: login is rate
+  // limited (5/min/IP) and Turnstile-gated, so per-VU login is neither possible
+  // nor desirable. This measures authed read performance (RLS-scoped queries)
+  // under concurrency without creating data.
+  const res = http.get(`${BASE_URL}${AUTH_PATH}`, {
     ...REQUEST_TIMEOUT,
     headers: { Cookie: SESSION_COOKIE },
-    tags: { journey: "auth", step: "ping" },
+    tags: { journey: "auth", step: "read" },
+    // 200 = authed OK. 401/403 are surfaced as failures below (expired/invalid
+    // cookie or role/path mismatch) rather than counted as transport errors.
+    responseCallback: http.expectedStatuses(200, 401, 403),
   });
-  check(res, { "authed ping 200": (r) => r.status === 200 });
+
+  const ok = res.status === 200;
+  authAvailability.add(ok);
+  check(res, {
+    "authed read 200 (cookie valid)": () => ok,
+  });
+  if (res.status === 401 || res.status === 403) {
+    console.warn(
+      `[auth] ${AUTH_PATH} → ${res.status}: SESSION_COOKIE is invalid/expired, or its role ` +
+        `does not match AUTH_PATH. Re-capture the cookie or set --env AUTH_PATH to a route the ` +
+        `session's role can read.`,
+    );
+  }
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
@@ -332,19 +377,26 @@ export default function (data) {
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- * CAVEATS / why upload + cancel are not automated here
+ * CAVEATS / why upload + cancel (and per-VU login) are not automated here
  * ─────────────────────────────────────────────────────────────────────────────
+ * - Sessions are Supabase SSR COOKIES (@supabase/ssr). k6 cannot mint one:
+ *     • login is rate limited to 5/min/IP and Turnstile-gated;
+ *     • /api/auth/demo-login returns a magic-link `token_hash` that the CLIENT
+ *       must exchange via supabase-js — it does NOT set cookies on its response;
+ *     • reconstructing the @supabase/ssr cookie from raw GoTrue tokens couples
+ *       the test to that library's internal (and chunked) cookie encoding,
+ *       which changes across versions.
+ *   The robust path is therefore: capture ONE real session cookie and reuse it
+ *   (see HOW TO CAPTURE in the header). That is exactly what the SESSION_COOKIE
+ *   authed leg does.
  * - POST /api/upload and POST /api/booking/cancel (and PATCH
- *   /api/appointments/:id/cancel) require a Supabase SSR session COOKIE. They
- *   reject Authorization: Bearer JWTs. k6 cannot mint @supabase/ssr cookies, so
- *   automating these would mean reverse-engineering the chunked cookie format —
- *   brittle and coupled to library internals. Supply SESSION_COOKIE for a
- *   read-only authed liveness check instead, or extend authJourney() with your
- *   own captured cookie if you need to load-test authed reads.
- * - Cancellation also requires an existing, cancellable appointment owned by
- *   the session user and inside the cancellation window — not reproducible from
- *   synthetic load without seeded fixtures.
- * - For a TRUE end-to-end authenticated booking journey under load, drive it
- *   through Playwright against a seeded staging clinic (see e2e/), or add a
- *   dedicated load-test-only authenticated booking endpoint guarded by a secret.
+ *   /api/appointments/:id/cancel) are cookie-authenticated writes with real
+ *   side effects (storage objects, status changes, notifications, waiting-list
+ *   promotion). High-VU automation of these is unsafe and, for cancel, also
+ *   requires a pre-existing cancellable appointment owned by the session user
+ *   inside the cancellation window — not reproducible from synthetic load.
+ * - A secret-guarded "load-test" bypass endpoint was considered and REJECTED:
+ *   shipping an auth/rate-limit bypass into a PHI application is an
+ *   unacceptable attack surface. Authenticated WRITE coverage belongs in the
+ *   functional Playwright e2e suite (see e2e/), not in a high-VU load test.
  */
