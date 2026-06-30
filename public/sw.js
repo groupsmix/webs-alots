@@ -13,7 +13,14 @@
  * stale authenticated content.
  */
 
-const CACHE_NAME = "oltigo-v3";
+// Bump this version on any change to the precache list or caching strategy.
+// The `activate` handler deletes every cache whose name is not CACHE_NAME, so
+// bumping it evicts the previous version's entries — including a stale
+// precached "/" shell — the moment this SW activates. Combined with the
+// network-first HTML strategy below (which always serves a fresh page when
+// online and only falls back to cache offline), this keeps the homepage from
+// ever being served stale after a deploy.
+const CACHE_NAME = "oltigo-v4";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE_URLS = ["/", "/offline.html"];
