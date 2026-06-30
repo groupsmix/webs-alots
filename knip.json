@@ -11,7 +11,8 @@
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/*/index.ts",
     "worker-cron-handler.ts",
-    "open-next.config.ts"
+    "open-next.config.ts",
+    "vitest.storybook.config.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

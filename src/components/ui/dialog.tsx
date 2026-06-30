@@ -54,6 +54,14 @@ function DialogContent({
   const closeLabel = t(locale, "action.close");
   const contentRef = React.useRef<HTMLDivElement>(null);
 
+  // Keep the latest onClose in a ref so the focus-trap effect below can run
+  // once on mount instead of re-running (and re-stealing focus) on every
+  // render when callers pass an inline `onClose={() => ...}`.
+  const onCloseRef = React.useRef(onClose);
+  React.useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   // Focus management: trap focus inside modal and restore on close
   React.useEffect(() => {
     const el = contentRef.current;
@@ -75,7 +83,7 @@ function DialogContent({
     // Trap focus within dialog
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
       if (e.key !== "Tab" || focusable.length === 0) return;
@@ -102,7 +110,10 @@ function DialogContent({
       document.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+    // Mount-only: the dialog mounts when opened and unmounts when closed, so
+    // running this once per mount is correct. The latest onClose is read via
+    // onCloseRef, so no reactive dependency is needed here.
+  }, []);
 
   return (
     <>

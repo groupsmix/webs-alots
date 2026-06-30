@@ -29,6 +29,7 @@
     "demo:seed": "tsx scripts/seed.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "test-storybook": "vitest run --config vitest.storybook.config.ts",
     "eval:ai": "tsx evals/run-all.ts"
   },
   "dependencies": {
