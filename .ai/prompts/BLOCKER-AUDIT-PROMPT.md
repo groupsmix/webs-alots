@@ -92,7 +92,9 @@ Search and read code in these high-risk areas. Cite `file:line` for every findin
 - **PHI/secrets**: `src/lib/encryption.ts`, `src/lib/logger`, `src/lib/audit-log`, Sentry configs
   (`sentry.*.config.ts`), `.env.example`. Grep for `console.log`, PHI fields in logs.
 - **Webhooks**: `src/app/api/**/webhook*`, WhatsApp + Stripe signature verification.
-- **Payments**: `src/app/api/payments/**`.
+- **Payments**: `src/app/api/payments/**` (CMI, Stripe checkout), `src/app/api/billing/**`
+  (Stripe checkout/portal/webhook), `src/app/api/webhooks/route.ts`, and
+  `src/app/api/cron/stripe-reconcile/` — verify all billing/reconcile flows, not just `payments/`.
 - **Migrations**: `supabase/migrations/` — destructive ops, missing RLS on new `clinic_id` tables.
 - **Env/boot guards**: `src/lib/env.ts`, `wrangler.toml`, cron guards.
 
@@ -155,7 +157,7 @@ Use this exact structure:
   output. No speculation, no "might be", no hallucinated file paths. If unsure, mark
   `UNVERIFIED` and say what you'd need to confirm.
 - **Do not fix code in this pass** unless explicitly asked — this is an audit. Propose fixes.
-- **Respect SEALED layers** (`src/middleware.ts`, `src/lib/auth/`, `src/lib/tenant*.ts`,
+- **Respect SEALED layers** (`src/middleware.ts`, `src/lib/auth*.ts`, `src/lib/tenant*.ts`,
   `src/lib/encryption.ts`, RLS migrations): report issues, but route fixes through human review.
 - **Don't re-report resolved items** from the roadmap/changelog without proof of regression.
 - **Be honest about the verdict.** If there are zero P0s and zero P1s, say READY. If you could

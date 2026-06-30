@@ -8,7 +8,7 @@
 ## Architecture Overview
 
 ```
-Layer 1 (SEALED): Auth, RLS, multi-tenant → src/middleware.ts, src/lib/auth/, src/lib/tenant.ts
+Layer 1 (SEALED): Auth, RLS, multi-tenant → src/middleware.ts, src/lib/auth.ts (+ with-auth.ts, api-auth.ts, auth-roles.ts, auth-providers.ts, cron-auth.ts), src/lib/tenant.ts
 Layer 2 (SEALED): Booking, payments, notifications → src/app/api/booking/, src/app/api/payments/, src/lib/whatsapp.ts
 Layer 3 (EDIT):   Config, features, niches → src/lib/config/, src/lib/features.ts, src/lib/hooks/use-clinic-features.tsx
 Layer 4 (EDIT):   Templates, UI, pages → src/lib/templates.ts, src/components/, src/app/
@@ -22,8 +22,8 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 | Task Type               | Files to Edit                                                                                                                                                               | Files to NEVER Touch    |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | Add new niche           | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx` | Everything else         |
-| Add new vertical        | `src/lib/config/verticals.ts`, create new file in `src/lib/config/verticals/`                                                                                               | Core config files       |
-| Add new template        | `src/lib/templates.ts`, create new CSS file in `src/styles/templates/`                                                                                                      | Core layout files       |
+| Add new vertical        | `src/lib/config/verticals.ts` (add the id to the `VerticalId` union), then wire config in `src/lib/template-presets.ts`, `src/lib/config/clinic-types.ts`, `src/lib/config/default-services.ts`, `src/lib/features.ts` | Core config files       |
+| Add new template        | `src/lib/templates.ts` (style via Tailwind utility classes / tokens in `src/app/globals.css` — there is no `src/styles/` directory)                                         | Core layout files       |
 | Add new template preset | `src/lib/template-presets.ts`                                                                                                                                               | Templates themselves    |
 | Add new feature flag    | `src/lib/features.ts`, `src/lib/hooks/use-clinic-features.tsx`                                                                                                              | Auth, RLS, middleware   |
 | Add new API route       | Create under `src/app/api/[feature]/route.ts`                                                                                                                               | Existing API routes     |
@@ -32,7 +32,7 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 | Add new dashboard page  | Create under `src/app/(admin)/admin/[page]/page.tsx`, add nav entry in `src/components/layouts/admin-layout-shell.tsx`                                                      | Existing pages          |
 | Add new public page     | Create under `src/app/(clinic-public)/[page]/page.tsx`                                                                                                                      | Existing pages          |
 | Add new payment gateway | Create under `src/app/api/payments/[gateway]/route.ts`                                                                                                                      | Existing payment routes |
-| Add new language        | `src/lib/i18n.ts`                                                                                                                                                           | Everything else         |
+| Add new language        | Create `src/locales/<lang>.json`, then register it in `src/lib/i18n.ts` (`Locale` type, `LOCALES`, and the JSON import + `translations` map)                                | Auth, RLS, middleware   |
 | Add new component       | Create under `src/components/[category]/`                                                                                                                                   | Existing components     |
 | Fix a bug               | Depends on bug location — read error trace                                                                                                                                  | Unrelated files         |
 
@@ -41,7 +41,7 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 ## DO NOT Rules
 
 - Do **NOT** modify `src/middleware.ts` unless explicitly asked
-- Do **NOT** modify `src/lib/auth/` or `src/lib/auth.ts` unless explicitly asked
+- Do **NOT** modify `src/lib/auth.ts` or the related auth modules (`with-auth.ts`, `api-auth.ts`, `auth-roles.ts`, `auth-providers.ts`, `cron-auth.ts`) unless explicitly asked
 - Do **NOT** modify RLS policies in `supabase/migrations/` unless explicitly asked
 - Do **NOT** modify existing API route handlers (create new ones instead)
 - Do **NOT** delete any existing feature flags
@@ -58,7 +58,7 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 ```bash
 npm run lint          # ESLint — must pass
 npx tsc --noEmit     # TypeScript — must pass
-npm run test          # Vitest unit tests (519+ tests) — must pass
+npm run test          # Vitest unit tests (~210 test files) — must pass
 npm run build         # Next.js build — must pass (needs env vars)
 ```
 
@@ -173,7 +173,6 @@ export default function YourPublicPage() {
 | Feature flags (client hook)   | `src/lib/hooks/use-clinic-features.tsx`           |
 | Template definitions          | `src/lib/templates.ts`                            |
 | Vertical definitions          | `src/lib/config/verticals.ts`                     |
-| Vertical registry             | `src/lib/config/vertical-registry.ts`             |
 | Specialist dashboards         | `src/config/specialist-registry.ts`               |
 | Public layout (header/footer) | `src/components/layouts/clinic-public-layout.tsx` |
 | Public header                 | `src/components/public/header.tsx`                |
@@ -197,7 +196,7 @@ export default function YourPublicPage() {
 | ------------- | -------------------------------------------------- |
 | Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui    |
 | Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
-| Notifications | WhatsApp Business API (Meta Cloud API)             |
+| Notifications | WhatsApp (Meta Cloud API / Twilio), Email (Resend / SMTP), In-App, SMS |
 | Hosting       | Cloudflare Workers (via OpenNext)                  |
 | Payments      | CMI Payment Gateway (optional), Stripe             |
 
