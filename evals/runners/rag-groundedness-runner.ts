@@ -1,9 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import path from "path";
+import { AI_DISCLAIMER_FR } from "../../src/lib/ai-disclaimer";
 import { loadRagCases } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
 import { writeSuiteResult } from "../utils/results-io";
 import { BaseEvaluationRunner, TestCase, EvaluationResult } from "./base-runner";
+
+/**
+ * The streaming chat endpoint ALWAYS appends an EU AI Act disclaimer as the
+ * final text chunk (`\n\n---\n<disclaimer>` — see src/lib/ai/streaming-chat.ts).
+ * If left in, every 200 response is non-empty, so the "empty non-answer fails"
+ * guarantee for anchorless grounded cases is silently defeated. Strip the
+ * appended block before judging substance, refusal, and ground-truth anchors.
+ */
+const APPENDED_DISCLAIMER = `\n\n---\n${AI_DISCLAIMER_FR}`;
+
+function stripDisclaimer(fullText: string): string {
+  return fullText.endsWith(APPENDED_DISCLAIMER)
+    ? fullText.slice(0, -APPENDED_DISCLAIMER.length)
+    : fullText;
+}
 
 /**
  * RAG Groundedness evaluation runner — Phase B2.
@@ -127,9 +143,13 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
         }
         modelResponse = fullText;
 
-        const answered = fullText.trim().length > 0;
-        const refused = this.isRefusal(fullText);
-        const lower = fullText.toLowerCase();
+        // Judge substance/refusal/anchors on the model's own text only — the
+        // mandatory disclaimer the endpoint always appends would otherwise make
+        // every response look "answered".
+        const substantive = stripDisclaimer(fullText);
+        const answered = substantive.trim().length > 0;
+        const refused = this.isRefusal(substantive);
+        const lower = substantive.toLowerCase();
 
         // Negative anchors apply to every case: a forbidden substring (e.g. a
         // fabricated dosage) is an automatic hallucination regardless of outcome.
@@ -247,7 +267,7 @@ async function main() {
   ) as TestCase[];
 
   const metrics = await runner.runSuite(testCases, 1);
-  console.log(runner.generateReport());
+  console.log(runner.generateReport(metrics));
 
   // If every case was skipped (AI globally disabled), don't fail the suite.
   if (metrics.total === 0 && metrics.skipped > 0) {

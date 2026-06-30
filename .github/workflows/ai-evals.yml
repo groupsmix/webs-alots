@@ -21,13 +21,31 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: "20"
+          # Pin to the repository's supported runtime (package.json engines
+          # requires >=22.13; .nvmrc is the single source of truth). The
+          # previous hardcoded "20" contradicted the engine requirement and
+          # the Next 16 / React 19 stack.
+          node-version-file: ".nvmrc"
           cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Preflight — check required secrets
+      # The deterministic, offline suites (drug-interaction, triage, tool-loop)
+      # import the real production modules and need NO secrets and NO running
+      # server. They must gate every PR — that is the substance of this check.
+      # The RAG suite additionally requires a live, authenticated endpoint and
+      # self-skips when EVAL_AUTH_TOKEN is unset, so it is safe to invoke the
+      # full runner here unconditionally.
+      #
+      # Newly introduced gate: advisory (continue-on-error) until it is
+      # consistently green in CI, matching how other new gates are introduced
+      # in ci.yml. Promote to blocking by removing continue-on-error.
+      - name: Typecheck eval harness
+        run: npm run typecheck:evals
+        continue-on-error: true
+
+      - name: Preflight — check secrets for the live RAG suite
         id: preflight
         env:
           TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
@@ -35,17 +53,27 @@ jobs:
           EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
         run: |
           ok=true
-          [ -z "$TEST_DATABASE_URL" ] && echo "::warning::TEST_DATABASE_URL not set — skipping evals" && ok=false
-          [ -z "$OPENAI_API_KEY" ]    && echo "::warning::OPENAI_API_KEY not set — skipping evals"    && ok=false
-          [ -z "$EVAL_AUTH_TOKEN" ]   && echo "::warning::EVAL_AUTH_TOKEN not set — skipping evals"   && ok=false
+          [ -z "$TEST_DATABASE_URL" ] && echo "::notice::TEST_DATABASE_URL not set — live RAG suite will be skipped (offline suites still run)" && ok=false
+          [ -z "$OPENAI_API_KEY" ]    && echo "::notice::OPENAI_API_KEY not set — live RAG suite will be skipped (offline suites still run)"    && ok=false
+          [ -z "$EVAL_AUTH_TOKEN" ]   && echo "::notice::EVAL_AUTH_TOKEN not set — live RAG suite will be skipped (offline suites still run)"   && ok=false
           echo "secrets_ok=$ok" >> "$GITHUB_OUTPUT"
-      - name: Start Background Server for Testing
+
+      - name: Start background server for the live RAG suite
         if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           npm run build
           npm start &
-          # Wait for server to be ready
-          npx wait-on http://localhost:3000/api/docs -t 30000
+          # Dependency-free readiness probe (replaces `npx wait-on`, which was
+          # never declared as a dependency). Poll for up to ~60s.
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/docs >/dev/null 2>&1; then
+              echo "Server is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Server did not become ready in time"
+          exit 1
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -60,12 +88,24 @@ jobs:
           # no real seed accounts exist in the test database.
           SEED_PASSWORDS_ROTATED: "true"
           SEED_USERS_DELETED: "true"
+
+      # Always run the full suite. Offline suites gate the PR; the RAG suite
+      # runs only when a server + token are present (otherwise it self-skips
+      # and is excluded from totals).
+      #
+      # EVAL_AUTH_TOKEN is forwarded ONLY when the preflight confirmed the
+      # complete live setup (secrets_ok == 'true') — i.e. exactly when the
+      # background server above was actually started. The RAG runner keys its
+      # graceful skip on an empty EVAL_AUTH_TOKEN, so gating the token on
+      # secrets_ok keeps the two conditions in lockstep. Otherwise a partial
+      # secret config (e.g. EVAL_AUTH_TOKEN set but TEST_DATABASE_URL /
+      # OPENAI_API_KEY absent) would run the live RAG suite against a server
+      # that was never booted, and all 15 cases would fail on a dead endpoint.
       - name: Run AI Evaluations
-        if: steps.preflight.outputs.secrets_ok == 'true'
         run: npm run eval:ai
         env:
           API_BASE_URL: http://localhost:3000
-          EVAL_AUTH_TOKEN: ${{ secrets.EVAL_AUTH_TOKEN }}
+          EVAL_AUTH_TOKEN: ${{ steps.preflight.outputs.secrets_ok == 'true' && secrets.EVAL_AUTH_TOKEN || '' }}
 
       - name: Upload Evaluation Results
         if: always()

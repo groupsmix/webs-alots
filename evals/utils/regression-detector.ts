@@ -25,7 +25,12 @@ interface RegressionThresholds {
 const THRESHOLDS: RegressionThresholds = {
   maxDropPct: 2,
   minPassRate: {
-    "rag-groundedness": 90,
+    // All suites require 100%. The RAG runner hard-fails on ANY failed case
+    // (refused-case violations are safety-critical; grounded cases accept a
+    // conservative refusal), so a sub-100 threshold here was dead — it could
+    // never be the binding gate. Keep it at 100 so the threshold matches the
+    // runner's actual behaviour instead of implying tolerance that isn't there.
+    "rag-groundedness": 100,
     triage: 100,
     "tool-loop": 100,
     "drug-interaction": 100,
