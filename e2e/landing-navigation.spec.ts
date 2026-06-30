@@ -9,6 +9,13 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Clinic public page — navigation & structure", () => {
+  // E-1: Pin the base URL to a tenant subdomain. These assertions describe the
+  // clinic public site (clinic header/footer/nav), which only renders on a
+  // tenant subdomain — NOT on the root SaaS marketing landing. CI sets
+  // E2E_BASE_URL to the demo subdomain; locally we fall back to demo.localhost
+  // so the suite doesn't silently fail when run against the root domain.
+  test.use({ baseURL: process.env.E2E_BASE_URL || "http://demo.localhost:3000" });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
   });

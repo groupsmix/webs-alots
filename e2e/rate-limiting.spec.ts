@@ -83,18 +83,35 @@ test.describe("Rate limiting — 429 response shape", () => {
     }
   });
 
-  test("rate-limited booking POST returns 429 not 5xx and has error body", async ({ request }) => {
+  test("rate-limited booking POST returns 429 not 5xx and has error body", async ({
+    request,
+    baseURL,
+  }) => {
     // POST /api/booking is the highest-risk public write endpoint. If rate
     // limiting fires it must return 429 with a clean JSON body — not crash.
+    //
+    // A same-origin Origin header is REQUIRED: /api/booking is not CSRF-exempt,
+    // so without it every request is short-circuited with a 403 ("missing
+    // origin header") and the rate limiter / handler is never reached — making
+    // the assertions below vacuous. baseURL is the origin the CSRF allow-list
+    // accepts (see src/lib/middleware/csrf.ts). The payload is also schema-
+    // complete so requests reach the handler instead of stopping at validation.
+    const origin = (baseURL ?? "").replace(/\/$/, "");
     const responses = await Promise.all(
       Array.from({ length: 20 }, () =>
         request.post("/api/booking", {
+          headers: { origin },
           data: {
             specialtyId: "test",
             doctorId: "test",
+            serviceId: "test",
             date: "2099-12-01",
             time: "10:00",
+            isFirstVisit: true,
+            hasInsurance: false,
             patient: { name: "Load Test", phone: "+212600000000" },
+            slotDuration: 30,
+            bufferTime: 5,
           },
         }),
       ),

@@ -290,7 +290,12 @@ test.describe("RBAC — public routes remain accessible", () => {
 
   test("API health check is accessible without auth", async ({ request }) => {
     const response = await request.get("/api/health");
-    expect(response.status()).toBe(200);
+    // This test asserts the endpoint is NOT behind the auth gate. Health can
+    // legitimately return 503 when a dependency is down, so accept 200 or 503
+    // and explicitly reject the auth-rejection codes — a 401/403 here would
+    // mean monitoring tools (which carry no session) can't reach it.
+    expect([200, 503]).toContain(response.status());
+    expect([401, 403]).not.toContain(response.status());
   });
 
   test("API branding is accessible without auth", async ({ request }) => {

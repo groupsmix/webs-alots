@@ -122,10 +122,19 @@ test.describe("Tenant isolation — API data scoping", () => {
 });
 
 test.describe("Tenant isolation — booking endpoint scoping", () => {
-  test("POST /api/booking requires booking verification token", async ({ request }) => {
+  test("POST /api/booking requires booking verification token", async ({ request, baseURL }) => {
     // The booking endpoint requires an x-booking-token header
     // to prevent unauthenticated spam.
+    //
+    // A same-origin Origin header is REQUIRED: POST /api/booking is not
+    // CSRF-exempt, so without it the middleware short-circuits with a 403
+    // ("missing origin header") and this test would never reach the
+    // booking-token check it is meant to exercise. baseURL is exactly the
+    // origin the CSRF allow-list accepts (see src/lib/middleware/csrf.ts).
     const response = await request.post("/api/booking", {
+      headers: {
+        origin: (baseURL ?? "").replace(/\/$/, ""),
+      },
       data: {
         specialtyId: "test",
         doctorId: "test",
@@ -142,13 +151,15 @@ test.describe("Tenant isolation — booking endpoint scoping", () => {
         bufferTime: 5,
       },
     });
-    // Should reject without booking token (401)
+    // CSRF now passes, so the rejection comes from the booking-token guard
+    // itself: 401 (no token), or 429 if the per-IP rate limit fires first.
     expect([401, 403, 429]).toContain(response.status());
   });
 
-  test("POST /api/booking rejects invalid booking token", async ({ request }) => {
+  test("POST /api/booking rejects invalid booking token", async ({ request, baseURL }) => {
     const response = await request.post("/api/booking", {
       headers: {
+        origin: (baseURL ?? "").replace(/\/$/, ""),
         "x-booking-token": "invalid-token-value",
       },
       data: {
@@ -167,7 +178,8 @@ test.describe("Tenant isolation — booking endpoint scoping", () => {
         bufferTime: 5,
       },
     });
-    // Should reject with invalid token (403)
+    // CSRF passes; the invalid token is rejected with 403 (or 429 if the
+    // rate limit fires first).
     expect([401, 403, 429]).toContain(response.status());
   });
 });
