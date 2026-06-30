@@ -230,7 +230,9 @@ function readJourney(BASE_URL) {
     ...readParams("landing"),
     responseCallback: http.expectedStatuses({ min: 200, max: 399 }),
   });
-  readAvailability.add(check(landing, { "landing 2xx/3xx": (r) => r.status >= 200 && r.status < 400 }));
+  readAvailability.add(
+    check(landing, { "landing 2xx/3xx": (r) => r.status >= 200 && r.status < 400 }),
+  );
 
   // 2. Public booking page. Accept 2xx/3xx — on the apex/staging host without a
   //    clinic subdomain the tenant resolver may redirect to clinic selection,
