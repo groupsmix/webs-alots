@@ -19,22 +19,22 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 
 ## Quick-Reference Table
 
-| Task Type               | Files to Edit                                                                                                                                                               | Files to NEVER Touch    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Add new niche           | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx` | Everything else         |
+| Task Type               | Files to Edit                                                                                                                                                                                                          | Files to NEVER Touch    |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Add new niche           | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx`                                            | Everything else         |
 | Add new vertical        | `src/lib/config/verticals.ts` (add the id to the `VerticalId` union), then wire config in `src/lib/template-presets.ts`, `src/lib/config/clinic-types.ts`, `src/lib/config/default-services.ts`, `src/lib/features.ts` | Core config files       |
-| Add new template        | `src/lib/templates.ts` (style via Tailwind utility classes / tokens in `src/app/globals.css` — there is no `src/styles/` directory)                                         | Core layout files       |
-| Add new template preset | `src/lib/template-presets.ts`                                                                                                                                               | Templates themselves    |
-| Add new feature flag    | `src/lib/features.ts`, `src/lib/hooks/use-clinic-features.tsx`                                                                                                              | Auth, RLS, middleware   |
-| Add new API route       | Create under `src/app/api/[feature]/route.ts`                                                                                                                               | Existing API routes     |
-| Add new AI feature      | Create under `src/app/api/ai/[feature]/route.ts`, add feature flag                                                                                                          | Core AI chatbot         |
-| Build/change UI         | Read `.ai/skills/ui-ux/SKILL.md` first for design tokens, RTL/Arabic rules, and WCAG guidelines                                                                             | Existing component APIs |
-| Add new dashboard page  | Create under `src/app/(admin)/admin/[page]/page.tsx`, add nav entry in `src/components/layouts/admin-layout-shell.tsx`                                                      | Existing pages          |
-| Add new public page     | Create under `src/app/(clinic-public)/[page]/page.tsx`                                                                                                                      | Existing pages          |
-| Add new payment gateway | Create under `src/app/api/payments/[gateway]/route.ts`                                                                                                                      | Existing payment routes |
-| Add new language        | Create `src/locales/<lang>.json`, then register it in `src/lib/i18n.ts` (`Locale` type, `LOCALES`, and the JSON import + `translations` map)                                | Auth, RLS, middleware   |
-| Add new component       | Create under `src/components/[category]/`                                                                                                                                   | Existing components     |
-| Fix a bug               | Depends on bug location — read error trace                                                                                                                                  | Unrelated files         |
+| Add new template        | `src/lib/templates.ts` (style via Tailwind utility classes / tokens in `src/app/globals.css` — there is no `src/styles/` directory)                                                                                    | Core layout files       |
+| Add new template preset | `src/lib/template-presets.ts`                                                                                                                                                                                          | Templates themselves    |
+| Add new feature flag    | `src/lib/features.ts`, `src/lib/hooks/use-clinic-features.tsx`                                                                                                                                                         | Auth, RLS, middleware   |
+| Add new API route       | Create under `src/app/api/[feature]/route.ts`                                                                                                                                                                          | Existing API routes     |
+| Add new AI feature      | Create under `src/app/api/ai/[feature]/route.ts`, add feature flag                                                                                                                                                     | Core AI chatbot         |
+| Build/change UI         | Read `.ai/skills/ui-ux/SKILL.md` first for design tokens, RTL/Arabic rules, and WCAG guidelines                                                                                                                        | Existing component APIs |
+| Add new dashboard page  | Create under `src/app/(admin)/admin/[page]/page.tsx`, add nav entry in `src/components/layouts/admin-layout-shell.tsx`                                                                                                 | Existing pages          |
+| Add new public page     | Create under `src/app/(clinic-public)/[page]/page.tsx`                                                                                                                                                                 | Existing pages          |
+| Add new payment gateway | Create under `src/app/api/payments/[gateway]/route.ts`                                                                                                                                                                 | Existing payment routes |
+| Add new language        | Create `src/locales/<lang>.json`, then register it in `src/lib/i18n.ts` (`Locale` type, `LOCALES`, and the JSON import + `translations` map)                                                                           | Auth, RLS, middleware   |
+| Add new component       | Create under `src/components/[category]/`                                                                                                                                                                              | Existing components     |
+| Fix a bug               | Depends on bug location — read error trace                                                                                                                                                                             | Unrelated files         |
 
 ---
 
@@ -192,13 +192,13 @@ export default function YourPublicPage() {
 
 ## Project Stack
 
-| Layer         | Technology                                         |
-| ------------- | -------------------------------------------------- |
-| Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui    |
-| Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
+| Layer         | Technology                                                             |
+| ------------- | ---------------------------------------------------------------------- |
+| Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui                        |
+| Backend       | Supabase (Auth, Database, Storage, Edge Functions)                     |
 | Notifications | WhatsApp (Meta Cloud API / Twilio), Email (Resend / SMTP), In-App, SMS |
-| Hosting       | Cloudflare Workers (via OpenNext)                  |
-| Payments      | CMI Payment Gateway (optional), Stripe             |
+| Hosting       | Cloudflare Workers (via OpenNext)                                      |
+| Payments      | CMI Payment Gateway (optional), Stripe                                 |
 
 ## User Roles (order of privilege)
 
