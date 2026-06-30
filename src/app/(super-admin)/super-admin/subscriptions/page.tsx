@@ -178,7 +178,11 @@ export default function SubscriptionsPage() {
     active: subscriptions.filter((s) => s.status === "active").length,
     trial: subscriptions.filter((s) => s.status === "trial").length,
     pastDue: subscriptions.filter((s) => s.status === "past_due").length,
-    suspended: subscriptions.filter((s) => s.status === "suspended").length,
+    // Real suspensions exclude tenants quarantined by migration 00173 — those
+    // are known keyboard-mash / test data, not genuine churn (Audit F-2 item 2).
+    suspended: subscriptions.filter((s) => s.status === "suspended" && !s.isQuarantinedJunk).length,
+    quarantined: subscriptions.filter((s) => s.status === "suspended" && s.isQuarantinedJunk)
+      .length,
     cancelled: subscriptions.filter((s) => s.status === "cancelled").length,
     total: subscriptions.length,
   };
@@ -553,6 +557,11 @@ export default function SubscriptionsPage() {
             <p className="text-xs text-muted-foreground">
               {stats.pastDue} impayés, {stats.suspended} suspendus, {stats.cancelled} annulés
             </p>
+            {stats.quarantined > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                + {stats.quarantined} en quarantaine (données de test, exclues du décompte)
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
