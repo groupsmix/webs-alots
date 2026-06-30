@@ -14,7 +14,7 @@
 
 provider "registry.terraform.io/cloudflare/cloudflare" {
   version     = "5.21.0"
-  constraints = "~> 5.19"
+  constraints = "~> 5.21"
   hashes = [
     "h1:GHS9VFEa0rXjux9Cipqy2QGEmQ0bst6Xqd5WUUJsOwI=",
     "h1:TJQJrskWa1FJ8gk6BAhj4X6fa5TFqI255T6Y6ZKrFkU=",
