@@ -513,10 +513,12 @@ export default function SubscriptionsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="h-4 w-4 text-green-600" />
-              <span className="text-xs text-muted-foreground">MRR (abonnements actifs)</span>
+              <span className="text-xs text-muted-foreground">MRR</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(mrr)}</p>
-            <p className="text-xs text-muted-foreground">MAD / mois</p>
+            <p className="text-xs text-muted-foreground">
+              MAD / mois — abonnements actifs (réf. revenus récurrents)
+            </p>
           </CardContent>
         </Card>
         <Card>
