@@ -155,7 +155,12 @@ function buildCsp(nonce: string): string {
     // TODO: migrate dynamic inline styles to CSS custom properties so this
     // can be hardened back to 'self' only.
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' blob: ${sbHost} uploads.oltigo.com`,
+    // `data:` is required for the landing page's inline SVG noise/grain
+    // textures (data:image/svg+xml). Without it the CSP blocks them, they
+    // fail to render, and the console fills with img-src violations.
+    // data: URIs cannot execute script, so this does not weaken the XSS
+    // posture established by the strict nonce/'strict-dynamic' script-src.
+    `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,
     `frame-src ${frameSrc}`,
