@@ -12,8 +12,9 @@
 
 ## ESLint Warnings
 
-- **Warning count:** 4,088
+- **Warning count:** 3,451 (re-verified 2026-06-30; frozen baseline file `.eslint-warning-baseline` records 3,457)
 - **Source file:** `.eslint-warning-baseline`
+- **Composition:** ~3,365 `i18next/no-literal-string`, 81 `react-hooks/set-state-in-effect`, remainder misc. 0 errors.
 
 ## Code Coverage Floors
 
@@ -21,18 +22,18 @@ From `.vitest-coverage-floor.json`:
 
 | Metric     | Current Floor | Target |
 | ---------- | ------------- | ------ |
-| Statements | 15%           | 80%    |
+| Statements | 14%           | 80%    |
 | Branches   | 11%           | 70%    |
-| Lines      | 15%           | 70%    |
-| Functions  | 10%           | 60%    |
+| Lines      | 14%           | 70%    |
+| Functions  | 11%           | 60%    |
 
 ## i18n Empty Keys
 
-- **Empty key count:** 342 (EN/AR)
+- **Empty key count:** 0 (EN/AR) — re-verified 2026-06-30 (`.i18n-coverage-baseline.json` = {en:0, ar:0}). The historical 342 figure has been resolved.
 
 ## npm Audit (CVEs)
 
-- **Status:** UNKNOWN — must be established separately via `npm audit`
+- **Status:** 0 vulnerabilities (re-verified 2026-06-30 via `npm audit`).
 
 ## Finding References
 
