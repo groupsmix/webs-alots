@@ -1,0 +1,100 @@
+# =============================================================================
+# k6 Load & Smoke Test — scheduled capacity baseline + manual runs
+# =============================================================================
+#
+# Closes audit RISK-006 ("No Load Testing ... not integrated into CI/CD,
+# no monthly load test schedule").
+#
+# Runs the k6 scripts against STAGING only:
+#   - k6/smoke.js         endpoint smoke / load (ping, status, health, landing)
+#   - k6/booking-flow.js  patient booking READ journey (landing, /book, status)
+#
+# Triggers:
+#   - schedule: monthly capacity baseline (1st of the month, 06:00 UTC). Chosen
+#     to avoid the 04:00 restore drill window in restore-test.yml.
+#   - workflow_dispatch: manual run with a chosen profile / target.
+#
+# Safety:
+#   - This workflow NEVER targets production and never sets ALLOW_PROD. The
+#     scripts' shared guard (k6/lib/env-guard.js) additionally refuses load mode
+#     against any production host.
+#   - The booking WRITE path (which creates real appointments + notifications)
+#     is intentionally NOT runnable from CI. Run it manually/locally against a
+#     disposable clinic: `k6 run --env BOOKING_WRITE=true --env PROFILE=write ...`.
+#
+# A failing run = a real regression (SLO breach or unreachable endpoint) and
+# should be investigated; that is the point of a scheduled baseline.
+# =============================================================================
+
+name: k6 Load & Smoke Test
+
+on:
+  schedule:
+    # Monthly, 1st day, 06:00 UTC.
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Test intensity"
+        type: choice
+        default: smoke
+        options:
+          - smoke # tiny functional check (fast)
+          - load # full ramp: 100 VUs (smoke.js) / 2m→50→100→0 (booking-flow.js)
+      base_url:
+        description: "Target base URL (staging/preview only — production is refused)"
+        type: string
+        default: "https://staging.oltigo.com"
+
+# Least-privilege: only needs to read the repo to get the k6 scripts.
+permissions:
+  contents: read
+
+# Don't let two runs of this workflow overlap (they'd contend for the same
+# staging capacity and muddy the numbers).
+concurrency:
+  group: load-test
+  cancel-in-progress: false
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    name: Run k6 against staging
+    env:
+      # Scheduled runs default to the staging baseline; dispatch can override
+      # the profile but the target is pinned to staging unless explicitly given.
+      K6_VERSION: v0.54.0
+      PROFILE: ${{ github.event.inputs.profile || 'load' }}
+      BASE_URL: ${{ github.event.inputs.base_url || 'https://staging.oltigo.com' }}
+    steps:
+      # AUDIT-16 / CICD-01: pin GH Actions to a full commit SHA.
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # Install k6 from the official GitHub release, pinned by version. Avoids a
+      # third-party marketplace action (one fewer SHA to track) while staying
+      # deterministic. Add a sha256 check here if you want stricter supply-chain
+      # guarantees.
+      - name: Install k6
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz" -o /tmp/k6.tar.gz
+          tar -xzf /tmp/k6.tar.gz -C /tmp
+          sudo install "/tmp/k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+          k6 version
+
+      # smoke.js: smoke profile → quick 2-VU check; load profile → 100-VU ramp.
+      - name: Endpoint smoke / load (k6/smoke.js)
+        env:
+          SMOKE_MODE: ${{ env.PROFILE == 'load' && 'load' || '' }}
+        run: |
+          set -euo pipefail
+          echo "Running smoke.js (PROFILE=${PROFILE}) against ${BASE_URL}"
+          k6 run --env "BASE_URL=${BASE_URL}" k6/smoke.js
+
+      # booking-flow.js: READ journey only (no BOOKING_WRITE in CI).
+      - name: Booking read journey (k6/booking-flow.js)
+        run: |
+          set -euo pipefail
+          echo "Running booking-flow.js (PROFILE=${PROFILE}) against ${BASE_URL}"
+          k6 run --env "BASE_URL=${BASE_URL}" --env "PROFILE=${PROFILE}" k6/booking-flow.js
