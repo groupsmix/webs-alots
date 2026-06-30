@@ -146,7 +146,10 @@ function sandboxSubmitClaim(params: {
 }): ClaimSubmissionResult {
   const rates = COVERAGE_RATES[params.insuranceType];
   const approvedAmount = Math.floor(params.amountCentimes * (rates.coverage / 100));
-  const claimNumber = `${params.insuranceType}-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  // Use crypto-grade randomness (not Math.random) so claim identifiers are
+  // unpredictable and collision-resistant — they reference financial records.
+  const claimSuffix = crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+  const claimNumber = `${params.insuranceType}-${Date.now()}-${claimSuffix}`;
 
   return {
     success: true,
