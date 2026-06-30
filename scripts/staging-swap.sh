@@ -58,6 +58,24 @@ if [[ "${CONFIRM}" != "y" && "${CONFIRM}" != "Y" ]]; then
   exit 0
 fi
 
+# Step 1b: Refuse to run with a dirty working tree — this script switches
+# branches, which would either fail or carry uncommitted changes along.
+if [[ -n "$(git status --porcelain)" ]]; then
+  log_error "Working tree is not clean. Commit or stash your changes before swapping."
+  exit 1
+fi
+
+# Remember the operator's current branch and restore it on exit, even if the
+# build/deploy fails midway, so they are not left stranded on 'staging'.
+ORIGINAL_REF="$(git symbolic-ref --quiet --short HEAD || git rev-parse HEAD)"
+restore_branch() {
+  if [[ -n "${ORIGINAL_REF:-}" ]]; then
+    log_info "Returning to '${ORIGINAL_REF}'..."
+    git checkout --quiet "${ORIGINAL_REF}" 2>/dev/null || true
+  fi
+}
+trap restore_branch EXIT
+
 # Step 2: Create backup timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p "${BACKUP_DIR}"

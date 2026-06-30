@@ -20,9 +20,26 @@ import path from "node:path";
 const LOCALES_DIR = path.resolve("src/locales");
 const BASELINE_PATH = path.resolve(".translation-empty-baseline");
 
-const fr = JSON.parse(fs.readFileSync(path.join(LOCALES_DIR, "fr.json"), "utf-8"));
-const en = JSON.parse(fs.readFileSync(path.join(LOCALES_DIR, "en.json"), "utf-8"));
-const ar = JSON.parse(fs.readFileSync(path.join(LOCALES_DIR, "ar.json"), "utf-8"));
+/** Read + parse a JSON file, failing with a clear message instead of a stack trace. */
+function readJson(p) {
+  let raw;
+  try {
+    raw = fs.readFileSync(p, "utf-8");
+  } catch {
+    console.error(`::error::Required file not found: ${p}`);
+    process.exit(1);
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error(`::error::Invalid JSON in ${p}: ${err?.message ?? err}`);
+    process.exit(1);
+  }
+}
+
+const fr = readJson(path.join(LOCALES_DIR, "fr.json"));
+const en = readJson(path.join(LOCALES_DIR, "en.json"));
+const ar = readJson(path.join(LOCALES_DIR, "ar.json"));
 
 const frKeys = Object.keys(fr);
 
@@ -36,7 +53,17 @@ const missingAr = frKeys.filter((k) => !(k in ar));
 
 const totalGaps = Math.max(emptyEn.length + missingEn.length, emptyAr.length + missingAr.length);
 
-const baseline = parseInt(fs.readFileSync(BASELINE_PATH, "utf-8").trim(), 10);
+let baseline;
+try {
+  baseline = parseInt(fs.readFileSync(BASELINE_PATH, "utf-8").trim(), 10);
+} catch {
+  console.error(`::error::Baseline file not found: ${BASELINE_PATH}`);
+  process.exit(1);
+}
+if (!Number.isFinite(baseline)) {
+  console.error(`::error::Baseline file ${BASELINE_PATH} does not contain a valid integer.`);
+  process.exit(1);
+}
 
 console.log(
   `Translation gaps: EN ${emptyEn.length} empty + ${missingEn.length} missing = ${emptyEn.length + missingEn.length}`,
