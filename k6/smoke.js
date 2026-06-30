@@ -33,6 +33,7 @@
 import { check, sleep } from "k6";
 import http from "k6/http";
 import { Rate } from "k6/metrics";
+import { validateBaseUrl } from "./lib/env-guard.js";
 
 // ── Custom metrics ──────────────────────────────────────────────────────────
 
@@ -47,108 +48,16 @@ import { Rate } from "k6/metrics";
  */
 const httpAvailability = new Rate("http_availability");
 
-// ── Allowed host allowlist ───────────────────────────────────────────────────
-
-/**
- * Only these hostnames (and their subdomains) are recognised as known
- * Oltigo hosts. Any other host is rejected to prevent accidentally running
- * a load test against an attacker-controlled URL or a typo'd domain.
- *
- * Fix #1: replaces the old `endsWith(".oltigo.com")` check which could be
- * bypassed by a crafted hostname such as "staging.oltigo.com.evil.com".
- */
-const ALLOWED_HOSTS = ["oltigo.com", "staging.oltigo.com", "preview.oltigo.com", "localhost"];
-
-function classifyHost(hostname) {
-  // Loopback is always local.
-  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
-    return "local";
-  }
-  // Exact match against a known host.
-  if (ALLOWED_HOSTS.includes(hostname)) {
-    return hostname.startsWith("staging") || hostname.startsWith("preview") ? "non-prod" : "prod";
-  }
-  // Subdomain of a known host (e.g. "pr-42.preview.oltigo.com").
-  for (const allowed of ALLOWED_HOSTS) {
-    if (allowed === "localhost") continue;
-    if (hostname.endsWith(`.${allowed}`)) {
-      // A demo/staging/preview-prefixed subdomain of oltigo.com is non-prod.
-      if (
-        allowed === "oltigo.com" &&
-        (hostname.startsWith("staging") ||
-          hostname.startsWith("preview") ||
-          hostname.startsWith("demo"))
-      ) {
-        return "non-prod";
-      }
-      return allowed === "oltigo.com" ? "prod" : "non-prod";
-    }
-  }
-  return "unknown";
-}
-
 // ── Setup: validate environment ──────────────────────────────────────────────
 
 export function setup() {
-  const baseUrl = __ENV.BASE_URL;
-  if (!baseUrl) {
-    throw new Error(
-      "BASE_URL is required. Example: k6 run --env BASE_URL=https://staging.oltigo.com k6/smoke.js",
-    );
-  }
-
-  // Parse the URL to inspect the scheme and hostname directly — substring
-  // matching on the raw string is unsafe and bypassable.
-  let parsed;
-  try {
-    parsed = new URL(baseUrl);
-  } catch {
-    throw new Error(`BASE_URL is not a valid URL: ${baseUrl}`);
-  }
-
-  const hostname = parsed.hostname;
-  const hostClass = classifyHost(hostname);
-  const isLocal = hostClass === "local";
-
-  // Fix #2 — HTTPS enforcement: reject plaintext URLs so auth cookies and
-  // tokens are never sent over the wire unencrypted, even on "internal"
-  // networks. Localhost/loopback is exempt for local dev.
-  if (!isLocal && parsed.protocol !== "https:") {
-    throw new Error(
-      `BASE_URL must use HTTPS (got '${parsed.protocol}'). ` +
-        `Plaintext URLs are not permitted — even on staging, credentials travel over the wire.`,
-    );
-  }
-
-  // Fix #1 — allowlist-based host classification replaces the fragile substring
-  // match. An unrecognised host (e.g. "staging.oltigo.com.evil.com") is refused
-  // outright rather than silently hammering an unknown server.
-  if (hostClass === "unknown") {
-    throw new Error(
-      `BASE_URL hostname '${hostname}' is not a recognised Oltigo host. ` +
-        `Allowed hosts: ${ALLOWED_HOSTS.join(", ")} (and their subdomains). ` +
-        `If this is intentional, add it to the ALLOWED_HOSTS list in k6/smoke.js.`,
-    );
-  }
-
-  const isProd = hostClass === "prod";
-  if (isProd && __ENV.ALLOW_PROD !== "true") {
-    throw new Error(
-      `BASE_URL resolves to a production host (${hostname}). Set --env ALLOW_PROD=true to confirm.`,
-    );
-  }
-
-  // Fix #7 — Load mode is staging/preview ONLY. Previously this was documented
-  // in the header but NOT enforced: with ALLOW_PROD=true a 100-VU ramp could be
-  // pointed straight at production. Refuse it outright — even with ALLOW_PROD —
-  // so a smoke run can never accidentally turn into a prod load test.
-  if (isProd && isLoadMode) {
-    throw new Error(
-      `Load mode (100-VU ramp) is not permitted against production (${hostname}). ` +
-        `Run load tests against a staging/preview host instead. ALLOW_PROD does not override this.`,
-    );
-  }
-
+  // Host allowlist, HTTPS enforcement, prod opt-in, and the "no load against
+  // prod" guard all live in the shared k6/lib/env-guard.js so smoke.js and
+  // booking-flow.js cannot drift apart. (Fixes #1, #2, #7, #10 live there.)
+  const { baseUrl } = validateBaseUrl(__ENV.BASE_URL, {
+    isLoadMode,
+    allowProd: __ENV.ALLOW_PROD === "true",
+  });
   return { baseUrl };
 }
 
