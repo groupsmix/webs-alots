@@ -150,11 +150,27 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   // F-A93-07: Auto-redact PHI fields from extra metadata
   if (Object.keys(extra).length > 0) Object.assign(payload, redactPhi(extra));
 
-  // Use console.error for structured output to stderr.
-  // In Cloudflare Workers this is captured by `wrangler tail`.
+  // Route to the console method that matches the log level.
+  // In Cloudflare Workers / Node these are all captured for `wrangler tail`
+  // and stderr piping; in the browser this keeps info/warn out of the red
+  // error channel (e.g. the "Service worker registered" info message was
+  // previously surfaced as a console error, polluting the dev console).
   // NOTE: We intentionally use console here (unlike application code)
   // because this IS the logging infrastructure.
-  console.error(JSON.stringify(payload));
+  const serialized = JSON.stringify(payload);
+  switch (level) {
+    case "error":
+      console.error(serialized);
+      break;
+    case "warn":
+      console.warn(serialized);
+      break;
+    case "debug":
+      console.debug(serialized);
+      break;
+    default:
+      console.info(serialized);
+  }
 
   // Forward to any registered external transports
   for (const transport of transports) {
