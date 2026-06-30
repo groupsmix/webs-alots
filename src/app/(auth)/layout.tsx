@@ -71,8 +71,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         >
           <source src="/login-bg.mp4" type="video/mp4" />
         </video>
-        {/* Tint overlay over the video to keep the white text legible */}
-        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-[#005a3b]/85 via-[#00795a]/75 to-[#009e74]/85" />
+        {/* Brand tint over the video: light enough to let the loop show
+            clearly, with a stronger bottom scrim so the white text and
+            feature copy stay legible over the brighter video frames. */}
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-[#005a3b]/45 via-[#00795a]/30 to-[#009e74]/45" />
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-t from-black/45 via-transparent to-black/15" />
 
         {/* Decorative background shapes */}
         <div className="pointer-events-none absolute inset-0 z-0">
