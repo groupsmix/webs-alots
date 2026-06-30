@@ -86,18 +86,21 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 
-  // F-04: Purge authenticated content from cache on logout
+  // F-04: Purge authenticated content from cache on logout.
+  // Wrapped in event.waitUntil so the service worker is kept alive until the
+  // purge finishes — otherwise the SW can be terminated mid-purge, leaving
+  // stale authenticated HTML (potential PHI) in the cache after logout.
   if (event.data?.type === "PURGE_AUTHED") {
-    caches.open(CACHE_NAME).then((cache) => {
-      cache.keys().then((keys) => {
-        for (const request of keys) {
-          const url = new URL(request.url);
-          if (isAuthedRoute(url.pathname)) {
-            cache.delete(request);
-          }
-        }
-      });
-    });
+    event.waitUntil(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const keys = await cache.keys();
+        await Promise.all(
+          keys
+            .filter((request) => isAuthedRoute(new URL(request.url).pathname))
+            .map((request) => cache.delete(request)),
+        );
+      }),
+    );
   }
 });
 

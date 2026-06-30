@@ -164,6 +164,15 @@ function buildCsp(nonce: string): string {
     "font-src 'self'",
     `connect-src ${connectSources}`,
     `frame-src ${frameSrc}`,
+    // worker-src MUST be explicit: without it, the service worker falls back
+    // to script-src, whose `'strict-dynamic'` causes `'self'` to be ignored,
+    // which blocks `navigator.serviceWorker.register("/sw.js")` in production
+    // and silently disables the entire PWA (offline support, update toast,
+    // push notifications). `blob:` covers libraries that spawn blob workers.
+    "worker-src 'self' blob:",
+    // manifest-src: pin the PWA manifest to same-origin so a stray default-src
+    // change can never relax it.
+    "manifest-src 'self'",
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",

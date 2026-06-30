@@ -178,8 +178,8 @@ export default function SubProcessorsPage() {
         </p>
         <p>
           Pour toute question ou opposition à un changement de sous-traitant, contactez :{" "}
-          <a href="mailto:dpo@oltigo.health" className="underline hover:text-foreground">
-            dpo@oltigo.health
+          <a href="mailto:dpo@oltigo.com" className="underline hover:text-foreground">
+            dpo@oltigo.com
           </a>
         </p>
       </div>

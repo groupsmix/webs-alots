@@ -38,3 +38,11 @@
   Cache-Control: public, max-age=31536000, immutable
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable
+
+# Background/hero media (e.g. /login-bg.mp4). Filenames are stable across
+# deploys, so cache for 30 days with revalidation rather than re-downloading
+# the multi-hundred-KB video on every visit.
+/*.mp4
+  Cache-Control: public, max-age=2592000, must-revalidate
+/*.webm
+  Cache-Control: public, max-age=2592000, must-revalidate
