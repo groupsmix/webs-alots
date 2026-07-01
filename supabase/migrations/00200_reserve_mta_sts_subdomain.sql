@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 00197: Reserve the `mta-sts` subdomain
+-- Migration 00200: Reserve the `mta-sts` subdomain
 --
 -- Follow-up to migration 00171 (AUDIT F-2) and the public/ folder audit.
 --
