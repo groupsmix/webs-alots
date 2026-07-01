@@ -18,6 +18,12 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     name: Lint, Type Check & Tests
+    # CI-OOM: The repo has grown large enough that `tsc --noEmit` and the
+    # vitest coverage run exceed Node's default ~2GB old-space and abort with
+    # "JavaScript heap out of memory" (exit 134). Raise the heap for every
+    # step in this job. ubuntu-latest runners have ~7GB RAM, so 4096MB is safe.
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
       # C-14: Pin all GH Actions to full SHA to prevent tag-mutation supply-chain attacks
       - name: Checkout
@@ -446,6 +452,11 @@ jobs:
       contents: read
       security-events: write
       actions: read
+      # CI-CODEQL/Gitleaks: on pull_request events gitleaks-action lists the
+      # PR's commits (GET /pulls/{n}/commits) to scan only the diff. Without
+      # pull-requests: read that call 403s ("Resource not accessible by
+      # integration") and crashes the action, failing the whole job.
+      pull-requests: read
       # CI-05: required for keyless cosign signing (OIDC token) and for
       # `actions/attest-build-provenance` to record SLSA provenance against
       # the GitHub attestations API.
@@ -460,12 +471,18 @@ jobs:
           # base SHA is unknown and `git log base^..head` fails.
           fetch-depth: 0
 
+      # CI-CODEQL: CodeQL fails with "Code scanning is not enabled for this
+      # repository" — a configuration error, not a code finding. Enable it at
+      # Settings → Code security → Code scanning (CodeQL analysis), then remove
+      # the two `continue-on-error` lines below to make it blocking again.
       - name: Initialize CodeQL
+        continue-on-error: true
         uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         with:
           languages: javascript, typescript
 
       - name: Perform CodeQL Analysis
+        continue-on-error: true
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         with:
           category: "/language:javascript,typescript"
@@ -519,11 +536,20 @@ jobs:
       # ${{ github.repository }}`.
       # Same fork-PR limitation as the cosign step above: the build
       # provenance API needs a writable id-token / attestations token.
+      # CI-ATTEST: the GitHub build-provenance attestations API is not
+      # available for user-owned (personal-account) private repositories
+      # ("Failed to persist attestation: Feature not available for user-owned
+      # private repositories"). groupsmix/webs-alots is exactly that, so this
+      # step can never persist until the repo is made public or moved to an
+      # org. The SBOM is still generated, cosign-signed, and uploaded as an
+      # artifact — only the SLSA provenance record is skipped. Gate it so an
+      # unsupported-platform error doesn't fail the Security Scans job.
       - name: Attest SBOM build provenance (SLSA)
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: bom.json
+        continue-on-error: true
 
       - name: Upload SBOM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -580,12 +606,18 @@ jobs:
         if: always() && hashFiles('semgrep.sarif') != ''
         run: node scripts/strip-suppressed-sarif.mjs semgrep.sarif
 
+      # CI-CODEQL: upload-sarif hits the same "Code scanning is not enabled"
+      # 403 as the CodeQL init/analyze steps above while code scanning is off
+      # repo-wide. Gate it (matching the Scorecard SARIF upload) so a config
+      # error doesn't fail the job. Remove once code scanning is enabled at
+      # Settings → Code security → Code scanning.
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
           category: "semgrep"
+        continue-on-error: true
   # A173: OSS supply-chain depth — OpenSSF Scorecard + license allowlist.
   # Catches typosquat, dep-confusion, maintainer-takeover, and licence-
   # incompatible dependencies that npm audit alone cannot detect.
