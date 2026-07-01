@@ -1,7 +1,9 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { validateQuery } from "@/lib/api-validate";
 import { invoicesTable, paymentPlansTable, paymentPlanInstallmentsTable } from "@/lib/billing-db";
 import { logger } from "@/lib/logger";
+import { financialSummaryQuerySchema } from "@/lib/validations/billing";
 import { withAuth } from "@/lib/with-auth";
 
 const ADMIN_ROLES = ["super_admin", "clinic_admin"] as const;
@@ -16,16 +18,17 @@ export const GET = withAuth(
     const clinicId = profile.clinic_id;
     if (!clinicId) return apiError("Clinic context required", 403);
 
-    const url = request.nextUrl;
-    const period = url.searchParams.get("period") ?? "month";
+    const parsed = validateQuery(financialSummaryQuerySchema, request);
+    if (parsed instanceof NextResponse) return parsed;
+    const { period = "month", start_date, end_date } = parsed.data;
     const now = new Date();
 
     let startDate: string;
     let endDate: string;
 
-    if (url.searchParams.get("start_date") && url.searchParams.get("end_date")) {
-      startDate = url.searchParams.get("start_date")!;
-      endDate = url.searchParams.get("end_date")!;
+    if (start_date && end_date) {
+      startDate = start_date;
+      endDate = end_date;
     } else {
       endDate = now.toISOString().slice(0, 10);
       switch (period) {

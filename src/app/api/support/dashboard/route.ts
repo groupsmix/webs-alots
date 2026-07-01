@@ -1,7 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { validateQuery } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { requireTenant } from "@/lib/tenant";
+import { supportDashboardQuerySchema } from "@/lib/validations/support";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 /**
@@ -13,9 +15,9 @@ export const GET = withAuth(
   async (request: NextRequest, auth: AuthContext) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
-    const url = new URL(request.url);
-    const dateFrom = url.searchParams.get("date_from");
-    const dateTo = url.searchParams.get("date_to");
+    const parsed = validateQuery(supportDashboardQuerySchema, request);
+    if (parsed instanceof NextResponse) return parsed;
+    const { date_from: dateFrom, date_to: dateTo } = parsed.data;
 
     // Fetch ticket counts by status
     const [openRes, inProgressRes, resolvedRes, closedRes] = await Promise.all([

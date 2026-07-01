@@ -1,8 +1,10 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
+import { validateQuery } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
+import { inventoryAlertsSchema } from "@/lib/validations/batch4c";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,9 +28,9 @@ export const GET = withAuth(
       const supabase = await createTenantClient(clinicId);
       const untypedSupabase = supabase as unknown as SupabaseUntyped;
 
-      const url = request.nextUrl;
-      const category = url.searchParams.get("category");
-      const alertType = url.searchParams.get("alertType") ?? "all";
+      const parsed = validateQuery(inventoryAlertsSchema, request);
+      if (parsed instanceof NextResponse) return parsed;
+      const { category, alertType = "all" } = parsed.data;
 
       // Fetch all active items for this clinic
       let query = untypedSupabase

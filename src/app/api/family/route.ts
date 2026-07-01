@@ -1,11 +1,15 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
+import { validateQuery, withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
-import { familyLinkCreateSchema } from "@/lib/validations/batch4c";
+import {
+  familyLinkCreateSchema,
+  familyLinkDeleteSchema,
+  familyMembersListSchema,
+} from "@/lib/validations/batch4c";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,10 +133,9 @@ export const GET = withAuth(
     }
     const clinicId = tenant.clinicId;
 
-    const patientId = request.nextUrl.searchParams.get("patientId");
-    if (!patientId) {
-      return apiError("Paramètre patientId requis", 400, "MISSING_PARAM");
-    }
+    const parsed = validateQuery(familyMembersListSchema, request);
+    if (parsed instanceof NextResponse) return parsed;
+    const { patientId } = parsed.data;
 
     try {
       const supabase = await createTenantClient(clinicId);
@@ -211,10 +214,9 @@ export const DELETE = withAuth(
     }
     const clinicId = tenant.clinicId;
 
-    const linkId = request.nextUrl.searchParams.get("linkId");
-    if (!linkId) {
-      return apiError("Paramètre linkId requis", 400, "MISSING_PARAM");
-    }
+    const parsed = validateQuery(familyLinkDeleteSchema, request);
+    if (parsed instanceof NextResponse) return parsed;
+    const { linkId } = parsed.data;
 
     try {
       const supabase = await createTenantClient(clinicId);

@@ -1,10 +1,10 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
+import { validateQuery, withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { admissionCreateSchema } from "@/lib/validations/adt";
+import { admissionCreateSchema, admissionQuerySchema } from "@/lib/validations/adt";
 import { withAuth } from "@/lib/with-auth";
 
 /**
@@ -15,11 +15,11 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
   const clinicId = profile.clinic_id;
   if (!clinicId) return apiError("Contexte clinique requis", 403);
 
-  const url = request.nextUrl;
-  const status = url.searchParams.get("status");
-  const patientId = url.searchParams.get("patient_id");
-  const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10));
-  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "20", 10)));
+  const parsed = validateQuery(admissionQuerySchema, request);
+  if (parsed instanceof NextResponse) return parsed;
+  const { status, patient_id: patientId, page: pageParam, limit: limitParam } = parsed.data;
+  const page = pageParam ?? 1;
+  const limit = limitParam ?? 20;
   const offset = (page - 1) * limit;
 
   let query = supabase

@@ -1,5 +1,6 @@
+import { NextResponse } from "next/server";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
+import { validateQuery, withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
@@ -8,7 +9,7 @@ import type { TemplateVariables } from "@/lib/notifications";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import type { UserRole } from "@/lib/types/database";
-import { noShowMarkSchema } from "@/lib/validations/receptionist-ai";
+import { noShowAnalyticsQuerySchema, noShowMarkSchema } from "@/lib/validations/receptionist-ai";
 import { withAuth } from "@/lib/with-auth";
 
 const NO_SHOW_ROLES: UserRole[] = [...STAFF_ROLES];
@@ -231,9 +232,9 @@ export const GET = withAuth(async (request, { supabase }) => {
   const { tenant } = await requireTenantWithConfig();
   const clinicId = tenant.clinicId;
 
-  const doctorId = request.nextUrl.searchParams.get("doctorId");
-  const patientId = request.nextUrl.searchParams.get("patientId");
-  const view = request.nextUrl.searchParams.get("view") ?? "summary";
+  const parsedQuery = validateQuery(noShowAnalyticsQuerySchema, request);
+  if (parsedQuery instanceof NextResponse) return parsedQuery;
+  const { doctorId, patientId, view } = parsedQuery.data;
 
   if (view === "flagged-patients") {
     const { data: flagged } = await supabase
