@@ -81,6 +81,16 @@ test.describe("Locale behavior", () => {
     await page.evaluate(() => localStorage.setItem("preferred-locale", "en"));
     await page.goto("/pricing");
     await page.waitForLoadState("domcontentloaded");
+
+    // Assert the persisted locale is actually applied on the destination
+    // page. Checking only that the body was non-empty was self-defeating —
+    // it passed even when the locale silently reset to the default ("fr")
+    // on navigation (issue #1133). Wait for hydration to pick up the
+    // stored locale, then assert the exact value.
+    await page.waitForFunction(() => document.documentElement.getAttribute("lang") === "en", {
+      timeout: 5_000,
+    });
+    expect(await page.locator("html").getAttribute("lang")).toBe("en");
     await expect(page.locator("body")).not.toBeEmpty();
   });
 });

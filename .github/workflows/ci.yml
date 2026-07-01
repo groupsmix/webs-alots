@@ -1161,6 +1161,23 @@ jobs:
           ROOT_DOMAIN: localhost
           NEXT_PUBLIC_SITE_URL: http://demo.localhost:3000
           CRON_SECRET: ci-e2e-cron-secret-placeholder-0123456789
+          # #1131: Deterministic payment test secrets, shared by the web
+          # server and the Playwright process (the webServer spawned by
+          # Playwright inherits this step's env). Stripe/CMI signature
+          # verification is pure hashing against a shared secret, so no
+          # real gateway account is needed: payment-webhooks-e2e.spec.ts
+          # signs its own payloads with these values and asserts the
+          # valid-signature 200 happy path strictly. NOT real credentials —
+          # they are only ever compared against hashes on the local CI
+          # server, and test payloads reference non-existent orders so no
+          # payment state is mutated. STRIPE_SECRET_KEY only satisfies the
+          # handler's is-configured presence check; the webhook path never
+          # calls the Stripe API with it (create-checkout/billing/cron
+          # routes are auth-gated before any Stripe call).
+          STRIPE_SECRET_KEY: sk_test_ci-e2e-stripe-key-placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_ci-e2e-stripe-webhook-secret-placeholder
+          CMI_MERCHANT_ID: ci-e2e-cmi-merchant-id-placeholder
+          CMI_SECRET_KEY: ci-e2e-cmi-secret-key-placeholder
           # R-02: PROFILE_HEADER_HMAC_KEY is required in production mode (and
           # `next start` runs in production). Without it, env validation in
           # src/lib/env.ts hard-fails on startup and Playwright never gets a
