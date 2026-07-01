@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiSuccess, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { sanitizeIlike } from "@/lib/sanitize-ilike";
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
-import type { SupportedLanguage } from "@/lib/validations/support";
+import { faqSearchSchema, safeParse } from "@/lib/validations";
 
 /**
  * GET /api/support/faq/search?q=...&language=...&category=...&limit=...
@@ -15,18 +15,16 @@ export async function GET(request: NextRequest): Promise<Response> {
   const tenant = await requireTenant();
   const clinicId = tenant.clinicId;
   const url = new URL(request.url);
-
-  const query = url.searchParams.get("q")?.trim();
-  if (!query || query.length === 0) {
-    return apiError("Query parameter 'q' is required", 400, "VALIDATION_ERROR");
+  const parsedInput = safeParse(faqSearchSchema, {
+    query: url.searchParams.get("q")?.trim() || undefined,
+    language: url.searchParams.get("language") ?? undefined,
+    category: url.searchParams.get("category") ?? undefined,
+    limit: url.searchParams.get("limit") ?? undefined,
+  });
+  if (!parsedInput.success) {
+    return apiValidationError(parsedInput.error);
   }
-  if (query.length > 500) {
-    return apiError("Query too long", 400, "VALIDATION_ERROR");
-  }
-
-  const language = url.searchParams.get("language") as SupportedLanguage | null;
-  const category = url.searchParams.get("category");
-  const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "10", 10) || 10, 50);
+  const { query, language, category, limit } = parsedInput.data;
 
   const supabase = await createClient();
 

@@ -1,8 +1,10 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
+import { validateQuery } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
+import { waitTimeEstimateSchema } from "@/lib/validations/batch4c";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseUntyped = { from(table: string): any };
@@ -20,11 +22,9 @@ export async function GET(request: NextRequest) {
     return apiError("Clinic context required — use a clinic subdomain", 400);
   }
   const clinicId = tenant.clinicId;
-  const doctorId = request.nextUrl.searchParams.get("doctorId");
-
-  if (!doctorId) {
-    return apiError("Paramètre doctorId requis", 400, "MISSING_PARAM");
-  }
+  const parsed = validateQuery(waitTimeEstimateSchema, request);
+  if (parsed instanceof NextResponse) return parsed;
+  const { doctorId } = parsed.data;
 
   try {
     const supabase = await createTenantClient(clinicId);

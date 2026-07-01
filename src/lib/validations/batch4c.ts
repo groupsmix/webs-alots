@@ -67,31 +67,6 @@ export const familyMembersListSchema = z.object({
   patientId: z.string().uuid(),
 });
 
-// ── 5. Prescription Renewal ────────────────────────────────────────────
-
-export const prescriptionRenewalRequestSchema = z.object({
-  patientId: z.string().uuid(),
-  doctorId: z.string().uuid(),
-  originalPrescriptionId: z.string().uuid().optional(),
-  medicationName: z.string().min(1).max(500),
-  dosage: z.string().max(200).optional(),
-  requestChannel: z.enum(["whatsapp", "app", "phone", "in_person"]).optional(),
-  requestMessage: z.string().max(2000).optional(),
-});
-
-export const prescriptionRenewalReviewSchema = z.object({
-  renewalId: z.string().uuid(),
-  action: z.enum(["approve", "reject"]),
-  doctorNotes: z.string().max(2000).optional(),
-  rejectionReason: z.string().max(1000).optional(),
-  pharmacyName: z.string().max(200).optional(),
-  pharmacyPhone: z.string().max(30).optional(),
-});
-
-export const prescriptionRenewalDispenseSchema = z.object({
-  renewalId: z.string().uuid(),
-});
-
 // ── 6. Wait Time Estimate ──────────────────────────────────────────────
 
 export const waitTimeEstimateSchema = z.object({

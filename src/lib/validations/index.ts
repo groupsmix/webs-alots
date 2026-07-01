@@ -60,21 +60,7 @@ export {
   petProfileUpdateSchema,
 } from "./clinical";
 
-export {
-  chatRequestSchema,
-  CHAT_MESSAGE_CONTENT_MAX,
-  aiPrescriptionRequestSchema,
-  aiPatientSummaryRequestSchema,
-  aiDrugCheckRequestSchema,
-  aiDrugCheckOverrideSchema,
-  aiManagerRequestSchema,
-  aiAutoSuggestRequestSchema,
-  aiVoiceNoteRequestSchema,
-  aiVoiceNoteSaveSchema,
-  aiSmartPrescriptionRequestSchema,
-  aiPrescriptionSaveSchema,
-  aiDrugInteractionCheckRequestSchema,
-} from "./chat";
+export { chatRequestSchema, CHAT_MESSAGE_CONTENT_MAX, aiManagerRequestSchema } from "./chat";
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
@@ -88,7 +74,6 @@ export {
   waitlistNotifySchema,
   waitlistPromoteSchema,
   noShowMarkSchema,
-  noShowAnalyticsQuerySchema,
 } from "./receptionist-ai";
 
 export {
@@ -112,8 +97,6 @@ export {
   ticketRatingSchema,
   ticketMessageSchema,
   whatsappInboundSchema,
-  supportDashboardQuerySchema,
-  detectLanguageSchema,
   SUPPORTED_LANGUAGES,
   FAQ_CATEGORIES,
   TICKET_CHANNELS,
@@ -159,19 +142,11 @@ export {
   phoneHandlerLookupSchema,
   attestationCreateSchema,
   attestationSignSchema,
-  attestationListSchema,
   familyLinkCreateSchema,
-  familyLinkDeleteSchema,
-  familyMembersListSchema,
-  prescriptionRenewalRequestSchema,
-  prescriptionRenewalReviewSchema,
-  prescriptionRenewalDispenseSchema,
-  waitTimeEstimateSchema,
   doctorDelayUpdateSchema,
   inventoryItemCreateSchema,
   inventoryItemUpdateSchema,
   inventoryTransactionSchema,
-  inventoryAlertsSchema,
 } from "./batch4c";
 
 export {
@@ -180,25 +155,10 @@ export {
   paymentPlanCreateSchema,
   installmentUpdateSchema,
   reminderSendSchema,
-  financialSummaryQuerySchema,
   revenueInsightsQuerySchema,
 } from "./billing";
 
-export {
-  whatsappConsentGrantSchema,
-  whatsappConsentRevokeSchema,
-  whatsappConsentExportSchema,
-  whatsappConsentDeleteSchema,
-  whatsappVoiceWebhookSchema,
-  wabaPhoneNumberIdSchema,
-} from "./whatsapp";
-
-export {
-  admissionCreateSchema,
-  dischargeSchema,
-  transferSchema,
-  admissionQuerySchema,
-} from "./adt";
+export { admissionCreateSchema, dischargeSchema, transferSchema } from "./adt";
 
 export {
   staffInviteSchema,

@@ -1,11 +1,11 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
+import { validateQuery, withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
-import { attestationCreateSchema } from "@/lib/validations/batch4c";
+import { attestationCreateSchema, attestationListSchema } from "@/lib/validations/batch4c";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,11 +153,9 @@ export const GET = withAuth(
       const supabase = await createTenantClient(clinicId);
       const untypedSupabase = supabase as unknown as SupabaseUntyped;
 
-      const url = request.nextUrl;
-      const patientId = url.searchParams.get("patientId");
-      const doctorId = url.searchParams.get("doctorId");
-      const type = url.searchParams.get("type");
-      const status = url.searchParams.get("status");
+      const parsed = validateQuery(attestationListSchema, request);
+      if (parsed instanceof NextResponse) return parsed;
+      const { patientId, doctorId, type, status } = parsed.data;
 
       let query = untypedSupabase
         .from("attestations")

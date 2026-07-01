@@ -76,4 +76,8 @@ export const noShowAnalyticsQuerySchema = z.object({
   patientId: z.string().optional(),
   startDate: isoDate.optional(),
   endDate: isoDate.optional(),
+  view: z
+    .enum(["summary", "flagged-patients", "doctor-stats", "patient-history"])
+    .optional()
+    .default("summary"),
 });

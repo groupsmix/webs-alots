@@ -225,3 +225,30 @@ export function withAuthValidation<T>(
   // pass null to preserve the "any authenticated user" behavior.
   return allowedRoles === null ? withAuthAnyRole(inner) : withAuth(inner, allowedRoles);
 }
+
+/**
+ * Validate a request's query string against a Zod schema.
+ *
+ * Reads `request.nextUrl.searchParams`, flattens it into a plain object via
+ * `Object.fromEntries`, and validates it with the shared `safeParse` helper.
+ *
+ * Returns either:
+ *   - a `NextResponse` (422 validation error) when parsing fails, or
+ *   - `{ data }` with the typed, validated query values on success.
+ *
+ * @example
+ *   const parsed = validateQuery(admissionQuerySchema, request);
+ *   if (parsed instanceof NextResponse) return parsed;
+ *   const { status, patient_id } = parsed.data;
+ */
+export function validateQuery<T>(
+  schema: ZodType<T>,
+  request: NextRequest,
+): NextResponse | { data: T } {
+  const raw = Object.fromEntries(request.nextUrl.searchParams);
+  const result = safeParse(schema, raw);
+  if (!result.success) {
+    return apiValidationError(result.error);
+  }
+  return { data: result.data };
+}

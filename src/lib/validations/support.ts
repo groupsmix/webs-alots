@@ -46,7 +46,7 @@ export const faqSearchSchema = z.object({
   query: z.string().min(1).max(500),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
   category: z.enum(FAQ_CATEGORIES).optional(),
-  limit: z.number().int().min(1).max(50).optional().default(10),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(10),
 });
 
 // ── Support Ticket Schemas ───────────────────────────────────────────
@@ -92,7 +92,7 @@ export const whatsappInboundSchema = z.object({
   wa_message_id: z.string().max(200).optional(),
 });
 
-// ── Support Dashboard Schemas ────────────────────────────────────────
+// ── Support Dashboard Schemas ─────────────────────────────────────────
 
 export const supportDashboardQuerySchema = z.object({
   status: z.enum(TICKET_STATUSES).optional(),
@@ -105,12 +105,6 @@ export const supportDashboardQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
-  page: z.number().int().min(1).optional().default(1),
-  per_page: z.number().int().min(1).max(100).optional().default(20),
-});
-
-// ── Language Detection ───────────────────────────────────────────────
-
-export const detectLanguageSchema = z.object({
-  text: z.string().min(1).max(2000),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  per_page: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
