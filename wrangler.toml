@@ -189,8 +189,30 @@ bucket_name = "webs-alots-uploads"
 # ── Environment Variables (non-secret) ────────────────────────────────
 # Secrets (API keys, encryption keys) are set via `wrangler secret put`
 # or Cloudflare dashboard. Only non-sensitive defaults go here.
+#
+# W8-A31-01 / B1: This top-level block is the config used by a plain
+# `wrangler deploy` (no --env) — which targets a Worker named "webs-alots",
+# i.e. the SAME script as [env.production]. Wrangler env blocks do NOT
+# inherit top-level vars and vice-versa, so this block is kept at full
+# production parity with [env.production.vars] below. Without WORKER_ENV /
+# R2_BUCKET_NAME / ROOT_DOMAIN a default-env deploy would silently ship a
+# broken Worker (uploads 503, subdomain routing collapses, crons refuse to
+# fire). `npm run deploy` now passes `--env production` explicitly, but this
+# parity is retained as a backstop for any manual `wrangler deploy`.
 [vars]
 NODE_ENV = "production"
+# audit-4 F-13: distinguishes prod from staging at runtime (NODE_ENV is
+# "production" in both). Destructive crons consult this to refuse to run
+# outside production. Mirrors [env.production.vars].
+WORKER_ENV = "production"
+# Upload storage bucket name for the R2 presigned URL signer (src/lib/r2.ts).
+# Without it getR2PresignConfig() returns null and every /api/upload 503s.
+# Must match the UPLOADS_BUCKET binding's bucket_name.
+R2_BUCKET_NAME = "webs-alots-uploads"
+# Tenant routing + cron self-invocation base. Without ROOT_DOMAIN,
+# extractSubdomain() returns null for every *.oltigo.com host and the cron
+# handler refuses to fire. Mirrors [env.production.vars].
+ROOT_DOMAIN = "oltigo.com"
 # FIXED: KV binding is now resolved correctly via getWorkerBinding() which uses
 # getCloudflareContext().env instead of globalThis. The rate limiter can now use
 # the distributed KV backend for production-grade protection.
@@ -200,6 +222,10 @@ RATE_LIMIT_BACKEND = "kv"
 # See SECURITY.md § PHI Masking, findings #7/#13
 NEXT_PUBLIC_DATA_MASKING = "partial"
 NEXT_PUBLIC_PLAUSIBLE_HOST = "plausible.io"
+# Seed-account safety flags — mirror [env.production.vars]. They only silence
+# the startup seed-guard warnings; the runtime block is the DB blocklist.
+SEED_PASSWORDS_ROTATED = "true"
+SEED_USERS_DELETED = "true"
 
 # ── Production Environment ────────────────────────────────────────────
 # INF-004: Explicit production block prevents top-level debug toggles
@@ -474,16 +500,16 @@ enabled = true
 [triggers]
 crons = [
   "*/5 * * * *",  # every 5 min — uptime monitor + WhatsApp alerts
-  "*/15 * * * *", # every 15 min — notification queue flush
-  "*/30 * * * *", # every 30 min — appointment reminders
-  "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders
+  "*/15 * * * *", # every 15 min — notification queue flush + audit-log flush
+  "*/30 * * * *", # every 30 min — appointment reminders + webhook retries
+  "0 * * * *",    # hourly — R2 cleanup, feedback, rebooking + support-SLA + daily briefing + NPS survey
   "0 2 * * *",    # 02:00 UTC daily — subscription billing
   "0 3 * * *",    # 03:00 UTC daily — GDPR patient data purge
   "0 4 * * *",    # 04:00 UTC daily — M-03/M-04 dedup table TTL purge
-  "0 5 * * *",    # 05:00 UTC daily — BL-002 Stripe payment reconciliation
+  "0 5 * * *",    # 05:00 UTC daily — BL-002 Stripe reconciliation + AI clinic briefings
   "0 8 * * *",    # 08:00 UTC daily — onboarding nudges for stalled clinics
   "0 9 * * *",    # 09:00 UTC daily — payment reminders (overdue + upcoming)
-  "0 1 * * *",    # 01:00 UTC daily — usage snapshots + overage alerts
+  "0 1 * * *",    # 01:00 UTC daily — usage snapshots + Law 09-08 data retention
   "30 6 * * *",   # 06:30 UTC daily — trial lifecycle (warnings + downgrades)
 ]
 

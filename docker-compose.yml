@@ -1,20 +1,36 @@
-# Docker Compose for local Oltigo development
+# Docker Compose for local Oltigo development — SUPPLEMENTARY SERVICES ONLY
 # Usage: docker compose up -d
 #
-# This starts a local Supabase stack (Postgres + Auth + Storage + REST API),
-# Redis for rate limiting, and Mailpit for email testing — so you can
-# develop without needing remote services.
+# IMPORTANT: This file does NOT run Supabase. The Oltigo app needs the full
+# Supabase stack (Postgres + Auth/GoTrue + Storage + PostgREST + the Kong API
+# gateway on :54321 + Studio), which this compose file does not provide. Run
+# that stack with the Supabase CLI in a separate terminal:
+#
+#   supabase start      # serves the API gateway on http://localhost:54321
+#                       # and Studio on http://localhost:54323
+#   supabase status     # prints the anon + service_role keys to copy below
+#
+# This compose file only adds the extra local services the CLI does NOT ship:
+#   - MinIO      — S3-compatible object store (local stand-in for Cloudflare R2)
+#   - Redis      — rate limiting / caching
+#   - Mailpit    — email capture (SMTP :1025, web UI http://localhost:8025)
+#   - Uptime Kuma — uptime monitoring (web UI http://localhost:3001)
+#
+# (A previous version of this file also declared bare `db` and `studio`
+# services. They were removed: the `db` Postgres collided with the Supabase
+# CLI's own Postgres on :54322, and `studio` pointed at `kong`/`meta` services
+# that never existed here, so its REST/Auth tabs could never connect. Use the
+# CLI for Postgres + Studio instead.)
 #
 # Before starting, generate secrets:
-#   POSTGRES_PASSWORD=$(openssl rand -hex 16)
 #   MINIO_ROOT_USER=$(openssl rand -hex 8)
 #   MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)
 #   REDIS_PASSWORD=$(openssl rand -hex 16)
 #
-# After starting, update your .env.local:
+# Then update your .env.local:
 #   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-#   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
-#   SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from `supabase status`>
+#   SUPABASE_SERVICE_ROLE_KEY=<service_role key from `supabase status`>
 #   RATE_LIMIT_REDIS_URL=redis://:$REDIS_PASSWORD@localhost:6379
 #   SMTP_HOST=localhost
 #   SMTP_PORT=1025
@@ -23,64 +39,13 @@
 # Mailpit web UI: http://localhost:8025
 #
 # SECURITY HARDENING (A31 findings):
-# - Bind Postgres to 127.0.0.1 only (not 0.0.0.0)
 # - Use environment-variable passwords (never hardcode)
 # - Add no_new_privileges and drop capabilities where practical
 # - Add healthchecks to stateful services
 # - MinIO console bound to localhost only
-# - Redis and Mailhog bound to localhost only
+# - Redis and Mailpit bound to localhost only
 
 services:
-  # ---------- Supabase Postgres ----------
-  # A32-2: Pin dev images by digest when updating. Run:
-  #   docker pull supabase/postgres:<tag> && docker inspect --format='{{index .RepoDigests 0}}' supabase/postgres:<tag>
-  # then use the full image@sha256:... reference here.
-  db:
-    # A32-2: Pinned by digest for reproducible builds.
-    # To update: docker pull supabase/postgres:<new-tag> && docker inspect --format='{{index .RepoDigests 0}}' supabase/postgres:<new-tag>
-    image: supabase/postgres:15.14.1.131@sha256:ae15b4d243438161fe310172a9f37510dd54a6b59ee55dbad3482249bf227f32
-    ports:
-      # A31.2 / A31.19: Bind to localhost only, not 0.0.0.0
-      - "127.0.0.1:54322:5432"
-    environment:
-      # A31.3: Password must come from environment, never hardcoded
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      POSTGRES_DB: postgres
-    volumes:
-      - supabase-db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
-
-  # ---------- Supabase Studio (optional) ----------
-  # A32-2: Studio tag is dated 2024-01-01 — consider bumping to a
-  # recent release and pinning by digest (see A32-2 note on db above).
-  studio:
-    # A32-2: Pinned by digest. Bumped from 20240101 to latest release.
-    image: supabase/studio:2026.05.25-sha-65c570e@sha256:c18b922ab1afdc4f25600f5c5bba701c302823013df5388927205a472ea95a10
-    ports:
-      # A31.5 / A31.12: Bind to localhost only (unauthenticated DB admin UI)
-      - "127.0.0.1:54323:3000"
-    environment:
-      STUDIO_PG_META_URL: http://meta:8080
-      SUPABASE_URL: http://kong:8000
-      SUPABASE_REST_URL: http://kong:8000/rest/v1/
-    depends_on:
-      db:
-        condition: service_healthy
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
-
   # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
   # A32-2: Pin by digest when updating (see note on db above).
   minio:
@@ -194,8 +159,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  supabase-db:
-    driver: local
   minio-data:
     driver: local
   redis-data:

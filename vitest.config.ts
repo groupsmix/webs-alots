@@ -6,11 +6,23 @@ import { defineConfig } from "vitest/config";
 // mechanically bumped upward per merged PR. Long-term targets:
 // statements: 80, branches: 70, lines: 70, functions: 60.
 const floorPath = path.resolve(__dirname, ".vitest-coverage-floor.json");
-const floor = JSON.parse(fs.readFileSync(floorPath, "utf-8")) as {
+const floorFile = JSON.parse(fs.readFileSync(floorPath, "utf-8")) as {
   statements: number;
   branches: number;
   lines: number;
   functions: number;
+  // The ratchet file also carries a `target` object documenting the
+  // long-term goals. It must NOT be forwarded to Vitest: any non-metric key
+  // in `coverage.thresholds` is interpreted as a per-glob threshold, so
+  // `target` would become a glob that matches no files (ignored at best,
+  // a "no files for threshold glob" error at worst). Pick only the metrics.
+  target?: unknown;
+};
+const floor = {
+  statements: floorFile.statements,
+  branches: floorFile.branches,
+  lines: floorFile.lines,
+  functions: floorFile.functions,
 };
 
 export default defineConfig({
