@@ -42,6 +42,14 @@ const CLAUDE_MODEL = "claude-3-5-sonnet-20241022";
 const CLAUDE_MAX_TOKENS = 2000;
 const ANTHROPIC_TIMEOUT_MS = 90_000;
 
+// Anthropic rejects images whose base64 payload exceeds ~5 MB and caps the
+// total request body around 32 MB. base64 inflates bytes by ~4/3, so we bound
+// the DECRYPTED (raw) size well under those limits to avoid both guaranteed
+// API failures and building a huge base64 string in memory. Oversized files
+// are a permanent condition (marked "failed", never retried).
+const MAX_IMAGE_BYTES = 3_500_000; // ~4.7 MB base64, under Anthropic's 5 MB image cap
+const MAX_PDF_BYTES = 20_000_000; // ~26.7 MB base64, under Anthropic's ~32 MB request cap
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -316,6 +324,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .eq("id", record.id)
         .eq("clinic_id", record.clinic_id);
       return json({ error: "Unsupported file type" }, 422);
+    }
+
+    // ── Size guard (permanent failure, no retry) ──
+    // Enforce on the decrypted byte length before base64-encoding so we never
+    // send a payload Anthropic will reject or build an oversized string that
+    // could exhaust the function's memory.
+    const maxBytes = isImage ? MAX_IMAGE_BYTES : MAX_PDF_BYTES;
+    if (fileBytes.length > maxBytes) {
+      await supabase
+        .from("patient_files")
+        .update({
+          extraction_status: "failed",
+          extraction_error: `File too large for extraction (${fileBytes.length} bytes, limit ${maxBytes})`,
+        })
+        .eq("id", record.id)
+        .eq("clinic_id", record.clinic_id);
+      return json({ error: "File too large for extraction" }, 422);
     }
 
     // ── Build Claude message content ──

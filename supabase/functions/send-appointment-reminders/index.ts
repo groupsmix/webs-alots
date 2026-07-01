@@ -285,6 +285,21 @@ Deno.serve(async (req: Request) => {
         [patient.name, appt.doctor?.name ?? "", dateStr, timeStr, clinic.name],
       );
 
+      // Only record the deduplication row when the message was actually
+      // accepted by the WhatsApp API (a message id was returned). On a
+      // transient send failure sendTemplateMessage returns null; writing a
+      // dedup row here would permanently mark the reminder as "sent" and
+      // suppress every future retry, silently dropping the patient's
+      // reminder. Skipping the insert lets a subsequent cron run (while the
+      // appointment is still inside the ±window tolerance) retry the send.
+      if (!waMessageId) {
+        console.warn("WhatsApp reminder send failed — will retry on next run", {
+          appointmentId: appt.id,
+          reminderType: window.type,
+        });
+        continue;
+      }
+
       // Insert deduplication record — ignore if unique constraint fires
       // (e.g. two parallel invocations racing within the same window).
       const { error: insertErr } = await supabase.from("appointment_reminders").insert({
