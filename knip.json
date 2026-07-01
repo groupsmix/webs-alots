@@ -27,7 +27,6 @@
   "ignoreDependencies": [
     "eslint-plugin-jsx-a11y",
     "tailwindcss",
-    "eslint-plugin-react-hooks",
     "tw-animate-css",
     "shadcn",
     "@anthropic-ai/sdk"

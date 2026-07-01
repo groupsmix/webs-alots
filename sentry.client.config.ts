@@ -5,9 +5,11 @@ import * as Sentry from "@sentry/nextjs";
 // presence check still shipped `sentry-public_key=placeholder` to the browser
 // and silently dropped every client-side exception. Treat any DSN containing
 // "placeholder" as unset so misconfiguration fails closed (no Sentry) rather
-// than failing open (a dead Sentry client). The hard runtime gate lives in
-// src/lib/env.ts (enforceEnvValidation), which refuses to boot production with
-// a placeholder DSN; this guard is the matching client-side defense.
+// than failing open (a dead Sentry client). Note: src/lib/env.ts enforces
+// that NEXT_PUBLIC_SENTRY_DSN is *present* in production (enforceEnvValidation)
+// but does NOT reject placeholder values — so this substring guard is the
+// authoritative client-side fail-closed defense, not a duplicate of a
+// server-side gate.
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 const hasValidDsn = !!dsn && !/placeholder/i.test(dsn);
 

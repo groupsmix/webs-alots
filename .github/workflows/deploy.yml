@@ -103,6 +103,13 @@ jobs:
           # Both production and staging use "partial" (matches wrangler.toml
           # [env.*.vars] and .env.example).
           NEXT_PUBLIC_DATA_MASKING: partial
+          # BG2 / Ops dashboard "Last Deployment": pin a deterministic build
+          # timestamp instead of letting next.config.ts fall back to
+          # `new Date()` (which makes every build non-reproducible and churns
+          # the Worker bundle). Use the pushed commit's timestamp so rebuilding
+          # the same commit yields an identical value; fall back to the run
+          # start time for workflow_dispatch runs with no head_commit.
+          NEXT_PUBLIC_DEPLOY_TIME: ${{ github.event.head_commit.timestamp || github.run_started_at }}
 
       # Fail fast if the build silently produced no generated OpenNext fetch bundle.
       - name: Verify build output

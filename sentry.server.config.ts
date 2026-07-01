@@ -25,8 +25,9 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-    // R-20 Fix: Set sendDefaultPii to false explicitly
-    // @sentry/nextjs@8 defaults this to true, which is a PII risk
+    // R-20 Fix: Set sendDefaultPii to false explicitly.
+    // @sentry/nextjs (v10, see package.json) can enable sendDefaultPii in
+    // some setups, which is a PII/PHI risk for this app — pin it off.
     sendDefaultPii: false,
 
     // Performance monitoring: Sample 10% of transactions in production by default.
