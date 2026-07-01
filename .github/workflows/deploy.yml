@@ -19,10 +19,11 @@
 #
 # Required Cloudflare Worker secrets (set ONCE per worker via
 # `wrangler secret put`, or via the dashboard — NOT pushed by this workflow):
-#   webs-alots-ai needs: GROQ_API_KEY (the AI Builder runs on Groq) plus
-#                        NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY;
-#                        optional: ANTHROPIC_API_KEY, E2B_API_KEY and other
-#                        per-provider keys. Helper: scripts/setup-ai-worker-secrets.sh
+#   webs-alots-ai needs: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+#                        (super_admin auth) plus AT LEAST ONE AI provider config —
+#                        either OPENAI_API_KEY (+ optional OPENAI_BASE_URL /
+#                        OPENAI_MODEL) or ANTHROPIC_API_KEY.
+#                        Helper: scripts/setup-ai-worker-secrets.sh
 #   webs-alots already has its own runtime secrets configured.
 #                        Helper: scripts/setup-worker-secrets.sh
 #
@@ -166,8 +167,8 @@ jobs:
 
       # ─── Second Worker: webs-alots-ai (AI routes) ─────────────────────
       # Lives in workers/ai/ as a separate npm package. Plain fetch handler
-      # (no Next.js / OpenNext) so the bundle stays small. Holds CopilotKit
-      # runtime + Anthropic SDK + ai SDK + @e2b SDK so the main Worker stays
+      # (no Next.js / OpenNext) so the bundle stays small. Holds the CopilotKit
+      # runtime + the OpenAI / Anthropic clients so the main Worker stays
       # under Cloudflare's 10 MiB Workers Paid script size limit.
       #
       # See workers/ai/README.md for architecture rationale.
@@ -187,9 +188,10 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/ai
           # Deploy to `production` on main, `staging` on the staging branch.
-          # webs-alots-ai runtime secrets (GROQ_API_KEY, optionally
-          # ANTHROPIC_API_KEY / E2B_API_KEY, NEXT_PUBLIC_SUPABASE_URL,
-          # NEXT_PUBLIC_SUPABASE_ANON_KEY) are configured directly on the
-          # Worker via `wrangler secret put` (scripts/setup-ai-worker-secrets.sh)
-          # — not pushed by this workflow to avoid putting them in GH Actions.
+          # webs-alots-ai runtime secrets (NEXT_PUBLIC_SUPABASE_URL,
+          # NEXT_PUBLIC_SUPABASE_ANON_KEY and one AI provider config —
+          # OPENAI_API_KEY [+ OPENAI_BASE_URL/OPENAI_MODEL] or ANTHROPIC_API_KEY)
+          # are configured directly on the Worker via `wrangler secret put`
+          # (scripts/setup-ai-worker-secrets.sh) — not pushed by this workflow
+          # to avoid putting them in GH Actions.
           command: deploy --env ${{ github.ref_name == 'main' && 'production' || 'staging' }}

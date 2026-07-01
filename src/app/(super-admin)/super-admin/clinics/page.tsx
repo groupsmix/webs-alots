@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Check,
   Minus,
+  Trash2,
   Heart,
   Image,
   Clock,
@@ -55,7 +56,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
 import { exportToCSV } from "@/lib/export-data";
 import { logger } from "@/lib/logger";
-import { fetchClinics, updateClinicStatus } from "@/lib/super-admin-actions";
+import { fetchClinics, updateClinicStatus, deleteClinic } from "@/lib/super-admin-actions";
 import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 /** Subset of the clinics.config JSONB column used in clinic management. */
@@ -403,7 +404,8 @@ type BulkAction =
   | "enable-feature"
   | "suspend"
   | "export"
-  | "change-status";
+  | "change-status"
+  | "delete";
 
 const TIER_OPTIONS = ["free", "standard", "premium", "enterprise"];
 const FEATURE_OPTIONS = [
@@ -499,6 +501,10 @@ export default function AllClinicsPage() {
   const [loginClinic, setLoginClinic] = useState<ClinicDetail | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendClinic, setSuspendClinic] = useState<ClinicDetail | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ClinicDetail | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleteForce, setDeleteForce] = useState(false);
   const [list, setList] = useState<ClinicDetail[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -911,6 +917,13 @@ export default function AllClinicsPage() {
     const count = ids.length;
     if (count === 0) return;
 
+    // Bulk delete goes through the deleteClinic server action (per-clinic PHI
+    // guard), not the bulk API route.
+    if (bulkAction === "delete") {
+      await executeBulkDelete();
+      return;
+    }
+
     // Translate the UI action into the API contract.
     let body: { action: string; ids: string[]; message?: string; value?: string };
     switch (bulkAction) {
@@ -1002,6 +1015,8 @@ export default function AllClinicsPage() {
         return "Suspend Clinics";
       case "change-status":
         return "Change Status";
+      case "delete":
+        return "Delete Clinics";
       default:
         return "";
     }
@@ -1030,6 +1045,67 @@ export default function AllClinicsPage() {
       setActionLoading(false);
     }
     setSuspendOpen(false);
+  }
+
+  // Permanently delete a single clinic (and its cascading tenant data).
+  async function handleDeleteClinic() {
+    if (!deleteTarget) return;
+    setActionLoading(true);
+    try {
+      const target = deleteTarget;
+      await deleteClinic(target.id, { force: deleteForce });
+      setList((prev) => prev.filter((c) => c.id !== target.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
+      addToast(`${target.name} was permanently deleted`, "success");
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+      setDeleteConfirmName("");
+      setDeleteForce(false);
+    } catch (err) {
+      logger.warn("Failed to delete clinic", { context: "super-admin/clinics", error: err });
+      addToast(err instanceof Error ? err.message : "Failed to delete clinic", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  // Bulk delete: deletes every selected clinic that has no patient PHI; clinics
+  // that still hold patient data are skipped (never wiped in bulk) and reported.
+  async function executeBulkDelete() {
+    const targets = selectedClinics;
+    if (targets.length === 0) return;
+    setActionLoading(true);
+    try {
+      const results = await Promise.allSettled(targets.map((c) => deleteClinic(c.id)));
+      const deletedIds = new Set<string>();
+      let skipped = 0;
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled") {
+          deletedIds.add(targets[i]!.id);
+        } else {
+          skipped += 1;
+        }
+      });
+      if (deletedIds.size > 0) {
+        setList((prev) => prev.filter((c) => !deletedIds.has(c.id)));
+      }
+      setSelectedIds(new Set());
+      setBulkAction(null);
+      addToast(
+        `Deleted ${deletedIds.size} clinic${deletedIds.size === 1 ? "" : "s"}` +
+          (skipped > 0 ? ` · ${skipped} skipped (still have patient data)` : ""),
+        skipped > 0 ? "warning" : "success",
+      );
+    } catch (err) {
+      logger.warn("Bulk delete failed", { context: "super-admin/clinics", error: err });
+      addToast("Bulk delete failed. Please try again.", "error");
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function refreshHealthAnalytics() {
@@ -1411,6 +1487,15 @@ export default function AllClinicsPage() {
             Change Status
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            className="text-red-600 hover:text-red-700"
+            onClick={() => openBulkAction("delete")}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Delete
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedIds(new Set())}
@@ -1633,6 +1718,20 @@ export default function AllClinicsPage() {
                               ) : (
                                 <Ban className="h-3.5 w-3.5" />
                               )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Delete clinic"
+                              className="text-red-600"
+                              onClick={() => {
+                                setDeleteTarget(clinic);
+                                setDeleteConfirmName("");
+                                setDeleteForce(false);
+                                setDeleteOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </td>
@@ -2132,6 +2231,16 @@ export default function AllClinicsPage() {
                   value={confirmName}
                   onChange={(e) => setConfirmName(e.target.value)}
                 />
+                {confirmName.length > 0 && confirmName !== suspendClinic.name ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    Name doesn&apos;t match yet — the Suspend button stays disabled until you type
+                    it exactly.
+                  </p>
+                ) : confirmName.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Type the name above to enable the Suspend button.
+                  </p>
+                ) : null}
               </div>
             )}
             <DialogFooter>
@@ -2167,6 +2276,80 @@ export default function AllClinicsPage() {
                     Suspend
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* Delete Clinic Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        {deleteTarget && (
+          <DialogContent onClose={() => setDeleteOpen(false)}>
+            <DialogHeader>
+              <DialogTitle>Delete Clinic</DialogTitle>
+              <DialogDescription>
+                This permanently deletes the clinic and all of its data — patients, appointments,
+                payments and files. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-4">
+              <p className="text-sm font-medium">{deleteTarget.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {deleteTarget.userCountRange} users &middot; {deleteTarget.city || "—"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
+              <label className="text-sm font-medium">Type the clinic name to confirm:</label>
+              <Input
+                placeholder={deleteTarget.name}
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
+              />
+              {deleteConfirmName.length > 0 && deleteConfirmName !== deleteTarget.name ? (
+                <p className="text-xs text-amber-600 dark:text-amber-500">
+                  Name doesn&apos;t match yet — the Delete button stays disabled until you type it
+                  exactly.
+                </p>
+              ) : deleteConfirmName.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Type the name above to enable the Delete button.
+                </p>
+              ) : null}
+            </div>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={deleteForce}
+                onChange={(e) => setDeleteForce(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span className="text-muted-foreground">
+                Also erase clinics that still contain patient records (PHI). Leave unchecked to
+                protect real practices — without this, a clinic that still has patients is kept and
+                the deletion is refused.
+              </span>
+            </label>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteOpen(false);
+                  setDeleteConfirmName("");
+                  setDeleteForce(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteClinic}
+                disabled={actionLoading || deleteConfirmName !== deleteTarget.name}
+              >
+                {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete permanently
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2273,6 +2456,19 @@ export default function AllClinicsPage() {
               </div>
             )}
 
+            {bulkAction === "delete" && (
+              <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-3">
+                <p className="text-sm font-medium text-red-800 dark:text-red-400">
+                  Permanently delete {selectedClinics.length} clinic
+                  {selectedClinics.length !== 1 ? "s" : ""}?
+                </p>
+                <p className="mt-1 text-xs text-red-700 dark:text-red-400/80">
+                  This cannot be undone. For safety, any selected clinic that still has patient
+                  records is skipped — only empty / junk clinics are deleted.
+                </p>
+              </div>
+            )}
+
             {bulkAction === "change-status" && (
               <div className="space-y-2">
                 {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent select */}
@@ -2297,9 +2493,12 @@ export default function AllClinicsPage() {
                 Cancel
               </Button>
               <Button
-                variant={bulkAction === "suspend" ? "destructive" : "default"}
+                variant={
+                  bulkAction === "suspend" || bulkAction === "delete" ? "destructive" : "default"
+                }
                 onClick={executeBulkAction}
                 disabled={
+                  actionLoading ||
                   (bulkAction === "change-tier" && !bulkActionValue) ||
                   (bulkAction === "enable-feature" && !bulkActionValue) ||
                   (bulkAction === "change-status" && !bulkActionValue) ||
@@ -2310,6 +2509,11 @@ export default function AllClinicsPage() {
                   <>
                     <Ban className="h-4 w-4 mr-1" />
                     Suspend {selectedClinics.length} Clinic{selectedClinics.length !== 1 ? "s" : ""}
+                  </>
+                ) : bulkAction === "delete" ? (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete {selectedClinics.length} Clinic{selectedClinics.length !== 1 ? "s" : ""}
                   </>
                 ) : (
                   <>

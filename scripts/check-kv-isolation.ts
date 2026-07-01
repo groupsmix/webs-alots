@@ -11,12 +11,19 @@
  * declared under [env.staging.kv_namespaces] shares an `id` or `preview_id` with
  * one declared under [env.production.kv_namespaces] or the top-level [[kv_namespaces]].
  *
- * Run: npx tsx scripts/check-kv-isolation.ts
- * CI:  Add to pre-deploy-check.sh or .github/workflows/ci.yml before wrangler deploy.
+ * Run: npx tsx scripts/check-kv-isolation.ts            # lint (warn on placeholder)
+ * CI:  .github/workflows/ci.yml "guards" stage.
+ *      pre-deploy-check.sh invokes it with --strict before deploy, which also
+ *      fails on un-provisioned placeholder IDs (REPLACE_BEFORE_STAGING_DEPLOY*).
+ *
+ * This supersedes the former check-kv-namespace-collision.mjs (it only looked
+ * at RATE_LIMIT_KV); this guard checks every KV binding declared for staging.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
+const STRICT = process.argv.includes("--strict");
 
 const ROOT = process.cwd();
 const WRANGLER_PATH = join(ROOT, "wrangler.toml");
@@ -125,7 +132,26 @@ for (const e of [...topLevel, ...prod]) {
 
 let failed = false;
 
+const isPlaceholder = (v?: string): boolean => !!v && v.startsWith("REPLACE_BEFORE_STAGING_DEPLOY");
+
 for (const stagingEntry of staging) {
+  // Un-provisioned placeholder: a legitimate intermediate state after landing
+  // the audit fix but before running create-staging-kv.sh. Warn in lint mode,
+  // hard-fail in --strict (deploy) mode. A placeholder cannot collide with a
+  // real production id, so skip the collision comparison.
+  if (isPlaceholder(stagingEntry.id) || isPlaceholder(stagingEntry.preview_id)) {
+    const msg =
+      `KV namespace "${stagingEntry.binding}" in [env.staging.kv_namespaces] still has a ` +
+      `placeholder id/preview_id. Run scripts/create-staging-kv.sh before deploying staging.`;
+    if (STRICT) {
+      console.error(`\n[A-09 LAUNCH BLOCKER] ${msg}\n`);
+      failed = true;
+    } else {
+      console.warn(`⚠ ${msg}`);
+    }
+    continue;
+  }
+
   const collisions: string[] = [];
 
   if (stagingEntry.id && prodIds.has(stagingEntry.id)) {

@@ -1,13 +1,33 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * E2E tests for the full appointment booking cycle.
+ * E2E checks for the public booking PAGE (structure & resilience).
  *
- * Covers the complete patient journey: landing on the booking page,
- * selecting a service/specialty, picking a time slot, and confirming.
+ * SCOPE — IMPORTANT: these are render/structure assertions only (the page
+ * loads with a 2xx, shows interactive controls, is responsive, exposes no
+ * server error, has clinic branding). They do NOT complete a real booking,
+ * and there is intentionally no upload/cancel coverage here.
+ *
+ * Why the true end-to-end cycle (book -> upload -> cancel) is NOT automated:
+ *   1. It requires the full demo seed (clinic + time slots + auth users),
+ *      which CI does not apply — seed-dependent tests are gated behind
+ *      E2E_DEMO_SEED and skipped in CI (see e2e/demo-smoke.spec.ts). A test
+ *      here would therefore add zero pipeline protection.
+ *   2. The 3-step BookingForm has no stable test IDs and uses i18n (French)
+ *      copy, so a UI-driven completion is brittle.
+ *   3. Cancel is time-sensitive (cancellation-window check) AND seeded
+ *      appointments are inserted with slot_start/slot_end only — the one-time
+ *      backfill in migration 00019 runs before the seed, so seeded rows have
+ *      NULL appointment_date/start_time, which the cancel route requires.
+ *      (Worth tracking separately: seed inserts bypass the booking RPC that
+ *      populates those derived columns.)
+ *
+ * To close the gap properly, run against a fully seeded staging/local stack
+ * with E2E_DEMO_SEED=true and drive: anonymous /book completion (RPC path,
+ * which sets appointment_date/start_time) -> patient login -> upload -> cancel.
  */
 
-test.describe("Booking full cycle", () => {
+test.describe("Booking page — structure & resilience", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/book");
   });

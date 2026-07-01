@@ -57,6 +57,7 @@ export const RESERVED_SUBDOMAINS: ReadonlySet<string> = new Set([
   "imap",
   "pop",
   "pop3",
+  "mta-sts",
   "ftp",
   "sftp",
   "vpn",

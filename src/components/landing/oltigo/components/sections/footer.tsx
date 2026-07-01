@@ -25,7 +25,12 @@ const FOOTER_HREFS: string[][] = [
   // 2 — Company / Entreprise / الشركة
   ["/about", "/contact", "/about", "/contact"],
   // 3 — Legal / Légal / قانوني
-  ["/privacy", "/terms", "/privacy", "/sub-processors"],
+  // Labels (parallel by position): Confidentialité · Conditions · Loi 09-08 · Sécurité
+  // Each maps to a distinct, real destination. "Loi 09-08" points at the
+  // sub-processor list (the page that documents 09-08 / GDPR Art.28 sub-
+  // processing) and "Sécurité" at the RFC 9116 security policy. Previously
+  // "Loi 09-08" duplicated /privacy and "Sécurité" pointed at /sub-processors.
+  ["/privacy", "/terms", "/sub-processors", "/.well-known/security.txt"],
 ];
 
 /** On-page anchors stay client-side scroll links; real routes are nav links. */

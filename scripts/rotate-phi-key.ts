@@ -34,20 +34,6 @@ import { createHash, createHmac } from "crypto";
 
 // ── Configuration ──
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PHI_PREFIXES = [
-  "clinics/*/documents/",
-  "clinics/*/prescriptions/",
-  "clinics/*/lab-results/",
-  "clinics/*/lab_results/",
-  "clinics/*/x-rays/",
-  "clinics/*/xrays/",
-  "clinics/*/medical-records/",
-  "clinics/*/medical_records/",
-  "clinics/*/patient-files/",
-  "clinics/*/patient_files/",
-];
-
 // We list from the "clinics/" prefix and filter for .enc files
 const ROOT_PREFIX = "clinics/";
 

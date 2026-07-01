@@ -132,6 +132,35 @@ PHI is required to perform clinical work.
 If you are not the DPO, do not set this variable — request a masking
 level of `partial` or `full` instead.
 
+## Email Transport Security (MTA-STS / TLS-RPT)
+
+The MTA-STS policy lives at `public/.well-known/mta-sts.txt`
+(`mode: enforce`, `mx: *.mx.cloudflare.net`, matching Cloudflare Email
+Routing's `route{1,2,3}.mx.cloudflare.net` hosts). For this policy to take
+effect, the deployment **must** satisfy all of the following — shipping the
+file alone is not sufficient:
+
+1. **Serve it from the policy host.** Sending MTAs fetch the policy from
+   `https://mta-sts.<root-domain>/.well-known/mta-sts.txt` — **not** from the
+   apex/app domain. Point `mta-sts.oltigo.com` at the Worker (or a static
+   host) so that exact URL returns this file with `Content-Type: text/plain`.
+2. **Exempt the policy host from tenant resolution.** `mta-sts` must be in the
+   reserved-subdomain list (`src/lib/reserved-subdomains.ts`) so the
+   subdomain-resolution middleware does not treat it as a clinic tenant and
+   redirect/404 the policy request.
+3. **Publish the DNS records:**
+   - `_mta-sts.oltigo.com` TXT → `v=STSv1; id=<timestamp>` (bump `id` on every
+     policy change so senders re-fetch).
+   - `_smtp._tls.oltigo.com` TXT → `v=TLSRPTv1; rua=mailto:security@oltigo.com`
+     (TLS-RPT, so failures are reported rather than silently dropped).
+
+> ⚠️ `mode: enforce` means a sending MTA that has cached this policy will
+> **refuse to deliver mail** if the receiving MX cannot present a valid
+> certificate matching the `mx` pattern. Before enabling the `_mta-sts` DNS
+> record in production, validate the policy end-to-end (e.g. with
+> `mode: testing` first, watching TLS-RPT reports). Note that RFC 8461 policy
+> files do not support comments, so the file body must remain key/value only.
+
 ## Compliance
 
 This platform handles Protected Health Information (PHI) under Moroccan **Law 09-08** (Protection of Individuals with Regard to the Processing of Personal Data). All security reports related to PHI handling are treated as **critical priority**.

@@ -53,12 +53,18 @@ jobs:
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 
+      # FR-32: Verify every Worker binding declared in wrangler.toml is
+      # referenced in source — flags orphaned bindings that add cost/risk.
+      - name: Check Worker bindings
+        run: npx tsx scripts/check-bindings.ts
+
       # A-09 / A31-A60 Top Finding #1 (CRIT): Prevent staging vs production
       # KV-namespace ID collision. Lint mode (no --strict) warns on
-      # placeholder IDs, hard-fails on collision. Deploy workflow should
-      # invoke this with --strict to also block placeholder IDs.
-      - name: Check RATE_LIMIT_KV namespace IDs
-        run: node scripts/check-kv-namespace-collision.mjs
+      # placeholder IDs, hard-fails on collision. The deploy path
+      # (pre-deploy-check.sh) invokes this with --strict to also block
+      # un-provisioned placeholder IDs.
+      - name: Check KV namespace isolation
+        run: npx tsx scripts/check-kv-isolation.ts
 
       # Audit Task 5: ensure every code symbol MVP_SCOPE.md names (feature
       # gates, env vars, KV bindings, files) still exists in the source tree,

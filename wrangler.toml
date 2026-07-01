@@ -365,20 +365,29 @@ dead_letter_queue = "notification-queue-staging-dlq"
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
-# W8-A31-01 / A-09 (RESOLVED 2026-05-31): dedicated staging KV namespace.
+# W8-A31-01: KV namespace binding for staging.
 #
-# Staging now uses its OWN RATE_LIMIT_KV namespace, distinct from production
-# (prod id = 7ac37dff…; staging id = da3acaf3… below), so staging load tests
-# and auth attempts no longer share/exhaust production rate-limit counters.
-# Created via the Cloudflare API (account 0dadac33…1ba4) using
-# `./scripts/create-staging-kv.sh`.
+# A-09 (etap1 audit finding #5) — RESOLVED 2026-05-31. Staging now uses a
+# DEDICATED RATE_LIMIT_KV namespace whose id/preview_id are DISTINCT from
+# production (see below), so a staging k6 load test no longer drains the
+# production rate-limit token buckets. R2 buckets are likewise separated
+# (webs-alots-uploads-staging vs webs-alots-uploads).
 #
-# CI guard `scripts/check-kv-namespace-collision.mjs` fails the build if the
-# staging and production ids ever become identical again, preventing
-# regression. Verify isolation during a load test with:
-#   wrangler tail --env staging   # staging KV ops only; prod tail stays quiet
+# This isolation is enforced in CI and at deploy time by
+# `scripts/check-kv-isolation.ts` (run with `--strict` from
+# pre-deploy-check.sh), which fails on any staging↔production ID collision
+# and on un-provisioned `REPLACE_BEFORE_STAGING_DEPLOY*` placeholders.
+#
+# To (re)provision a staging-only namespace if these IDs are ever lost:
+#
+#   $ ./scripts/create-staging-kv.sh
+#
+# which runs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` (and
+# `--preview`) and prints the IDs to paste below.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
+# A-09 resolved 2026-05-31: dedicated staging KV namespace.
+# Created via Cloudflare API (account 0dadac33…1ba4).
 id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING
 preview_id = "4965f9300c924de3afc0407679ff775b"  # RATE_LIMIT_KV_STAGING_preview
 
@@ -490,14 +499,6 @@ crons = [
 #
 # Reference: https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler
 #
-# STATUS (verified 2026-06): src/lib/supabase-server.ts ALREADY reads
-# SUPABASE_POOLER_URL via getSupabasePoolerUrl() (src/lib/env.ts) and honours
-# it when set to an http(s) origin. NOTE: the supabase-js clients
-# (createServerClient / createClient) talk to PostgREST/GoTrue/Realtime over
-# HTTPS — they never open a raw Postgres TCP socket — so a `postgresql://…:6543`
-# transaction-pooler URL is intentionally IGNORED here (using it as the REST
-# base URL would break every API/Auth call). PostgREST already pools DB
-# connections server-side via Supavisor, so Worker isolates do not exhaust the
-# 5432 connection limit through supabase-js. The pooler/DIRECT_URL above are
-# for direct-driver paths only (migrations / backups via SUPABASE_DB_URL).
-# See the rationale block in src/lib/supabase-server.ts (getSupabaseUrl).
+# TODO: Update src/lib/supabase-server.ts to read from SUPABASE_POOLER_URL
+# when available, falling back to NEXT_PUBLIC_SUPABASE_URL for backward
+# compatibility. This is a one-line change per client factory function.

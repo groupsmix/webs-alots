@@ -448,6 +448,19 @@ export function isMfaEnabled(): boolean {
 }
 
 /**
+ * Whether super_admin accounts are *required* to enrol in 2FA (not just
+ * stepped-up if they already have it). Off by default so enabling it is a
+ * deliberate, verified rollout: set `ENFORCE_SUPER_ADMIN_MFA=true` once at
+ * least one super_admin has a verified factor, to avoid locking admins into
+ * the /setup-2fa flow unexpectedly.
+ *
+ * Read through this helper rather than `process.env` directly.
+ */
+export function isSuperAdminMfaRequired(): boolean {
+  return process.env.ENFORCE_SUPER_ADMIN_MFA === "true";
+}
+
+/**
  * Whether the custom-domain / Cloudflare DNS feature is enabled.
  *
  * Toggled by `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`. When disabled, the
@@ -1220,7 +1233,11 @@ export function getSmtpPass(): string | undefined {
 
 /** From address for transactional email. */
 export function getEmailFromAddress(): string {
-  return process.env.EMAIL_FROM ?? "noreply@oltigo.ma";
+  // Canonical product domain is oltigo.com (see NEXT_PUBLIC_SITE_URL default,
+  // image hosts, security.txt). Keep the fallback on the same domain so a
+  // missing EMAIL_FROM does not emit a different-domain sender. Production
+  // overrides this via the EMAIL_FROM env var to its verified sending domain.
+  return process.env.EMAIL_FROM ?? "noreply@oltigo.com";
 }
 
 /** Meta / WhatsApp app secret for HMAC webhook verification. */
@@ -1317,12 +1334,12 @@ export function getBookingTokenSecret(): string | undefined {
   return process.env.BOOKING_TOKEN_SECRET;
 }
 
-/** Root domain (e.g. oltigo.ma). */
+/** Root domain (e.g. oltigo.com). */
 export function getRootDomain(): string {
   return process.env.ROOT_DOMAIN ?? "";
 }
 
-/** Public site URL (e.g. https://oltigo.ma). */
+/** Public site URL (e.g. https://oltigo.com). */
 export function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "";
 }

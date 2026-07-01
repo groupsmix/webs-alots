@@ -8,13 +8,13 @@
 # (see workers/ai/README.md and the Env interface in
 # workers/ai/src/lib/supabase.ts).
 #
-# Required for the AI Builder to work:
-#   - GROQ_API_KEY                 (builder runs on Groq Llama 3.3 70B; free tier)
+# Required for the CopilotKit endpoint to work:
 #   - NEXT_PUBLIC_SUPABASE_URL     (public value, read at runtime by the worker)
 #   - NEXT_PUBLIC_SUPABASE_ANON_KEY(public value)
-# Optional extra model providers / sandbox:
-#   - ANTHROPIC_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, OPENAI_API_KEY,
-#     DEEPSEEK_API_KEY, MISTRAL_API_KEY, XAI_API_KEY, E2B_API_KEY
+#   - At least ONE AI provider config:
+#       * OPENAI_API_KEY (+ optional OPENAI_BASE_URL / OPENAI_MODEL) for any
+#         OpenAI-compatible endpoint, OR
+#       * ANTHROPIC_API_KEY for the Anthropic adapter.
 #
 # Prerequisites: `wrangler login` (or CLOUDFLARE_API_TOKEN exported) and
 # `npm install` inside workers/ai.
@@ -76,21 +76,17 @@ setup_pasted() {
 }
 
 echo
-info "=== Required for the AI Builder ==="
-setup_pasted GROQ_API_KEY "free key from https://console.groq.com"
+info "=== Required: Supabase auth (super_admin validation) ==="
 setup_pasted NEXT_PUBLIC_SUPABASE_URL "Supabase → Settings → API → Project URL (public value)"
 setup_pasted NEXT_PUBLIC_SUPABASE_ANON_KEY "Supabase → Settings → API → anon key (public value)"
 
 echo
-info "=== Optional model providers / sandbox (press Enter to skip) ==="
-setup_pasted ANTHROPIC_API_KEY "Anthropic console (Claude)"
-setup_pasted GOOGLE_GENERATIVE_AI_API_KEY "Google AI Studio (Gemini)"
-setup_pasted OPENAI_API_KEY "OpenAI platform"
-setup_pasted DEEPSEEK_API_KEY "DeepSeek platform"
-setup_pasted MISTRAL_API_KEY "Mistral platform"
-setup_pasted XAI_API_KEY "xAI platform (Grok)"
-setup_pasted E2B_API_KEY "E2B (server-side code sandbox; optional)"
+info "=== AI provider — set at least ONE (press Enter to skip) ==="
+setup_pasted OPENAI_API_KEY "OpenAI or any OpenAI-compatible endpoint"
+setup_pasted OPENAI_BASE_URL "OPTIONAL: base URL for a non-OpenAI compatible host"
+setup_pasted OPENAI_MODEL "OPTIONAL: model id for the OpenAI-compatible provider"
+setup_pasted ANTHROPIC_API_KEY "alternative to OPENAI_API_KEY (Anthropic / Claude)"
 
 echo
 ok "Done. Review what is set with:  (cd workers/ai && $WRANGLER secret list --env $ENV_NAME)"
-warn "Only providers you have ACTIVATED in /admin/ai-config will appear in the builder model picker."
+warn "Set at least one AI provider (OPENAI_API_KEY or ANTHROPIC_API_KEY) or the CopilotKit endpoint will return 500."
