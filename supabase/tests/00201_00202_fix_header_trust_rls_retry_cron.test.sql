@@ -29,14 +29,24 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- ── Plan ─────────────────────────────────────────────────────────────────────
---   1-14:  Each rebound table has a policy referencing get_user_clinic_id()
---   15:    no rebound table still references get_request_clinic_id()
---   16-17: ai_traces INSERT locked to service_role (+ no anon/auth INSERT policy)
---   18:    clinic_ai_briefings super_admin uses is_super_admin() (not users.id)
---   19-21: upload_policies admin policies use users.auth_id = auth.uid()
+--   1-14:  Each rebound policy references get_user_clinic_id() / is_super_admin()
+--   15:    No REBOUND policy still references get_request_clinic_id().
+--            NOTE: the anon/public SELECT paths on appointments, reviews,
+--            before_after_photos, products, services, time_slots,
+--            on_duty_schedule (00041) and the AND-bound refund_requests /
+--            agent_conversations policies (00125/00156) legitimately retain
+--            get_request_clinic_id() for the `auth.uid() IS NULL` branch, so the
+--            negative is scoped to the 14 policies 00201 actually rewrote — a
+--            blanket "no non-users table" check would red-line a correct schema.
+--   16:    ai_traces INSERT scoped to service_role only
+--   17:    No anon/authenticated INSERT policy exists on ai_traces
+--   18:    clinic_ai_briefings super_admin policy dropped the broken users.id predicate
+--   19-21: upload_policies admin policies use users.auth_id
 --   22:    retry_pending_document_extractions(integer) exists
 --   23:    retry_pending_document_extractions is SECURITY DEFINER
---   24-26: retry_pending_document_extractions: anon/auth denied, service_role ok
+--   24:    anon cannot EXECUTE retry_pending_document_extractions
+--   25:    authenticated cannot EXECUTE retry_pending_document_extractions
+--   26:    service_role retains EXECUTE on retry_pending_document_extractions
 --   27:    retry-document-extractions pg_cron schedule exists
 SELECT plan(27);
 
@@ -187,7 +197,7 @@ SELECT is(
         'subscription_history', 'usage_snapshots', 'referral_codes',
         'referral_events', 'referral_credits', 'ai_traces', 'upload_policies'
       )
-      AND (qual || ' ' || coalesce(with_check, ''))
+      AND (coalesce(qual, '') || ' ' || coalesce(with_check, ''))
           LIKE '%get_request_clinic_id%'),
   0,
   'no rebound table still references get_request_clinic_id() (header-trust regression)'
@@ -203,7 +213,7 @@ SELECT ok(
       AND tablename = 'ai_traces'
       AND policyname = 'ai_traces_insert_service'
       AND cmd = 'INSERT'
-      AND roles = '{service_role}'
+      AND roles::text[] = ARRAY['service_role']
   ),
   'ai_traces INSERT policy scoped to service_role only'
 );
@@ -215,7 +225,7 @@ SELECT is(
     WHERE schemaname = 'public'
       AND tablename = 'ai_traces'
       AND cmd = 'INSERT'
-      AND roles && ARRAY['anon', 'authenticated']),
+      AND roles::text[] && ARRAY['anon', 'authenticated']),
   0,
   'no anon/authenticated INSERT policy exists on ai_traces'
 );
@@ -322,7 +332,6 @@ DECLARE
   v_request_refs   text;
   v_bad_insert     text;
   v_bad_auth_id    text;
-  v_missing_cron   text;
 BEGIN
   -- Every rebound table must have at least one policy on get_user_clinic_id().
   v_rebound_tables := ARRAY[
@@ -335,7 +344,7 @@ BEGIN
       SELECT 1 FROM pg_policies
       WHERE schemaname = 'public'
         AND tablename = v_rebound_tables[i]
-        AND (qual || ' ' || coalesce(with_check, ''))
+        AND (coalesce(qual, '') || ' ' || coalesce(with_check, ''))
             LIKE '%get_user_clinic_id%'
     ) THEN
       RAISE EXCEPTION
@@ -355,7 +364,7 @@ BEGIN
        'subscription_history', 'usage_snapshots', 'referral_codes',
        'referral_events', 'referral_credits', 'ai_traces', 'upload_policies'
      )
-     AND (qual || ' ' || coalesce(with_check, ''))
+     AND (coalesce(qual, '') || ' ' || coalesce(with_check, ''))
          LIKE '%get_request_clinic_id%';
   IF v_request_refs IS NOT NULL THEN
     RAISE EXCEPTION
@@ -369,7 +378,7 @@ BEGIN
    WHERE schemaname = 'public'
      AND tablename = 'ai_traces'
      AND cmd = 'INSERT'
-     AND roles && ARRAY['anon', 'authenticated'];
+     AND roles::text[] && ARRAY['anon', 'authenticated'];
   IF v_bad_insert IS NOT NULL THEN
     RAISE EXCEPTION
       'ai_traces INSERT policy exists for role(s): % — should be service_role only.',
@@ -382,7 +391,7 @@ BEGIN
    WHERE schemaname = 'public'
      AND tablename = 'upload_policies'
      AND policyname LIKE 'upload_policies_%'
-     AND (qual || ' ' || coalesce(with_check, ''))
+     AND (coalesce(qual, '') || ' ' || coalesce(with_check, ''))
          LIKE '%users.id = auth.uid()%';
   IF v_bad_auth_id IS NOT NULL THEN
     RAISE EXCEPTION
