@@ -67,28 +67,21 @@ AS $f$
     AND policyname = pol
 $f$;
 
--- Shortcut: assert a policy on table 't' named 'p' contains string 's'.
+-- Shortcut: TRUE when policy 'p' on table 't' contains string 's'.
+-- Returns boolean so it can feed pgTAP's ok(boolean, description) directly.
 CREATE FUNCTION pg_temp.policy_contains(tbl regclass, pol text, needle text)
-  RETURNS text
+  RETURNS boolean
   LANGUAGE sql STABLE
 AS $f$
-  SELECT CASE
-    WHEN pg_temp.policy_def(tbl, pol) LIKE '%' || needle || '%'
-    THEN 'ok'
-    ELSE 'not ok'
-  END
+  SELECT pg_temp.policy_def(tbl, pol) LIKE '%' || needle || '%'
 $f$;
 
--- Shortcut: assert a policy on table 't' named 'p' does NOT contain string 's'.
+-- Shortcut: TRUE when policy 'p' on table 't' does NOT contain string 's'.
 CREATE FUNCTION pg_temp.policy_not_contains(tbl regclass, pol text, needle text)
-  RETURNS text
+  RETURNS boolean
   LANGUAGE sql STABLE
 AS $f$
-  SELECT CASE
-    WHEN pg_temp.policy_def(tbl, pol) NOT LIKE '%' || needle || '%'
-    THEN 'ok'
-    ELSE 'not ok'
-  END
+  SELECT pg_temp.policy_def(tbl, pol) NOT LIKE '%' || needle || '%'
 $f$;
 
 -- ── Rebound PHI/business tables use get_user_clinic_id() ────────────────────
