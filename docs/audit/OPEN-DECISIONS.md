@@ -41,7 +41,9 @@ From `CURRENT-STATUS.md`, the open work is operational, not code:
 - [ ] **RISK-006** Add `k6/booking-flow.js` (login → create appointment → upload → cancel) and wire into CI.
 - [ ] **RISK-005/011/014** Stand up SLO dashboards, a CSP-report review runbook, and wire `sentry-cron`
       into the cron routes.
-- [ ] **RISK-008** Add a CI test for PHI dual-key decryption during the rotation window (code supports it).
+
+> **Note:** RISK-008 (PHI dual-key rotation) is **already covered** — `encryption.test.ts` (`SEC-013`)
+> tests encrypt-with-old / decrypt-after-rotation and the fail-when-neither-key-matches path.
 
 ---
 
@@ -102,11 +104,13 @@ long-form marketing/landing copy until a translator is engaged.
 pure-logic** modules first (high value, easy to test without heavy mocking):
 
 - [x] `src/lib/insurance/client.ts` — **done** (`src/lib/__tests__/insurance-client.test.ts`).
-- [ ] `src/lib/encryption.ts` — encrypt/decrypt round-trip + dual-key rotation window (also closes RISK-008).
-- [ ] `src/lib/tenant.ts` / `src/lib/assert-tenant.ts` — tenant-scope enforcement & fail-closed behavior.
-- [ ] `src/lib/with-auth.ts` — role gating / deny-by-default.
-- [ ] `src/lib/rate-limit.ts` — limiter + fail-closed circuit behavior.
-- [ ] `src/lib/validations/*` — schema accept/reject cases for the heavily-used schemas.
+- [x] `src/lib/idempotency.ts` — **done** (`src/lib/__tests__/idempotency.test.ts`): determinism,
+      SHA-256 vector, separator collision-safety for both sync/async variants.
+- [x] `src/lib/encryption.ts` — **already covered** (`encryption.test.ts`, incl. `SEC-013` rotation).
+- [x] `src/lib/tenant.ts` / `assert-tenant.ts` / `with-auth.ts` / `rate-limit.ts` / `crypto-utils.ts` —
+      **already covered** (dedicated test files exist).
+- [ ] `src/lib/validations/*` — schema accept/reject cases for the heavily-used schemas (partial coverage today).
+- [ ] Broaden coverage on data-layer + API route handlers (the largest remaining untested surface).
 
 Each merged PR should ratchet `.vitest-coverage-floor.json` upward (never down), per the existing
 FE-006 convention in `vitest.config.ts`.
