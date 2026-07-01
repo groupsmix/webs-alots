@@ -175,12 +175,18 @@ bucket_name = "webs-alots-uploads"
 
 # ── Next.js Incremental Cache (audit R-8) ─────────────────────────────
 # open-next.config.ts wires the R2-backed incremental cache so `use cache`
-# / ISR entries persist across Worker isolates (the adapter degrades to a
-# graceful no-op while this binding is absent). To activate durable caching:
+# / ISR entries persist across Worker isolates. NOTE: the adapter is a graceful
+# no-op when this binding is absent only at REQUEST time — at DEPLOY time
+# `opennextjs-cloudflare deploy` runs populate-cache, which HARD-FAILS
+# ("No R2 binding NEXT_INC_CACHE_R2_BUCKET found!") if the override is wired but
+# the binding is missing. open-next.config.ts therefore gates the r2IncrementalCache
+# override behind ENABLE_R2_INCREMENTAL_CACHE so a plain deploy stays green until
+# the bucket exists. To activate durable caching (do all three together):
 #   1. Create a DEDICATED bucket (do NOT reuse UPLOADS_BUCKET — that bucket
 #      holds PHI and must not be co-mingled with rendered cache content):
 #        wrangler r2 bucket create webs-alots-next-cache
 #   2. Uncomment the binding below (top level AND env.production).
+#   3. Set ENABLE_R2_INCREMENTAL_CACHE=1 in the deploy workflow (build + deploy).
 # The adapter reads the binding name `NEXT_INC_CACHE_R2_BUCKET` exactly.
 # [[r2_buckets]]
 # binding = "NEXT_INC_CACHE_R2_BUCKET"
