@@ -1,3 +1,8 @@
+> ⚠️ **SUPERSEDED (2026-06-30).** This document is a historical snapshot and is **out of date** —
+> several items below marked `NOT STARTED` (e.g. RISK-004 circuit breaker, RISK-018 egress allowlist,
+> RISK-024 webhook rate limit, RISK-013 GDPR purge) are in fact implemented in code.
+> See **`CURRENT-STATUS.md`** for the verified, canonical status.
+
 # REMAINING AUDIT FINDINGS — UNRESOLVED RISKS
 
 # Oltigo Health Platform

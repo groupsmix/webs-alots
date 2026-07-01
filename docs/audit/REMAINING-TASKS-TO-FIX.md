@@ -1,3 +1,7 @@
+> ⚠️ **SUPERSEDED (2026-06-30).** Historical snapshot. See **`CURRENT-STATUS.md`** for the
+> verified, canonical status (this doc's "production-ready" conclusion is broadly correct, but the
+> specifics have moved on).
+
 # REMAINING TASKS TO FIX — Oltigo Health Platform
 
 **Date:** June 14, 2026  
