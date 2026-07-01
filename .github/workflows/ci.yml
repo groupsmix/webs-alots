@@ -452,6 +452,11 @@ jobs:
       contents: read
       security-events: write
       actions: read
+      # CI-CODEQL/Gitleaks: on pull_request events gitleaks-action lists the
+      # PR's commits (GET /pulls/{n}/commits) to scan only the diff. Without
+      # pull-requests: read that call 403s ("Resource not accessible by
+      # integration") and crashes the action, failing the whole job.
+      pull-requests: read
       # CI-05: required for keyless cosign signing (OIDC token) and for
       # `actions/attest-build-provenance` to record SLSA provenance against
       # the GitHub attestations API.
