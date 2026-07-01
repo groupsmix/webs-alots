@@ -592,12 +592,18 @@ jobs:
         if: always() && hashFiles('semgrep.sarif') != ''
         run: node scripts/strip-suppressed-sarif.mjs semgrep.sarif
 
+      # CI-CODEQL: upload-sarif hits the same "Code scanning is not enabled"
+      # 403 as the CodeQL init/analyze steps above while code scanning is off
+      # repo-wide. Gate it (matching the Scorecard SARIF upload) so a config
+      # error doesn't fail the job. Remove once code scanning is enabled at
+      # Settings → Code security → Code scanning.
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
           category: "semgrep"
+        continue-on-error: true
   # A173: OSS supply-chain depth — OpenSSF Scorecard + license allowlist.
   # Catches typosquat, dep-confusion, maintainer-takeover, and licence-
   # incompatible dependencies that npm audit alone cannot detect.
