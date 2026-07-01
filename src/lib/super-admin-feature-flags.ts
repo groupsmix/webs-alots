@@ -3,8 +3,8 @@ import { getKVBinding } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
-export type SuperAdminFeatureFlagCategory = "core" | "experimental" | "integration";
-export type SuperAdminFeatureFlagSource = "kv" | "db";
+type SuperAdminFeatureFlagCategory = "core" | "experimental" | "integration";
+type SuperAdminFeatureFlagSource = "kv" | "db";
 
 export interface SuperAdminFeatureFlag {
   key: string;

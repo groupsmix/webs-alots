@@ -7,8 +7,8 @@
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type IncidentSeverity = "critical" | "high" | "medium" | "low";
-export type IncidentStatus = "reported" | "investigating" | "contained" | "resolved" | "closed";
+type IncidentSeverity = "critical" | "high" | "medium" | "low";
+type IncidentStatus = "reported" | "investigating" | "contained" | "resolved" | "closed";
 export type IncidentCategory =
   | "data_breach"
   | "unauthorized_access"
@@ -47,12 +47,6 @@ export interface IncidentCreateInput {
   reportedBy: string;
   affectedSystems: string[];
   affectedPatientCount: number | null;
-}
-
-export interface ContainmentAction {
-  action: string;
-  performedBy: string;
-  performedAt: string;
 }
 
 // ─── Implementation ──────────────────────────────────────────────────────────

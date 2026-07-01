@@ -50,5 +50,3 @@ export const API_ERROR_CODES = Object.freeze({
   PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
   INVALID_FILE_TYPE: "INVALID_FILE_TYPE",
 } as const);
-
-export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];

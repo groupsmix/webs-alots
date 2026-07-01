@@ -27,7 +27,7 @@ export interface WABARoutingResult {
   whatsappPhoneNumberId: string;
 }
 
-export interface PatientLookupResult {
+interface PatientLookupResult {
   patientId: string;
   patientName: string;
   patientPhone: string;

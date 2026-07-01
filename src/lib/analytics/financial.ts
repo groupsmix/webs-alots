@@ -16,7 +16,7 @@ export interface FinancialReportQuery {
   endDate: string;
 }
 
-export interface RevenueBreakdown {
+interface RevenueBreakdown {
   consultations: number;
   procedures: number;
   pharmacy: number;
@@ -24,7 +24,7 @@ export interface RevenueBreakdown {
   total: number;
 }
 
-export interface AccountsReceivableEntry {
+interface AccountsReceivableEntry {
   patientId: string;
   patientName: string;
   amountOwed: number;

@@ -2,7 +2,7 @@ import { get } from "@/lib/api-client";
 import type { NotificationLogEntry } from "@/lib/notifications";
 import type { WhatsAppTemplate } from "@/lib/whatsapp";
 
-export interface QueueItem {
+interface QueueItem {
   id: string;
   status: "pending" | "failed";
   attempts: number;
@@ -14,7 +14,7 @@ export interface QueueItem {
   payload: Record<string, unknown>;
 }
 
-export interface QueueStatus {
+interface QueueStatus {
   pending: number;
   failed: number;
   deadLettered: number;

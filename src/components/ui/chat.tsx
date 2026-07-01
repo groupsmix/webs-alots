@@ -7,7 +7,7 @@ import { ChatInput } from "@/components/ui/chat-input";
 import { ChatMessage } from "@/components/ui/chat-message";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export interface ChatUiMessage {
+interface ChatUiMessage {
   id: string;
   role: "user" | "assistant";
   content: string;

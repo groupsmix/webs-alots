@@ -9,12 +9,7 @@
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
-export type TraceStatus =
-  | "ok"
-  | "validation_failed"
-  | "all_providers_failed"
-  | "rate_limited"
-  | "error";
+type TraceStatus = "ok" | "validation_failed" | "all_providers_failed" | "rate_limited" | "error";
 
 export interface AITrace {
   clinicId?: string | null;

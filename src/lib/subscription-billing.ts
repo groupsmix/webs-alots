@@ -432,13 +432,13 @@ async function logBillingEvent(
 
 // ── Usage-Based Billing ──
 
-export interface UsageBillLine {
+interface UsageBillLine {
   resourceType: string;
   unitCount: number;
   costUsd: number;
 }
 
-export interface ClinicUsageBill {
+interface ClinicUsageBill {
   clinicId: string;
   plan: SubscriptionPlan;
   planCostMad: number;

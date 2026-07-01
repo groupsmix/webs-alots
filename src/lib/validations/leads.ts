@@ -19,5 +19,3 @@ export const demoLeadSchema = z.object({
   city: safeName.pipe(z.string().max(120)).optional(),
   locale: z.enum(["fr", "ar", "en", "dar"]).optional(),
 });
-
-export type DemoLeadInput = z.infer<typeof demoLeadSchema>;

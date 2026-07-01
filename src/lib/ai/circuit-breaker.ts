@@ -14,7 +14,7 @@ const DEFAULT_FAILURE_THRESHOLD = 5;
 const DEFAULT_FAILURE_WINDOW_MS = 60_000;
 const DEFAULT_OPEN_MS = 5 * 60_000;
 
-export type AICircuitState = "closed" | "open" | "half_open";
+type AICircuitState = "closed" | "open" | "half_open";
 
 interface StoredCircuitBreakerState {
   consecutiveFailures: number;

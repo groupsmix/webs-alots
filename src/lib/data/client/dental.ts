@@ -196,7 +196,7 @@ export async function fetchTreatmentPlans(
 // Dental: Lab Orders
 // ─────────────────────────────────────────────
 
-export interface LabOrderView {
+interface LabOrderView {
   id: string;
   patientId: string;
   patientName: string;

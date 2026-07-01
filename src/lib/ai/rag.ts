@@ -25,7 +25,7 @@ export interface RAGContext {
   method: "vector" | "keyword" | "corrective" | "none";
 }
 
-export interface RAGChunk {
+interface RAGChunk {
   id: string;
   content: string;
   sourceType: string;

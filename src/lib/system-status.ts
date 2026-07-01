@@ -2,16 +2,16 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { isR2Configured } from "@/lib/r2";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
-export type PublicServiceStatus = "operational" | "degraded" | "down";
+type PublicServiceStatus = "operational" | "degraded" | "down";
 
-export interface PublicStatusService {
+interface PublicStatusService {
   name: string;
   status: PublicServiceStatus;
   detail?: string;
   latencyMs?: number;
 }
 
-export interface PublicStatusIncident {
+interface PublicStatusIncident {
   id: string;
   monitorName: string;
   eventType: "down" | "up" | "degraded";

@@ -16,7 +16,7 @@ import { logger } from "@/lib/logger";
 
 // ── Types ──
 
-export interface ClinicMetrics {
+interface ClinicMetrics {
   clinicId: string;
   clinicName: string;
   yesterday: {
@@ -48,7 +48,7 @@ export interface ClinicMetrics {
   };
 }
 
-export interface GeneratedBriefing {
+interface GeneratedBriefing {
   content: string;
   overallSentiment: "positive" | "neutral" | "concerning" | "critical";
   metricsSnapshot: ClinicMetrics;

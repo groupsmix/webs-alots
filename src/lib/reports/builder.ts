@@ -10,11 +10,11 @@ import type { Database } from "@/lib/types/database";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ReportDataSource = "appointments" | "patients" | "payments" | "prescriptions";
+type ReportDataSource = "appointments" | "patients" | "payments" | "prescriptions";
 
-export type ExportFormat = "json" | "csv";
+type ExportFormat = "json" | "csv";
 
-export interface ReportFilter {
+interface ReportFilter {
   field: string;
   operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "in";
   value: string | number | string[];
