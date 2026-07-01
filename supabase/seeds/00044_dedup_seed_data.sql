@@ -1,4 +1,8 @@
--- Migration 00044: Deduplicate seed data
+-- Seed fixup (historical, one-off): Deduplicate seed data
+--
+-- NOTE: This file lives in supabase/seeds/ and is NOT a schema migration
+-- (the migration CHANGELOG lists 00044 as an unused gap). It is applied
+-- manually against legacy databases only. See supabase/seeds/README.md.
 --
 -- Migration 00040 re-seeded services and a doctor that already existed from
 -- the original seed, creating duplicates with different IDs:
