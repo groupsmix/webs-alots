@@ -71,7 +71,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: "22"
+          # Match .nvmrc (22.13.0), ci.yml, and package.json engines (>=22.13)
+          # so deploy validates on the same Node minor that CI tested against.
+          node-version: "22.13"
           cache: npm
 
       # C-04: --ignore-scripts prevents malicious postinstall on CI.
@@ -92,15 +94,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref_name == 'main' && secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.STAGING_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref_name == 'main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.STAGING_SUPABASE_ANON_KEY }}
           # Audit 2026-06-09 Task 2 (P0): PHI masking level for client
-          # components. getMaskLevel() in src/lib/mask.ts defaults to "none"
-          # when this is absent, and NEXT_PUBLIC_* values are inlined at
-          # BUILD time — the runtime var in wrangler.toml does not reach
-          # client bundles. Without this line, production client components
-          # ship with masking compiled to "none" while the env.ts startup
-          # health check (which reads the runtime var) passes silently.
+          # components. getMaskLevel() in src/lib/mask.ts now defaults to
+          # "partial" (fail-safe), but NEXT_PUBLIC_* values are inlined at
+          # BUILD time and the runtime var in wrangler.toml does not reach
+          # client bundles — so we still set it explicitly here to pin the
+          # exact deployed value and let the post-deploy smoke test assert it
+          # made it into the shipped bundle.
           # Both production and staging use "partial" (matches wrangler.toml
-          # [env.*.vars] and .env.example). The post-deploy smoke test
-          # asserts this value made it into the shipped bundle.
+          # [env.*.vars] and .env.example).
           NEXT_PUBLIC_DATA_MASKING: partial
 
       # Fail fast if the build silently produced no generated OpenNext fetch bundle.

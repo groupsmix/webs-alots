@@ -39,7 +39,6 @@
     "types": "warn",
     "nsTypes": "warn",
     "enumMembers": "warn",
-    "classMembers": "warn",
     "duplicates": "warn",
     "unresolved": "warn"
   }

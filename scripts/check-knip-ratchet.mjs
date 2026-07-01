@@ -56,8 +56,36 @@ try {
   process.exit(1);
 }
 
-// knip JSON reporter outputs an object with a "files" array for unused files.
-const unusedFiles = Array.isArray(report.files) ? report.files : [];
+// Extract the list of unused files from the knip JSON report.
+//
+// knip@6's JSON reporter emits `{ issues: [ { file, files: [...], exports,
+// types, ... }, ... ] }`, where a file is reported as UNUSED when its
+// per-file `files` array is non-empty (it contains the file itself). The
+// previous implementation read a top-level `report.files` array, which does
+// not exist in this knip version — so it always counted 0 and the ratchet
+// silently passed regardless of how much dead code existed. Parse the
+// per-issue `files` arrays, with a fallback to the legacy top-level shape.
+function extractUnusedFiles(rep) {
+  const out = [];
+  if (Array.isArray(rep.issues)) {
+    for (const issue of rep.issues) {
+      if (Array.isArray(issue.files) && issue.files.length > 0) {
+        for (const f of issue.files) {
+          out.push(typeof f === "string" ? f : f.name || issue.file);
+        }
+      }
+    }
+  }
+  // Backward-compat: older knip versions exposed a top-level `files` array.
+  if (out.length === 0 && Array.isArray(rep.files)) {
+    for (const f of rep.files) {
+      out.push(typeof f === "string" ? f : f.path || JSON.stringify(f));
+    }
+  }
+  return out;
+}
+
+const unusedFiles = extractUnusedFiles(report);
 const count = unusedFiles.length;
 
 if (count > baseline) {
