@@ -122,8 +122,6 @@ export const PHI_ENCRYPTED_FIELDS = [
   "chronic_conditions",
 ] as const;
 
-export type PhiEncryptedField = (typeof PHI_ENCRYPTED_FIELDS)[number];
-
 /**
  * Encrypt multiple PHI fields in a record before database insertion.
  * Only encrypts fields that are in PHI_ENCRYPTED_FIELDS and have values.

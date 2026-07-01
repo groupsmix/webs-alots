@@ -18,7 +18,7 @@ export interface ClinicAnalyticsQuery {
   endDate: string;
 }
 
-export interface AppointmentMetrics {
+interface AppointmentMetrics {
   total: number;
   completed: number;
   cancelled: number;
@@ -27,19 +27,19 @@ export interface AppointmentMetrics {
   averageWaitMinutes: number | null;
 }
 
-export interface PatientAcquisitionMetrics {
+interface PatientAcquisitionMetrics {
   newPatients: number;
   returningPatients: number;
   retentionRate: number;
 }
 
-export interface RevenueMetrics {
+interface RevenueMetrics {
   totalRevenue: number;
   averagePerAppointment: number;
   currency: string;
 }
 
-export interface StaffMetrics {
+interface StaffMetrics {
   doctorId: string;
   doctorName: string;
   appointmentsHandled: number;

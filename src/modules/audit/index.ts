@@ -11,4 +11,3 @@ export {
   computeEntryHash,
   getLastAuditHash,
 } from "./append-only";
-export type { ImmutableAuditEntry } from "./append-only";

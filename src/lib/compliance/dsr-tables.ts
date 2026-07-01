@@ -37,7 +37,7 @@ export type Article9Category =
 /**
  * How a DSR endpoint locates a data subject's rows in this table.
  */
-export type DsrKey = "patient_id" | "user_id" | "primary_user_id";
+type DsrKey = "patient_id" | "user_id" | "primary_user_id";
 
 export interface DsrTable {
   /** Postgres table name in the `public` schema. */

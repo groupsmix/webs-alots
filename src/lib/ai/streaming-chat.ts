@@ -23,7 +23,7 @@ import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 /** Tool definition for AI function calling. */
-export interface AITool {
+interface AITool {
   name: string;
   description: string;
   parameters: Record<

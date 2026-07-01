@@ -19,7 +19,7 @@ import { getMonthlyUnitCount } from "@/lib/tenant-metering";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type AlertThreshold = 80 | 100;
+type AlertThreshold = 80 | 100;
 
 interface UsageCheck {
   key: string;

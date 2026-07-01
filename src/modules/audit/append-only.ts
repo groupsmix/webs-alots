@@ -19,7 +19,7 @@ import { logger } from "@/lib/logger";
 import type { Json } from "@/lib/types/database";
 
 /** Audit entry shape for the immutable log. */
-export interface ImmutableAuditEntry {
+interface ImmutableAuditEntry {
   clinic_id: string;
   action: string;
   entity_type: string;

@@ -104,12 +104,3 @@ export interface ModelConfig {
   costPerOutputToken: number; // in cents per 1M tokens
   rpmLimit: number; // requests per minute
 }
-
-/** Feature toggle state */
-export interface AIFeatureToggle {
-  featureKey: string;
-  displayName: string;
-  description: string | null;
-  isEnabled: boolean;
-  minTier: RoutingTier;
-}

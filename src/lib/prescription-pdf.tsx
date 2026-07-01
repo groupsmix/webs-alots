@@ -9,7 +9,7 @@
  * Call this only from Node.js API routes (not middleware or edge functions).
  */
 
-export interface PrescriptionMedication {
+interface PrescriptionMedication {
   name: string;
   dose: string;
   duration: string;

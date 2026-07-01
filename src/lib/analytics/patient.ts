@@ -15,14 +15,14 @@ export interface PatientAnalyticsQuery {
   patientId: string;
 }
 
-export interface AppointmentHistoryEntry {
+interface AppointmentHistoryEntry {
   date: string;
   type: string;
   status: string;
   doctorName: string | null;
 }
 
-export interface EngagementMetrics {
+interface EngagementMetrics {
   totalAppointments: number;
   completedAppointments: number;
   cancelledAppointments: number;

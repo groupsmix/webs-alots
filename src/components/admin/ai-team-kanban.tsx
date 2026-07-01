@@ -340,4 +340,4 @@ export function AITeamKanban({ tasks, onRefresh }: { tasks: TeamTask[]; onRefres
   );
 }
 
-export type { TeamTask, TaskStatus as TeamTaskStatus };
+export type { TeamTask };

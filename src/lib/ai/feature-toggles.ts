@@ -33,8 +33,6 @@ export const AI_FEATURE_KEYS = [
   "smart_recommendations",
 ] as const;
 
-export type AIFeatureKey = (typeof AI_FEATURE_KEYS)[number];
-
 export interface FeatureToggleState {
   isEnabled: boolean;
   minTier: number;

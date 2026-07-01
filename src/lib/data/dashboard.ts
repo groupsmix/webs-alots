@@ -416,7 +416,7 @@ export async function getDoctorDashboardData(
 // Patient Dashboard Data (server-side)
 // ────────────────────────────────────────────
 
-export interface PatientAppointmentView {
+interface PatientAppointmentView {
   id: string;
   serviceName: string;
   doctorName: string;
@@ -425,7 +425,7 @@ export interface PatientAppointmentView {
   status: string;
 }
 
-export interface PatientPrescriptionView {
+interface PatientPrescriptionView {
   id: string;
   patientId: string;
   doctorName: string;
@@ -433,7 +433,7 @@ export interface PatientPrescriptionView {
   medications: { name: string; dosage: string; duration: string }[];
 }
 
-export interface PatientInvoiceView {
+interface PatientInvoiceView {
   id: string;
   amount: number;
   currency: string;
@@ -441,7 +441,7 @@ export interface PatientInvoiceView {
   date: string;
 }
 
-export interface PatientNotificationView {
+interface PatientNotificationView {
   id: string;
   read: boolean;
 }

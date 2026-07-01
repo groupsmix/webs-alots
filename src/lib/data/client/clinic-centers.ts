@@ -11,7 +11,7 @@ import { getLocalDateStr } from "@/lib/utils";
 import { ensureLookups, fetchRows, _activeUserMap } from "./_core";
 import { fetchTodayAppointments } from "./appointments";
 
-export interface DepartmentManagementView {
+interface DepartmentManagementView {
   id: string;
   name: string;
   nameAr: string | null;
@@ -23,7 +23,7 @@ export interface DepartmentManagementView {
   isActive: boolean;
 }
 
-export interface DepartmentDashboardStatView {
+interface DepartmentDashboardStatView {
   id: string;
   name: string;
   doctorCount: number;
@@ -40,7 +40,7 @@ export interface DepartmentOverviewView {
   stats: DepartmentDashboardStatView[];
 }
 
-export interface BedManagementBedView {
+interface BedManagementBedView {
   id: string;
   bedNumber: string;
   status: "available" | "occupied" | "maintenance" | "reserved";

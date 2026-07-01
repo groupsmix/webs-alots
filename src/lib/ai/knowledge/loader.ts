@@ -26,7 +26,7 @@ export const PACK_BUILT_AT = "2026-06-20";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type DrugInteractionSeverity = "minor" | "moderate" | "major" | "contraindicated";
+type DrugInteractionSeverity = "minor" | "moderate" | "major" | "contraindicated";
 
 export interface DrugInteraction {
   drugA: string;
@@ -37,7 +37,7 @@ export interface DrugInteraction {
   recommendation: string;
 }
 
-export interface DarijaTerm {
+interface DarijaTerm {
   /** Primary Darija term (Arabic-script transliteration or Latin) */
   darijaTerms: string[];
   frTerm: string;
@@ -45,7 +45,7 @@ export interface DarijaTerm {
   category: "anatomy" | "symptom" | "medication" | "procedure";
 }
 
-export interface TaxonomyTag {
+interface TaxonomyTag {
   tag: string;
   labelFr: string;
   labelAr: string;

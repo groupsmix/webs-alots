@@ -1,4 +1,4 @@
-export type PricingTier = "starter" | "professional" | "enterprise";
+type PricingTier = "starter" | "professional" | "enterprise";
 
 export interface FeatureMatrix {
   maxDoctors: number;

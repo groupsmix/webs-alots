@@ -8,60 +8,6 @@
  * Applicable to Moroccan Law 09-08 and general healthcare data protection.
  */
 
-import type { Json } from "@/lib/types/database";
-
-// ── PHI Data Classification ──
-
-export type PHICategory =
-  | "patient_name"
-  | "date_of_birth"
-  | "address"
-  | "phone"
-  | "email"
-  | "national_id"
-  | "medical_record"
-  | "diagnosis"
-  | "medication"
-  | "lab_result"
-  | "imaging"
-  | "insurance"
-  | "appointment"
-  | "financial";
-
-export type PIICategory =
-  | "clinician_details"
-  | "fee_structure"
-  | "salary"
-  | "bank_details"
-  | "vendor_payment";
-
-// ── Enhanced Audit Entry (PHI-aware) ──
-
-export type PHIAuditAction =
-  | "create"
-  | "read"
-  | "update"
-  | "delete"
-  | "print"
-  | "export"
-  | "sign"
-  | "addendum"
-  | "override";
-
-export interface PHIAuditEntry {
-  timestamp: string;
-  userId: string;
-  patientId: string;
-  action: PHIAuditAction;
-  resourceType: string;
-  resourceId: string;
-  clinicId: string;
-  changes?: { before: Json; after: Json };
-  ipAddress?: string;
-  sessionId?: string;
-  overrideReason?: string;
-}
-
 // ── PHI Leak Vector Checks ──
 
 const PHI_PATTERNS = [

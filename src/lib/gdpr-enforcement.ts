@@ -33,7 +33,7 @@ import { logger } from "@/lib/logger";
  * Processing activity identifiers used throughout the system.
  * Add new values here when adding new processing activities.
  */
-export type ProcessingActivity =
+type ProcessingActivity =
   | "ai_summaries"
   | "ai_drug_interactions"
   | "ai_prescription_suggestions"

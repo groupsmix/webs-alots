@@ -23,7 +23,7 @@ import { sendTextMessage } from "@/lib/whatsapp";
 
 // ── Types ──
 
-export type ConsentStatus = "granted" | "revoked" | "pending" | "expired";
+type ConsentStatus = "granted" | "revoked" | "pending" | "expired";
 
 export interface WhatsAppConsentRecord {
   id: string;

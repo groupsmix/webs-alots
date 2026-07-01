@@ -42,7 +42,7 @@ import type {
 // ─────────────────────────────────────────────
 
 /** Staff roles a clinic admin may create directly from the dashboard. */
-export type ClinicStaffRole = "doctor" | "receptionist";
+type ClinicStaffRole = "doctor" | "receptionist";
 
 export interface ClinicUserRow {
   id: string;

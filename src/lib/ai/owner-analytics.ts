@@ -17,9 +17,9 @@ const SIGNAL_LABELS: Record<string, string> = {
   negativeSupportRateInverted: "qualité du support",
 };
 
-export type HealthGrade = (typeof HEALTH_GRADES)[number];
-export type HealthTrend = (typeof HEALTH_TRENDS)[number];
-export type HealthRisk = (typeof HEALTH_RISKS)[number];
+type HealthGrade = (typeof HEALTH_GRADES)[number];
+type HealthTrend = (typeof HEALTH_TRENDS)[number];
+type HealthRisk = (typeof HEALTH_RISKS)[number];
 
 export type OwnerClinicSignals = ClinicSignals;
 
@@ -86,7 +86,7 @@ export interface PlatformAlertDraft {
   created_at: string;
 }
 
-export type ApprovedAdminQueryId =
+type ApprovedAdminQueryId =
   | "top_at_risk_clinics"
   | "best_performing_clinics"
   | "stalled_onboardings"
