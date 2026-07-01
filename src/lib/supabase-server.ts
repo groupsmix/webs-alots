@@ -78,6 +78,7 @@ export async function createClient() {
                 // purpose — the @supabase/ssr browser client reads them via
                 // document.cookie; HttpOnly would break client-side auth and
                 // needs the larger server-session refactor instead.
+                // nosemgrep: semgrep.env-access -- NODE_ENV is a non-secret build/runtime constant (read directly elsewhere: cors.ts, email.ts, chaos-engine.ts); routing it through env.ts adds no safety
                 secure: process.env.NODE_ENV === "production",
                 sameSite: options?.sameSite ?? "lax",
                 path: options?.path ?? "/",
@@ -139,6 +140,7 @@ export async function createTenantClient(clinicId: string) {
                 // purpose — the @supabase/ssr browser client reads them via
                 // document.cookie; HttpOnly would break client-side auth and
                 // needs the larger server-session refactor instead.
+                // nosemgrep: semgrep.env-access -- NODE_ENV is a non-secret build/runtime constant (read directly elsewhere: cors.ts, email.ts, chaos-engine.ts); routing it through env.ts adds no safety
                 secure: process.env.NODE_ENV === "production",
                 sameSite: options?.sameSite ?? "lax",
                 path: options?.path ?? "/",
