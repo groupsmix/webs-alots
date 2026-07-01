@@ -17,6 +17,7 @@
  */
 
 import { escapeHtml } from "@/lib/escape-html";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
@@ -62,7 +63,7 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
   const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
   try {
-    const response = await fetch(RESEND_API_URL, {
+    const response = await safeFetch(RESEND_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -174,7 +175,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
 
   try {
     const auth = btoa(`${user}:${pass}`);
-    const response = await fetch(`${baseUrl}/messages`, {
+    const response = await safeFetch(`${baseUrl}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,

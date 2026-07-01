@@ -30,6 +30,11 @@ const ALLOWED_DOMAINS = [
   "api.twilio.com",
   "graph.facebook.com", // WhatsApp Business API
   "api.resend.com",
+  "mailgun.net", // Email HTTP relay (api.mailgun.net, api.eu.mailgun.net)
+  "postmarkapp.com", // Email HTTP relay (api.postmarkapp.com)
+
+  // Security
+  "pwnedpasswords.com", // HIBP k-anonymity password breach check
 
   // Analytics & Monitoring
   "plausible.io",

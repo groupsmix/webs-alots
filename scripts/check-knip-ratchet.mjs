@@ -88,6 +88,64 @@ function extractUnusedFiles(rep) {
 const unusedFiles = extractUnusedFiles(report);
 const count = unusedFiles.length;
 
+// ---------------------------------------------------------------------------
+// Unused exports + types ratchet.
+//
+// knip reports far more unused *exports* and *types* than unused files. These
+// were previously ungated (the exports rule is "warn" in knip.json and this
+// script only counted files), so dead export surface could accumulate
+// unchecked. Count them here and enforce a second monotonic ratchet against
+// .knip-exports-baseline so the backlog can only shrink.
+// ---------------------------------------------------------------------------
+const EXPORTS_BASELINE_PATH = ".knip-exports-baseline";
+let exportsBaseline = Number.POSITIVE_INFINITY;
+try {
+  const raw = readFileSync(EXPORTS_BASELINE_PATH, "utf8").trim();
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed)) {
+    console.error(`::error::Could not parse ${EXPORTS_BASELINE_PATH} as a number (got "${raw}")`);
+    process.exit(1);
+  }
+  exportsBaseline = parsed;
+} catch {
+  console.error(
+    `::error::${EXPORTS_BASELINE_PATH} not found — cannot enforce the unused-export ratchet`,
+  );
+  process.exit(1);
+}
+
+function countExportsAndTypes(rep) {
+  let n = 0;
+  if (Array.isArray(rep.issues)) {
+    for (const issue of rep.issues) {
+      if (Array.isArray(issue.exports)) n += issue.exports.length;
+      if (Array.isArray(issue.types)) n += issue.types.length;
+      if (Array.isArray(issue.nsExports)) n += issue.nsExports.length;
+      if (Array.isArray(issue.nsTypes)) n += issue.nsTypes.length;
+    }
+  }
+  return n;
+}
+
+const exportsCount = countExportsAndTypes(report);
+
+if (exportsCount > exportsBaseline) {
+  console.error(
+    `::error::Knip unused-export ratchet failed: ${exportsCount} unused exports/types found ` +
+      `(baseline ${exportsBaseline}). Remove the dead export (or delete the symbol) before merging.`,
+  );
+  process.exit(1);
+} else if (exportsCount < exportsBaseline) {
+  console.log(
+    `Knip unused-export count improved: ${exportsCount} unused exports/types ` +
+      `(baseline ${exportsBaseline}). Lower ${EXPORTS_BASELINE_PATH} to ${exportsCount} to lock in the gain.`,
+  );
+} else {
+  console.log(
+    `Knip unused-export count: ${exportsCount} unused exports/types (at baseline ${exportsBaseline}).`,
+  );
+}
+
 if (count > baseline) {
   console.error(
     `::error::Knip dead-code ratchet failed: ${count} unused files found (baseline ${baseline}). ` +

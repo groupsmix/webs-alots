@@ -6,6 +6,7 @@
  * but sends via the standard SMS channel (no "whatsapp:" prefix).
  */
 
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 const TWILIO_API_URL = "https://api.twilio.com/2010-04-01";
@@ -54,7 +55,7 @@ export async function sendSms(to: string, body: string): Promise<SmsSendResult> 
     formData.append("To", to);
     formData.append("Body", body);
 
-    const response = await fetch(url, {
+    const response = await safeFetch(url, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,

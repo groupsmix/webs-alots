@@ -37,6 +37,22 @@ describe("fetch-wrapper", () => {
 
       expect(global.fetch).toHaveBeenCalled();
     });
+
+    it("allows the HIBP breach-check host", async () => {
+      global.fetch = vi.fn().mockResolvedValue(new Response("ok"));
+
+      await safeFetch("https://api.pwnedpasswords.com/range/ABCDE");
+
+      expect(global.fetch).toHaveBeenCalled();
+    });
+
+    it("allows the Mailgun email relay host", async () => {
+      global.fetch = vi.fn().mockResolvedValue(new Response("ok"));
+
+      await safeFetch("https://api.mailgun.net/v3/mg.example.com/messages");
+
+      expect(global.fetch).toHaveBeenCalled();
+    });
   });
 
   describe("wouldEgressBeAllowed", () => {

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError, apiRateLimited, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { provisionChatbotForPlan } from "@/lib/chatbot-provisioning";
 import { getPlanByPriceId, type PlanSlug } from "@/lib/config/subscription-plans";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -271,7 +272,7 @@ export async function POST(request: NextRequest) {
         // Retrieve subscription to get clinic_id from metadata.
         // P-04: bound the outbound fetch — Stripe latency must not block the
         // webhook handler past Cloudflare's request budget.
-        const subResponse = await fetch(
+        const subResponse = await safeFetch(
           `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
           {
             headers: { Authorization: `Bearer ${stripeSecretKey}` },
@@ -353,7 +354,7 @@ export async function POST(request: NextRequest) {
 
         // Retrieve subscription to get clinic_id.
         // P-04: bound the outbound fetch (see comment above).
-        const subResponse = await fetch(
+        const subResponse = await safeFetch(
           `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
           {
             headers: { Authorization: `Bearer ${stripeSecretKey}` },

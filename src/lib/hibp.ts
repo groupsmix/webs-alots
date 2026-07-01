@@ -8,6 +8,8 @@
  * @see https://haveibeenpwned.com/API/v3#PwnedPasswords
  */
 
+import { safeFetch } from "@/lib/fetch-wrapper";
+
 const HIBP_API_URL = "https://api.pwnedpasswords.com/range";
 
 /**
@@ -35,7 +37,7 @@ export async function checkPasswordPwned(password: string): Promise<number> {
   const prefix = hashHex.slice(0, 5);
   const suffix = hashHex.slice(5);
 
-  const response = await fetch(`${HIBP_API_URL}/${prefix}`, {
+  const response = await safeFetch(`${HIBP_API_URL}/${prefix}`, {
     // Tell HIBP to return results in the original hash format (not NTLM).
     headers: { "Add-Padding": "true" },
     signal: AbortSignal.timeout(5_000),
