@@ -536,3 +536,19 @@ INSERT INTO consultation_notes (id, patient_id, doctor_id, appointment_id, notes
    '2026-03-19 11:30:00+00')
 ON CONFLICT (id) DO NOTHING;
 
+
+
+-- ============================================================
+-- Sync app-facing date/time columns with slot_start/slot_end.
+-- The cancel/reschedule routes and the double-booking unique index read
+-- appointment_date/start_time/end_time. Migration 00019 backfills these, but
+-- it runs BEFORE this seed, so the rows inserted above would otherwise be left
+-- NULL — and cancelling them fails with "Appointment is missing date or time
+-- information". Re-apply the same UTC-based derivation as 00019 for seed rows.
+-- ============================================================
+UPDATE appointments
+SET appointment_date = (slot_start AT TIME ZONE 'UTC')::date,
+    start_time       = (slot_start AT TIME ZONE 'UTC')::time,
+    end_time         = (slot_end   AT TIME ZONE 'UTC')::time
+WHERE appointment_date IS NULL
+  AND slot_start IS NOT NULL;

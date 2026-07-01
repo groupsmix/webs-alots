@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Storybook stories are dev-only, no i18n needed */
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useEffect, type ReactNode } from "react";
 import { AITeamKanban } from "./ai-team-kanban";

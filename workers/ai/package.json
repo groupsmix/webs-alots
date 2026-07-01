@@ -2,7 +2,7 @@
   "name": "@webs-alots/ai-worker",
   "version": "0.1.0",
   "private": true,
-  "description": "Standalone Cloudflare Worker for AI routes (CopilotKit runtime + AI Builder sandbox). Split out from the main webs-alots Worker to keep its bundle under Cloudflare's 10 MiB compressed limit. See README.md.",
+  "description": "Standalone Cloudflare Worker for the CopilotKit AI route. Split out from the main webs-alots Worker to keep its bundle under Cloudflare's 10 MiB compressed limit. See README.md.",
   "main": "src/index.ts",
   "scripts": {
     "deploy": "wrangler deploy",
@@ -12,18 +12,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.81",
-    "@ai-sdk/google": "^3.0.80",
-    "@ai-sdk/groq": "^3.0.42",
-    "@ai-sdk/openai": "^3.0.68",
-    "@ai-sdk/openai-compatible": "^1.0.39",
     "@anthropic-ai/sdk": "^0.101.0",
     "@copilotkit/runtime": "^1.59.5",
-    "@e2b/code-interpreter": "^2.5.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.99.3",
-    "ai": "^6.0.197",
-    "zod": "^4.4.3"
+    "openai": "^6.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250501.0",

@@ -16,8 +16,11 @@ The AI models and their safety filters evolve over time. To ensure the evaluatio
 
 ## Handling Model Updates
 
-After a model update, run `npm run eval:ai` locally (set `EVAL_AUTH_TOKEN` to
-include the RAG suite).
+The deterministic offline suites (drug-interaction, triage, tool-loop) run with
+no secrets or server. To additionally exercise the live RAG suite, run
+`npm run eval:ai` locally with `EVAL_AUTH_TOKEN` set and `API_BASE_URL` pointed
+at a tenant-resolvable, authenticated instance (see the README "Live RAG suite
+prerequisites").
 If the pass rate drops:
 
 1. Examine `evals/results/` (per-suite JSON and the generated HTML report) to

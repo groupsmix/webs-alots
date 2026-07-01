@@ -40,9 +40,8 @@ Based on codebase verification, the following items are **ALREADY DONE**:
 
 These are operational improvements that enhance long-term maintainability. None are production-blocking.
 
-### TASK-P2-01: Feature Flag UI for Operators
+### TASK-P2-01: Post-Deploy Smoke Test for AI Endpoints
 
-**Issue:** Feature flags toggled via wrangler CLI only (no UI)
 **Issue:** Post-deploy smoke test only tests signup, not AI endpoints  
 **Impact:** Broken AI deployment not caught until users report errors
 
@@ -94,7 +93,7 @@ await testAIChat();
 
 ---
 
-### TASK-P2-04: Feature Flag UI for Operators
+### TASK-P2-05: Feature Flag UI for Operators
 
 **Issue:** Feature flags toggled via wrangler CLI only (no UI)  
 **Impact:** Non-technical operators cannot toggle feature flags during incidents
@@ -361,17 +360,17 @@ All P3 tasks have been completed! ✅
 
 | Priority    | Count | Description                   |
 | ----------- | ----- | ----------------------------- |
-| P2 (Medium) | 4     | Operational improvements      |
+| P2 (Medium) | 5     | Operational improvements      |
 | P3 (Low)    | 0     | All completed ✅              |
-| **Total**   | **4** | **Non-blocking enhancements** |
+| **Total**   | **5** | **Non-blocking enhancements** |
 
 ### Tasks by Effort
 
 | Effort    | Count | Time per Task       |
 | --------- | ----- | ------------------- |
-| Small     | 2     | 2-4 hours each      |
+| Small     | 3     | 2-4 hours each      |
 | Medium    | 2     | 4-12 hours each     |
-| **Total** | **4** | **~30 hours total** |
+| **Total** | **5** | **~32 hours total** |
 
 ### Recommended Timeline
 
@@ -379,9 +378,10 @@ All P3 tasks have been completed! ✅
 
 All critical risks resolved. Safe to deploy.
 
-#### **Week 2-4: High-Value Improvements** (12 hours)
+#### **Week 2-4: High-Value Improvements** (14 hours)
 
-- TASK-P2-01: Feature flag UI (8 hours)
+- TASK-P2-01: Post-deploy AI smoke test (2 hours)
+- TASK-P2-05: Feature flag UI (8 hours)
 - TASK-P2-02: Database index monitoring (4 hours)
 
 #### **Week 5-8: Security & Resilience** (18 hours)

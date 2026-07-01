@@ -3,7 +3,7 @@
  *
  * Triggered every 15 minutes by the pg_cron job created in migration 00147.
  * For each reminder window (T-24h, T-2h, T-15min):
- *   1. Finds confirmed appointments whose scheduled_at falls inside the window.
+ *   1. Finds confirmed appointments whose slot_start falls inside the window.
  *   2. Skips appointments that already have a reminder_type entry in
  *      appointment_reminders (deduplication via unique constraint).
  *   3. Sends a WhatsApp template message using the clinic's own phone number
@@ -30,7 +30,7 @@ interface Clinic {
 interface Appointment {
   id: string;
   clinic_id: string;
-  scheduled_at: string;
+  slot_start: string;
   patient: { name: string; phone: string | null } | null;
   doctor: { name: string } | null;
   clinic: Clinic | null;
@@ -126,6 +126,24 @@ async function getClinicWhatsAppToken(clinicId: string): Promise<string | null> 
   return data?.whatsapp_access_token ?? null;
 }
 
+// ── Constant-time secret comparison (EDGE-01 hardening) ─────────────────────
+
+/**
+ * Compares two secrets without leaking length/content via timing.
+ * Returns false on length mismatch (token lengths are fixed, so this does
+ * not leak meaningful information) and otherwise accumulates byte diffs so
+ * the loop always runs to completion.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  if (ab.length === 0 || ab.length !== bb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
+
 // ── Main handler ───────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -146,8 +164,8 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
 
-  const isServiceRole = serviceRoleKey && token === serviceRoleKey;
-  const isCronSecret = cronSecret && token === cronSecret;
+  const isServiceRole = serviceRoleKey !== "" && timingSafeEqual(token, serviceRoleKey);
+  const isCronSecret = cronSecret !== "" && timingSafeEqual(token, cronSecret);
 
   if (!isServiceRole && !isCronSecret) {
     return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
@@ -165,7 +183,8 @@ Deno.serve(async (req: Request) => {
     const rangeEnd = new Date(targetMs + WINDOW_TOLERANCE_MS).toISOString();
 
     // Fetch confirmed appointments in the target window.
-    // The inner NOT IN subquery deduplicates against already-sent reminders.
+    // Deduplication against already-sent reminders is done below with a
+    // separate appointment_reminders lookup + in-memory Set (see alreadySent).
     // Token is loaded separately from the server-only credentials table.
     const { data: appointments, error } = await supabase
       .from("appointments")
@@ -173,7 +192,7 @@ Deno.serve(async (req: Request) => {
         `
         id,
         clinic_id,
-        scheduled_at,
+        slot_start,
         patient:users!patient_id ( name, phone ),
         doctor:users!doctor_id   ( name ),
         clinic:clinics (
@@ -183,8 +202,8 @@ Deno.serve(async (req: Request) => {
       `,
       )
       .eq("status", "confirmed")
-      .gte("scheduled_at", rangeStart)
-      .lte("scheduled_at", rangeEnd);
+      .gte("slot_start", rangeStart)
+      .lte("slot_start", rangeEnd);
 
     if (error) {
       console.error("Failed to fetch appointments for reminder window", {
@@ -250,7 +269,7 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      const scheduled = new Date(appt.scheduled_at);
+      const scheduled = new Date(appt.slot_start);
       const dateStr = scheduled.toLocaleDateString("fr-MA");
       const timeStr = scheduled.toLocaleTimeString("fr-MA", {
         hour: "2-digit",

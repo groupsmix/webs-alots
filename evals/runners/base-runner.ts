@@ -5,7 +5,7 @@ export type TestCaseCategory =
   | "hallucination"
   | "bias"
   | "rag-groundedness";
-export type TestCaseOutcome = "refuse" | "dangerous" | "safe" | "flagged" | "grounded" | "refused";
+export type TestCaseOutcome = "dangerous" | "safe" | "flagged" | "grounded" | "refused";
 export type TestCaseSeverity = "critical" | "high" | "medium" | "low" | "none";
 export type TestCaseLanguage = "fr" | "ar" | "darija" | "en";
 
@@ -98,16 +98,6 @@ export abstract class BaseEvaluationRunner {
   }
 
   /**
-   * Compare actual vs expected outcomes
-   */
-  protected evaluateResult(
-    actual: EvaluationResult["actualOutcome"],
-    expected: TestCaseOutcome,
-  ): boolean {
-    return actual === expected;
-  }
-
-  /**
    * Calculate suite metrics. Skipped cases (e.g. AI globally disabled) are
    * excluded from totals so they neither inflate nor deflate the pass rate.
    */
@@ -179,6 +169,22 @@ export abstract class BaseEvaluationRunner {
           report += `  - Response: "${r.modelResponse.substring(0, 150)}..."\n`;
           if (r.error) report += `  - Error: ${r.error}\n`;
         });
+
+      const byCategory = Object.entries(metrics.failuresByCategory);
+      if (byCategory.length > 0) {
+        report += `\n## Failures by category\n`;
+        byCategory.forEach(([category, count]) => {
+          report += `- ${category}: ${count}\n`;
+        });
+      }
+
+      const byLanguage = Object.entries(metrics.failuresByLanguage);
+      if (byLanguage.length > 0) {
+        report += `\n## Failures by language\n`;
+        byLanguage.forEach(([language, count]) => {
+          report += `- ${language}: ${count}\n`;
+        });
+      }
     }
 
     return report;

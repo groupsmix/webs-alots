@@ -384,24 +384,25 @@ dead_letter_queue = "notification-queue-staging-dlq"
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
-# W8-A31-01: KV namespace binding for staging
+# W8-A31-01: KV namespace binding for staging.
 #
-# etap1 audit finding #5 / A-09 — RESOLVED 2026-05-31.
-#
-# Staging now uses a DEDICATED RATE_LIMIT_KV namespace whose id/preview_id
-# (below) differ from [[env.production.kv_namespaces]], so staging and
-# production no longer share rate-limit counters (a staging load test can no
-# longer exhaust prod token buckets). R2 buckets are likewise separated
+# A-09 (etap1 audit finding #5) — RESOLVED 2026-05-31. Staging now uses a
+# DEDICATED RATE_LIMIT_KV namespace whose id/preview_id are DISTINCT from
+# production (see below), so a staging k6 load test no longer drains the
+# production rate-limit token buckets. R2 buckets are likewise separated
 # (webs-alots-uploads-staging vs webs-alots-uploads).
 #
-# Guards that keep this from regressing:
-#   • scripts/check-kv-namespace-collision.mjs (CI) fails if any staging KV id
-#     matches a production id.
-#   • To (re)provision staging KV if ever needed:
-#       ./scripts/create-staging-kv.sh
-#     (runs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` + `--preview`).
+# This isolation is enforced in CI and at deploy time by
+# `scripts/check-kv-isolation.ts` (run with `--strict` from
+# pre-deploy-check.sh), which fails on any staging↔production ID collision
+# and on un-provisioned `REPLACE_BEFORE_STAGING_DEPLOY*` placeholders.
 #
-# NOTE: KV namespace ids are resource identifiers, not secrets.
+# To (re)provision a staging-only namespace if these IDs are ever lost:
+#
+#   $ ./scripts/create-staging-kv.sh
+#
+# which runs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` (and
+# `--preview`) and prints the IDs to paste below.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING (dedicated, != prod)

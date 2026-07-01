@@ -10,125 +10,54 @@
  *   # Smoke mode (default — 2 VUs, 30 s, safe for any environment):
  *   k6 run --env BASE_URL=https://staging.oltigo.com k6/smoke.js
  *
- *   # Load mode (100-VU ramp — staging only, explicit opt-in required):
+ *   # Load mode (100-VU ramp — staging/preview only, explicit opt-in required):
  *   k6 run --env BASE_URL=https://staging.oltigo.com --env SMOKE_MODE=load k6/smoke.js
  *
  *   # Production (requires explicit opt-in to prevent accidents):
  *   k6 run --env BASE_URL=https://oltigo.com --env ALLOW_PROD=true k6/smoke.js
  *
- * Thresholds enforced:
- *   - http_availability (custom Rate): > 99.9% HTTP-layer health (2xx/503)
- *   - http_req_failed:                 < 0.1%  (k6 built-in)
- *   - per-endpoint p95 durations:      ping < 300ms, status/health < 500ms, landing < 800ms
+ *   # NOTE: load mode is refused against production even with ALLOW_PROD=true.
+ *
+ * Thresholds enforced (mode-aware):
+ *   Smoke mode (default, ~150 samples — all-or-nothing, zero failures):
+ *     - http_availability: rate>=1   (every probe must return an expected status)
+ *     - http_req_failed:   rate<=0   (no request failures)
+ *     - p95 latencies (cold-start tolerant): ping<500ms, status/health<1000ms, landing<1500ms
+ *   Load mode (100-VU ramp — statistical SLOs meaningful at volume):
+ *     - http_availability: rate>0.999
+ *     - http_req_failed:   rate<0.001
+ *     - p95 latencies: ping<300ms, status/health<500ms, landing<800ms
  */
 
 /* eslint-disable import/no-anonymous-default-export */
 import { check, sleep } from "k6";
 import http from "k6/http";
 import { Rate } from "k6/metrics";
+import { validateBaseUrl } from "./lib/env-guard.js";
 
 // ── Custom metrics ──────────────────────────────────────────────────────────
 
 /**
- * HTTP-layer availability: tracks whether the endpoint returned an expected
- * HTTP status (2xx or the documented 503 for degraded). This is intentionally
- * separated from JSON-body assertion checks so a malformed response body does
- * not falsely trip the availability SLO — the HTTP layer may be healthy even
- * when the JSON shape is wrong, and those are different failure modes.
+ * HTTP-layer availability: tracks whether each endpoint returned an expected
+ * HTTP status. "Expected" is per-endpoint: ping must be exactly 200; status and
+ * health accept 200 or the documented 503; landing accepts any 2xx/3xx. This is
+ * intentionally separated from JSON-body assertion checks so a malformed
+ * response body does not falsely trip the availability SLO — the HTTP layer may
+ * be healthy even when the JSON shape is wrong, and those are different failure
+ * modes.
  */
 const httpAvailability = new Rate("http_availability");
-
-// ── Allowed host allowlist ───────────────────────────────────────────────────
-
-/**
- * Only these hostnames (and their subdomains) are recognised as known
- * Oltigo hosts. Any other host is rejected to prevent accidentally running
- * a load test against an attacker-controlled URL or a typo'd domain.
- *
- * Fix #1: replaces the old `endsWith(".oltigo.com")` check which could be
- * bypassed by a crafted hostname such as "staging.oltigo.com.evil.com".
- */
-const ALLOWED_HOSTS = ["oltigo.com", "staging.oltigo.com", "preview.oltigo.com", "localhost"];
-
-function classifyHost(hostname) {
-  // Loopback is always local.
-  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
-    return "local";
-  }
-  // Exact match against a known host.
-  if (ALLOWED_HOSTS.includes(hostname)) {
-    return hostname.startsWith("staging") || hostname.startsWith("preview") ? "non-prod" : "prod";
-  }
-  // Subdomain of a known host (e.g. "pr-42.preview.oltigo.com").
-  for (const allowed of ALLOWED_HOSTS) {
-    if (allowed === "localhost") continue;
-    if (hostname.endsWith(`.${allowed}`)) {
-      // A demo/staging/preview-prefixed subdomain of oltigo.com is non-prod.
-      if (
-        allowed === "oltigo.com" &&
-        (hostname.startsWith("staging") ||
-          hostname.startsWith("preview") ||
-          hostname.startsWith("demo"))
-      ) {
-        return "non-prod";
-      }
-      return allowed === "oltigo.com" ? "prod" : "non-prod";
-    }
-  }
-  return "unknown";
-}
 
 // ── Setup: validate environment ──────────────────────────────────────────────
 
 export function setup() {
-  const baseUrl = __ENV.BASE_URL;
-  if (!baseUrl) {
-    throw new Error(
-      "BASE_URL is required. Example: k6 run --env BASE_URL=https://staging.oltigo.com k6/smoke.js",
-    );
-  }
-
-  // Parse the URL to inspect the scheme and hostname directly — substring
-  // matching on the raw string is unsafe and bypassable.
-  let parsed;
-  try {
-    parsed = new URL(baseUrl);
-  } catch {
-    throw new Error(`BASE_URL is not a valid URL: ${baseUrl}`);
-  }
-
-  const hostname = parsed.hostname;
-  const hostClass = classifyHost(hostname);
-  const isLocal = hostClass === "local";
-
-  // Fix #2 — HTTPS enforcement: reject plaintext URLs so auth cookies and
-  // tokens are never sent over the wire unencrypted, even on "internal"
-  // networks. Localhost/loopback is exempt for local dev.
-  if (!isLocal && parsed.protocol !== "https:") {
-    throw new Error(
-      `BASE_URL must use HTTPS (got '${parsed.protocol}'). ` +
-        `Plaintext URLs are not permitted — even on staging, credentials travel over the wire.`,
-    );
-  }
-
-  // Fix #1 — allowlist-based host classification replaces the fragile substring
-  // match. An unrecognised host (e.g. "staging.oltigo.com.evil.com") is refused
-  // outright rather than silently hammering an unknown server.
-  if (hostClass === "unknown") {
-    throw new Error(
-      `BASE_URL hostname '${hostname}' is not a recognised Oltigo host. ` +
-        `Allowed hosts: ${ALLOWED_HOSTS.join(", ")} (and their subdomains). ` +
-        `If this is intentional, add it to the ALLOWED_HOSTS list in k6/smoke.js.`,
-    );
-  }
-
-  const isProd = hostClass === "prod";
-  if (isProd && __ENV.ALLOW_PROD !== "true") {
-    throw new Error(
-      `BASE_URL resolves to a production host (${hostname}). Set --env ALLOW_PROD=true to confirm.`,
-    );
-  }
-
+  // Host allowlist, HTTPS enforcement, prod opt-in, and the "no load against
+  // prod" guard all live in the shared k6/lib/env-guard.js so smoke.js and
+  // booking-flow.js cannot drift apart. (Fixes #1, #2, #7, #10 live there.)
+  const { baseUrl } = validateBaseUrl(__ENV.BASE_URL, {
+    isLoadMode,
+    allowProd: __ENV.ALLOW_PROD === "true",
+  });
   return { baseUrl };
 }
 
@@ -151,23 +80,51 @@ const loadScenario = {
 
 const isLoadMode = __ENV.SMOKE_MODE === "load";
 
+/**
+ * Fix #8 — Thresholds are now mode-aware.
+ *
+ * The previous single threshold set used statistical SLOs (rate>0.999,
+ * rate<0.001) for BOTH modes. That is meaningless — and misleading — in the
+ * default smoke mode: 2 VUs for 30 s yields only ~150 samples, so a SINGLE
+ * failed probe already drops availability to ~0.994 (below 0.999) and the run
+ * fails anyway. The "99.9%" framing implied a tolerance that does not exist at
+ * that sample size.
+ *
+ *   - Smoke mode  → all-or-nothing. Every probe must succeed (zero failures),
+ *     stated honestly as rate>=1 / rate<=0. Latency budgets are relaxed to
+ *     tolerate cold starts on a freshly woken / just-deployed environment.
+ *   - Load mode   → the real statistical SLOs, which only become meaningful at
+ *     the volume the 100-VU ramp produces.
+ */
+const smokeThresholds = {
+  // Every HTTP-layer probe must return an expected status — no failures.
+  http_availability: ["rate>=1"],
+  // Zero request failures tolerated at this tiny sample size.
+  http_req_failed: ["rate<=0"],
+  // Cold-start-tolerant latency budgets (a just-woken Worker/edge is slower).
+  "http_req_duration{endpoint:ping}": ["p(95)<500"],
+  "http_req_duration{endpoint:status}": ["p(95)<1000"],
+  "http_req_duration{endpoint:health}": ["p(95)<1000"],
+  "http_req_duration{endpoint:landing}": ["p(95)<1500"],
+};
+
+const loadThresholds = {
+  // HTTP-layer availability SLO: > 99.9% of probes must get an expected status.
+  http_availability: ["rate>0.999"],
+  // Overall error rate < 0.1%.
+  http_req_failed: ["rate<0.001"],
+  // Per-endpoint p95 latency budgets (tagged thresholds).
+  "http_req_duration{endpoint:ping}": ["p(95)<300"],
+  "http_req_duration{endpoint:status}": ["p(95)<500"],
+  "http_req_duration{endpoint:health}": ["p(95)<500"],
+  "http_req_duration{endpoint:landing}": ["p(95)<800"],
+};
+
 export const options = {
   scenarios: {
     main: isLoadMode ? loadScenario : smokeScenario,
   },
-  thresholds: {
-    // HTTP-layer availability SLO: > 99.9% of probes must get an expected status.
-    http_availability: ["rate>0.999"],
-
-    // Overall error rate < 0.1%.
-    http_req_failed: ["rate<0.001"],
-
-    // Per-endpoint p95 latency budgets (tagged thresholds).
-    "http_req_duration{endpoint:ping}": ["p(95)<300"],
-    "http_req_duration{endpoint:status}": ["p(95)<500"],
-    "http_req_duration{endpoint:health}": ["p(95)<500"],
-    "http_req_duration{endpoint:landing}": ["p(95)<800"],
-  },
+  thresholds: isLoadMode ? loadThresholds : smokeThresholds,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -220,9 +177,11 @@ export default function (data) {
   httpAvailability.add(pingHttpOk);
 
   // ── /api/status — platform status ─────────────────────────────────────────
-  // Accepts 200 (all ok) and 503 (degraded but intentionally reported).
-  // 503 is an expected response when a subsystem is disabled (e.g. AI kill
-  // switch), NOT an infrastructure failure — don't trip http_req_failed.
+  // Accepts 200 (operational/degraded) and 503 (down). The route returns 503
+  // ONLY when the overall snapshot status is "down" (i.e. a probed service is
+  // down); a "degraded" snapshot still returns 200. 503 is therefore an
+  // expected, intentionally-reported state — NOT an infra failure — so it must
+  // not trip http_req_failed.
   const status = http.get(`${BASE_URL}/api/status`, {
     ...REQUEST_PARAMS,
     tags: { endpoint: "status" },
@@ -234,13 +193,17 @@ export default function (data) {
   });
   httpAvailability.add(statusHttpOk);
   // JSON-body assertion (separate from SLO — a bad body ≠ an unavailable service).
+  // The status route returns the snapshot directly (NOT wrapped by apiSuccess),
+  // so `status` is a top-level string: "operational" | "degraded" | "down".
   const statusBody = parseJsonBody(status, "status");
   check(status, {
     "status has status field": () => statusBody !== null && typeof statusBody.status === "string",
   });
 
   // ── /api/health — readiness probe ─────────────────────────────────────────
-  // Same contract as /api/status: 200 = healthy, 503 = degraded but responsive.
+  // 200 = healthy/degraded, 503 = unhealthy (a dependency is down). The route
+  // returns 503 ONLY when the overall status is "unhealthy"; "degraded" still
+  // returns 200.
   const health = http.get(`${BASE_URL}/api/health`, {
     ...REQUEST_PARAMS,
     tags: { endpoint: "health" },
@@ -252,10 +215,29 @@ export default function (data) {
   });
   httpAvailability.add(healthHttpOk);
   // JSON-body assertion (separate from SLO).
+  //
+  // Fix #9 — corrected contract. /api/health is wrapped by apiSuccess(), so the
+  // body shape is { ok: true, data: HealthResponse } and the real status lives
+  // at `data.status` — NOT the top level. Its values are
+  // "healthy" | "degraded" | "unhealthy" (the route NEVER emits "ok").
+  // The previous check read `healthBody.status` and compared against "ok"/
+  // "degraded", so it failed 100% of the time on every environment. This now
+  // matches the contract used by scripts/smoke-post-deploy.mjs (which reads
+  // body.data.status), with a top-level fallback for forward-compat. A healthy
+  // or degraded service passes; "unhealthy" (a dependency down) is a failure.
   const healthBody = parseJsonBody(health, "health");
   check(health, {
-    "health has status value": () =>
-      healthBody !== null && (healthBody.status === "ok" || healthBody.status === "degraded"),
+    "health reports healthy or degraded": () => {
+      if (healthBody === null) return false;
+      const wrapped = healthBody.data;
+      const s =
+        wrapped && typeof wrapped.status === "string"
+          ? wrapped.status
+          : typeof healthBody.status === "string"
+            ? healthBody.status
+            : null;
+      return s === "healthy" || s === "degraded";
+    },
   });
 
   // ── / — landing page ──────────────────────────────────────────────────────

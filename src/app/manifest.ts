@@ -21,8 +21,12 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       "Plateforme SaaS multi-tenant pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0f172a",
+    // Aligned with the app chrome defined in app/layout.tsx `viewport.themeColor`
+    // (light "#f4f1ea" / dark "#0b0f0e"). A web manifest carries a single
+    // theme_color, so we use the light editorial palette here; the splash
+    // background matches so there is no color flash before first paint.
+    background_color: "#f4f1ea",
+    theme_color: "#f4f1ea",
     orientation: "portrait-primary",
     categories: ["health", "medical", "business"],
     lang: locale,

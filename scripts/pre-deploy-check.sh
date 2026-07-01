@@ -78,7 +78,8 @@ fi
 
 # A-09: Verify staging and production KV namespaces are distinct.
 # Shared KV means a staging load test exhausts prod rate-limit counters.
+# --strict also blocks un-provisioned placeholder IDs before a deploy.
 echo "Checking KV namespace isolation (A-09)..."
-npx tsx scripts/check-kv-isolation.ts || exit 1
+npx tsx scripts/check-kv-isolation.ts --strict || exit 1
 
 echo "Configuration check passed."

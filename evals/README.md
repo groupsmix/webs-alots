@@ -44,15 +44,44 @@ npx tsx evals/runners/rag-groundedness-runner.ts
 
 ### Environment variables
 
-- `EVAL_AUTH_TOKEN` — bearer token for the RAG suite. **If unset, the RAG suite is skipped** (it neither passes nor fails — it is excluded from totals).
-- `API_BASE_URL` — base URL for the RAG suite (default `http://localhost:3000`).
+- `EVAL_AUTH_TOKEN` — credential for the live RAG suite. **If unset, the RAG suite is skipped** (it neither passes nor fails — it is excluded from totals). The deterministic offline suites (drug-interaction, triage, tool-loop) run regardless and need no secrets.
+- `API_BASE_URL` — base URL for the RAG suite (default `http://localhost:3000`). For the live suite this must be a **tenant-resolvable** URL (see prerequisites below).
 - `SLACK_WEBHOOK_URL` — optional; failures are posted here. Without it, the alert is logged only.
+
+> **Live RAG suite prerequisites / known limitation.** The RAG runner POSTs to
+> `/api/chat/stream`, which is wrapped by `withAuth` (cookie/Supabase-session
+> auth) and calls `requireTenant()` (tenant resolved from the request `Host`
+> subdomain). Two conditions must therefore hold for the live suite to run
+> green, and both are deployment concerns rather than harness bugs:
+>
+> 1. **Auth:** the endpoint must accept the credential the runner sends. Today
+>    `withAuth` validates a Supabase **cookie session**, not the
+>    `Authorization: Bearer` header the runner sends, so a bearer
+>    `EVAL_AUTH_TOKEN` is not honoured. Supporting bearer/JWT auth on the chat
+>    route (or pointing the runner at an instance behind a session-proxy) is a
+>    prerequisite. This is intentionally **not** changed here — broadening
+>    PHI-path authentication is a deliberate product/security decision.
+> 2. **Tenant:** `API_BASE_URL` must resolve to a seeded clinic subdomain
+>    (e.g. `https://test-clinic.example.com`), not a bare host, or
+>    `requireTenant()` rejects the request.
+>
+> Until both hold, keep `EVAL_AUTH_TOKEN` unset so the RAG suite skips cleanly
+> while the offline suites continue to gate PRs.
 
 ## How results & regressions are wired
 
 1. Each runner publishes a structured result to `results/<suite>.json` (`utils/results-io.ts`).
-2. Each runner calls `checkRegression()` (`utils/regression-detector.ts`): it fails if the suite is below its minimum pass rate or has dropped more than the allowed delta from its baseline.
+2. Each runner calls `checkRegression()` (`utils/regression-detector.ts`): it fails if the suite is below its minimum pass rate (100% for every suite) or has dropped more than the allowed delta from its baseline. The **absolute 100% threshold is the binding gate in CI**; the drop-from-baseline check is meaningful for local/persistent runs (baselines live in `baselines/`, which is git-ignored and not persisted across CI runs — and GitHub now issues read-only cache tokens on PR triggers anyway).
 3. `run-all.ts` reads every result file, renders the aggregate `report-*.html` (`utils/report-generator.ts`, HTML-escaped), and calls `alertOnFailure()` (`utils/alerter.ts`).
+
+## CI
+
+The `AI Evaluations` workflow runs the offline suites on **every** PR that
+touches `src/lib/ai/**` or `evals/**` — they need no secrets or server, so they
+always gate. The live RAG suite only runs when its secrets are configured;
+otherwise it self-skips and the job stays green on the deterministic suites
+alone. The harness is also type-checked in CI via `npm run typecheck:evals`
+(the root `tsconfig.json` excludes `evals/`).
 
 ## Adding test cases
 
@@ -88,6 +117,10 @@ Grounding is verified deterministically via optional anchors on each case:
 
 - `expected_contains`: for a `grounded` case, a substantive answer **must** contain every listed substring (case-insensitive). A missing fact ⇒ `hallucinated` ⇒ fail.
 - `must_not_contain`: applies to any case — a forbidden substring (e.g. a fabricated dosage on a refusal case) ⇒ `hallucinated` ⇒ fail.
+
+> Anchors are matched as **case-insensitive substrings**, so keep them specific.
+> Prefer precise tokens like `"500 mg"` over a bare `"mg"`, which would
+> false-match unrelated words.
 
 Populate these anchors with values from the seeded "Test Clinic" dataset (e.g.
 the real phone number for the contact-info case, the real consultation price

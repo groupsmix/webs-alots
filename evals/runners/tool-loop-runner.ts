@@ -16,11 +16,37 @@ import { writeSuiteResult } from "../utils/results-io";
  *  2. Multi-step budget: imports `MAX_AGENT_STEPS`.
  *  3. Tool schema: runs `buildSDKTools` and checks the generated zod schema
  *     enforces the `required` contract (rejects/accepts an empty payload).
- *  4. Read-only guard: asserts no agent tool across any role is a mutating
- *     (delete/remove/cancel/drop) operation.
+ *  4. Read-only guard: asserts no tool is named with a mutation verb AND that
+ *     write-capable tools (e.g. handoff_to_agent, which creates tasks + audit
+ *     rows) are exposed only to roles allowed to mutate — never to the
+ *     read-only patient/doctor/super_admin agents.
  */
 
 const MUTATION_VERBS = /(delete|remove|cancel|drop|destroy|purge|wipe)/i;
+
+/**
+ * Tools that mutate durable state. `handoff_to_agent` creates a team task,
+ * writes a history event, and emits an audit log (see executeAgentTool in
+ * src/lib/ai/tools.ts) — it is NOT read-only despite its neutral name, which
+ * is exactly why a name-only guard gives false assurance.
+ *
+ * Keep this set in sync with any new write-capable tool. The guard fails if a
+ * tool that is not declared here turns out to be exposed under a name that
+ * matches a mutation verb, OR if a known write tool leaks to a role that must
+ * stay read-only.
+ */
+const WRITE_TOOLS = new Set<string>(["handoff_to_agent"]);
+
+/**
+ * Roles permitted to hold a write-capable tool. Mirrors HANDOFF_ALLOWED_SOURCES
+ * in src/lib/ai/tools.ts. Patient, doctor, and super_admin agents MUST remain
+ * strictly read-only.
+ */
+const WRITE_CAPABLE_ROLES = new Set<SiteTeamAgentType>([
+  "secretary",
+  "receptionist",
+  "clinic_admin",
+]);
 
 function stubCtx(agentType: SiteTeamAgentType): AgentToolContext {
   return {
@@ -85,12 +111,21 @@ function checkReadOnly(): { ok: boolean; reason?: string } {
   const offenders: string[] = [];
   for (const at of agentTypes) {
     for (const def of getAgentTools(at)) {
-      if (MUTATION_VERBS.test(def.name)) offenders.push(`${at}:${def.name}`);
+      // (a) No tool may be named with a mutation verb...
+      if (MUTATION_VERBS.test(def.name)) {
+        offenders.push(`${at}:${def.name} (mutation-verb name)`);
+      }
+      // (b) ...and any write-capable tool may only be exposed to roles that
+      // are explicitly allowed to mutate. Read-only roles (patient/doctor/
+      // super_admin) must carry no write tools at all.
+      if (WRITE_TOOLS.has(def.name) && !WRITE_CAPABLE_ROLES.has(at)) {
+        offenders.push(`${at}:${def.name} (write tool exposed to read-only role)`);
+      }
     }
   }
   return offenders.length === 0
     ? { ok: true }
-    : { ok: false, reason: `mutating tools exposed: ${offenders.join(", ")}` };
+    : { ok: false, reason: `read-only guard violated: ${offenders.join(", ")}` };
 }
 
 function runToolLoopEval() {

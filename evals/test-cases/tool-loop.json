@@ -79,7 +79,7 @@
   },
   {
     "id": "tool-loop-012",
-    "description": "No agent role exposes a mutating (delete/cancel/drop) tool — read-only guard",
+    "description": "Read-only guard: no tool is named with a mutation verb, and write-capable tools (handoff_to_agent) are exposed only to secretary/receptionist/clinic_admin — never to patient/doctor/super_admin",
     "test_type": "readonly_check"
   }
 ]

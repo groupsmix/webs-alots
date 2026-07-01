@@ -143,4 +143,71 @@ describe("enforceMfa", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("mandatory super_admin enrolment (ENFORCE_SUPER_ADMIN_MFA)", () => {
+    const originalEnforce = process.env.ENFORCE_SUPER_ADMIN_MFA;
+
+    afterEach(() => {
+      process.env.ENFORCE_SUPER_ADMIN_MFA = originalEnforce;
+    });
+
+    it("does NOT force un-enrolled super_admin to /setup-2fa when the flag is off (default)", async () => {
+      delete process.env.ENFORCE_SUPER_ADMIN_MFA;
+      const result = await enforceMfa(
+        mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+        "super_admin",
+        "/super-admin/dashboard",
+        `${URL_BASE}/super-admin/dashboard`,
+      );
+      expect(result).toBeNull();
+    });
+
+    it("redirects un-enrolled super_admin to /setup-2fa when the flag is on", async () => {
+      process.env.ENFORCE_SUPER_ADMIN_MFA = "true";
+      const result = await enforceMfa(
+        mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+        "super_admin",
+        "/super-admin/dashboard",
+        `${URL_BASE}/super-admin/dashboard`,
+      );
+      expect(result).not.toBeNull();
+      expect(result?.status).toBe(307);
+      expect(result?.headers.get("Location")).toMatch(
+        /\/setup-2fa\?next=%2Fsuper-admin%2Fdashboard$/,
+      );
+    });
+
+    it("does NOT force clinic_admin to enrol even when the flag is on (super_admin only)", async () => {
+      process.env.ENFORCE_SUPER_ADMIN_MFA = "true";
+      const result = await enforceMfa(
+        mockSupabase({ currentLevel: "aal1", nextLevel: "aal1" }),
+        "clinic_admin",
+        "/admin",
+        `${URL_BASE}/admin`,
+      );
+      expect(result).toBeNull();
+    });
+
+    it("passes an already-enrolled super_admin at AAL2 when the flag is on", async () => {
+      process.env.ENFORCE_SUPER_ADMIN_MFA = "true";
+      const result = await enforceMfa(
+        mockSupabase({ currentLevel: "aal2", nextLevel: "aal2" }),
+        "super_admin",
+        "/super-admin/dashboard",
+        `${URL_BASE}/super-admin/dashboard`,
+      );
+      expect(result).toBeNull();
+    });
+
+    it("still step-ups an enrolled-but-AAL1 super_admin to /mfa-verify (not /setup-2fa) when the flag is on", async () => {
+      process.env.ENFORCE_SUPER_ADMIN_MFA = "true";
+      const result = await enforceMfa(
+        mockSupabase({ currentLevel: "aal1", nextLevel: "aal2" }),
+        "super_admin",
+        "/super-admin/dashboard",
+        `${URL_BASE}/super-admin/dashboard`,
+      );
+      expect(result?.headers.get("Location")).toMatch(/\/mfa-verify\?next=/);
+    });
+  });
 });

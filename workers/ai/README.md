@@ -1,7 +1,7 @@
 # webs-alots-ai
 
-Second Cloudflare Worker for the Oltigo Health platform. Handles the two
-AI routes that pull in heavy server-side dependencies.
+Second Cloudflare Worker for the Oltigo Health platform. Handles the
+CopilotKit AI route, which pulls in heavy server-side dependencies.
 
 ## Why a separate Worker?
 
@@ -13,33 +13,42 @@ breaching Cloudflare's **10 MiB Workers Paid script size limit**.
 The AI runtime is:
 
 - `@copilotkit/runtime` — server-side CopilotKit chat orchestration
-- `@anthropic-ai/sdk` — Claude API client
-- `@ai-sdk/anthropic` + `ai` — streaming text generation
-- `@e2b/code-interpreter` — secure code sandbox
+- `openai` — OpenAI-compatible client (used by the OpenAI adapter)
+- `@anthropic-ai/sdk` — Claude client (used by the Anthropic adapter)
 
-These cannot be lazy-loaded from inside a route handler because the route
-handler **is** the server entry. They have to live on the server.
+These cannot be lazy-loaded from inside a route handler in the main app
+because the route handler **is** the server entry. They have to live on the
+server. (Within this Worker they ARE deferred to first-request time — see the
+header comment in `src/handlers/copilotkit.ts` for why.)
 
 Splitting them into a separate Worker:
 
 - Keeps the main Worker comfortably under 10 MiB
-- Keeps the AI Worker small (~2.5 MiB compressed) since it has no Next.js
+- Keeps the AI Worker small (~1.5 MiB compressed) since it has no Next.js
   runtime overhead — it is a plain `fetch` handler
 - Is transparent to the browser: Cloudflare zone routing sends
-  `oltigo.com/api/copilotkit/*` and `oltigo.com/api/builder/sandbox/*`
-  to `webs-alots-ai` before they ever reach the main Worker.
+  `oltigo.com/api/copilotkit/*` to `webs-alots-ai` before the request ever
+  reaches the main Worker.
 
 ## Routing
 
-| URL pattern                        | Worker          |
-| ---------------------------------- | --------------- |
-| `oltigo.com/api/copilotkit/*`      | `webs-alots-ai` |
-| `oltigo.com/api/builder/sandbox/*` | `webs-alots-ai` |
-| `oltigo.com/*` (everything else)   | `webs-alots`    |
-| `*.oltigo.com/*` (subdomains)      | `webs-alots`    |
+| URL pattern                      | Worker          |
+| -------------------------------- | --------------- |
+| `oltigo.com/api/copilotkit`      | `webs-alots-ai` |
+| `oltigo.com/api/copilotkit/*`    | `webs-alots-ai` |
+| `oltigo.com/*` (everything else) | `webs-alots`    |
+| `*.oltigo.com/*` (subdomains)    | `webs-alots`    |
 
-Cloudflare picks the most specific Worker Route. The AI Worker's two
-patterns are strictly more specific than the main Worker's catch-all.
+Cloudflare picks the most specific Worker Route. The AI Worker's two patterns
+are strictly more specific than the main Worker's catch-all.
+
+## Status
+
+This endpoint is currently **dormant**: the in-app CopilotKit sidebar was
+retired (see `src/app/(super-admin)/layout.tsx`), so nothing in the product
+calls `/api/copilotkit` today. The Worker still deploys and works; to bring it
+back online you need an AI provider key set (below) and the Cloudflare Worker
+Routes wired up.
 
 ## Auth
 
@@ -47,21 +56,33 @@ Identical to the main app: the browser sends Supabase `sb-<project>-auth-token`
 cookies on every request. The AI Worker parses the `Cookie` header,
 hands the cookies to `@supabase/ssr`'s `createServerClient`, and calls
 `supabase.auth.getUser()` to validate. Then it checks `role = super_admin`
-in the `users` table before proceeding.
+(keyed on `users.auth_id`) before proceeding.
 
 Source: `src/lib/supabase.ts`.
 
 ## Secrets
 
-Set these before first deploy:
+The Worker needs Supabase auth values plus **at least one** AI provider
+config. Set these before first deploy (per environment):
 
 ```sh
 cd workers/ai
-wrangler secret put ANTHROPIC_API_KEY
-wrangler secret put E2B_API_KEY
+# Auth (required) — public values, set on the Worker rather than committed.
 wrangler secret put NEXT_PUBLIC_SUPABASE_URL
 wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# AI provider — set ONE of the following:
+#   (a) Any OpenAI-compatible endpoint:
+wrangler secret put OPENAI_API_KEY
+wrangler secret put OPENAI_BASE_URL   # optional: e.g. a non-OpenAI host
+wrangler secret put OPENAI_MODEL      # optional: model id
+#   (b) Or Anthropic:
+wrangler secret put ANTHROPIC_API_KEY
 ```
+
+If `OPENAI_API_KEY` is set it takes precedence; otherwise `ANTHROPIC_API_KEY`
+is used. If neither is set the endpoint returns a 500 explaining the missing
+config. Helper script: `scripts/setup-ai-worker-secrets.sh`.
 
 Staging / production are separate Workers (`webs-alots-ai-staging` and
 `webs-alots-ai`) — each needs its own secret set.
@@ -89,9 +110,8 @@ npm ci
 npm run dev              # wrangler dev on a local port
 ```
 
-The main Next.js app's `next dev` will still mount `/api/copilotkit` and
-`/api/builder/sandbox` as Next routes for browser-local development — see
-the stubs in `src/app/api/copilotkit/route.ts` and
-`src/app/api/builder/sandbox/route.ts` (they redirect to this Worker in prod
-but the stubs return 501 locally, so for full local AI dev you need to run
-`wrangler dev` here in parallel and proxy through it).
+The main Next.js app's `next dev` mounts `/api/copilotkit` as a Next route for
+browser-local development — see the stub in `src/app/api/copilotkit/route.ts`
+(it returns 501 locally, since in production Cloudflare routes the URL to this
+Worker). For full local AI dev, run `wrangler dev` here in parallel and proxy
+through it.

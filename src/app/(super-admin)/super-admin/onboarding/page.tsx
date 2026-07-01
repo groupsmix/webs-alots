@@ -55,7 +55,7 @@ import {
 // ---------- Constants ----------
 
 const STEPS = [
-  { id: 1, label: "Créer une clinique", icon: Building2 },
+  { id: 1, label: "Create Clinic", icon: Building2 },
   { id: 2, label: "Add Staff", icon: Users },
   { id: 3, label: "Add Services", icon: Stethoscope },
   { id: 4, label: "Time Slots", icon: Clock },
@@ -1159,7 +1159,7 @@ export default function OnboardingPage() {
           )}
           <Link href="/super-admin/onboarding/provision">
             <Button variant="outline" size="sm">
-              Provisionnement auto
+              Auto-Provision
             </Button>
           </Link>
         </div>
@@ -1193,6 +1193,13 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={() => isClickable && navigateToStep(s.id)}
                 disabled={!isClickable}
+                title={
+                  isClickable
+                    ? `Go back to: ${s.label}`
+                    : step === s.id
+                      ? `Current step: ${s.label}`
+                      : `Complete the current step to unlock: ${s.label}`
+                }
                 className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
                   step === s.id
                     ? "bg-primary text-primary-foreground"

@@ -57,11 +57,16 @@ if [[ "${1:-}" == "--verify" ]]; then
   PRIMARY_COUNT=$(aws s3 ls "s3://${R2_BUCKET_NAME}" --recursive \
     --endpoint-url "${PRIMARY_ENDPOINT}" | wc -l)
 
-  # Switch to replica credentials for the second count
-  AWS_ACCESS_KEY_ID="${R2_REPLICA_ACCESS_KEY_ID}" \
-  AWS_SECRET_ACCESS_KEY="${R2_REPLICA_SECRET_ACCESS_KEY}" \
-  REPLICA_COUNT=$(aws s3 ls "s3://${R2_REPLICA_BUCKET_NAME}" --recursive \
-    --endpoint-url "${REPLICA_ENDPOINT}" | wc -l)
+  # Switch to replica credentials for the second count.
+  # NOTE: the env-var prefixes must wrap the `aws` command itself — putting
+  # them before a `VAR=$(...)` assignment does NOT export them into the
+  # command substitution, so the replica listing would silently run with the
+  # primary credentials and report a wrong/zero count.
+  REPLICA_COUNT=$(
+    AWS_ACCESS_KEY_ID="${R2_REPLICA_ACCESS_KEY_ID}" \
+    AWS_SECRET_ACCESS_KEY="${R2_REPLICA_SECRET_ACCESS_KEY}" \
+    aws s3 ls "s3://${R2_REPLICA_BUCKET_NAME}" --recursive \
+      --endpoint-url "${REPLICA_ENDPOINT}" | wc -l)
 
   log_info "Primary bucket objects: ${PRIMARY_COUNT}"
   log_info "Replica bucket objects: ${REPLICA_COUNT}"

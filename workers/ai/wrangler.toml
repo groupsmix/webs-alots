@@ -3,9 +3,10 @@
 # =============================================================================
 #
 # Second Cloudflare Worker for Oltigo Health. Handles the CopilotKit AI route
-# that pulls in heavy server-side dependencies (CopilotKit runtime, Anthropic
-# SDK, ai SDK). Those add compressed bundle weight that previously pushed the
-# main `webs-alots` Worker over Cloudflare's 10 MiB Paid-plan limit.
+# that pulls in heavy server-side dependencies (CopilotKit runtime + the
+# OpenAI / Anthropic clients). Those add compressed bundle weight that
+# previously pushed the main `webs-alots` Worker over Cloudflare's 10 MiB
+# Paid-plan limit.
 #
 # Architecture:
 #   browser → oltigo.com/api/copilotkit/*         → webs-alots-ai
@@ -19,11 +20,13 @@
 # of dead weight for two route handlers).
 #
 # Secrets that must be set BEFORE first deploy (per environment, e.g. --env production):
-#   wrangler secret put GROQ_API_KEY --env production                 # AI Builder (Groq / Llama 3.3 70B) — REQUIRED
 #   wrangler secret put NEXT_PUBLIC_SUPABASE_URL --env production      # super_admin auth — REQUIRED
 #   wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY --env production # super_admin auth — REQUIRED
-#   wrangler secret put ANTHROPIC_API_KEY --env production            # OPTIONAL: only the dormant CopilotKit runtime
-#   wrangler secret put E2B_API_KEY --env production                  # OPTIONAL: reserved for server-side execution
+#   # AI provider — set at least ONE of the following:
+#   wrangler secret put OPENAI_API_KEY --env production               # OpenAI-compatible endpoint
+#   wrangler secret put OPENAI_BASE_URL --env production              # OPTIONAL: non-OpenAI compatible host
+#   wrangler secret put OPENAI_MODEL --env production                # OPTIONAL: model id
+#   wrangler secret put ANTHROPIC_API_KEY --env production           # alternative to OPENAI_API_KEY
 #
 # The NEXT_PUBLIC_SUPABASE_* values are public (they ship in the browser
 # bundle), but they are set ON THE WORKER rather than committed here — this
@@ -70,8 +73,8 @@ routes = [
 
 # ── Limits ────────────────────────────────────────────────────────────
 # AI generation can run long; raise CPU cap from 30 s default to the
-# 5 min Workers Paid max. streamText holds the worker open until
-# generation finishes or the client disconnects.
+# 5 min Workers Paid max. The CopilotKit runtime streams the response and
+# holds the worker open until generation finishes or the client disconnects.
 [limits]
 cpu_ms = 300_000
 

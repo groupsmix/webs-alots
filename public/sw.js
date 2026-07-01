@@ -13,7 +13,14 @@
  * stale authenticated content.
  */
 
-const CACHE_NAME = "oltigo-v3";
+// Bump this version on any change to the precache list or caching strategy.
+// The `activate` handler deletes every cache whose name is not CACHE_NAME, so
+// bumping it evicts the previous version's entries — including a stale
+// precached "/" shell — the moment this SW activates. Combined with the
+// network-first HTML strategy below (which always serves a fresh page when
+// online and only falls back to cache offline), this keeps the homepage from
+// ever being served stale after a deploy.
+const CACHE_NAME = "oltigo-v4";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE_URLS = ["/", "/offline.html"];
@@ -86,18 +93,21 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 
-  // F-04: Purge authenticated content from cache on logout
+  // F-04: Purge authenticated content from cache on logout.
+  // Wrapped in event.waitUntil so the service worker is kept alive until the
+  // purge finishes — otherwise the SW can be terminated mid-purge, leaving
+  // stale authenticated HTML (potential PHI) in the cache after logout.
   if (event.data?.type === "PURGE_AUTHED") {
-    caches.open(CACHE_NAME).then((cache) => {
-      cache.keys().then((keys) => {
-        for (const request of keys) {
-          const url = new URL(request.url);
-          if (isAuthedRoute(url.pathname)) {
-            cache.delete(request);
-          }
-        }
-      });
-    });
+    event.waitUntil(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const keys = await cache.keys();
+        await Promise.all(
+          keys
+            .filter((request) => isAuthedRoute(new URL(request.url).pathname))
+            .map((request) => cache.delete(request)),
+        );
+      }),
+    );
   }
 });
 
