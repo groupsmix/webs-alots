@@ -536,11 +536,20 @@ jobs:
       # ${{ github.repository }}`.
       # Same fork-PR limitation as the cosign step above: the build
       # provenance API needs a writable id-token / attestations token.
+      # CI-ATTEST: the GitHub build-provenance attestations API is not
+      # available for user-owned (personal-account) private repositories
+      # ("Failed to persist attestation: Feature not available for user-owned
+      # private repositories"). groupsmix/webs-alots is exactly that, so this
+      # step can never persist until the repo is made public or moved to an
+      # org. The SBOM is still generated, cosign-signed, and uploaded as an
+      # artifact — only the SLSA provenance record is skipped. Gate it so an
+      # unsupported-platform error doesn't fail the Security Scans job.
       - name: Attest SBOM build provenance (SLSA)
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: bom.json
+        continue-on-error: true
 
       - name: Upload SBOM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
