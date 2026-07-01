@@ -9,6 +9,7 @@
 
 import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
+import { excludeSoftDeleted } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
 import { createClient, createTenantClient, createPublicAnonClient } from "@/lib/supabase-server";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
@@ -153,10 +154,9 @@ async function getClinicId(): Promise<string | null> {
 
   try {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("clinics")
-      .select("id")
-      .eq("status", "active")
+    const { data } = await excludeSoftDeleted(
+      supabase.from("clinics").select("id").eq("status", "active"),
+    )
       .order("created_at", { ascending: true })
       .limit(1)
       .single();

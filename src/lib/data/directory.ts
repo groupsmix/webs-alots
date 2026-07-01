@@ -7,6 +7,7 @@
  */
 
 import { cacheLife, cacheTag } from "next/cache";
+import { excludeSoftDeleted } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
 
 /** Shape of the `users.metadata` JSONB column for doctors. */
@@ -178,10 +179,12 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
     }
 
     // Fetch active clinics
-    const { data: clinics, error: clinicsError } = await supabase
-      .from("clinics")
-      .select("id, name, subdomain, phone, address, logo_url, config")
-      .eq("status", "active");
+    const { data: clinics, error: clinicsError } = await excludeSoftDeleted(
+      supabase
+        .from("clinics")
+        .select("id, name, subdomain, phone, address, logo_url, config")
+        .eq("status", "active"),
+    );
 
     if (clinicsError || !clinics) {
       logger.warn("Failed to fetch directory clinics", {
