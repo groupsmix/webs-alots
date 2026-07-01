@@ -448,6 +448,19 @@ export function isMfaEnabled(): boolean {
 }
 
 /**
+ * Whether super_admin accounts are *required* to enrol in 2FA (not just
+ * stepped-up if they already have it). Off by default so enabling it is a
+ * deliberate, verified rollout: set `ENFORCE_SUPER_ADMIN_MFA=true` once at
+ * least one super_admin has a verified factor, to avoid locking admins into
+ * the /setup-2fa flow unexpectedly.
+ *
+ * Read through this helper rather than `process.env` directly.
+ */
+export function isSuperAdminMfaRequired(): boolean {
+  return process.env.ENFORCE_SUPER_ADMIN_MFA === "true";
+}
+
+/**
  * Whether the custom-domain / Cloudflare DNS feature is enabled.
  *
  * Toggled by `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`. When disabled, the
