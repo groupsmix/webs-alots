@@ -1,18 +1,34 @@
-# Open Decisions & Playbooks
+# Owner Decisions & Playbooks
 
-**Created:** 2026-06-30
-Companion to `CURRENT-STATUS.md`. This file holds the items that need a **human decision**
-(product/business/ops) or a **content effort**, plus copy-paste-ready playbooks so they can be
-executed quickly. None of these are safe for a tool to auto-apply.
+**Created:** 2026-06-30 · **Owner decisions recorded:** 2026-06-30
+Companion to `CURRENT-STATUS.md`.
+
+Context: **pre-launch, no real users yet.** The product owner delegated these calls. This file
+records the **decisions made** and leaves only the items that physically require cloud/deploy access
+or a professional translator.
+
+## Owner decisions — summary
+
+| #   | Item                                                              | Decision                                                                                                                                           | Status                 |
+| --- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| 1   | License                                                           | **Keep proprietary** (`UNLICENSED` + `private:true` + `LICENSE` are already consistent)                                                            | ✅ resolved, no change |
+| 2   | `patient-metadata.ts` (redundant type)                            | **Cut** — superseded, 0 references                                                                                                                 | ✅ done                |
+| 3   | `video/client.ts` telemedicine + dental lab-orders + ~278 exports | **Keep** — real unwired features / config-bound / API contracts; zero runtime cost (tree-shaken)                                                   | ✅ decided             |
+| 4   | i18n (~3,365 strings)                                             | **Defer to a professional translator, post-MVP** — app renders in French today; not a launch blocker; medical Arabic must not be machine-generated | ⏸ deferred             |
+| 5   | Egress allowlist enforcement                                      | **Enable at next deploy** (`EGRESS_ALLOWLIST_ENFORCE=true`) — ideal pre-launch window                                                              | ⏳ needs deploy access |
+| 6   | DR drill, IaC prod-import, SLO dashboards, sentry-cron wiring     | **Assign to the Cloudflare/Supabase account owner** — cannot be done from the repo                                                                 | ⏳ needs cloud access  |
+
+The remaining ⏳ items are the **real pre-launch checklist** and need whoever administers the
+Cloudflare + Supabase accounts. Details and playbooks below.
 
 ---
 
-## 1. License field — decision needed
+## 1. License — DECISION: keep proprietary ✅
 
-- `package.json` declares `"license": "UNLICENSED"`, but the repo ships a `LICENSE` file and
-  `THIRD_PARTY_LICENSES.md`.
-- **Decide:** is this proprietary (keep `UNLICENSED` and confirm `LICENSE` matches) or open-source
-  (set the correct SPDX identifier, e.g. `"MIT"`)? One-line change once the business answer is known.
+Verified consistent, **no change needed**: `package.json` has `"private": true` +
+`"license": "UNLICENSED"`, and `LICENSE` is an all-rights-reserved proprietary notice
+(© Oltigo Health / MediaHoly). This is the correct setup for a closed-source commercial SaaS.
+(The earlier "mismatch" flag was a false alarm.)
 
 ---
 
@@ -47,18 +63,23 @@ From `CURRENT-STATUS.md`, the open work is operational, not code:
 
 ---
 
-## 4. Unwired feature scaffolding — keep or cut?
+## 4. Unwired feature scaffolding — DECISIONS recorded
 
-`knip` flags these as unused. They are **intended features not yet wired**, not garbage. Do **not**
-bulk-delete — decide per item. (Note `RateLimiterDO` is referenced in `wrangler.toml`, not via TS
-imports, so it must NOT be removed regardless of knip.)
+`knip` flags these as unused. They are **intended features not yet wired**, not garbage.
+**Owner decision:** keep the real features (zero runtime cost — they are tree-shaken out of the
+bundle), and cut only genuinely-redundant/superseded code. Do **not** bulk-delete: `RateLimiterDO`
+is referenced in `wrangler.toml` (not via TS imports), and the Zod schemas are API contracts.
 
-| Item                                                                                        | What it is                                                                       | Recommendation                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/video/client.ts`                                                                   | Twilio video telemedicine client                                                 | Keep if telemedicine is on the roadmap. **If kept and wired, add `video.twilio.com` to the `safeFetch` egress allowlist** (only `api.twilio.com` is listed today). Otherwise cut. |
-| `src/components/dental/lab-orders-panel.tsx` + `LabOrder`/`fetchLabOrders`/`createLabOrder` | Dental lab-orders feature (UI + data layer)                                      | Keep if dental lab orders are planned; otherwise cut the whole set together.                                                                                                      |
-| `src/lib/types/patient-metadata.ts`                                                         | A `PatientMetadata` type its docstring says is "used across AI routes" but isn't | Likely safe to remove (redundant type), low value either way.                                                                                                                     |
-| ~278 other unused exports                                                                   | API-contract Zod schemas, security/GDPR fns, infra bindings                      | Leave. They're public surface / config-bound. Trim only as part of cutting a specific feature.                                                                                    |
+| Item                                                                                        | What it is                                                                   | Decision                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/types/patient-metadata.ts`                                                         | Redundant `PatientMetadata` type (docstring claims usage that doesn't exist) | **CUT** ✅ (done — 0 references, superseded)                                                                                                                                                                                           |
+| `src/lib/video/client.ts`                                                                   | Twilio video telemedicine client                                             | **KEEP** — a coherent, complete module for a plausible healthcare roadmap feature; not redundant, just unwired. **If/when wired, add `video.twilio.com` to the `safeFetch` egress allowlist** (only `api.twilio.com` is listed today). |
+| `src/components/dental/lab-orders-panel.tsx` + `LabOrder`/`fetchLabOrders`/`createLabOrder` | Dental lab-orders feature (UI + data layer)                                  | **KEEP** — real unwired feature; revisit when dental lab orders are scheduled or formally descoped.                                                                                                                                    |
+| ~278 other unused exports                                                                   | API-contract Zod schemas, security/GDPR fns, infra bindings                  | **KEEP** — public surface / config-bound. Trim only when cutting a specific feature.                                                                                                                                                   |
+
+**Rationale:** cutting real unwired features saves ~0 bytes at runtime but risks breaking the build
+(their exports are interdependent) and destroys intended work. Revisit per-feature as each is wired
+or descoped — a product-roadmap moment, not an audit cleanup.
 
 ---
 
