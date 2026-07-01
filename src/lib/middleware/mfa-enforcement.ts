@@ -4,21 +4,24 @@
  * Extracted from middleware.ts to keep the orchestrator under ~300 lines.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isMfaEnabled } from "@/lib/env";
+import { isMfaEnabled, isSuperAdminMfaRequired } from "@/lib/env";
 import { secureRedirect } from "@/lib/middleware/security-headers";
 
 /**
- * §3.5 — MFA step-up for privileged roles (optional-enrollment model).
+ * §3.5 — MFA step-up for privileged roles.
  *
- * 2FA enrollment is **optional**: privileged users (`super_admin` /
- * `clinic_admin`) are NOT forced to enrol. Enrolment is offered as a
- * self-service action from the dashboard (links to `/setup-2fa`).
+ * Two layers, both gated by `isMfaEnabled()`:
  *
- * What is still enforced: **step-up for users who have already enrolled.**
- * `getAuthenticatorAssuranceLevel()` reports `nextLevel === "aal2"` only when
- * a verified factor exists, so an admin who voluntarily enabled 2FA is still
- * challenged at `/mfa-verify` when their session is only at AAL1, while an
- * un-enrolled admin (`nextLevel === "aal1"`) passes through untouched.
+ * 1. **Step-up (always on for super_admin / clinic_admin):** a user who has a
+ *    verified factor (`nextLevel === "aal2"`) but whose current session is
+ *    still at AAL1 is challenged at `/mfa-verify`.
+ *
+ * 2. **Mandatory enrolment (super_admin only, opt-in via
+ *    `ENFORCE_SUPER_ADMIN_MFA=true`):** a super_admin with **no** verified
+ *    factor (`nextLevel === "aal1"`) is redirected to `/setup-2fa` until they
+ *    enrol. Off by default, so the historical optional-enrolment behaviour is
+ *    unchanged unless the flag is set. `/setup-2fa` and `/mfa-verify` are not
+ *    in PROTECTED_PREFIXES, so `enforceMfa` never runs there — no redirect loop.
  *
  * Returns `null` when no redirect is needed (pass-through).
  */
@@ -33,13 +36,19 @@ export async function enforceMfa(
   if (!isMfaEnabled()) return null;
 
   if (role === "super_admin" || role === "clinic_admin") {
-    // Step-up only — never force enrolment. When the user has a verified
-    // factor, `nextLevel` is "aal2"; if the session has not yet used it
-    // (currentLevel "aal1"), require a step-up challenge. Un-enrolled users
-    // report `nextLevel === "aal1"` and fall through with no redirect.
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    // (1) Step-up: enrolled factor exists but this session hasn't used it yet.
     if (aalData?.nextLevel === "aal2" && aalData?.currentLevel !== "aal2") {
       const redirectUrl = new URL("/mfa-verify", requestUrl);
+      redirectUrl.searchParams.set("next", pathname);
+      return secureRedirect(redirectUrl);
+    }
+
+    // (2) Mandatory enrolment for super_admin (opt-in). `nextLevel === "aal1"`
+    // means no verified factor is enrolled yet.
+    if (role === "super_admin" && isSuperAdminMfaRequired() && aalData?.nextLevel === "aal1") {
+      const redirectUrl = new URL("/setup-2fa", requestUrl);
       redirectUrl.searchParams.set("next", pathname);
       return secureRedirect(redirectUrl);
     }
