@@ -235,6 +235,11 @@ ROOT_DOMAIN = "oltigo.com"
 # seed_user_blocklist, unaffected by them.
 SEED_PASSWORDS_ROTATED = "true"
 SEED_USERS_DELETED = "true"
+# Security hardening (RISK-018): enforce the outbound-domain allowlist.
+# safeFetch() blocks any outbound call to a host not listed in
+# src/lib/fetch-wrapper.ts. Enabled pre-launch (no users yet) — the safe
+# window to surface any missing domain. To disable, set to "false".
+EGRESS_ALLOWLIST_ENFORCE = "true"
 
 [[env.production.queues.producers]]
 binding = "NOTIFICATION_QUEUE"
@@ -339,6 +344,9 @@ WORKER_ENV = "staging"
 # Upload storage: staging R2 bucket name for the presigned URL signer.
 # Mirrors the production block; must match the staging UPLOADS_BUCKET binding.
 R2_BUCKET_NAME = "webs-alots-uploads-staging"
+# Security hardening (RISK-018): enforce the outbound-domain allowlist on
+# staging too, so it is validated before production traffic. See production note.
+EGRESS_ALLOWLIST_ENFORCE = "true"
 # FIXED: KV binding now resolved correctly via getWorkerBinding().
 RATE_LIMIT_BACKEND = "kv"
 # PHI masking must be "partial" in staging as well.
