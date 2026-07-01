@@ -288,17 +288,17 @@ export default {
       ctx.waitUntil(
         handler
           .fetch(request, env, ctx)
-          .then(async (res: Response) => {
-            // L-08: Redact response body — may contain operational data
-            // (row counts from gdpr-purge, billing details, etc.)
+          .then((res: Response) => {
+            // L-08: Never read or log the response body from cron routes — it
+            // may contain PHI / operational data (row counts from gdpr-purge,
+            // billing amounts, patient identifiers from data-retention, etc.).
+            // Log only the status code, matching the queue() handler. (audit R-7)
             if (res.ok) {
               console.log(`[Cron] ${route} responded ${res.status}`);
             } else {
-              const body = await res.text();
-              const truncated = body.length > 200 ? body.slice(0, 200) + "…" : body;
-              // T-04: Strip newlines/CRLF to prevent log injection via response bodies.
-              const sanitized = truncated.replace(/[\r\n\t]/g, " ");
-              console.error(`[Cron] ${route} responded ${res.status}: ${sanitized}`);
+              console.error(
+                `[Cron] ${route} responded ${res.status} — body redacted (may contain PHI)`,
+              );
               void reportCronError(env, `${route} responded ${res.status}`, {
                 cron: controller.cron,
                 route,

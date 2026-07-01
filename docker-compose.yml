@@ -30,8 +30,6 @@
 # - MinIO console bound to localhost only
 # - Redis and Mailhog bound to localhost only
 
-version: "3.8"
-
 services:
   # ---------- Supabase Postgres ----------
   # A32-2: Pin dev images by digest when updating. Run:
@@ -188,6 +186,11 @@ services:
       retries: 3
     security_opt:
       - no-new-privileges:true
+    # A31: Drop all Linux capabilities for parity with the other services.
+    # Uptime Kuma binds an unprivileged port (3001) and only writes to its
+    # data volume, so it needs no elevated capabilities.
+    cap_drop:
+      - ALL
     restart: unless-stopped
 
 volumes:
