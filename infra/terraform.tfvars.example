@@ -36,6 +36,17 @@ cloudflare_account_id = "replace-with-cloudflare-account-id"
 # manage_queue_consumers                    = false
 # manage_worker_routes                      = false
 
+# DNS (MTA-STS / TLS-RPT) is managed out of band by default. Set manage_dns to
+# true only after importing any pre-existing records; it also requires
+# cloudflare_zone_id above and "Zone / DNS: Edit" on the API token. Scope is
+# limited to the MTA-STS policy records (no MX/SPF/DMARC), so it cannot cause a
+# partial mail outage. Bump mta_sts_policy_id (and re-deploy mta-sts.txt) on any
+# policy change so senders re-fetch.
+# manage_dns                                = false
+# dns_root_domain                           = "oltigo.com"
+# mta_sts_policy_id                         = "20260630000000"
+# mta_sts_report_email                      = "security@oltigo.com"
+
 # r2_bucket_location                        = null
 # r2_storage_class                          = null
 

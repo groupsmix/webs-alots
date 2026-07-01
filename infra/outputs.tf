@@ -38,3 +38,12 @@ output "worker_routes" {
     ai_staging    = sort([for pattern, route in cloudflare_workers_route.ai_staging : route.pattern])
   }
 }
+
+output "dns_records" {
+  description = "MTA-STS / TLS-RPT DNS record names managed by Terraform (empty unless manage_dns = true)."
+  value = {
+    mta_sts_host   = [for r in cloudflare_dns_record.mta_sts_host : r.name]
+    mta_sts_policy = [for r in cloudflare_dns_record.mta_sts_policy : r.name]
+    smtp_tls_rpt   = [for r in cloudflare_dns_record.smtp_tls_reporting : r.name]
+  }
+}

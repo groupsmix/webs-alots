@@ -10,6 +10,7 @@
 #   - Account: R2 Storage: Edit
 #   - Account: Queues: Edit
 #   - Zone: Workers Routes: Edit (only needed when manage_worker_routes = true)
+#   - Zone: DNS: Edit            (only needed when manage_dns = true)
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
