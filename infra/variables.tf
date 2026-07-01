@@ -12,6 +12,7 @@ variable "cloudflare_api_token" {
       - Account / R2 Storage: Edit
       - Account / Queues: Edit
       - Zone / Workers Routes: Edit  (only when manage_worker_routes = true)
+      - Zone / DNS: Edit             (only when manage_dns = true)
 
     IMPORTANT: Never set this in terraform.tfvars or any file committed to git.
     Inject it via the environment variable TF_VAR_cloudflare_api_token in CI,
@@ -25,10 +26,11 @@ variable "cloudflare_zone_id" {
   description = <<-EOT
     Cloudflare zone ID for oltigo.com routes.
 
-    Only required when manage_worker_routes = true. Routes are owned by
-    wrangler.toml by default (manage_worker_routes = false), so this is
-    optional and defaults to null. A precondition in routes.tf fails the plan
-    if routes are managed but this is left unset.
+    Required when manage_worker_routes = true OR manage_dns = true. Routes are
+    owned by wrangler.toml by default (manage_worker_routes = false) and DNS is
+    managed out of band by default (manage_dns = false), so this is optional and
+    defaults to null. Preconditions in routes.tf and dns.tf fail the plan if
+    routes/DNS are managed but this is left unset.
   EOT
   type        = string
   default     = null
@@ -217,4 +219,58 @@ variable "manage_worker_routes" {
   EOT
   type        = bool
   default     = false
+}
+
+variable "manage_dns" {
+  description = <<-EOT
+    Whether Terraform should manage the MTA-STS / TLS-RPT DNS records (dns.tf).
+
+    Defaults to false because DNS for oltigo.com is currently maintained out of
+    band (Cloudflare dashboard). Enabling this without first importing any
+    pre-existing records would make Terraform attempt to create duplicates.
+
+    When true:
+      - cloudflare_zone_id must be set (precondition in dns.tf), and
+      - the API token must also carry "Zone / DNS: Edit".
+
+    Scope is intentionally limited to the records that make the MTA-STS policy
+    effective. It does NOT manage MX / SPF / DMARC / apex / www, so turning it
+    on cannot cause a partial-ownership mail outage.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "dns_root_domain" {
+  description = <<-EOT
+    Apex domain used to construct the MTA-STS / TLS-RPT record names
+    (e.g. "oltigo.com" yields mta-sts.oltigo.com, _mta-sts.oltigo.com,
+    _smtp._tls.oltigo.com). Only used when manage_dns = true.
+  EOT
+  type        = string
+  default     = "oltigo.com"
+}
+
+variable "mta_sts_policy_id" {
+  description = <<-EOT
+    Value of the `id` field in the _mta-sts TXT record (v=STSv1; id=...).
+
+    Sending MTAs re-fetch the policy only when this id changes, so bump it
+    (and re-deploy public/.well-known/mta-sts.txt) on every policy change. A
+    monotonic timestamp such as YYYYMMDDHHMMSS is the conventional format.
+    Only used when manage_dns = true.
+  EOT
+  type        = string
+  default     = "20260630000000"
+}
+
+variable "mta_sts_report_email" {
+  description = <<-EOT
+    Mailbox that receives SMTP TLS reports (TLS-RPT rua). Placed in the
+    _smtp._tls TXT record. Should match the canonical security contact
+    (security@oltigo.com — see public/.well-known/security.txt). Only used when
+    manage_dns = true.
+  EOT
+  type        = string
+  default     = "security@oltigo.com"
 }

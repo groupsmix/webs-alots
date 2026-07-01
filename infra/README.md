@@ -11,6 +11,7 @@ This scaffold manages the durable Cloudflare resources that back the current `wr
 - R2 buckets for encrypted uploads
 - Cloudflare Queues and dead-letter queues for notifications
 - Worker route bindings for the application Worker **and** the AI Worker (`webs-alots-ai`), for production and staging domains (opt-in — see below)
+- MTA-STS / TLS-RPT DNS records that make the mail-transport-security policy effective (opt-in — see below)
 
 ### Ownership boundary with `wrangler.toml`
 
@@ -21,6 +22,7 @@ where Terraform and wrangler continuously revert each other, Terraform does
 
 - `manage_queue_consumers` defaults to `false`
 - `manage_worker_routes` defaults to `false`
+- `manage_dns` defaults to `false`
 
 Only flip these to `true` if you first remove the corresponding
 `[[queues.consumers]]` / `[[routes]]` blocks from `wrangler.toml` and make
@@ -54,7 +56,9 @@ To keep the initial rollout low-risk, this directory does **not** yet manage:
 - the built Worker bundle or version uploads
 - runtime Worker secrets
 - Supabase projects, backups, or database users
-- Cloudflare WAF rules, Access policies, DNS records, Turnstile, or Logpush
+- Cloudflare WAF rules, Access policies, Turnstile, or Logpush
+- DNS records **other than** the MTA-STS / TLS-RPT set in `dns.tf` (MX, SPF,
+  DMARC, apex, www, and clinic subdomains remain managed out of band)
 
 Those are good follow-up candidates, but they require either artifact-aware deployment plumbing or provider decisions that should be made explicitly.
 
@@ -107,7 +111,7 @@ root so state and identifiers cannot be accidentally committed
 ## Prerequisites
 
 - Terraform `>= 1.11` (required — `backend.tf` uses native S3-backend state locking via `use_lockfile`, which needs 1.11+; CI pins 1.14.6)
-- Cloudflare API token with permissions for Workers KV, R2, Queues, and Workers Routes — see `providers.tf` for the full permission list
+- Cloudflare API token with permissions for Workers KV, R2, Queues, Workers Routes, and (when `manage_dns = true`) Zone DNS — see `providers.tf` for the full permission list
 - Pass the token via `TF_VAR_cloudflare_api_token` (never in `terraform.tfvars` or any committed file)
 - `terraform.tfvars` created from `terraform.tfvars.example`
 - A configured remote backend (see `backend.tf`)
@@ -167,6 +171,46 @@ Queues API and import `cloudflare_queue.*` before the first apply. Routes are
 owned by wrangler by default (`manage_worker_routes = false`); only import
 `cloudflare_workers_route.*` if you are taking route ownership into Terraform.
 
+### DNS records (MTA-STS / TLS-RPT)
+
+`dns.tf` manages the three records that make the MTA-STS policy in
+`public/.well-known/mta-sts.txt` effective, gated behind `manage_dns`
+(default `false`):
+
+| Resource                                   | Record                        | Purpose                                           |
+| ------------------------------------------ | ----------------------------- | ------------------------------------------------- |
+| `cloudflare_dns_record.mta_sts_host`       | `mta-sts.oltigo.com` (AAAA)   | Proxied host so the Worker serves the policy file |
+| `cloudflare_dns_record.mta_sts_policy`     | `_mta-sts.oltigo.com` (TXT)   | `v=STSv1; id=…` policy version                    |
+| `cloudflare_dns_record.smtp_tls_reporting` | `_smtp._tls.oltigo.com` (TXT) | `v=TLSRPTv1; rua=…` TLS failure reporting         |
+
+Enabling this requires `cloudflare_zone_id` and the `Zone / DNS: Edit` token
+permission. Before the first apply, **import any of these records that already
+exist** so Terraform does not try to create duplicates:
+
+```bash
+terraform import 'cloudflare_dns_record.mta_sts_host[0]'       <zone_id>/<dns_record_id>
+terraform import 'cloudflare_dns_record.mta_sts_policy[0]'      <zone_id>/<dns_record_id>
+terraform import 'cloudflare_dns_record.smtp_tls_reporting[0]'  <zone_id>/<dns_record_id>
+```
+
+Operational notes:
+
+- The `mta-sts` label is reserved from tenant registration
+  (`src/lib/reserved-subdomains.ts` + migration `00200`) so it cannot be
+  claimed as a clinic subdomain.
+- `mx: *.mx.cloudflare.net` in the policy file matches Cloudflare Email
+  Routing's `route{1,2,3}.mx.cloudflare.net` MX hosts. If mail is NOT on
+  Cloudflare Email Routing, update the policy file's `mx` before enabling.
+- Because the policy is `mode: enforce`, validate with TLS-RPT reports (and
+  optionally `mode: testing`) before relying on it — a sender that has cached
+  the policy will refuse delivery if the MX cannot present a matching cert.
+- Bump `mta_sts_policy_id` **and** re-deploy `mta-sts.txt` together on any
+  policy change so sending MTAs re-fetch.
+
+> TXT `content` is written without surrounding quotes; the provider/API adds
+> them. If a plan shows a perpetual quote-only diff after import, reconcile the
+> stored value rather than re-quoting here.
+
 ## R2 jurisdiction migration
 
 `production_r2_bucket_jurisdiction` and `staging_r2_bucket_jurisdiction` default
@@ -219,7 +263,7 @@ The AI Worker (`webs-alots-ai`) owns the more-specific `oltigo.com/api/copilotki
 ## Suggested next iterations
 
 1. Add Cloudflare WAF custom rules and managed rule overrides
-2. Add DNS records and origin/service bindings where appropriate
+2. Expand DNS coverage beyond MTA-STS (MX, SPF, DMARC, apex/www) once those are ready to move off dashboard management
 3. Add Logpush / audit-log retention plumbing
 4. Decide whether to manage Workers secrets through a future Cloudflare Secrets Store flow or keep them operationally managed
 5. Add automated drift detection: once the remote backend is configured, run `terraform plan -detailed-exitcode` in CI (with read-only credentials) so divergence between `wrangler.toml` and this directory is caught automatically rather than relying on review discipline
