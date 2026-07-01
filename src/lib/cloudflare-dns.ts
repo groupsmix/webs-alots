@@ -21,6 +21,7 @@
  *   await removeSubdomain("dr-ahmed");
  */
 
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ async function cfFetch<T>(
 ): Promise<CloudflareApiResponse<T>> {
   const url = `${CF_API_BASE}/zones/${config.zoneId}${path}`;
 
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     ...options,
     headers: {
       Authorization: `Bearer ${config.auth.apiToken}`,

@@ -11,6 +11,7 @@
  *   - CLOUDFLARE_ZONE_NAME   — Parent domain name (e.g. "oltigo.com")
  */
 
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 interface CloudflareCustomHostnameResult {
@@ -65,7 +66,7 @@ export async function createCustomHostname(hostname: string): Promise<CustomHost
   }
 
   try {
-    const response = await fetch(
+    const response = await safeFetch(
       `https://api.cloudflare.com/client/v4/zones/${auth.zoneId}/custom_hostnames`,
       {
         method: "POST",
@@ -106,7 +107,7 @@ export async function deleteCustomHostname(
   }
 
   try {
-    const response = await fetch(
+    const response = await safeFetch(
       `https://api.cloudflare.com/client/v4/zones/${auth.zoneId}/custom_hostnames/${customHostnameId}`,
       {
         method: "DELETE",
@@ -140,7 +141,7 @@ export async function getCustomHostnameStatus(
   }
 
   try {
-    const response = await fetch(
+    const response = await safeFetch(
       `https://api.cloudflare.com/client/v4/zones/${auth.zoneId}/custom_hostnames/${customHostnameId}`,
       {
         method: "GET",

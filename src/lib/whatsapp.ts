@@ -5,6 +5,7 @@
  * Integrates with the notification engine for template-based messaging.
  */
 
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 
@@ -77,7 +78,7 @@ async function sendViaMeta(
   to: string,
   body: string,
 ): Promise<WhatsAppSendResult> {
-  const response = await fetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
+  const response = await safeFetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.metaAccessToken}`,
@@ -122,7 +123,7 @@ async function sendViaTwilio(
   formData.append("To", `whatsapp:${to}`);
   formData.append("Body", body);
 
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     method: "POST",
     headers: {
       Authorization: `Basic ${auth}`,
@@ -153,7 +154,7 @@ async function sendInteractiveViaMeta(
   config: WhatsAppConfig,
   payload: WhatsAppInteractivePayload,
 ): Promise<WhatsAppSendResult> {
-  const response = await fetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
+  const response = await safeFetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.metaAccessToken}`,
@@ -318,7 +319,7 @@ export async function sendWhatsAppTemplateMessage(
         ]
       : [];
 
-  const response = await fetch(`${META_API_URL}/${params.phoneNumberId}/messages`, {
+  const response = await safeFetch(`${META_API_URL}/${params.phoneNumberId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${params.accessToken}`,

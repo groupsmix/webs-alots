@@ -389,6 +389,14 @@ jobs:
       - name: Guard tenant scoping on Supabase mutations
         run: node scripts/check-tenant-scoping.mjs
 
+      # Audit egress-adoption fix: server-side third-party integration
+      # modules (whatsapp, sms, email, hibp, cloudflare, billing webhook)
+      # must route outbound HTTP through safeFetch() so the egress allowlist
+      # (EGRESS_ALLOWLIST_ENFORCE) and audit logging apply. A raw fetch()
+      # in those modules silently bypasses both.
+      - name: Guard egress safeFetch adoption
+        run: node scripts/check-egress-safefetch.mjs
+
       # F-060: Verify typedoc generation succeeds. Catches broken JSDoc,
       # missing re-exports, and TypeScript errors in doc comments before
       # they reach main.
@@ -742,6 +750,20 @@ jobs:
           MAIN_BASELINE=$(git show "origin/${{ github.event.pull_request.base.ref }}:.knip-baseline" 2>/dev/null | tr -d '[:space:]' || echo "$PR_BASELINE")
           if [ "$PR_BASELINE" -gt "$MAIN_BASELINE" ]; then
             echo "::error::Knip baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
+            exit 1
+          fi
+
+      # Prevent raising the knip unused-export baseline in PRs (same ratchet
+      # discipline as .knip-baseline above): a PR may lower the count of
+      # unused exports/types, never raise it.
+      - name: Guard knip exports baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_BASELINE=$(cat .knip-exports-baseline | tr -d '[:space:]')
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          MAIN_BASELINE=$(git show "origin/${{ github.event.pull_request.base.ref }}:.knip-exports-baseline" 2>/dev/null | tr -d '[:space:]' || echo "$PR_BASELINE")
+          if [ "$PR_BASELINE" -gt "$MAIN_BASELINE" ]; then
+            echo "::error::Knip exports baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
             exit 1
           fi
 
