@@ -173,6 +173,19 @@ dead_letter_queue = "notification-queue-dlq"
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads"
 
+# ── Next.js Incremental Cache (audit R-8) ─────────────────────────────
+# open-next.config.ts wires the R2-backed incremental cache so `use cache`
+# / ISR entries persist across Worker isolates (the adapter degrades to a
+# graceful no-op while this binding is absent). To activate durable caching:
+#   1. Create a DEDICATED bucket (do NOT reuse UPLOADS_BUCKET — that bucket
+#      holds PHI and must not be co-mingled with rendered cache content):
+#        wrangler r2 bucket create webs-alots-next-cache
+#   2. Uncomment the binding below (top level AND env.production).
+# The adapter reads the binding name `NEXT_INC_CACHE_R2_BUCKET` exactly.
+# [[r2_buckets]]
+# binding = "NEXT_INC_CACHE_R2_BUCKET"
+# bucket_name = "webs-alots-next-cache"
+
 # ── Environment Variables (non-secret) ────────────────────────────────
 # Secrets (API keys, encryption keys) are set via `wrangler secret put`
 # or Cloudflare dashboard. Only non-sensitive defaults go here.
@@ -251,6 +264,12 @@ dead_letter_queue = "notification-queue-dlq"
 [[env.production.r2_buckets]]
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads"
+
+# Next.js incremental cache (audit R-8) — uncomment after creating the
+# dedicated bucket (see top-level note). Do NOT reuse UPLOADS_BUCKET (PHI).
+# [[env.production.r2_buckets]]
+# binding = "NEXT_INC_CACHE_R2_BUCKET"
+# bucket_name = "webs-alots-next-cache"
 
 # W8-A31-01: KV namespace binding (was missing — rate limiter fell open)
 [[env.production.kv_namespaces]]
@@ -367,56 +386,25 @@ bucket_name = "webs-alots-uploads-staging"
 
 # W8-A31-01: KV namespace binding for staging
 #
-# etap1 audit finding #5 — DO NOT MERGE THIS FILE'S STAGING BLOCK
-# until the steps below are completed.
+# etap1 audit finding #5 / A-09 — RESOLVED 2026-05-31.
 #
-# CURRENT STATE (launch blocker): the IDs below are the SAME ones used by
-# [[env.production.kv_namespaces]] above. That means rate-limit counters
-# are shared between staging and production:
-#
-#   • Load tests on staging exhaust prod counters → real users get 429s.
-#   • A prod rate-limit event blocks staging testing.
-#   • Staging auth attempts count against prod IP / user buckets.
-#
-# Action required before launch (run once on a workstation with `wrangler login`):
-#
-#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING
-#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview
-#
-# Then replace the two `id` / `preview_id` values below with the new
-# staging-specific IDs returned by the wrangler commands, and verify
-# isolation by tailing logs on both envs during a staging load test:
-#
-#   wrangler tail --env staging   # should see KV ops; prod tail should not.
-#
-# Until the IDs are replaced, treat staging and production as a single
-# rate-limit surface. R2 buckets are already correctly separated
+# Staging now uses a DEDICATED RATE_LIMIT_KV namespace whose id/preview_id
+# (below) differ from [[env.production.kv_namespaces]], so staging and
+# production no longer share rate-limit counters (a staging load test can no
+# longer exhaust prod token buckets). R2 buckets are likewise separated
 # (webs-alots-uploads-staging vs webs-alots-uploads).
-# A-09 LAUNCH BLOCKER: The IDs below are currently identical to the production
-# KV namespace. This MUST be fixed before any staging load test or launch:
 #
-#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING
-#   wrangler kv:namespace create RATE_LIMIT_KV_STAGING --preview
+# Guards that keep this from regressing:
+#   • scripts/check-kv-namespace-collision.mjs (CI) fails if any staging KV id
+#     matches a production id.
+#   • To (re)provision staging KV if ever needed:
+#       ./scripts/create-staging-kv.sh
+#     (runs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` + `--preview`).
 #
-# Replace BOTH ids below with the staging-specific values returned above.
-# Until fixed, a staging k6 load test exhausts prod rate-limit token buckets,
-# giving real users 429 errors during launch-day traffic.
-#
-# A-09 / A31-A60 Top Finding #1 (CRIT) — placeholder IDs below are
-# DELIBERATELY INVALID so wrangler refuses to deploy staging until a
-# real staging-only KV namespace is provisioned. To fix:
-#
-#   $ ./scripts/create-staging-kv.sh
-#
-# which runs `wrangler kv:namespace create RATE_LIMIT_KV_STAGING` (and
-# `--preview`) against your Cloudflare account and prints the IDs to
-# paste below. CI guard `scripts/check-kv-namespace-collision.mjs`
-# prevents this regressing once fixed.
+# NOTE: KV namespace ids are resource identifiers, not secrets.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-# A-09 resolved 2026-05-31: dedicated staging KV namespace.
-# Created via Cloudflare API (account 0dadac33…1ba4).
-id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING
+id = "da3acaf35a2d448984a4a95e769bc393"          # RATE_LIMIT_KV_STAGING (dedicated, != prod)
 preview_id = "4965f9300c924de3afc0407679ff775b"  # RATE_LIMIT_KV_STAGING_preview
 
 # Uncomment after provisioning APP_CACHE_KV for staging:
@@ -505,10 +493,11 @@ crons = [
 
 # ── Supabase Connection Pooling ───────────────────────────────────────
 # Cloudflare Workers have no persistent TCP connections (each invocation
-# is a fresh isolate). At 1 000+ concurrent tenants, direct connections
-# to Supabase's port 5432 will exhaust the DB connection limit.
+# is a fresh isolate). Direct Postgres connections (port 5432) from
+# ephemeral isolates will exhaust Supabase's DB connection limit under load.
 #
-# Fix: use Supabase's built-in PgBouncer (transaction pooler) on port 6543.
+# Fix: use Supabase's built-in PgBouncer (transaction pooler) on port 6543
+# for any path that opens a raw Postgres TCP socket.
 #
 # Set these two secrets in CI / Cloudflare dashboard:
 #
@@ -519,7 +508,8 @@ crons = [
 #
 #   SUPABASE_POOLER_URL — the transaction-pooler URL from Supabase dashboard
 #     Format: postgresql://postgres.[project-ref]@aws-0-eu-west-3.pooler.supabase.com:6543/postgres
-#     Used by: server-side Supabase client for all DB operations in Workers
+#     Used by: direct Postgres driver paths (migrations, backups/restores).
+#     Enforced at startup by enforceSupabasePoolerConfigured() in src/lib/env.ts.
 #
 #   DIRECT_URL — direct Postgres URL (port 5432), used ONLY for migrations
 #     Format: postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
@@ -527,6 +517,11 @@ crons = [
 #
 # Reference: https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler
 #
-# TODO: Update src/lib/supabase-server.ts to read from SUPABASE_POOLER_URL
-# when available, falling back to NEXT_PUBLIC_SUPABASE_URL for backward
-# compatibility. This is a one-line change per client factory function.
+# NOTE (audit R-5): the supabase-js clients in src/lib/supabase-server.ts
+# intentionally do NOT use SUPABASE_POOLER_URL — they speak HTTPS to
+# PostgREST/GoTrue and rely on Supavisor for server-side pooling. A
+# `postgresql://…:6543` value is a Postgres wire-protocol endpoint and must
+# never be used as the supabase-js base URL (it would break every REST/Auth
+# call). The previous "TODO: read pooler URL in supabase-server.ts" was
+# removed because acting on it would break the app; see the getSupabaseUrl()
+# doc comment for the full rationale.

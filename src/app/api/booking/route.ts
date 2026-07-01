@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { consumeBookingTokenSignature } from "@/lib/booking-token-replay";
 import {
   getPublicGeneratedSlots,
   getPublicAvailableSlots,
@@ -32,35 +33,13 @@ import { safeName, safeText } from "@/lib/validations/primitives";
 // (SECURITY DEFINER function that bypasses users-table RLS).
 
 /**
- * FP-08: In-memory store of used booking token signatures to prevent
- * replay within a token's TTL.  Keys are the HMAC signature portion of
- * the token; values are the token's expiry timestamp (ms) so stale
- * entries can be evicted lazily.
- *
- * This is adequate for a single-process deployment (Cloudflare Workers
- * isolate scope).  For multi-instance deployments, replace with a
- * shared store (e.g. Redis or a DB table with TTL).
+ * FP-08 / B-1: Single-use enforcement for booking tokens is handled by
+ * `consumeBookingTokenSignature` (src/lib/booking-token-replay.ts), which
+ * persists consumed signatures in Cloudflare KV so the once-only guarantee
+ * holds across Worker isolates (the previous module-scope Map only
+ * deduplicated within a single isolate). It degrades to in-memory dedup when
+ * KV is unavailable (dev/tests).
  */
-const usedTokenSignatures = new Map<string, number>();
-
-/** Evict expired entries to bound memory growth. */
-function evictExpiredTokens(): void {
-  const now = Date.now();
-  for (const [sig, expiry] of usedTokenSignatures) {
-    if (now > expiry) usedTokenSignatures.delete(sig);
-  }
-}
-
-/**
- * Mark a token signature as used.  Returns `false` if already used
- * (replay detected), `true` if this is the first use.
- */
-function consumeTokenSignature(signature: string, expiry: number): boolean {
-  evictExpiredTokens();
-  if (usedTokenSignatures.has(signature)) return false;
-  usedTokenSignatures.set(signature, expiry);
-  return true;
-}
 
 const bookingRequestSchema = z.object({
   specialtyId: z.string().min(1),
@@ -317,8 +296,9 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     return apiForbidden("Invalid or expired booking token");
   }
 
-  // FP-08: Reject replayed tokens — each token may only be used once.
-  if (!consumeTokenSignature(tokenResult.signature!, tokenResult.expiry!)) {
+  // FP-08 / B-1: Reject replayed tokens — each token may only be used once.
+  // Durable across Worker isolates via KV (see booking-token-replay.ts).
+  if (!(await consumeBookingTokenSignature(tokenResult.signature!, tokenResult.expiry!))) {
     return apiForbidden("Booking token has already been used");
   }
 

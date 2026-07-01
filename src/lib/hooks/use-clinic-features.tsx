@@ -213,11 +213,15 @@ function ClinicFeaturesProvider({
   clinicTypeKey?: string | null;
 }) {
   const [config, setConfig] = useState<FeaturesConfig | null>(initialConfig ?? null);
-  const [loaded, setLoaded] = useState(!!initialConfig);
+  // Derive the initial "loaded" flag during initialization rather than in the
+  // effect: it is already resolved when we either have an initialConfig or have
+  // no clinicTypeKey to fetch. This avoids a synchronous setState inside the
+  // effect (react-hooks/set-state-in-effect) and its cascading re-render.
+  const [loaded, setLoaded] = useState(!!initialConfig || !clinicTypeKey);
 
   useEffect(() => {
     if (initialConfig || !clinicTypeKey) {
-      setLoaded(true);
+      // Nothing to fetch — `loaded` already reflects this from initial state.
       return;
     }
 

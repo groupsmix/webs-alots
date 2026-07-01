@@ -936,12 +936,18 @@ export function enforceBackupEncryptionConfigured(): void {
 }
 
 /**
- * RISK-001 / DB-01: Require the Supabase transaction pooler in production.
+ * RISK-001 / DB-01: Require the Supabase transaction pooler to be configured in
+ * production.
  *
- * Cloudflare Workers do not hold persistent TCP connections, so direct DB
- * connections from ephemeral isolates will exhaust Postgres slots under load.
- * The app already prefers `SUPABASE_POOLER_URL`; this guard prevents silently
- * shipping production without it.
+ * Scope note (audit R-5): the supabase-js clients used at request time talk to
+ * PostgREST/GoTrue over HTTPS and rely on Supavisor for server-side pooling —
+ * they do NOT open raw Postgres TCP connections and therefore do NOT consume
+ * `SUPABASE_POOLER_URL` (see `src/lib/supabase-server.ts`). This guard exists for
+ * the *direct* Postgres driver paths (migrations, backups/restores) that DO open
+ * TCP sockets from ephemeral Cloudflare isolates and would otherwise exhaust
+ * Postgres connection slots under load. It asserts the operator has provisioned a
+ * transaction-pooler endpoint before deploy; it does not change which URL
+ * supabase-js uses.
  */
 export function enforceSupabasePoolerConfigured(): void {
   if (process.env.NODE_ENV !== "production") return;
@@ -955,8 +961,10 @@ export function enforceSupabasePoolerConfigured(): void {
 
   const message =
     "[STARTUP HEALTH CHECK FAILED] SUPABASE_POOLER_URL is required in production.\n" +
-    "Cloudflare Workers must use the Supabase transaction pooler (port 6543) to avoid\n" +
-    "connection exhaustion under load. Set the pooler URL via Worker secret before deploy.";
+    "Direct Postgres driver paths (migrations, backups) must use the Supabase\n" +
+    "transaction pooler (port 6543) to avoid connection exhaustion from ephemeral\n" +
+    "Cloudflare isolates. supabase-js request traffic already uses HTTPS/Supavisor\n" +
+    "and is unaffected. Set the pooler URL via Worker secret before deploy.";
   logger.error(message, {
     context: "env-validation",
     check: "supabase-pooler",

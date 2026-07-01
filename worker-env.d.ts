@@ -111,19 +111,30 @@ interface KVNamespace {
 
 /**
  * Cloudflare Worker environment bindings for Oltigo.
- * Add new KV / R2 / Queue bindings here as they are provisioned.
+ *
+ * Audit R-6: this interface must mirror the bindings actually declared in
+ * wrangler.toml. Bindings that are provisioned (uncommented) are required;
+ * bindings that are documented-but-commented (operator opt-in) are optional and
+ * always accessed through `getWorkerBinding<T>()`, which returns `T | undefined`.
+ * Add new bindings here as they are provisioned.
  */
 interface CloudflareEnv {
-  /** In-memory-compatible distributed rate limiter — see rate-limit.ts */
+  /** Distributed rate limiter + booking-token replay store — see rate-limit.ts / booking-token-replay.ts. Provisioned. */
   RATE_LIMIT_KV: KVNamespace;
-  /** Subdomain → clinic lookup cache (5-min TTL). Used by middleware. */
+  /** Super-admin feature-flag / kill-switch store. Provisioned. */
+  FEATURE_FLAGS_KV: KVNamespace;
+  /** Cloudflare R2 bucket for PHI file storage (encrypted uploads). Provisioned — see src/lib/r2.ts. */
+  UPLOADS_BUCKET: R2Bucket;
+  /** Notification dispatch queue producer. Provisioned. */
+  NOTIFICATION_QUEUE: Queue;
+  /** Subdomain → clinic lookup cache (legacy fallback). Optional — commented in wrangler.toml. */
   SUBDOMAIN_KV?: KVNamespace;
-  /** TASK-017: Tenant lookup cache — 5-min TTL. Provision with wrangler kv namespace create TENANT_CACHE */
-  TENANT_CACHE: KVNamespace;
-  /** General-purpose app cache (feature flags, AI config) */
+  /** TASK-017: Tenant lookup cache (5-min TTL). Optional — commented in wrangler.toml; middleware falls back to a direct Supabase read when absent. */
+  TENANT_CACHE?: KVNamespace;
+  /** General-purpose app cache (feature flags, AI config). Optional — commented in wrangler.toml. */
   APP_CACHE_KV?: KVNamespace;
-  /** Cloudflare R2 bucket for PHI file storage */
-  PHI_BUCKET?: R2Bucket;
+  /** Next.js incremental cache bucket (audit R-8). Optional — commented in wrangler.toml until provisioned; adapter degrades gracefully when absent. */
+  NEXT_INC_CACHE_R2_BUCKET?: R2Bucket;
 }
 
 interface ExportedHandler<Env = Record<string, string>> {
