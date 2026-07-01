@@ -28,6 +28,7 @@
     "knip": "knip",
     "seed": "tsx scripts/seed.ts",
     "demo:seed": "tsx scripts/seed.ts",
+    "purge:junk": "tsx scripts/purge-junk-clinics.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test-storybook": "vitest run --config vitest.storybook.config.ts",
