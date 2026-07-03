@@ -189,8 +189,8 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
           }
         }
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
       actualOutcome = "error";
       errorMsg = err?.message ?? String(err);
     }
