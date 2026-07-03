@@ -22,9 +22,10 @@ export async function sendSlackAlert(message: string): Promise<void> {
     return;
   }
   if (parsedUrl.hostname !== "hooks.slack.com" && !parsedUrl.hostname.endsWith(".slack.com")) {
-    console.warn(
-      `SLACK_WEBHOOK_URL hostname '${parsedUrl.hostname}' is not a known Slack host — verify this is intentional.`,
+    console.error(
+      `SLACK_WEBHOOK_URL hostname '${parsedUrl.hostname}' is not a known Slack host — aborting alert.`,
     );
+    return;
   }
 
   try {
@@ -35,6 +36,7 @@ export async function sendSlackAlert(message: string): Promise<void> {
     });
   } catch (err) {
     console.error("Failed to send Slack alert:", err);
+    throw err;
   }
 }
 

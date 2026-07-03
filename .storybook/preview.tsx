@@ -1,20 +1,33 @@
 import type { Preview } from "@storybook/nextjs-vite";
+import { useEffect } from "react";
 import "../src/app/globals.css";
+
+/** Supported locales — used both for toolbar items and as a validation allowlist. */
+const SUPPORTED_LOCALES = ["fr", "en", "ar"] as const;
+type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
 /**
  * Applies the active theme + locale globals to the preview <html> element so
  * that dark mode (`.dark` class — see globals.css `@custom-variant dark`) and
  * RTL (`dir="rtl"` + `.rtl` class, as the app's locale-switcher does) can be
  * exercised from the Storybook toolbar and asserted in component tests.
+ *
+ * The locale is validated against SUPPORTED_LOCALES before being written to
+ * the DOM — URL-injected globals (e.g. `?globals=locale:xyz`) cannot inject
+ * arbitrary strings into HTML attributes.
  */
 function applyGlobals(theme: string, locale: string) {
   if (typeof document === "undefined") return;
+  // Validate locale against allowlist to prevent arbitrary DOM attribute injection.
+  const safeLocale: SupportedLocale = (SUPPORTED_LOCALES as readonly string[]).includes(locale)
+    ? (locale as SupportedLocale)
+    : "fr";
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
-  const dir = locale === "ar" ? "rtl" : "ltr";
+  const dir = safeLocale === "ar" ? "rtl" : "ltr";
   root.setAttribute("dir", dir);
-  root.setAttribute("lang", locale);
-  root.classList.toggle("rtl", locale === "ar");
+  root.setAttribute("lang", safeLocale);
+  root.classList.toggle("rtl", safeLocale === "ar");
 }
 
 const preview: Preview = {
@@ -73,7 +86,12 @@ const preview: Preview = {
   decorators: [
     (Story, context) => {
       const { theme, locale } = context.globals as { theme?: string; locale?: string };
-      applyGlobals(theme ?? "light", locale ?? "fr");
+      // useEffect defers DOM mutations to after the render phase — performing
+      // direct DOM writes during render is a React anti-pattern that can cause
+      // layout thrashing and hydration mismatches.
+      useEffect(() => {
+        applyGlobals(theme ?? "light", locale ?? "fr");
+      }, [theme, locale]);
       return <Story />;
     },
   ],

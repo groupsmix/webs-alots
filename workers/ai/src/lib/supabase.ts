@@ -16,6 +16,7 @@
  */
 
 import { createServerClient } from "@supabase/ssr";
+import { logger } from "./logger";
 
 export interface Env {
   NEXT_PUBLIC_SUPABASE_URL: string;
@@ -32,6 +33,9 @@ export interface Env {
   OPENAI_BASE_URL?: string; // OpenAI-compatible endpoint (e.g. mimo)
   OPENAI_MODEL?: string; // model id for the OpenAI-compatible provider
   ANTHROPIC_API_KEY?: string; // consumed by the CopilotKit Anthropic adapter
+  // ── Feature flags ─────────────────────────────────────────────────────
+  /** Set to "false" to dark the CopilotKit endpoint without redeploying. */
+  COPILOTKIT_ENABLED?: string;
 }
 
 interface ParsedCookie {
@@ -146,7 +150,10 @@ export async function requireSuperAdmin(
     if (profileError.code === "PGRST116") {
       return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
     }
-    console.error("[webs-alots-ai] role lookup failed", profileError);
+    logger.error("[webs-alots-ai] role lookup failed", {
+      code: profileError.code,
+      message: profileError.message,
+    });
     return { ok: false, response: jsonResponse({ error: "Internal Server Error" }, 500) };
   }
 

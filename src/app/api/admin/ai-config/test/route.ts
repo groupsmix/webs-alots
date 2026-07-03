@@ -14,6 +14,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { PROVIDER_MODELS } from "@/lib/ai/models";
 import { callProvider, ProviderError, RateLimitError } from "@/lib/ai/providers";
 import { loadProviderConfigs } from "@/lib/ai/router";
@@ -51,7 +52,18 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     return apiValidationError("Invalid JSON body");
   }
 
-  const provider = body.provider as AIProvider | undefined;
+  const postSchema = z.object({
+    provider: z.string({ message: "provider is required" }),
+    api_key: z.string().optional(),
+  });
+
+  const parsedResult = postSchema.safeParse(body);
+  if (!parsedResult.success) {
+    return apiValidationError(parsedResult.error.issues[0].message);
+  }
+  const parsed = parsedResult.data as Record<string, unknown>;
+
+  const provider = parsed.provider as AIProvider | undefined;
   if (!provider || !VALID_PROVIDERS.includes(provider)) {
     return apiValidationError(
       `provider is required and must be one of: ${VALID_PROVIDERS.join(", ")}`,
@@ -63,8 +75,8 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
   //   2. The currently saved key for that provider
   //   3. null for workers_ai (uses env)
   let apiKey: string | null = null;
-  if (typeof body.api_key === "string" && body.api_key.length > 0) {
-    apiKey = body.api_key;
+  if (typeof parsed.api_key === "string" && parsed.api_key.length > 0) {
+    apiKey = parsed.api_key;
   } else if (provider !== "workers_ai") {
     const supabase = createUntypedAdminClient("ai-config-test");
     const configs = await loadProviderConfigs(supabase, { forceRefresh: true });

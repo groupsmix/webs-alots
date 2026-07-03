@@ -14,6 +14,7 @@
 
 import { handleCopilotKit } from "./handlers/copilotkit";
 import { withCors } from "./lib/cors";
+import { logger } from "./lib/logger";
 import { jsonResponse, type Env } from "./lib/supabase";
 
 /**
@@ -22,6 +23,13 @@ import { jsonResponse, type Env } from "./lib/supabase";
  * added CORS to the preflight + error paths, never the success stream).
  */
 async function route(request: Request, env: Env): Promise<Response> {
+  // L-3: Kill-switch. Set COPILOTKIT_ENABLED=false (wrangler secret) to
+  // dark the endpoint without removing routes or redeploying. Unset or
+  // any value other than "false" keeps the endpoint active.
+  if (env.COPILOTKIT_ENABLED === "false") {
+    return jsonResponse({ error: "Not Found" }, 404);
+  }
+
   const url = new URL(request.url);
   const path = url.pathname;
 
@@ -48,7 +56,9 @@ export default {
       const response = await route(request, env);
       return withCors(response, request);
     } catch (err) {
-      console.error("[webs-alots-ai] unhandled error", err);
+      logger.error("[webs-alots-ai] unhandled error", {
+        err: err instanceof Error ? err.message : String(err),
+      });
       return withCors(jsonResponse({ error: "Internal Server Error" }, 500), request);
     }
   },

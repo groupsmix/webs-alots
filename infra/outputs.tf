@@ -1,5 +1,6 @@
 output "rate_limit_namespace_ids" {
   description = "KV namespace IDs for production and staging rate limiting."
+  sensitive   = true
   value = {
     production = cloudflare_workers_kv_namespace.rate_limit_production.id
     staging    = cloudflare_workers_kv_namespace.rate_limit_staging.id
@@ -8,11 +9,13 @@ output "rate_limit_namespace_ids" {
 
 output "feature_flags_namespace_id" {
   description = "KV namespace ID backing production super-admin feature flags."
+  sensitive   = true
   value       = cloudflare_workers_kv_namespace.feature_flags_production.id
 }
 
 output "uploads_bucket_names" {
   description = "R2 bucket names for encrypted uploads."
+  sensitive   = true
   value = {
     production = cloudflare_r2_bucket.uploads_production.name
     staging    = cloudflare_r2_bucket.uploads_staging.name
@@ -21,6 +24,7 @@ output "uploads_bucket_names" {
 
 output "notification_queue_names" {
   description = "Queue names for notification delivery and dead-letter handling."
+  sensitive   = true
   value = {
     production     = cloudflare_queue.notification_production.queue_name
     production_dlq = cloudflare_queue.notification_production_dlq.queue_name

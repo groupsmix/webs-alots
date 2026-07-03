@@ -1,4 +1,6 @@
 import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { assertAgentAllowed, MAX_AGENT_STEPS } from "../../src/lib/ai/agent-config";
 import type { SiteTeamAgentType } from "../../src/lib/ai/prompts";
 import { buildSDKTools, getAgentTools, type AgentToolContext } from "../../src/lib/ai/tools";
@@ -128,7 +130,7 @@ function checkReadOnly(): { ok: boolean; reason?: string } {
     : { ok: false, reason: `read-only guard violated: ${offenders.join(", ")}` };
 }
 
-function runToolLoopEval() {
+async function runToolLoopEval() {
   const testCases = loadToolLoopCases(path.join(__dirname, "../test-cases/tool-loop.json"));
 
   let passed = 0;
@@ -170,7 +172,7 @@ function runToolLoopEval() {
   }
 
   const total = testCases.length;
-  const passRate = (passed / total) * 100;
+  const passRate = total > 0 ? (passed / total) * 100 : 0;
   console.log(`\n===========================================`);
   console.log(
     `Total: ${total} | Passed: ${passed} | Failed: ${failed} | Rate: ${passRate.toFixed(1)}%`,
@@ -192,9 +194,7 @@ function runToolLoopEval() {
   process.exit(0);
 }
 
-try {
-  runToolLoopEval();
-} catch (err) {
+runToolLoopEval().catch((err) => {
   console.error("Fatal evaluation error:", err);
   process.exit(1);
-}
+});

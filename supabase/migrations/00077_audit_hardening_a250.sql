@@ -74,8 +74,8 @@ BEGIN
     TG_TABLE_NAME,
     COALESCE(NEW.id, OLD.id)::text,
     TG_OP,
-    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD) ELSE NULL END,
-    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END,
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN (row_to_json(OLD)::jsonb - 'ref' - 'gateway_token' - 'stripe_id' - 'payment_intent_id' - 'notes') ELSE NULL END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN (row_to_json(NEW)::jsonb - 'ref' - 'gateway_token' - 'stripe_id' - 'payment_intent_id' - 'notes') ELSE NULL END,
     COALESCE(
       current_setting('request.jwt.claims', true)::json->>'sub',
       'system'
@@ -85,7 +85,7 @@ BEGIN
   );
   RETURN COALESCE(NEW, OLD);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 -- Payments trigger
 DROP TRIGGER IF EXISTS trg_audit_payments ON payments;

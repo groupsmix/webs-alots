@@ -24,13 +24,11 @@ locals {
   # "oltigo.com/*" would swallow /api/copilotkit/* and break the AI Worker.
   # Keep these in lockstep with workers/ai/wrangler.toml.
   ai_production_route_patterns = toset([
-    "oltigo.com/api/copilotkit",
-    "oltigo.com/api/copilotkit/*",
+    "oltigo.com/api/copilotkit*",
   ])
 
   ai_staging_route_patterns = toset([
-    "staging.oltigo.com/api/copilotkit",
-    "staging.oltigo.com/api/copilotkit/*",
+    "staging.oltigo.com/api/copilotkit*",
   ])
 
   queue_consumer_settings = {

@@ -63,6 +63,7 @@ WHERE status = 'active';
 
 -- Grant anon read on the view
 GRANT SELECT ON public_clinic_directory TO anon;
+COMMENT ON VIEW public_clinic_directory IS 'SEC-10: Exposes a restricted subset of clinic data to anonymous users. Relies on GRANT SELECT TO anon instead of RLS.';
 
 -- Drop the overly broad anon SELECT policy if it exists
 DO $$
@@ -205,7 +206,7 @@ BEGIN
       UPDATE family_members fm
       SET clinic_id = u.clinic_id
       FROM users u
-      WHERE fm.user_id = u.id
+      WHERE fm.primary_user_id = u.id
       AND fm.clinic_id IS NULL;
 
       -- Make NOT NULL after backfill
@@ -394,20 +395,17 @@ BEGIN
         name,
         role,
         clinic_id,
-        created_at,
-        updated_at
+        created_at
       ) VALUES (
         NEW.id,
         NEW.email,
         COALESCE(safe_meta->>'full_name', safe_meta->>'name', split_part(NEW.email, '@', 1)),
         user_role,
         user_clinic_id,
-        NOW(),
         NOW()
       )
       ON CONFLICT (auth_id) DO UPDATE SET
-        email = EXCLUDED.email,
-        updated_at = NOW();
+        email = EXCLUDED.email;
 
       RETURN NEW;
     END;
@@ -457,7 +455,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS processing_consents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   clinic_id UUID REFERENCES clinics(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   processing_activity TEXT NOT NULL,
   legal_basis TEXT NOT NULL,
   granted_at TIMESTAMPTZ NOT NULL DEFAULT now(),

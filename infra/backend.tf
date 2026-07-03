@@ -30,32 +30,32 @@
 # 3. Uncomment and fill the block below, then run `terraform init`.
 #    Replace <account_id> with the R2 account ID.
 #
-# terraform {
-#   backend "s3" {
-#     bucket = "oltigo-tf-state"
-#     key    = "infra/cloudflare/terraform.tfstate"
-#     region = "auto"
-#
-#     endpoints = {
-#       s3 = "https://<account_id>.r2.cloudflarestorage.com"
-#     }
-#
-#     # R2 is not AWS — skip the AWS-specific validation/credential lookups.
-#     skip_credentials_validation = true
-#     skip_region_validation      = true
-#     skip_requesting_account_id  = true
-#     skip_s3_checksum            = true
-#     skip_metadata_api_check     = true
-#
-#     # Native S3-backend state locking via R2 conditional writes
-#     # (requires Terraform >= 1.11). Remove if on an older Terraform and use a
-#     # DynamoDB-compatible lock table instead.
-#     use_lockfile = true
-#
-#     # Encrypt the state object at rest.
-#     encrypt = true
-#   }
-# }
+terraform {
+  backend "s3" {
+    bucket = "oltigo-tf-state"
+    key    = "infra/cloudflare/terraform.tfstate"
+    region = "auto"
+
+    endpoints = {
+      s3 = "https://<account_id>.r2.cloudflarestorage.com"
+    }
+
+    # R2 is not AWS — skip the AWS-specific validation/credential lookups.
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_s3_checksum            = true
+    skip_metadata_api_check     = true
+
+    # Native S3-backend state locking via R2 conditional writes
+    # (requires Terraform >= 1.11). Remove if on an older Terraform and use a
+    # DynamoDB-compatible lock table instead.
+    use_lockfile = true
+
+    # Encrypt the state object at rest.
+    encrypt = true
+  }
+}
 #
 # Alternative: HCP Terraform / Terraform Cloud `cloud {}` block, which provides
 # encrypted state, locking, and run history without managing an R2 bucket.

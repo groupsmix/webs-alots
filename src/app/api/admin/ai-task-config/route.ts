@@ -14,6 +14,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import {
   ALLOWED_MODELS,
   PINNED_SNAPSHOT_MODELS,
@@ -57,7 +58,7 @@ async function handleGet(_req: NextRequest, _auth: AuthContext) {
 
   const { data, error } = await supabase
     .from("ai_task_configs")
-    .select("id, task_type, pinned_provider, pinned_model, is_active, updated_at")
+    .select("id, task_type, pinned_provider, pinned_model, is_active, max_retries, updated_at")
     .order("task_type");
 
   if (error) {
@@ -104,26 +105,40 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     return apiValidationError("Invalid JSON body");
   }
 
-  const taskType = body.task_type as string | undefined;
-  if (!taskType || !TASK_TYPES.includes(taskType as AITaskType)) {
+  const patchSchema = z.object({
+    task_type: z.string(),
+    pinned_provider: z.string().nullable().optional(),
+    pinned_model: z.string().nullable().optional(),
+    is_active: z.boolean().optional(),
+    max_retries: z.number().int().min(0).max(5).optional(),
+  });
+
+  const parsedResult = patchSchema.safeParse(body);
+  if (!parsedResult.success) {
+    return apiValidationError(parsedResult.error.issues[0].message);
+  }
+  const parsed = parsedResult.data;
+
+  if (!TASK_TYPES.includes(parsed.task_type as AITaskType)) {
     return apiValidationError(`task_type must be one of: ${TASK_TYPES.join(", ")}`);
   }
+  const taskType = parsed.task_type;
 
   const update: Record<string, unknown> = {};
 
-  if ("pinned_provider" in body) {
-    const provider = body.pinned_provider as string | null;
+  if ("pinned_provider" in parsed) {
+    const provider = parsed.pinned_provider;
     if (provider !== null && !PROVIDERS.includes(provider as AIProvider)) {
       return apiValidationError(`pinned_provider must be null or one of: ${PROVIDERS.join(", ")}`);
     }
     update.pinned_provider = provider;
     // Switching provider invalidates any model pin from the previous provider
-    if (!("pinned_model" in body)) update.pinned_model = null;
+    if (!("pinned_model" in parsed)) update.pinned_model = null;
   }
 
-  if ("pinned_model" in body) {
-    const model = body.pinned_model as string | null;
-    if (model !== null) {
+  if ("pinned_model" in parsed) {
+    const model = parsed.pinned_model;
+    if (model != null) {
       const resolved = resolveModelAlias(model);
       if (!ALLOWED_MODELS.has(resolved.model)) {
         return apiValidationError("pinned_model is not in the model allowlist");
@@ -134,11 +149,12 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     }
   }
 
-  if ("is_active" in body) {
-    if (typeof body.is_active !== "boolean") {
-      return apiValidationError("is_active must be a boolean");
-    }
-    update.is_active = body.is_active;
+  if ("is_active" in parsed) {
+    update.is_active = parsed.is_active;
+  }
+
+  if ("max_retries" in parsed) {
+    update.max_retries = parsed.max_retries;
   }
 
   if (Object.keys(update).length === 0) {
@@ -150,7 +166,10 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
 
   const supabase = createUntypedAdminClient("ai-task-config-update");
 
-  const { error } = await supabase.from("ai_task_configs").update(update).eq("task_type", taskType);
+  const { error } = await supabase
+    .from("ai_task_configs")
+    .update(update)
+    .eq("task_type", parsed.task_type);
 
   if (error) {
     logger.error("Failed to update AI task config", {

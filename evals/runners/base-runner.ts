@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type TestCaseCategory =
   | "jailbreak"
   | "drug-interaction"
@@ -14,6 +13,7 @@ export interface TestCase {
   category: TestCaseCategory;
   language: TestCaseLanguage;
   input: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: Record<string, any>;
   expected_outcome: TestCaseOutcome;
   severity: TestCaseSeverity;
@@ -138,7 +138,7 @@ export abstract class BaseEvaluationRunner {
    * Log individual test progress
    */
   private logProgress(result: EvaluationResult) {
-    const status = result.passed ? "✅ PASS" : "❌ FAIL";
+    const status = result.skipped ? "⏭️ SKIP" : result.passed ? "✅ PASS" : "❌ FAIL";
     console.log(
       `  ${status} | ${result.testCase.id} | expected: ${result.testCase.expected_outcome} | actual: ${result.actualOutcome} | ${result.executionTimeMs}ms`,
     );
@@ -162,7 +162,7 @@ export abstract class BaseEvaluationRunner {
     if (metrics.failed > 0) {
       report += `## Failures\n`;
       this.results
-        .filter((r) => !r.passed)
+        .filter((r) => !r.passed && !r.skipped)
         .forEach((r) => {
           report += `- **${r.testCase.id}** (${r.testCase.language}): Expected '${r.testCase.expected_outcome}', got '${r.actualOutcome}'\n`;
           report += `  - Input: "${r.testCase.input}"\n`;

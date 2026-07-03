@@ -65,11 +65,13 @@ define = { "import.meta.url" = "\"file:///worker.mjs\"" }
 # account_id is intentionally omitted — injected by cloudflare/wrangler-action.
 
 # ── Routes ────────────────────────────────────────────────────────────
-# More-specific patterns win over the main Worker's catch-all.
-routes = [
-  { pattern = "oltigo.com/api/copilotkit", zone_name = "oltigo.com" },
-  { pattern = "oltigo.com/api/copilotkit/*", zone_name = "oltigo.com" },
-]
+# Explicit routes are declared only in [env.staging] and [env.production].
+# The default (bare `wrangler deploy`) has NO routes intentionally — this
+# prevents accidental bare deploys from clobbering the production route
+# registrations. Use `npm run deploy:staging` or `npm run deploy:production`.
+#
+# To do a dev-only deploy without routes, run:
+#   wrangler deploy --env dev (or point at a custom domain / workers.dev)
 
 # ── Limits ────────────────────────────────────────────────────────────
 # AI generation can run long; raise CPU cap from 30 s default to the
@@ -100,7 +102,7 @@ cpu_ms = 300_000
 
 [env.staging.observability]
 enabled = true
-head_sampling_rate = 1.0
+head_sampling_rate = 0.1   # 10 % sampling for staging to reduce observability cost
 
 [env.production]
 name = "webs-alots-ai"

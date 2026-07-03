@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Shared results storage so the individual runners (each its own process) can
@@ -48,10 +50,16 @@ export function readAllSuiteResults(): SuiteResult[] {
     .filter((r): r is SuiteResult => r !== null);
 }
 
-/** Delete stale per-suite result files and reports before a fresh full run. */
 export function clearSuiteResults(): void {
   ensureResultsDir();
-  for (const f of fs.readdirSync(resultsDir)) {
-    if (f.endsWith(".json") || f.endsWith(".html")) fs.rmSync(path.join(resultsDir, f));
+  const KNOWN_SUITE_FILES = [
+    "drug-interaction.json",
+    "triage.json",
+    "tool-loop.json",
+    "rag-groundedness.json",
+  ];
+  for (const f of KNOWN_SUITE_FILES) {
+    const p = path.join(resultsDir, f);
+    if (fs.existsSync(p)) fs.rmSync(p);
   }
 }

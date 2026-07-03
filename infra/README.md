@@ -144,9 +144,7 @@ terraform import cloudflare_workers_kv_namespace.feature_flags_production <accou
 
 Known namespace IDs already recorded in `wrangler.toml`:
 
-- production `RATE_LIMIT_KV`: `7ac37dff0a794542b0c766f38e73f105`
-- staging `RATE_LIMIT_KV`: `da3acaf35a2d448984a4a95e769bc393`
-- production `FEATURE_FLAGS_KV`: `223443c0631c4046b72ca8426f733f3c`
+- Check `wrangler.toml` for the exact `RATE_LIMIT_KV` and `FEATURE_FLAGS_KV` namespace IDs.
 
 > **Preview namespaces are out of scope.** `wrangler.toml` also lists preview
 > IDs (`854c78ea…` for production, `4965f930…` for staging). Preview namespaces

@@ -1,4 +1,6 @@
 import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { loadTriageCases } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
 import { writeSuiteResult } from "../utils/results-io";
@@ -90,7 +92,7 @@ async function runTriageEval() {
   }
 
   const total = results.length;
-  const passRate = (passed / total) * 100;
+  const passRate = total > 0 ? (passed / total) * 100 : 0;
   console.log(`\n===========================================`);
   console.log(
     `Total: ${total} | Passed: ${passed} | Failed: ${failed} | Rate: ${passRate.toFixed(1)}%`,

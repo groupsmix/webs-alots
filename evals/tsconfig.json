@@ -1,5 +1,5 @@
 {
-  "//": "Dedicated typecheck config for the evaluation harness. The root tsconfig EXCLUDES evals/, so without this the runners were never type-checked. Kept separate so the main build/typecheck stays untouched. `paths` is redefined relative to this directory (no baseUrl — deprecated in TS 7.0; moduleResolution 'bundler' resolves paths relative to the tsconfig location) so the `@/*` alias used by the imported production modules resolves to repo `src/*`. The repo's ambient .d.ts files are included so module/global augmentations the imported src modules rely on are in scope.",
+  "//": "Dedicated typecheck config for the evaluation harness. The root tsconfig EXCLUDES evals/, so without this the runners were never type-checked. Kept separate so the main build/typecheck stays untouched. `paths` is redefined relative to this directory (no baseUrl — discouraged in TS 5.x; moduleResolution 'bundler' resolves paths relative to the tsconfig location) so the `@/*` alias used by the imported production modules resolves to repo `src/*`. The repo's ambient .d.ts files are included so module/global augmentations the imported src modules rely on are in scope.",
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "noEmit": true,

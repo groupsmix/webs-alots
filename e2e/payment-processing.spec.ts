@@ -381,9 +381,8 @@ test.describe("Payment — body size limits", () => {
     const response = await request.post("/api/payments/webhook", {
       headers: {
         "content-type": "application/json",
-        "content-length": "50000000", // 50 MB (advertised, not sent)
       },
-      data: "{}",
+      data: "x".repeat(50 * 1024 * 1024), // Send actual 50MB payload to force 413
     });
     expect(response.status()).not.toBe(200);
     expect([400, 413, 503]).toContain(response.status());

@@ -93,19 +93,26 @@ import { check, sleep } from "k6";
 import http from "k6/http";
 import { Counter, Rate } from "k6/metrics";
 import { validateBaseUrl } from "./lib/env-guard.js";
+import { parseJsonBody } from "./lib/utils.js";
 
 // ── Tunables ──────────────────────────────────────────────────────────────────
 
 const PROFILE = (__ENV.PROFILE || "load").toLowerCase();
 const BOOKING_WRITE = __ENV.BOOKING_WRITE === "true";
-const BOOKING_PATH = __ENV.BOOKING_PATH || "/book";
+const BOOKING_PATH = (() => {
+  const p = __ENV.BOOKING_PATH || "/book";
+  return p.startsWith("/") ? p : "/" + p;
+})();
 const SESSION_COOKIE = __ENV.SESSION_COOKIE || "";
 // Cookie-protected READ endpoint exercised by the optional authed leg. Default
 // targets the patient's own document list (GET /api/patient/documents — patient
 // role, no required query params, scoped to the session user). Override to match
 // the role of whatever session you captured (e.g. a clinic_admin cookie →
 // "/api/patient/timeline?patientId=<uuid>").
-const AUTH_PATH = __ENV.AUTH_PATH || "/api/patient/documents";
+const AUTH_PATH = (() => {
+  const p = __ENV.AUTH_PATH || "/api/patient/documents";
+  return p.startsWith("/") ? p : "/" + p;
+})();
 // A phone the verify endpoint will accept (syntactic check only today). Use an
 // obviously-fake test number so any created bookings are easy to identify.
 const TEST_PHONE = __ENV.BOOKING_PHONE || "+212600000000";
@@ -212,15 +219,7 @@ function readParams(name) {
   return { ...REQUEST_TIMEOUT, tags: { journey: "read", step: name } };
 }
 
-/** Parse a JSON body, returning null (with a diagnostic) on failure. */
-function parseJson(r, label) {
-  try {
-    return JSON.parse(r.body);
-  } catch (e) {
-    console.warn(`[${label}] JSON.parse failed (status=${r.status}): ${e.message}`);
-    return null;
-  }
-}
+// parseJsonBody is imported from ./lib/utils.js (shared with smoke.js).
 
 // ── Read journey ──────────────────────────────────────────────────────────────
 
@@ -281,7 +280,7 @@ function writeJourney(BASE_URL) {
     return;
   }
 
-  const verifyBody = parseJson(verify, "verify");
+  const verifyBody = parseJsonBody(verify, "verify");
   const token = verifyBody && verifyBody.data ? verifyBody.data.token : undefined;
   if (!token) {
     bookingFailed.add(1);

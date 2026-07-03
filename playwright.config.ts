@@ -16,7 +16,7 @@ export default defineConfig({
   // transient failures (network blips, timing issues). Local runs stay at 0
   // so flakes are visible during development.
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? "50%" : undefined,
   reporter: "html",
   use: {
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",

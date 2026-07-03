@@ -85,7 +85,7 @@ external ones (Supabase service-role key, pooler URL, Stripe, etc.). The AI
 Worker has its own secrets — set them with the companion helper:
 
 ```bash
-bash scripts/setup-ai-worker-secrets.sh staging      # GROQ_API_KEY + Supabase + optional providers
+bash scripts/setup-ai-worker-secrets.sh staging      # Supabase + OPENAI_API_KEY or ANTHROPIC_API_KEY
 bash scripts/setup-ai-worker-secrets.sh production
 ```
 

@@ -134,7 +134,11 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.match(/\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|eot)$/)) {
     event.respondWith(
       caches.match(request).then((cached) => {
-        // Return cached version immediately if available
+        // Always kick off a network fetch to update the cache in the background.
+        // The promise is passed to event.waitUntil() so the browser keeps the
+        // SW alive until the cache write completes — without this the SW can be
+        // terminated the moment event.respondWith() resolves, leaving stale
+        // assets in cache indefinitely.
         const networkFetch = fetch(request)
           .then((response) => {
             if (response.ok) {
@@ -145,7 +149,12 @@ self.addEventListener("fetch", (event) => {
           })
           .catch(() => cached);
 
-        return cached || networkFetch;
+        if (cached) {
+          // Keep the SW alive while the background update finishes.
+          event.waitUntil(networkFetch);
+          return cached;
+        }
+        return networkFetch;
       }),
     );
     return;
@@ -205,20 +214,38 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url = event.notification.data?.url || "/";
+  const rawUrl = event.notification.data?.url || "/";
 
   if (event.action === "dismiss") return;
+
+  // Security: validate the URL is same-origin or a relative path before
+  // opening a window. Push payloads are VAPID-signed, but a compromised
+  // server or leaked signing key could otherwise direct users to arbitrary
+  // external URLs via openWindow().
+  let safeUrl;
+  try {
+    const parsed = new URL(rawUrl, self.location.origin);
+    if (parsed.origin !== self.location.origin) {
+      console.warn("[SW] Blocked notification URL with external origin:", rawUrl);
+      safeUrl = "/";
+    } else {
+      safeUrl = parsed.href;
+    }
+  } catch {
+    // Malformed URL — fall back to root.
+    safeUrl = "/";
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       // Focus an existing window if one is open
       for (const client of clientList) {
-        if (client.url.includes(url) && "focus" in client) {
+        if (client.url === safeUrl && "focus" in client) {
           return client.focus();
         }
       }
       // Otherwise open a new window
-      return self.clients.openWindow(url);
+      return self.clients.openWindow(safeUrl);
     }),
   );
 });

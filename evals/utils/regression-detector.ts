@@ -1,5 +1,8 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { resultsDir } from "./results-io";
 
 /**
  * Regression Detector — Phase E2.
@@ -38,7 +41,6 @@ const THRESHOLDS: RegressionThresholds = {
 };
 
 const baselinesDir = path.join(__dirname, "../baselines");
-const resultsDir = path.join(__dirname, "../results");
 const baselineFile = path.join(baselinesDir, "baselines.json");
 
 function ensureDirs() {
@@ -108,9 +110,9 @@ export function checkRegression(
     };
   }
 
-  // Update baseline if improved
-  if (currentPassRate > existing.passRate) {
-    existing.passRate = currentPassRate;
+  // Update baseline if improved or count changed
+  if (currentPassRate > existing.passRate || currentTotal !== existing.total) {
+    existing.passRate = Math.max(currentPassRate, existing.passRate);
     existing.total = currentTotal;
     existing.updatedAt = new Date().toISOString();
     saveBaselines(baselines);
@@ -121,7 +123,8 @@ export function checkRegression(
 }
 
 // CLI mode — run standalone check
-if (require.main === module) {
+const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+if (isMain) {
   console.log("Running regression detection...");
   ensureDirs();
 

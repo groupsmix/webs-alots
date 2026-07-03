@@ -65,7 +65,8 @@ SELECT is(
 SELECT is(
   (SELECT count(*)::int
      FROM (VALUES ('users'),('clinics'),('appointments'),('payments'),
-                  ('medical_records'),('prescriptions'),('consultation_notes')
+                  ('medical_records'),('prescriptions'),('consultation_notes'),
+                  ('clinic_whatsapp_credentials')
           ) AS t(rel)
     WHERE NOT EXISTS (
       SELECT 1 FROM pg_class c
@@ -114,7 +115,8 @@ BEGIN
 
   SELECT string_agg(t.rel, ', ') INTO v_rls_off
     FROM (VALUES ('users'),('clinics'),('appointments'),('payments'),
-                 ('medical_records'),('prescriptions'),('consultation_notes')) AS t(rel)
+                 ('medical_records'),('prescriptions'),('consultation_notes'),
+                 ('clinic_whatsapp_credentials')) AS t(rel)
    WHERE NOT EXISTS (
      SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relname = t.rel AND c.relrowsecurity);

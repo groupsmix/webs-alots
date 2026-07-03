@@ -1,5 +1,7 @@
 import { spawn } from "child_process";
 import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { alertOnFailure } from "./utils/alerter";
 import { generateHtmlReport } from "./utils/report-generator";
 import { clearSuiteResults, readAllSuiteResults, resultsDir } from "./utils/results-io";
@@ -80,7 +82,7 @@ async function runAll() {
     total,
     passed,
     failed,
-    passRate: total > 0 ? (passed / total) * 100 : 100,
+    passRate: total > 0 ? (passed / total) * 100 : 0,
     suites,
   };
 
@@ -91,7 +93,10 @@ async function runAll() {
   await alertOnFailure(summary);
 
   console.log(`\n===========================================`);
-  if (allPassed) {
+  if (total === 0) {
+    console.error(`🚨 No test cases evaluated — check runner output above.`);
+    process.exit(1);
+  } else if (allPassed) {
     console.log(`🎉 ALL EVALUATIONS PASSED SUCCESSFULLY!`);
     process.exit(0);
   } else {

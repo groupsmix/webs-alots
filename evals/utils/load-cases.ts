@@ -284,6 +284,9 @@ export function loadTriageCases(filePath: string): TriageTestCase[] {
     }
     const c = rec as Record<string, unknown>;
     const id = nonEmptyString(c.id) ? c.id : "<missing>";
+    if (!nonEmptyString(c.id)) errors.push(`${where}: missing or empty 'id'`);
+    if (!isMember(LANGUAGES, c.language))
+      errors.push(`${where} (${id}): invalid language '${String(c.language)}'`);
     if (!nonEmptyString(c.input)) errors.push(`${where} (${id}): missing 'input'`);
     if (!["urgent", "non-urgent"].includes(c.expected_outcome as string))
       errors.push(

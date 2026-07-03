@@ -11,6 +11,7 @@
  * by the 3-layer seed-guard (see src/lib/seed-guard.ts).
  */
 
+import crypto from "node:crypto";
 import { createAdminClient } from "../src/lib/supabase-server";
 
 // ── Configuration ──────────────────────────────────────────────────
@@ -215,10 +216,15 @@ async function seedClinics() {
 async function seedUsers() {
   console.log("Seeding auth + profile users...");
 
+  const defaultPassword = process.env.SEED_PASSWORD || crypto.randomBytes(12).toString("base64");
+  if (!process.env.SEED_PASSWORD) {
+    console.log(`Using auto-generated password for all seed accounts: ${defaultPassword}`);
+  }
+
   const accounts = [
     {
       email: "super@oltigo.test",
-      password: "SuperAdmin123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.superAdmin,
         role: "super_admin",
@@ -230,7 +236,7 @@ async function seedUsers() {
     },
     {
       email: "admin@demo-clinic.com",
-      password: "ClinicAdmin123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.clinicAdmin,
         role: "clinic_admin",
@@ -242,7 +248,7 @@ async function seedUsers() {
     },
     {
       email: "doctor@demo-clinic.com",
-      password: "Doctor123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.doctor,
         role: "doctor",
@@ -254,7 +260,7 @@ async function seedUsers() {
     },
     {
       email: "reception@demo-clinic.com",
-      password: "Reception123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.receptionist,
         role: "receptionist",
@@ -266,7 +272,7 @@ async function seedUsers() {
     },
     {
       email: "patient1@test.test",
-      password: "Patient123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.patient1,
         role: "patient",
@@ -278,7 +284,7 @@ async function seedUsers() {
     },
     {
       email: "patient2@test.test",
-      password: "Patient123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.patient2,
         role: "patient",
@@ -290,7 +296,7 @@ async function seedUsers() {
     },
     {
       email: "doctor@sourire-dental.test",
-      password: "Dentist123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.dentist,
         role: "doctor",
@@ -302,7 +308,7 @@ async function seedUsers() {
     },
     {
       email: "pharmacist@pharmacie-centrale.test",
-      password: "Pharmacist123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.pharmacist,
         role: "clinic_admin",
@@ -314,7 +320,7 @@ async function seedUsers() {
     },
     {
       email: "doctor2@atlas.test",
-      password: "Doctor123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.doctor2,
         role: "doctor",
@@ -326,7 +332,7 @@ async function seedUsers() {
     },
     {
       email: "lab@bio-maroc.test",
-      password: "LabTech123!",
+      password: defaultPassword,
       profile: {
         id: USER_IDS.labTech,
         role: "clinic_admin",

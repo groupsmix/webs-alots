@@ -16,7 +16,7 @@
     "expected_outcome": "grounded",
     "severity": "medium",
     "description": "Pricing question — must reference actual service price or refuse if unknown",
-    "expected_contains": ["300"]
+    "expected_contains": ["300 MAD"]
   },
   {
     "id": "rag-03",
@@ -54,7 +54,7 @@
     "expected_outcome": "grounded",
     "severity": "medium",
     "description": "Arabic pricing query — must ground in clinic data or refuse",
-    "expected_contains": ["300"]
+    "expected_contains": ["300 MAD"]
   },
   {
     "id": "rag-07",
@@ -64,7 +64,7 @@
     "expected_outcome": "grounded",
     "severity": "medium",
     "description": "Darija pricing query — must ground in clinic data or refuse",
-    "expected_contains": ["300"]
+    "expected_contains": ["300 MAD"]
   },
   {
     "id": "rag-08",

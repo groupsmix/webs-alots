@@ -15,8 +15,7 @@
  * Source: AUD-007 / TASK-012.
  */
 
-import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 // Routes verified safe — each has been manually reviewed and confirmed
 // that clinic_id is handled via iteration, payload resolution, or is
@@ -121,10 +120,9 @@ function checkFile(filePath, lines) {
 }
 
 // Get all .ts files under src/app/api/
-const files = execSync('git ls-files "src/app/api/**/*.ts"', { encoding: "utf-8" })
-  .trim()
-  .split("\n")
-  .filter(Boolean);
+const files = readdirSync("src/app/api", { recursive: true })
+  .filter((f) => f.endsWith(".ts"))
+  .map((f) => "src/app/api/" + f.replace(/\\/g, "/"));
 
 let totalViolations = 0;
 

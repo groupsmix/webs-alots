@@ -116,3 +116,12 @@ export const petProfileUpdateSchema = z.object({
   notes: z.string().max(5000).nullable().optional(),
   is_active: z.boolean().optional(),
 });
+
+export const patientDocumentCreateSchema = z.object({
+  r2Key: z.string().min(1),
+  fileName: z.string().min(1),
+  fileType: z.string().optional().default("application/octet-stream"),
+  fileSize: z.number().positive(),
+  docType: z.string().optional(),
+  originalName: z.string().nullable().optional(),
+});

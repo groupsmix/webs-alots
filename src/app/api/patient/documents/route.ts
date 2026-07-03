@@ -24,9 +24,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest, type NextResponse } from "next/server";
+import { z } from "zod";
 import { apiError, apiForbidden, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { deleteFromR2 } from "@/lib/r2";
+import { patientDocumentCreateSchema } from "@/lib/validations/clinical";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const DOC_TYPES = new Set(["analysis", "radiology", "insurance", "other"]);
@@ -179,26 +182,19 @@ async function getHandler(
 }
 
 async function postHandler(
+  input: z.infer<typeof patientDocumentCreateSchema>,
   request: NextRequest,
   { supabase, profile }: AuthContext,
 ): Promise<NextResponse> {
   if (!profile.clinic_id) return apiForbidden("Clinic context required");
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON body");
-  }
-
-  const input = body as Record<string, unknown>;
-  const r2Key = typeof input.r2Key === "string" ? input.r2Key : "";
-  const rawName = typeof input.fileName === "string" ? input.fileName.trim() : "";
-  const fileType = typeof input.fileType === "string" ? input.fileType : "application/octet-stream";
-  const fileSize = typeof input.fileSize === "number" ? Math.floor(input.fileSize) : 0;
+  const r2Key = input.r2Key;
+  const rawName = input.fileName.trim();
+  const fileType = input.fileType ?? "application/octet-stream";
+  const fileSize = Math.floor(input.fileSize);
   const docType = normalizeDocType(input.docType);
 
-  if (!r2Key || !isSafeKey(r2Key)) {
+  if (!isSafeKey(r2Key)) {
     return apiError("A valid uploaded file key is required");
   }
   // The R2 key must live under the caller's own clinic prefix — this is the
@@ -211,11 +207,9 @@ async function postHandler(
     return apiForbidden("File key does not belong to your clinic");
   }
   if (!rawName) return apiError("A document name is required");
-  if (fileSize <= 0) return apiError("A valid file size is required");
 
   const fileName = rawName.slice(0, MAX_NAME_LENGTH);
-  const originalName =
-    typeof input.originalName === "string" ? input.originalName.slice(0, MAX_NAME_LENGTH) : null;
+  const originalName = input.originalName ? input.originalName.slice(0, MAX_NAME_LENGTH) : null;
 
   try {
     const row = await insertDocument(supabase, {
@@ -273,5 +267,5 @@ async function deleteHandler(
 }
 
 export const GET = withAuth(getHandler, ["patient"]);
-export const POST = withAuth(postHandler, ["patient"]);
+export const POST = withAuthValidation(patientDocumentCreateSchema, postHandler, ["patient"]);
 export const DELETE = withAuth(deleteHandler, ["patient"]);
