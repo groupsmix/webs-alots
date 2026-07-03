@@ -14,6 +14,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import {
   ALLOWED_MODELS,
   PINNED_SNAPSHOT_MODELS,
@@ -27,7 +28,6 @@ import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
-import { z } from "zod";
 
 const TASK_TYPES: readonly AITaskType[] = [
   "classify",

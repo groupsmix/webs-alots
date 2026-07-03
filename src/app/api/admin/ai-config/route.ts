@@ -26,6 +26,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { invalidateConfigCache, invalidateFeatureToggleCache } from "@/lib/ai/config-cache";
 import { encryptProviderKey, isProviderKeyEncrypted } from "@/lib/ai/secret-encryption";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
@@ -33,7 +34,6 @@ import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
-import { z } from "zod";
 
 // ── GET: List AI configs (role-scoped) ──
 

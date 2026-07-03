@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import type { Preview } from "@storybook/nextjs-vite";
+import { useEffect } from "react";
 import "../src/app/globals.css";
 
 /** Supported locales — used both for toolbar items and as a validation allowlist. */

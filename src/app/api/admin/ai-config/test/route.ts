@@ -14,6 +14,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { PROVIDER_MODELS } from "@/lib/ai/models";
 import { callProvider, ProviderError, RateLimitError } from "@/lib/ai/providers";
 import { loadProviderConfigs } from "@/lib/ai/router";
@@ -23,7 +24,6 @@ import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
-import { z } from "zod";
 
 const VALID_PROVIDERS: AIProvider[] = [
   "anthropic",

@@ -19,12 +19,12 @@
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
 import { isAiDisabledByEnv } from "@/lib/env";
 import { getKVBinding, isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { withAuth } from "@/lib/with-auth";
-import { z } from "zod";
 import type { AuthContext } from "@/lib/with-auth";
 
 const KILL_SWITCH_KEY = "ai.enabled";
