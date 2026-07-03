@@ -6,6 +6,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { z } from "zod";
 import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
@@ -180,8 +181,20 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
       return apiValidationError("Invalid JSON body");
     }
 
-    const parsed = body as Record<string, unknown>;
-    const action = typeof parsed.action === "string" ? parsed.action : "";
+    const patchSchema = z.object({
+      action: z.string().min(1, "action is required"),
+      user_id: z.string().optional(),
+      role: z.string().optional(),
+      email: z.string().email("A valid email is required").optional(),
+      name: z.string().optional(),
+    });
+
+    const parsedResult = patchSchema.safeParse(body);
+    if (!parsedResult.success) {
+      return apiValidationError(parsedResult.error.issues[0].message);
+    }
+    const parsed = parsedResult.data as Record<string, unknown>;
+    const action = parsedResult.data.action;
 
     if (action === "invite") {
       return inviteTeamMember(parsed, auth);

@@ -24,6 +24,7 @@ import { isAiDisabledByEnv } from "@/lib/env";
 import { getKVBinding, isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { withAuth } from "@/lib/with-auth";
+import { z } from "zod";
 import type { AuthContext } from "@/lib/with-auth";
 
 const KILL_SWITCH_KEY = "ai.enabled";
@@ -58,15 +59,20 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     return apiValidationError("Invalid JSON body");
   }
 
-  const enabled = body.enabled;
-  if (typeof enabled !== "boolean") {
-    return apiValidationError("enabled (boolean) is required");
-  }
+  const postSchema = z.object({
+    enabled: z.boolean({
+      message: "enabled (boolean) is required",
+    }),
+    confirm: z.literal(true, {
+      message: "confirm: true is required to change the AI kill switch",
+    }),
+  });
 
-  // Server-side double-confirmation — the UI dialog is not enough on its own.
-  if (body.confirm !== true) {
-    return apiValidationError("confirm: true is required to change the AI kill switch");
+  const parsedResult = postSchema.safeParse(body);
+  if (!parsedResult.success) {
+    return apiValidationError(parsedResult.error.issues[0].message);
   }
+  const enabled = parsedResult.data.enabled;
 
   if (enabled && isAiDisabledByEnv()) {
     return apiError(

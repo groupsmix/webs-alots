@@ -18,6 +18,7 @@ set -euo pipefail
 
 TYPES_FILE="src/lib/types/database.ts"
 TMP_REGEN="/tmp/db-types-regen.ts"
+trap 'rm -f "$TMP_REGEN"' EXIT
 
 if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
   echo "⚠️  SUPABASE_ACCESS_TOKEN not set — skipping DB type drift check."

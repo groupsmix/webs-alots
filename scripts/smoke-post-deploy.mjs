@@ -111,6 +111,7 @@ async function fetchText(url, init = undefined) {
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(url, { ...init, signal: ctrl.signal, redirect: "follow" });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
     const text = await res.text();
     return { status: res.status, text, headers: res.headers };
   } finally {

@@ -34,6 +34,7 @@ import { check, sleep } from "k6";
 import http from "k6/http";
 import { Rate } from "k6/metrics";
 import { validateBaseUrl } from "./lib/env-guard.js";
+import { parseJsonBody } from "./lib/utils.js";
 
 // ── Custom metrics ──────────────────────────────────────────────────────────
 
@@ -127,33 +128,7 @@ export const options = {
   thresholds: isLoadMode ? loadThresholds : smokeThresholds,
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
-/**
- * Parse a JSON response body with a diagnostic log on failure.
- * Returns the parsed object on success, or null on failure so callers can
- * distinguish a parse error from a deliberate null value.
- *
- * Fix #5 / Fix #6: used for assertion-only checks kept separate from the
- * HTTP-layer availability metric, and emits a diagnostic warning (including
- * the Content-Type) so malformed bodies aren't silently masked as check=false.
- */
-function parseJsonBody(r, label) {
-  const ct = r.headers["Content-Type"] || "?";
-  if (!ct.includes("application/json")) {
-    console.warn(
-      `[${label}] unexpected Content-Type '${ct}' (status=${r.status}) — expected application/json`,
-    );
-  }
-  try {
-    return JSON.parse(r.body);
-  } catch (e) {
-    console.warn(
-      `[${label}] JSON.parse failed (status=${r.status} content-type=${ct}): ${e.message}`,
-    );
-    return null;
-  }
-}
 
 // ── Main scenario ─────────────────────────────────────────────────────────────
 

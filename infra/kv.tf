@@ -26,5 +26,6 @@ resource "cloudflare_workers_kv_namespace" "feature_flags_production" {
   # (see infra/README.md). There is no staging equivalent in wrangler.toml.
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [title]
   }
 }

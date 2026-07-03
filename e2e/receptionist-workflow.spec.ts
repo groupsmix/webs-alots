@@ -19,7 +19,7 @@ const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 // defaults from supabase/seeds/00003_seed_data.sql). They only work under
 // E2E_DEMO_SEED=true and are blocked in production by the seed-user guard.
 const DEMO_RECEPTION_EMAIL = process.env.E2E_DEMO_RECEPTION_EMAIL || "reception@demo-clinic.com";
-const DEMO_RECEPTION_PASSWORD = process.env.E2E_DEMO_RECEPTION_PASSWORD || "Reception123!";
+const DEMO_RECEPTION_PASSWORD = process.env.E2E_DEMO_RECEPTION_PASSWORD || "";
 
 test.describe("Receptionist Workflow Test", () => {
   // Use the demo subdomain for all requests in this block (CI sets

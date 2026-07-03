@@ -70,13 +70,22 @@ async function main(): Promise<void> {
   const deletable: ClinicRow[] = [];
   const skippedWithPatients: { clinic: ClinicRow; patients: number }[] = [];
 
+  const junkIds = junk.map((c) => c.id);
+  const { data: usersData } = await supabase
+    .from("users")
+    .select("clinic_id")
+    .in("clinic_id", junkIds)
+    .eq("role", "patient");
+
+  const patientCounts = new Map<string, number>();
+  for (const row of usersData || []) {
+    if (row.clinic_id) {
+      patientCounts.set(row.clinic_id, (patientCounts.get(row.clinic_id) || 0) + 1);
+    }
+  }
+
   for (const clinic of junk) {
-    const { count } = await supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinic.id)
-      .eq("role", "patient");
-    const patients = count ?? 0;
+    const patients = patientCounts.get(clinic.id) || 0;
     if (patients > 0) {
       skippedWithPatients.push({ clinic, patients });
     } else {

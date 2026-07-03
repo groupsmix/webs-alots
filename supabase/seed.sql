@@ -50,8 +50,8 @@ BEGIN
   -- refuse to proceed. Supabase local dev should either leave this unset
   -- (in which case the later `SET app.environment = 'local'` applies) or
   -- explicitly set it to 'local' / 'development' / 'test'.
-  IF current_setting('app.environment', true) IN ('production', 'staging') THEN
-    RAISE EXCEPTION 'SEED ABORT: Refusing to run seed data in % environment', current_setting('app.environment', true);
+  IF current_setting('app.environment', true) NOT IN ('local', 'development', 'test') THEN
+    RAISE EXCEPTION 'SEED ABORT: Refusing to run seed data in non-local environment (%)', COALESCE(current_setting('app.environment', true), 'unset');
   END IF;
 END
 $$;
@@ -239,7 +239,7 @@ $$;
 -- DEMO CLINIC
 -- ============================================================
 
-INSERT INTO clinics (id, name, type, config, tier, status) VALUES
+INSERT INTO clinics (id, name, type, config, tier, status, subdomain) VALUES
   ('c0000000-de00-0000-0000-000000000001',
    'Cabinet Demo Oltigo',
    'doctor',
@@ -249,11 +249,11 @@ INSERT INTO clinics (id, name, type, config, tier, status) VALUES
      "city": "Casablanca",
      "phone": "+212 5 00 00 00 00",
      "specialty": "General Medicine",
-     "subdomain": "demo",
      "is_demo": true
    }'::jsonb,
    'premium',
-   'active')
+   'active',
+   'demo')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================

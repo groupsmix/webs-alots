@@ -13,7 +13,7 @@ const OTHER_SUBDOMAIN_URL = "http://sourire-dental.localhost:3000";
 // supabase/seeds/00003_seed_data.sql); they only work when E2E_DEMO_SEED=true
 // and are blocked in production by the seed-user guard (see AGENTS.md).
 const DEMO_ADMIN_EMAIL = process.env.E2E_DEMO_ADMIN_EMAIL || "admin@demo-clinic.com";
-const DEMO_ADMIN_PASSWORD = process.env.E2E_DEMO_ADMIN_PASSWORD || "ClinicAdmin123!";
+const DEMO_ADMIN_PASSWORD = process.env.E2E_DEMO_ADMIN_PASSWORD || "";
 
 async function loginAsDemoClinicAdmin(page: Page): Promise<void> {
   await page.goto(`${DEMO_SUBDOMAIN_URL}/login`);

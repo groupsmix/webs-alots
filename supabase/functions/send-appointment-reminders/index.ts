@@ -18,13 +18,14 @@
  *                               (set via `supabase secrets set CRON_SECRET=...`)
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.107.0";
+import { createClient } from "@supabase/supabase-js";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface Clinic {
   name: string;
   whatsapp_phone_id: string | null;
+  config: { locale?: string } | null;
 }
 
 interface Appointment {
@@ -55,12 +56,14 @@ const REMINDER_WINDOWS: ReminderWindow[] = [
   { type: "15min", minutesBefore: 15, template: "appointment_reminder_15min" },
 ];
 
-// ── Supabase Client ────────────────────────────────────────────────────────
+// ── Startup Assertions ─────────────────────────────────────────────────────
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
+if (!Deno.env.get("CRON_SECRET") || Deno.env.get("CRON_SECRET")!.length < 32) {
+  console.error("FATAL: CRON_SECRET is not set or too short (< 32 chars).");
+}
+if (!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.length < 32) {
+  console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY is not set or too short (< 32 chars).");
+}
 
 // ── WhatsApp helper ────────────────────────────────────────────────────────
 
@@ -70,6 +73,7 @@ async function sendTemplateMessage(
   to: string,
   templateName: string,
   bodyParams: string[],
+  locale: string = "fr"
 ): Promise<string | null> {
   const res = await fetch(`${META_API_BASE}/${phoneNumberId}/messages`, {
     method: "POST",
@@ -83,7 +87,7 @@ async function sendTemplateMessage(
       type: "template",
       template: {
         name: templateName,
-        language: { code: "fr" },
+        language: { code: locale },
         components:
           bodyParams.length > 0
             ? [
@@ -112,7 +116,7 @@ async function sendTemplateMessage(
 
 /** Fetches the WhatsApp access token for a clinic from the server-only
  *  `clinic_whatsapp_credentials` table. Returns null if no creds exist. */
-async function getClinicWhatsAppToken(clinicId: string): Promise<string | null> {
+async function getClinicWhatsAppToken(supabase: any, clinicId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("clinic_whatsapp_credentials")
     .select("whatsapp_access_token")
@@ -174,8 +178,19 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // ── Supabase Client ──────────────────────────────────────────────────────
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (!supabaseUrl) {
+    return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 503 });
+  }
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+
   const now = new Date();
   let totalProcessed = 0;
+
+  // Cache WhatsApp tokens per clinic for this invocation so we don't
+  // hit the credentials table once per appointment.
+  const tokenCache = new Map<string, string | null>();
 
   for (const window of REMINDER_WINDOWS) {
     const targetMs = now.getTime() + window.minutesBefore * 60_000;
@@ -197,7 +212,8 @@ Deno.serve(async (req: Request) => {
         doctor:users!doctor_id   ( name ),
         clinic:clinics (
           name,
-          whatsapp_phone_id
+          whatsapp_phone_id,
+          config
         )
       `,
       )
@@ -231,9 +247,7 @@ Deno.serve(async (req: Request) => {
       (alreadySent ?? []).map((r: { appointment_id: string }) => r.appointment_id),
     );
 
-    // Cache WhatsApp tokens per clinic for this invocation so we don't
-    // hit the credentials table once per appointment.
-    const tokenCache = new Map<string, string | null>();
+
 
     for (const appt of rows) {
       if (alreadySentIds.has(appt.id)) continue;
@@ -249,7 +263,7 @@ Deno.serve(async (req: Request) => {
 
       let accessToken = tokenCache.get(appt.clinic_id);
       if (accessToken === undefined) {
-        accessToken = await getClinicWhatsAppToken(appt.clinic_id);
+        accessToken = await getClinicWhatsAppToken(supabase, appt.clinic_id);
         tokenCache.set(appt.clinic_id, accessToken);
       }
 
@@ -270,12 +284,16 @@ Deno.serve(async (req: Request) => {
       }
 
       const scheduled = new Date(appt.slot_start);
-      const dateStr = scheduled.toLocaleDateString("fr-MA");
+      const dateStr = scheduled.toLocaleDateString("fr-MA", {
+        timeZone: "Africa/Casablanca",
+      });
       const timeStr = scheduled.toLocaleTimeString("fr-MA", {
         hour: "2-digit",
         minute: "2-digit",
         timeZone: "Africa/Casablanca",
       });
+
+      const locale = clinic.config?.locale ?? "fr";
 
       const waMessageId = await sendTemplateMessage(
         clinic.whatsapp_phone_id,
@@ -283,6 +301,7 @@ Deno.serve(async (req: Request) => {
         patient.phone,
         window.template,
         [patient.name, appt.doctor?.name ?? "", dateStr, timeStr, clinic.name],
+        locale
       );
 
       // Only record the deduplication row when the message was actually
@@ -314,9 +333,9 @@ Deno.serve(async (req: Request) => {
           appointmentId: appt.id,
           error: insertErr,
         });
+      } else {
+        totalProcessed++;
       }
-
-      totalProcessed++;
     }
   }
 

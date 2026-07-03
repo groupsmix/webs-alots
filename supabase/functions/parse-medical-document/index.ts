@@ -32,7 +32,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { AwsClient } from "https://esm.sh/aws4fetch@1.0.19";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -271,6 +271,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (!record?.r2_key || typeof record.r2_key !== "string") {
     return json({ error: "Invalid payload: record.r2_key is required" }, 400);
   }
+  if (!/^[a-zA-Z0-9/._-]+$/.test(record.r2_key) || record.r2_key.includes("..")) {
+    return json({ error: "Invalid payload: record.r2_key contains invalid characters" }, 400);
+  }
 
   const supabase = createClient(supabaseUrl, serviceKey);
   const aws = new AwsClient({
@@ -361,15 +364,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
     messageContent.push({ type: "text", text: EXTRACTION_PROMPT });
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "x-api-key": anthropicKey,
+      "anthropic-version": "2023-06-01",
+    };
+    if (isPDF) {
+      headers["anthropic-beta"] = "pdfs-2024-09-25";
+    }
+
     // ── Call Anthropic Claude ──
     const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "pdfs-2024-09-25",
-      },
+      headers,
       body: JSON.stringify({
         model: CLAUDE_MODEL,
         max_tokens: CLAUDE_MAX_TOKENS,

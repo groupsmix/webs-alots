@@ -60,7 +60,7 @@ BEGIN
     WHERE  extraction_status = 'pending'
       AND  COALESCE(extraction_retry_count, 0) < 3
     ORDER  BY created_at
-    LIMIT  p_batch_size
+    LIMIT  p_batch_size FOR UPDATE SKIP LOCKED
   LOOP
     PERFORM net.http_post(
       url     := v_url || '/parse-medical-document',

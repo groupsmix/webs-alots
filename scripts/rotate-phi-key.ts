@@ -369,37 +369,43 @@ async function main() {
   let failed = 0;
   const failures: { key: string; error: string }[] = [];
 
-  for (let i = 0; i < encFiles.length; i++) {
-    const key = encFiles[i];
-    const progress = `[${i + 1}/${encFiles.length}]`;
+  const BATCH_SIZE = 15;
+  for (let i = 0; i < encFiles.length; i += BATCH_SIZE) {
+    const batch = encFiles.slice(i, i + BATCH_SIZE);
+    await Promise.all(
+      batch.map(async (key, batchIdx) => {
+        const idx = i + batchIdx;
+        const progress = `[${idx + 1}/${encFiles.length}]`;
 
-    try {
-      if (dryRun) {
-        console.log(`${progress} Would re-encrypt: ${key}`);
-        succeeded++;
-        continue;
-      }
+        try {
+          if (dryRun) {
+            console.log(`${progress} Would re-encrypt: ${key}`);
+            succeeded++;
+            return;
+          }
 
-      // Download
-      const encrypted = await getObject(config, key);
+          // Download
+          const encrypted = await getObject(config, key);
 
-      // Decrypt with old key
-      const plaintext = await decryptWithKey(encrypted, oldKey);
+          // Decrypt with old key
+          const plaintext = await decryptWithKey(encrypted, oldKey);
 
-      // Re-encrypt with new key
-      const reEncrypted = await encryptWithKey(plaintext, newKey);
+          // Re-encrypt with new key
+          const reEncrypted = await encryptWithKey(plaintext, newKey);
 
-      // Upload back
-      await putObject(config, key, reEncrypted, "application/octet-stream");
+          // Upload back
+          await putObject(config, key, reEncrypted, "application/octet-stream");
 
-      succeeded++;
-      console.log(`${progress} Re-encrypted: ${key}`);
-    } catch (err) {
-      failed++;
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      failures.push({ key, error: errorMsg });
-      console.error(`${progress} FAILED: ${key} — ${errorMsg}`);
-    }
+          succeeded++;
+          console.log(`${progress} Re-encrypted: ${key}`);
+        } catch (err) {
+          failed++;
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          failures.push({ key, error: errorMsg });
+          console.error(`${progress} FAILED: ${key} — ${errorMsg}`);
+        }
+      }),
+    );
   }
 
   // Summary

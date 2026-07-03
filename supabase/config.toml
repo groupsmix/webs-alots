@@ -40,12 +40,12 @@ enable_confirmations = true
 
 # A54-1: Session timeout for PHI app (OWASP ASVS V3).
 # Absolute session lifetime: 24 hours; inactivity timeout: 30 minutes.
-# NOTE: Session timeouts require Supabase Pro plan — configure via
-# Dashboard > Authentication > Policies on the production project.
-# Uncomment below when CI preview branches use Pro:
-# [auth.sessions]
-# timebox = "24h"
-# inactivity_timeout = "30m"
+# NOTE: This block is active when the project is on Supabase Pro plan.
+# Local/free-tier preview branches can ignore the PGDG error — the settings
+# are simply not enforced in those environments.
+[auth.sessions]
+timebox = "24h"
+inactivity_timeout = "30m"
 
 [db]
 # The database major version to use

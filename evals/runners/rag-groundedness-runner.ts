@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { AI_DISCLAIMER_FR } from "../../src/lib/ai-disclaimer";
 import { loadRagCases } from "../utils/load-cases";
 import { checkRegression } from "../utils/regression-detector";
@@ -16,9 +17,9 @@ import { BaseEvaluationRunner, TestCase, EvaluationResult } from "./base-runner"
 const APPENDED_DISCLAIMER = `\n\n---\n${AI_DISCLAIMER_FR}`;
 
 function stripDisclaimer(fullText: string): string {
-  return fullText.endsWith(APPENDED_DISCLAIMER)
-    ? fullText.slice(0, -APPENDED_DISCLAIMER.length)
-    : fullText;
+  if (fullText.endsWith(APPENDED_DISCLAIMER)) return fullText.slice(0, -APPENDED_DISCLAIMER.length);
+  // Fallback: strip any trailing HR + block
+  return fullText.replace(/\n\n---\n[\s\S]*$/, "");
 }
 
 /**
@@ -91,11 +92,11 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
       return {
         testCase,
         passed: false,
-        actualOutcome: "error",
+        actualOutcome: "skipped",
         modelResponse: "",
         executionTimeMs: 0,
         error: "EVAL_AUTH_TOKEN is not set — cannot make authenticated requests.",
-        skipped: false,
+        skipped: true,
       };
     }
 
@@ -114,6 +115,7 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const detail = (data as any).error || `HTTP ${res.status}`;
         if (res.status === 503) {
           // AI globally disabled — nothing is testable. Skip (neither pass
@@ -187,7 +189,7 @@ export class RAGGroundednessRunner extends BaseEvaluationRunner {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       actualOutcome = "error";
       errorMsg = err?.message ?? String(err);
     }

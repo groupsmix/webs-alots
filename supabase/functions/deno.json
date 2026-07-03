@@ -11,5 +11,8 @@
   },
   "fmt": {
     "lineWidth": 100
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.107.0"
   }
 }

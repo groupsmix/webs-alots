@@ -77,7 +77,7 @@ async function analyzeWithRetry(
       return await builder.analyze();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("Execution context was destroyed") && attempt < maxRetries - 1) {
+      if ((msg.includes("Execution context was destroyed") || msg.includes("Target page, context or browser has been closed")) && attempt < maxRetries - 1) {
         // Wait for the new page to finish loading after navigation
         await page.waitForLoadState("load");
         await page.waitForTimeout(300);

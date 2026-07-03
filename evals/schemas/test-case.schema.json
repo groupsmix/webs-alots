@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AIEvaluationTestCase",
+  "description": "Schema for standard AI evaluation test cases. Note: Triage test cases use a different format (TriageTestCase) and are not covered by this schema.",
   "type": "object",
   "properties": {
     "id": {
@@ -10,7 +11,7 @@
     "category": {
       "type": "string",
       "enum": ["jailbreak", "drug-interaction", "hallucination", "bias", "rag-groundedness"],
-      "description": "The category of the evaluation"
+      "description": "The category of the evaluation. 'jailbreak', 'hallucination', and 'bias' are x-reserved for future use."
     },
     "language": {
       "type": "string",

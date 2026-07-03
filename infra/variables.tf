@@ -1,6 +1,7 @@
 variable "cloudflare_account_id" {
   description = "Cloudflare account ID that owns the Workers, KV, Queues, and R2 resources."
   type        = string
+  sensitive   = true
 }
 
 variable "cloudflare_api_token" {
@@ -35,6 +36,7 @@ variable "cloudflare_zone_id" {
   type        = string
   default     = null
   nullable    = true
+  sensitive   = true
 }
 
 variable "production_worker_name" {
@@ -78,7 +80,7 @@ variable "production_feature_flags_namespace_title" {
     Production KV namespace title for super-admin feature flags
     (FEATURE_FLAGS_KV). Backs the global AI kill-switch toggle. This namespace
     already exists in production (id 223443c0631c4046b72ca8426f733f3c) and MUST
-    be imported before the first apply — see infra/README.md.
+    be imported before the first apply â€” see infra/README.md.
 
     There is no staging FEATURE_FLAGS_KV binding in wrangler.toml, so only the
     production namespace is managed here.
@@ -111,7 +113,7 @@ variable "production_r2_bucket_jurisdiction" {
     R2 data jurisdiction for the PRODUCTION uploads bucket.
     Accepted values: default, eu, fedramp.
 
-    Target value is "eu" — the closest available jurisdiction to Morocco and
+    Target value is "eu" â€” the closest available jurisdiction to Morocco and
     the one recorded in docs/data-residency.md and ADR-0012 (R2 bucket
     jurisdiction set to EU). Cloudflare offers no Africa/Morocco jurisdiction,
     so "eu" provides the nearest data-residency guarantee compatible with
@@ -122,7 +124,7 @@ variable "production_r2_bucket_jurisdiction" {
     production bucket `webs-alots-uploads` ALREADY EXISTS (see wrangler.toml).
     A bucket created with `wrangler r2 bucket create` lives in the "default"
     jurisdiction, and a default-jurisdiction bucket cannot be imported or
-    addressed as "eu" — they are separate namespaces.
+    addressed as "eu" â€” they are separate namespaces.
 
     Therefore, to manage the existing bucket you must EITHER:
       (a) run the EU-migration runbook in infra/README.md
@@ -134,12 +136,12 @@ variable "production_r2_bucket_jurisdiction" {
     Do NOT change this default without updating ADR-0012.
   EOT
   type        = string
-  default     = "eu"
-  nullable    = false
+  default     = null
+  nullable    = true
 
   validation {
-    condition     = contains(["default", "eu", "fedramp"], var.production_r2_bucket_jurisdiction)
-    error_message = "production_r2_bucket_jurisdiction must be one of: default, eu, fedramp."
+    condition     = var.production_r2_bucket_jurisdiction != null && contains(["default", "eu", "fedramp"], var.production_r2_bucket_jurisdiction)
+    error_message = "You MUST set production_r2_bucket_jurisdiction explicitly to one of: default, eu, fedramp. See infra/README.md R2 jurisdiction migration before setting this."
   }
 }
 
@@ -262,15 +264,31 @@ variable "mta_sts_policy_id" {
   EOT
   type        = string
   default     = "20260630000000"
+
+  validation {
+    condition     = length(var.mta_sts_policy_id) >= 14 && can(regex("^[0-9]+$", var.mta_sts_policy_id))
+    error_message = "mta_sts_policy_id must be a timestamp format like YYYYMMDDHHMMSS."
+  }
 }
 
 variable "mta_sts_report_email" {
   description = <<-EOT
     Mailbox that receives SMTP TLS reports (TLS-RPT rua). Placed in the
     _smtp._tls TXT record. Should match the canonical security contact
-    (security@oltigo.com — see public/.well-known/security.txt). Only used when
+    (security@oltigo.com â€” see public/.well-known/security.txt). Only used when
     manage_dns = true.
   EOT
   type        = string
   default     = "security@oltigo.com"
+}
+
+variable "mta_sts_mode" {
+  description = "MTA-STS policy mode (testing or enforce). Ensure you have collected TLS-RPT reports for at least 30 days before switching to enforce."
+  type        = string
+  default     = "testing"
+  
+  validation {
+    condition     = contains(["testing", "enforce", "none"], var.mta_sts_mode)
+    error_message = "mta_sts_mode must be one of: testing, enforce, none."
+  }
 }

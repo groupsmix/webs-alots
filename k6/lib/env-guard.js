@@ -40,7 +40,7 @@ const NON_PROD_ZONES = ["staging.oltigo.com", "preview.oltigo.com"];
  */
 export function classifyHost(hostname) {
   // Loopback is always local.
-  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
     return "local";
   }
 
@@ -139,5 +139,9 @@ export function validateBaseUrl(baseUrl, opts = {}) {
     );
   }
 
-  return { baseUrl, hostname, hostClass, isLocal, isProd };
+  // Strip any trailing slash so callers can safely do `${baseUrl}/api/…`
+  // without generating double-slashed URLs (e.g. BASE_URL=https://staging.oltigo.com/).
+  const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+
+  return { baseUrl: cleanBaseUrl, hostname, hostClass, isLocal, isProd };
 }

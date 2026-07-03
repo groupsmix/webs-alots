@@ -54,7 +54,7 @@ for SECRET in "${!CADENCE[@]}"; do
   # Find the most recent rotation date for this secret in the log.
   # Use -oE (POSIX ERE) rather than -oP (GNU/PCRE-only) so this also works
   # on the BSD grep shipped with macOS.
-  LAST_DATE=$(grep -i "$SECRET" "$LOG_FILE" 2>/dev/null | \
+  LAST_DATE=$(grep -iE "\\b${SECRET}\\b" "$LOG_FILE" 2>/dev/null | \
     grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | \
     sort -r | head -1 || true)
 

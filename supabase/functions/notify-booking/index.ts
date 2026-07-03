@@ -18,13 +18,21 @@
  *   TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM (for Twilio)
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 /** UUID v4 format validator */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Local timezone for displaying appointment date/time in messages. */
 const DISPLAY_TIMEZONE = "Africa/Casablanca";
+
+// ── Startup Assertions ─────────────────────────────────────────────────────
+
+if (!Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("EDGE_FUNCTION_SECRET")!.length < 32) {
+  console.error("FATAL: EDGE_FUNCTION_SECRET is not set or too short (< 32 chars).");
+}
+if (!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.length < 32) {
+  console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY is not set or too short (< 32 chars).");
+}
 
 /**
  * Compares two secrets without leaking length/content via timing.
@@ -44,8 +52,6 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 interface AppointmentRow {
   id: string;
-  appointment_date: string | null;
-  start_time: string | null;
   slot_start: string | null;
   slot_end: string | null;
   status: string;
@@ -131,10 +137,19 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Input validation (EDGE-01) ────────────────────────────────────
-    const { appointmentId } = await req.json();
+    const payload = await req.json();
+    const appointmentId = payload.appointmentId || payload.record?.id;
+    const clinicId = payload.clinicId || payload.record?.clinic_id;
 
     if (!appointmentId || typeof appointmentId !== "string" || !UUID_RE.test(appointmentId)) {
       return new Response(JSON.stringify({ error: "appointmentId must be a valid UUID" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!clinicId || typeof clinicId !== "string" || !UUID_RE.test(clinicId)) {
+      return new Response(JSON.stringify({ error: "clinicId must be a valid UUID" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -149,9 +164,10 @@ Deno.serve(async (req: Request) => {
     const { data: appointment, error } = await supabase
       .from("appointments")
       .select(
-        "id, appointment_date, start_time, slot_start, slot_end, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name)",
+        "id, slot_start, slot_end, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name)",
       )
       .eq("id", appointmentId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (error || !appointment) {
@@ -164,27 +180,21 @@ Deno.serve(async (req: Request) => {
     const apt = appointment as unknown as AppointmentRow;
     const results: { recipient: string; sent: boolean }[] = [];
 
-    // Derive display date/time, falling back to slot_start when
-    // appointment_date or start_time are NULL. The fallback is rendered in the
-    // clinic's local timezone (Africa/Casablanca) so patients/doctors see the
-    // correct local time rather than UTC.
-    let displayDate = apt.appointment_date;
-    let displayTime = apt.start_time;
+    // Derive display date/time from slot_start, rendered in clinic local timezone.
+    let displayDate: string | null = null;
+    let displayTime: string | null = null;
 
-    if ((!displayDate || !displayTime) && apt.slot_start) {
+    if (apt.slot_start) {
       const slotDt = new Date(apt.slot_start);
       if (!isNaN(slotDt.getTime())) {
         // en-CA formats dates as YYYY-MM-DD.
-        displayDate =
-          displayDate ?? slotDt.toLocaleDateString("en-CA", { timeZone: DISPLAY_TIMEZONE });
-        displayTime =
-          displayTime ??
-          slotDt.toLocaleTimeString("fr-MA", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: DISPLAY_TIMEZONE,
-          });
+        displayDate = slotDt.toLocaleDateString("en-CA", { timeZone: DISPLAY_TIMEZONE });
+        displayTime = slotDt.toLocaleTimeString("fr-MA", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: DISPLAY_TIMEZONE,
+        });
       }
     }
 

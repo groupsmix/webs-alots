@@ -33,6 +33,7 @@ import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import type { AuthContext } from "@/lib/with-auth";
+import { z } from "zod";
 
 // ── GET: List AI configs (role-scoped) ──
 
@@ -153,28 +154,39 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
     return apiValidationError("Invalid JSON body");
   }
 
-  const provider = body.provider as string | undefined;
-  if (!provider) {
-    return apiValidationError("provider is required");
-  }
+  const patchSchema = z.object({
+    provider: z.string({ message: "provider is required" }).min(1, "provider is required"),
+    api_key: z.string().nullable().optional(),
+    is_active: z.boolean().optional(),
+    base_url: z.string().nullable().optional(),
+    monthly_budget_cents: z.number().nonnegative().optional(),
+    routing_tier: z.number().int().min(0).max(3).optional(),
+  });
 
+  const parsedResult = patchSchema.safeParse(body);
+  if (!parsedResult.success) {
+    return apiValidationError(parsedResult.error.issues[0].message);
+  }
+  const parsed = parsedResult.data;
+
+  const provider = parsed.provider;
   const supabase = createUntypedAdminClient("ai-config-update");
 
   // Build update object — only include fields that were sent
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-  if ("api_key" in body) {
-    const apiKey = body.api_key as string | null;
+  if ("api_key" in parsed) {
+    const apiKey = parsed.api_key;
     // ENCRYPT the API key before storage. encryptProviderKey returns null
     // when the input is null/empty.
-    update.api_key_encrypted = await encryptProviderKey(apiKey);
+    update.api_key_encrypted = await encryptProviderKey(apiKey ?? null);
     if (!apiKey && provider !== "workers_ai") {
       update.is_active = false;
     }
   }
 
-  if ("is_active" in body) {
-    const isActive = body.is_active as boolean;
+  if ("is_active" in parsed) {
+    const isActive = parsed.is_active;
     if (isActive && provider !== "workers_ai") {
       const { data: existing } = await supabase // nosemgrep: semgrep.tenant-scoping
         .from("ai_provider_configs")
@@ -183,20 +195,12 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
         .single();
 
       const hasKey =
-        !!(existing?.api_key_encrypted as string | null) || !!("api_key" in body && body.api_key);
+        !!(existing?.api_key_encrypted as string | null) || !!("api_key" in parsed && parsed.api_key);
       if (!hasKey) {
         return apiError("Cannot activate provider without an API key", 400, "NO_API_KEY");
       }
     }
     update.is_active = isActive;
-  }
-
-  if ("monthly_budget_cents" in body) {
-    const budget = body.monthly_budget_cents as number;
-    if (typeof budget !== "number" || budget < 0) {
-      return apiValidationError("monthly_budget_cents must be a non-negative number");
-    }
-    update.monthly_budget_cents = budget;
   }
 
   if ("routing_tier" in body) {
@@ -253,8 +257,19 @@ async function handlePost(req: NextRequest, _auth: AuthContext) {
     return apiValidationError("Invalid JSON body");
   }
 
-  const featureKey = body.feature_key as string | undefined;
-  const isEnabled = body.is_enabled as boolean | undefined;
+  const postSchema = z.object({
+    feature_key: z.string({ message: "feature_key is required" }),
+    is_enabled: z.boolean({ message: "is_enabled is required" }),
+  });
+
+  const parsedResult = postSchema.safeParse(body);
+  if (!parsedResult.success) {
+    return apiValidationError(parsedResult.error.issues[0].message);
+  }
+  const parsed = parsedResult.data as Record<string, unknown>;
+
+  const featureKey = parsed.feature_key as string | undefined;
+  const isEnabled = parsed.is_enabled as boolean | undefined;
 
   if (!featureKey || typeof isEnabled !== "boolean") {
     return apiValidationError("feature_key (string) and is_enabled (boolean) are required");

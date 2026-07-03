@@ -27,7 +27,7 @@ const RUN_DEMO_SEED_TESTS = process.env.E2E_DEMO_SEED === "true";
 // defaults from scripts/seed.ts). They only work under E2E_DEMO_SEED=true and
 // are blocked in production by the seed-user guard (see AGENTS.md).
 const DEMO_DOCTOR_EMAIL = process.env.E2E_DEMO_DOCTOR_EMAIL || "doctor@demo-clinic.com";
-const DEMO_DOCTOR_PASSWORD = process.env.E2E_DEMO_DOCTOR_PASSWORD || "Doctor123!";
+const DEMO_DOCTOR_PASSWORD = process.env.E2E_DEMO_DOCTOR_PASSWORD || "";
 
 test.describe("Demo Clinic Smoke Test", () => {
   // Use the demo subdomain for all requests in this block (CI sets

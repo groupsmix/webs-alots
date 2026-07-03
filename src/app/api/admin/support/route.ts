@@ -7,6 +7,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { z } from "zod";
 import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
@@ -131,16 +132,26 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
       return apiValidationError("Invalid JSON body");
     }
 
-    const parsed = body as Record<string, unknown>;
-    const subject = typeof parsed.subject === "string" ? parsed.subject.trim() : "";
-    const description = typeof parsed.description === "string" ? parsed.description.trim() : "";
-    const clinicIdValue = typeof parsed.clinic_id === "string" ? parsed.clinic_id.trim() : "";
-    const priority = normalizePriority(parsed.priority);
-    const category = typeof parsed.category === "string" ? parsed.category : "general";
+    const postSchema = z.object({
+      subject: z.string().min(1, "subject is required"),
+      description: z.string().min(1, "description is required"),
+      clinic_id: z.string().min(1, "clinic_id is required"),
+      priority: z.string().optional(),
+      category: z.string().optional().default("general"),
+    });
 
-    if (!subject) return apiValidationError("subject is required");
-    if (!description) return apiValidationError("description is required");
-    if (!clinicIdValue) return apiValidationError("clinic_id is required");
+    const parsedResult = postSchema.safeParse(body);
+    if (!parsedResult.success) {
+      return apiValidationError(parsedResult.error.issues[0].message);
+    }
+    const parsed = parsedResult.data;
+
+    const subject = parsed.subject.trim();
+    const description = parsed.description.trim();
+    const clinicIdValue = parsed.clinic_id.trim();
+    const priority = normalizePriority(parsed.priority);
+    const category = parsed.category;
+
     if (!VALID_PRIORITIES.includes(priority as (typeof VALID_PRIORITIES)[number])) {
       return apiValidationError(`priority must be one of: ${VALID_PRIORITIES.join(", ")}`);
     }
@@ -198,12 +209,20 @@ async function handlePatch(request: NextRequest, auth: AuthContext) {
       return apiValidationError("Invalid JSON body");
     }
 
-    const parsed = body as Record<string, unknown>;
-    const ticketId = typeof parsed.ticket_id === "string" ? parsed.ticket_id.trim() : "";
+    const patchSchema = z.object({
+      ticket_id: z.string().min(1, "ticket_id is required"),
+      status: z.string().optional(),
+      priority: z.string().optional(),
+      assigned_to: z.string().uuid().nullable().optional(),
+      assigned_team_member_id: z.string().uuid().nullable().optional(),
+    });
 
-    if (!ticketId) {
-      return apiValidationError("ticket_id is required");
+    const parsedResult = patchSchema.safeParse(body);
+    if (!parsedResult.success) {
+      return apiValidationError(parsedResult.error.issues[0].message);
     }
+    const parsed = parsedResult.data;
+    const ticketId = parsed.ticket_id.trim();
 
     const updates: Record<string, unknown> = {};
     if (typeof parsed.status === "string") {

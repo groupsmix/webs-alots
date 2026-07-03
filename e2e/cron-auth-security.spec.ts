@@ -71,9 +71,12 @@ function discoverCronRoutes(): CronRoute[] {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
 
-    const routeFile = join(CRON_DIR, entry.name, "route.ts");
-    if (!existsSync(routeFile)) continue;
+    const folderPath = join(CRON_DIR, entry.name);
+    const folderFiles = readdirSync(folderPath);
+    const routeFilename = folderFiles.find(f => /^route\.(ts|js|mjs|cjs)$/.test(f));
+    if (!routeFilename) continue;
 
+    const routeFile = join(folderPath, routeFilename);
     const src = readFileSync(routeFile, "utf8");
     const methods: HttpMethod[] = [];
     for (const method of ["GET", "POST"] as const) {
