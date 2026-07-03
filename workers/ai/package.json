@@ -5,7 +5,7 @@
   "description": "Standalone Cloudflare Worker for the CopilotKit AI route. Split out from the main webs-alots Worker to keep its bundle under Cloudflare's 10 MiB compressed limit. See README.md.",
   "main": "src/index.ts",
   "scripts": {
-    "deploy": "wrangler deploy",
+    "deploy": "node -e \"console.error('Use deploy:staging or deploy:production'); process.exit(1)\"",
     "deploy:staging": "wrangler deploy --env staging",
     "deploy:production": "wrangler deploy --env production",
     "dev": "wrangler dev",
@@ -14,7 +14,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.101.0",
     "@copilotkit/runtime": "^1.59.5",
-    "@supabase/ssr": "^0.10.2",
+    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.99.3",
     "openai": "^6.0.0"
   },

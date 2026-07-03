@@ -31,11 +31,14 @@ type RuntimeModule = typeof import("@copilotkit/runtime");
 
 let cachedRuntimeModule: RuntimeModule | null = null;
 let cachedServiceAdapter: CopilotServiceAdapter | null = null;
+let cachedEnvFingerprint: string | null = null;
 
 async function loadRuntime(
   env: Env,
 ): Promise<{ runtimeModule: RuntimeModule; serviceAdapter: CopilotServiceAdapter }> {
-  if (cachedRuntimeModule && cachedServiceAdapter) {
+  // C-2: invalidate the adapter cache when secrets are rotated without redeploy.
+  const envFingerprint = `${env.OPENAI_API_KEY ?? ""}|${env.ANTHROPIC_API_KEY ?? ""}`;
+  if (cachedRuntimeModule && cachedServiceAdapter && cachedEnvFingerprint === envFingerprint) {
     return { runtimeModule: cachedRuntimeModule, serviceAdapter: cachedServiceAdapter };
   }
   // Dynamic import — see header comment.
@@ -58,11 +61,17 @@ async function loadRuntime(
       ...(env.OPENAI_MODEL ? { model: env.OPENAI_MODEL } : {}),
     });
   } else {
-    serviceAdapter = new runtimeModule.AnthropicAdapter();
+    // C-1: pass the ANTHROPIC_API_KEY from the CF env binding.
+    // AnthropicAdapter accepts an Anthropic client instance so we
+    // don't rely on process.env which doesn’t exist in CF Workers.
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const anthropicClient = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY! });
+    serviceAdapter = new runtimeModule.AnthropicAdapter({ anthropic: anthropicClient });
   }
 
   cachedRuntimeModule = runtimeModule;
   cachedServiceAdapter = serviceAdapter;
+  cachedEnvFingerprint = envFingerprint;
   return { runtimeModule, serviceAdapter };
 }
 
@@ -79,7 +88,10 @@ export async function handleCopilotKit(request: Request, env: Env): Promise<Resp
 
   const authResult = await requireSuperAdmin(request, env);
   if (!authResult.ok) return authResult.response;
-  const { userId } = authResult;
+  const { userId, userEmail } = authResult;
+  console.log(
+    JSON.stringify({ level: "info", msg: "[webs-alots-ai] copilotkit request", userId, userEmail }),
+  );
 
   // Defense-in-depth: cap how fast a single super_admin session can drive the
   // upstream AI provider. See lib/rate-limit.ts for the per-isolate caveat.

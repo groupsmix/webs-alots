@@ -43,7 +43,7 @@ export function checkRateLimit(key: string, now: number = Date.now()): RateLimit
 
   // Opportunistically prune empty buckets so the map cannot grow without
   // bound across many distinct keys over the isolate's lifetime.
-  if (buckets.size > 1024) {
+  if (buckets.size > 256) {
     for (const [k, v] of buckets) {
       if (v.length === 0 || v[v.length - 1] <= cutoff) buckets.delete(k);
     }
