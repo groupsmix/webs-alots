@@ -166,7 +166,10 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
 
   const supabase = createUntypedAdminClient("ai-task-config-update");
 
-  const { error } = await supabase.from("ai_task_configs").update(update).eq("task_type", parsed.task_type);
+  const { error } = await supabase
+    .from("ai_task_configs")
+    .update(update)
+    .eq("task_type", parsed.task_type);
 
   if (error) {
     logger.error("Failed to update AI task config", {

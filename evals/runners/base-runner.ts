@@ -1,4 +1,3 @@
-
 export type TestCaseCategory =
   | "jailbreak"
   | "drug-interaction"

@@ -52,7 +52,12 @@ export function readAllSuiteResults(): SuiteResult[] {
 
 export function clearSuiteResults(): void {
   ensureResultsDir();
-  const KNOWN_SUITE_FILES = ["drug-interaction.json", "triage.json", "tool-loop.json", "rag-groundedness.json"];
+  const KNOWN_SUITE_FILES = [
+    "drug-interaction.json",
+    "triage.json",
+    "tool-loop.json",
+    "rag-groundedness.json",
+  ];
   for (const f of KNOWN_SUITE_FILES) {
     const p = path.join(resultsDir, f);
     if (fs.existsSync(p)) fs.rmSync(p);

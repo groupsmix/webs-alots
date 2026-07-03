@@ -30,7 +30,10 @@ const DISPLAY_TIMEZONE = "Africa/Casablanca";
 if (!Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("EDGE_FUNCTION_SECRET")!.length < 32) {
   console.error("FATAL: EDGE_FUNCTION_SECRET is not set or too short (< 32 chars).");
 }
-if (!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.length < 32) {
+if (
+  !Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.length < 32
+) {
   console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY is not set or too short (< 32 chars).");
 }
 

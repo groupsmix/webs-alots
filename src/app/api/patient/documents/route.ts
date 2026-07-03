@@ -209,8 +209,7 @@ async function postHandler(
   if (!rawName) return apiError("A document name is required");
 
   const fileName = rawName.slice(0, MAX_NAME_LENGTH);
-  const originalName =
-    input.originalName ? input.originalName.slice(0, MAX_NAME_LENGTH) : null;
+  const originalName = input.originalName ? input.originalName.slice(0, MAX_NAME_LENGTH) : null;
 
   try {
     const row = await insertDocument(supabase, {

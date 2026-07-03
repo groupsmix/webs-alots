@@ -7,12 +7,13 @@
 ---
 
 ## Severity Legend
-| Label | Meaning |
-|---|---|
-| 🔴 Critical | Breaks correctness / patient-safety gate / exposes secrets |
-| 🟠 High | Logic error that can silently pass bad test cases or wrong results |
-| 🟡 Medium | Real defect with a viable workaround; degrades reliability |
-| 🔵 Low | Code-quality / maintenance issue with no immediate runtime impact |
+
+| Label       | Meaning                                                            |
+| ----------- | ------------------------------------------------------------------ |
+| 🔴 Critical | Breaks correctness / patient-safety gate / exposes secrets         |
+| 🟠 High     | Logic error that can silently pass bad test cases or wrong results |
+| 🟡 Medium   | Real defect with a viable workaround; degrades reliability         |
+| 🔵 Low      | Code-quality / maintenance issue with no immediate runtime impact  |
 
 ---
 
@@ -21,6 +22,7 @@
 ---
 
 ### C-1 — `require.main === module` will NEVER be true in an ESM context
+
 **File:** [`evals/utils/regression-detector.ts`](file:///c:/webs-alots/evals/utils/regression-detector.ts#L124)  
 **Line:** 124
 
@@ -37,23 +39,27 @@ Additionally, `tsx` v4 (the installed version `^4.22.3`) uses ESM loaders by def
 Any developer who tries to run `npx tsx evals/utils/regression-detector.ts` directly (as a standalone regression check) will get a silently empty output with exit 0 instead of the expected baseline listing. The dead block also produces a TypeScript error when `@types/node` is properly configured for ESM (`moduleResolution: bundler` + `isolatedModules: true`): `require` may not be defined.
 
 **Suggested fix:**
+
 ```ts
 // Replace the CommonJS guard with an ESM-compatible check:
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'));
 if (isMain) { ... }
 ```
+
 Or simply remove the CLI mode and expose a separate entry script.
 
 ---
 
 ### C-2 — `__dirname` is unavailable in ESM — path resolution silently breaks at runtime
-**Files:**  
-- [`evals/run-all.ts`](file:///c:/webs-alots/evals/run-all.ts#L27) — line 27  
-- [`evals/utils/regression-detector.ts`](file:///c:/webs-alots/evals/utils/regression-detector.ts#L40-L41) — lines 40–41  
-- [`evals/utils/results-io.ts`](file:///c:/webs-alots/evals/utils/results-io.ts#L22) — line 22  
-- [`evals/runners/drug-interaction-runner.ts`](file:///c:/webs-alots/evals/runners/drug-interaction-runner.ts#L51) — line 51  
-- [`evals/runners/triage-runner.ts`](file:///c:/webs-alots/evals/runners/triage-runner.ts#L42) — line 42  
-- [`evals/runners/tool-loop-runner.ts`](file:///c:/webs-alots/evals/runners/tool-loop-runner.ts#L132) — line 132  
+
+**Files:**
+
+- [`evals/run-all.ts`](file:///c:/webs-alots/evals/run-all.ts#L27) — line 27
+- [`evals/utils/regression-detector.ts`](file:///c:/webs-alots/evals/utils/regression-detector.ts#L40-L41) — lines 40–41
+- [`evals/utils/results-io.ts`](file:///c:/webs-alots/evals/utils/results-io.ts#L22) — line 22
+- [`evals/runners/drug-interaction-runner.ts`](file:///c:/webs-alots/evals/runners/drug-interaction-runner.ts#L51) — line 51
+- [`evals/runners/triage-runner.ts`](file:///c:/webs-alots/evals/runners/triage-runner.ts#L42) — line 42
+- [`evals/runners/tool-loop-runner.ts`](file:///c:/webs-alots/evals/runners/tool-loop-runner.ts#L132) — line 132
 - [`evals/runners/rag-groundedness-runner.ts`](file:///c:/webs-alots/evals/runners/rag-groundedness-runner.ts#L266) — line 266
 
 **What's wrong:**  
@@ -66,22 +72,26 @@ Every path to test-case JSON files, the results directory, and the baselines dir
 
 **Suggested fix:**  
 Replace all `__dirname` usages with the ESM equivalent at the top of each file:
+
 ```ts
 import { fileURLToPath } from "url";
 import path from "path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 ```
+
 Or switch the `--import tsx` flag in `run-all.ts` back to the CJS hook (`--require tsx/cjs` or `tsx` invocation), which does inject `__dirname`. The simplest fix is to change the spawn call to use `tsx` as the runtime directly (same pattern as the `eval:ai` script in `package.json`):
+
 ```ts
 // Instead of: spawn(process.execPath, ["--import", "tsx", scriptPath], ...)
 // Use:
-spawn("tsx", [scriptPath], { ...options, shell: false })
+spawn("tsx", [scriptPath], { ...options, shell: false });
 // or find tsx binary: spawn(require.resolve("tsx/dist/cli.mjs"), [scriptPath])
 ```
 
 ---
 
 ### C-3 — RAG runner with empty `EVAL_AUTH_TOKEN` still calls the API with a `"Bearer "` token — contradicts its own guard
+
 **File:** [`evals/runners/rag-groundedness-runner.ts`](file:///c:/webs-alots/evals/runners/rag-groundedness-runner.ts#L88-L99)  
 **Lines:** 88–99 (instance guard) vs. 246–256 (main guard)
 
@@ -91,25 +101,28 @@ spawn("tsx", [scriptPath], { ...options, shell: false })
 > "Guard: if the token is empty the runner was constructed without going through `main()`"
 
 The guard correctly short-circuits, but it returns:
+
 ```ts
 { passed: false, actualOutcome: "error", ..., skipped: false }
 ```
+
 This causes the case to count as a **failure** (not a skip), which will trip the 100% pass-rate gate and fail CI even when the intent is graceful skip.
 
 **Why it's a problem:**  
-If the suite is invoked standalone via `npx tsx evals/runners/rag-groundedness-runner.ts` with no token, `main()` catches it correctly. But the *class-level* fallback path marks results as failed, not skipped — if used in any integration test context, it yields false negatives.
+If the suite is invoked standalone via `npx tsx evals/runners/rag-groundedness-runner.ts` with no token, `main()` catches it correctly. But the _class-level_ fallback path marks results as failed, not skipped — if used in any integration test context, it yields false negatives.
 
 **Suggested fix:**  
 Change the instance-level guard to set `skipped: true`:
+
 ```ts
 return {
   testCase,
-  passed: false,          // still false — skipped cases are not "passed"
+  passed: false, // still false — skipped cases are not "passed"
   actualOutcome: "skipped",
   modelResponse: "",
   executionTimeMs: 0,
   error: "EVAL_AUTH_TOKEN is not set — skipped.",
-  skipped: true,          // ← was false, should be true
+  skipped: true, // ← was false, should be true
 };
 ```
 
@@ -120,6 +133,7 @@ return {
 ---
 
 ### H-1 — `drug-interaction-runner.ts`: `passRate` computed with division before checking zero total
+
 **File:** [`evals/runners/drug-interaction-runner.ts`](file:///c:/webs-alots/evals/runners/drug-interaction-runner.ts#L98)  
 **Line:** 98
 
@@ -136,6 +150,7 @@ Contrast this with `base-runner.ts` line 111 which correctly guards: `/ (total |
 `NaN` in the results JSON will corrupt the aggregate report's pass-rate math in `run-all.ts` (line 83: `(passed / total) * 100` — same vulnerability at the aggregate level).
 
 **Suggested fix:**
+
 ```ts
 const passRate = total > 0 ? (passed / total) * 100 : 0;
 ```
@@ -143,6 +158,7 @@ const passRate = total > 0 ? (passed / total) * 100 : 0;
 ---
 
 ### H-2 — `triage-runner.ts`: same `NaN` on zero total
+
 **File:** [`evals/runners/triage-runner.ts`](file:///c:/webs-alots/evals/runners/triage-runner.ts#L93)  
 **Line:** 93
 
@@ -157,6 +173,7 @@ Same root cause as H-1. No zero-guard.
 ---
 
 ### H-3 — `tool-loop-runner.ts`: same `NaN` on zero total
+
 **File:** [`evals/runners/tool-loop-runner.ts`](file:///c:/webs-alots/evals/runners/tool-loop-runner.ts#L173)  
 **Line:** 173
 
@@ -171,6 +188,7 @@ Same root cause as H-1 and H-2.
 ---
 
 ### H-4 — `run-all.ts`: aggregate `passRate` is also NaN-vulnerable on zero total
+
 **File:** [`evals/run-all.ts`](file:///c:/webs-alots/evals/run-all.ts#L83)  
 **Line:** 83
 
@@ -179,17 +197,20 @@ passRate: total > 0 ? (passed / total) * 100 : 100,
 ```
 
 **What's wrong:**  
-This one has the zero guard, but it defaults to `100` (pass) when zero cases run. This means if *all* suites are skipped or produce empty results, the aggregate reports `100%` and Slack receives no alert, even though nothing was actually tested. This is a silent false-green.
+This one has the zero guard, but it defaults to `100` (pass) when zero cases run. This means if _all_ suites are skipped or produce empty results, the aggregate reports `100%` and Slack receives no alert, even though nothing was actually tested. This is a silent false-green.
 
 **Why it's a problem:**  
 A completely broken eval environment (e.g. all JSON files missing) would report as `100% pass / 0 cases` — indistinguishable from a genuine full pass.
 
 **Suggested fix:**  
 Fail (or at minimum alert) when `total === 0`:
+
 ```ts
 passRate: total > 0 ? (passed / total) * 100 : 0,
 ```
+
 And add an explicit check in `runAll()`:
+
 ```ts
 if (total === 0) {
   console.error("🚨 No test cases evaluated — check runner output above.");
@@ -200,6 +221,7 @@ if (total === 0) {
 ---
 
 ### H-5 — `regression-detector.ts`: baseline update only triggers on improvement — stale baselines never decay
+
 **File:** [`evals/utils/regression-detector.ts`](file:///c:/webs-alots/evals/utils/regression-detector.ts#L112-L118)  
 **Lines:** 112–118
 
@@ -218,6 +240,7 @@ Someone could accidentally delete half the drug-interaction test cases, the suit
 
 **Suggested fix:**  
 Always update the baseline's `total` even when rate is unchanged:
+
 ```ts
 if (currentPassRate > existing.passRate || currentTotal !== existing.total) {
   existing.passRate = Math.max(currentPassRate, existing.passRate);
@@ -230,6 +253,7 @@ if (currentPassRate > existing.passRate || currentTotal !== existing.total) {
 ---
 
 ### H-6 — `loadTriageCases`: `id` is validated only by `checkIds` (called after the loop) — `id` can be `<missing>` in error messages
+
 **File:** [`evals/utils/load-cases.ts`](file:///c:/webs-alots/evals/utils/load-cases.ts#L274-L298)  
 **Lines:** 274–298
 
@@ -240,6 +264,7 @@ Additionally, `loadTriageCases` does not validate that `c.language` is one of th
 
 **Suggested fix:**  
 Add inline `id` and `language` validation to `loadTriageCases`:
+
 ```ts
 if (!nonEmptyString(c.id)) errors.push(`${where}: missing or empty 'id'`);
 if (!isMember(LANGUAGES, c.language))
@@ -249,6 +274,7 @@ if (!isMember(LANGUAGES, c.language))
 ---
 
 ### H-7 — `alerter.ts`: Slack alert failure is silently swallowed — no exit code change
+
 **File:** [`evals/utils/alerter.ts`](file:///c:/webs-alots/evals/utils/alerter.ts#L36-L38)  
 **Lines:** 36–38
 
@@ -274,6 +300,7 @@ Either re-throw after logging (letting `run-all.ts` handle it), or return a bool
 ---
 
 ### M-1 — `base-runner.ts` `generateReport()`: skipped cases are excluded from metrics but their failures still appear in the Failures section
+
 **File:** [`evals/runners/base-runner.ts`](file:///c:/webs-alots/evals/runners/base-runner.ts#L163-L170)  
 **Lines:** 163–170
 
@@ -288,6 +315,7 @@ this.results
 
 **Suggested fix:**  
 Add `&& !r.skipped` to the filter:
+
 ```ts
 this.results.filter((r) => !r.passed && !r.skipped).forEach(...)
 ```
@@ -295,6 +323,7 @@ this.results.filter((r) => !r.passed && !r.skipped).forEach(...)
 ---
 
 ### M-2 — `rag-groundedness-runner.ts`: `stripDisclaimer` is brittle — exact suffix match will silently stop working if disclaimer changes
+
 **File:** [`evals/runners/rag-groundedness-runner.ts`](file:///c:/webs-alots/evals/runners/rag-groundedness-runner.ts#L18-L22)  
 **Lines:** 18–22
 
@@ -306,6 +335,7 @@ This is a silent correctness regression: the runner will still run and report re
 
 **Suggested fix:**  
 Add a regex-based strip that matches `\n\n---\n<any text>$` as a fallback:
+
 ```ts
 function stripDisclaimer(fullText: string): string {
   if (fullText.endsWith(APPENDED_DISCLAIMER)) return fullText.slice(0, -APPENDED_DISCLAIMER.length);
@@ -317,6 +347,7 @@ function stripDisclaimer(fullText: string): string {
 ---
 
 ### M-3 — `results-io.ts`: `clearSuiteResults()` deletes HTML reports inside `results/` including reports from the current run if called mid-run
+
 **File:** [`evals/utils/results-io.ts`](file:///c:/webs-alots/evals/utils/results-io.ts#L52-L57)  
 **Lines:** 52–57
 
@@ -325,8 +356,14 @@ function stripDisclaimer(fullText: string): string {
 
 **Suggested fix:**  
 Limit deletion scope to known suite JSON files (`drug-interaction.json`, `triage.json`, etc.), not a blanket glob:
+
 ```ts
-const KNOWN_SUITE_FILES = ["drug-interaction.json", "triage.json", "tool-loop.json", "rag-groundedness.json"];
+const KNOWN_SUITE_FILES = [
+  "drug-interaction.json",
+  "triage.json",
+  "tool-loop.json",
+  "rag-groundedness.json",
+];
 for (const f of KNOWN_SUITE_FILES) {
   const p = path.join(resultsDir, f);
   if (fs.existsSync(p)) fs.rmSync(p);
@@ -336,8 +373,10 @@ for (const f of KNOWN_SUITE_FILES) {
 ---
 
 ### M-4 — `regression-detector.ts` also exports a `resultsDir` that duplicates `results-io.ts`'s `resultsDir`
-**Files:**  
-- [`evals/utils/regression-detector.ts`](file:///c:/webs-alots/evals/utils/regression-detector.ts#L41) — line 41  
+
+**Files:**
+
+- [`evals/utils/regression-detector.ts`](file:///c:/webs-alots/evals/utils/regression-detector.ts#L41) — line 41
 - [`evals/utils/results-io.ts`](file:///c:/webs-alots/evals/utils/results-io.ts#L22) — line 22
 
 **What's wrong:**  
@@ -345,6 +384,7 @@ Both files define `resultsDir = path.join(__dirname, "../results")` independentl
 
 **Suggested fix:**  
 Remove the private `resultsDir` in `regression-detector.ts` and import it from `results-io`:
+
 ```ts
 import { resultsDir } from "./results-io";
 ```
@@ -352,6 +392,7 @@ import { resultsDir } from "./results-io";
 ---
 
 ### M-5 — `rag-groundedness.json`: `expected_contains` anchor `"300"` is too broad — will false-match unrelated numbers
+
 **File:** [`evals/test-cases/rag-groundedness.json`](file:///c:/webs-alots/evals/test-cases/rag-groundedness.json#L19)  
 **Lines:** 19, 57, 67
 
@@ -375,6 +416,7 @@ Use the currency-disambiguated form: `"300 MAD"` or `"300 DH"` or `"300 dirhams"
 ---
 
 ### M-6 — `rag-groundedness.json`: `expected_contains: ["22 33 44 55"]` (rag-13) looks like a placeholder phone number
+
 **File:** [`evals/test-cases/rag-groundedness.json`](file:///c:/webs-alots/evals/test-cases/rag-groundedness.json#L122)  
 **Line:** 122
 
@@ -390,6 +432,7 @@ Verify the exact phone number stored in the Test Clinic fixture (likely in `supa
 ---
 
 ### M-7 — `rag-groundedness.json` rag-03: `expected_contains: ["Benali"]` is a specific doctor name with no fixture verification
+
 **File:** [`evals/test-cases/rag-groundedness.json`](file:///c:/webs-alots/evals/test-cases/rag-groundedness.json#L29)  
 **Line:** 29
 
@@ -402,6 +445,7 @@ Add a comment or linked reference to the seed script that defines the Test Clini
 ---
 
 ### M-8 — `tool-loop-runner.ts`: synchronous `runToolLoopEval()` wraps async calls but is not declared `async`
+
 **File:** [`evals/runners/tool-loop-runner.ts`](file:///c:/webs-alots/evals/runners/tool-loop-runner.ts#L131)  
 **Line:** 131
 
@@ -410,6 +454,7 @@ Add a comment or linked reference to the seed script that defines the Test Clini
 
 **Suggested fix:**  
 Make `runToolLoopEval` async and await it properly:
+
 ```ts
 async function runToolLoopEval() { ... }
 runToolLoopEval().catch((err) => {
@@ -417,6 +462,7 @@ runToolLoopEval().catch((err) => {
   process.exit(1);
 });
 ```
+
 This matches the pattern used by all other runners.
 
 ---
@@ -426,6 +472,7 @@ This matches the pattern used by all other runners.
 ---
 
 ### L-1 — `evals/tsconfig.json`: comment inside `//` key uses deprecated terminology ("no baseUrl — deprecated in TS 7.0")
+
 **File:** [`evals/tsconfig.json`](file:///c:/webs-alots/evals/tsconfig.json#L2)  
 **Line:** 2
 
@@ -438,6 +485,7 @@ Update the comment to accurately reflect current TypeScript docs: `baseUrl` is d
 ---
 
 ### L-2 — `base-runner.ts`: `/* eslint-disable @typescript-eslint/no-explicit-any */` blanket suppression
+
 **File:** [`evals/runners/base-runner.ts`](file:///c:/webs-alots/evals/runners/base-runner.ts#L1)  
 **Line:** 1
 
@@ -446,6 +494,7 @@ A file-level ESLint disable for `no-explicit-any` suppresses the rule for the en
 
 **Suggested fix:**  
 Use an inline suppression only on the specific line:
+
 ```ts
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 context?: Record<string, any>;
@@ -454,6 +503,7 @@ context?: Record<string, any>;
 ---
 
 ### L-3 — `rag-groundedness-runner.ts`: same blanket `eslint-disable` for `any`
+
 **File:** [`evals/runners/rag-groundedness-runner.ts`](file:///c:/webs-alots/evals/runners/rag-groundedness-runner.ts#L1)  
 **Line:** 1
 
@@ -462,6 +512,7 @@ Same issue as L-2. The `any` is used only at line 117: `(data as any).error`. Ap
 ---
 
 ### L-4 — `base-runner.ts`: `logProgress()` does not log skipped cases — silent omission in output
+
 **File:** [`evals/runners/base-runner.ts`](file:///c:/webs-alots/evals/runners/base-runner.ts#L140-L145)  
 **Lines:** 140–145
 
@@ -469,6 +520,7 @@ Same issue as L-2. The `any` is used only at line 117: `(data as any).error`. Ap
 `logProgress()` uses `result.passed ? "✅ PASS" : "❌ FAIL"` — skipped results are logged as `❌ FAIL` because `passed` is `false` for skipped cases. This makes the console output misleading: a skipped RAG case appears as a failure during the run, even though it is correctly excluded from metrics.
 
 **Suggested fix:**
+
 ```ts
 const status = result.skipped ? "⏭️ SKIP" : result.passed ? "✅ PASS" : "❌ FAIL";
 ```
@@ -476,6 +528,7 @@ const status = result.skipped ? "⏭️ SKIP" : result.passed ? "✅ PASS" : "�
 ---
 
 ### L-5 — `schemas/test-case.schema.json`: schema does not list `"triage"` as a category — triage test cases have no schema
+
 **File:** [`evals/schemas/test-case.schema.json`](file:///c:/webs-alots/evals/schemas/test-case.schema.json)
 
 **What's wrong:**  
@@ -487,6 +540,7 @@ Add a separate `triage-test-case.schema.json` or document clearly in `MAINTENANC
 ---
 
 ### L-6 — Dead `category` values in schema (`"jailbreak"`, `"hallucination"`, `"bias"`) with no runners
+
 **File:** [`evals/schemas/test-case.schema.json`](file:///c:/webs-alots/evals/schemas/test-case.schema.json#L12)  
 **Line:** 12
 
@@ -502,6 +556,7 @@ Until the runners exist, consider marking these categories as `"x-reserved"` in 
 ---
 
 ### L-7 — `alerter.ts`: non-Slack HTTPS webhook hostname only logs a `console.warn` — not an error
+
 **File:** [`evals/utils/alerter.ts`](file:///c:/webs-alots/evals/utils/alerter.ts#L24-L28)  
 **Lines:** 24–28
 
@@ -513,10 +568,11 @@ A misconfigured or compromised environment variable would silently send eval met
 
 **Suggested fix:**  
 Either treat non-Slack hostnames as errors (return without posting), or make the host allowlist enforcement stricter:
+
 ```ts
 if (parsedUrl.hostname !== "hooks.slack.com" && !parsedUrl.hostname.endsWith(".slack.com")) {
   console.error("SLACK_WEBHOOK_URL does not point to a known Slack host — aborting alert.");
-  return;  // ← was a warn + continue, should be a return
+  return; // ← was a warn + continue, should be a return
 }
 ```
 
@@ -524,33 +580,33 @@ if (parsedUrl.hostname !== "hooks.slack.com" && !parsedUrl.hostname.endsWith(".s
 
 ## Summary Table
 
-| ID | File | Line(s) | Severity | Category |
-|---|---|---|---|---|
-| C-1 | `utils/regression-detector.ts` | 124 | 🔴 Critical | Bug/Runtime |
-| C-2 | `run-all.ts`, all runners, `utils/*.ts` | 27, 40–41, 22, 51, 42, 132, 266 | 🔴 Critical | Bug/Blocker |
-| C-3 | `runners/rag-groundedness-runner.ts` | 88–99 | 🔴 Critical | Logic Error |
-| H-1 | `runners/drug-interaction-runner.ts` | 98 | 🟠 High | Bug |
-| H-2 | `runners/triage-runner.ts` | 93 | 🟠 High | Bug |
-| H-3 | `runners/tool-loop-runner.ts` | 173 | 🟠 High | Bug |
-| H-4 | `run-all.ts` | 83 | 🟠 High | Logic Error |
-| H-5 | `utils/regression-detector.ts` | 112–118 | 🟠 High | Logic Error |
-| H-6 | `utils/load-cases.ts` | 274–298 | 🟠 High | Bug |
-| H-7 | `utils/alerter.ts` | 36–38 | 🟠 High | Reliability |
-| M-1 | `runners/base-runner.ts` | 163–170 | 🟡 Medium | Logic Error |
-| M-2 | `runners/rag-groundedness-runner.ts` | 18–22 | 🟡 Medium | Fragility |
-| M-3 | `utils/results-io.ts` | 52–57 | 🟡 Medium | Logic Error |
-| M-4 | `utils/regression-detector.ts` | 41 | 🟡 Medium | Duplication |
-| M-5 | `test-cases/rag-groundedness.json` | 19, 57, 67 | 🟡 Medium | Test Quality |
-| M-6 | `test-cases/rag-groundedness.json` | 122 | 🟡 Medium | Test Quality |
-| M-7 | `test-cases/rag-groundedness.json` | 29 | 🟡 Medium | Test Quality |
-| M-8 | `runners/tool-loop-runner.ts` | 131 | 🟡 Medium | Async Safety |
-| L-1 | `evals/tsconfig.json` | 2 | 🔵 Low | Documentation |
-| L-2 | `runners/base-runner.ts` | 1 | 🔵 Low | Code Quality |
-| L-3 | `runners/rag-groundedness-runner.ts` | 1 | 🔵 Low | Code Quality |
-| L-4 | `runners/base-runner.ts` | 140–145 | 🔵 Low | UX/Output |
-| L-5 | `schemas/test-case.schema.json` | — | 🔵 Low | Documentation |
-| L-6 | `schemas/test-case.schema.json` | 12 | 🔵 Low | Dead Code |
-| L-7 | `utils/alerter.ts` | 24–28 | 🔵 Low | Security |
+| ID  | File                                    | Line(s)                         | Severity    | Category      |
+| --- | --------------------------------------- | ------------------------------- | ----------- | ------------- |
+| C-1 | `utils/regression-detector.ts`          | 124                             | 🔴 Critical | Bug/Runtime   |
+| C-2 | `run-all.ts`, all runners, `utils/*.ts` | 27, 40–41, 22, 51, 42, 132, 266 | 🔴 Critical | Bug/Blocker   |
+| C-3 | `runners/rag-groundedness-runner.ts`    | 88–99                           | 🔴 Critical | Logic Error   |
+| H-1 | `runners/drug-interaction-runner.ts`    | 98                              | 🟠 High     | Bug           |
+| H-2 | `runners/triage-runner.ts`              | 93                              | 🟠 High     | Bug           |
+| H-3 | `runners/tool-loop-runner.ts`           | 173                             | 🟠 High     | Bug           |
+| H-4 | `run-all.ts`                            | 83                              | 🟠 High     | Logic Error   |
+| H-5 | `utils/regression-detector.ts`          | 112–118                         | 🟠 High     | Logic Error   |
+| H-6 | `utils/load-cases.ts`                   | 274–298                         | 🟠 High     | Bug           |
+| H-7 | `utils/alerter.ts`                      | 36–38                           | 🟠 High     | Reliability   |
+| M-1 | `runners/base-runner.ts`                | 163–170                         | 🟡 Medium   | Logic Error   |
+| M-2 | `runners/rag-groundedness-runner.ts`    | 18–22                           | 🟡 Medium   | Fragility     |
+| M-3 | `utils/results-io.ts`                   | 52–57                           | 🟡 Medium   | Logic Error   |
+| M-4 | `utils/regression-detector.ts`          | 41                              | 🟡 Medium   | Duplication   |
+| M-5 | `test-cases/rag-groundedness.json`      | 19, 57, 67                      | 🟡 Medium   | Test Quality  |
+| M-6 | `test-cases/rag-groundedness.json`      | 122                             | 🟡 Medium   | Test Quality  |
+| M-7 | `test-cases/rag-groundedness.json`      | 29                              | 🟡 Medium   | Test Quality  |
+| M-8 | `runners/tool-loop-runner.ts`           | 131                             | 🟡 Medium   | Async Safety  |
+| L-1 | `evals/tsconfig.json`                   | 2                               | 🔵 Low      | Documentation |
+| L-2 | `runners/base-runner.ts`                | 1                               | 🔵 Low      | Code Quality  |
+| L-3 | `runners/rag-groundedness-runner.ts`    | 1                               | 🔵 Low      | Code Quality  |
+| L-4 | `runners/base-runner.ts`                | 140–145                         | 🔵 Low      | UX/Output     |
+| L-5 | `schemas/test-case.schema.json`         | —                               | 🔵 Low      | Documentation |
+| L-6 | `schemas/test-case.schema.json`         | 12                              | 🔵 Low      | Dead Code     |
+| L-7 | `utils/alerter.ts`                      | 24–28                           | 🔵 Low      | Security      |
 
 **Total: 3 Critical · 7 High · 8 Medium · 7 Low = 25 findings**
 

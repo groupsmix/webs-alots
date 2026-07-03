@@ -221,7 +221,6 @@ function readParams(name) {
 
 // parseJsonBody is imported from ./lib/utils.js (shared with smoke.js).
 
-
 // ── Read journey ──────────────────────────────────────────────────────────────
 
 function readJourney(BASE_URL) {

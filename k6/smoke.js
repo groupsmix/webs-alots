@@ -128,8 +128,6 @@ export const options = {
   thresholds: isLoadMode ? loadThresholds : smokeThresholds,
 };
 
-
-
 // ── Main scenario ─────────────────────────────────────────────────────────────
 
 // Fix #4 — Per-request timeout budget. If the server hangs beyond this window

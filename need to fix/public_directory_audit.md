@@ -11,10 +11,11 @@ This report contains the findings from the comprehensive audit of the `public/` 
 - **What's wrong:** The "stale-while-revalidate" caching strategy for static assets fetches from the network to update the cache in the background, but fails to use `event.waitUntil()` to keep the service worker alive during the fetch.
 - **Why it's a problem:** When `event.respondWith()` resolves (e.g., returning the cached response), the browser considers the event complete. The browser can and often will terminate the service worker thread immediately, killing the background `fetch()` before the cache is updated. Users may get stuck with stale static assets indefinitely.
 - **Suggested fix:** Pass the background fetch promise into `event.waitUntil()`.
+
   ```javascript
   // Current:
   // return cached || networkFetch;
-  
+
   // Suggested Fix:
   if (cached) {
     event.waitUntil(networkFetch);
@@ -54,7 +55,7 @@ This report contains the findings from the comprehensive audit of the `public/` 
 
 - **File:** [`_headers`](file:///c:/webs-alots/public/_headers#L16-L19)
 - **What's wrong:** There is a cache-control rule defined for `/_next/image/*`.
-- **Why it's a problem:** Cloudflare static `_headers` files apply *only* to static files served directly by the static assets binding. Next.js image optimization is a dynamic API/worker route (typically accessed via query params like `/_next/image?url=...`), not a static file. Therefore, this rule is unreachable and will be ignored by Cloudflare Pages/Workers static routing, leading to a false sense of security regarding image caching.
+- **Why it's a problem:** Cloudflare static `_headers` files apply _only_ to static files served directly by the static assets binding. Next.js image optimization is a dynamic API/worker route (typically accessed via query params like `/_next/image?url=...`), not a static file. Therefore, this rule is unreachable and will be ignored by Cloudflare Pages/Workers static routing, leading to a false sense of security regarding image caching.
 - **Suggested fix:** Remove this rule from `_headers`. Cache control for optimized images should be handled within the Next.js `next.config.ts` or the OpenNext image optimization worker directly.
 
 > [!NOTE]

@@ -1,5 +1,5 @@
 1. BUGS & ERRORS
-[Medium] IPv6 Loopback Match Failure
+   [Medium] IPv6 Loopback Match Failure
 
 File: k6/lib/env-guard.js (Line 43)
 What's wrong: The script checks for the IPv6 loopback address using hostname === "::1". However, the standard URL parser automatically surrounds IPv6 hostnames with brackets (i.e., "[::1]").
@@ -16,17 +16,15 @@ Suggested fix: Normalize the string by stripping trailing slashes before returni
 File: k6/booking-flow.js (Lines 101, 108)
 What's wrong: BOOKING_PATH and AUTH_PATH are extracted from environment variables. They lack defensive checks to guarantee they begin with a forward slash.
 Why it's a problem: If a user overrides these values incorrectly (e.g., --env BOOKING_PATH=book), the script will directly concatenate it and produce an invalid domain string like https://staging.oltigo.combook, instantly failing the requests.
-Suggested fix: Prepend a slash defensively when injecting the variables, or normalize them during variable initialization: const path = __ENV.BOOKING_PATH?.startsWith('/') ? __ENV.BOOKING_PATH : '/' + __ENV.BOOKING_PATH;
-2. SECURITY ISSUES
+Suggested fix: Prepend a slash defensively when injecting the variables, or normalize them during variable initialization: const path = **ENV.BOOKING_PATH?.startsWith('/') ? **ENV.BOOKING_PATH : '/' + \_\_ENV.BOOKING_PATH; 2. SECURITY ISSUES
 No security vulnerabilities were found. These scripts act as external clients pushing load to the environment. The usage of hardcoded fallback phone numbers, mock data, and domain whitelists is intentional. HTTPS enforcement logic correctly prevents credentials from being passed in plaintext over non-local networks.
 
 3. BLOCKERS
-No execution blockers were found.
+   No execution blockers were found.
 
 All dependencies (k6, k6/http, k6/metrics) are standard built-in modules for the k6 runtime.
 Module resolutions (like import { validateBaseUrl } from "./lib/env-guard.js";) are correctly pathed for ES Module resolution.
-__ENV injection conforms properly to k6 standards. The scripts will run cleanly out-of-the-box.
-4. PERFORMANCE & CODE QUALITY
+\_\_ENV injection conforms properly to k6 standards. The scripts will run cleanly out-of-the-box. 4. PERFORMANCE & CODE QUALITY
 [Low] Duplicated JSON Parsing Logic
 
 File: k6/smoke.js (Line 141) and k6/booking-flow.js (Line 215)

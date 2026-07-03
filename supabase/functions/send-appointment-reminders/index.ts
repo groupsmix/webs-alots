@@ -61,7 +61,10 @@ const REMINDER_WINDOWS: ReminderWindow[] = [
 if (!Deno.env.get("CRON_SECRET") || Deno.env.get("CRON_SECRET")!.length < 32) {
   console.error("FATAL: CRON_SECRET is not set or too short (< 32 chars).");
 }
-if (!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.length < 32) {
+if (
+  !Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.length < 32
+) {
   console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY is not set or too short (< 32 chars).");
 }
 
@@ -73,7 +76,7 @@ async function sendTemplateMessage(
   to: string,
   templateName: string,
   bodyParams: string[],
-  locale: string = "fr"
+  locale: string = "fr",
 ): Promise<string | null> {
   const res = await fetch(`${META_API_BASE}/${phoneNumberId}/messages`, {
     method: "POST",
@@ -116,7 +119,10 @@ async function sendTemplateMessage(
 
 /** Fetches the WhatsApp access token for a clinic from the server-only
  *  `clinic_whatsapp_credentials` table. Returns null if no creds exist. */
-async function getClinicWhatsAppToken(supabase: SupabaseClient, clinicId: string): Promise<string | null> {
+async function getClinicWhatsAppToken(
+  supabase: SupabaseClient,
+  clinicId: string,
+): Promise<string | null> {
   const { data, error } = await supabase
     .from("clinic_whatsapp_credentials")
     .select("whatsapp_access_token")
@@ -247,8 +253,6 @@ Deno.serve(async (req: Request) => {
       (alreadySent ?? []).map((r: { appointment_id: string }) => r.appointment_id),
     );
 
-
-
     for (const appt of rows) {
       if (alreadySentIds.has(appt.id)) continue;
 
@@ -301,7 +305,7 @@ Deno.serve(async (req: Request) => {
         patient.phone,
         window.template,
         [patient.name, appt.doctor?.name ?? "", dateStr, timeStr, clinic.name],
-        locale
+        locale,
       );
 
       // Only record the deduplication row when the message was actually

@@ -195,7 +195,8 @@ async function handlePatch(req: NextRequest, auth: AuthContext) {
         .single();
 
       const hasKey =
-        !!(existing?.api_key_encrypted as string | null) || !!("api_key" in parsed && parsed.api_key);
+        !!(existing?.api_key_encrypted as string | null) ||
+        !!("api_key" in parsed && parsed.api_key);
       if (!hasKey) {
         return apiError("Cannot activate provider without an API key", 400, "NO_API_KEY");
       }

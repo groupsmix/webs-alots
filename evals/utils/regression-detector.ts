@@ -123,7 +123,7 @@ export function checkRegression(
 }
 
 // CLI mode — run standalone check
-const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'));
+const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
 if (isMain) {
   console.log("Running regression detection...");
   ensureDirs();

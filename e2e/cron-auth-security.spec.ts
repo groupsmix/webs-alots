@@ -73,7 +73,7 @@ function discoverCronRoutes(): CronRoute[] {
 
     const folderPath = join(CRON_DIR, entry.name);
     const folderFiles = readdirSync(folderPath);
-    const routeFilename = folderFiles.find(f => /^route\.(ts|js|mjs|cjs)$/.test(f));
+    const routeFilename = folderFiles.find((f) => /^route\.(ts|js|mjs|cjs)$/.test(f));
     if (!routeFilename) continue;
 
     const routeFile = join(folderPath, routeFilename);
