@@ -2,11 +2,6 @@ name: Rotate PHI Encryption Key
 
 on:
   workflow_dispatch:
-    inputs:
-      new_key:
-        description: "New 64-character hex encryption key"
-        required: true
-        type: string
 
 # Least-privilege permissions
 permissions:
@@ -24,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 22
+          node-version-file: ".nvmrc"
           cache: npm
 
       - name: Install dependencies
@@ -51,7 +46,7 @@ jobs:
       - name: Run rotation script
         env:
           PHI_ENCRYPTION_KEY: ${{ secrets.PHI_ENCRYPTION_KEY }}
-          NEW_PHI_ENCRYPTION_KEY: ${{ inputs.new_key }}
+          NEW_PHI_ENCRYPTION_KEY: ${{ secrets.NEW_PHI_ENCRYPTION_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -25,10 +25,14 @@ jobs:
             const title = process.env.PR_TITLE || "";
             const outputPath = process.env.GITHUB_OUTPUT;
             const match = title.match(/ from ([vV]?\d+(?:\.\d+){1,2}(?:[-+][^\s]+)?) to ([vV]?\d+(?:\.\d+){1,2}(?:[-+][^\s]+)?)/);
+            const groupMatch = title.match(/Bump the .* group/);
             const normalize = (value) => value.replace(/^[^\d]*/, "").split(/[+-]/)[0].split(".").map((part) => Number.parseInt(part, 10));
             let allow = false;
             let reason = "unparsed-title";
-            if (match) {
+            if (groupMatch) {
+              allow = true;
+              reason = "grouped-update";
+            } else if (match) {
               const from = normalize(match[1]);
               const to = normalize(match[2]);
               const fromMajor = from[0] ?? 0;

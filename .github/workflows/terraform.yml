@@ -62,8 +62,9 @@ jobs:
           if grep -Eq '^[[:space:]]*backend[[:space:]]+"|^[[:space:]]*cloud[[:space:]]*\{' backend.tf; then
             echo "Remote backend block is uncommented in backend.tf."
           else
-            echo "NOTICE: No active remote backend block in backend.tf."
-            echo "        'terraform apply' is intentionally blocked until one is configured."
+            echo "ERROR: No active remote backend block in backend.tf."
+            echo "       'terraform apply' is intentionally blocked until one is configured."
+            exit 1
           fi
           echo "Local-state guard passed."
 

@@ -73,7 +73,7 @@ jobs:
         with:
           # Match .nvmrc (22.13.0), ci.yml, and package.json engines (>=22.13)
           # so deploy validates on the same Node minor that CI tested against.
-          node-version: "22.13"
+          node-version-file: ".nvmrc"
           cache: npm
 
       # C-04: --ignore-scripts prevents malicious postinstall on CI.

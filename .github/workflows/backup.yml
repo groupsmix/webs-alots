@@ -60,7 +60,7 @@ jobs:
         if: steps.preflight.outputs.secrets_ok == 'true'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 22
+          node-version-file: ".nvmrc"
 
       - name: Install PostgreSQL client
         if: steps.preflight.outputs.secrets_ok == 'true'
@@ -75,7 +75,7 @@ jobs:
         run: |
           PGCONN_ERROR=$(psql "${SUPABASE_DB_URL}" -c "SELECT 1;" 2>&1) || {
             # Mask password in URL before logging (safe to print host/user)
-            SAFE_ERROR=$(echo "$PGCONN_ERROR" | sed 's|postgresql://[^:]*:[^@]*@|postgresql://***:***@|g')
+            SAFE_ERROR=$(echo "$PGCONN_ERROR" | sed 's|postgres\(ql\)\?://[^:]*:[^@]*@|postgres\1://***:***@|g')
             echo "::error::Database connection failed: ${SAFE_ERROR}"
             exit 1
           }
@@ -83,7 +83,7 @@ jobs:
       - name: Install AWS CLI (for S3-compatible R2)
         if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
-          pip install awscli
+          echo "AWS CLI is already installed on Ubuntu runners."
 
       - name: Configure R2 credentials
         if: steps.preflight.outputs.secrets_ok == 'true'
@@ -252,7 +252,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          pip install awscli
 
       - name: Configure R2 credentials
         if: steps.preflight.outputs.secrets_ok == 'true'
