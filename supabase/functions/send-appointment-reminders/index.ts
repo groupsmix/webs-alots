@@ -18,7 +18,7 @@
  *                               (set via `supabase secrets set CRON_SECRET=...`)
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ async function sendTemplateMessage(
 
 /** Fetches the WhatsApp access token for a clinic from the server-only
  *  `clinic_whatsapp_credentials` table. Returns null if no creds exist. */
-async function getClinicWhatsAppToken(supabase: any, clinicId: string): Promise<string | null> {
+async function getClinicWhatsAppToken(supabase: SupabaseClient, clinicId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("clinic_whatsapp_credentials")
     .select("whatsapp_access_token")

@@ -286,7 +286,7 @@ variable "mta_sts_mode" {
   description = "MTA-STS policy mode (testing or enforce). Ensure you have collected TLS-RPT reports for at least 30 days before switching to enforce."
   type        = string
   default     = "testing"
-  
+
   validation {
     condition     = contains(["testing", "enforce", "none"], var.mta_sts_mode)
     error_message = "mta_sts_mode must be one of: testing, enforce, none."
