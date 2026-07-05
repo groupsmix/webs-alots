@@ -17,7 +17,7 @@ The items below were addressed in a follow-up pass.
 | P6 — Dual circuit breakers                               | 📝 Decision documented, not merged               | Cross-referencing doc comments added to both `@/lib/circuit-breaker` and `@/lib/ai/circuit-breaker` explaining why they're intentionally separate (KV persistence + longer open window for AI providers) and what to do if a second KV-backed consumer shows up. No behavioral merge — that's a bigger call the team should make deliberately.                                                                                                                                                                                                                                                                                                                                                                                         |
 | P10 — Dual config directories                            | 📝 Documented                                    | Added `src/config/README.md` and `src/lib/config/README.md` clarifying the ownership boundary (app-level vs clinic-domain config) and naming the canonical location for shared types.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | P3 — Identity modeling (auth roles vs specialist slugs)  | ✅ Security gap fixed, modeling question remains | The concrete middleware bug is fixed: specialist route families are now protected and gated to existing authenticated staff roles instead of being left outside both the public and protected route sets. The broader architectural question still remains — whether specialist capability should eventually become a first-class identity/RBAC concept instead of a route/config-layer concept.                                                                                                                                                                                                                                                                                                                                       |
-| P5 — `super-admin-actions.ts` god file                   | ✅ Major structural reduction completed          | `src/lib/super-admin-actions.ts` is now a thin public wrapper surface. Implementation bodies are split across `src/lib/super-admin/base.ts`, `clinic-actions.ts`, `provisioning-actions.ts`, `promotions-actions.ts`, `feature-actions.ts`, `billing-actions.ts`, and `dashboard-actions.ts`. Furthermore, `provisioning-actions.ts` itself was recently refactored and split into distinct modules to separate staff provisioning from clinic setup.                                                                                                                                                                                                                                                                                  |
+| P5 — `super-admin-actions.ts` god file                   | ✅ Major structural reduction completed          | `src/lib/super-admin-actions.ts` is now a thin public wrapper surface. Implementation bodies are split across 16 files in `src/lib/super-admin/`: `activity-helpers.ts`, `base.ts`, `billing-actions.ts`, `catalog-helpers.ts`, `clinic-detail-actions.ts`, `clinic-lifecycle-actions.ts`, `clinic-setup-actions.ts`, `dashboard-actions.ts`, `feature-actions.ts`, `helpers.ts`, `models.ts`, `promotion-helpers.ts`, `promotions-actions.ts`, `staff-provisioning-actions.ts`, `subscription-helpers.ts`, `types.ts`. The former `clinic-actions.ts` was split into the three `clinic-*-actions.ts` modules; `provisioning-actions.ts` became `staff-provisioning-actions.ts`.                                                                                                                                                                                                                                                                                  |
 | P8 — `withAuth` duplication (SEALED)                     | ⏸ Not attempted                                  | Left as-is: high effort/risk, and P8 specifically touches a SEALED file (`with-auth.ts`) that TASK-ROUTER says not to modify without explicit request.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | P9 — product boundary                                    | ⏸ Not attempted                                  | Left as-is. Recommend tackling this as its own dedicated, reviewed change rather than bundling it into a general cleanup pass.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | P11 — `env.ts` monolith                                  | 🟡 Partially addressed                           | Extracted the production startup hard-fail guards and security-posture flag policy list into `src/lib/env-startup.ts`, then extracted the env-rule registry and `validateEnv()` into `src/lib/env-validation.ts`. `src/lib/env.ts` dropped from **1,498** lines to **574** lines.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -48,7 +48,7 @@ These items have been addressed and are documented here for historical context.
 ### ✅ 4. `super-admin-actions.ts` Is No Longer A God File (Formerly 🟠 P5)
 
 **The Issue:** The file was a massive 1,996-line inline implementation blob.
-**The Fix:** Substantially addressed. It is now a 344-line thin wrapper surface. Implementations are broken into focused modules (`base.ts`, `clinic-actions.ts`, etc.). Recent work further decomposed `provisioning-actions.ts` into isolated modules to separate staff provisioning concerns from clinic setup concerns, thoroughly addressing the underlying coupling and merge conflict risks.
+**The Fix:** Substantially addressed. It is now a 344-line thin wrapper surface. Implementations are broken into 16 focused modules under `src/lib/super-admin/`: `activity-helpers.ts`, `base.ts`, `billing-actions.ts`, `catalog-helpers.ts`, `clinic-detail-actions.ts`, `clinic-lifecycle-actions.ts`, `clinic-setup-actions.ts`, `dashboard-actions.ts`, `feature-actions.ts`, `helpers.ts`, `models.ts`, `promotion-helpers.ts`, `promotions-actions.ts`, `staff-provisioning-actions.ts`, `subscription-helpers.ts`, `types.ts`. The former `clinic-actions.ts` was split into `clinic-detail-actions.ts`, `clinic-lifecycle-actions.ts`, and `clinic-setup-actions.ts`; `provisioning-actions.ts` became `staff-provisioning-actions.ts`.
 
 ### 📝 5. Dual Config Directories (Formerly 🟡 P10)
 
@@ -97,6 +97,47 @@ The substantive behavioral difference is role enforcement. Everything else is du
 ### 4. 🟡 `env.ts` Is Still A Monolith (P11)
 
 While partially improved (dropped from 1,498 to 574 lines), it still centralizes environment parsing, grouped validation rules, getter helpers, production-mode helpers, and AI provider resolution. This makes change review and dependency hygiene harder than necessary.
+
+---
+
+## Live Conflict Status (verified 2026-07-05)
+
+The Architecture A ("operations platform, NOT an EMR") vs Architecture B ("clinical/multi-vertical product") conflict documented as **P9** remains **open and actively contradictory** in the codebase. Concrete evidence:
+
+### Evidence 1: Migration 00187 declares "NOT an EMR" and drops clinical tables
+
+`supabase/migrations/00187_drop_clinical_emr_surface.sql` (line 5):
+> "Oltigo is a multi-tenant clinic OPERATIONS platform … It is NOT an EMR and must not store or process clinical / medical-record data"
+
+It drops **12 clinical tables**: `drug_interaction_alerts`, `drug_interactions`, `cdss_override_log`, `lab_results`, `lab_test_orders`, `lab_tests`, `prescription_drafts`, `prescription_renewal_requests`, `prescription_renewals`, `encounter_addenda`, `clinical_encounters`, `telemedicine_sessions`.
+
+### Evidence 2: Clinical API routes still exist
+
+Despite the migration's declaration, `src/app/api/` still contains active clinical route directories:
+- `prescriptions/`
+- `vitals/`
+- `radiology/`
+- `insurance-claims/`
+- `admissions/`
+
+### Evidence 3: Non-healthcare verticals still present
+
+Multi-vertical expansion routes remain in `src/app/api/`:
+- `pets/` (veterinary)
+- `menus/` (restaurant)
+- `restaurant-orders/`
+- `restaurant-tables/`
+
+### Evidence 4: Validation schemas still re-export clinical and vertical types
+
+`src/lib/validations/index.ts` still re-exports schemas that serve the clinical and non-healthcare surfaces:
+- `radiologyOrderCreateSchema` (line 55)
+- `petProfileCreateSchema` (line 59)
+- `labReportSchema` (line 54)
+
+### Conclusion
+
+P9 is unresolved. The database layer has partially committed to Architecture A (dropping EMR tables), while the application layer (API routes, validation schemas) retains Architecture B surface. This creates a split where the schema no longer supports data that the API routes still expose, representing both a governance gap and a runtime risk for any code path that references the dropped tables.
 
 ---
 

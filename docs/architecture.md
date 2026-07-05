@@ -17,7 +17,7 @@ flowchart TD
     end
 
     subgraph SB["Supabase (EU Region)"]
-        PG[(PostgreSQL<br/>RLS-Enforced + 88 Migrations)]
+        PG[(PostgreSQL<br/>RLS-Enforced + 202 Migrations)]
         Auth[GoTrue Auth<br/>MFA / OTP / Password]
         RT[Realtime<br/>Presence + Subscriptions]
     end
@@ -63,7 +63,7 @@ flowchart TD
 | `src/app/api/`         | API route handlers (withAuth + withValidation wrappers)                 |
 | `src/lib/ai/`          | AI modules: config, sanitize, pseudonymise, validate-output             |
 | `src/lib/middleware/`  | Composable middleware modules                                           |
-| `supabase/migrations/` | 90+ sequential SQL migrations with RLS                                  |
+| `supabase/migrations/` | 202 sequential SQL migrations (numbered through 00203) with RLS         |
 | `docs/`                | Runbooks, SOPs, compliance, ADRs                                        |
 | `.github/workflows/`   | CI (lint, typecheck, test, security, e2e, deploy)                       |
 | `wrangler.toml`        | Cloudflare Workers config (routes, KV, R2, crons)                       |
