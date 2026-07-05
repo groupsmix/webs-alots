@@ -36,7 +36,7 @@ export type ScopedApiGroup =
 /**
  * Scope group identifiers for gated dashboard route groups.
  */
-export type ScopedDashboard =
+type ScopedDashboard =
   | "radiology"
   | "dialysis"
   | "ivf"

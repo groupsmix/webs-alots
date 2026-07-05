@@ -181,27 +181,3 @@ export function isFeatureEnabled(
   if (!config) return false;
   return config[key] === true;
 }
-
-/**
- * ADR 0013: Check whether a gated API group is accessible for a clinic.
- *
- * This is the primary enforcement point for operations-first scope. Any API
- * route handler in a gated group (clinical, ADT, restaurant, veterinary) MUST
- * call this and return 403 if it returns false.
- *
- * @param apiGroup - The API group directory name (e.g. "prescriptions", "pets")
- * @param featuresConfig - The clinic's features_config from the database
- * @returns true if the clinic is allowed to access this API group
- *
- * @see src/lib/config/verticals.ts — VERTICAL_SCOPES defines the matrix
- * @see docs/adr/0013-operations-first-scope.md
- */
-export function isGatedApiGroupEnabled(
-  apiGroup: string,
-  featuresConfig: FeaturesConfig | undefined | null,
-): boolean {
-  // Lazy import to avoid circular dependency at module init
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { isApiGroupEnabled } = require("@/lib/config/verticals");
-  return isApiGroupEnabled(apiGroup, featuresConfig);
-}

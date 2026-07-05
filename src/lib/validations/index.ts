@@ -8,7 +8,7 @@
  * ADR 0013 (operations-first scope enforcement): Clinical, ADT, restaurant,
  * and veterinary schemas are re-exported from a GATED section at the bottom
  * of this file. They remain importable at build time (TypeScript needs them)
- * but route handlers MUST call `isGatedApiGroupEnabled()` before using them.
+ * but route handlers MUST call `assertScopeGate()` before using them.
  * The CI guard `scripts/check-scope-enforcement.mjs` verifies this.
  */
 
@@ -58,7 +58,7 @@ export {
 
 // ── GATED: Clinical / PHI (ADR 0013) ───────────────────────────────────────
 // These schemas serve Architecture-B surfaces. Route handlers using them MUST
-// call `isGatedApiGroupEnabled("prescriptions"|"radiology"|"vitals", config)`
+// call `assertScopeGate(supabase, clinicId, "prescriptions"|"radiology"|"vitals")`
 // and return 403/apiError if the vertical is not enabled for the clinic.
 // @scope-gate: clinical
 export {
