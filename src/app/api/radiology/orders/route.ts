@@ -16,11 +16,12 @@ import {
   updateRadiologyOrderStatus,
   saveRadiologyReport,
 } from "@/lib/data/radiology";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
 
 export const POST = withAuthValidation(
   radiologyOrderCreateSchema,
-  async (body, request, { profile }) => {
+  async (body, request, { profile, supabase }) => {
     const {
       patientId,
       modality,
@@ -35,6 +36,10 @@ export const POST = withAuthValidation(
     if (!clinicId) {
       return apiError("User must belong to a clinic");
     }
+
+    // ADR 0013: Scope gate — radiology is a clinical vertical
+    const denied = await assertScopeGate(supabase, clinicId, "radiology");
+    if (denied) return denied;
 
     const result = await createRadiologyOrder({
       clinic_id: clinicId,
@@ -58,13 +63,17 @@ export const POST = withAuthValidation(
 
 export const PATCH = withAuthValidation(
   radiologyOrderPatchSchema,
-  async (body, _request, { profile }) => {
+  async (body, _request, { profile, supabase }) => {
     const { orderId, action } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
       return apiError("User must belong to a clinic");
     }
+
+    // ADR 0013: Scope gate — radiology is a clinical vertical
+    const denied = await assertScopeGate(supabase, clinicId, "radiology");
+    if (denied) return denied;
 
     if (action === "status") {
       const { status } = body;

@@ -4,6 +4,12 @@
  * This file preserves backward compatibility — existing imports from
  * `@/lib/validations` continue to work unchanged. New code should import
  * directly from the domain module (e.g. `@/lib/validations/booking`).
+ *
+ * ADR 0013 (operations-first scope enforcement): Clinical, ADT, restaurant,
+ * and veterinary schemas are re-exported from a GATED section at the bottom
+ * of this file. They remain importable at build time (TypeScript needs them)
+ * but route handlers MUST call `isGatedApiGroupEnabled()` before using them.
+ * The CI guard `scripts/check-scope-enforcement.mjs` verifies this.
  */
 
 export { normalizeText, safeText, safeName } from "./primitives";
@@ -50,20 +56,29 @@ export {
   verifyEmailConfirmSchema,
 } from "./admin";
 
+// ── GATED: Clinical / PHI (ADR 0013) ───────────────────────────────────────
+// These schemas serve Architecture-B surfaces. Route handlers using them MUST
+// call `isGatedApiGroupEnabled("prescriptions"|"radiology"|"vitals", config)`
+// and return 403/apiError if the vertical is not enabled for the clinic.
+// @scope-gate: clinical
 export {
   labReportSchema,
   radiologyOrderCreateSchema,
   radiologyOrderPatchSchema,
   radiologyReportPdfSchema,
   uploadConfirmSchema,
-  petProfileCreateSchema,
-  petProfileUpdateSchema,
 } from "./clinical";
+
+// ── GATED: Veterinary vertical (ADR 0013) ──────────────────────────────────
+// @scope-gate: veterinary
+export { petProfileCreateSchema, petProfileUpdateSchema } from "./clinical";
 
 export { chatRequestSchema, CHAT_MESSAGE_CONTENT_MAX, aiManagerRequestSchema } from "./chat";
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
+// ── GATED: Restaurant vertical (ADR 0013) ──────────────────────────────────
+// @scope-gate: restaurant
 export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
 
 export {
@@ -150,6 +165,8 @@ export {
   revenueInsightsQuerySchema,
 } from "./billing";
 
+// ── GATED: ADT vertical (ADR 0013) ─────────────────────────────────────────
+// @scope-gate: adt
 export { admissionCreateSchema, dischargeSchema, transferSchema } from "./adt";
 
 export {
@@ -159,4 +176,6 @@ export {
   staffInviteQuerySchema,
 } from "./staff-invitations";
 
+// ── GATED: Clinical / insurance-claims (ADR 0013) ──────────────────────────
+// @scope-gate: clinical
 export { insuranceClaimQuerySchema } from "./insurance-claims";

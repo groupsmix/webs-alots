@@ -20,6 +20,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { encryptBuffer } from "@/lib/encryption";
 import { generatePrescriptionPDF } from "@/lib/prescription-pdf";
 import { uploadToR2, isR2Configured } from "@/lib/r2";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { createAdminClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
@@ -45,6 +46,10 @@ export const POST = withAuthValidation(
   async (body, _request, { supabase, profile }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
+
+    // ADR 0013: Scope gate — prescriptions is a clinical vertical
+    const denied = await assertScopeGate(supabase, clinicId, "prescriptions");
+    if (denied) return denied;
 
     // ── Fetch patient ──────────────────────────────────────────────────
     const { data: patient } = await supabase

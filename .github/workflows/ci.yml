@@ -78,6 +78,12 @@ jobs:
       - name: Check MVP_SCOPE.md references resolve
         run: node scripts/check-mvp-scope-refs.mjs
 
+      # ADR 0013: Verify every Architecture-B route handler (clinical, ADT,
+      # restaurant, veterinary) contains a scope-gating check. Prevents
+      # ungated clinical/vertical API surface from shipping.
+      - name: Check scope enforcement (ADR 0013)
+        run: node scripts/check-scope-enforcement.mjs
+
       # CI-001: Enforce a warning ceiling that ratchets downward over time.
       # The baseline is stored in .eslint-warning-baseline and must be
       # reduced whenever warnings are fixed — never increased.

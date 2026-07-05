@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiNotFound, apiSupabaseError, apiError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { safeParse } from "@/lib/validations";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
@@ -35,6 +36,10 @@ export const GET = withAuth(
     const clinicId = auth.profile.clinic_id;
     if (!clinicId) return apiNotFound("No clinic context");
 
+    // ADR 0013: Scope gate — menus is a restaurant vertical
+    const denied = await assertScopeGate(auth.supabase, clinicId, "menus");
+    if (denied) return denied;
+
     const { data, error } = await auth.supabase
       .from("menus")
       .select(
@@ -59,6 +64,10 @@ export const PATCH = withAuth(
     const id = extractId(request);
     const clinicId = auth.profile.clinic_id;
     if (!clinicId) return apiNotFound("No clinic context");
+
+    // ADR 0013: Scope gate — menus is a restaurant vertical
+    const denied = await assertScopeGate(auth.supabase, clinicId, "menus");
+    if (denied) return denied;
 
     let body: unknown;
     try {
@@ -102,6 +111,10 @@ export const DELETE = withAuth(
     const id = extractId(request);
     const clinicId = auth.profile.clinic_id;
     if (!clinicId) return apiNotFound("No clinic context");
+
+    // ADR 0013: Scope gate — menus is a restaurant vertical
+    const denied = await assertScopeGate(auth.supabase, clinicId, "menus");
+    if (denied) return denied;
 
     const { error } = await auth.supabase
       .from("menus")

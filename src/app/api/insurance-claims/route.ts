@@ -4,6 +4,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { insuranceClaimCreateSchema } from "@/lib/validations/insurance-claims";
 import { withAuth } from "@/lib/with-auth";
 
@@ -14,6 +15,10 @@ import { withAuth } from "@/lib/with-auth";
 export const GET = withAuth(async (request: NextRequest, { supabase, profile }) => {
   const clinicId = profile.clinic_id;
   if (!clinicId) return apiError("Contexte clinique requis", 403);
+
+  // ADR 0013: Scope gate — insurance-claims is a clinical vertical
+  const denied = await assertScopeGate(supabase, clinicId, "insurance-claims");
+  if (denied) return denied;
 
   const url = request.nextUrl;
   const status = url.searchParams.get("status");
@@ -55,6 +60,10 @@ export const POST = withAuthValidation(
   async (body, _request, { supabase, profile }) => {
     const clinicId = profile.clinic_id;
     if (!clinicId) return apiError("Contexte clinique requis", 403);
+
+    // ADR 0013: Scope gate — insurance-claims is a clinical vertical
+    const denied = await assertScopeGate(supabase, clinicId, "insurance-claims");
+    if (denied) return denied;
 
     const { patient_id, insurance_type, amount_claimed, line_items, notes } = body;
 

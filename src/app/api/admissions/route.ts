@@ -4,6 +4,7 @@ import { validateQuery, withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { admissionCreateSchema, admissionQuerySchema } from "@/lib/validations/adt";
 import { withAuth } from "@/lib/with-auth";
 
@@ -14,6 +15,10 @@ import { withAuth } from "@/lib/with-auth";
 export const GET = withAuth(async (request: NextRequest, { supabase, profile }) => {
   const clinicId = profile.clinic_id;
   if (!clinicId) return apiError("Contexte clinique requis", 403);
+
+  // ADR 0013: Scope gate — admissions is an ADT vertical
+  const denied = await assertScopeGate(supabase, clinicId, "admissions");
+  if (denied) return denied;
 
   const parsed = validateQuery(admissionQuerySchema, request);
   if (parsed instanceof NextResponse) return parsed;
@@ -50,6 +55,10 @@ export const POST = withAuthValidation(
   async (body, _request, { supabase, profile }) => {
     const clinicId = profile.clinic_id;
     if (!clinicId) return apiError("Contexte clinique requis", 403);
+
+    // ADR 0013: Scope gate — admissions is an ADT vertical
+    const denied = await assertScopeGate(supabase, clinicId, "admissions");
+    if (denied) return denied;
 
     const { patient_id, bed_id, department_id, admitting_doctor_id, diagnosis, notes } = body;
 

@@ -1,0 +1,152 @@
+/**
+ * ADR 0013: Operations-First Scope Enforcement — Acceptance Tests.
+ *
+ * Verifies that a freshly-provisioned doctor-type clinic sees only operational
+ * surfaces, with every specialty/vertical dashboard and API group hidden until
+ * explicitly enabled via feature flags.
+ *
+ * These are pure unit tests — no database or network required.
+ */
+import { describe, it, expect } from "vitest";
+import {
+  VERTICAL_SCOPES,
+  ALL_GATED_API_GROUPS,
+  ALL_GATED_FLAGS,
+  getVerticalForApiGroup,
+  isApiGroupEnabled,
+} from "@/lib/config/verticals";
+import { isFeatureEnabled, type FeaturesConfig } from "@/lib/features";
+
+describe("ADR 0013: Operations-First Scope Enforcement", () => {
+  describe("fresh doctor-type clinic (no flags enabled)", () => {
+    // A freshly provisioned general_medicine clinic has NO features_config
+    const emptyConfig: FeaturesConfig = {};
+    const nullConfig = null;
+
+    it("should deny access to all gated API groups with empty config", () => {
+      for (const group of ALL_GATED_API_GROUPS) {
+        expect(isApiGroupEnabled(group, emptyConfig)).toBe(false);
+      }
+    });
+
+    it("should deny access to all gated API groups with null config", () => {
+      for (const group of ALL_GATED_API_GROUPS) {
+        expect(isApiGroupEnabled(group, nullConfig)).toBe(false);
+      }
+    });
+
+    it("should deny all gated feature flags with empty config", () => {
+      for (const flag of ALL_GATED_FLAGS) {
+        expect(isFeatureEnabled(emptyConfig, flag)).toBe(false);
+      }
+    });
+
+    it("should deny all gated feature flags with null config", () => {
+      for (const flag of ALL_GATED_FLAGS) {
+        expect(isFeatureEnabled(nullConfig, flag)).toBe(false);
+      }
+    });
+
+    it("should have clinical, ADT, veterinary, and restaurant verticals defined", () => {
+      const ids = VERTICAL_SCOPES.map((v) => v.id);
+      expect(ids).toContain("clinical");
+      expect(ids).toContain("adt");
+      expect(ids).toContain("veterinary");
+      expect(ids).toContain("restaurant");
+    });
+  });
+
+  describe("operational API groups (not gated)", () => {
+    it("should allow access to operational routes regardless of config", () => {
+      const operationalGroups = [
+        "booking",
+        "appointments",
+        "auth",
+        "admin",
+        "super-admin",
+        "notifications",
+        "webhooks",
+        "payments",
+        "billing",
+        "invoices",
+        "cron",
+      ];
+
+      for (const group of operationalGroups) {
+        expect(getVerticalForApiGroup(group)).toBeUndefined();
+        expect(isApiGroupEnabled(group, null)).toBe(true);
+        expect(isApiGroupEnabled(group, {})).toBe(true);
+      }
+    });
+  });
+
+  describe("explicit vertical enablement", () => {
+    it("should allow prescriptions when prescriptions flag is enabled", () => {
+      const config: FeaturesConfig = { prescriptions: true };
+      expect(isApiGroupEnabled("prescriptions", config)).toBe(true);
+    });
+
+    it("should allow pets when pet_profiles flag is enabled", () => {
+      const config: FeaturesConfig = { pet_profiles: true };
+      expect(isApiGroupEnabled("pets", config)).toBe(true);
+    });
+
+    it("should allow restaurant-orders when menu_management flag is enabled", () => {
+      const config: FeaturesConfig = { menu_management: true };
+      expect(isApiGroupEnabled("restaurant-orders", config)).toBe(true);
+    });
+
+    it("should allow admissions when bed_management flag is enabled", () => {
+      const config: FeaturesConfig = { bed_management: true };
+      expect(isApiGroupEnabled("admissions", config)).toBe(true);
+    });
+
+    it("should NOT allow cross-vertical access (pet flag does not enable restaurant)", () => {
+      const config: FeaturesConfig = { pet_profiles: true };
+      expect(isApiGroupEnabled("restaurant-orders", config)).toBe(false);
+      expect(isApiGroupEnabled("menus", config)).toBe(false);
+    });
+
+    it("should NOT allow clinical access with only restaurant flags", () => {
+      const config: FeaturesConfig = {
+        menu_management: true,
+        table_management: true,
+        qr_ordering: true,
+        reservations: true,
+      };
+      expect(isApiGroupEnabled("prescriptions", config)).toBe(false);
+      expect(isApiGroupEnabled("vitals", config)).toBe(false);
+      expect(isApiGroupEnabled("radiology", config)).toBe(false);
+      expect(isApiGroupEnabled("admissions", config)).toBe(false);
+    });
+  });
+
+  describe("getVerticalForApiGroup mapping", () => {
+    it("maps clinical API groups to the clinical vertical", () => {
+      expect(getVerticalForApiGroup("prescriptions")?.id).toBe("clinical");
+      expect(getVerticalForApiGroup("vitals")?.id).toBe("clinical");
+      expect(getVerticalForApiGroup("radiology")?.id).toBe("clinical");
+      expect(getVerticalForApiGroup("insurance-claims")?.id).toBe("clinical");
+    });
+
+    it("maps admissions to the ADT vertical", () => {
+      expect(getVerticalForApiGroup("admissions")?.id).toBe("adt");
+    });
+
+    it("maps pets to the veterinary vertical", () => {
+      expect(getVerticalForApiGroup("pets")?.id).toBe("veterinary");
+    });
+
+    it("maps restaurant groups to the restaurant vertical", () => {
+      expect(getVerticalForApiGroup("menus")?.id).toBe("restaurant");
+      expect(getVerticalForApiGroup("restaurant-orders")?.id).toBe("restaurant");
+      expect(getVerticalForApiGroup("restaurant-tables")?.id).toBe("restaurant");
+    });
+
+    it("returns undefined for operational groups", () => {
+      expect(getVerticalForApiGroup("booking")).toBeUndefined();
+      expect(getVerticalForApiGroup("payments")).toBeUndefined();
+      expect(getVerticalForApiGroup("auth")).toBeUndefined();
+    });
+  });
+});

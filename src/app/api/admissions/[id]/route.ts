@@ -3,6 +3,7 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { dischargeSchema, transferSchema } from "@/lib/validations/adt";
 import { safeParse } from "@/lib/validations/helpers";
 import { withAuth } from "@/lib/with-auth";
@@ -14,6 +15,10 @@ import { withAuth } from "@/lib/with-auth";
 export const GET = withAuth(async (request: NextRequest, { supabase, profile }) => {
   const clinicId = profile.clinic_id;
   if (!clinicId) return apiError("Contexte clinique requis", 403);
+
+  // ADR 0013: Scope gate — admissions is an ADT vertical
+  const denied = await assertScopeGate(supabase, clinicId, "admissions");
+  if (denied) return denied;
 
   const id = request.nextUrl.pathname.split("/").pop();
   if (!id) return apiError("ID requis", 400);
@@ -39,6 +44,10 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
 export const PATCH = withAuth(async (request: NextRequest, { supabase, profile }) => {
   const clinicId = profile.clinic_id;
   if (!clinicId) return apiError("Contexte clinique requis", 403);
+
+  // ADR 0013: Scope gate — admissions is an ADT vertical
+  const denied = await assertScopeGate(supabase, clinicId, "admissions");
+  if (denied) return denied;
 
   const id = request.nextUrl.pathname.split("/").pop();
   if (!id) return apiError("ID requis", 400);
