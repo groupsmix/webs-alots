@@ -81,17 +81,20 @@ Grounded in the code as of this map.
 - AI Team routes (`api/ai/team/*`) + kanban
 - Referral **payouts** (real API: `api/super-admin/referral-credits`)
 - Billing invoices display, Usage metrics (real API; geo-gated)
-- Feature Flags runtime (KV-backed; needs `FEATURE_FLAGS_KV` bound in prod)
+- Feature Flags runtime (KV-backed; `FEATURE_FLAGS_KV` bound in prod since 2026-06)
 
-### Mock / NOT persisted — must fix before charging money
+### Now persisted (formerly mock — resolved 2026-07)
 
-These show success toasts but **don't save anything** (no write API/server action):
+These were previously mock-only (success toasts with no DB writes). They are now fully persisted
+with audit logging, resolving the former "#1 revenue-blocking gap" (P1/P2/P4 in `deep_dive_analysis.md`):
 
-- **Pricing** tier edits + promotions
-- **Subscriptions** status changes + bulk activate/suspend/cancel
-- **Feature Matrix** global/per-tier toggles
-  > These are now labelled honestly ("aperçu — non enregistré") in PRs #1099/#1100, but for a
-  > monthly-subscription business they need to become real. **This is the #1 revenue-blocking gap.**
+- **Subscription status changes** → `updateSubscriptionStatusImpl` writes `clinics.status` + audit log (`src/lib/super-admin/billing-actions.ts`).
+- **Pricing tier edits** → `updatePricingTierImpl` writes `pricing_tiers` + structured `priceChanges` audit diff (`src/lib/super-admin/feature-actions.ts`).
+- **Promotions** → `createPromotionImpl` / `setPromotionEnabledImpl` / `deletePromotionImpl` write the `promotions` table (`src/lib/super-admin/promotions-actions.ts`).
+- **Feature matrix toggles** → `updateFeatureDefinitionImpl` / `bulkSetFeatureTierImpl` write `feature_definitions` (`src/lib/super-admin/feature-actions.ts`).
+
+The former "aperçu — non enregistré" UI labels (PRs #1099/#1100) have been removed from locale files
+since these actions now persist.
 
 ### Clinical / PHI — the Lane-A vs Lane-B decision (Section 2)
 
@@ -103,11 +106,13 @@ Radiology, prescriptions, patient documents, vitals, insurance claims, patient t
 
 **Phase 0 — Decide (you):** Lane A or Lane B (Section 2). Everything below assumes **Lane A**.
 
-**Phase 1 — Make the money real (highest value):**
+**Phase 1 — Make the money real (highest value):** ✅ Complete
 
-1. Real persistence for **subscriptions** (status changes) → API + DB writes + audit log + tests.
-2. Real persistence for **pricing** tiers + promotions.
-3. Bind `FEATURE_FLAGS_KV` in production (or hide the page) so flags/kill-switch work.
+1. ~~Real persistence for **subscriptions** (status changes) → API + DB writes + audit log + tests.~~ **Done** — `updateSubscriptionStatusImpl` in `billing-actions.ts`.
+2. ~~Real persistence for **pricing** tiers + promotions.~~ **Done** — `updatePricingTierImpl` + promotions CRUD in `feature-actions.ts` / `promotions-actions.ts`.
+3. ~~Bind `FEATURE_FLAGS_KV` in production (or hide the page) so flags/kill-switch work.~~ **Done** — bound in `wrangler.toml` `[env.production.kv_namespaces]` (namespace `223443c0…`, provisioned 2026-06).
+
+> **Remaining work:** verify + add integration tests for the persistence paths above; confirm audit-log coverage meets billing-grade compliance.
 
 **Phase 2 — Lane-A guardrail:** 4. Feature-flag OFF the clinical modules (radiology, prescriptions, patient docs, vitals, insurance)
 so they're not exposed/sold yet; ensure no clinical files are written to your R2 in the active product. 5. Confirm the operational data you _do_ keep (name/phone/appointment) has a clear retention + DSAR story
