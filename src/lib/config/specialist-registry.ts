@@ -37,7 +37,19 @@ import {
   Package,
 } from "lucide-react";
 import type { ClinicDashboardConfig } from "@/components/layouts/clinic-dashboard-layout";
+import { capabilityForSlug, type Capability } from "@/lib/config/capabilities";
 
+/**
+ * P3: Specialist dashboards key off the canonical capability slugs defined in
+ * `src/lib/config/capabilities.ts`. This registry covers the subset of
+ * specialist surfaces that ship a dashboard config today; the canonical slug
+ * spellings (incl. `speech-therapist`) come from that single source of truth.
+ *
+ * Not every capability slug needs a dashboard entry here (e.g. `pharmacist`
+ * and `equipment` are gated surfaces without a config in this registry), but
+ * every key below MUST be a valid canonical specialist slug — enforced by
+ * `assertRegistrySlugsAreCanonical()` and the capabilities unit test.
+ */
 type SpecialistSlug =
   | "nutritionist"
   | "optician"
@@ -262,3 +274,34 @@ export function getSpecialistConfigFromPathname(pathname: string): ClinicDashboa
   const slug = segments[0] as SpecialistSlug;
   return specialistRegistry[slug] ?? null;
 }
+
+/** The specialist slugs that have a dashboard config in this registry. */
+export const REGISTRY_SPECIALIST_SLUGS = Object.keys(specialistRegistry) as SpecialistSlug[];
+
+/**
+ * P3: resolve a registry slug to its canonical capability. Because the registry
+ * keys off the same slugs as `capabilities.ts`, this is a thin pass-through —
+ * it exists so downstream code (and tests) reference ONE mapping.
+ * Returns `null` if the slug is not a canonical capability slug (fail-closed).
+ */
+export function capabilityForSpecialistSlug(slug: string): Capability | null {
+  return capabilityForSlug(slug);
+}
+
+/**
+ * Invariant guard (also asserted in `capabilities.test.ts`): every slug that
+ * has a dashboard config resolves to exactly one canonical capability. Throws
+ * at module-eval time if the registry drifts from the capability layer.
+ */
+function assertRegistrySlugsAreCanonical(): void {
+  for (const slug of REGISTRY_SPECIALIST_SLUGS) {
+    if (capabilityForSlug(slug) === null) {
+      throw new Error(
+        `specialist-registry: slug "${slug}" is not a canonical capability slug ` +
+          `in capabilities.ts (P3 drift).`,
+      );
+    }
+  }
+}
+
+assertRegistrySlugsAreCanonical();

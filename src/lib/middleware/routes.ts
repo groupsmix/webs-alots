@@ -1,6 +1,14 @@
 /**
  * Route classification helpers for middleware.
+ *
+ * SEALED Layer-1 file. The gating logic here is unchanged; identity is no
+ * longer declared locally. `SPECIALIST_PROTECTED_PREFIXES` is now IMPORTED
+ * from the canonical capability layer (`src/lib/config/capabilities.ts`) and
+ * re-exported for backward compatibility, so the specialist prefix list can
+ * never drift from the capability map / next.config.ts. (P3)
  */
+
+import { SPECIALIST_PROTECTED_PREFIXES as CANONICAL_SPECIALIST_PREFIXES } from "@/lib/config/capabilities";
 
 /** Routes that don't require authentication */
 const PUBLIC_ROUTES = [
@@ -29,20 +37,15 @@ const PUBLIC_PREFIXES = ["/pharmacy", "/dentist"];
  * Specialist dashboard prefixes.
  *
  * These are real authenticated staff surfaces under `src/app/(specialist)/...`
- * but they are NOT first-class auth roles in the DB. They remain modeled as
- * route slugs / dashboard families rather than `UserRole` values.
+ * but they are NOT first-class auth roles in the DB. They are modeled as
+ * capabilities layered on the 5 core roles (see `capabilities.ts`), gated to
+ * `SPECIALIST_STAFF_ROLES` in `src/middleware.ts`.
+ *
+ * P3: DERIVED from the canonical capability layer — do NOT hand-edit. To add
+ * or rename a specialist surface, change `SPECIALIST_CAPABILITIES` in
+ * `src/lib/config/capabilities.ts`; this list follows automatically.
  */
-export const SPECIALIST_PROTECTED_PREFIXES = [
-  "/pharmacist",
-  "/nutritionist",
-  "/optician",
-  "/parapharmacy",
-  "/physiotherapist",
-  "/psychologist",
-  "/radiology",
-  "/speech-therapist",
-  "/equipment",
-] as const;
+export const SPECIALIST_PROTECTED_PREFIXES = CANONICAL_SPECIALIST_PREFIXES;
 
 /** Existing core staff roles that may access specialist dashboards. */
 export const SPECIALIST_STAFF_ROLES = ["clinic_admin", "receptionist", "doctor"] as const;

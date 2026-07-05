@@ -606,9 +606,15 @@ edit existing API handlers (create new ones), delete feature flags, rename DB co
 - **5 auth roles** (privilege order): `super_admin` > `clinic_admin` > `receptionist` > `doctor` > `patient`.
 - **Specialist slugs** (separate system, not DB roles): `nutritionist`, `optician`, `parapharmacy`,
   `physiotherapist`, `psychologist`, `speech-therapist`, `radiology` (+ `equipment` vertical).
-- **AI persona alias:** `secretary` (canonical) ↔ `receptionist` (legacy) — `secretary` is **not** a DB role.
-- **Open conflict (P3):** auth roles, specialist slugs, and AI personas are three overlapping identity
-  vocabularies with naming drift (`speech-therapist` vs `speech_therapist`). See `deep_dive_analysis.md` P3.
+- **AI persona alias:** `secretary` (canonical) ↔ `receptionist` (DB role) — `secretary` is **not** a DB role.
+- **P3 (RESOLVED):** auth roles, specialist slugs, and AI personas are now unified behind one canonical
+  source, `src/lib/config/capabilities.ts`. It defines `CoreRole`, a `Capability` union, the
+  `CAPABILITIES` role→capability map, and one canonical slug↔capability mapping that resolves the naming
+  drift (`speech-therapist`/`speech_therapist`, `secretary`/`receptionist`) in a single place. Specialists
+  and pharmacist remain **capabilities layered on the 5 core roles (NOT new DB roles)**, matching the
+  `SPECIALIST_STAFF_ROLES` gating in `src/middleware.ts`. `SPECIALIST_PROTECTED_PREFIXES` (routes.ts) and
+  `PROTECTED_ROUTE_PREFIXES` (next.config.ts) are DERIVED from that map; the AI layer reuses its
+  `ROLE_TO_PERSONA` mapping. Drift is guarded by `src/lib/__tests__/capabilities.test.ts`. See §17.
 
 ### 14.4. Non-Negotiable Invariants (what an AI must not break)
 
@@ -852,10 +858,23 @@ flowchart LR
 
 ---
 
-## 17. Capability RBAC — One Canonical Identity Model (fixes P3)
+## 17. Capability RBAC — One Canonical Identity Model (fixes P3) ✅ IMPLEMENTED
 
-Today identity is scattered across three vocabularies: DB `UserRole` (5), specialist **route slugs**
-(9), and AI **personas** (`secretary`↔`receptionist`). Target: a **single canonical capability layer**.
+> **Status: IMPLEMENTED.** The single canonical capability layer described below now lives at
+> `src/lib/config/capabilities.ts`. It is the source of truth for the 5 core roles, the `Capability`
+> union, the `CAPABILITIES` role→capability map, the canonical slug↔capability mapping (naming drift
+> resolved once), and the `secretary`↔`receptionist` AI persona alias. `SPECIALIST_PROTECTED_PREFIXES`
+> (SEALED `src/lib/middleware/routes.ts`, import-only), `PROTECTED_ROUTE_PREFIXES` (`next.config.ts`),
+> and `src/lib/config/specialist-registry.ts` are all DERIVED from it. `src/lib/ai/agent-config.ts`
+> reuses its `ROLE_TO_PERSONA` mapping. Decision taken: specialists/pharmacist are **capabilities
+> layered on the existing 5 core roles, NOT new DB roles** — matching the live `SPECIALIST_STAFF_ROLES`
+> gating in `src/middleware.ts`. No new DB roles and no migrations were introduced. Full derivation and
+> fail-closed behaviour (unknown role/slug → no capabilities) are asserted by
+> `src/lib/__tests__/capabilities.test.ts`. The design below is retained as the reference spec.
+
+Previously identity was scattered across three vocabularies: DB `UserRole` (5), specialist **route
+slugs** (9), and AI **personas** (`secretary`↔`receptionist`). Now: a **single canonical capability
+layer**.
 
 ```ts
 // proposed: src/lib/config/capabilities.ts (single source of truth)
@@ -884,8 +903,10 @@ const CAPABILITIES: Record<CoreRole, Capability[]> = {
 - Derive `ROLE_ROUTE_MAP`, `next.config.ts` `PROTECTED_ROUTE_PREFIXES`, and the specialist registry
   **from this one map** instead of maintaining three hand-synced lists.
 - Reconcile naming drift once: `speech-therapist` vs `speech_therapist`, `secretary` vs `receptionist`.
-- Decide whether `pharmacist`/specialists become first-class `UserRole`s or stay capabilities layered
-  on `clinic_admin`/`doctor` — either is fine, but pick one and encode it here.
+- **Decision made (encoded in `capabilities.ts`):** `pharmacist`/specialists stay **capabilities
+  layered on the existing core roles** (`clinic_admin`/`receptionist`/`doctor`), NOT first-class
+  `UserRole`s. This matches how `src/middleware.ts` already gates `SPECIALIST_PROTECTED_PREFIXES` to
+  `SPECIALIST_STAFF_ROLES` today. No new DB roles, no migrations.
 
 ---
 
