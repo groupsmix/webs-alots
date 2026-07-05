@@ -1,9 +1,5 @@
 import type { SuperAdminClient } from "@/lib/super-admin/base";
-import type {
-  CreateServiceInput,
-  ServiceRow,
-  TimeSlotRow,
-} from "@/lib/super-admin/models";
+import type { CreateServiceInput, ServiceRow, TimeSlotRow } from "@/lib/super-admin/models";
 
 export async function createServiceImpl(
   supabase: SuperAdminClient,

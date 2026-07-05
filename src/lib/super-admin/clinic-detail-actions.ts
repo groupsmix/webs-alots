@@ -24,7 +24,10 @@ export async function upsertClinicFeatureOverrideImpl(
 ): Promise<void> {
   const { error } = await supabase
     .from("clinic_feature_overrides")
-    .upsert({ clinic_id: clinicId, feature_key: featureId, enabled }, { onConflict: "clinic_id,feature_key" });
+    .upsert(
+      { clinic_id: clinicId, feature_key: featureId, enabled },
+      { onConflict: "clinic_id,feature_key" },
+    );
 
   if (error) throw new Error(`Failed to upsert feature override: ${error.message}`);
 }

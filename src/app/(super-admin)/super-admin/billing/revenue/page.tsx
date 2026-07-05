@@ -8,13 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
+import { logger } from "@/lib/logger";
 import {
   PLAN_ORDER,
   getPlanConfig,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type SubscriptionPlan,
 } from "@/lib/subscription-billing";
-import { logger } from "@/lib/logger";
 import {
   fetchRevenueStats as fetchRevenueStatsAction,
   type RevenueStats,
@@ -128,7 +128,9 @@ export default function RevenueDashboardPage() {
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium">{plan.name}</h4>
                         <Badge variant="outline" className="text-[10px]">
-                          {plan.priceMonthly === 0 ? "Gratuit" : `${formatCurrency(plan.priceMonthly)}`}
+                          {plan.priceMonthly === 0
+                            ? "Gratuit"
+                            : `${formatCurrency(plan.priceMonthly)}`}
                         </Badge>
                       </div>
                       <p className="text-3xl font-bold">{count}</p>

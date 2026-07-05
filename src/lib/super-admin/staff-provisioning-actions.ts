@@ -12,11 +12,7 @@ import type {
 } from "@/lib/super-admin/models";
 
 async function fetchClinicName(supabase: SuperAdminClient, clinicId: string): Promise<string> {
-  const { data } = await supabase
-    .from("clinics")
-    .select("name")
-    .eq("id", clinicId)
-    .maybeSingle();
+  const { data } = await supabase.from("clinics").select("name").eq("id", clinicId).maybeSingle();
   const name = data?.name?.trim();
   return name && name.length > 0 ? name : "your clinic";
 }

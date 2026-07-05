@@ -177,7 +177,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-
     ];
   },
 
@@ -211,8 +210,6 @@ const nextConfig: NextConfig = {
     // Icon/thumbnail sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
-
-
 
   async redirects() {
     // WWW → non-www redirect is handled in middleware.ts so it works

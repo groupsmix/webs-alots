@@ -1,9 +1,5 @@
 import { logger } from "@/lib/logger";
-import {
-  mapPromotion,
-  PROMOTION_COLS,
-  type UntypedClient,
-} from "@/lib/super-admin/helpers";
+import { mapPromotion, PROMOTION_COLS, type UntypedClient } from "@/lib/super-admin/helpers";
 import type { PromotionRow } from "@/lib/super-admin/types";
 
 export async function fetchPromotionsImpl(supabase: UntypedClient): Promise<PromotionRow[]> {

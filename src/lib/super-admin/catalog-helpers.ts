@@ -1,8 +1,4 @@
-import type {
-  FeatureDefinition,
-  PriceHistoryEntry,
-  PricingTierRow,
-} from "@/lib/super-admin/types";
+import type { FeatureDefinition, PriceHistoryEntry, PricingTierRow } from "@/lib/super-admin/types";
 
 type FeatureDefinitionRow = {
   id: string;
