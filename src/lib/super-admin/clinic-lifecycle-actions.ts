@@ -228,6 +228,7 @@ export async function deleteClinicImpl(
 
   try {
     await supabase.from("activity_logs").insert({
+      clinic_id: clinicId,
       action: "clinic_deleted",
       description:
         `Clinic "${clinic.name}" (id ${clinic.id}, subdomain ${clinic.subdomain ?? "—"}) ` +
