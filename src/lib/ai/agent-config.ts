@@ -28,14 +28,12 @@ export const MAX_AGENT_STEPS = 5;
  *
  * P3: the role→persona relationship (including the `receptionist`→`secretary`
  * rename) now lives in `src/lib/config/capabilities.ts` as `ROLE_TO_PERSONA`,
- * so the DB role system and the AI persona layer reference ONE mapping instead
- * of independent constants. This constant is a typed view over that source.
- * (`UserRole` and `CoreRole` are the same 5 roles by construction.)
+ * whose values are already typed as `SiteTeamAgentType`. `CoreRole` and
+ * `UserRole` are compiler-enforced to be the same 5 roles (see the lock-step
+ * assertion in `capabilities.ts`), so this is a direct, cast-free alias — an
+ * invalid persona would be a compile error at the `ROLE_TO_PERSONA` source.
  */
-export const ROLE_TO_AGENT: Record<UserRole, SiteTeamAgentType> = ROLE_TO_PERSONA as Record<
-  CoreRole,
-  SiteTeamAgentType
->;
+export const ROLE_TO_AGENT: Record<CoreRole, SiteTeamAgentType> = ROLE_TO_PERSONA;
 
 /**
  * Returns true when `role` is permitted to drive `agentType`.

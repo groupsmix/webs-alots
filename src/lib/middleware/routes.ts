@@ -8,7 +8,10 @@
  * never drift from the capability map / next.config.ts. (P3)
  */
 
-import { SPECIALIST_PROTECTED_PREFIXES as CANONICAL_SPECIALIST_PREFIXES } from "@/lib/config/capabilities";
+import {
+  SPECIALIST_PROTECTED_PREFIXES as CANONICAL_SPECIALIST_PREFIXES,
+  CORE_ROLE_ROUTE,
+} from "@/lib/config/capabilities";
 
 /** Routes that don't require authentication */
 const PUBLIC_ROUTES = [
@@ -71,13 +74,16 @@ export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health", "/api/v1/health"]);
  * user bypasses route scoping. Unknown roles are denied in middleware
  * (see fail-closed block in middleware.ts).
  */
-export const ROLE_ROUTE_MAP: Record<string, string> = {
-  super_admin: "/super-admin",
-  clinic_admin: "/admin",
-  receptionist: "/receptionist",
-  doctor: "/doctor",
-  patient: "/patient",
-};
+/**
+ * DB core role → dashboard route prefix.
+ *
+ * P3: DERIVED from the canonical `CORE_ROLE_ROUTE` in
+ * `src/lib/config/capabilities.ts` — do NOT hand-edit. Kept as a
+ * `Record<string, string>` (not `Record<CoreRole, string>`) so unknown-role
+ * lookups still resolve to `undefined` (fail-closed), which the gating logic
+ * in `src/middleware.ts` relies on. Route values are unchanged.
+ */
+export const ROLE_ROUTE_MAP: Record<string, string> = { ...CORE_ROLE_ROUTE };
 
 /** Role to dashboard path mapping */
 export const ROLE_DASHBOARD_MAP: Record<string, string> = {

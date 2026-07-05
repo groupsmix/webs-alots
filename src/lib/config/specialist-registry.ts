@@ -289,19 +289,31 @@ export function capabilityForSpecialistSlug(slug: string): Capability | null {
 }
 
 /**
- * Invariant guard (also asserted in `capabilities.test.ts`): every slug that
- * has a dashboard config resolves to exactly one canonical capability. Throws
- * at module-eval time if the registry drifts from the capability layer.
+ * Invariant guard: every slug with a dashboard config must resolve to exactly
+ * one canonical capability in `capabilities.ts`.
+ *
+ * The authoritative enforcement of this invariant is the build-time test
+ * `src/lib/__tests__/capabilities.test.ts`. This runtime check is a
+ * DEV-ONLY belt-and-suspenders: it throws in development/test so drift is
+ * caught immediately while iterating, but is a no-op in production so a small
+ * config drift can never turn into a boot-time crash across the whole
+ * dashboard surface. Returns the offending slug (or `null`) for testability.
  */
-function assertRegistrySlugsAreCanonical(): void {
+export function findNonCanonicalRegistrySlug(): string | null {
   for (const slug of REGISTRY_SPECIALIST_SLUGS) {
-    if (capabilityForSlug(slug) === null) {
-      throw new Error(
-        `specialist-registry: slug "${slug}" is not a canonical capability slug ` +
-          `in capabilities.ts (P3 drift).`,
-      );
-    }
+    if (capabilityForSlug(slug) === null) return slug;
   }
+  return null;
 }
 
-assertRegistrySlugsAreCanonical();
+// Dev-only fail-fast. In production this is skipped entirely; the unit test is
+// the source of truth for the invariant.
+if (process.env.NODE_ENV !== "production") {
+  const bad = findNonCanonicalRegistrySlug();
+  if (bad !== null) {
+    throw new Error(
+      `specialist-registry: slug "${bad}" is not a canonical capability slug ` +
+        `in capabilities.ts (P3 drift).`,
+    );
+  }
+}

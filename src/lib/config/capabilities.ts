@@ -27,9 +27,18 @@
  * derived constants below; they do not re-declare identity.
  */
 
+import type { SiteTeamAgentType } from "@/lib/ai/prompts";
+import type { UserRole } from "@/lib/types/database";
+
 /* ────────────────────────────────────────────────────────────────────────
  * 1. Core roles — the ONLY principals in the DB / auth system.
- *    Kept in exact lock-step with `UserRole` in `src/lib/types/database.ts`.
+ *    Kept in exact lock-step with `UserRole` in `src/lib/types/database.ts`,
+ *    and that lock-step is COMPILER-ENFORCED below (see the mutual
+ *    assignability check) rather than relying on this comment.
+ *
+ * NOTE: both imports above are `import type`, so they are erased at compile
+ * time. This module therefore keeps ZERO runtime dependencies and stays safe
+ * to import from `next.config.ts` (which loads outside the bundler).
  * ──────────────────────────────────────────────────────────────────────── */
 
 export type CoreRole =
@@ -38,6 +47,31 @@ export type CoreRole =
   | "receptionist"
   | "doctor"
   | "patient";
+
+/**
+ * COMPILER-ENFORCED lock-step between `CoreRole` (this module) and the DB
+ * `UserRole` (`src/lib/types/database.ts`). If either union gains, loses, or
+ * renames a member, one of the `satisfies` checks below stops compiling —
+ * turning a silent divergence into a build error instead of a doc-comment
+ * promise.
+ *
+ * Pure type-level guard: `AssertMutuallyAssignable` resolves to `true` only
+ * when the two unions are mutually assignable (i.e. identical member sets).
+ * The two `satisfies true` lines then fail to compile on any drift. No runtime
+ * value is emitted (types are erased), so ZERO runtime deps are added.
+ */
+type MutuallyAssignable<A, B> = [A] extends [B]
+  ? [B] extends [A]
+    ? true
+    : false
+  : false;
+
+type _AssertCoreRoleMatchesUserRole = MutuallyAssignable<CoreRole, UserRole> extends true
+  ? true
+  : never;
+// If CoreRole and UserRole ever diverge, the next line is a compile error:
+const _coreRoleUserRoleLockStep = true satisfies _AssertCoreRoleMatchesUserRole;
+void _coreRoleUserRoleLockStep;
 
 /** Privilege order, highest first. Informational (auth ordering lives in Layer 1). */
 export const CORE_ROLE_ORDER: readonly CoreRole[] = [
@@ -203,14 +237,32 @@ export const SPECIALIST_CAPABILITIES: readonly SpecialistCapabilityDef[] = [
  */
 export const EXTRA_PROTECTED_SLUGS: readonly string[] = ["lab-panel"] as const;
 
-/** Core-role route slugs (the 5 principals), for prefix derivation. */
-export const CORE_ROLE_SLUGS: readonly string[] = [
-  "patient",
-  "doctor",
-  "receptionist",
-  "admin",
-  "super-admin",
-] as const;
+/**
+ * Canonical DB core role → dashboard route (leading-slash prefix).
+ *
+ * SINGLE SOURCE OF TRUTH for the role→route mapping. `ROLE_ROUTE_MAP` in the
+ * SEALED `src/lib/middleware/routes.ts` is DERIVED from this (import-only), so
+ * no core-role→route mapping is hand-synced anywhere.
+ *
+ * Ordered to preserve the existing protected-prefix ordering used by
+ * `next.config.ts` (patient, doctor, receptionist, admin, super-admin).
+ */
+export const CORE_ROLE_ROUTE: Record<CoreRole, string> = {
+  patient: "/patient",
+  doctor: "/doctor",
+  receptionist: "/receptionist",
+  clinic_admin: "/admin",
+  super_admin: "/super-admin",
+};
+
+/**
+ * Core-role route slugs (the 5 principals), for prefix derivation.
+ * DERIVED from `CORE_ROLE_ROUTE` (drop the leading `/`) so the two never drift.
+ * Preserves order: patient, doctor, receptionist, admin, super-admin.
+ */
+export const CORE_ROLE_SLUGS: readonly string[] = Object.values(CORE_ROLE_ROUTE).map((r) =>
+  r.replace(/^\//, ""),
+);
 
 /* ────────────────────────────────────────────────────────────────────────
  * 4. Derived constants — consumed by SEALED files & next.config.ts.
@@ -247,13 +299,13 @@ export const PROTECTED_ROUTE_PREFIXES_WITH_WILDCARDS: readonly string[] = [
  * Only `receptionist` differs from its role name; it is exposed to the AI
  * layer as the `secretary` persona.
  */
-export const ROLE_TO_PERSONA: Record<CoreRole, string> = {
+export const ROLE_TO_PERSONA: Record<CoreRole, SiteTeamAgentType> = {
   super_admin: "super_admin",
   clinic_admin: "clinic_admin",
   receptionist: "secretary",
   doctor: "doctor",
   patient: "patient",
-};
+} satisfies Record<CoreRole, SiteTeamAgentType>;
 
 /**
  * Legacy AI persona aliases → canonical persona.

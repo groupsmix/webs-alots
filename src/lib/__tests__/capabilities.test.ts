@@ -16,6 +16,7 @@ import {
   ALL_CAPABILITIES,
   CAPABILITIES,
   CORE_ROLE_ORDER,
+  CORE_ROLE_ROUTE,
   CORE_ROLE_SLUGS,
   EXTRA_PROTECTED_SLUGS,
   PERSONA_ALIASES,
@@ -31,8 +32,10 @@ import {
   type Capability,
   type CoreRole,
 } from "@/lib/config/capabilities";
+import { findNonCanonicalRegistrySlug } from "@/lib/config/specialist-registry";
 import {
   SPECIALIST_PROTECTED_PREFIXES as ROUTES_SPECIALIST_PREFIXES,
+  ROLE_ROUTE_MAP,
 } from "@/lib/middleware/routes";
 
 describe("capabilities: specialist slug → capability", () => {
@@ -104,6 +107,58 @@ describe("capabilities: derived lists have NO drift", () => {
     for (const slug of CORE_ROLE_SLUGS) {
       expect(PROTECTED_ROUTE_PREFIXES_WITH_WILDCARDS).toContain(`/${slug}`);
     }
+  });
+});
+
+describe("capabilities: role → route derivation (no drift)", () => {
+  it("CORE_ROLE_ROUTE covers exactly the 5 core roles", () => {
+    expect(Object.keys(CORE_ROLE_ROUTE).sort()).toEqual([...CORE_ROLE_ORDER].sort());
+  });
+
+  it("ROLE_ROUTE_MAP is fully derived from CORE_ROLE_ROUTE (values unchanged)", () => {
+    // Same entries as the canonical source...
+    expect(ROLE_ROUTE_MAP).toEqual({ ...CORE_ROLE_ROUTE });
+    // ...and the exact historical route values are preserved.
+    expect(ROLE_ROUTE_MAP).toEqual({
+      super_admin: "/super-admin",
+      clinic_admin: "/admin",
+      receptionist: "/receptionist",
+      doctor: "/doctor",
+      patient: "/patient",
+    });
+  });
+
+  it("ROLE_ROUTE_MAP is fail-closed for unknown roles", () => {
+    expect(ROLE_ROUTE_MAP["hacker"]).toBeUndefined();
+    expect(ROLE_ROUTE_MAP[""]).toBeUndefined();
+  });
+
+  it("CORE_ROLE_SLUGS is derived from CORE_ROLE_ROUTE (leading slash stripped, order preserved)", () => {
+    const expected = Object.values(CORE_ROLE_ROUTE).map((r) => r.replace(/^\//, ""));
+    expect([...CORE_ROLE_SLUGS]).toEqual(expected);
+    // Regression-guard the concrete ordering next.config.ts depends on.
+    expect([...CORE_ROLE_SLUGS]).toEqual([
+      "patient",
+      "doctor",
+      "receptionist",
+      "admin",
+      "super-admin",
+    ]);
+  });
+
+  it("every core-role route prefix appears in the next.config-derived list", () => {
+    for (const route of Object.values(CORE_ROLE_ROUTE)) {
+      expect(PROTECTED_ROUTE_PREFIXES_WITH_WILDCARDS).toContain(route);
+      expect(PROTECTED_ROUTE_PREFIXES_WITH_WILDCARDS).toContain(`${route}/:path*`);
+    }
+  });
+});
+
+describe("capabilities: specialist-registry stays canonical", () => {
+  it("no registry slug drifts from the capability layer", () => {
+    // The registry's dev-only boot guard uses this same helper; here we assert
+    // the invariant at test time (the authoritative enforcement point).
+    expect(findNonCanonicalRegistrySlug()).toBeNull();
   });
 });
 
