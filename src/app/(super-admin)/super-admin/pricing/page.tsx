@@ -48,7 +48,12 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
-import { systemTypeLabels, tierColors, type SystemType, type SubscriptionPlan } from "@/lib/config/pricing";
+import {
+  systemTypeLabels,
+  tierColors,
+  type SystemType,
+  type SubscriptionPlan,
+} from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
@@ -87,8 +92,6 @@ interface Promotion {
   endDate: string;
   enabled: boolean;
 }
-
-
 
 const systemIcons: Record<SystemType, typeof Stethoscope> = {
   doctor: Stethoscope,
@@ -678,7 +681,9 @@ export default function PricingPage() {
                   )}
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <Badge className={`text-[10px] ${tierColors[tier.slug as SubscriptionPlan] ?? ""}`}>
+                      <Badge
+                        className={`text-[10px] ${tierColors[tier.slug as SubscriptionPlan] ?? ""}`}
+                      >
                         {isEditing ? (
                           <Input
                             value={editName}
@@ -1088,7 +1093,13 @@ export default function PricingPage() {
                           />
                         </td>
                         {(
-                          ["free", "starter", "professional", "enterprise", "enterprise-saas"] as SubscriptionPlan[]
+                          [
+                            "free",
+                            "starter",
+                            "professional",
+                            "enterprise",
+                            "enterprise-saas",
+                          ] as SubscriptionPlan[]
                         ).map((SubscriptionPlan) => (
                           <td key={SubscriptionPlan} className="py-3 px-4 text-center">
                             <button
@@ -1354,7 +1365,9 @@ export default function PricingPage() {
             <div className="space-y-2">
               <Label>Applicable Tiers</Label>
               <div className="flex flex-wrap gap-2">
-                {(["free", "starter", "professional", "enterprise", "enterprise-saas"] as const).map((slug) => (
+                {(
+                  ["free", "starter", "professional", "enterprise", "enterprise-saas"] as const
+                ).map((slug) => (
                   <Button
                     key={slug}
                     type="button"

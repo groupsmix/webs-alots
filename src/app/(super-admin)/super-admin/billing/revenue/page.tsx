@@ -128,7 +128,9 @@ export default function RevenueDashboardPage() {
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium">{plan.name}</h4>
                         <Badge variant="outline" className="text-[10px]">
-                          {plan.priceMonthly === 0 ? "Gratuit" : `${formatCurrency(plan.priceMonthly)}`}
+                          {plan.priceMonthly === 0
+                            ? "Gratuit"
+                            : `${formatCurrency(plan.priceMonthly)}`}
                         </Badge>
                       </div>
                       <p className="text-3xl font-bold">{count}</p>

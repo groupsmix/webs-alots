@@ -1,20 +1,14 @@
 import { assertClinicId } from "@/lib/assert-tenant";
 import { requireRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
-import {
-  clinicActivatedEmail,
-  clinicSuspendedEmail,
-} from "@/lib/email-templates";
+import { clinicActivatedEmail, clinicSuspendedEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
 import { syncClinicOnboardingState } from "@/lib/onboarding/state";
 import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 import { createAdminClient, createClient } from "@/lib/supabase-server";
 import type { SuperAdminClient } from "@/lib/super-admin/base";
-import type {
-  ClinicRow,
-  CreateClinicInput,
-} from "@/lib/super-admin/models";
+import type { ClinicRow, CreateClinicInput } from "@/lib/super-admin/models";
 import type { Json } from "@/lib/types/database";
 
 export async function createClinicImpl(
@@ -233,17 +227,15 @@ export async function deleteClinicImpl(
   }
 
   try {
-    await supabase
-      .from("activity_logs")
-      .insert({
-        action: "clinic_deleted",
-        description:
-          `Clinic "${clinic.name}" (id ${clinic.id}, subdomain ${clinic.subdomain ?? "—"}) ` +
-          `permanently deleted by ${profile.name ?? "super_admin"}` +
-          (patientCount > 0 ? ` — ${patientCount} patient record(s) erased` : ""),
-        type: "clinic",
-        timestamp: new Date().toISOString(),
-      });
+    await supabase.from("activity_logs").insert({
+      action: "clinic_deleted",
+      description:
+        `Clinic "${clinic.name}" (id ${clinic.id}, subdomain ${clinic.subdomain ?? "—"}) ` +
+        `permanently deleted by ${profile.name ?? "super_admin"}` +
+        (patientCount > 0 ? ` — ${patientCount} patient record(s) erased` : ""),
+      type: "clinic",
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     logger.warn("Non-blocking audit log failed", {
       context: "super-admin-actions",

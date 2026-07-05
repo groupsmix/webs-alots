@@ -50,7 +50,7 @@ const TIER_NAMES: Record<string, string> = {
   cabinet: "starter",
   pro: "professional",
   premium: "enterprise",
-  "enterprise": "SaaS Mensuel",
+  enterprise: "SaaS Mensuel",
 };
 
 export async function fetchClinicSubscription(

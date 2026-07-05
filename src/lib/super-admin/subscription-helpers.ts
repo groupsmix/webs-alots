@@ -4,11 +4,7 @@ import {
   normalizeSubscriptionPlan,
   type SubscriptionPlan,
 } from "@/lib/subscription-billing";
-import type {
-  BillingRecord,
-  ClientInvoice,
-  ClientSubscription,
-} from "@/lib/super-admin/types";
+import type { BillingRecord, ClientInvoice, ClientSubscription } from "@/lib/super-admin/types";
 import { getLocalDateStr } from "@/lib/utils";
 import { isKnownJunkSubdomain } from "@/lib/validations/known-junk-tenants";
 

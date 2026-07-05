@@ -24,7 +24,9 @@ type AdminClient = ReturnType<typeof createAdminClient>;
  * Resolve the chatbot intelligence level for a given plan.
  * Returns `false` if the plan doesn't include chatbot.
  */
-export function getChatbotLevelForPlan(plan: SubscriptionPlan): false | "basic" | "smart" | "advanced" {
+export function getChatbotLevelForPlan(
+  plan: SubscriptionPlan,
+): false | "basic" | "smart" | "advanced" {
   try {
     return getPlanConfig(plan)?.aiChatbot ?? false;
   } catch {

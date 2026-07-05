@@ -1,15 +1,15 @@
 # `src/lib/config`
 
 Clinic-domain configuration: types, defaults, and presentation constants that
-describe *what a clinic/system is and how it's priced/displayed* — as opposed
+describe _what a clinic/system is and how it's priced/displayed_ — as opposed
 to app-wide config (see `src/config/README.md`).
 
-| File | Purpose |
-|------|---------|
-| `clinic-types.ts` | `ClinicType` definitions and per-type metadata. |
-| `default-services.ts` | Default service catalogs seeded per clinic type. |
-| `verticals.ts` | `VerticalId` union and vertical definitions. |
-| `pricing.ts` | Presentation-only constants for the super-admin pricing UI: `systemTypeLabels`, `tierColors`, and the canonical `SystemType` type (`"doctor" \| "dentist" \| "pharmacy"`). Re-exports `SubscriptionPlan` from `@/lib/subscription-billing` rather than redefining it. |
+| File                  | Purpose                                                                                                                                                                                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clinic-types.ts`     | `ClinicType` definitions and per-type metadata.                                                                                                                                                                                                                       |
+| `default-services.ts` | Default service catalogs seeded per clinic type.                                                                                                                                                                                                                      |
+| `verticals.ts`        | `VerticalId` union and vertical definitions.                                                                                                                                                                                                                          |
+| `pricing.ts`          | Presentation-only constants for the super-admin pricing UI: `systemTypeLabels`, `tierColors`, and the canonical `SystemType` type (`"doctor" \| "dentist" \| "pharmacy"`). Re-exports `SubscriptionPlan` from `@/lib/subscription-billing` rather than redefining it. |
 
 ## Single source of truth for shared domain types
 
