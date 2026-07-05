@@ -9,6 +9,9 @@ src/lib/types/database.ts
 pnpm-lock.yaml
 package-lock.json
 
+# Analysis documents (uploaded via GitHub UI, not source code)
+alayse and acrchiculture/
+
 # Generated test artifacts
 playwright-report/
 test-results/
