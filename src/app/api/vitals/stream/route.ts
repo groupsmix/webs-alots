@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { requireTenant } from "@/lib/tenant";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 import { createVitalsStream } from "@/modules/vitals/stream";
@@ -18,6 +19,11 @@ import { createVitalsStream } from "@/modules/vitals/stream";
 export const GET = withAuth(
   async (request: NextRequest, auth: AuthContext) => {
     const tenant = await requireTenant();
+
+    // ADR 0013: Scope gate — vitals is a clinical vertical
+    const denied = await assertScopeGate(auth.supabase, tenant.clinicId, "vitals");
+    if (denied) return denied;
+
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get("patient_id");
 

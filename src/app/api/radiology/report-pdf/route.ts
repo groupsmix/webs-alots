@@ -14,6 +14,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { updateRadiologyOrderPdfUrl } from "@/lib/data/radiology";
 import { escapeHtml } from "@/lib/escape-html";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { formatDisplayDate } from "@/lib/utils";
 import { radiologyReportPdfSchema } from "@/lib/validations";
 
@@ -67,7 +68,7 @@ function generateReportHtml(data: {
 
 export const POST = withAuthValidation(
   radiologyReportPdfSchema,
-  async (body, request, { profile }) => {
+  async (body, request, { profile, supabase }) => {
     const {
       orderId,
       patientName,
@@ -83,6 +84,10 @@ export const POST = withAuthValidation(
     if (!clinicId) {
       return apiError("User must belong to a clinic");
     }
+
+    // ADR 0013: Scope gate — radiology is a clinical vertical
+    const denied = await assertScopeGate(supabase, clinicId, "radiology");
+    if (denied) return denied;
 
     if (!findings && !impression && !reportText) {
       return apiError("Report content is required (findings, impression, or reportText)");

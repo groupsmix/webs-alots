@@ -13,6 +13,7 @@
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
+import { assertScopeGate } from "@/lib/scope-gate";
 import type { Json } from "@/lib/types/database";
 import { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
@@ -29,6 +30,10 @@ export const GET = withAuth(
       if (!profile.clinic_id) {
         return apiError("No clinic associated with this account", 403);
       }
+
+      // ADR 0013: Scope gate — restaurant-orders is a restaurant vertical
+      const denied = await assertScopeGate(supabase, profile.clinic_id, "restaurant-orders");
+      if (denied) return denied;
 
       const status = request.nextUrl.searchParams.get("status");
       const tableId = request.nextUrl.searchParams.get("table_id");
@@ -81,6 +86,10 @@ export const POST = withAuthValidation(
       return apiError("No clinic associated with this account", 403);
     }
 
+    // ADR 0013: Scope gate — restaurant-orders is a restaurant vertical
+    const denied = await assertScopeGate(supabase, profile.clinic_id, "restaurant-orders");
+    if (denied) return denied;
+
     // Calculate totals from items
     const subtotal = body.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
     const tax = Math.round(subtotal * 0.2 * 100) / 100; // 20% TVA
@@ -123,6 +132,11 @@ export const PATCH = withAuthValidation(
     if (!profile.clinic_id) {
       return apiError("No clinic associated with this account", 403);
     }
+
+    // ADR 0013: Scope gate — restaurant-orders is a restaurant vertical
+    const denied = await assertScopeGate(supabase, profile.clinic_id, "restaurant-orders");
+    if (denied) return denied;
+
     const { id, ...updates } = body;
 
     const updatePayload: Record<string, unknown> = {
@@ -176,6 +190,10 @@ export const DELETE = withAuth(
     if (!profile.clinic_id) {
       return apiError("No clinic associated with this account", 403);
     }
+
+    // ADR 0013: Scope gate — restaurant-orders is a restaurant vertical
+    const denied = await assertScopeGate(supabase, profile.clinic_id, "restaurant-orders");
+    if (denied) return denied;
 
     const id = request.nextUrl.searchParams.get("id");
 

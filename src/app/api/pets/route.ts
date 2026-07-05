@@ -13,6 +13,7 @@
 import { apiError, apiSuccess, apiInternalError, apiNotFound } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { petProfileCreateSchema, petProfileUpdateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
@@ -28,6 +29,10 @@ export const GET = withAuth(
       if (!profile.clinic_id) {
         return apiError("No clinic associated with this account", 403);
       }
+
+      // ADR 0013: Scope gate — pets is a veterinary vertical
+      const denied = await assertScopeGate(supabase, profile.clinic_id, "pets");
+      if (denied) return denied;
 
       const ownerId = request.nextUrl.searchParams.get("owner_id");
       const petId = request.nextUrl.searchParams.get("id");
@@ -93,6 +98,10 @@ export const POST = withAuthValidation(
       return apiError("No clinic associated with this account", 403);
     }
 
+    // ADR 0013: Scope gate — pets is a veterinary vertical
+    const denied = await assertScopeGate(supabase, profile.clinic_id, "pets");
+    if (denied) return denied;
+
     const { data, error } = await supabase
       .from("pet_profiles")
       .insert({
@@ -130,6 +139,10 @@ export const PATCH = withAuthValidation(
     if (!profile.clinic_id) {
       return apiError("No clinic associated with this account", 403);
     }
+
+    // ADR 0013: Scope gate — pets is a veterinary vertical
+    const denied = await assertScopeGate(supabase, profile.clinic_id, "pets");
+    if (denied) return denied;
 
     const { id, ...updates } = body;
 
@@ -180,6 +193,10 @@ export const DELETE = withAuth(
     if (!profile.clinic_id) {
       return apiError("No clinic associated with this account", 403);
     }
+
+    // ADR 0013: Scope gate — pets is a veterinary vertical
+    const denied = await assertScopeGate(supabase, profile.clinic_id, "pets");
+    if (denied) return denied;
 
     const id = request.nextUrl.searchParams.get("id");
 

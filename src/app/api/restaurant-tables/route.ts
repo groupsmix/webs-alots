@@ -10,6 +10,7 @@ import { z } from "zod";
 import { apiSuccess, apiSupabaseError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
 
 const createTableSchema = z.object({
@@ -27,6 +28,10 @@ export const GET = withAuth(
   async (_request: NextRequest, auth: AuthContext) => {
     const clinicId = auth.profile.clinic_id;
     if (!clinicId) return apiSuccess([]);
+
+    // ADR 0013: Scope gate — restaurant-tables is a restaurant vertical
+    const denied = await assertScopeGate(auth.supabase, clinicId, "restaurant-tables");
+    if (denied) return denied;
 
     const { data, error } = await auth.supabase
       .from("restaurant_tables")
@@ -54,6 +59,10 @@ export const POST = withAuthValidation(
     if (!clinicId) {
       return apiSupabaseError({ message: "No clinic context" }, "restaurant-tables/create");
     }
+
+    // ADR 0013: Scope gate — restaurant-tables is a restaurant vertical
+    const denied = await assertScopeGate(auth.supabase, clinicId, "restaurant-tables");
+    if (denied) return denied;
 
     const { data, error } = await auth.supabase
       .from("restaurant_tables")

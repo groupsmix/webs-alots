@@ -16,6 +16,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { createRadiologyImage } from "@/lib/data/radiology";
 import { logger } from "@/lib/logger";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+import { assertScopeGate } from "@/lib/scope-gate";
 import { withAuth } from "@/lib/with-auth";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (aligned with main upload route)
 
@@ -57,7 +58,7 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
 }
 
-export const POST = withAuth(async (request, { profile }) => {
+export const POST = withAuth(async (request, { profile, supabase }) => {
   if (!isR2Configured()) {
     return apiError("File storage is not configured", 503);
   }
@@ -78,6 +79,10 @@ export const POST = withAuth(async (request, { profile }) => {
   if (!orderId || !clinicId) {
     return apiError("orderId is required and user must belong to a clinic");
   }
+
+  // ADR 0013: Scope gate — radiology is a clinical vertical
+  const denied = await assertScopeGate(supabase, clinicId, "radiology");
+  if (denied) return denied;
 
   if (file.size > MAX_FILE_SIZE) {
     return apiError("File too large (max 10 MB)");
