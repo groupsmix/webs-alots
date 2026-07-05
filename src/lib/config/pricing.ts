@@ -3,8 +3,8 @@
  * These are pure presentation constants, not database data.
  */
 
-import type { SystemType as DatabaseSystemType } from "@/lib/types/database";
 import type { SubscriptionPlan } from "@/lib/subscription-billing";
+import type { SystemType as DatabaseSystemType } from "@/lib/types/database";
 export type { SubscriptionPlan };
 
 export type SystemType = DatabaseSystemType;

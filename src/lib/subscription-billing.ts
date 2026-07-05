@@ -20,7 +20,7 @@ export type SubscriptionPlan = DatabaseSubscriptionPlan;
 type SubscriptionStatus = "active" | "past_due" | "canceled" | "trialing" | "paused";
 export type BillingInterval = "monthly" | "yearly";
 
-export type AiChatbotLevel = false | "basic" | "smart" | "advanced";
+type AiChatbotLevel = false | "basic" | "smart" | "advanced";
 
 export interface PlanConfig {
   id: SubscriptionPlan;

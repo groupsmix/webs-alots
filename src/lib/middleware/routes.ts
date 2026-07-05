@@ -33,6 +33,7 @@ const PUBLIC_PREFIXES = ["/pharmacy", "/dentist"];
  * route slugs / dashboard families rather than `UserRole` values.
  */
 export const SPECIALIST_PROTECTED_PREFIXES = [
+  "/pharmacist",
   "/nutritionist",
   "/optician",
   "/parapharmacy",

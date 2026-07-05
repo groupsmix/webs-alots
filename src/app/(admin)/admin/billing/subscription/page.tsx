@@ -19,14 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 import {
-  SUBSCRIPTION_PLANS,
   FEATURE_LABELS,
   PLAN_ORDER,
   type SubscriptionPlan,
   getPlanConfig,
 } from "@/lib/subscription-billing";
-import { logger } from "@/lib/logger";
 import { formatCurrency } from "@/lib/utils";
 
 interface ClinicSubscriptionInfo {

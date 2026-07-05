@@ -1,6 +1,5 @@
 "use client";
 
-import { type SubscriptionPlan } from "@/lib/subscription-billing";
 
 import { Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { type SubscriptionPlan } from "@/lib/subscription-billing";
 
 const CLINIC_TYPE_PLACEHOLDER = "Select clinic type…";
 const CLINIC_TIER_PLACEHOLDER = "Select a subscription tier…";

@@ -19,7 +19,7 @@ export function resolveClinicSubscriptionPlan(clinic: {
   return normalizeSubscriptionPlan(clinic.config?.subscription_plan ?? clinic.tier ?? "free");
 }
 
-export function getSubscriptionPlanLabel(plan: SubscriptionPlan): string {
+function getSubscriptionPlanLabel(plan: SubscriptionPlan): string {
   return getPlanConfig(plan).name;
 }
 
@@ -87,7 +87,7 @@ export function buildPaymentsByClinic(
   return paymentsByClinic;
 }
 
-export function mapClientInvoices(payments: ClientPaymentRow[]): ClientInvoice[] {
+function mapClientInvoices(payments: ClientPaymentRow[]): ClientInvoice[] {
   return payments.slice(0, 5).map((payment) => ({
     id: payment.id,
     date: payment.created_at?.split("T")[0] ?? "",
