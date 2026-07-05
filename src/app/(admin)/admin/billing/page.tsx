@@ -31,7 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { tierColors, type TierSlug } from "@/lib/config/pricing";
+import { tierColors, type SubscriptionPlan } from "@/lib/config/pricing";
 import { fetchClinicSubscription, type ClinicSubscriptionView } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 import { fetchPricingTiers, type PricingTierRow } from "@/lib/super-admin-actions";
@@ -42,7 +42,7 @@ export default function ClientBillingPage() {
 
   const tenant = useTenant();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [selectedUpgrade, setSelectedUpgrade] = useState<TierSlug | null>(null);
+  const [selectedUpgrade, setSelectedUpgrade] = useState<SubscriptionPlan | null>(null);
   const [currentSub, setCurrentSub] = useState<ClinicSubscriptionView | null>(null);
   const [allTiers, setAllTiers] = useState<PricingTierRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,13 +85,13 @@ export default function ClientBillingPage() {
 
   const tierIcon = (slug: string) => {
     switch (slug) {
-      case "vitrine":
+      case "free":
         return <Shield className="h-5 w-5" />;
-      case "cabinet":
+      case "starter":
         return <CreditCard className="h-5 w-5" />;
-      case "pro":
+      case "professional":
         return <Zap className="h-5 w-5" />;
-      case "premium":
+      case "enterprise":
         return <Crown className="h-5 w-5" />;
       default:
         return <CreditCard className="h-5 w-5" />;
@@ -133,11 +133,11 @@ export default function ClientBillingPage() {
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <CardTitle className="text-base flex items-center gap-2">
-              {tierIcon(currentSub.tierSlug)}
+              {tierIcon(currentSub.SubscriptionPlan)}
               Votre plan actuel
             </CardTitle>
             <Badge
-              className={`${tierColors[currentSub.tierSlug as TierSlug] ?? ""} text-sm px-3 py-1`}
+              className={`${tierColors[currentSub.SubscriptionPlan as SubscriptionPlan] ?? ""} text-sm px-3 py-1`}
             >
               {currentSub.tierName}
             </Badge>
@@ -330,9 +330,9 @@ export default function ClientBillingPage() {
           <CardContent>
             <div className="space-y-3">
               {allTiers
-                .filter((t) => t.slug !== "saas-monthly")
+                .filter((t) => t.slug !== "enterprise")
                 .map((tier) => {
-                  const isCurrent = tier.slug === currentSub.tierSlug;
+                  const isCurrent = tier.slug === currentSub.SubscriptionPlan;
                   const pricing = tier.pricing[currentSub.systemType];
                   const price = pricing?.monthly ?? 0;
                   return (
@@ -374,12 +374,12 @@ export default function ClientBillingPage() {
                             size="sm"
                             className="mt-1 text-xs"
                             onClick={() => {
-                              setSelectedUpgrade(tier.slug as TierSlug);
+                              setSelectedUpgrade(tier.slug as SubscriptionPlan);
                               setUpgradeOpen(true);
                             }}
                           >
                             {allTiers.indexOf(tier) >
-                            allTiers.findIndex((t) => t.slug === currentSub.tierSlug)
+                            allTiers.findIndex((t) => t.slug === currentSub.SubscriptionPlan)
                               ? "Upgrader"
                               : "Changer"}
                           </Button>

@@ -1,6 +1,6 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
-import { SUBSCRIPTION_PLANS, type PlanSlug } from "@/lib/config/subscription-plans";
+import { getPlanConfig, type SubscriptionPlan } from "@/lib/subscription-billing";
 import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { subscriptionCheckoutSchema } from "@/lib/validations";
@@ -47,9 +47,11 @@ export const POST = withAuthValidation(
     }
 
     const { planId, successUrl, cancelUrl } = body;
-    const plan = SUBSCRIPTION_PLANS[planId as PlanSlug];
-
-    if (!plan) {
+    const planSlug = planId as SubscriptionPlan;
+    let plan;
+    try {
+      plan = getPlanConfig(planSlug);
+    } catch {
       return apiError("Invalid plan selected", 400, "INVALID_PLAN");
     }
 

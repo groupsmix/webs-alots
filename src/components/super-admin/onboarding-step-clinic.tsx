@@ -1,5 +1,7 @@
 "use client";
 
+import { type SubscriptionPlan } from "@/lib/subscription-billing";
+
 import { Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +15,7 @@ const CLINIC_TIER_PLACEHOLDER = "Select a subscription tier…";
 export interface ClinicFormData {
   name: string;
   type: "" | "doctor" | "dentist" | "pharmacy";
-  tier: "" | "vitrine" | "cabinet" | "pro" | "premium" | "saas";
+  tier: "" | SubscriptionPlan;
   city: string;
   phone: string;
   email: string;
@@ -84,11 +86,10 @@ export function OnboardingStepClinic({
               <option value="" disabled>
                 {CLINIC_TIER_PLACEHOLDER}
               </option>
-              <option value="vitrine">Vitrine — 2,500-3,000 MAD</option>
-              <option value="cabinet">Cabinet — 6,000-8,000 MAD</option>
-              <option value="pro">Pro — 12,000-15,000 MAD</option>
-              <option value="premium">Premium — 20,000-25,000 MAD</option>
-              <option value="saas">SaaS Monthly — 500-1,000 MAD/mo</option>
+              <option value="free">Free</option>
+              <option value="starter">Starter</option>
+              <option value="professional">Professional</option>
+              <option value="enterprise">Enterprise</option>
             </select>
           </div>
           <div className="space-y-2">

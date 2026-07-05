@@ -798,7 +798,7 @@ export default function SubscriptionsPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge className={`text-[10px] ${tierColors[sub.tierSlug]}`}>
+                        <Badge className={`text-[10px] ${tierColors[sub.SubscriptionPlan]}`}>
                           {sub.tierName}
                         </Badge>
                       </td>
@@ -1030,7 +1030,7 @@ export default function SubscriptionsPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Tier :</span>{" "}
-                  <Badge className={`text-[10px] ${tierColors[detailSub.tierSlug]}`}>
+                  <Badge className={`text-[10px] ${tierColors[detailSub.SubscriptionPlan]}`}>
                     {detailSub.tierName}
                   </Badge>
                 </div>

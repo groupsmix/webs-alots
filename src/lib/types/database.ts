@@ -9800,7 +9800,7 @@ export type MaintenanceType = "routine" | "repair" | "calibration" | "inspection
 
 export type MaintenanceStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
-export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
+export type ClinicTier = "free" | "starter" | "professional" | "enterprise" | "saas";
 
 export type AppointmentStatus =
   | "pending"
@@ -10378,7 +10378,7 @@ export type SubscriptionStatus = "active" | "trial" | "past_due" | "cancelled" |
 
 export type SubscriptionBillingCycle = "monthly" | "yearly";
 
-export type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
+export type SubscriptionPlan = "free" | "starter" | "professional" | "enterprise";
 
 export type SystemType = "doctor" | "dentist" | "pharmacy";
 
@@ -10474,7 +10474,7 @@ export type ClinicFeatureOverride = {
 
 export type PricingTier = {
   id: string;
-  slug: TierSlug;
+  slug: SubscriptionPlan;
   name: string;
   description: string | null;
   is_popular: boolean;
@@ -12144,4 +12144,3 @@ export type RestaurantOrder = {
   created_at: string;
   updated_at: string;
 }
-

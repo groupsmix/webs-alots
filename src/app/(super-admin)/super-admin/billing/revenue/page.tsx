@@ -9,11 +9,11 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import {
-  SUBSCRIPTION_PLANS,
   PLAN_ORDER,
+  getPlanConfig,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  type PlanSlug,
-} from "@/lib/config/subscription-plans";
+  type SubscriptionPlan,
+} from "@/lib/subscription-billing";
 import { logger } from "@/lib/logger";
 import {
   fetchRevenueStats as fetchRevenueStatsAction,
@@ -117,24 +117,24 @@ export default function RevenueDashboardPage() {
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {PLAN_ORDER.map((slug) => {
-                  const plan = SUBSCRIPTION_PLANS[slug];
+                  const plan = getPlanConfig(slug);
                   const count = stats.planBreakdown[slug] ?? 0;
                   const total = stats.totalClinics || 1;
                   const percentage = Math.round((count / total) * 100);
-                  const revenue = count * plan.price;
+                  const revenue = count * plan.priceMonthly;
 
                   return (
                     <div key={slug} className="rounded-lg border p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium">{plan.name}</h4>
                         <Badge variant="outline" className="text-[10px]">
-                          {plan.price === 0 ? "Gratuit" : `${formatCurrency(plan.price)}`}
+                          {plan.priceMonthly === 0 ? "Gratuit" : `${formatCurrency(plan.priceMonthly)}`}
                         </Badge>
                       </div>
                       <p className="text-3xl font-bold">{count}</p>
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-xs text-muted-foreground">{percentage}% des cliniques</p>
-                        {plan.price > 0 && (
+                        {plan.priceMonthly > 0 && (
                           <p className="text-xs font-medium text-green-600">
                             {formatCurrency(revenue)}/mois
                           </p>

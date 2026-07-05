@@ -14,7 +14,7 @@
  */
 
 import { logAuditEvent } from "@/lib/audit-log";
-import { SUBSCRIPTION_PLANS, type PlanSlug } from "@/lib/config/subscription-plans";
+import { getPlanConfig, type SubscriptionPlan } from "@/lib/subscription-billing";
 import { logger } from "@/lib/logger";
 import type { createAdminClient } from "@/lib/supabase-server";
 
@@ -24,8 +24,12 @@ type AdminClient = ReturnType<typeof createAdminClient>;
  * Resolve the chatbot intelligence level for a given plan.
  * Returns `false` if the plan doesn't include chatbot.
  */
-export function getChatbotLevelForPlan(plan: PlanSlug): false | "basic" | "smart" | "advanced" {
-  return SUBSCRIPTION_PLANS[plan]?.limits.aiChatbot ?? false;
+export function getChatbotLevelForPlan(plan: SubscriptionPlan): false | "basic" | "smart" | "advanced" {
+  try {
+    return getPlanConfig(plan)?.aiChatbot ?? false;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -40,7 +44,7 @@ export function getChatbotLevelForPlan(plan: PlanSlug): false | "basic" | "smart
 export async function provisionChatbotForPlan(
   supabase: AdminClient,
   clinicId: string,
-  plan: PlanSlug,
+  plan: SubscriptionPlan,
 ): Promise<void> {
   const level = getChatbotLevelForPlan(plan);
 

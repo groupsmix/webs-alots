@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ClinicDashboardLayout } from "@/components/layouts/clinic-dashboard-layout";
-import { getSpecialistConfigFromPathname } from "@/config/specialist-registry";
+import { getSpecialistConfigFromPathname } from "@/lib/config/specialist-registry";
 
 /**
  * Client shell for the specialist layout (SC-01).

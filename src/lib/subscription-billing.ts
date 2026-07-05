@@ -11,13 +11,16 @@ import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
 import { logTenantContext } from "@/lib/tenant-context";
+import type { SubscriptionPlan as DatabaseSubscriptionPlan } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
 
 // ---- Types ----
 
-export type SubscriptionPlan = "free" | "starter" | "professional" | "enterprise";
+export type SubscriptionPlan = DatabaseSubscriptionPlan;
 type SubscriptionStatus = "active" | "past_due" | "canceled" | "trialing" | "paused";
 export type BillingInterval = "monthly" | "yearly";
+
+export type AiChatbotLevel = false | "basic" | "smart" | "advanced";
 
 export interface PlanConfig {
   id: SubscriptionPlan;
@@ -25,6 +28,7 @@ export interface PlanConfig {
   priceMonthly: number;
   priceYearly: number;
   currency: string;
+  stripePriceId: string | null;
   features: string[];
   maxDoctors: number;
   maxPatients: number;
@@ -32,8 +36,11 @@ export interface PlanConfig {
   smsCredits: number;
   whatsappCredits: number;
   customDomain: boolean;
-  videoConsultation: boolean;
   apiAccess: boolean;
+  aiChatbot: AiChatbotLevel;
+  storageGB: number;
+  multiLocation: boolean;
+  popular?: boolean;
 }
 
 export interface ClinicSubscription {
@@ -81,15 +88,18 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 0,
     priceYearly: 0,
     currency: "MAD",
-    features: ["Up to 2 doctors", "50 patients", "100 appointments/month", "Basic dashboard"],
-    maxDoctors: 2,
+    stripePriceId: null,
+    features: ["basic_booking", "website", "5_appointments_per_month"],
+    maxDoctors: 1,
     maxPatients: 50,
-    maxAppointmentsPerMonth: 100,
+    maxAppointmentsPerMonth: 5,
     smsCredits: 0,
     whatsappCredits: 0,
     customDomain: false,
-    videoConsultation: false,
     apiAccess: false,
+    aiChatbot: false,
+    storageGB: 1,
+    multiLocation: false,
   },
   {
     id: "starter",
@@ -97,21 +107,25 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 199,
     priceYearly: 1990,
     currency: "MAD",
+    stripePriceId: process.env.STRIPE_PRICE_STARTER || null,
     features: [
-      "Up to 5 doctors",
-      "500 patients",
-      "500 appointments/month",
-      "SMS & WhatsApp (100/mo)",
-      "CSV Export",
+      "booking",
+      "website",
+      "whatsapp_reminders",
+      "50_appointments",
+      "email_notifications",
     ],
-    maxDoctors: 5,
+    maxDoctors: 3,
     maxPatients: 500,
-    maxAppointmentsPerMonth: 500,
+    maxAppointmentsPerMonth: 50,
     smsCredits: 100,
     whatsappCredits: 100,
     customDomain: false,
-    videoConsultation: false,
     apiAccess: false,
+    aiChatbot: "basic",
+    storageGB: 5,
+    multiLocation: false,
+    popular: true,
   },
   {
     id: "professional",
@@ -119,25 +133,25 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 599,
     priceYearly: 5990,
     currency: "MAD",
+    stripePriceId: process.env.STRIPE_PRICE_PROFESSIONAL || null,
     features: [
-      "Unlimited doctors",
-      "Unlimited patients",
-      "Unlimited appointments",
-      "SMS & WhatsApp (500/mo)",
-      "Custom domain",
-      "Video consultations",
-      "Full analytics",
+      "everything_starter",
+      "ai_receptionist",
+      "analytics",
+      "unlimited_appointments",
+      "custom_domain",
+      "priority_support",
     ],
-    // MED-02: Use -1 sentinel for "unlimited" instead of Number.MAX_SAFE_INTEGER
-    // which displays as 9007199254740991 in UIs and JSON responses.
-    maxDoctors: -1,
+    maxDoctors: 10,
     maxPatients: -1,
     maxAppointmentsPerMonth: -1,
     smsCredits: 500,
     whatsappCredits: 500,
     customDomain: true,
-    videoConsultation: true,
     apiAccess: false,
+    aiChatbot: "smart",
+    storageGB: 25,
+    multiLocation: false,
   },
   {
     id: "enterprise",
@@ -145,13 +159,14 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceMonthly: 999,
     priceYearly: 9990,
     currency: "MAD",
+    stripePriceId: process.env.STRIPE_PRICE_ENTERPRISE || null,
     features: [
-      "Everything in Professional",
-      "API access",
-      "Priority support",
-      "Unlimited SMS & WhatsApp",
-      "White-label branding",
-      "Multi-location",
+      "everything_pro",
+      "multi_location",
+      "api_access",
+      "priority_support",
+      "white_label",
+      "dedicated_account_manager",
     ],
     maxDoctors: -1,
     maxPatients: -1,
@@ -159,10 +174,77 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     smsCredits: -1,
     whatsappCredits: -1,
     customDomain: true,
-    videoConsultation: true,
     apiAccess: true,
+    aiChatbot: "advanced",
+    storageGB: 100,
+    multiLocation: true,
   },
 ];
+
+/** Feature labels for display in the billing UI (French). */
+export const FEATURE_LABELS: Record<string, string> = {
+  basic_booking: "Réservation basique",
+  booking: "Réservation en ligne",
+  website: "Site web vitrine",
+  whatsapp_reminders: "Rappels WhatsApp",
+  email_notifications: "Notifications email",
+  "5_appointments_per_month": "5 RDV / mois",
+  "50_appointments": "50 RDV / mois",
+  everything_starter: "Tout le plan Starter",
+  ai_receptionist: "Réceptionniste IA",
+  analytics: "Tableau de bord analytique",
+  unlimited_appointments: "RDV illimités",
+  custom_domain: "Domaine personnalisé",
+  priority_support: "Support prioritaire",
+  everything_pro: "Tout le plan Professional",
+  multi_location: "Multi-établissements",
+  api_access: "Accès API",
+  white_label: "Marque blanche",
+  dedicated_account_manager: "Account manager dédié",
+};
+
+/** Get a plan by its Stripe Price ID. */
+export function getPlanByPriceId(priceId: string): PlanConfig | undefined {
+  return SUBSCRIPTION_PLANS.find((plan) => plan.stripePriceId === priceId);
+}
+
+/** All plan slugs in upgrade order. */
+export const PLAN_ORDER: SubscriptionPlan[] = ["free", "starter", "professional", "enterprise"];
+
+/**
+ * Deep-Dive P1/P2: maps legacy Moroccan tier slugs (`vitrine`, `cabinet`,
+ * `pro`, `premium`, `saas`, `saas-monthly` — still present on older
+ * `clinics.tier` rows) onto the canonical `SubscriptionPlan` model used by
+ * checkout, webhooks, and revenue reporting. This is the single source of
+ * truth for that mapping — every caller that resolves a raw stored value
+ * (from `clinics.tier`, `clinics.config.subscription_plan`, or
+ * `clinic_subscriptions.plan`) into a `SubscriptionPlan` MUST go through
+ * `normalizeSubscriptionPlan` instead of casting the raw value and calling
+ * `getPlanConfig` directly — the latter throws on legacy/unknown slugs.
+ */
+const LEGACY_TIER_TO_PLAN: Record<string, SubscriptionPlan> = {
+  free: "free",
+  starter: "starter",
+  professional: "professional",
+  enterprise: "enterprise",
+  vitrine: "free",
+  cabinet: "starter",
+  pro: "professional",
+  premium: "enterprise",
+  saas: "enterprise",
+  "saas-monthly": "enterprise",
+};
+
+/**
+ * Normalize any raw stored plan/tier value (canonical or legacy, any case)
+ * into a valid `SubscriptionPlan`. Unknown/missing values fall back to
+ * `"free"` rather than throwing, so this is always safe to call on
+ * untrusted/legacy data before passing the result to `getPlanConfig`.
+ */
+export function normalizeSubscriptionPlan(value: unknown): SubscriptionPlan {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return LEGACY_TIER_TO_PLAN[normalized] ?? "free";
+}
 
 // ---- Helpers ----
 

@@ -9,7 +9,7 @@ import { getLocalDateStr } from "@/lib/utils";
 export interface ClinicSubscriptionView {
   id: string;
   clinicId: string;
-  tierSlug: string;
+  SubscriptionPlan: string;
   tierName: string;
   status: "active" | "trial" | "past_due" | "cancelled" | "suspended";
   currentPeriodStart: string;
@@ -46,11 +46,11 @@ export interface ClinicSubscriptionView {
 }
 
 const TIER_NAMES: Record<string, string> = {
-  vitrine: "Vitrine",
-  cabinet: "Cabinet",
-  pro: "Pro",
-  premium: "Premium",
-  "saas-monthly": "SaaS Mensuel",
+  vitrine: "free",
+  cabinet: "starter",
+  pro: "professional",
+  premium: "enterprise",
+  "enterprise": "SaaS Mensuel",
 };
 
 export async function fetchClinicSubscription(
@@ -67,14 +67,14 @@ export async function fetchClinicSubscription(
 
   if (clinicError || !clinic) return null;
 
-  const tierSlug = clinic.tier ?? "vitrine";
+  const SubscriptionPlan = clinic.tier ?? "free";
   const systemType = clinic.type ?? "doctor";
 
   // Fetch pricing tier details
   const { data: tierData } = await supabase
     .from("pricing_tiers")
     .select("id, slug, name, description, features, limits, pricing")
-    .eq("slug", tierSlug)
+    .eq("slug", SubscriptionPlan)
     .single();
 
   // Fetch recent payments as invoices
@@ -122,8 +122,8 @@ export async function fetchClinicSubscription(
   return {
     id: `sub-${clinic.id}`,
     clinicId: clinic.id,
-    tierSlug,
-    tierName: TIER_NAMES[tierSlug] ?? tierSlug,
+    SubscriptionPlan,
+    tierName: TIER_NAMES[SubscriptionPlan] ?? SubscriptionPlan,
     status: subStatus,
     currentPeriodStart: monthStart,
     currentPeriodEnd: monthEnd,

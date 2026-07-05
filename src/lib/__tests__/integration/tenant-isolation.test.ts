@@ -173,30 +173,26 @@ describe("Tenant Isolation — Route Protection", () => {
     vi.clearAllMocks();
   });
 
-  it("maps all protected prefixes to role entries", async () => {
-    const { ROLE_ROUTE_MAP } = await import("@/lib/middleware/routes");
+  it("maps core auth roles and separately protects specialist route families", async () => {
+    const { ROLE_ROUTE_MAP, SPECIALIST_PROTECTED_PREFIXES, isProtectedRoute } =
+      await import("@/lib/middleware/routes");
 
-    const expectedPrefixes = [
-      "/super-admin",
-      "/admin",
-      "/receptionist",
-      "/doctor",
-      "/patient",
-      "/pharmacist",
-      "/nutritionist",
-      "/optician",
-      "/parapharmacy",
-      "/physiotherapist",
-      "/psychologist",
-      "/radiology",
-      "/speech-therapist",
-      "/equipment",
-    ];
+    const expectedCorePrefixes = ["/super-admin", "/admin", "/receptionist", "/doctor", "/patient"];
 
     const mappedPrefixes = Object.values(ROLE_ROUTE_MAP);
 
-    for (const prefix of expectedPrefixes) {
+    for (const prefix of expectedCorePrefixes) {
       expect(mappedPrefixes).toContain(prefix);
+    }
+
+    // Specialist dashboards are protected surfaces too, but intentionally not
+    // modeled as first-class auth roles. They are guarded by middleware using
+    // existing staff roles (`clinic_admin` / `receptionist` / `doctor`).
+    expect(mappedPrefixes).not.toContain("/nutritionist");
+    expect(mappedPrefixes).not.toContain("/equipment");
+
+    for (const prefix of SPECIALIST_PROTECTED_PREFIXES) {
+      expect(isProtectedRoute(`${prefix}/dashboard`)).toBe(true);
     }
   });
 

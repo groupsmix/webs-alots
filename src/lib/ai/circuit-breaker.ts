@@ -4,6 +4,13 @@
  * Protects user-facing AI routes from repeatedly calling unstable providers
  * during outage windows. State is stored in FEATURE_FLAGS_KV when available,
  * with an in-memory fallback for dev/test.
+ *
+ * Deep-Dive P6: this is deliberately separate from the general-purpose
+ * `@/lib/circuit-breaker` used by other outbound dependencies (WhatsApp,
+ * Stripe, Resend). AI provider outages need state that survives Worker
+ * isolate churn (hence KV persistence) and a much longer open window (5 min
+ * vs 30 s) tuned for LLM provider recovery times. See `@/lib/circuit-breaker`
+ * for the rationale on why these are not merged into one implementation.
  */
 
 import { getKVBinding } from "@/lib/features";

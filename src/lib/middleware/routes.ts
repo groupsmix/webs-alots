@@ -25,14 +25,14 @@ const PUBLIC_ROUTES = [
 /** Public route prefixes (no auth required) */
 const PUBLIC_PREFIXES = ["/pharmacy", "/dentist"];
 
-/** Protected route prefixes (require authentication) */
-const PROTECTED_PREFIXES = [
-  "/patient",
-  "/doctor",
-  "/receptionist",
-  "/admin",
-  "/super-admin",
-  "/pharmacist",
+/**
+ * Specialist dashboard prefixes.
+ *
+ * These are real authenticated staff surfaces under `src/app/(specialist)/...`
+ * but they are NOT first-class auth roles in the DB. They remain modeled as
+ * route slugs / dashboard families rather than `UserRole` values.
+ */
+export const SPECIALIST_PROTECTED_PREFIXES = [
   "/nutritionist",
   "/optician",
   "/parapharmacy",
@@ -41,6 +41,19 @@ const PROTECTED_PREFIXES = [
   "/radiology",
   "/speech-therapist",
   "/equipment",
+] as const;
+
+/** Existing core staff roles that may access specialist dashboards. */
+export const SPECIALIST_STAFF_ROLES = ["clinic_admin", "receptionist", "doctor"] as const;
+
+/** Protected route prefixes (require authentication) */
+const PROTECTED_PREFIXES = [
+  "/patient",
+  "/doctor",
+  "/receptionist",
+  "/admin",
+  "/super-admin",
+  ...SPECIALIST_PROTECTED_PREFIXES,
 ];
 
 /** Lightweight API routes that skip heavy middleware processing */
@@ -60,15 +73,6 @@ export const ROLE_ROUTE_MAP: Record<string, string> = {
   receptionist: "/receptionist",
   doctor: "/doctor",
   patient: "/patient",
-  pharmacist: "/pharmacist",
-  nutritionist: "/nutritionist",
-  optician: "/optician",
-  parapharmacy: "/parapharmacy",
-  physiotherapist: "/physiotherapist",
-  psychologist: "/psychologist",
-  radiology: "/radiology",
-  speech_therapist: "/speech-therapist",
-  equipment: "/equipment",
 };
 
 /** Role to dashboard path mapping */
@@ -78,15 +82,6 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   receptionist: "/receptionist/dashboard",
   doctor: "/doctor/dashboard",
   patient: "/patient/dashboard",
-  pharmacist: "/pharmacist/dashboard",
-  nutritionist: "/nutritionist/dashboard",
-  optician: "/optician/dashboard",
-  parapharmacy: "/parapharmacy/dashboard",
-  physiotherapist: "/physiotherapist/dashboard",
-  psychologist: "/psychologist/dashboard",
-  radiology: "/radiology/dashboard",
-  speech_therapist: "/speech-therapist/dashboard",
-  equipment: "/equipment/dashboard",
 };
 
 /**
@@ -205,6 +200,10 @@ export function isPublicRoute(pathname: string): boolean {
 
 export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+export function isSpecialistProtectedRoute(pathname: string): boolean {
+  return SPECIALIST_PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 /**

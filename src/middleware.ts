@@ -26,10 +26,12 @@ import { applyRateLimit } from "@/lib/middleware/rate-limiting";
 import {
   isPublicRoute,
   isProtectedRoute,
+  isSpecialistProtectedRoute,
   LIGHTWEIGHT_API_PATHS,
   ROLE_ROUTE_MAP,
   ROLE_DASHBOARD_MAP,
   safeRedirectPath,
+  SPECIALIST_STAFF_ROLES,
 } from "@/lib/middleware/routes";
 import { checkSanctionedCountry } from "@/lib/middleware/sanctioned-countries";
 import {
@@ -607,6 +609,22 @@ export async function middleware(request: NextRequest) {
     const mfaRedirect = await enforceMfa(supabase, profile.role, pathname, request.url);
     if (mfaRedirect) return mfaRedirect;
     if (profile.role === "super_admin") return supabaseResponse;
+
+    // Specialist dashboards are protected page surfaces, but the repo models
+    // them as route families / clinic types rather than first-class DB roles.
+    // Gate them behind existing authenticated staff roles instead of inventing
+    // phantom auth roles (Deep-Dive P3).
+    if (isSpecialistProtectedRoute(pathname)) {
+      if (SPECIALIST_STAFF_ROLES.some((role) => role === profile.role)) {
+        return supabaseResponse;
+      }
+      const dashboardPath = ROLE_DASHBOARD_MAP[profile.role];
+      if (dashboardPath) {
+        return secureRedirect(new URL(dashboardPath, request.url));
+      }
+      await authClient.signOut();
+      return secureRedirect(new URL("/login?error=unauthorized_role", request.url));
+    }
 
     // Check if user is accessing their allowed routes
     if (!pathname.startsWith(allowedPrefix)) {

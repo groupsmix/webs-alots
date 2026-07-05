@@ -177,13 +177,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // API Versioning: Sunset headers removed per audit finding S0-03-04.
-      // The /api/v1/* routes are rewrites to unversioned handlers (see
-      // rewrites() below), NOT independent implementations. Advertising a
-      // Sunset date on the unversioned paths is misleading because both
-      // paths resolve to the same handler. Re-add Sunset headers only once
-      // real v1 handlers are implemented and unversioned paths are scheduled
-      // for removal.
+
     ];
   },
 
@@ -218,35 +212,7 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
 
-  async rewrites() {
-    // API Versioning: map /api/v1/<route> to the existing unversioned
-    // handlers so routes are accessible under both /api/<route> and
-    // /api/v1/<route>. Old unversioned paths remain functional (backward
-    // compat) but receive a Sunset header (see headers() above).
-    const versionedRoutes = [
-      "booking",
-      "upload",
-      "checkin",
-      "chat",
-      "notifications",
-      "webhooks",
-      "payments",
-      "consent",
-      "files",
-    ];
-    return {
-      beforeFiles: versionedRoutes.flatMap((route) => [
-        {
-          source: `/api/v1/${route}`,
-          destination: `/api/${route}`,
-        },
-        {
-          source: `/api/v1/${route}/:path*`,
-          destination: `/api/${route}/:path*`,
-        },
-      ]),
-    };
-  },
+
 
   async redirects() {
     // WWW → non-www redirect is handled in middleware.ts so it works

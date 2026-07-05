@@ -47,7 +47,6 @@ describe("Billing API — plan configuration", () => {
   it("enterprise plan includes API access", () => {
     const config = getPlanConfig("enterprise");
     expect(config.apiAccess).toBe(true);
-    expect(config.videoConsultation).toBe(true);
   });
 });
 

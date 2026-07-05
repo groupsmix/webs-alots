@@ -1,327 +1,145 @@
 "use server";
 
 /**
- * Super Admin Supabase actions — CRUD operations for onboarding clinics.
+ * Public super-admin server action façade.
  *
- * Runs server-side as Next.js Server Actions.  The authenticated user's
- * session is verified via the cookie-based Supabase client, ensuring the
- * anon key is never exposed and RLS policies are enforced server-side.
- *
- * All operations require the authenticated user to have role = "super_admin".
+ * The concrete implementations live under `src/lib/super-admin/*-actions.ts`.
+ * This file preserves the stable import surface used across the app.
  */
 
-import { assertClinicId } from "@/lib/assert-tenant";
 import { requireRole } from "@/lib/auth";
-import { sendEmail } from "@/lib/email";
+import { createClient } from "@/lib/supabase-server";
+import { rawClient } from "@/lib/super-admin/base";
 import {
-  staffWelcomeEmail,
-  clinicSuspendedEmail,
-  clinicActivatedEmail,
-} from "@/lib/email-templates";
-import { getSiteUrl, getSupabaseServiceRoleKey } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { syncClinicOnboardingState } from "@/lib/onboarding/state";
-import { assertAllowedSubdomain } from "@/lib/reserved-subdomains";
-import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
-import { createClient, createAdminClient } from "@/lib/supabase-server";
-import type { ClinicType, ClinicTier, Json } from "@/lib/types/database";
-import { getLocalDateStr } from "@/lib/utils";
-import { isKnownJunkSubdomain } from "@/lib/validations/known-junk-tenants";
+  fetchBillingRecordsImpl,
+  fetchClientSubscriptionsImpl,
+  fetchRevenueStatsImpl,
+  updateSubscriptionStatusImpl,
+} from "@/lib/super-admin/billing-actions";
+import {
+  deleteClinicFeatureOverrideImpl,
+  fetchClinicActivityLogsImpl,
+  fetchClinicFeatureOverridesImpl,
+  fetchClinicPatientCountImpl,
+  fetchClinicStaffCountImpl,
+  upsertClinicFeatureOverrideImpl,
+} from "@/lib/super-admin/clinic-detail-actions";
+import {
+  activateClinicImpl,
+  createClinicImpl,
+  deleteClinicImpl,
+  fetchClinicAdminUserIdImpl,
+  fetchClinicByIdImpl,
+  fetchClinicsImpl,
+  updateClinicStatusImpl,
+} from "@/lib/super-admin/clinic-lifecycle-actions";
+import {
+  createAnnouncementImpl,
+  deleteAnnouncementImpl,
+  fetchActivityLogsImpl,
+  fetchAnnouncementsImpl,
+  fetchDashboardStatsImpl,
+  setAnnouncementActiveImpl,
+  type DashboardStats,
+  updateAnnouncementImpl,
+} from "@/lib/super-admin/dashboard-actions";
+import {
+  bulkSetFeatureTierImpl,
+  fetchFeatureDefinitionsImpl,
+  fetchFeatureTogglesImpl,
+  fetchPriceHistoryImpl,
+  fetchPricingTiersImpl,
+  updateFeatureDefinitionImpl,
+  updatePricingTierImpl,
+} from "@/lib/super-admin/feature-actions";
+import { type UntypedClient } from "@/lib/super-admin/helpers";
+import type {
+  ClinicFeatureOverride,
+  ClinicRow,
+  CreateClinicInput,
+  CreateServiceInput,
+  CreateUserInput,
+  CreateUserResult,
+  ServiceRow,
+  TimeSlotRow,
+} from "@/lib/super-admin/models";
+import {
+  createPromotionImpl,
+  deletePromotionImpl,
+  fetchPromotionsImpl,
+  setPromotionEnabledImpl,
+} from "@/lib/super-admin/promotions-actions";
+import {
+  createServiceImpl,
+  createTimeSlotsForDoctorImpl,
+} from "@/lib/super-admin/clinic-setup-actions";
+import { createUserImpl } from "@/lib/super-admin/staff-provisioning-actions";
+import type {
+  ActivityLog,
+  Announcement,
+  AnnouncementInput,
+  BillingRecord,
+  ClientSubscription,
+  FeatureDefinition,
+  FeatureToggleRow,
+  PriceHistoryEntry,
+  PricingTierRow,
+  PromotionRow,
+  RevenueStats,
+} from "@/lib/super-admin/types";
 
-/**
- * Server-side Supabase client scoped to super_admin operations.
- *
- * **SECURITY NOTE — RLS bypass considerations:**
- * This function returns a cookie-based Supabase client whose queries
- * run under the authenticated user's session. It does NOT bypass RLS
- * by itself. However, some callers (e.g. `createUser`) also use
- * `createAdminClient("super_admin")` which creates a service-role client that
- * **does bypass all Row Level Security policies**.
- *
- * Any function in this file that uses `createAdminClient("super_admin")` must:
- *   1. Validate all inputs before passing them to the admin client.
- *   2. Be restricted to super_admin callers (enforced by `requireRole`).
- *   3. Log the operation for audit purposes (see `activity_logs` table).
- *   4. Never expose the service-role key or admin client to the browser.
- *
- * Audit this file whenever RLS policies change or new admin operations
- * are added. A bug in any exported function is a potential data breach.
- */
-async function rawClient() {
-  await requireRole("super_admin");
-  return createClient();
+export type {
+  ActivityLog,
+  Announcement,
+  AnnouncementInput,
+  BillingRecord,
+  ClientSubscription,
+  FeatureDefinition,
+  FeatureToggleRow,
+  PricingTierRow,
+  PromotionRow,
+  RevenueStats,
+} from "@/lib/super-admin/types";
+export type { DashboardStats } from "@/lib/super-admin/dashboard-actions";
+export type {
+  ClinicFeatureOverride,
+  CreateClinicInput,
+  CreateServiceInput,
+  CreateUserAccess,
+  CreateUserInput,
+  CreateUserResult,
+} from "@/lib/super-admin/models";
+
+async function rawUntypedClient(): Promise<UntypedClient> {
+  return (await rawClient()) as unknown as UntypedClient;
 }
 
-// Row shapes returned by raw queries (match SQL schema, not the TS Database type)
-interface ClinicRow {
-  id: string;
-  name: string;
-  type: string;
-  config: Record<string, unknown> | null;
-  tier: string | null;
-  status: string | null;
-  subdomain: string | null;
-  created_at: string | null;
-}
-
-interface UserRow {
-  id: string;
-  auth_id: string | null;
-  role: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  clinic_id: string | null;
-  created_at: string | null;
-}
-
-interface ServiceRow {
-  id: string;
-  clinic_id: string;
-  name: string;
-  price: number | null;
-  duration_minutes: number;
-  category: string | null;
-}
-
-interface TimeSlotRow {
-  id: string;
-  doctor_id: string;
-  clinic_id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
-  max_capacity: number;
-  buffer_minutes: number;
-}
-
-// ---------- Types ----------
-
-export interface CreateClinicInput {
-  name: string;
-  type: ClinicType;
-  tier: ClinicTier;
-  config?: Record<string, unknown>;
-  status?: "active" | "inactive" | "suspended";
-  subdomain?: string;
-}
-
-export interface CreateUserInput {
-  clinic_id: string;
-  role: "clinic_admin" | "receptionist" | "doctor";
-  name: string;
-  phone?: string;
-  email?: string;
-}
-
-/**
- * Per-staff access state returned by {@link createUser} so the onboarding
- * wizard can report the *true* login status (Audit #1/#10) instead of showing
- * a fake shared password that never matches the real random auth password.
- */
-export interface CreateUserAccess {
-  /** A Supabase Auth login exists (was created or already existed) for this staff member. */
-  authCreated: boolean;
-  /** The "set your password" invitation email was sent successfully. */
-  inviteSent: boolean;
-  /** Human-readable reason when a login or invite could not be provided. */
-  inviteError?: string;
-}
-
-/** {@link createUser} result: the persisted row plus its real access state. */
-export type CreateUserResult = UserRow & { access: CreateUserAccess };
-
-export interface CreateServiceInput {
-  clinic_id: string;
-  name: string;
-  price?: number;
-  duration_minutes: number;
-  category?: string;
-}
-
-interface _CreateTimeSlotInput {
-  doctor_id: string;
-  clinic_id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_available?: boolean;
-  max_capacity?: number;
-  buffer_minutes?: number;
-}
-
-// ---------- Clinic CRUD ----------
+// ---------- Clinic ----------
 
 export async function createClinic(input: CreateClinicInput): Promise<ClinicRow> {
-  const supabase = await rawClient();
-  const cfg = input.config ?? {};
-
-  // Audit #5: validate the subdomain through the shared helper (length,
-  // reserved words, hyphen abuse, punycode) BEFORE the INSERT, instead of
-  // relying solely on the DB trigger. Throws a clear, operator-facing message
-  // that the wizard surfaces to the user.
-  if (input.subdomain) {
-    assertAllowedSubdomain(input.subdomain);
-  }
-
-  const { data, error } = await supabase
-    .from("clinics")
-    .insert({
-      name: input.name,
-      type: input.type,
-      tier: input.tier,
-      // Audit #3/#9: onboarding-created clinics start `inactive` and are flipped
-      // to `active` only once onboarding completes (see `activateClinic`). This
-      // stops an abandoned or half-finished onboarding from leaving a
-      // publicly-resolvable, empty/broken tenant live. `inactive` satisfies the
-      // earlier QA concern too: it is distinct from the scary `suspended` state
-      // (the DB column default) and the clinic becomes `active` on completion.
-      status: input.status ?? "inactive",
-      config: cfg as Json,
-      subdomain: input.subdomain ?? null,
-      // Also set direct columns so public branding queries work
-      phone: (cfg.phone as string) || null,
-      address: (cfg.address as string) || null,
-      owner_email: (cfg.email as string) || null,
-      owner_name: (cfg.owner_name as string) || null,
-      city: (cfg.city as string) || null,
-      domain: (cfg.domain as string) || null,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to create clinic: ${error.message}`);
-
-  await syncClinicOnboardingState({
-    supabase,
-    clinicId: data.id,
-    clinicName: input.name,
-    contactName: typeof cfg.owner_name === "string" ? cfg.owner_name : null,
-    contactPhone: typeof cfg.phone === "string" ? cfg.phone : null,
-    contactEmail: typeof cfg.email === "string" ? cfg.email : null,
-    completedSteps: ["clinic_info"],
-    currentStep: "team_setup",
-    status: "in_progress",
-  });
-
-  return data as ClinicRow;
+  return createClinicImpl(await rawClient(), input);
 }
 
-/**
- * Mark a clinic `active` once its onboarding is complete (Audit #3).
- *
- * Clinics are created `inactive` (see `createClinic`) so that an abandoned or
- * half-finished onboarding never leaves a publicly-resolvable, broken tenant
- * live. The onboarding wizard calls this on its final step (and the
- * auto-provision route activates only when every provisioning step succeeds).
- *
- * Invalidates the subdomain cache so the tenant-resolution middleware picks up
- * the new status immediately, and writes a non-blocking audit-log entry.
- */
 export async function activateClinic(clinicId: string): Promise<void> {
-  const supabase = await rawClient();
-
-  const { data: clinic, error: fetchError } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin activates a specific clinic by id
-    .select("id, name, subdomain, status")
-    .eq("id", clinicId)
-    .single();
-
-  if (fetchError) throw new Error(`Failed to load clinic for activation: ${fetchError.message}`);
-
-  const { error } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin activates a specific clinic by id
-    .update({ status: "active" })
-    .eq("id", clinicId);
-
-  if (error) throw new Error(`Failed to activate clinic: ${error.message}`);
-
-  // Invalidate the subdomain cache so middleware serves the now-active tenant.
-  if (clinic?.subdomain) {
-    invalidateSubdomainCache(clinic.subdomain);
-  }
-
-  // Audit log (non-blocking).
-  try {
-    await supabase.from("activity_logs").insert({
-      action: "clinic_activated",
-      description: `Clinic "${clinic?.name ?? clinicId}" activated on onboarding completion`,
-      clinic_id: clinicId,
-      clinic_name: clinic?.name ?? null,
-      type: "clinic",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      clinicId,
-      error: err,
-    });
-  }
+  return activateClinicImpl(await rawClient(), clinicId);
 }
 
 export async function fetchClinics(): Promise<ClinicRow[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("clinics")
-    .select("id, name, type, config, tier, status, subdomain, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`Failed to fetch clinics: ${error.message}`);
-  return (data ?? []) as ClinicRow[];
+  return fetchClinicsImpl(await rawClient());
 }
 
 export async function fetchClinicById(clinicId: string): Promise<ClinicRow | null> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin fetches specific clinic by id
-    .select("id, name, type, config, tier, status, subdomain, created_at")
-    .eq("id", clinicId)
-    .single();
-
-  if (error) return null;
-  return data as ClinicRow;
+  return fetchClinicByIdImpl(await rawClient(), clinicId);
 }
 
-/**
- * Resolve the user id to impersonate for a clinic — its clinic_admin if one
- * exists, otherwise null. Used by the super-admin clinic detail page to wire
- * the "Impersonate" action (which targets a user, not a clinic).
- */
 export async function fetchClinicAdminUserId(clinicId: string): Promise<string | null> {
-  const supabase = await rawClient();
-  const { data } = await supabase
-    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin resolves admin for specific clinic
-    .select("id")
-    .eq("clinic_id", clinicId)
-    .eq("role", "clinic_admin")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return data?.id ?? null;
-}
-
-export interface ClinicFeatureOverride {
-  id: string;
-  clinic_id: string;
-  feature_key: string;
-  enabled: boolean;
-  created_at: string | null;
-  updated_at: string | null;
+  return fetchClinicAdminUserIdImpl(await rawClient(), clinicId);
 }
 
 export async function fetchClinicFeatureOverrides(
   clinicId: string,
 ): Promise<ClinicFeatureOverride[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping — super-admin reads overrides for specific clinic
-    .select("id, clinic_id, feature_key, enabled, created_at")
-    .eq("clinic_id", clinicId);
-
-  if (error || !data) return [];
-  return data as ClinicFeatureOverride[];
+  return fetchClinicFeatureOverridesImpl(await rawClient(), clinicId);
 }
 
 export async function upsertClinicFeatureOverride(
@@ -329,285 +147,46 @@ export async function upsertClinicFeatureOverride(
   featureId: string,
   enabled: boolean,
 ): Promise<void> {
-  const supabase = await rawClient();
-  const { error } = await supabase
-    .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping — super-admin upserts override for specific clinic
-    .upsert(
-      { clinic_id: clinicId, feature_key: featureId, enabled },
-      { onConflict: "clinic_id,feature_key" },
-    );
-
-  if (error) throw new Error(`Failed to upsert feature override: ${error.message}`);
+  return upsertClinicFeatureOverrideImpl(await rawClient(), clinicId, featureId, enabled);
 }
 
 export async function deleteClinicFeatureOverride(
   clinicId: string,
   featureId: string,
 ): Promise<void> {
-  const supabase = await rawClient();
-  const { error } = await supabase
-    .from("clinic_feature_overrides") // nosemgrep: semgrep.tenant-scoping — super-admin deletes override for specific clinic
-    .delete()
-    .eq("clinic_id", clinicId)
-    .eq("feature_key", featureId);
-
-  if (error) throw new Error(`Failed to delete feature override: ${error.message}`);
+  return deleteClinicFeatureOverrideImpl(await rawClient(), clinicId, featureId);
 }
 
 export async function fetchClinicStaffCount(clinicId: string): Promise<number> {
-  const supabase = await rawClient();
-  const { count, error } = await supabase
-    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin counts staff for specific clinic
-    .select("id", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .in("role", ["clinic_admin", "receptionist", "doctor"]);
-
-  if (error) return 0;
-  return count ?? 0;
+  return fetchClinicStaffCountImpl(await rawClient(), clinicId);
 }
 
 export async function fetchClinicPatientCount(clinicId: string): Promise<number> {
-  const supabase = await rawClient();
-  const { count, error } = await supabase
-    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin counts patients for specific clinic
-    .select("id", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .eq("role", "patient");
-
-  if (error) return 0;
-  return count ?? 0;
+  return fetchClinicPatientCountImpl(await rawClient(), clinicId);
 }
 
 export async function fetchClinicActivityLogs(clinicId: string): Promise<ActivityLog[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("activity_logs") // nosemgrep: semgrep.tenant-scoping — super-admin reads activity for specific clinic
-    .select("id, action, description, clinic_id, clinic_name, created_at, actor, type")
-    .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    action: row.action ?? "",
-    description: row.description ?? "",
-    clinicId: row.clinic_id ?? undefined,
-    clinicName: row.clinic_name ?? undefined,
-    timestamp: row.created_at ?? "",
-    actor: row.actor ?? "System",
-    type: (row.type ?? "clinic") as ActivityLog["type"],
-  }));
+  return fetchClinicActivityLogsImpl(await rawClient(), clinicId);
 }
 
 export async function updateClinicStatus(
   clinicId: string,
   status: "active" | "inactive" | "suspended",
 ): Promise<void> {
-  const supabase = await rawClient();
-
-  // Fetch clinic details for audit log, email notification, and cache invalidation
-  const { data: clinic } = await supabase
-    .from("clinics")
-    .select("id, name, subdomain, owner_email, owner_name")
-    .eq("id", clinicId)
-    .single();
-
-  const { error } = await supabase.from("clinics").update({ status }).eq("id", clinicId);
-
-  if (error) throw new Error(`Failed to update clinic status: ${error.message}`);
-
-  // Invalidate subdomain cache so middleware picks up the new status
-  if (clinic?.subdomain) {
-    invalidateSubdomainCache(clinic.subdomain);
-  }
-
-  // Audit log the status change
-  try {
-    await supabase.from("activity_logs").insert({
-      action: status === "suspended" ? "clinic_suspended" : "clinic_activated",
-      description: `Clinic "${clinic?.name ?? clinicId}" status changed to ${status}`,
-      clinic_id: clinicId,
-      clinic_name: clinic?.name ?? null,
-      type: "clinic",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      clinicId,
-      error: err,
-    });
-  }
-
-  // Send email notification to clinic admin
-  if (clinic?.owner_email) {
-    try {
-      const template =
-        status === "suspended"
-          ? clinicSuspendedEmail({
-              clinicName: clinic.name ?? "Your Clinic",
-              adminName: clinic.owner_name ?? "Admin",
-            })
-          : clinicActivatedEmail({
-              clinicName: clinic.name ?? "Your Clinic",
-              adminName: clinic.owner_name ?? "Admin",
-            });
-      await sendEmail({ to: clinic.owner_email, ...template });
-    } catch (emailErr) {
-      logger.warn("Failed to send clinic status email", {
-        context: "super-admin-actions",
-        clinicId,
-        error: emailErr,
-      });
-    }
-  }
+  return updateClinicStatusImpl(await rawClient(), clinicId, status);
 }
 
-// ---------- Clinic deletion ----------
-
-/**
- * Permanently delete a clinic and all of its tenant data.
- *
- * **IRREVERSIBLE.** Most clinic-scoped tables reference `clinics(id)` with
- * `ON DELETE CASCADE`, so removing the clinic row also removes its patients,
- * appointments, payments, uploaded files, etc. To stop an operator from wiping
- * a real practice's PHI by accident, deletion is **refused when the clinic
- * still has patient records** unless `force: true` is explicitly passed (the UI
- * gates this behind a "type the clinic name" confirmation and an extra
- * checkbox). Empty / junk clinics (zero patients) delete without `force`.
- *
- * Security: super_admin only (enforced by `requireRole`). The actual DELETE
- * runs through the service-role client so the cross-tenant cascade is not
- * blocked by RLS — the clinic id is validated first and the operation is
- * audit-logged. The audit row is written WITHOUT a `clinic_id` so the cascade
- * does not delete the very record that proves the deletion happened.
- *
- * @returns the number of patient records that were erased alongside the clinic.
- */
 export async function deleteClinic(
   clinicId: string,
   options: { force?: boolean } = {},
 ): Promise<{ deleted: true; patientCount: number }> {
-  const profile = await requireRole("super_admin");
-  // Runtime UUID validation before the service-role client touches anything.
-  assertClinicId(clinicId, "super-admin.deleteClinic");
-
-  const supabase = await createClient();
-
-  const { data: clinic, error: fetchError } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin deletes a specific clinic by id
-    .select("id, name, subdomain")
-    .eq("id", clinicId)
-    .single();
-
-  if (fetchError || !clinic) {
-    throw new Error(`Clinic not found: ${fetchError?.message ?? clinicId}`);
-  }
-
-  // Guard: never destroy real patient PHI unless the caller explicitly forces it.
-  const { count: patientCountRaw } = await supabase
-    .from("users") // nosemgrep: semgrep.tenant-scoping — super-admin counts patients for a specific clinic before deletion
-    .select("id", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .eq("role", "patient");
-
-  const patientCount = patientCountRaw ?? 0;
-  if (patientCount > 0 && !options.force) {
-    throw new Error(
-      `Refusing to delete "${clinic.name}": it still has ${patientCount} patient record(s). ` +
-        `Confirm again with the "erase patient data" option to permanently remove it.`,
-    );
-  }
-
-  // Audit FIRST (clinic_id intentionally null so the cascade keeps this row).
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — platform-level audit row (no clinic_id) so it survives the clinic's cascade delete
-      .from("activity_logs")
-      .insert({
-        action: "clinic_deleted",
-        description:
-          `Clinic "${clinic.name}" (id ${clinic.id}, subdomain ${clinic.subdomain ?? "—"}) ` +
-          `permanently deleted by ${profile.name ?? "super_admin"}` +
-          (patientCount > 0 ? ` — ${patientCount} patient record(s) erased` : ""),
-        type: "clinic",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      clinicId,
-      error: err,
-    });
-  }
-
-  // Cross-tenant delete via service-role client (RLS would otherwise block the
-  // cascade). Caller is super_admin-gated and the id is validated above.
-  // nosemgrep: semgrep.admin-client-guard — super-admin cross-tenant clinic deletion; id validated, role-gated, audit-logged above
-  const admin = createAdminClient("super_admin");
-  const { error: deleteError } = await admin.from("clinics").delete().eq("id", clinicId);
-
-  if (deleteError) {
-    throw new Error(`Failed to delete clinic: ${deleteError.message}`);
-  }
-
-  // Stop middleware from resolving the now-deleted tenant.
-  if (clinic.subdomain) {
-    invalidateSubdomainCache(clinic.subdomain);
-  }
-
-  return { deleted: true, patientCount };
+  return deleteClinicImpl(clinicId, options);
 }
 
 // ---------- Promotions ----------
 
-export interface PromotionRow {
-  id: string;
-  name: string;
-  discount: number;
-  tiers: string[];
-  startDate: string;
-  endDate: string;
-  enabled: boolean;
-}
-
-// `promotions` (migration 00194) is not yet in the generated Supabase types.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UntypedClient = { from: (table: string) => any };
-
-interface PromotionDbRow {
-  id: string;
-  name: string | null;
-  discount_percent: number | null;
-  tiers: string[] | null;
-  start_date: string | null;
-  end_date: string | null;
-  enabled: boolean | null;
-}
-
-function mapPromotion(row: PromotionDbRow): PromotionRow {
-  return {
-    id: row.id,
-    name: row.name ?? "",
-    discount: row.discount_percent ?? 0,
-    tiers: row.tiers ?? [],
-    startDate: row.start_date ?? "",
-    endDate: row.end_date ?? "",
-    enabled: row.enabled ?? true,
-  };
-}
-
-const PROMOTION_COLS = "id, name, discount_percent, tiers, start_date, end_date, enabled";
-
 export async function fetchPromotions(): Promise<PromotionRow[]> {
-  const supabase = (await rawClient()) as unknown as UntypedClient;
-  const { data, error } = await supabase
-    .from("promotions")
-    .select(PROMOTION_COLS)
-    .order("created_at", { ascending: false });
-  if (error || !data) return [];
-  return (data as PromotionDbRow[]).map(mapPromotion);
+  return fetchPromotionsImpl(await rawUntypedClient());
 }
 
 export async function createPromotion(input: {
@@ -617,432 +196,38 @@ export async function createPromotion(input: {
   startDate: string;
   endDate: string;
 }): Promise<PromotionRow> {
-  const supabase = (await rawClient()) as unknown as UntypedClient;
-  const { data, error } = await supabase
-    .from("promotions")
-    .insert({
-      name: input.name,
-      discount_percent: input.discount,
-      tiers: input.tiers,
-      start_date: input.startDate || null,
-      end_date: input.endDate || null,
-      enabled: true,
-    })
-    .select(PROMOTION_COLS)
-    .single();
-  if (error || !data) throw new Error(`Failed to create promotion: ${error?.message ?? "no data"}`);
-
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
-      .from("activity_logs")
-      .insert({
-        action: "promotion_created",
-        description: `Promotion "${input.name}" created`,
-        type: "billing",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", error: err });
-  }
-
-  return mapPromotion(data as PromotionDbRow);
+  return createPromotionImpl(await rawUntypedClient(), input);
 }
 
 export async function setPromotionEnabled(id: string, enabled: boolean): Promise<void> {
-  const supabase = (await rawClient()) as unknown as UntypedClient;
-  const { error } = await supabase.from("promotions").update({ enabled }).eq("id", id);
-  if (error) throw new Error(`Failed to update promotion: ${error.message}`);
+  return setPromotionEnabledImpl(await rawUntypedClient(), id, enabled);
 }
 
 export async function deletePromotion(id: string): Promise<void> {
-  const supabase = (await rawClient()) as unknown as UntypedClient;
-  const { error } = await supabase.from("promotions").delete().eq("id", id);
-  if (error) throw new Error(`Failed to delete promotion: ${error.message}`);
-
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (promotions are platform-wide, no clinic context)
-      .from("activity_logs")
-      .insert({
-        action: "promotion_deleted",
-        description: `Promotion ${id} deleted`,
-        type: "billing",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", error: err });
-  }
+  return deletePromotionImpl(await rawUntypedClient(), id);
 }
 
-/**
- * Persist a subscription status change for the super-admin Subscriptions view.
- *
- * A "subscription" is derived from the clinic's lifecycle `status`
- * (see `fetchClientSubscriptions`), so persisting a subscription action maps to
- * the clinic's `status` column:
- *   - `activate` -> `"active"`
- *   - `suspend`  -> `"suspended"`
- *   - `cancel`   -> `"inactive"` (rendered as "cancelled" in the subscriptions UI)
- *
- * Unlike `updateClinicStatus`, this intentionally does NOT send clinic-lifecycle
- * emails: this is a billing/subscription admin operation (often run in bulk),
- * and that helper's activate/suspend email branch would mislabel a "cancel" as
- * an activation. The change is audit-logged to `activity_logs` and invalidates
- * the subdomain cache so middleware reflects the new status immediately.
- */
+// ---------- Billing ----------
 export async function updateSubscriptionStatus(
   clinicId: string,
   action: "activate" | "suspend" | "cancel",
 ): Promise<void> {
-  const supabase = await rawClient();
-
-  const STATUS_BY_ACTION = {
-    activate: "active",
-    suspend: "suspended",
-    cancel: "inactive",
-  } as const;
-  const AUDIT_BY_ACTION = {
-    activate: { action: "subscription_activated", verb: "activated" },
-    suspend: { action: "subscription_suspended", verb: "suspended" },
-    cancel: { action: "subscription_cancelled", verb: "cancelled" },
-  } as const;
-
-  const status = STATUS_BY_ACTION[action];
-
-  // Fetch clinic for cache invalidation + audit context.
-  const { data: clinic } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin updates a specific clinic by id
-    .select("id, name, subdomain")
-    .eq("id", clinicId)
-    .single();
-
-  const { error } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin updates a specific clinic by id
-    .update({ status })
-    .eq("id", clinicId);
-
-  if (error) throw new Error(`Failed to update subscription status: ${error.message}`);
-
-  // Invalidate subdomain cache so middleware picks up the new status.
-  if (clinic?.subdomain) {
-    invalidateSubdomainCache(clinic.subdomain);
-  }
-
-  // Audit log (non-blocking).
-  try {
-    await supabase.from("activity_logs").insert({
-      action: AUDIT_BY_ACTION[action].action,
-      description: `Subscription for "${clinic?.name ?? clinicId}" ${AUDIT_BY_ACTION[action].verb}`,
-      clinic_id: clinicId,
-      clinic_name: clinic?.name ?? null,
-      type: "billing",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      clinicId,
-      error: err,
-    });
-  }
+  return updateSubscriptionStatusImpl(await rawClient(), clinicId, action);
 }
 
-// ---------- User CRUD ----------
+// ---------- Provisioning ----------
 
-/**
- * Resolve a clinic's display name for staff-facing emails (Audit #4).
- *
- * The welcome email previously used `clinic_id` (a raw UUID) as the clinic
- * name. This fetches the real name; if the lookup fails it falls back to a
- * neutral label rather than leaking the UUID.
- */
-async function fetchClinicName(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  clinicId: string,
-): Promise<string> {
-  const { data } = await supabase
-    .from("clinics") // nosemgrep: semgrep.tenant-scoping — super-admin reads one clinic's name by id for a staff invite
-    .select("name")
-    .eq("id", clinicId)
-    .maybeSingle();
-  const name = data?.name?.trim();
-  return name && name.length > 0 ? name : "your clinic";
-}
-
-/**
- * Persist (or reconcile) the public.users row for a staff member.
- *
- * The auth trigger (`handle_new_auth_user`, migrations 00028/00068) inserts a
- * public.users row (role='patient') the moment an auth account is created, and
- * users.email is UNIQUE (migration 00068 D-03). So when an auth account exists
- * we UPDATE the trigger-created row in place rather than inserting a duplicate
- * (which would 23505 and surface as an opaque Server Component crash). The
- * insert path additionally recovers from a duplicate-email race by updating the
- * existing row, keeping onboarding idempotent.
- */
-async function persistStaffUserRow(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  input: CreateUserInput,
-  authId: string | null,
-): Promise<UserRow> {
-  if (authId) {
-    // nosemgrep: semgrep.tenant-scoping — super-admin reconciles the staff row by auth_id; clinic_id is written below. Intentionally cross-tenant (see AGENTS.md super-admin exception)
-    const { data: existingRow } = await supabase
-      .from("users")
-      .select("id")
-      .eq("auth_id", authId)
-      .maybeSingle();
-
-    if (existingRow) {
-      // nosemgrep: semgrep.tenant-scoping — super-admin sets this staff member's clinic_id/role on the trigger-created row. Intentionally cross-tenant (see AGENTS.md super-admin exception)
-      const { data: updated, error: updateError } = await supabase
-        .from("users")
-        .update({
-          clinic_id: input.clinic_id,
-          role: input.role,
-          name: input.name,
-          phone: input.phone ?? null,
-          email: input.email ?? null,
-        })
-        .eq("auth_id", authId)
-        .select()
-        .single();
-
-      if (updateError) throw new Error(`Failed to update user: ${updateError.message}`);
-      return updated as UserRow;
-    }
-  }
-
-  const { data, error } = await supabase
-    .from("users")
-    .insert({
-      clinic_id: input.clinic_id,
-      role: input.role,
-      name: input.name,
-      phone: input.phone ?? null,
-      email: input.email ?? null,
-      ...(authId ? { auth_id: authId } : {}),
-    })
-    .select()
-    .single();
-
-  if (!error) return data as UserRow;
-
-  // Recover gracefully from a duplicate-email row (auth trigger or a prior
-  // onboarding of the same email). users.email is UNIQUE (23505) — update the
-  // existing row so onboarding is idempotent instead of crashing.
-  const isDuplicate =
-    error.code === "23505" || /duplicate key|already exists|unique constraint/i.test(error.message);
-  if (isDuplicate && input.email) {
-    // nosemgrep: semgrep.tenant-scoping — super-admin recovers a duplicate-email staff row by email and (re)assigns its clinic_id/role; intentionally cross-tenant, so no clinic_id filter (see AGENTS.md super-admin exception)
-    const { data: updated, error: updateError } = await supabase
-      .from("users")
-      .update({
-        clinic_id: input.clinic_id,
-        role: input.role,
-        name: input.name,
-        phone: input.phone ?? null,
-        ...(authId ? { auth_id: authId } : {}),
-      })
-      .eq("email", input.email)
-      .select()
-      .single();
-
-    if (!updateError && updated) return updated as UserRow;
-  }
-
-  throw new Error(`Failed to create user: ${error.message}`);
-}
-
-/**
- * Send the "set your password" invitation to a staff member who has a login.
- *
- * Returns whether the email was actually sent (Audit #10) and never throws, so
- * the caller can report the true access state to the wizard.
- */
-async function sendStaffInvite(params: {
-  email: string;
-  name: string;
-  role: string;
-  clinicName: string;
-}): Promise<{ inviteSent: boolean; inviteError?: string }> {
-  try {
-    const siteUrl = getSiteUrl() || "https://oltigo.com";
-    // nosemgrep: semgrep.admin-client-guard — super-admin GoTrue auth-admin op (generateLink); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
-    const admin = createAdminClient("super_admin");
-    const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
-      type: "recovery",
-      email: params.email,
-      options: { redirectTo: `${siteUrl}/login?reset=true` },
-    });
-
-    if (linkError) {
-      logger.warn("Failed to generate staff invite link", {
-        context: "super-admin-actions",
-        email: params.email,
-        error: linkError.message,
-      });
-      return { inviteSent: false, inviteError: linkError.message };
-    }
-
-    const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
-    const template = staffWelcomeEmail({
-      staffName: params.name,
-      clinicName: params.clinicName,
-      email: params.email,
-      loginUrl,
-      role: params.role,
-    });
-    const result = await sendEmail({ to: params.email, ...template });
-
-    if (!result.success) {
-      logger.warn("Staff invite email not sent", {
-        context: "super-admin-actions",
-        email: params.email,
-        error: result.error,
-      });
-    }
-    return { inviteSent: result.success, inviteError: result.success ? undefined : result.error };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "invite send failed";
-    logger.warn("Failed to send welcome email to staff", {
-      context: "super-admin-actions",
-      email: params.email,
-      error: err,
-    });
-    return { inviteSent: false, inviteError: message };
-  }
-}
-
-/**
- * Create a staff user with a real Supabase Auth login account.
- *
- * When a valid email is provided and SUPABASE_SERVICE_ROLE_KEY is configured:
- *   1. Creates (or matches an existing) Supabase Auth user, auto-confirmed.
- *   2. Persists the public.users row (reconciling the auth-trigger row).
- *   3. Sends a "set your password" invitation email so the staff member can
- *      log in — on EVERY success path (Audit #10), using the real clinic name
- *      (Audit #4).
- *
- * If the service-role key is missing or auth creation fails, the user is still
- * inserted into public.users (without a login) so onboarding does not break,
- * and the returned `access` state honestly reflects that no login was enabled
- * (Audit #1/#10) — the wizard reports this instead of showing a fake password.
- */
 export async function createUser(input: CreateUserInput): Promise<CreateUserResult> {
-  const supabase = await rawClient();
-  let authId: string | null = null;
-  let authError: string | undefined;
-  const serviceRoleConfigured = Boolean(getSupabaseServiceRoleKey());
-
-  // Attempt to create (or match) a Supabase Auth login when possible.
-  if (input.email && serviceRoleConfigured) {
-    try {
-      // nosemgrep: semgrep.admin-client-guard — super-admin GoTrue auth-admin op (createUser); cross-tenant by design and x-clinic-id scoping is irrelevant to the Auth API
-      const admin = createAdminClient("super_admin");
-      // Audit P1 #12: random one-time password; staff set their own via the
-      // recovery invite below, so this value is never shown to anyone.
-      const secureOneTimePassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
-      const { data: authUser, error: createErr } = await admin.auth.admin.createUser({
-        email: input.email,
-        password: secureOneTimePassword,
-        email_confirm: true,
-        user_metadata: {
-          name: input.name,
-          role: input.role,
-          clinic_id: input.clinic_id,
-          must_change_password: true,
-        },
-      });
-
-      if (createErr) {
-        if (createErr.message?.includes("already been registered")) {
-          const { data: listData } = await admin.auth.admin.listUsers();
-          const existing = listData?.users?.find((u) => u.email === input.email);
-          if (existing) {
-            authId = existing.id;
-          } else {
-            authError = createErr.message;
-          }
-        } else {
-          authError = createErr.message;
-          logger.warn("Failed to create auth account for staff — user created without login", {
-            context: "super-admin-actions",
-            email: input.email,
-            error: createErr.message,
-          });
-        }
-      } else if (authUser?.user) {
-        authId = authUser.user.id;
-      }
-    } catch (err) {
-      authError = err instanceof Error ? err.message : "auth account creation failed";
-      logger.warn("Auth account creation threw — user will be created without login", {
-        context: "super-admin-actions",
-        email: input.email,
-        error: err,
-      });
-    }
-  }
-
-  // Persist the public.users row regardless of whether a login was created.
-  const userRow = await persistStaffUserRow(supabase, input, authId);
-
-  // Audit #1/#10: compute and return the TRUE access state on every path.
-  let access: CreateUserAccess;
-  if (!input.email) {
-    access = {
-      authCreated: false,
-      inviteSent: false,
-      inviteError: "No email provided — this staff member cannot log in.",
-    };
-  } else if (!authId) {
-    access = {
-      authCreated: false,
-      inviteSent: false,
-      inviteError: serviceRoleConfigured
-        ? (authError ?? "Login could not be enabled for this staff member.")
-        : "Login not enabled — requires SUPABASE_SERVICE_ROLE_KEY and an email provider.",
-    };
-  } else {
-    // Audit #4: use the real clinic name (not the clinic UUID) in the invite.
-    const clinicName = await fetchClinicName(supabase, input.clinic_id);
-    const invite = await sendStaffInvite({
-      email: input.email,
-      name: input.name,
-      role: input.role,
-      clinicName,
-    });
-    access = {
-      authCreated: true,
-      inviteSent: invite.inviteSent,
-      inviteError: invite.inviteError,
-    };
-  }
-
-  return { ...userRow, access };
+  return createUserImpl(await rawClient(), input);
 }
 
-// ---------- Service CRUD ----------
+// ---------- Services ----------
 
 export async function createService(input: CreateServiceInput): Promise<ServiceRow> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("services")
-    .insert({
-      clinic_id: input.clinic_id,
-      name: input.name,
-      price: input.price ?? null,
-      duration_minutes: input.duration_minutes,
-      category: input.category ?? null,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(`Failed to create service: ${error.message}`);
-  return data as ServiceRow;
+  return createServiceImpl(await rawClient(), input);
 }
 
-// ---------- Time Slot CRUD ----------
+// ---------- Time Slots ----------
 
 export async function createTimeSlotsForDoctor(
   doctorId: string,
@@ -1055,535 +240,76 @@ export async function createTimeSlotsForDoctor(
     buffer_minutes?: number;
   }[],
 ): Promise<TimeSlotRow[]> {
-  const supabase = await rawClient();
-  const rows = slots.map((s) => ({
-    doctor_id: doctorId,
-    clinic_id: clinicId,
-    day_of_week: s.day_of_week,
-    start_time: s.start_time,
-    end_time: s.end_time,
-    is_available: true,
-    max_capacity: s.max_capacity ?? 1,
-    buffer_minutes: s.buffer_minutes ?? 10,
-  }));
-
-  const { data, error } = await supabase.from("time_slots").insert(rows).select();
-
-  if (error) throw new Error(`Failed to create time slots: ${error.message}`);
-  return (data ?? []) as TimeSlotRow[];
+  return createTimeSlotsForDoctorImpl(await rawClient(), doctorId, clinicId, slots);
 }
 
-// ---------- Dashboard Stats ----------
-
-interface DashboardStats {
-  clinics: ClinicRow[];
-  totalClinics: number;
-  activeClinics: number;
-  totalPatients: number;
-  totalAppointments: number;
-  totalRevenue: number;
-}
+// ---------- Dashboard ----------
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const supabase = await rawClient();
-
-  // Fetch clinics (needed for the listing) alongside lightweight COUNT
-  // queries for patients, appointments, and revenue.  This avoids
-  // pulling every row into memory just to call `.length`.
-  //
-  // For revenue we attempt an RPC (`sum_completed_payments`) that runs
-  // a server-side SUM.  If the function doesn't exist yet we fall back
-  // to fetching only the `amount` column of completed payments and
-  // summing client-side — still far cheaper than SELECT *.
-  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
-    supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
-    supabase.from("users").select("id", { count: "exact", head: true }).in("role", ["patient"]),
-    supabase.from("appointments").select("id", { count: "exact", head: true }),
-    // Fetch only the `amount` column of completed payments.
-    // A DB-level SUM via RPC would be ideal but the function may not
-    // exist yet — this is still far cheaper than SELECT *.
-    supabase.from("payments").select("amount").eq("status", "completed"),
-  ]);
-
-  const clinics = (clinicsRes.data ?? []) as ClinicRow[];
-  const completedPayments = (revenueRes.data ?? []) as { amount: number }[];
-
-  const totalClinics = clinics.length;
-  const activeClinics = clinics.filter((c) => c.status === "active").length;
-  const totalPatients = patientCountRes.count ?? 0;
-  const totalRevenue = completedPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
-
-  return {
-    clinics,
-    totalClinics,
-    activeClinics,
-    totalPatients,
-    totalAppointments: appointmentCountRes.count ?? 0,
-    totalRevenue,
-  };
+  return fetchDashboardStatsImpl(await rawClient());
 }
 
 // ---------- Billing Records ----------
 
-export interface BillingRecord {
-  id: string;
-  clinicId: string;
-  clinicName: string;
-  plan: string;
-  amountDue: number;
-  amountPaid: number;
-  currency: string;
-  status: "paid" | "pending" | "overdue" | "cancelled";
-  invoiceDate: string;
-  dueDate: string;
-  paidDate?: string;
-  paymentMethod?: string;
-}
-
 export async function fetchBillingRecords(): Promise<BillingRecord[]> {
-  const supabase = await rawClient();
-
-  const [paymentsRes, clinicsRes] = await Promise.all([
-    supabase
-      .from("payments")
-      .select("id, clinic_id, amount, status, payment_type, created_at")
-      .order("created_at", { ascending: false }),
-    supabase.from("clinics").select("id, name, tier"),
-  ]);
-
-  const payments = (paymentsRes.data ?? []) as {
-    id: string;
-    clinic_id: string;
-    amount: number;
-    status: string;
-    payment_type: string | null;
-    created_at: string;
-  }[];
-  const clinics = (clinicsRes.data ?? []) as { id: string; name: string; tier: string | null }[];
-  const clinicMap = new Map(clinics.map((c) => [c.id, c]));
-
-  return payments.map((p) => {
-    const clinic = clinicMap.get(p.clinic_id);
-    const createdDate = p.created_at?.split("T")[0] ?? "";
-    const isPaid = p.status === "completed";
-    return {
-      id: p.id,
-      clinicId: p.clinic_id,
-      clinicName: clinic?.name ?? "Unknown Clinic",
-      plan: clinic?.tier ?? "pro",
-      amountDue: p.amount ?? 0,
-      amountPaid: isPaid ? (p.amount ?? 0) : 0,
-      currency: "MAD",
-      status: (isPaid
-        ? "paid"
-        : p.status === "pending"
-          ? "pending"
-          : "overdue") as BillingRecord["status"],
-      invoiceDate: createdDate,
-      dueDate: createdDate,
-      paidDate: isPaid ? createdDate : undefined,
-      paymentMethod: p.payment_type ?? undefined,
-    };
-  });
+  return fetchBillingRecordsImpl(await rawClient());
 }
 
 // ---------- Announcements ----------
 
-export interface Announcement {
-  id: string;
-  title: string;
-  message: string;
-  type: "info" | "warning" | "critical";
-  target: string;
-  targetLabel: string;
-  publishedAt: string;
-  expiresAt?: string;
-  active: boolean;
-  createdBy: string;
-}
-
 export async function fetchAnnouncements(): Promise<Announcement[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("announcements")
-    .select(
-      "id, title, message, type, target, target_label, published_at, expires_at, is_active, created_by, created_at",
-    )
-    .order("created_at", { ascending: false });
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    title: row.title ?? "",
-    message: row.message ?? "",
-    type: (row.type ?? "info") as Announcement["type"],
-    target: row.target ?? "all",
-    targetLabel: row.target_label ?? "All Clinics",
-    publishedAt: (row.published_at ?? row.created_at ?? "").split("T")[0] ?? "",
-    expiresAt: row.expires_at ? row.expires_at.split("T")[0] : undefined,
-    active: row.is_active ?? true,
-    createdBy: row.created_by ?? "System",
-  }));
-}
-
-type AnnouncementRow = {
-  id: string;
-  title: string | null;
-  message: string | null;
-  type: string | null;
-  target: string | null;
-  target_label: string | null;
-  published_at: string | null;
-  expires_at: string | null;
-  is_active: boolean | null;
-  created_by: string | null;
-  created_at: string | null;
-};
-
-const ANNOUNCEMENT_COLUMNS =
-  "id, title, message, type, target, target_label, published_at, expires_at, is_active, created_by, created_at";
-
-function mapAnnouncement(row: AnnouncementRow): Announcement {
-  return {
-    id: row.id,
-    title: row.title ?? "",
-    message: row.message ?? "",
-    type: (row.type ?? "info") as Announcement["type"],
-    target: row.target ?? "all",
-    targetLabel: row.target_label ?? "All Clinics",
-    publishedAt: (row.published_at ?? row.created_at ?? "").split("T")[0] ?? "",
-    expiresAt: row.expires_at ? row.expires_at.split("T")[0] : undefined,
-    active: row.is_active ?? true,
-    createdBy: row.created_by ?? "System",
-  };
-}
-
-async function logAnnouncementActivity(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  action: string,
-  description: string,
-): Promise<void> {
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event; announcements are platform-wide (no clinic_id) so this audit row is not clinic-scoped
-      .from("activity_logs")
-      .insert({
-        action,
-        description,
-        type: "announcement",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", error: err });
-  }
-}
-
-export interface AnnouncementInput {
-  title: string;
-  message: string;
-  type: Announcement["type"];
-  target: string;
-  targetLabel: string;
-  publishedAt?: string;
-  expiresAt?: string;
+  return fetchAnnouncementsImpl(await rawClient());
 }
 
 export async function createAnnouncement(input: AnnouncementInput): Promise<Announcement> {
   const profile = await requireRole("super_admin");
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("announcements")
-    .insert({
-      title: input.title,
-      message: input.message,
-      type: input.type,
-      target: input.target,
-      target_label: input.targetLabel,
-      published_at: input.publishedAt || new Date().toISOString(),
-      expires_at: input.expiresAt || null,
-      is_active: true,
-      created_by: profile.name || "Super Admin",
-    })
-    .select(ANNOUNCEMENT_COLUMNS)
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Failed to create announcement: ${error?.message ?? "unknown error"}`);
-  }
-  await logAnnouncementActivity(
-    supabase,
-    "announcement_created",
-    `Announcement "${input.title}" created`,
-  );
-  return mapAnnouncement(data as AnnouncementRow);
+  return createAnnouncementImpl(await createClient(), profile.name || "Super Admin", input);
 }
 
 export async function updateAnnouncement(
   id: string,
   input: AnnouncementInput,
 ): Promise<Announcement> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("announcements")
-    .update({
-      title: input.title,
-      message: input.message,
-      type: input.type,
-      target: input.target,
-      target_label: input.targetLabel,
-      expires_at: input.expiresAt || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select(ANNOUNCEMENT_COLUMNS)
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Failed to update announcement: ${error?.message ?? "unknown error"}`);
-  }
-  await logAnnouncementActivity(
-    supabase,
-    "announcement_updated",
-    `Announcement "${input.title}" updated`,
-  );
-  return mapAnnouncement(data as AnnouncementRow);
+  return updateAnnouncementImpl(await rawClient(), id, input);
 }
 
 export async function setAnnouncementActive(id: string, active: boolean): Promise<void> {
-  const supabase = await rawClient();
-  const { error } = await supabase
-    .from("announcements")
-    .update({ is_active: active, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw new Error(`Failed to update announcement status: ${error.message}`);
-  await logAnnouncementActivity(
-    supabase,
-    active ? "announcement_activated" : "announcement_archived",
-    `Announcement ${active ? "activated" : "archived"}`,
-  );
+  return setAnnouncementActiveImpl(await rawClient(), id, active);
 }
 
 export async function deleteAnnouncement(id: string): Promise<void> {
-  const supabase = await rawClient();
-  const { error } = await supabase.from("announcements").delete().eq("id", id);
-  if (error) throw new Error(`Failed to delete announcement: ${error.message}`);
-  await logAnnouncementActivity(supabase, "announcement_deleted", `Announcement ${id} deleted`);
+  return deleteAnnouncementImpl(await rawClient(), id);
 }
 
-// ---------- Activity Logs ----------
-
-export interface ActivityLog {
-  id: string;
-  action: string;
-  description: string;
-  clinicId?: string;
-  clinicName?: string;
-  timestamp: string;
-  actor: string;
-  type: "clinic" | "billing" | "feature" | "announcement" | "template" | "auth";
-}
+// ---------- Activity ----------
 
 export async function fetchActivityLogs(): Promise<ActivityLog[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("activity_logs")
-    .select("id, action, description, clinic_id, clinic_name, created_at, actor, type")
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    action: row.action ?? "",
-    description: row.description ?? "",
-    clinicId: row.clinic_id ?? undefined,
-    clinicName: row.clinic_name ?? undefined,
-    timestamp: row.created_at ?? "",
-    actor: row.actor ?? "System",
-    type: (row.type ?? "clinic") as ActivityLog["type"],
-  }));
+  return fetchActivityLogsImpl(await rawClient());
 }
 
-// ---------- Feature Definitions ----------
-
-export interface FeatureDefinition {
-  id: string;
-  name: string;
-  description: string;
-  key: string;
-  category: "core" | "communication" | "integration" | "advanced";
-  availableTiers: string[];
-  globalEnabled: boolean;
-}
+// ---------- Feature Catalog ----------
 
 export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("feature_definitions")
-    .select("id, name, description, key, category, available_tiers, global_enabled")
-    .order("name", { ascending: true });
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    name: row.name ?? "",
-    description: row.description ?? "",
-    key: row.key ?? "",
-    category: (row.category ?? "core") as FeatureDefinition["category"],
-    availableTiers: row.available_tiers ?? [],
-    globalEnabled: row.global_enabled ?? true,
-  }));
+  return fetchFeatureDefinitionsImpl(await rawClient());
 }
 
-/**
- * Persist a feature-definition change (super-admin Feature Matrix).
- *
- * Writes the global on/off flag and/or the tier availability list to the
- * `feature_definitions` row. Only the provided fields are updated. Audit-logged
- * to `activity_logs` with the `feature` type.
- */
 export async function updateFeatureDefinition(
   featureId: string,
   updates: { globalEnabled?: boolean; availableTiers?: string[] },
 ): Promise<void> {
-  const supabase = await rawClient();
-
-  const payload: { global_enabled?: boolean; available_tiers?: string[] } = {};
-  if (updates.globalEnabled !== undefined) payload.global_enabled = updates.globalEnabled;
-  if (updates.availableTiers !== undefined) payload.available_tiers = updates.availableTiers;
-  if (Object.keys(payload).length === 0) return;
-
-  const { data: existing } = await supabase
-    .from("feature_definitions")
-    .select("id, name")
-    .eq("id", featureId)
-    .single();
-
-  const { error } = await supabase.from("feature_definitions").update(payload).eq("id", featureId);
-  if (error) throw new Error(`Failed to update feature definition: ${error.message}`);
-
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
-      .from("activity_logs")
-      .insert({
-        action: "feature_definition_updated",
-        description: `Feature "${existing?.name ?? featureId}" updated`,
-        type: "feature",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      featureId,
-      error: err,
-    });
-  }
+  return updateFeatureDefinitionImpl(await rawClient(), featureId, updates);
 }
 
-/**
- * Bulk-set a single tier across all feature definitions (Feature Matrix bulk
- * action). Adds or removes `tier` from every feature's `available_tiers`.
- * Writes a single `feature` audit-log entry rather than one per feature.
- */
 export async function bulkSetFeatureTier(tier: string, enabled: boolean): Promise<void> {
-  const supabase = await rawClient();
-
-  const { data: rows, error: readError } = await supabase
-    .from("feature_definitions")
-    .select("id, available_tiers");
-  if (readError) throw new Error(`Failed to read feature definitions: ${readError.message}`);
-  if (!rows) return;
-
-  for (const row of rows) {
-    const current: string[] = row.available_tiers ?? [];
-    const has = current.includes(tier);
-    if (enabled === has) continue; // already in desired state
-    const next = enabled ? [...current, tier] : current.filter((t) => t !== tier);
-    const { error } = await supabase
-      .from("feature_definitions")
-      .update({ available_tiers: next })
-      .eq("id", row.id);
-    if (error) throw new Error(`Failed to update feature ${row.id}: ${error.message}`);
-  }
-
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (feature catalogue is platform-wide, no clinic context)
-      .from("activity_logs")
-      .insert({
-        action: "feature_tier_bulk_update",
-        description: `All features ${enabled ? "enabled" : "disabled"} for tier "${tier}"`,
-        type: "feature",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      tier,
-      error: err,
-    });
-  }
+  return bulkSetFeatureTierImpl(await rawClient(), tier, enabled);
 }
 
-// ---------- Pricing Tiers ----------
-
-export interface PricingTierRow {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  popular: boolean;
-  pricing: Record<string, { monthly: number; yearly: number }>;
-  features: { key: string; label: string; included: boolean; limit?: string }[];
-  limits: {
-    maxDoctors: number;
-    maxPatients: number;
-    maxAppointmentsPerMonth: number;
-    storageGB: number;
-    customDomain: boolean;
-    apiAccess: boolean;
-    whiteLabel: boolean;
-  };
-}
+// ---------- Pricing ----------
 
 export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("pricing_tiers")
-    .select("id, slug, name, description, is_popular, pricing, features, limits, created_at")
-    .order("created_at", { ascending: true });
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    slug: row.slug ?? "",
-    name: row.name ?? "",
-    description: row.description ?? "",
-    popular: row.is_popular ?? false,
-    pricing: (row.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
-    features:
-      (row.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
-    limits: (row.limits as PricingTierRow["limits"]) ?? {
-      maxDoctors: 1,
-      maxPatients: 0,
-      maxAppointmentsPerMonth: 0,
-      storageGB: 1,
-      customDomain: false,
-      apiAccess: false,
-      whiteLabel: false,
-    },
-  }));
+  return fetchPricingTiersImpl(await rawClient());
 }
 
-/**
- * Persist edits to a pricing tier (super-admin Pricing view).
- *
- * Updates the `pricing_tiers` row in place. Only the provided fields are
- * written (name / per-system pricing JSON / features). Audit-logged to
- * `activity_logs` with the `billing` type (pricing is a billing concern).
- */
 export async function updatePricingTier(
   tierId: string,
   updates: {
@@ -1592,292 +318,29 @@ export async function updatePricingTier(
     features?: { key: string; label: string; included: boolean; limit?: string }[];
   },
 ): Promise<void> {
-  const supabase = await rawClient();
+  return updatePricingTierImpl(await rawClient(), tierId, updates);
+}
 
-  const payload: {
-    name?: string;
-    pricing?: Record<string, { monthly: number; yearly: number }>;
-    features?: { key: string; label: string; included: boolean; limit?: string }[];
-  } = {};
-  if (updates.name !== undefined) payload.name = updates.name;
-  if (updates.pricing !== undefined) payload.pricing = updates.pricing;
-  if (updates.features !== undefined) payload.features = updates.features;
-  if (Object.keys(payload).length === 0) return;
-
-  const { data: existing } = await supabase
-    .from("pricing_tiers")
-    .select("id, name")
-    .eq("id", tierId)
-    .single();
-
-  const { error } = await supabase.from("pricing_tiers").update(payload).eq("id", tierId);
-  if (error) throw new Error(`Failed to update pricing tier: ${error.message}`);
-
-  // Audit log (non-blocking).
-  try {
-    await supabase // nosemgrep: semgrep.tenant-scoping — global super-admin audit event (pricing catalogue is platform-wide, no clinic context)
-      .from("activity_logs")
-      .insert({
-        action: "pricing_tier_updated",
-        description: `Pricing tier "${existing?.name ?? tierId}" updated`,
-        type: "billing",
-        timestamp: new Date().toISOString(),
-      });
-  } catch (err) {
-    logger.warn("Non-blocking audit log failed", {
-      context: "super-admin-actions",
-      tierId,
-      error: err,
-    });
-  }
+export async function fetchPriceHistory(): Promise<PriceHistoryEntry[]> {
+  return fetchPriceHistoryImpl(await rawClient());
 }
 
 // ---------- Feature Toggles ----------
 
-export interface FeatureToggleRow {
-  id: string;
-  key: string;
-  label: string;
-  description: string;
-  category: "core" | "communication" | "integration" | "advanced" | "pharmacy";
-  systemTypes: string[];
-  tiers: string[];
-  enabled: boolean;
-}
-
 export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
-  const supabase = await rawClient();
-  const { data, error } = await supabase
-    .from("feature_toggles")
-    .select("id, key, label, description, category, system_types, tiers, enabled, created_at")
-    .order("created_at", { ascending: true });
-
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    key: row.key ?? "",
-    label: row.label ?? "",
-    description: row.description ?? "",
-    category: (row.category ?? "core") as FeatureToggleRow["category"],
-    systemTypes: row.system_types ?? [],
-    tiers: row.tiers ?? [],
-    enabled: row.enabled ?? true,
-  }));
+  return fetchFeatureTogglesImpl(await rawClient());
 }
 
-// ---------- Client Subscriptions ----------
+// ---------- Canonical Types ----------
 
-interface ClientInvoice {
-  id: string;
-  date: string;
-  amount: number;
-  status: "paid" | "pending" | "overdue" | "refunded";
-  paidDate?: string;
-}
+export type { SystemType } from "@/lib/config/pricing";
 
-export type SystemType = "doctor" | "dentist" | "pharmacy";
-type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
-
-export interface ClientSubscription {
-  id: string;
-  clinicId: string;
-  clinicName: string;
-  systemType: SystemType;
-  tierSlug: TierSlug;
-  tierName: string;
-  status: "active" | "trial" | "past_due" | "cancelled" | "suspended";
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  billingCycle: "monthly" | "yearly";
-  amount: number;
-  currency: string;
-  paymentMethod: string;
-  autoRenew: boolean;
-  trialEndsAt?: string;
-  cancelledAt?: string;
-  invoices: ClientInvoice[];
-  /**
-   * True when this clinic is one of the known-junk / test tenants that
-   * migration 00173 quarantined (status set to 'suspended'). Lets the UI
-   * separate quarantined keyboard-mash from real suspensions so the
-   * suspended count is not read as catastrophic churn (Audit F-2 item 2).
-   * Optional: treat undefined as false.
-   */
-  isQuarantinedJunk?: boolean;
-}
-
-const TIER_NAMES: Record<string, string> = {
-  vitrine: "Vitrine",
-  cabinet: "Cabinet",
-  pro: "Pro",
-  premium: "Premium",
-  "saas-monthly": "SaaS Monthly",
-};
-
-/**
- * I9 fix: default monthly subscription price per tier slug.
- * Used as a fallback amount when a clinic has no payment records
- * (new accounts, trial, or seed data). Prevents every subscription
- * from displaying 0 MAD in the admin panel.
- */
-const TIER_DEFAULT_MONTHLY_PRICE: Record<string, number> = {
-  vitrine: 0,
-  cabinet: 499,
-  pro: 999,
-  premium: 1999,
-  "saas-monthly": 1499,
-};
-
-// ---------- Revenue Stats ----------
-
-export interface RevenueStats {
-  mrr: number;
-  arr: number;
-  totalClinics: number;
-  activePaidClinics: number;
-  churnedThisMonth: number;
-  churnRate: number;
-  planBreakdown: Record<string, number>;
-  revenueByMonth: { month: string; revenue: number }[];
-}
+// ---------- Revenue ----------
 
 export async function fetchRevenueStats(): Promise<RevenueStats> {
-  const supabase = await rawClient();
-
-  const { data: clinics } = await supabase.from("clinics").select("id, config, created_at");
-
-  const planBreakdown: Record<string, number> = {
-    free: 0,
-    starter: 0,
-    professional: 0,
-    enterprise: 0,
-  };
-
-  // Import plan prices inline to avoid circular dependency
-  const PLAN_PRICES: Record<string, number> = {
-    free: 0,
-    starter: 199,
-    professional: 499,
-    enterprise: 999,
-  };
-
-  if (clinics) {
-    for (const clinic of clinics) {
-      const config = clinic.config as Record<string, unknown> | null;
-      const plan = (config?.subscription_plan as string) ?? "free";
-      if (planBreakdown[plan] !== undefined) {
-        planBreakdown[plan]++;
-      } else {
-        planBreakdown.free++;
-      }
-    }
-  }
-
-  const activePaidClinics =
-    (planBreakdown.starter ?? 0) +
-    (planBreakdown.professional ?? 0) +
-    (planBreakdown.enterprise ?? 0);
-
-  const mrr =
-    (planBreakdown.starter ?? 0) * PLAN_PRICES.starter +
-    (planBreakdown.professional ?? 0) * PLAN_PRICES.professional +
-    (planBreakdown.enterprise ?? 0) * PLAN_PRICES.enterprise;
-
-  return {
-    mrr,
-    arr: mrr * 12,
-    totalClinics: clinics?.length ?? 0,
-    activePaidClinics,
-    churnedThisMonth: 0,
-    churnRate: 0,
-    planBreakdown,
-    revenueByMonth: [],
-  };
+  return fetchRevenueStatsImpl(await rawClient());
 }
 
 export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> {
-  const supabase = await rawClient();
-
-  const [clinicsRes, paymentsRes] = await Promise.all([
-    supabase.from("clinics").select("id, name, type, tier, status, subdomain, config, created_at"),
-    supabase
-      .from("payments")
-      .select("id, clinic_id, amount, status, created_at")
-      .order("created_at", { ascending: false }),
-  ]);
-
-  const clinics = (clinicsRes.data ?? []) as ClinicRow[];
-  const payments = (paymentsRes.data ?? []) as {
-    id: string;
-    clinic_id: string;
-    amount: number;
-    status: string;
-    created_at: string;
-  }[];
-
-  const paymentsByClinic = new Map<string, typeof payments>();
-  for (const p of payments) {
-    const list = paymentsByClinic.get(p.clinic_id) ?? [];
-    list.push(p);
-    paymentsByClinic.set(p.clinic_id, list);
-  }
-
-  return clinics.map((c) => {
-    const tierSlug = (c.tier ?? "pro") as TierSlug;
-    const clinicPayments = paymentsByClinic.get(c.id) ?? [];
-    const invoices: ClientInvoice[] = clinicPayments.slice(0, 5).map((p) => ({
-      id: p.id,
-      date: p.created_at?.split("T")[0] ?? "",
-      amount: p.amount ?? 0,
-      status: (p.status === "completed"
-        ? "paid"
-        : p.status === "pending"
-          ? "pending"
-          : "overdue") as ClientInvoice["status"],
-      paidDate: p.status === "completed" ? p.created_at?.split("T")[0] : undefined,
-    }));
-
-    const subStatus: ClientSubscription["status"] =
-      c.status === "active"
-        ? "active"
-        : c.status === "suspended"
-          ? "suspended"
-          : c.status === "trial"
-            ? "trial"
-            : "cancelled";
-
-    const now = new Date();
-    const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
-    const monthEnd = getLocalDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-
-    const latestPayment = clinicPayments[0];
-    // I9 fix: fall back to the tier's default monthly price when the clinic
-    // has no payment records yet (new / trial / seed data). This ensures
-    // the subscription table shows a meaningful expected amount rather than
-    // 0 MAD for every account that hasn't billed yet.
-    const amount =
-      latestPayment?.amount != null && latestPayment.amount > 0
-        ? latestPayment.amount
-        : (TIER_DEFAULT_MONTHLY_PRICE[tierSlug] ?? 0);
-
-    return {
-      id: `sub-${c.id}`,
-      clinicId: c.id,
-      clinicName: c.name,
-      systemType: (c.type ?? "doctor") as SystemType,
-      tierSlug,
-      tierName: TIER_NAMES[tierSlug] ?? tierSlug,
-      status: subStatus,
-      currentPeriodStart: monthStart,
-      currentPeriodEnd: monthEnd,
-      billingCycle: "monthly" as const,
-      amount,
-      currency: "MAD",
-      paymentMethod: "Carte bancaire",
-      autoRenew: c.status === "active",
-      invoices,
-      isQuarantinedJunk: isKnownJunkSubdomain(c.subdomain),
-    };
-  });
+  return fetchClientSubscriptionsImpl(await rawClient());
 }

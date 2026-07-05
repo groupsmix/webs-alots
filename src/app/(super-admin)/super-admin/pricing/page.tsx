@@ -48,11 +48,12 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
-import { systemTypeLabels, tierColors, type SystemType, type TierSlug } from "@/lib/config/pricing";
+import { systemTypeLabels, tierColors, type SystemType, type SubscriptionPlan } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
   fetchPricingTiers,
+  fetchPriceHistory,
   fetchFeatureToggles,
   fetchPromotions,
   createPromotion,
@@ -87,37 +88,7 @@ interface Promotion {
   enabled: boolean;
 }
 
-const STORAGE_KEY_HISTORY = "oltigo_price_history";
 
-function isHistoryEntry(v: unknown): v is PriceHistoryEntry {
-  if (typeof v !== "object" || v === null) return false;
-  const o = v as Record<string, unknown>;
-  return (
-    typeof o.date === "string" &&
-    typeof o.system === "string" &&
-    typeof o.cycle === "string" &&
-    typeof o.oldPrice === "number" &&
-    typeof o.newPrice === "number"
-  );
-}
-
-function loadHistory(): PriceHistoryEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isHistoryEntry);
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(history: PriceHistoryEntry[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
-}
 
 const systemIcons: Record<SystemType, typeof Stethoscope> = {
   doctor: Stethoscope,
@@ -165,11 +136,12 @@ export default function PricingPage() {
     // blank the whole page or flash a misleading "Failed to load" — we render
     // whatever resolved and only warn on the parts that didn't. isActive() guards
     // against applying results after the component has unmounted.
-    const [subsRes, tiersRes, togglesRes, promosRes] = await Promise.allSettled([
+    const [subsRes, tiersRes, togglesRes, promosRes, historyRes] = await Promise.allSettled([
       fetchClientSubscriptions(),
       fetchPricingTiers(),
       fetchFeatureToggles(),
       fetchPromotions(),
+      fetchPriceHistory(),
     ]);
     if (!isActive()) return;
 
@@ -186,6 +158,9 @@ export default function PricingPage() {
     if (promosRes.status === "fulfilled") setPromotions(promosRes.value);
     else logger.warn("Failed to load promotions", { context: "page", error: promosRes.reason });
 
+    if (historyRes.status === "fulfilled") setPriceHistory(historyRes.value);
+    else logger.warn("Failed to load price history", { context: "page", error: historyRes.reason });
+
     setLoading(false);
   }, []);
 
@@ -196,10 +171,6 @@ export default function PricingPage() {
       active = false;
     };
   }, [loadData]);
-
-  useEffect(() => {
-    setPriceHistory(loadHistory());
-  }, []);
 
   const stats = {
     active: subscriptions.filter((s) => s.status === "active").length,
@@ -230,7 +201,7 @@ export default function PricingPage() {
     setToggles((prev) => prev.map((ft) => (ft.id === id ? { ...ft, enabled: !ft.enabled } : ft)));
   }
 
-  function handleToggleTier(featureId: string, tier: TierSlug) {
+  function handleToggleTier(featureId: string, tier: SubscriptionPlan) {
     setToggles((prev) =>
       prev.map((ft) => {
         if (ft.id !== featureId) return ft;
@@ -285,7 +256,7 @@ export default function PricingPage() {
     const duplicated: PricingTierRow = {
       ...tier,
       id: newId,
-      slug: `${tier.slug}-copie` as TierSlug,
+      slug: `${tier.slug}-copie` as SubscriptionPlan,
       name: `Copie de ${tier.name}`,
       popular: false, // only one tier can be "Populaire"
     };
@@ -357,17 +328,8 @@ export default function PricingPage() {
 
       // Record the local price-change history only after a successful persist.
       if (oldPrice !== newPrice) {
-        const cycleLabel: string = billingCycle === "yearly" ? "yearly" : "monthly";
-        const entry: PriceHistoryEntry = {
-          date: new Date().toISOString().split("T")[0] ?? "",
-          system: systemTypeLabels[selectedSystem],
-          cycle: cycleLabel,
-          oldPrice: Math.round(oldPrice),
-          newPrice: Math.round(newPrice),
-        };
-        const updated = [entry, ...priceHistory].slice(0, 50);
-        setPriceHistory(updated);
-        saveHistory(updated);
+        const freshHistory = await fetchPriceHistory();
+        setPriceHistory(freshHistory);
       }
 
       addToast("Tarif enregistré", "success");
@@ -700,7 +662,7 @@ export default function PricingPage() {
               const price = tier.pricing[selectedSystem]?.[billingCycle] ?? 0;
               const isExpanded = expandedTier === tier.id;
               const isEditing = editingTierId === tier.id;
-              const subCount = subscriptions.filter((s) => s.tierSlug === tier.slug).length;
+              const subCount = subscriptions.filter((s) => s.SubscriptionPlan === tier.slug).length;
 
               return (
                 <Card
@@ -716,7 +678,7 @@ export default function PricingPage() {
                   )}
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <Badge className={`text-[10px] ${tierColors[tier.slug as TierSlug] ?? ""}`}>
+                      <Badge className={`text-[10px] ${tierColors[tier.slug as SubscriptionPlan] ?? ""}`}>
                         {isEditing ? (
                           <Input
                             value={editName}
@@ -919,7 +881,7 @@ export default function PricingPage() {
                         {/* I3: SaaS Monthly differentiator vs Premium.
                             SaaS costs less (1 499 MAD) but has less storage (50 GB vs 100 GB).
                             Clarify the value proposition to prevent admin confusion. */}
-                        {tier.slug === "saas-monthly" && (
+                        {tier.slug === "enterprise-saas" && (
                           <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[10px] text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400">
                             <p className="font-semibold mb-0.5">Différent du plan Premium</p>
                             <p>
@@ -975,7 +937,7 @@ export default function PricingPage() {
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <Badge className={`text-[10px] ${tierColors[sub.tierSlug]}`}>
+                            <Badge className={`text-[10px] ${tierColors[sub.SubscriptionPlan]}`}>
                               {sub.tierName}
                             </Badge>
                           </td>
@@ -1126,15 +1088,15 @@ export default function PricingPage() {
                           />
                         </td>
                         {(
-                          ["vitrine", "cabinet", "pro", "premium", "saas-monthly"] as TierSlug[]
-                        ).map((tierSlug) => (
-                          <td key={tierSlug} className="py-3 px-4 text-center">
+                          ["free", "starter", "professional", "enterprise", "enterprise-saas"] as SubscriptionPlan[]
+                        ).map((SubscriptionPlan) => (
+                          <td key={SubscriptionPlan} className="py-3 px-4 text-center">
                             <button
-                              onClick={() => handleToggleTier(ft.id, tierSlug)}
+                              onClick={() => handleToggleTier(ft.id, SubscriptionPlan)}
                               disabled={!ft.enabled}
                               className="inline-flex items-center justify-center"
                             >
-                              {ft.tiers.includes(tierSlug) ? (
+                              {ft.tiers.includes(SubscriptionPlan) ? (
                                 <Check className="h-5 w-5 text-green-600" />
                               ) : (
                                 <X className="h-5 w-5 text-gray-300" />
@@ -1392,7 +1354,7 @@ export default function PricingPage() {
             <div className="space-y-2">
               <Label>Applicable Tiers</Label>
               <div className="flex flex-wrap gap-2">
-                {(["vitrine", "cabinet", "pro", "premium", "saas-monthly"] as const).map((slug) => (
+                {(["free", "starter", "professional", "enterprise", "enterprise-saas"] as const).map((slug) => (
                   <Button
                     key={slug}
                     type="button"
@@ -1401,7 +1363,7 @@ export default function PricingPage() {
                     className="text-xs capitalize"
                     onClick={() => togglePromoTier(slug)}
                   >
-                    {slug === "saas-monthly" ? "SaaS" : slug}
+                    {slug === "enterprise-saas" ? "SaaS" : slug}
                   </Button>
                 ))}
               </div>

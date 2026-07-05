@@ -437,7 +437,7 @@ export default function OnboardingPage() {
       const clinic = await createClinic({
         name: clinicForm.name,
         type: clinicForm.type || "doctor",
-        tier: clinicForm.tier || "pro",
+        tier: clinicForm.tier || "professional",
         subdomain: clinicForm.subdomain || undefined,
         config: {
           locale: "fr",

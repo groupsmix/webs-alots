@@ -23,13 +23,14 @@ import {
   SUBSCRIPTION_PLANS,
   FEATURE_LABELS,
   PLAN_ORDER,
-  type PlanSlug,
-} from "@/lib/config/subscription-plans";
+  type SubscriptionPlan,
+  getPlanConfig,
+} from "@/lib/subscription-billing";
 import { logger } from "@/lib/logger";
 import { formatCurrency } from "@/lib/utils";
 
 interface ClinicSubscriptionInfo {
-  plan: PlanSlug;
+  plan: SubscriptionPlan;
   status: string;
   appointmentsUsed: number;
   appointmentsLimit: number;
@@ -45,19 +46,9 @@ async function fetchSubscriptionInfo(clinicId: string): Promise<ClinicSubscripti
   if (response.ok) {
     const json = await response.json();
     if (json.ok) return json.data;
+    throw new Error(json.error || "Failed to fetch subscription data");
   }
-
-  // Fallback defaults when API is not yet wired
-  return {
-    plan: "free",
-    status: "active",
-    appointmentsUsed: 0,
-    appointmentsLimit: 5,
-    staffUsed: 1,
-    staffLimit: 1,
-    storageUsedGB: 0,
-    storageLimit: 1,
-  };
+  throw new Error(`API returned ${response.status}`);
 }
 
 export default function SubscriptionBillingPage() {
@@ -65,7 +56,7 @@ export default function SubscriptionBillingPage() {
   const { addToast } = useToast();
   const [subInfo, setSubInfo] = useState<ClinicSubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState<PlanSlug | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState<SubscriptionPlan | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -83,7 +74,7 @@ export default function SubscriptionBillingPage() {
     loadData();
   }, [loadData]);
 
-  const handleUpgrade = async (planId: PlanSlug) => {
+  const handleUpgrade = async (planId: SubscriptionPlan) => {
     setCheckoutLoading(planId);
     try {
       const response = await fetch("/api/billing/create-checkout", {
@@ -128,7 +119,7 @@ export default function SubscriptionBillingPage() {
     }
   };
 
-  const planIcon = (slug: PlanSlug) => {
+  const planIcon = (slug: SubscriptionPlan) => {
     switch (slug) {
       case "free":
         return <Shield className="h-5 w-5" />;
@@ -150,7 +141,7 @@ export default function SubscriptionBillingPage() {
   }
 
   const currentPlan = subInfo?.plan ?? "free";
-  const currentPlanConfig = SUBSCRIPTION_PLANS[currentPlan];
+  const currentPlanConfig = getPlanConfig(currentPlan);
   const currentPlanIndex = PLAN_ORDER.indexOf(currentPlan);
 
   return (
@@ -190,11 +181,11 @@ export default function SubscriptionBillingPage() {
             <div>
               <p className="text-xs text-muted-foreground mb-1">Prix</p>
               <p className="text-lg font-bold">
-                {currentPlanConfig.price === 0
+                {currentPlanConfig.priceMonthly === 0
                   ? "Gratuit"
-                  : formatCurrency(currentPlanConfig.price)}
+                  : formatCurrency(currentPlanConfig.priceMonthly)}
               </p>
-              {currentPlanConfig.price > 0 && (
+              {currentPlanConfig.priceMonthly > 0 && (
                 <p className="text-xs text-muted-foreground">/ mois</p>
               )}
             </div>
@@ -221,18 +212,18 @@ export default function SubscriptionBillingPage() {
             <div>
               <p className="text-xs text-muted-foreground mb-1">IA</p>
               <p className="text-sm font-medium">
-                {currentPlanConfig.limits.aiChatbot === false
+                {currentPlanConfig.aiChatbot === false
                   ? "Non inclus"
-                  : currentPlanConfig.limits.aiChatbot === "basic"
+                  : currentPlanConfig.aiChatbot === "basic"
                     ? "Basique"
-                    : currentPlanConfig.limits.aiChatbot === "smart"
+                    : currentPlanConfig.aiChatbot === "smart"
                       ? "Intelligent"
                       : "Avancé"}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Stockage</p>
-              <p className="text-sm font-medium">{currentPlanConfig.limits.storageGB} GB</p>
+              <p className="text-sm font-medium">{currentPlanConfig.storageGB} GB</p>
             </div>
           </div>
 
@@ -269,7 +260,7 @@ export default function SubscriptionBillingPage() {
           <div>
             <h4 className="text-sm font-semibold mb-3">Fonctionnalités incluses</h4>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {currentPlanConfig.features.map((feature) => (
+              {currentPlanConfig.features.map((feature: string) => (
                 <div key={feature} className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-600 shrink-0" />
                   <span>{FEATURE_LABELS[feature] ?? feature}</span>
@@ -291,7 +282,7 @@ export default function SubscriptionBillingPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {PLAN_ORDER.map((slug, index) => {
-              const plan = SUBSCRIPTION_PLANS[slug];
+              const plan = getPlanConfig(slug);
               const isCurrent = slug === currentPlan;
               const isDowngrade = index < currentPlanIndex;
               const isUpgrade = index > currentPlanIndex;
@@ -312,15 +303,15 @@ export default function SubscriptionBillingPage() {
                   </div>
                   <div className="mb-3">
                     <span className="text-2xl font-bold">
-                      {plan.price === 0 ? "Gratuit" : `${plan.price}`}
+                      {plan.priceMonthly === 0 ? "Gratuit" : `${plan.priceMonthly}`}
                     </span>
-                    {plan.price > 0 && (
+                    {plan.priceMonthly > 0 && (
                       <span className="text-sm text-muted-foreground"> MAD/mois</span>
                     )}
                   </div>
                   <Separator className="my-3" />
                   <ul className="space-y-2 mb-4">
-                    {plan.features.slice(0, 5).map((feature) => (
+                    {plan.features.slice(0, 5).map((feature: string) => (
                       <li key={feature} className="flex items-start gap-2 text-xs">
                         <Check className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
                         <span>{FEATURE_LABELS[feature] ?? feature}</span>
@@ -334,13 +325,13 @@ export default function SubscriptionBillingPage() {
                   </ul>
                   <div className="mt-auto">
                     <p className="text-xs text-muted-foreground mb-2">
-                      {plan.limits.appointmentsPerMonth === -1
+                      {plan.maxAppointmentsPerMonth === -1
                         ? "RDV illimités"
-                        : `${plan.limits.appointmentsPerMonth} RDV/mois`}
+                        : `${plan.maxAppointmentsPerMonth} RDV/mois`}
                       {" · "}
-                      {plan.limits.staffMembers === -1
+                      {plan.maxDoctors === -1
                         ? "Personnel illimité"
-                        : `${plan.limits.staffMembers} membre(s)`}
+                        : `${plan.maxDoctors} membre(s)`}
                     </p>
                     {isCurrent ? (
                       <Button variant="outline" size="sm" className="w-full" disabled>

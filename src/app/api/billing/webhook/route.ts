@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiError, apiRateLimited, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { provisionChatbotForPlan } from "@/lib/chatbot-provisioning";
-import { getPlanByPriceId, type PlanSlug } from "@/lib/config/subscription-plans";
+import { getPlanByPriceId, type SubscriptionPlan } from "@/lib/subscription-billing";
 import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 import { verifyStripeSignature } from "@/lib/stripe-signature";
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object;
         const clinicId = session.metadata?.clinic_id;
-        const planId = session.metadata?.plan_id as PlanSlug | undefined;
+        const planId = session.metadata?.plan_id as SubscriptionPlan | undefined;
         const stripeCustomerId = session.customer;
         const stripeSubscriptionId = session.subscription;
 
@@ -300,12 +300,12 @@ export async function POST(request: NextRequest) {
         logger.info("Subscription invoice paid", {
           context: "billing/webhook",
           clinicId,
-          planId: plan?.slug,
+          planId: plan?.id,
           periodEnd: subscription.current_period_end,
         });
 
         // Q-01: merge — see mergeClinicConfig.
-        const effectivePlan = plan?.slug ?? subscription.metadata?.plan_id;
+        const effectivePlan = plan?.id ?? subscription.metadata?.plan_id;
         const { error: renewError } = await mergeClinicConfig(
           supabase,
           clinicId,
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
 
         // Feature Task 1: Update chatbot intelligence on plan renewal/change
         if (plan) {
-          void provisionChatbotForPlan(supabase, clinicId, plan.slug);
+          void provisionChatbotForPlan(supabase, clinicId, plan.id);
         }
         break;
       }

@@ -16,6 +16,16 @@
  *   CLOSED   → normal operation; failures are counted
  *   OPEN     → fast-fail; no requests pass through
  *   HALF_OPEN → one probe request allowed; success closes, failure re-opens
+ *
+ * Deep-Dive P6: this is the *general-purpose* breaker for outbound
+ * dependencies (WhatsApp, Stripe, Resend, etc). AI provider routes use the
+ * separate `@/lib/ai/circuit-breaker` instead, which persists state in
+ * Cloudflare KV (so it survives Worker isolate churn) and uses a longer
+ * open window tuned for LLM provider outages. The two are intentionally not
+ * merged: KV-backed persistence has latency/cost trade-offs that are only
+ * justified for AI traffic today. If a second consumer needs KV-backed
+ * state, promote the AI breaker's storage layer into a shared module rather
+ * than duplicating it again.
  */
 
 import { logger } from "@/lib/logger";

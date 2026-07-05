@@ -25,11 +25,18 @@ describe("SUBSCRIPTION_PLANS", () => {
     expect(free.priceYearly).toBe(0);
   });
 
-  it("professional plan uses -1 for unlimited", () => {
+  it("professional plan caps doctors but has unlimited patients/appointments", () => {
     const pro = SUBSCRIPTION_PLANS.find((p) => p.id === "professional")!;
-    expect(pro.maxDoctors).toBe(-1);
+    expect(pro.maxDoctors).toBe(10);
     expect(pro.maxPatients).toBe(-1);
     expect(pro.maxAppointmentsPerMonth).toBe(-1);
+  });
+
+  it("enterprise plan uses -1 for unlimited doctors", () => {
+    const enterprise = SUBSCRIPTION_PLANS.find((p) => p.id === "enterprise")!;
+    expect(enterprise.maxDoctors).toBe(-1);
+    expect(enterprise.maxPatients).toBe(-1);
+    expect(enterprise.maxAppointmentsPerMonth).toBe(-1);
   });
 
   it("enterprise has API access", () => {

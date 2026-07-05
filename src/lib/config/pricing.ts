@@ -3,8 +3,11 @@
  * These are pure presentation constants, not database data.
  */
 
-export type SystemType = "doctor" | "dentist" | "pharmacy";
-export type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
+import type { SystemType as DatabaseSystemType } from "@/lib/types/database";
+import type { SubscriptionPlan } from "@/lib/subscription-billing";
+export type { SubscriptionPlan };
+
+export type SystemType = DatabaseSystemType;
 
 export type SubscriptionStatus = "active" | "trial" | "past_due" | "cancelled" | "suspended";
 
@@ -14,12 +17,11 @@ export const systemTypeLabels: Record<SystemType, string> = {
   pharmacy: "Pharmacie",
 };
 
-export const tierColors: Record<TierSlug, string> = {
-  vitrine: "bg-gray-100 text-gray-700",
-  cabinet: "bg-blue-100 text-blue-700",
-  pro: "bg-purple-100 text-purple-700",
-  premium: "bg-amber-100 text-amber-700",
-  "saas-monthly": "bg-emerald-100 text-emerald-700",
+export const tierColors: Record<SubscriptionPlan, string> = {
+  free: "bg-gray-100 text-gray-700",
+  starter: "bg-blue-100 text-blue-700",
+  professional: "bg-purple-100 text-purple-700",
+  enterprise: "bg-amber-100 text-amber-700",
 };
 
 export const statusColors: Record<SubscriptionStatus, string> = {

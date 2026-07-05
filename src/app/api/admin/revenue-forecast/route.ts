@@ -11,8 +11,8 @@
 import { type NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
-import { SUBSCRIPTION_PLANS, type PlanSlug } from "@/lib/config/subscription-plans";
 import { logger } from "@/lib/logger";
+import { getPlanConfig, normalizeSubscriptionPlan } from "@/lib/subscription-billing";
 import { createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
 import { safeParse } from "@/lib/validations/helpers";
@@ -84,12 +84,16 @@ async function handleGet(request: NextRequest, auth: AuthContext) {
     for (const clinic of clinics ?? []) {
       totalClinics++;
       const config = clinic.config as Record<string, unknown> | null;
-      const planSlug = (config?.subscription_plan as PlanSlug) ?? "free";
-      const plan = SUBSCRIPTION_PLANS[planSlug];
+      // Deep-Dive P1/P2: normalize legacy tier slugs (e.g. `pro`, `cabinet`)
+      // before resolving plan config — `getPlanConfig` throws on anything
+      // that isn't a canonical SubscriptionPlan, which previously crashed
+      // this route (500) for clinics still on legacy `clinics.tier` values.
+      const planSlug = normalizeSubscriptionPlan(config?.subscription_plan ?? clinic.tier);
+      const plan = getPlanConfig(planSlug);
       if (plan) {
         planBreakdown[planSlug] = (planBreakdown[planSlug] ?? 0) + 1;
-        if (plan.price > 0 && clinic.status === "active") {
-          currentMrr += plan.price;
+        if (plan.priceMonthly > 0 && clinic.status === "active") {
+          currentMrr += plan.priceMonthly;
           paidClinics++;
         }
       }
@@ -146,12 +150,13 @@ async function handlePost(request: NextRequest, auth: AuthContext) {
     for (const clinic of clinics ?? []) {
       totalClinics++;
       const config = clinic.config as Record<string, unknown> | null;
-      const planSlug = (config?.subscription_plan as PlanSlug) ?? "free";
-      const plan = SUBSCRIPTION_PLANS[planSlug];
+      // Deep-Dive P1/P2: same legacy-tier normalization as handleGet above.
+      const planSlug = normalizeSubscriptionPlan(config?.subscription_plan ?? clinic.tier);
+      const plan = getPlanConfig(planSlug);
       if (plan) {
         planBreakdown[planSlug] = (planBreakdown[planSlug] ?? 0) + 1;
-        if (plan.price > 0 && clinic.status === "active") {
-          currentMrr += plan.price;
+        if (plan.priceMonthly > 0 && clinic.status === "active") {
+          currentMrr += plan.priceMonthly;
           paidClinics++;
         }
       }
