@@ -5,7 +5,9 @@ rules:
   # to ensure validation, type safety, and a single source of truth.
   #
   # Allowed files:
-  #   - src/lib/env.ts (canonical env reader)
+  #   - src/lib/env.ts (canonical env barrel — public API)
+  #   - src/lib/env-*.ts leaf modules (P11 split: validation registry,
+  #     startup guards, domain-grouped getters, feature flags)
   #   - instrumentation.ts (Sentry init, runs before app)
   #   - sentry.*.config.ts (Sentry configuration)
   #   - next.config.ts (build-time config)
@@ -30,6 +32,12 @@ rules:
     paths:
       exclude:
         - src/lib/env.ts
+        - src/lib/env-validation.ts
+        - src/lib/env-startup.ts
+        - src/lib/env-getters-core.ts
+        - src/lib/env-getters-integrations.ts
+        - src/lib/env-getters-observability.ts
+        - src/lib/env-flags.ts
         - instrumentation.ts
         - "sentry.*.config.ts"
         - next.config.ts

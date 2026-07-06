@@ -151,10 +151,10 @@ jobs:
           # This step checks for new HIGH/CRITICAL vulns introduced in production deps.
           npm audit --audit-level=high --omit=dev
 
-      # R-08: Ban direct process.env.CRON_SECRET access outside the sanctioned env accessors (cron-auth.ts, env.ts, env-startup.ts)
+      # R-08: Ban direct process.env.CRON_SECRET access outside the sanctioned env accessors (cron-auth.ts, env.ts, env-startup.ts, env-getters-core.ts)
       - name: Guard CRON_SECRET access
         run: |
-          HITS=$(git ls-files 'src/**/*.ts' 'src/**/*.tsx' | xargs grep -l 'process\.env\.CRON_SECRET' | grep -vE 'src/lib/(cron-auth|env|env-startup)\.ts|__tests__/' || true)
+          HITS=$(git ls-files 'src/**/*.ts' 'src/**/*.tsx' | xargs grep -l 'process\.env\.CRON_SECRET' | grep -vE 'src/lib/(cron-auth|env|env-startup|env-getters-core)\.ts|__tests__/' || true)
           if [ -n "$HITS" ]; then
             echo "::error::Direct process.env.CRON_SECRET access found outside cron-auth.ts:"
             echo "$HITS"
