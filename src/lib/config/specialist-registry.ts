@@ -37,7 +37,19 @@ import {
   Package,
 } from "lucide-react";
 import type { ClinicDashboardConfig } from "@/components/layouts/clinic-dashboard-layout";
+import { capabilityForSlug } from "@/lib/config/capabilities";
 
+/**
+ * P3: Specialist dashboards key off the canonical capability slugs defined in
+ * `src/lib/config/capabilities.ts`. This registry covers the subset of
+ * specialist surfaces that ship a dashboard config today; the canonical slug
+ * spellings (incl. `speech-therapist`) come from that single source of truth.
+ *
+ * Not every capability slug needs a dashboard entry here (e.g. `pharmacist`
+ * and `equipment` are gated surfaces without a config in this registry), but
+ * every key below MUST be a valid canonical specialist slug — enforced by
+ * `assertRegistrySlugsAreCanonical()` and the capabilities unit test.
+ */
 type SpecialistSlug =
   | "nutritionist"
   | "optician"
@@ -261,4 +273,41 @@ export function getSpecialistConfigFromPathname(pathname: string): ClinicDashboa
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[0] as SpecialistSlug;
   return specialistRegistry[slug] ?? null;
+}
+
+/** The specialist slugs that have a dashboard config in this registry. */
+const REGISTRY_SPECIALIST_SLUGS = Object.keys(specialistRegistry) as SpecialistSlug[];
+
+/**
+ * Invariant guard: every slug with a dashboard config must resolve to exactly
+ * one canonical capability in `capabilities.ts`.
+ *
+ * The authoritative enforcement of this invariant is the build-time test
+ * `src/lib/__tests__/capabilities.test.ts`. This runtime check is a
+ * DEV-ONLY belt-and-suspenders: it throws in development/test so drift is
+ * caught immediately while iterating, but is a no-op in production so a small
+ * config drift can never turn into a boot-time crash across the whole
+ * dashboard surface. Returns the offending slug (or `null`) for testability.
+ */
+export function findNonCanonicalRegistrySlug(): string | null {
+  for (const slug of REGISTRY_SPECIALIST_SLUGS) {
+    if (capabilityForSlug(slug) === null) return slug;
+  }
+  return null;
+}
+
+// Dev-only fail-fast. In production this is skipped entirely; the unit test is
+// the source of truth for the invariant.
+// This module is imported from client components ("use client" layout shells),
+// so it must not import the server-only `@/lib/env` module. `NODE_ENV` is
+// inlined at build time by Next.js, making this a build-time constant check.
+// nosemgrep: semgrep.env-access
+if (process.env.NODE_ENV !== "production") {
+  const bad = findNonCanonicalRegistrySlug();
+  if (bad !== null) {
+    throw new Error(
+      `specialist-registry: slug "${bad}" is not a canonical capability slug ` +
+        `in capabilities.ts (P3 drift).`,
+    );
+  }
 }

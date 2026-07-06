@@ -1,6 +1,17 @@
 /**
  * Route classification helpers for middleware.
+ *
+ * SEALED Layer-1 file. The gating logic here is unchanged; identity is no
+ * longer declared locally. `SPECIALIST_PROTECTED_PREFIXES` is now IMPORTED
+ * from the canonical capability layer (`src/lib/config/capabilities.ts`) and
+ * re-exported for backward compatibility, so the specialist prefix list can
+ * never drift from the capability map / next.config.ts. (P3)
  */
+
+import {
+  SPECIALIST_PROTECTED_PREFIXES as CANONICAL_SPECIALIST_PREFIXES,
+  CORE_ROLE_ROUTE,
+} from "@/lib/config/capabilities";
 
 /** Routes that don't require authentication */
 const PUBLIC_ROUTES = [
@@ -29,20 +40,15 @@ const PUBLIC_PREFIXES = ["/pharmacy", "/dentist"];
  * Specialist dashboard prefixes.
  *
  * These are real authenticated staff surfaces under `src/app/(specialist)/...`
- * but they are NOT first-class auth roles in the DB. They remain modeled as
- * route slugs / dashboard families rather than `UserRole` values.
+ * but they are NOT first-class auth roles in the DB. They are modeled as
+ * capabilities layered on the 5 core roles (see `capabilities.ts`), gated to
+ * `SPECIALIST_STAFF_ROLES` in `src/middleware.ts`.
+ *
+ * P3: DERIVED from the canonical capability layer — do NOT hand-edit. To add
+ * or rename a specialist surface, change `SPECIALIST_CAPABILITIES` in
+ * `src/lib/config/capabilities.ts`; this list follows automatically.
  */
-export const SPECIALIST_PROTECTED_PREFIXES = [
-  "/pharmacist",
-  "/nutritionist",
-  "/optician",
-  "/parapharmacy",
-  "/physiotherapist",
-  "/psychologist",
-  "/radiology",
-  "/speech-therapist",
-  "/equipment",
-] as const;
+export const SPECIALIST_PROTECTED_PREFIXES = CANONICAL_SPECIALIST_PREFIXES;
 
 /** Existing core staff roles that may access specialist dashboards. */
 export const SPECIALIST_STAFF_ROLES = ["clinic_admin", "receptionist", "doctor"] as const;
@@ -68,13 +74,16 @@ export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health", "/api/v1/health"]);
  * user bypasses route scoping. Unknown roles are denied in middleware
  * (see fail-closed block in middleware.ts).
  */
-export const ROLE_ROUTE_MAP: Record<string, string> = {
-  super_admin: "/super-admin",
-  clinic_admin: "/admin",
-  receptionist: "/receptionist",
-  doctor: "/doctor",
-  patient: "/patient",
-};
+/**
+ * DB core role → dashboard route prefix.
+ *
+ * P3: DERIVED from the canonical `CORE_ROLE_ROUTE` in
+ * `src/lib/config/capabilities.ts` — do NOT hand-edit. Kept as a
+ * `Record<string, string>` (not `Record<CoreRole, string>`) so unknown-role
+ * lookups still resolve to `undefined` (fail-closed), which the gating logic
+ * in `src/middleware.ts` relies on. Route values are unchanged.
+ */
+export const ROLE_ROUTE_MAP: Record<string, string> = { ...CORE_ROLE_ROUTE };
 
 /** Role to dashboard path mapping */
 export const ROLE_DASHBOARD_MAP: Record<string, string> = {

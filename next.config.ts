@@ -1,43 +1,23 @@
 import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+// P3: protected route prefixes are DERIVED from the canonical capability layer
+// so they can never drift from middleware / capabilities.ts. Relative import
+// (not the `@/` alias) because next.config.ts is loaded outside the bundler's
+// path-alias resolution. capabilities.ts has zero runtime deps, so it is safe
+// to import here.
+import { PROTECTED_ROUTE_PREFIXES_WITH_WILDCARDS } from "./src/lib/config/capabilities";
 
 const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-const PROTECTED_ROUTE_PREFIXES = [
-  "/patient",
-  "/patient/:path*",
-  "/doctor",
-  "/doctor/:path*",
-  "/receptionist",
-  "/receptionist/:path*",
-  "/admin",
-  "/admin/:path*",
-  "/super-admin",
-  "/super-admin/:path*",
-  "/pharmacist",
-  "/pharmacist/:path*",
-  "/nutritionist",
-  "/nutritionist/:path*",
-  "/optician",
-  "/optician/:path*",
-  "/parapharmacy",
-  "/parapharmacy/:path*",
-  "/physiotherapist",
-  "/physiotherapist/:path*",
-  "/psychologist",
-  "/psychologist/:path*",
-  "/radiology",
-  "/radiology/:path*",
-  "/speech-therapist",
-  "/speech-therapist/:path*",
-  "/equipment",
-  "/equipment/:path*",
-  "/lab-panel",
-  "/lab-panel/:path*",
-] as const;
+// P3: DERIVED from `src/lib/config/capabilities.ts` (core role slugs +
+// specialist capability slugs + documented extra protected slugs, each with
+// its `:path*` wildcard variant). Do NOT hand-edit this list — change the
+// capability layer instead. The `capabilities.test.ts` unit test asserts this
+// stays fully in sync with the canonical source (no drift).
+const PROTECTED_ROUTE_PREFIXES = PROTECTED_ROUTE_PREFIXES_WITH_WILDCARDS;
 
 function getSupabaseImageHostname(): string {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
