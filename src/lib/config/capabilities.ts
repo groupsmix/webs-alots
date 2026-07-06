@@ -41,12 +41,7 @@ import type { UserRole } from "@/lib/types/database";
  * to import from `next.config.ts` (which loads outside the bundler).
  * ──────────────────────────────────────────────────────────────────────── */
 
-export type CoreRole =
-  | "super_admin"
-  | "clinic_admin"
-  | "receptionist"
-  | "doctor"
-  | "patient";
+export type CoreRole = "super_admin" | "clinic_admin" | "receptionist" | "doctor" | "patient";
 
 /**
  * COMPILER-ENFORCED lock-step between `CoreRole` (this module) and the DB
@@ -60,15 +55,10 @@ export type CoreRole =
  * The two `satisfies true` lines then fail to compile on any drift. No runtime
  * value is emitted (types are erased), so ZERO runtime deps are added.
  */
-type MutuallyAssignable<A, B> = [A] extends [B]
-  ? [B] extends [A]
-    ? true
-    : false
-  : false;
+type MutuallyAssignable<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
-type _AssertCoreRoleMatchesUserRole = MutuallyAssignable<CoreRole, UserRole> extends true
-  ? true
-  : never;
+type _AssertCoreRoleMatchesUserRole =
+  MutuallyAssignable<CoreRole, UserRole> extends true ? true : never;
 // If CoreRole and UserRole ever diverge, the next line is a compile error:
 const _coreRoleUserRoleLockStep = true satisfies _AssertCoreRoleMatchesUserRole;
 void _coreRoleUserRoleLockStep;
@@ -273,8 +263,9 @@ export const CORE_ROLE_SLUGS: readonly string[] = Object.values(CORE_ROLE_ROUTE)
  * IMPORTED by `src/lib/middleware/routes.ts` (SEALED) as
  * `SPECIALIST_PROTECTED_PREFIXES` — do not hand-maintain that list.
  */
-export const SPECIALIST_PROTECTED_PREFIXES: readonly string[] =
-  SPECIALIST_CAPABILITIES.map((s) => `/${s.slug}`);
+export const SPECIALIST_PROTECTED_PREFIXES: readonly string[] = SPECIALIST_CAPABILITIES.map(
+  (s) => `/${s.slug}`,
+);
 
 /**
  * Full protected route prefixes WITH the `:path*` wildcard variants, in the

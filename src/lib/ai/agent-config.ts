@@ -13,11 +13,7 @@
  */
 
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";
-import {
-  ROLE_TO_PERSONA,
-  canonicalPersona,
-  type CoreRole,
-} from "@/lib/config/capabilities";
+import { ROLE_TO_PERSONA, canonicalPersona, type CoreRole } from "@/lib/config/capabilities";
 import type { UserRole } from "@/lib/types/database";
 
 /** Maximum tool execution steps before forcing a final answer (Task A5). */

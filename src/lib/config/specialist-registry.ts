@@ -37,7 +37,7 @@ import {
   Package,
 } from "lucide-react";
 import type { ClinicDashboardConfig } from "@/components/layouts/clinic-dashboard-layout";
-import { capabilityForSlug, type Capability } from "@/lib/config/capabilities";
+import { capabilityForSlug } from "@/lib/config/capabilities";
 
 /**
  * P3: Specialist dashboards key off the canonical capability slugs defined in
@@ -276,17 +276,7 @@ export function getSpecialistConfigFromPathname(pathname: string): ClinicDashboa
 }
 
 /** The specialist slugs that have a dashboard config in this registry. */
-export const REGISTRY_SPECIALIST_SLUGS = Object.keys(specialistRegistry) as SpecialistSlug[];
-
-/**
- * P3: resolve a registry slug to its canonical capability. Because the registry
- * keys off the same slugs as `capabilities.ts`, this is a thin pass-through —
- * it exists so downstream code (and tests) reference ONE mapping.
- * Returns `null` if the slug is not a canonical capability slug (fail-closed).
- */
-export function capabilityForSpecialistSlug(slug: string): Capability | null {
-  return capabilityForSlug(slug);
-}
+const REGISTRY_SPECIALIST_SLUGS = Object.keys(specialistRegistry) as SpecialistSlug[];
 
 /**
  * Invariant guard: every slug with a dashboard config must resolve to exactly
@@ -308,6 +298,10 @@ export function findNonCanonicalRegistrySlug(): string | null {
 
 // Dev-only fail-fast. In production this is skipped entirely; the unit test is
 // the source of truth for the invariant.
+// This module is imported from client components ("use client" layout shells),
+// so it must not import the server-only `@/lib/env` module. `NODE_ENV` is
+// inlined at build time by Next.js, making this a build-time constant check.
+// nosemgrep: semgrep.env-access
 if (process.env.NODE_ENV !== "production") {
   const bad = findNonCanonicalRegistrySlug();
   if (bad !== null) {
