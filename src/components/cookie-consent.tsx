@@ -197,7 +197,7 @@ export function getStoredCookiePreferences(): CookiePreferences {
  * GA/GTM scripts) so they stop collecting data for the rest of the session.
  */
 function applyAnalyticsConsent(allowed: boolean): void {
-  if (typeof document === "undefined") return;
+  if (typeof window === "undefined" || typeof document === "undefined") return;
 
   if (!allowed) {
     // Remove Plausible

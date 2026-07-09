@@ -106,12 +106,13 @@ const log = (ok, msg) => {
   if (!ok) failures++;
 };
 
-async function fetchText(url, init = undefined) {
+async function fetchText(url, init = undefined, options = {}) {
+  const { throwOnError = true } = options;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(url, { ...init, signal: ctrl.signal, redirect: "follow" });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    if (throwOnError && !res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
     const text = await res.text();
     return { status: res.status, text, headers: res.headers };
   } finally {
@@ -324,7 +325,7 @@ async function checkAiWorkerRouting() {
   }
   for (const path of SMOKE_AI_WORKER_PATHS) {
     try {
-      const { status, text } = await fetchText(BASE + path);
+      const { status, text } = await fetchText(BASE + path, undefined, { throwOnError: false });
       // 501 is the definitive stub signature; the "Route moved" body marker is
       // stub-specific too and guards against the status code being changed.
       const servedByStub = status === 501 || /"error"\s*:\s*"Route moved"/.test(text);
@@ -362,11 +363,15 @@ async function checkOptionalAiEndpoint() {
       status,
       text,
       headers: responseHeaders,
-    } = await fetchText(BASE + SMOKE_AI_PATH, {
-      method: SMOKE_AI_METHOD,
-      headers,
-      body: SMOKE_AI_METHOD === "GET" || SMOKE_AI_METHOD === "HEAD" ? undefined : SMOKE_AI_BODY,
-    });
+    } = await fetchText(
+      BASE + SMOKE_AI_PATH,
+      {
+        method: SMOKE_AI_METHOD,
+        headers,
+        body: SMOKE_AI_METHOD === "GET" || SMOKE_AI_METHOD === "HEAD" ? undefined : SMOKE_AI_BODY,
+      },
+      { throwOnError: false },
+    );
 
     log(
       status === SMOKE_AI_EXPECT_STATUS,

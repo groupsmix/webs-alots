@@ -1,3 +1,5 @@
+"use client";
+
 import {
   LayoutDashboard,
   ClipboardList,
@@ -9,6 +11,7 @@ import {
   Pill,
   Truck,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   ClinicDashboardLayout,
   type ClinicDashboardConfig,
@@ -17,9 +20,14 @@ import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 
 const pharmacistMobileTabs: MobileTabItem[] = [
   { href: "/pharmacist/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/pharmacist/prescriptions", label: "Prescriptions", icon: ClipboardList },
-  { href: "/pharmacist/stock", label: "Stock", icon: Package },
-  { href: "/pharmacist/sales", label: "Sales", icon: Receipt },
+  {
+    href: "/pharmacist/prescriptions",
+    label: "Prescriptions",
+    icon: ClipboardList,
+    requiredFeature: "prescriptions",
+  },
+  { href: "/pharmacist/stock", label: "Stock", icon: Package, requiredFeature: "stock" },
+  { href: "/pharmacist/sales", label: "Sales", icon: Receipt, requiredFeature: "sales" },
 ];
 
 const config: ClinicDashboardConfig = {
@@ -29,17 +37,37 @@ const config: ClinicDashboardConfig = {
   accentColor: "emerald-600",
   navItems: [
     { href: "/pharmacist/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/pharmacist/prescriptions", label: "Prescriptions", icon: ClipboardList },
-    { href: "/pharmacist/stock", label: "Stock Management", icon: Package },
-    { href: "/pharmacist/orders", label: "Purchase Orders", icon: ShoppingCart },
-    { href: "/pharmacist/sales", label: "Daily Sales", icon: Receipt },
-    { href: "/pharmacist/expiry", label: "Expiry Tracker", icon: AlertTriangle },
-    { href: "/pharmacist/suppliers", label: "Suppliers", icon: Truck },
-    { href: "/pharmacist/loyalty", label: "Loyalty Program", icon: Gift },
+    {
+      href: "/pharmacist/prescriptions",
+      label: "Prescriptions",
+      icon: ClipboardList,
+      requiredFeature: "prescriptions",
+    },
+    {
+      href: "/pharmacist/stock",
+      label: "Stock Management",
+      icon: Package,
+      requiredFeature: "stock",
+    },
+    {
+      href: "/pharmacist/orders",
+      label: "Purchase Orders",
+      icon: ShoppingCart,
+      requiredFeature: "stock",
+    },
+    { href: "/pharmacist/sales", label: "Daily Sales", icon: Receipt, requiredFeature: "sales" },
+    {
+      href: "/pharmacist/expiry",
+      label: "Expiry Tracker",
+      icon: AlertTriangle,
+      requiredFeature: "stock",
+    },
+    { href: "/pharmacist/suppliers", label: "Suppliers", icon: Truck, requiredFeature: "stock" },
+    { href: "/pharmacist/loyalty", label: "Loyalty Program", icon: Gift, requiredFeature: "sales" },
   ],
   mobileTabs: pharmacistMobileTabs,
 };
 
-export function PharmacistLayoutShell({ children }: { children: React.ReactNode }) {
+export function PharmacistLayoutShell({ children }: { children: ReactNode }) {
   return <ClinicDashboardLayout config={config}>{children}</ClinicDashboardLayout>;
 }

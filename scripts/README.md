@@ -19,24 +19,25 @@ or `manual` (operator-run).
 
 ## CI guards (ratchets & invariants)
 
-| Script                        | Language   | Run by    | Purpose                                                                                                    |
-| ----------------------------- | ---------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| `check-bindings.ts`           | TypeScript | CI        | Flags wrangler.toml bindings not referenced anywhere in source.                                            |
-| `check-bundle-budget.mjs`     | Node       | CI        | Fails if the shared JS bundle exceeds its size budget.                                                     |
-| `check-cron-auth.ts`          | TypeScript | CI        | Verifies every `/api/cron/` route calls `verifyCronSecret()`.                                              |
-| `check-cron-mapping.ts`       | TypeScript | CI        | Verifies all wrangler.toml `crons` blocks match the handler's `CRON_ROUTES`.                               |
-| `check-db-types-drift.sh`     | Bash       | manual    | Detects `database.ts` drift vs the live schema (requires `SUPABASE_PROJECT_ID`).                           |
-| `check-i18n-coverage.mjs`     | Node       | CI        | i18n coverage ratchet: untranslated `fr`→`en/ar` keys may shrink, never grow.                              |
-| `check-knip-ratchet.mjs`      | Node       | CI        | Unused-file/export ratchet against the knip baseline.                                                      |
-| `check-kv-isolation.ts`       | TypeScript | CI/deploy | Ensures staging KV namespace IDs are distinct from production (A-09); `--strict` also blocks placeholders. |
-| `check-mvp-scope-refs.mjs`    | Node       | CI        | Verifies symbols referenced in `MVP_SCOPE.md` still exist in source.                                       |
-| `check-security-coverage.mjs` | Node       | CI        | Asserts the documented security-test coverage posture.                                                     |
-| `check-tenant-scoping.mjs`    | Node       | CI        | Guards tenant (clinic) scoping invariants.                                                                 |
-| `check-translations.mjs`      | Node       | CI        | Validates translation files for structural issues.                                                         |
-| `ratchet-coverage.mjs`        | Node       | manual    | Bumps `.vitest-coverage-floor.json` to current coverage.                                                   |
-| `strip-suppressed-sarif.mjs`  | Node       | CI        | Removes in-source-suppressed findings from a SARIF before upload.                                          |
-| `verify-cron-export.mjs`      | Node       | CI        | Verifies the cron handler exports match expectations.                                                      |
-| `snapshot-rls-policies.mjs`   | Node       | CI        | Prints all RLS policies for PR-review visibility.                                                          |
+| Script                                  | Language   | Run by    | Purpose                                                                                                    |
+| --------------------------------------- | ---------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `check-bindings.ts`                     | TypeScript | CI        | Flags wrangler.toml bindings not referenced anywhere in source.                                            |
+| `check-bundle-budget.mjs`               | Node       | CI        | Fails if the shared JS bundle exceeds its size budget.                                                     |
+| `check-cron-auth.ts`                    | TypeScript | CI        | Verifies every `/api/cron/` route calls `verifyCronSecret()`.                                              |
+| `check-cron-mapping.ts`                 | TypeScript | CI        | Verifies all wrangler.toml `crons` blocks match the handler's `CRON_ROUTES`.                               |
+| `check-db-types-drift.sh`               | Bash       | manual    | Detects `database.ts` drift vs the live schema (requires `SUPABASE_PROJECT_ID`).                           |
+| `check-dropped-clinical-table-refs.mjs` | Node       | CI        | Parses migration `00187` and fails if runtime source still targets any dropped clinical/EMR table.         |
+| `check-i18n-coverage.mjs`               | Node       | CI        | i18n coverage ratchet: untranslated `fr`→`en/ar` keys may shrink, never grow.                              |
+| `check-knip-ratchet.mjs`                | Node       | CI        | Unused-file/export ratchet against the knip baseline.                                                      |
+| `check-kv-isolation.ts`                 | TypeScript | CI/deploy | Ensures staging KV namespace IDs are distinct from production (A-09); `--strict` also blocks placeholders. |
+| `check-mvp-scope-refs.mjs`              | Node       | CI        | Verifies symbols referenced in `MVP_SCOPE.md` still exist in source.                                       |
+| `check-security-coverage.mjs`           | Node       | CI        | Asserts the documented security-test coverage posture.                                                     |
+| `check-tenant-scoping.mjs`              | Node       | CI        | Guards tenant (clinic) scoping invariants.                                                                 |
+| `check-translations.mjs`                | Node       | CI        | Validates translation files for structural issues.                                                         |
+| `ratchet-coverage.mjs`                  | Node       | manual    | Bumps `.vitest-coverage-floor.json` to current coverage.                                                   |
+| `strip-suppressed-sarif.mjs`            | Node       | CI        | Removes in-source-suppressed findings from a SARIF before upload.                                          |
+| `verify-cron-export.mjs`                | Node       | CI        | Verifies the cron handler exports match expectations.                                                      |
+| `snapshot-rls-policies.mjs`             | Node       | CI        | Prints all RLS policies for PR-review visibility.                                                          |
 
 ## Security & secrets
 

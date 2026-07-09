@@ -15,7 +15,7 @@ function StarRating({ rating }: { rating: number }) {
     <div className="flex gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
-          key={i}
+          key={`star-${i + 1}`}
           className={`h-3.5 w-3.5 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`}
         />
       ))}

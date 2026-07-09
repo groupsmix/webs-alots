@@ -18,6 +18,9 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 
+const RADIOLOGY_LIMITED_MODE_MESSAGE =
+  "This deployment is in limited radiology mode: existing studies can be viewed, but ordering, uploads, status updates, and report generation are disabled.";
+
 export default function RadiologyDashboardPage() {
   const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
@@ -72,19 +75,26 @@ export default function RadiologyDashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Radiology Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Overview of imaging operations</p>
+      <div className="space-y-4 mb-6">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          {RADIOLOGY_LIMITED_MODE_MESSAGE}
         </div>
-        <Badge variant="outline" className="text-indigo-600 border-indigo-600">
-          <Clock className="h-3 w-3 mr-1" />
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </Badge>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Radiology Dashboard</h1>
+            <p className="text-muted-foreground text-sm">
+              Overview of existing imaging data and study status
+            </p>
+          </div>
+          <Badge variant="outline" className="text-indigo-600 border-indigo-600">
+            <Clock className="h-3 w-3 mr-1" />
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">

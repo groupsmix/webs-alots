@@ -11,11 +11,15 @@
 # See workers/ai/README.md for why the split exists.
 #
 # Required GitHub secrets:
-#   CLOUDFLARE_API_TOKEN   — scoped to Workers Scripts:Edit on BOTH scripts,
-#                            Account Settings:Read, Workers KV Storage:Edit,
-#                            Workers Routes:Edit on the oltigo.com zone
-#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (not a secret, but kept
-#                            out of wrangler.toml to avoid leaking it in forks)
+#   Preferred: environment-scoped `CLOUDFLARE_API_TOKEN` /
+#              `CLOUDFLARE_ACCOUNT_ID` secrets on the `production` and
+#              `staging` GitHub Environments so staging creds cannot deploy
+#              production. This workflow also supports explicit branch-scoped
+#              fallbacks: `CLOUDFLARE_API_TOKEN_PROD`,
+#              `CLOUDFLARE_API_TOKEN_STAGING`, `CLOUDFLARE_ACCOUNT_ID_PROD`,
+#              `CLOUDFLARE_ACCOUNT_ID_STAGING`.
+#   Legacy fallback: repository-level `CLOUDFLARE_API_TOKEN` /
+#                    `CLOUDFLARE_ACCOUNT_ID` remain supported during migration.
 #
 # Required Cloudflare Worker secrets (set ONCE per worker via
 # `wrangler secret put`, or via the dashboard — NOT pushed by this workflow):
@@ -63,6 +67,9 @@ jobs:
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
       url: ${{ github.ref_name == 'main' && 'https://oltigo.com' || 'https://staging.oltigo.com' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ github.ref_name == 'main' && (secrets.CLOUDFLARE_API_TOKEN_PROD || secrets.CLOUDFLARE_API_TOKEN) || (secrets.CLOUDFLARE_API_TOKEN_STAGING || secrets.CLOUDFLARE_API_TOKEN) }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ github.ref_name == 'main' && (secrets.CLOUDFLARE_ACCOUNT_ID_PROD || secrets.CLOUDFLARE_ACCOUNT_ID) || (secrets.CLOUDFLARE_ACCOUNT_ID_STAGING || secrets.CLOUDFLARE_ACCOUNT_ID) }}
     steps:
       # CICD-01 / AUDIT-16: Pin GH Actions to SHA for supply-chain hardening.
       - name: Checkout
@@ -134,11 +141,11 @@ jobs:
           #    variable for wrangler to work".
           # Setting them at the step `env:` level puts them in the runner
           # process.env so every spawned process inherits them.
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           # Deploy to `production` on main, `staging` on the staging branch.
           command: deploy --env ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
@@ -188,11 +195,11 @@ jobs:
         # CICD-01 / AUDIT-16: pinned to v3.15.0 SHA for supply-chain hardening.
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/ai
           # Deploy to `production` on main, `staging` on the staging branch.
           # webs-alots-ai runtime secrets (NEXT_PUBLIC_SUPABASE_URL,

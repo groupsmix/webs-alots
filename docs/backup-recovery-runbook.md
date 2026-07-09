@@ -43,7 +43,7 @@ The workflow at `.github/workflows/backup.yml` runs nightly and:
 2. Runs `pg_dump` with `--no-owner --no-acl --clean --if-exists`
 3. Gzips the dump and uploads to `s3://R2_BACKUP_BUCKET/backups/{type}/`
 4. Rotates old backups (keeps 7 daily, 4 weekly, 3 monthly)
-5. Verifies the latest backup by restoring into a temporary PostgreSQL instance
+5. Verifies the latest backup by restoring into a temporary local Supabase stack
 6. Sends Slack/email alerts on failure
 
 ### Required GitHub Secrets
@@ -192,11 +192,11 @@ For a concise cross-reference on regional recovery posture, see
 
 The nightly backup workflow includes a `verify` job that:
 
-1. Downloads the latest daily backup from R2
-2. Starts a temporary PostgreSQL instance
-3. Restores the backup
-4. Verifies at least 5 tables exist in the `public` schema
-5. Cleans up the temporary database
+1. Downloads the latest backup from R2 (daily, then weekly, then monthly fallback)
+2. Starts the local Supabase stack used elsewhere in this repo
+3. Restores the backup into that Supabase-compatible scratch database
+4. Verifies at least 5 tables exist in the `public` schema and runs a `clinics` smoke query
+5. Cleans up the temporary stack
 
 ### Manual verification
 

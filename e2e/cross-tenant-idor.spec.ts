@@ -143,27 +143,8 @@ test.describe("TC-01 — Tenant header injection attacks", () => {
 // ── Cross-tenant resource ID access on real by-id routes (IDOR) ────────────
 
 test.describe("TC-01 — Cross-tenant resource ID access (IDOR)", () => {
-  test("GET /api/admissions/{id} with cross-tenant ID is auth-gated", async ({ request }) => {
-    const res = await request.get(`/api/admissions/${APPT_B_ID}`);
-    expect(AUTH_DENIED).toContain(res.status());
-  });
-
   test("GET /api/invoices/{id} with cross-tenant ID is auth-gated", async ({ request }) => {
     const res = await request.get(`/api/invoices/${APPT_B_ID}`);
-    expect(AUTH_DENIED).toContain(res.status());
-  });
-
-  test("PATCH /api/admissions/{id} with cross-tenant ID + extra fields is auth-gated", async ({
-    request,
-  }) => {
-    // The auth gate runs before the body is read, so mass-assignment of
-    // disallowed fields can never take effect for an anonymous caller. The
-    // field-allowlisting itself is unit-tested (mass-assignment-guard.yml +
-    // route handler tests); here we only assert the route denies anonymous
-    // writes outright.
-    const res = await request.patch(`/api/admissions/${APPT_B_ID}`, {
-      data: { action: "discharge", role: "super_admin", clinic_id: CLINIC_B_ID },
-    });
     expect(AUTH_DENIED).toContain(res.status());
   });
 

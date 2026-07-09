@@ -8,13 +8,15 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Insurance claims — API access control", () => {
-  test("GET /api/insurance-claims returns 401 without auth", async ({ request }) => {
-    const response = await request.get("/api/insurance-claims");
+  test("GET /api/clinic-owner/insurance-claims returns 401 without auth", async ({ request }) => {
+    const response = await request.get("/api/clinic-owner/insurance-claims");
     expect([401, 403]).toContain(response.status());
   });
 
-  test("POST /api/insurance-claims rejects unauthenticated request", async ({ request }) => {
-    const response = await request.post("/api/insurance-claims", {
+  test("POST /api/clinic-owner/insurance-claims rejects unauthenticated request", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/clinic-owner/insurance-claims", {
       data: {
         patient_id: "00000000-0000-0000-0000-000000000001",
         insurance_type: "CNSS",
@@ -25,17 +27,21 @@ test.describe("Insurance claims — API access control", () => {
     expect([401, 403]).toContain(response.status());
   });
 
-  test("PATCH /api/insurance-claims/:id rejects unauthenticated review", async ({ request }) => {
+  test("PATCH /api/clinic-owner/insurance-claims/:id rejects unauthenticated review", async ({
+    request,
+  }) => {
     // withAuth short-circuits to 401 (or 403) before the id/validation logic
     // runs, so a missing route (404) would be a real regression — assert tightly.
-    const response = await request.patch("/api/insurance-claims/fake-id", {
+    const response = await request.patch("/api/clinic-owner/insurance-claims/fake-id", {
       data: { status: "approved", approved_amount_centimes: 50000 },
     });
     expect([401, 403]).toContain(response.status());
   });
 
-  test("GET /api/insurance-claims/:id rejects unauthenticated access", async ({ request }) => {
-    const response = await request.get("/api/insurance-claims/fake-id");
+  test("GET /api/clinic-owner/insurance-claims/:id rejects unauthenticated access", async ({
+    request,
+  }) => {
+    const response = await request.get("/api/clinic-owner/insurance-claims/fake-id");
     expect([401, 403]).toContain(response.status());
   });
 });

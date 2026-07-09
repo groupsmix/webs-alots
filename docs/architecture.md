@@ -1,7 +1,7 @@
 # Architecture Overview
 
 > **Audience:** Engineers, auditors, new team members
-> **Last updated:** May 2026
+> **Last updated:** July 2026
 
 ```mermaid
 flowchart TD
@@ -67,3 +67,22 @@ flowchart TD
 | `docs/`                | Runbooks, SOPs, compliance, ADRs                                        |
 | `.github/workflows/`   | CI (lint, typecheck, test, security, e2e, deploy)                       |
 | `wrangler.toml`        | Cloudflare Workers config (routes, KV, R2, crons)                       |
+
+## Canonical Architecture Documents
+
+> Historical one-off analysis snapshots live under `docs/architecture-analysis/`.
+> Treat this file and `docs/architecture/` as the living source of truth.
+
+Use this page as the entry point, then follow the focused documents below:
+
+| Document                                         | Purpose                                                                                 |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `docs/architecture/trust-boundary-matrix.md`     | Maps trusted vs distrusted signals across edge, auth, app, DB, and service-role paths   |
+| `docs/architecture/global-vs-tenant-map.md`      | Separates tenant-scoped surfaces from platform-global islands                           |
+| `docs/architecture/constitutional-guardrails.md` | Documents the CI/test/ADR guardrails that act as architectural law                      |
+| `docs/architecture/failure-semantics.md`         | Explains which subsystems fail closed, degrade gracefully, or fail open                 |
+| `docs/architecture/runtime-phase-model.md`       | Captures build-time, deploy-time, request-time, and isolate/runtime constraints         |
+| `docs/architecture/distributed-truth-map.md`     | Explains where architecture is intentionally split across multiple synchronized sources |
+| `docs/architecture/rls-policy-map.md`            | Documents tenant RLS policy classes, global-table exceptions, and pgTAP enforcement     |
+| `docs/adr/0013-operations-first-scope.md`        | Records the operations-first scope decision                                             |
+| `docs/adr/0014-ai-fail-open-toggle-posture.md`   | Records the deliberate AI kill-switch / toggle failure posture                          |

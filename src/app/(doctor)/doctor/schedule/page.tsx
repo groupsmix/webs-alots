@@ -152,7 +152,7 @@ export default function DoctorSchedulePage() {
                 {dayNames.map((day, i) => {
                   const wh = workingHours[i];
                   return (
-                    <div key={i} className="flex items-center justify-between text-sm">
+                    <div key={day} className="flex items-center justify-between text-sm">
                       <Breadcrumb
                         items={[
                           { label: "Doctor", href: "/doctor/dashboard" },

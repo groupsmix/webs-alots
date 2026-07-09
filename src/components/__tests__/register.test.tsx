@@ -1,10 +1,32 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import RegisterPageDefault from "@/app/(auth)/register/page";
 
 // Mock the auth module
 vi.mock("@/lib/auth", () => ({
   registerPatient: vi.fn().mockResolvedValue({ error: null }),
   verifyOTP: vi.fn().mockResolvedValue({ error: null }),
+}));
+
+vi.mock("@/lib/auth-providers", () => ({
+  registerWithEmail: vi.fn().mockResolvedValue({ error: null }),
+  signInWithGoogle: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/components/locale-switcher", () => ({
+  useLocale: () => ["fr"],
+}));
+
+vi.mock("@/lib/i18n", () => ({
+  t: (_locale: string, key: string) => key,
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
 }));
 
 // Mock UI components
@@ -85,28 +107,24 @@ describe("RegisterPage", () => {
   });
 
   describe("when PHONE_AUTH_ENABLED is false (default)", () => {
-    it("renders unavailable state", async () => {
-      const { default: RegisterPage } = await import("@/app/(auth)/register/page");
-      render(<RegisterPage />);
+    it("renders unavailable state", () => {
+      render(<RegisterPageDefault />);
       expect(screen.getByTestId("card")).toBeDefined();
     });
 
-    it("shows login link", async () => {
-      const { default: RegisterPage } = await import("@/app/(auth)/register/page");
-      render(<RegisterPage />);
+    it("shows login link", () => {
+      render(<RegisterPageDefault />);
       const loginLink = document.querySelector('a[href="/login"]');
       expect(loginLink).toBeDefined();
     });
 
-    it("shows mobile branding with Oltigo Health", async () => {
-      const { default: RegisterPage } = await import("@/app/(auth)/register/page");
-      render(<RegisterPage />);
+    it("shows mobile branding with Oltigo Health", () => {
+      render(<RegisterPageDefault />);
       expect(screen.getByText("Oltigo Health")).toBeDefined();
     });
 
-    it("shows contact link when registration unavailable", async () => {
-      const { default: RegisterPage } = await import("@/app/(auth)/register/page");
-      render(<RegisterPage />);
+    it("shows contact link when registration unavailable", () => {
+      render(<RegisterPageDefault />);
       const contactLink = document.querySelector('a[href="/contact"]');
       expect(contactLink).toBeDefined();
     });

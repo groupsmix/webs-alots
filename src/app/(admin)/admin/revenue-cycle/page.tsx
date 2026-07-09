@@ -146,7 +146,7 @@ export default function RevenueCyclePage() {
     setError(null);
     try {
       const [claimsRes, invoicesRes] = await Promise.all([
-        fetch("/api/insurance-claims?limit=50", { credentials: "include" }),
+        fetch("/api/clinic-owner/insurance-claims?limit=50", { credentials: "include" }),
         fetch("/api/invoices?limit=50", { credentials: "include" }),
       ]);
 

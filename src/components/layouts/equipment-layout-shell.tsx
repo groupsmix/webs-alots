@@ -1,13 +1,27 @@
 "use client";
 
-import { LayoutDashboard, Package, HandCoins, Wrench, Menu, X, Languages } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  HandCoins,
+  Wrench,
+  Menu,
+  X,
+  Languages,
+  ShieldAlert,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, createContext, useContext, useCallback } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
-import { FeatureGate } from "@/components/feature-gate";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import { useLocale } from "@/components/locale-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ClinicFeatureKey } from "@/lib/features";
+import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
+import { t } from "@/lib/i18n";
 
 export type EquipmentLocale = "fr" | "ar";
 
@@ -42,20 +56,36 @@ const navLabels: Record<string, Record<EquipmentLocale, string>> = {
   "/equipment/maintenance": { fr: "Maintenance", ar: "\u0627\u0644\u0635\u064A\u0627\u0646\u0629" },
 };
 
-const navItems = [
-  { href: "/equipment/dashboard", icon: LayoutDashboard },
-  { href: "/equipment/inventory", icon: Package },
-  { href: "/equipment/rentals", icon: HandCoins },
-  { href: "/equipment/maintenance", icon: Wrench },
+interface EquipmentNavItem {
+  href: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  requiredFeature: ClinicFeatureKey;
+}
+
+const navItems: EquipmentNavItem[] = [
+  { href: "/equipment/dashboard", icon: LayoutDashboard, requiredFeature: "equipment_rentals" },
+  { href: "/equipment/inventory", icon: Package, requiredFeature: "equipment_rentals" },
+  { href: "/equipment/rentals", icon: HandCoins, requiredFeature: "equipment_rentals" },
+  { href: "/equipment/maintenance", icon: Wrench, requiredFeature: "equipment_maintenance" },
 ];
+
+function requiredFeaturesForPathname(pathname: string): ClinicFeatureKey[] {
+  if (pathname.startsWith("/equipment/maintenance")) return ["equipment_maintenance"];
+  if (pathname.startsWith("/equipment/inventory") || pathname.startsWith("/equipment/rentals")) {
+    return ["equipment_rentals"];
+  }
+  return ["equipment_rentals", "equipment_maintenance"];
+}
 
 function SidebarContent({
   pathname,
   locale,
+  navItems,
   onNavClick,
 }: {
   pathname: string;
   locale: EquipmentLocale;
+  navItems: EquipmentNavItem[];
   onNavClick?: () => void;
 }) {
   return (
@@ -88,16 +118,20 @@ function SidebarContent({
   );
 }
 
-export default function EquipmentLayoutShell({ children }: { children: React.ReactNode }) {
+export default function EquipmentLayoutShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [locale, setLocale] = useState<EquipmentLocale>("fr");
+  const [appLocale] = useLocale();
+  const { loaded, hasFeature } = useClinicFeatures();
 
   const toggleLocale = useCallback(() => {
     setLocale((prev) => (prev === "fr" ? "ar" : "fr"));
   }, []);
 
   const isRtl = locale === "ar";
+  const visibleNavItems = navItems.filter((item) => hasFeature(item.requiredFeature));
+  const routeEnabled = requiredFeaturesForPathname(pathname).some((feature) => hasFeature(feature));
   const title =
     locale === "fr"
       ? "Mat\u00E9riel M\u00E9dical"
@@ -152,6 +186,7 @@ export default function EquipmentLayoutShell({ children }: { children: React.Rea
               <SidebarContent
                 pathname={pathname}
                 locale={locale}
+                navItems={visibleNavItems}
                 onNavClick={() => setMobileOpen(false)}
               />
             </aside>
@@ -172,24 +207,52 @@ export default function EquipmentLayoutShell({ children }: { children: React.Rea
               {locale === "fr" ? "\u0639\u0631\u0628\u064A" : "FR"}
             </button>
           </div>
-          <SidebarContent pathname={pathname} locale={locale} />
+          <SidebarContent pathname={pathname} locale={locale} navItems={visibleNavItems} />
         </aside>
 
         <main id="main-content" className="flex-1 p-4 pt-16 pb-20 md:p-6 md:pb-6">
-          <FeatureGate featureKey="equipment_rentals" moduleName="Medical Equipment">
-            {children}
-          </FeatureGate>
+          {!loaded ? (
+            <div className="flex min-h-[200px] items-center justify-center" aria-busy="true">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+            </div>
+          ) : routeEnabled ? (
+            children
+          ) : (
+            <div className="flex min-h-[60vh] items-center justify-center px-4">
+              <Card className="w-full max-w-md text-center">
+                <CardContent className="p-8">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                    <ShieldAlert className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <h2 className="mb-2 text-lg font-semibold">
+                    {t(appLocale, "featureGate.notEnabled").replace("{module}", title)}
+                  </h2>
+                  <p className="mb-6 text-sm text-muted-foreground">
+                    {t(appLocale, "featureGate.notAvailable")}
+                  </p>
+                  <Link
+                    href="/admin/dashboard"
+                    className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {t(appLocale, "featureGate.backToDashboard")}
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </main>
 
         {/* Mobile bottom tab bar */}
-        <MobileTabBar
-          tabs={navItems.map((item) => ({
-            href: item.href,
-            label: navLabels[item.href]?.[locale] ?? item.href,
-            icon: item.icon,
-          }))}
-          onMoreClick={() => setMobileOpen(true)}
-        />
+        {visibleNavItems.length ? (
+          <MobileTabBar
+            tabs={visibleNavItems.map((item) => ({
+              href: item.href,
+              label: navLabels[item.href]?.[locale] ?? item.href,
+              icon: item.icon,
+            }))}
+            onMoreClick={() => setMobileOpen(true)}
+          />
+        ) : null}
       </div>
     </EquipmentI18nContext.Provider>
   );

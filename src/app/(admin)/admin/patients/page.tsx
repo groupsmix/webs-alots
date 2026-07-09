@@ -126,6 +126,7 @@ export default function AdminPatientDatabasePage() {
 
   const patients = patientsList;
   const appointments = appointmentsList;
+  const prescriptions = Array.isArray(selectedRx) ? selectedRx : [];
 
   const filtered = patients.filter(
     (p) =>
@@ -472,13 +473,13 @@ export default function AdminPatientDatabasePage() {
                         Loading prescriptions…
                       </p>
                     )}
-                    {!rxLoading && selectedRx.length === 0 && (
+                    {!rxLoading && prescriptions.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         No prescriptions
                       </p>
                     )}
                     {!rxLoading &&
-                      selectedRx.map((rx) => (
+                      prescriptions.map((rx) => (
                         <div key={rx.id} className="border rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-sm font-medium flex items-center gap-1">
@@ -488,8 +489,11 @@ export default function AdminPatientDatabasePage() {
                             <span className="text-xs text-muted-foreground">{rx.date}</span>
                           </div>
                           <div className="space-y-1">
-                            {rx.medications.map((med, i) => (
-                              <p key={i} className="text-xs text-muted-foreground">
+                            {rx.medications.map((med) => (
+                              <p
+                                key={`${rx.id}-${med.name}-${med.dosage}-${med.duration}`}
+                                className="text-xs text-muted-foreground"
+                              >
                                 <span className="font-medium text-foreground">{med.name}</span> —{" "}
                                 {med.dosage} for {med.duration}
                               </p>

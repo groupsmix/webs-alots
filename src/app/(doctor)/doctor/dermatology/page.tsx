@@ -372,8 +372,11 @@ export default function DermatologyPage() {
                     {cond.treatments.length > 0 && (
                       <div className="rounded-lg bg-muted/50 p-3 mb-3">
                         <p className="text-xs font-medium mb-2">Treatments:</p>
-                        {cond.treatments.map((t, i) => (
-                          <div key={i} className="text-sm flex items-center gap-2">
+                        {cond.treatments.map((t) => (
+                          <div
+                            key={`${cond.id}-${t.name}-${t.startDate ?? "ongoing"}`}
+                            className="text-sm flex items-center gap-2"
+                          >
                             <CheckCircle className="h-3 w-3 text-green-600" />
                             <span className="font-medium">{t.name}</span>
                             <span className="text-muted-foreground">from {t.startDate}</span>

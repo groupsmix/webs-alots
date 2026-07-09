@@ -172,7 +172,7 @@ export default async function DentistHomePage() {
                     >
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
-                          key={i}
+                          key={`${review.id}-star-${i + 1}`}
                           aria-hidden="true"
                           className={`h-4 w-4 ${
                             i < review.rating

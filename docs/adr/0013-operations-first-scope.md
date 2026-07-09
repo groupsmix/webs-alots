@@ -12,14 +12,15 @@ Accepted
 
 Migration `00187_drop_clinical_emr_surface.sql` and `MVP_SCOPE.md` declare that Oltigo is an
 **operations platform** (scheduling, reminders, payments, WhatsApp, owner analytics) — NOT an
-EMR. However, clinical API routes (`prescriptions/`, `vitals/`, `radiology/`,
+EMR. When this ADR was written, clinical API routes (`prescriptions/`, `vitals/`, `radiology/`,
 `insurance-claims/`, `admissions/`), non-healthcare verticals (`pets/`, `menus/`,
-`restaurant-orders/`, `restaurant-tables/`), and their validation schemas still ship ungated.
+`restaurant-orders/`, `restaurant-tables/`), and their validation schemas were still shipping
+ungated.
 
-This creates a governance gap (documented as P9 in `deep_dive_analysis.md`): the database layer
-committed to Architecture A by dropping 12 clinical tables, while the application layer retains
-Architecture B surface. Any fresh clinic provisioned today gets access to all routes regardless
-of its type or subscription.
+This created a governance gap (documented as P9 in `docs/architecture-analysis/deep_dive_analysis.md`): the database layer
+committed to Architecture A by dropping 12 clinical tables, while the application layer retained
+Architecture B surface. At the time, a fresh clinic could reach those routes regardless of its
+clinic type or subscription.
 
 ## Decision
 
@@ -29,7 +30,7 @@ and feature flag.**
 Specifically:
 
 1. Every surface classified as "Clinical PHI" or "Non-healthcare vertical" in §4 of
-   `project_architecture_analysis(2).md` ships **flag-OFF by default**.
+   `docs/architecture-analysis/project_architecture_analysis(2).md` ships **flag-OFF by default**.
 
 2. A capability matrix (`src/lib/config/verticals.ts`) maps each `ClinicType` to its
    `enabledApiGroups` and `enabledFlags`. A `doctor`-type (general medicine) clinic does NOT
@@ -61,5 +62,5 @@ Specifically:
 
 - `supabase/migrations/00187_drop_clinical_emr_surface.sql`
 - `docs/PRODUCT_FOCUS_MAP.md` §2 (Lane A vs Lane B)
-- `alayse and acrchiculture/deep_dive_analysis.md` P9 (Live Conflict Status)
-- `alayse and acrchiculture/project_architecture_analysis(2).md` §4.2
+- `docs/architecture-analysis/deep_dive_analysis.md` P9 (Live Conflict Status)
+- `docs/architecture-analysis/project_architecture_analysis(2).md` §4.2

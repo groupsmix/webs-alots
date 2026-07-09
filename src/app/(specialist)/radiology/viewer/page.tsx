@@ -10,6 +10,9 @@ import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 
+const RADIOLOGY_VIEWER_NOTICE =
+  "Viewer access remains available for existing studies, but new radiology uploads are disabled in this deployment.";
+
 export default function DicomViewerPage() {
   const tenant = useTenant();
   const {
@@ -38,9 +41,16 @@ export default function DicomViewerPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">DICOM Viewer</h1>
-        <p className="text-muted-foreground text-sm">View medical images in DICOM format</p>
+      <div className="space-y-4 mb-6">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          {RADIOLOGY_VIEWER_NOTICE}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">DICOM Viewer</h1>
+          <p className="text-muted-foreground text-sm">
+            View existing medical images in DICOM format
+          </p>
+        </div>
       </div>
 
       <Card className="mb-6">
@@ -49,8 +59,8 @@ export default function DicomViewerPage() {
             <Monitor className="h-16 w-16 text-indigo-600 mx-auto" />
             <h2 className="text-xl font-semibold">DICOM Viewer Integration</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Connect to an external DICOM viewer such as OHIF Viewer or Cornerstone.js to view
-              medical images with full diagnostic tools.
+              Connect to an external DICOM viewer such as OHIF Viewer or Cornerstone.js to review
+              existing medical images with full diagnostic tools.
             </p>
             <div className="flex items-center justify-center gap-3 pt-4">
               <ExternalLink
@@ -151,7 +161,7 @@ export default function DicomViewerPage() {
                   <FileImage className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">No studies with images found</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Upload images via the Image Gallery page
+                    Existing studies appear here once images are already present for the clinic.
                   </p>
                 </div>
               </CardContent>
@@ -166,7 +176,7 @@ export default function DicomViewerPage() {
           <div>
             <h3 className="font-medium text-sm mb-1">Integration Notes</h3>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>&bull; Upload DICOM files via the Image Gallery</li>
+              <li>&bull; Existing DICOM studies can still be opened in an external viewer</li>
               <li>&bull; DICOM Study UIDs are stored with each image</li>
               <li>&bull; Configure your PACS/DICOMweb endpoint in clinic settings</li>
               <li>&bull; Supported viewers: OHIF, Cornerstone.js, Horos</li>

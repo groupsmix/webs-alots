@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, CreditCard, FileText, CheckCircle2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,10 @@ const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   overdue: "destructive",
 };
 
+const INVOICE_RECEIPT_DISABLED_MESSAGE =
+  "Invoice receipt downloads are temporarily unavailable in this deployment.";
+
 export default function PatientInvoicesPage() {
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -69,19 +71,16 @@ export default function PatientInvoicesPage() {
     .filter((i) => i.status === "pending")
     .reduce((sum, i) => sum + i.amount, 0);
 
-  const handleDownload = (invoiceId: string) => {
-    setDownloading(invoiceId);
-    setTimeout(() => {
-      setDownloading(null);
-    }, 1500);
-  };
-
   return (
     <div>
       <Breadcrumb
         items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Invoices" }]}
       />
-      <h1 className="text-2xl font-bold mb-6">My Invoices</h1>
+      <h1 className="text-2xl font-bold mb-4">My Invoices</h1>
+
+      <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+        {INVOICE_RECEIPT_DISABLED_MESSAGE}
+      </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
@@ -155,16 +154,8 @@ export default function PatientInvoicesPage() {
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Download Receipt"
-                          onClick={() => handleDownload(inv.id)}
-                          disabled={downloading === inv.id}
-                        >
-                          <Download
-                            className={`h-3.5 w-3.5 ${downloading === inv.id ? "animate-bounce" : ""}`}
-                          />
+                        <Button variant="ghost" size="sm" title="Receipt unavailable" disabled>
+                          <Download className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </td>
@@ -191,14 +182,9 @@ export default function PatientInvoicesPage() {
                       {inv.date} &middot; {inv.method}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownload(inv.id)}
-                    disabled={downloading === inv.id}
-                  >
+                  <Button variant="outline" size="sm" disabled>
                     <Download className="h-3.5 w-3.5 mr-1" />
-                    Receipt
+                    Receipt unavailable
                   </Button>
                 </div>
               </div>

@@ -23,6 +23,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
 import { formatCurrency } from "@/lib/utils";
 
@@ -43,6 +44,25 @@ interface Expense {
   category_id: string | null;
   expense_categories: ExpenseCategory | null;
   created_at: string;
+}
+
+interface ExpensesApiResponse<T> {
+  ok?: boolean;
+  data?: T;
+  error?: string;
+}
+
+async function readExpensesApiResponse<T>(
+  res: Response,
+  fallbackMessage: string,
+): Promise<ExpensesApiResponse<T>> {
+  const json = (await res.json().catch(() => null)) as ExpensesApiResponse<T> | null;
+
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error ?? fallbackMessage);
+  }
+
+  return json;
 }
 
 const CATEGORY_TYPES = [
@@ -74,9 +94,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function ExpensesPage() {
   const [locale] = useLocale();
   const tenant = useTenant();
+  const { addToast } = useToast();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showCategoryAdd, setShowCategoryAdd] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
@@ -100,16 +122,27 @@ export default function ExpensesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [expRes, catRes] = await Promise.all([
-        fetch(`/api/clinic-owner/expenses?month=${month}`),
-        fetch("/api/clinic-owner/expense-categories"),
+      const [expJson, catJson] = await Promise.all([
+        fetch(`/api/clinic-owner/expenses?month=${month}`).then((res) =>
+          readExpensesApiResponse<{ expenses?: Expense[] }>(
+            res,
+            "Échec du chargement des dépenses",
+          ),
+        ),
+        fetch("/api/clinic-owner/expense-categories").then((res) =>
+          readExpensesApiResponse<{ categories?: ExpenseCategory[] }>(
+            res,
+            "Échec du chargement des catégories",
+          ),
+        ),
       ]);
-      const expJson = await expRes.json();
-      const catJson = await catRes.json();
-      if (expJson.ok) setExpenses(expJson.data.expenses);
-      if (catJson.ok) setCategories(catJson.data.categories);
+      setExpenses(expJson.data?.expenses ?? []);
+      setCategories(catJson.data?.categories ?? []);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur lors du chargement des dépenses";
+      setError(message);
       logger.warn("Failed to load expenses", { context: "page", error: err });
     } finally {
       setLoading(false);
@@ -117,8 +150,53 @@ export default function ExpensesPage() {
   }, [month]);
 
   useEffect(() => {
-    if (tenant?.clinicId) loadData();
-  }, [tenant?.clinicId, loadData]);
+    if (!tenant?.clinicId) return;
+
+    let cancelled = false;
+
+    const loadInitialData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [expJson, catJson] = await Promise.all([
+          fetch(`/api/clinic-owner/expenses?month=${month}`).then((res) =>
+            readExpensesApiResponse<{ expenses?: Expense[] }>(
+              res,
+              "Échec du chargement des dépenses",
+            ),
+          ),
+          fetch("/api/clinic-owner/expense-categories").then((res) =>
+            readExpensesApiResponse<{ categories?: ExpenseCategory[] }>(
+              res,
+              "Échec du chargement des catégories",
+            ),
+          ),
+        ]);
+
+        if (!cancelled) {
+          setExpenses(expJson.data?.expenses ?? []);
+          setCategories(catJson.data?.categories ?? []);
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Erreur lors du chargement des dépenses";
+        if (!cancelled) {
+          setError(message);
+        }
+        logger.warn("Failed to load expenses", { context: "page", error: err });
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadInitialData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tenant?.clinicId, month]);
 
   const resetForm = () => {
     setFormDesc("");
@@ -146,37 +224,58 @@ export default function ExpensesPage() {
       notes: formNotes || undefined,
     };
 
-    const res = await fetch("/api/clinic-owner/expenses", {
-      method: editExpense ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const json = await res.json();
-    if (json.ok) {
+    try {
+      const res = await fetch("/api/clinic-owner/expenses", {
+        method: editExpense ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      await readExpensesApiResponse(res, "Échec de l'enregistrement de la dépense");
       resetForm();
       setShowAdd(false);
-      loadData();
+      setError(null);
+      addToast("Dépense enregistrée", "success");
+      await loadData();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Échec de l'enregistrement de la dépense";
+      setError(message);
+      addToast(message, "error");
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await fetch(`/api/clinic-owner/expenses?id=${id}`, { method: "DELETE" });
-    const json = await res.json();
-    if (json.ok) loadData();
+    try {
+      const res = await fetch(`/api/clinic-owner/expenses?id=${id}`, { method: "DELETE" });
+      await readExpensesApiResponse(res, "Échec de la suppression de la dépense");
+      setError(null);
+      addToast("Dépense supprimée", "success");
+      await loadData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Échec de la suppression de la dépense";
+      setError(message);
+      addToast(message, "error");
+    }
   };
 
   const handleAddCategory = async () => {
-    const res = await fetch("/api/clinic-owner/expense-categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: catName, type: catType }),
-    });
-    const json = await res.json();
-    if (json.ok) {
+    try {
+      const res = await fetch("/api/clinic-owner/expense-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: catName, type: catType }),
+      });
+      await readExpensesApiResponse(res, "Échec de la création de la catégorie");
       setCatName("");
       setCatType("operational");
       setShowCategoryAdd(false);
-      loadData();
+      setError(null);
+      addToast("Catégorie ajoutée", "success");
+      await loadData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Échec de la création de la catégorie";
+      setError(message);
+      addToast(message, "error");
     }
   };
 
@@ -211,7 +310,7 @@ export default function ExpensesPage() {
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="w-[180px]"
+            className="w-45"
           />
           <Button variant="outline" size="sm" onClick={() => setShowCategoryAdd(true)}>
             {/* eslint-disable-next-line i18next/no-literal-string */}
@@ -229,6 +328,12 @@ export default function ExpensesPage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">

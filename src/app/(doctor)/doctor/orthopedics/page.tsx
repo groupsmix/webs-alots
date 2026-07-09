@@ -55,6 +55,10 @@ const FRACTURE_STATUSES: Record<
   healed: { label: "Healed", variant: "success" },
 };
 
+function createEmptyRehabMilestone() {
+  return { id: crypto.randomUUID(), title: "", targetDate: "", completed: false };
+}
+
 export default function OrthopedicsPage() {
   const [xrays, setXrays] = useState<XRayRecordView[]>([]);
   const [fractures, setFractures] = useState<FractureRecordView[]>([]);
@@ -79,7 +83,7 @@ export default function OrthopedicsPage() {
     condition: "",
     targetEndDate: "",
     notes: "",
-    milestones: [{ title: "", targetDate: "", completed: false }],
+    milestones: [createEmptyRehabMilestone()],
   });
 
   useEffect(() => {
@@ -211,7 +215,9 @@ export default function OrthopedicsPage() {
   const handleAddRehab = async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id || !rehabForm.title) return;
-    const milestones = rehabForm.milestones.filter((m) => m.title);
+    const milestones = rehabForm.milestones
+      .filter((m) => m.title)
+      .map(({ id: _id, ...milestone }) => milestone);
     const newId = await createRehabPlan({
       clinic_id: user.clinic_id,
       patient_id: user.id,
@@ -244,7 +250,7 @@ export default function OrthopedicsPage() {
       condition: "",
       targetEndDate: "",
       notes: "",
-      milestones: [{ title: "", targetDate: "", completed: false }],
+      milestones: [createEmptyRehabMilestone()],
     });
     setShowRehabForm(false);
   };
@@ -480,8 +486,11 @@ export default function OrthopedicsPage() {
                       )}
                       {plan.milestones.length > 0 && (
                         <div className="space-y-1">
-                          {plan.milestones.map((m, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm">
+                          {plan.milestones.map((m) => (
+                            <div
+                              key={`${plan.id}-${m.title}-${m.targetDate ?? "pending"}`}
+                              className="flex items-center gap-2 text-sm"
+                            >
                               {m.completed ? (
                                 <CheckCircle className="h-3.5 w-3.5 text-green-600" />
                               ) : (
@@ -688,7 +697,7 @@ export default function OrthopedicsPage() {
             <div className="space-y-2">
               <Label>Milestones</Label>
               {rehabForm.milestones.map((m, i) => (
-                <div key={i} className="grid grid-cols-2 gap-2">
+                <div key={m.id} className="grid grid-cols-2 gap-2">
                   <Input
                     placeholder="Milestone title"
                     value={m.title}
@@ -715,7 +724,7 @@ export default function OrthopedicsPage() {
                 onClick={() =>
                   setRehabForm((p) => ({
                     ...p,
-                    milestones: [...p.milestones, { title: "", targetDate: "", completed: false }],
+                    milestones: [...p.milestones, createEmptyRehabMilestone()],
                   }))
                 }
               >

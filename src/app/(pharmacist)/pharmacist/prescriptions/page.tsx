@@ -86,6 +86,9 @@ const statusFilters: PrescriptionStatus[] = [
   "delivered",
 ];
 
+const PHARMACY_QUEUE_ACTIONS_DISABLED_MESSAGE =
+  "Prescription status updates and WhatsApp notifications are temporarily unavailable in this deployment.";
+
 export default function PrescriptionsPage() {
   const [locale] = useLocale();
 
@@ -139,14 +142,20 @@ export default function PrescriptionsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold">Prescription Queue</h1>
-          <p className="text-muted-foreground text-sm">Manage incoming prescription orders</p>
+          <p className="text-muted-foreground text-sm">
+            Review current prescription requests in read-only mode
+          </p>
         </div>
         <Badge className="bg-yellow-100 text-yellow-700 border-0">
           {allPrescriptions.filter((rx) => rx.status === "pending").length} pending
         </Badge>
+      </div>
+
+      <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+        {PHARMACY_QUEUE_ACTIONS_DISABLED_MESSAGE}
       </div>
 
       {/* Filters */}
@@ -274,25 +283,25 @@ export default function PrescriptionsPage() {
                       </p>
                     </div>
                     {rx.status === "pending" && (
-                      <Button className="bg-blue-600 hover:bg-blue-700 w-full">
-                        <Eye className="mr-2 h-4 w-4" /> Start Review
+                      <Button className="bg-blue-600 hover:bg-blue-700 w-full" disabled>
+                        <Eye className="mr-2 h-4 w-4" /> Review unavailable
                       </Button>
                     )}
                     {rx.status === "reviewing" && (
-                      <Button className="bg-emerald-600 hover:bg-emerald-700 w-full">
-                        <Check className="mr-2 h-4 w-4" /> Mark Ready
+                      <Button className="bg-emerald-600 hover:bg-emerald-700 w-full" disabled>
+                        <Check className="mr-2 h-4 w-4" /> Status update unavailable
                       </Button>
                     )}
                     {rx.status === "ready" && (
-                      <Button className="bg-emerald-600 hover:bg-emerald-700 w-full">
-                        <Package className="mr-2 h-4 w-4" /> Mark Picked Up
+                      <Button className="bg-emerald-600 hover:bg-emerald-700 w-full" disabled>
+                        <Package className="mr-2 h-4 w-4" /> Status update unavailable
                       </Button>
                     )}
                     {!rx.whatsappNotified &&
                       rx.status !== "picked-up" &&
                       rx.status !== "delivered" && (
-                        <Button variant="outline" className="w-full">
-                          <MessageCircle className="mr-2 h-4 w-4" /> Notify via WhatsApp
+                        <Button variant="outline" className="w-full" disabled>
+                          <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp unavailable
                         </Button>
                       )}
                     {rx.whatsappNotified && (

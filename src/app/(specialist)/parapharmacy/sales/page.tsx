@@ -68,9 +68,14 @@ export default function ParapharmacySalesPage() {
   const [productSearch, setProductSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const refreshSales = useCallback(() => {
+  const refreshSales = useCallback(async () => {
     if (!tenant?.clinicId) return;
-    fetchDailySales(tenant.clinicId).then(setSales);
+    setError(null);
+    try {
+      setSales(await fetchDailySales(tenant.clinicId));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    }
   }, [tenant?.clinicId]);
 
   useEffect(() => {

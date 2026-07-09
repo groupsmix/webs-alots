@@ -9,8 +9,8 @@ import { requireTenant } from "@/lib/tenant";
  * Patient Medical Timeline
  *
  * Server Component that displays a chronological timeline of the patient's
- * visits, prescriptions, and medical events. Fetches data server-side
- * to eliminate client-side loading states for initial render.
+ * appointments and prescriptions. Fetches data server-side to eliminate
+ * client-side loading states for initial render.
  */
 
 interface TimelineEvent {
@@ -117,13 +117,22 @@ export default async function MedicalTimelinePage() {
     appointment: "bg-blue-100 text-blue-800",
     prescription: "bg-green-100 text-green-800",
   };
+  const typeLabels: Record<TimelineEvent["type"], string> = {
+    appointment: t(locale, "nav.appointments"),
+    prescription: t(locale, "prescription.title"),
+  };
 
   return (
     <div className="space-y-6">
       <Breadcrumb
         items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical Timeline" }]}
       />
-      <h1 className="text-2xl font-bold">{t(locale, "carnet.title")}</h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold">{t(locale, "carnet.title")}</h1>
+        <p className="text-sm text-muted-foreground">
+          This timeline currently includes appointments and prescriptions.
+        </p>
+      </div>
 
       {timeline.length === 0 ? (
         <Card>
@@ -142,7 +151,7 @@ export default async function MedicalTimelinePage() {
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[event.type] ?? "bg-gray-100 text-gray-800"}`}
                     >
-                      {event.type}
+                      {typeLabels[event.type]}
                     </span>
                     <span className="text-xs text-muted-foreground">{event.date}</span>
                   </div>

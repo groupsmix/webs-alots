@@ -80,29 +80,68 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const newSubs = fs.readFileSync('new-subdomains.txt', 'utf8').trim();
-            if (!newSubs) return;
+            const crypto = require('crypto');
+
+            const raw = fs.readFileSync('new-subdomains.txt', 'utf8');
+            const normalizedList = [...new Set(raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean))]
+              .sort()
+              .join('\n');
+            if (!normalizedList) return;
+
+            const fingerprint = crypto.createHash('sha256').update(normalizedList).digest('hex');
+            const marker = `<!-- asm-subdomains-fingerprint:${fingerprint} -->`;
+            const title = `[ASM] ${process.env.new_count} new subdomain(s) detected`;
+            const body = [
+              '## Attack Surface Change Detected (A213)',
+              '',
+              'The daily ASM scan found new subdomains in Certificate Transparency logs:',
+              '',
+              '```',
+              normalizedList,
+              '```',
+              '',
+              '**Action required:**',
+              '- Verify each subdomain is intentional',
+              '- Confirm TLS configuration is correct',
+              '- Check for unintended service exposure',
+              '',
+              `Scan date: ${new Date().toISOString().slice(0, 10)}`,
+              marker,
+            ].join('\n');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security,asm',
+              per_page: 100,
+            });
+
+            const existing = issues.find((issue) =>
+              !issue.pull_request &&
+              issue.title.startsWith('[ASM]') &&
+              ((issue.body || '').includes(marker) || (issue.body || '').includes(`\n${normalizedList}\n`))
+            );
+
+            if (existing) {
+              if (!(existing.body || '').includes(marker)) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  title,
+                  body,
+                });
+              }
+              core.info(`ASM findings already tracked in issue #${existing.number}; skipping duplicate issue.`);
+              return;
+            }
 
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[ASM] ${process.env.new_count} new subdomain(s) detected`,
-              body: [
-                '## Attack Surface Change Detected (A213)',
-                '',
-                'The daily ASM scan found new subdomains in Certificate Transparency logs:',
-                '',
-                '```',
-                newSubs,
-                '```',
-                '',
-                '**Action required:**',
-                '- Verify each subdomain is intentional',
-                '- Confirm TLS configuration is correct',
-                '- Check for unintended service exposure',
-                '',
-                `Scan date: ${new Date().toISOString().slice(0, 10)}`,
-              ].join('\n'),
+              title,
+              body,
               labels: ['security', 'asm'],
             });
 

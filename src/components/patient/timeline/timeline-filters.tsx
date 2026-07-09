@@ -4,7 +4,6 @@
 import {
   Calendar,
   Pill,
-  FlaskConical,
   ScanLine,
   CreditCard,
   FileText,
@@ -20,7 +19,6 @@ import { TIMELINE_EVENT_TYPES, type TimelineEventType } from "@/lib/validations/
 const EVENT_FILTER_CONFIG: Record<TimelineEventType, { icon: typeof Calendar; label: string }> = {
   visit: { icon: Calendar, label: "Consultations" },
   prescription: { icon: Pill, label: "Ordonnances" },
-  lab_result: { icon: FlaskConical, label: "Résultats labo" },
   imaging: { icon: ScanLine, label: "Imagerie" },
   payment: { icon: CreditCard, label: "Paiements" },
   note: { icon: FileText, label: "Notes" },

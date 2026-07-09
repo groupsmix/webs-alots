@@ -1,18 +1,9 @@
 "use client";
 
-import {
-  Search,
-  Image as ImageIcon,
-  ExternalLink,
-  Eye,
-  FileImage,
-  Upload,
-  Loader2,
-  X,
-} from "lucide-react";
+import { Search, Image as ImageIcon, ExternalLink, Eye, FileImage, Upload, X } from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +30,9 @@ import {
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 
+const RADIOLOGY_UPLOAD_DISABLED_MESSAGE =
+  "Radiology image uploads are temporarily unavailable in this deployment.";
+
 export default function RadiologyImagesPage() {
   const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
@@ -51,17 +45,8 @@ export default function RadiologyImagesPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadOrderId, setUploadOrderId] = useState("");
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const refreshOrders = useCallback(() => {
-    fetchRadiologyOrders(tenant?.clinicId ?? "").then((all) => {
-      setAllOrders(all);
-      setOrders(all.filter((o) => o.imageCount > 0));
-    });
-  }, [tenant?.clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,25 +87,7 @@ export default function RadiologyImagesPage() {
   };
 
   const handleUpload = async () => {
-    if (!uploadOrderId || uploadFiles.length === 0) return;
-    setUploading(true);
-    try {
-      for (let i = 0; i < uploadFiles.length; i++) {
-        setUploadProgress(`Uploading ${i + 1} of ${uploadFiles.length}...`);
-        const formData = new FormData();
-        formData.append("file", uploadFiles[i]);
-        formData.append("orderId", uploadOrderId);
-        formData.append("clinicId", tenant?.clinicId ?? "");
-        await fetch("/api/radiology/upload", { method: "POST", body: formData });
-      }
-      setUploadOpen(false);
-      setUploadFiles([]);
-      setUploadOrderId("");
-      setUploadProgress("");
-      refreshOrders();
-    } finally {
-      setUploading(false);
-    }
+    setUploadOpen(false);
   };
 
   if (loading) {
@@ -150,109 +117,108 @@ export default function RadiologyImagesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Image Gallery</h1>
-          <p className="text-muted-foreground text-sm">Browse and upload radiology images</p>
+      <div className="space-y-4 mb-6">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          {RADIOLOGY_UPLOAD_DISABLED_MESSAGE}
         </div>
-        <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Upload className="h-4 w-4 mr-2" /> Upload Images
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Upload Radiology Images</DialogTitle>
-              <DialogDescription>
-                Upload X-ray, MRI, CT, or DICOM images to a study order.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label>Study Order</Label>
-                <Select value={uploadOrderId} onValueChange={setUploadOrderId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an order..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allOrders.map((o) => (
-                      <SelectItem key={o.id} value={o.id}>
-                        {o.orderNumber} - {o.patientName} ({o.modality.toUpperCase()})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-              <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragOver ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20" : "border-muted-foreground/25 hover:border-muted-foreground/50"}`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Drag & drop files here, or click to browse
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  JPEG, PNG, TIFF, DICOM, PDF (max 50 MB)
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,application/dicom,.dcm,application/pdf"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </div>
-
-              {uploadFiles.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Selected Files ({uploadFiles.length})</Label>
-                  {uploadFiles.map((file, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2"
-                    >
-                      <span className="truncate mr-2">
-                        {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(i)}
-                        className="h-6 w-6 p-0"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Image Gallery</h1>
+            <p className="text-muted-foreground text-sm">Browse existing radiology images</p>
+          </div>
+          <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+            <DialogTrigger asChild>
+              <Button disabled title={RADIOLOGY_UPLOAD_DISABLED_MESSAGE}>
+                <Upload className="h-4 w-4 mr-2" /> Upload Images
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Upload Radiology Images</DialogTitle>
+                <DialogDescription>
+                  Image uploads are disabled in this deployment. Existing studies remain viewable.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Study Order</Label>
+                  <Select value={uploadOrderId} onValueChange={setUploadOrderId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an order..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allOrders.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          {o.orderNumber} - {o.patientName} ({o.modality.toUpperCase()})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              {uploadProgress && <p className="text-sm text-muted-foreground">{uploadProgress}</p>}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setUploadOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUpload}
-                disabled={uploading || !uploadOrderId || uploadFiles.length === 0}
-              >
-                {uploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Upload {uploadFiles.length} File{uploadFiles.length !== 1 ? "s" : ""}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
+                <div
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragOver ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20" : "border-muted-foreground/25 hover:border-muted-foreground/50"}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Drag & drop files here, or click to browse
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    JPEG, PNG, TIFF, DICOM, PDF (max 50 MB)
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,application/dicom,.dcm,application/pdf"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </div>
+
+                {uploadFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Selected Files ({uploadFiles.length})</Label>
+                    {uploadFiles.map((file, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2"
+                      >
+                        <span className="truncate mr-2">
+                          {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(i)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setUploadOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpload} disabled title={RADIOLOGY_UPLOAD_DISABLED_MESSAGE}>
+                  Upload {uploadFiles.length} File{uploadFiles.length !== 1 ? "s" : ""}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="relative mb-6 max-w-md">

@@ -3,7 +3,6 @@ import { z } from "zod";
 export const TIMELINE_EVENT_TYPES = [
   "visit",
   "prescription",
-  "lab_result",
   "imaging",
   "payment",
   "note",

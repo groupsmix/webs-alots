@@ -12,6 +12,7 @@
 import { resolveAIConfig } from "@/lib/ai/config";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { isAIEnabled } from "@/lib/features";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 // ── Types ──
@@ -422,7 +423,7 @@ TRIAGE SUPPORT (HIER):
 Génère le briefing exécutif.`;
 
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await safeFetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

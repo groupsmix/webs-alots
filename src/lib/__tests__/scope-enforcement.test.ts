@@ -11,9 +11,12 @@ import { describe, it, expect } from "vitest";
 import {
   VERTICAL_SCOPES,
   ALL_GATED_API_GROUPS,
+  ALL_GATED_DASHBOARDS,
   ALL_GATED_FLAGS,
   getVerticalForApiGroup,
+  getScopedDashboardForPathname,
   isApiGroupEnabled,
+  isDashboardEnabled,
 } from "@/lib/config/verticals";
 import { isFeatureEnabled, type FeaturesConfig } from "@/lib/features";
 
@@ -32,6 +35,18 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
     it("should deny access to all gated API groups with null config", () => {
       for (const group of ALL_GATED_API_GROUPS) {
         expect(isApiGroupEnabled(group, nullConfig)).toBe(false);
+      }
+    });
+
+    it("should deny access to all gated dashboards with empty config", () => {
+      for (const dashboard of ALL_GATED_DASHBOARDS) {
+        expect(isDashboardEnabled(dashboard, emptyConfig)).toBe(false);
+      }
+    });
+
+    it("should deny access to all gated dashboards with null config", () => {
+      for (const dashboard of ALL_GATED_DASHBOARDS) {
+        expect(isDashboardEnabled(dashboard, nullConfig)).toBe(false);
       }
     });
 
@@ -56,7 +71,39 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
     });
   });
 
-  describe("operational API groups (not gated)", () => {
+  describe("gated scope inventory", () => {
+    it("keeps deleted/stubbed Architecture-B API groups modeled", () => {
+      expect(ALL_GATED_API_GROUPS).toEqual(
+        expect.arrayContaining([
+          "prescriptions",
+          "vitals",
+          "radiology",
+          "insurance-claims",
+          "admissions",
+          "pets",
+          "menus",
+          "restaurant-orders",
+          "restaurant-tables",
+        ]),
+      );
+    });
+
+    it("keeps surviving Architecture-B dashboards modeled", () => {
+      expect(ALL_GATED_DASHBOARDS).toEqual(
+        expect.arrayContaining([
+          "doctor/dialysis-sessions",
+          "doctor/ivf-cycles",
+          "doctor/cardiology",
+          "radiology-dashboard",
+          "nutritionist",
+          "pharmacist",
+          "equipment",
+        ]),
+      );
+    });
+  });
+
+  describe("operational API groups and dashboards (not gated)", () => {
     it("should allow access to operational routes regardless of config", () => {
       const operationalGroups = [
         "booking",
@@ -77,6 +124,12 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
         expect(isApiGroupEnabled(group, null)).toBe(true);
         expect(isApiGroupEnabled(group, {})).toBe(true);
       }
+    });
+
+    it("should allow access to operational dashboard paths regardless of config", () => {
+      expect(getScopedDashboardForPathname("/doctor/schedule")).toBeUndefined();
+      expect(isDashboardEnabled("doctor/schedule", null)).toBe(true);
+      expect(isDashboardEnabled("doctor/schedule", {})).toBe(true);
     });
   });
 
@@ -101,6 +154,18 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       expect(isApiGroupEnabled("admissions", config)).toBe(true);
     });
 
+    it("should allow a gated dashboard only when one of its flags is enabled", () => {
+      expect(isDashboardEnabled("doctor/dialysis-sessions", {})).toBe(false);
+      expect(isDashboardEnabled("doctor/dialysis-sessions", { dialysis_sessions: true })).toBe(
+        true,
+      );
+    });
+
+    it("should allow radiology dashboard when radiology reports are enabled", () => {
+      expect(isDashboardEnabled("radiology-dashboard", {})).toBe(false);
+      expect(isDashboardEnabled("radiology-dashboard", { radiology_reports: true })).toBe(true);
+    });
+
     it("should NOT allow cross-vertical access (pet flag does not enable restaurant)", () => {
       const config: FeaturesConfig = { pet_profiles: true };
       expect(isApiGroupEnabled("restaurant-orders", config)).toBe(false);
@@ -118,6 +183,8 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       expect(isApiGroupEnabled("vitals", config)).toBe(false);
       expect(isApiGroupEnabled("radiology", config)).toBe(false);
       expect(isApiGroupEnabled("admissions", config)).toBe(false);
+      expect(isDashboardEnabled("doctor/cardiology", config)).toBe(false);
+      expect(isDashboardEnabled("radiology-dashboard", config)).toBe(false);
     });
   });
 
@@ -147,6 +214,27 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       expect(getVerticalForApiGroup("booking")).toBeUndefined();
       expect(getVerticalForApiGroup("payments")).toBeUndefined();
       expect(getVerticalForApiGroup("auth")).toBeUndefined();
+    });
+  });
+
+  describe("getScopedDashboardForPathname mapping", () => {
+    it("maps gated doctor dashboards from pathnames", () => {
+      expect(getScopedDashboardForPathname("/doctor/dialysis-sessions")).toBe(
+        "doctor/dialysis-sessions",
+      );
+      expect(getScopedDashboardForPathname("/doctor/ivf-cycles/123")).toBe("doctor/ivf-cycles");
+    });
+
+    it("maps gated specialist dashboards from pathnames", () => {
+      expect(getScopedDashboardForPathname("/radiology/orders")).toBe("radiology-dashboard");
+      expect(getScopedDashboardForPathname("/nutritionist/meal-plans")).toBe("nutritionist");
+      expect(getScopedDashboardForPathname("/pharmacist/stock")).toBe("pharmacist");
+      expect(getScopedDashboardForPathname("/equipment/maintenance")).toBe("equipment");
+    });
+
+    it("returns undefined for operational dashboard paths", () => {
+      expect(getScopedDashboardForPathname("/doctor/schedule")).toBeUndefined();
+      expect(getScopedDashboardForPathname("/admin/dashboard")).toBeUndefined();
     });
   });
 });

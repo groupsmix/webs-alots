@@ -28,6 +28,27 @@ interface CustomDomain {
   created_at: string;
 }
 
+interface CustomDomainResponse {
+  ok?: boolean;
+  data?: {
+    domains?: CustomDomain[];
+  };
+  error?: string;
+}
+
+async function readCustomDomainResponse(
+  res: Response,
+  fallbackMessage: string,
+): Promise<CustomDomainResponse> {
+  const json = (await res.json().catch(() => null)) as CustomDomainResponse | null;
+
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error ?? fallbackMessage);
+  }
+
+  return json;
+}
+
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: "text-yellow-600", badge: "warning" as const },
   active: { icon: CheckCircle, color: "text-green-600", badge: "default" as const },
@@ -44,20 +65,46 @@ export default function CustomDomainPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchDomains = useCallback(async () => {
+    setError(null);
     try {
       const res = await fetch("/api/branding/custom-domain");
-      const json = await res.json();
-      if (json.ok) {
-        setDomains(json.data.domains);
-      }
+      const json = await readCustomDomainResponse(res, "Failed to load domains");
+      setDomains(json.data?.domains ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load domains");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchDomains();
-  }, [fetchDomains]);
+    let cancelled = false;
+
+    const loadInitialDomains = async () => {
+      setError(null);
+      try {
+        const res = await fetch("/api/branding/custom-domain");
+        const json = await readCustomDomainResponse(res, "Failed to load domains");
+        if (!cancelled) {
+          setDomains(json.data?.domains ?? []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load domains");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadInitialDomains();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const addDomain = async () => {
     if (!newDomain.trim()) return;
@@ -69,13 +116,11 @@ export default function CustomDomainPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: newDomain.trim().toLowerCase() }),
       });
-      const json = await res.json();
-      if (json.ok) {
-        setNewDomain("");
-        await fetchDomains();
-      } else {
-        setError(json.error ?? "Failed to add domain");
-      }
+      await readCustomDomainResponse(res, "Failed to add domain");
+      setNewDomain("");
+      await fetchDomains();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add domain");
     } finally {
       setAdding(false);
     }
@@ -89,10 +134,10 @@ export default function CustomDomainPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domainId }),
       });
-      const json = await res.json();
-      if (json.ok) {
-        setDomains((prev) => prev.filter((d) => d.id !== domainId));
-      }
+      await readCustomDomainResponse(res, "Failed to remove domain");
+      setDomains((prev) => prev.filter((d) => d.id !== domainId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove domain");
     } finally {
       setDeleting(null);
     }

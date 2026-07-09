@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, Pill, FileText, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchPrescriptions, type PrescriptionView } from "@/lib/data/client";
 
+const PRESCRIPTION_PDF_DISABLED_MESSAGE =
+  "Prescription PDF downloads are temporarily unavailable in this deployment.";
+
 export default function PatientPrescriptionsPage() {
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [patientPrescriptions, setPatientPrescriptions] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -55,25 +57,22 @@ export default function PatientPrescriptionsPage() {
     );
   }
 
-  const handleDownload = (rxId: string) => {
-    setDownloading(rxId);
-    setTimeout(() => {
-      setDownloading(null);
-    }, 1500);
-  };
-
   return (
     <div>
       <Breadcrumb
         items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Prescriptions" }]}
       />
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold">My Prescriptions</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {patientPrescriptions.length} prescription{patientPrescriptions.length !== 1 ? "s" : ""}
           </p>
         </div>
+      </div>
+
+      <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+        {PRESCRIPTION_PDF_DISABLED_MESSAGE}
       </div>
 
       {patientPrescriptions.length === 0 ? (
@@ -115,8 +114,11 @@ export default function PatientPrescriptionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rx.medications.map((med, i) => (
-                        <tr key={i} className="border-t">
+                      {rx.medications.map((med) => (
+                        <tr
+                          key={`${rx.id}-${med.name}-${med.dosage}-${med.duration}`}
+                          className="border-t"
+                        >
                           <td className="py-2 font-medium">{med.name}</td>
                           <td className="py-2 text-muted-foreground">{med.dosage}</td>
                           <td className="py-2 text-muted-foreground">{med.duration}</td>
@@ -131,16 +133,9 @@ export default function PatientPrescriptionsPage() {
                     <p className="text-sm text-muted-foreground">{rx.notes}</p>
                   </div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownload(rx.id)}
-                  disabled={downloading === rx.id}
-                >
-                  <Download
-                    className={`h-4 w-4 mr-1 ${downloading === rx.id ? "animate-bounce" : ""}`}
-                  />
-                  {downloading === rx.id ? "Downloading..." : "Download PDF"}
+                <Button variant="outline" size="sm" disabled>
+                  <Download className="h-4 w-4 mr-1" />
+                  PDF unavailable
                 </Button>
               </CardContent>
             </Card>

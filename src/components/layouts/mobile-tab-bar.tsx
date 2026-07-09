@@ -1,15 +1,20 @@
 "use client";
 
 import { MoreHorizontal } from "lucide-react";
-type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType, SVGProps } from "react";
+import type { ClinicFeatureKey } from "@/lib/features";
 import { Z_INDEX } from "@/lib/z-index";
+
+type LucideIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 export interface MobileTabItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Optional architecture/scope feature gate for this tab. */
+  requiredFeature?: ClinicFeatureKey;
 }
 
 interface MobileTabBarProps {

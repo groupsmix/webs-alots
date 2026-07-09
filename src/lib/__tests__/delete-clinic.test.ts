@@ -2,7 +2,7 @@
  * Tests for deleteClinic (super-admin permanent clinic deletion).
  *
  * Verifies the super_admin role gate, the patient-PHI safety guard
- * (refuse unless force), the platform-level audit entry, the service-role
+ * (refuse unless force), the clinic-scoped audit entry, the service-role
  * delete, subdomain-cache invalidation, and error propagation.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -98,14 +98,14 @@ describe("deleteClinic", () => {
     expect(result).toEqual({ deleted: true, patientCount: 0 });
   });
 
-  it("writes a platform-level audit entry (no clinic_id) before deleting", async () => {
+  it("writes a clinic-scoped audit entry before deleting", async () => {
     const deleteClinic = await loadAction();
     await deleteClinic("c1");
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({ action: "clinic_deleted", type: "clinic" }),
     );
     const auditArg = (insert.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
-    expect(auditArg.clinic_id).toBeUndefined();
+    expect(auditArg.clinic_id).toBe("c1");
   });
 
   it("invalidates the subdomain cache for the deleted clinic", async () => {

@@ -20,14 +20,14 @@ You said you want to **stay away from patient/clinical data** because it's high 
 But the codebase today is a **full clinical platform**, not an operations tool. Verified surfaces
 that store/handle Protected Health Information (PHI) in the cloud:
 
-| Surface                   | Route / file                                           | What it stores                               |
-| ------------------------- | ------------------------------------------------------ | -------------------------------------------- |
-| Radiology images          | `api/radiology/upload` → `lib/r2`                      | medical images in R2                         |
-| Prescriptions             | `api/prescriptions`, `api/radiology/report-pdf`        | clinical docs                                |
-| Patient documents         | `api/patient/documents` + `patient_files` table + R2   | patient files (PHI-encrypted, EXIF-stripped) |
-| Vitals                    | `api/vitals`, `api/vitals/stream`                      | clinical measurements                        |
-| Insurance claims          | `api/insurance/*`, `api/clinic-owner/insurance-claims` | claims + patient identifiers                 |
-| Patient timeline / export | `api/patient/timeline`, `api/patient/export`           | aggregated PHI                               |
+| Surface                   | Representative surface / file                                                    | What it stores                               |
+| ------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------- |
+| Radiology images          | `src/app/(specialist)/radiology/*`, `src/lib/data/radiology.ts`, `src/lib/r2.ts` | medical images in R2                         |
+| Prescriptions             | `src/lib/data/client/prescriptions.ts`, patient/pharmacist prescription pages    | clinical docs                                |
+| Patient documents         | `api/patient/documents` + `patient_files` table + R2                             | patient files (PHI-encrypted, EXIF-stripped) |
+| Vitals                    | `src/modules/vitals/stream.ts`, dialysis/vitals UI components                    | clinical measurements                        |
+| Insurance claims          | `api/clinic-owner/insurance-claims`, `api/patient/insurance-profile`             | claims + patient identifiers                 |
+| Patient timeline / export | `api/patient/timeline`, `api/patient/export`                                     | aggregated PHI                               |
 
 There is real PHI hygiene already in place (field encryption, EXIF stripping, GDPR-purge cron,
 data-retention cron, R2 cleanup cron, RLS on every table). So it's _well built_ — but it's the
@@ -86,7 +86,7 @@ Grounded in the code as of this map.
 ### Now persisted (formerly mock — resolved 2026-07)
 
 These were previously mock-only (success toasts with no DB writes). They are now fully persisted
-with audit logging, resolving the former "#1 revenue-blocking gap" (P1/P2/P4 in `deep_dive_analysis.md`):
+with audit logging, resolving the former "#1 revenue-blocking gap" (P1/P2/P4 in `docs/architecture-analysis/deep_dive_analysis.md`):
 
 - **Subscription status changes** → `updateSubscriptionStatusImpl` writes `clinics.status` + audit log (`src/lib/super-admin/billing-actions.ts`).
 - **Pricing tier edits** → `updatePricingTierImpl` writes `pricing_tiers` + structured `priceChanges` audit diff (`src/lib/super-admin/feature-actions.ts`).

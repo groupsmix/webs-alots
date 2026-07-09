@@ -3,8 +3,8 @@
  *
  * GET /api/patient/timeline?patientId=<uuid>&eventType=<type>&search=<q>&from=<date>&to=<date>&page=1&limit=50
  *
- * Returns a unified timeline of all patient events (visits, prescriptions,
- * lab results, imaging, payments, notes, communications).
+ * Returns a unified timeline of operational patient events (visits,
+ * prescriptions, imaging, payments, notes, communications).
  *
  * Access: doctor, clinic_admin, super_admin
  */

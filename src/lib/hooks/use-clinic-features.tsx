@@ -188,8 +188,8 @@ interface ClinicFeaturesContextValue {
 const ClinicFeaturesContext = createContext<ClinicFeaturesContextValue>({
   config: null,
   loaded: false,
-  hasFeature: () => true, // default: show everything until loaded
-  hasFeatureForSpecialty: () => true,
+  hasFeature: () => false,
+  hasFeatureForSpecialty: () => false,
 });
 
 /**
@@ -200,10 +200,10 @@ const ClinicFeaturesContext = createContext<ClinicFeaturesContextValue>({
  *  - a pre-fetched `initialConfig` (SSR / server component), or
  *  - a `clinicTypeKey` to fetch from the API at mount time.
  *
- * When neither is supplied, all features are enabled by default.
+ * When neither is supplied, all features are disabled by default. Root layout
+ * should pass the tenant's clinic type so feature-gated modules can fail closed.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- React component kept for future use
-function ClinicFeaturesProvider({
+export function ClinicFeaturesProvider({
   children,
   initialConfig,
   clinicTypeKey,
@@ -239,7 +239,7 @@ function ClinicFeaturesProvider({
           setLoaded(true);
         }
       } catch (err) {
-        logger.warn("Failed to fetch clinic features, enabling all", {
+        logger.warn("Failed to fetch clinic features, disabling gated features", {
           context: "clinic-features",
           error: err,
         });
@@ -256,7 +256,7 @@ function ClinicFeaturesProvider({
     };
   }, [initialConfig, clinicTypeKey]);
 
-  const hasFeature = (key: ClinicFeatureKey) => !loaded || isFeatureEnabled(config, key);
+  const hasFeature = (key: ClinicFeatureKey) => loaded && isFeatureEnabled(config, key);
 
   /**
    * Check if a feature is enabled, considering both clinic config AND user specialty

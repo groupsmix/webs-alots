@@ -108,8 +108,12 @@ export default function EquipmentInventoryPage() {
 
   function reload() {
     setLoading(true);
+    setError(null);
     fetchEquipmentInventory(tenant?.clinicId ?? "")
       .then(setItems)
+      .catch((err) => {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      })
       .finally(() => setLoading(false));
   }
 

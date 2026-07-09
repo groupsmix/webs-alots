@@ -56,30 +56,19 @@ export {
   verifyEmailConfirmSchema,
 } from "./admin";
 
-// ── GATED: Clinical / PHI (ADR 0013) ───────────────────────────────────────
-// These schemas serve Architecture-B surfaces. Route handlers using them MUST
-// call `assertScopeGate(supabase, clinicId, "prescriptions"|"radiology"|"vitals")`
-// and return 403/apiError if the vertical is not enabled for the clinic.
-// @scope-gate: clinical
-export {
-  labReportSchema,
-  radiologyOrderCreateSchema,
-  radiologyOrderPatchSchema,
-  radiologyReportPdfSchema,
-  uploadConfirmSchema,
-} from "./clinical";
-
-// ── GATED: Veterinary vertical (ADR 0013) ──────────────────────────────────
-// @scope-gate: veterinary
-export { petProfileCreateSchema, petProfileUpdateSchema } from "./clinical";
+// ── LIMITED: Clinical/PHI and Veterinary routes deleted (P9 — ADR-0013 commit) ──────────────
+// Most clinical/veterinary route schemas are intentionally not exported from the barrel because
+// their API routes were removed after migration 00187 dropped the underlying tables. The schemas
+// below remain exported for active upload validation and legacy schema tests only.
+export { labReportSchema, uploadConfirmSchema } from "./clinical";
 
 export { chatRequestSchema, CHAT_MESSAGE_CONTENT_MAX, aiManagerRequestSchema } from "./chat";
 
 export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 
-// ── GATED: Restaurant vertical (ADR 0013) ──────────────────────────────────
-// @scope-gate: restaurant
-export { restaurantOrderCreateSchema, restaurantOrderUpdateSchema } from "./restaurant";
+// ── REMOVED: Restaurant routes deleted (P9 — ADR-0013 commit) ───────────────────────────────
+// The restaurant-orders/menus/restaurant-tables API routes were removed because the
+// underlying database tables were dropped in migration 00187.
 
 export {
   smartScheduleSchema,
@@ -165,9 +154,9 @@ export {
   revenueInsightsQuerySchema,
 } from "./billing";
 
-// ── GATED: ADT vertical (ADR 0013) ─────────────────────────────────────────
-// @scope-gate: adt
-export { admissionCreateSchema, dischargeSchema, transferSchema } from "./adt";
+// ── REMOVED: ADT and insurance-claims routes deleted (P9 — ADR-0013 commit) ─────────────────
+// The admissions and insurance-claims API routes were removed because the underlying
+// database tables were dropped in migration 00187.
 
 export {
   staffInviteSchema,
@@ -175,7 +164,3 @@ export {
   staffInviteRevokeSchema,
   staffInviteQuerySchema,
 } from "./staff-invitations";
-
-// ── GATED: Clinical / insurance-claims (ADR 0013) ──────────────────────────
-// @scope-gate: clinical
-export { insuranceClaimQuerySchema } from "./insurance-claims";

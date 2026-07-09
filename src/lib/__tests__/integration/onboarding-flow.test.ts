@@ -6,7 +6,7 @@
  * idempotency guards, subdomain generation, and error handling.
  */
 import { NextRequest } from "next/server";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -60,6 +60,12 @@ const VALID_PAYLOAD = {
   city: "Casablanca",
 };
 
+let POST: typeof import("@/app/api/onboarding/route").POST;
+
+beforeAll(async () => {
+  ({ POST } = await import("@/app/api/onboarding/route"));
+}, 30_000);
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe("Onboarding flow — route handler integration", () => {
@@ -78,7 +84,6 @@ describe("Onboarding flow — route handler integration", () => {
       error: null,
     });
 
-    const { POST } = await import("@/app/api/onboarding/route");
     const request = buildOnboardingRequest({
       clinic_type_key: "general",
       owner_name: "Admin",
@@ -98,7 +103,6 @@ describe("Onboarding flow — route handler integration", () => {
       error: null,
     });
 
-    const { POST } = await import("@/app/api/onboarding/route");
     const request = buildOnboardingRequest(VALID_PAYLOAD);
     const response = await POST(request);
     const body = await response.json();
@@ -124,7 +128,6 @@ describe("Onboarding flow — route handler integration", () => {
       error: null,
     });
 
-    const { POST } = await import("@/app/api/onboarding/route");
     const request = buildOnboardingRequest(VALID_PAYLOAD);
     const response = await POST(request);
     const body = await response.json();
@@ -156,7 +159,6 @@ describe("Onboarding flow — route handler integration", () => {
         error: null,
       });
 
-    const { POST } = await import("@/app/api/onboarding/route");
     const request = buildOnboardingRequest(VALID_PAYLOAD);
     const response = await POST(request);
     const body = await response.json();

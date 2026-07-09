@@ -247,12 +247,22 @@ jobs:
             echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Checkout
+        if: steps.preflight.outputs.secrets_ok == 'true'
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Supabase CLI
+        if: steps.preflight.outputs.secrets_ok == 'true'
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.101.0
+
       - name: Install tools
         if: steps.preflight.outputs.secrets_ok == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          pip install awscli
+          python3 -m pip install awscli
 
       - name: Configure R2 credentials
         if: steps.preflight.outputs.secrets_ok == 'true'
@@ -278,20 +288,25 @@ jobs:
         # F-03: Download the actual .sql.gz.gpg file (not .sql.gz).
         # Backups are encrypted with GPG before upload.
         run: |
+          set -euo pipefail
           R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
-          LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/daily/" \
-            --endpoint-url "${R2_ENDPOINT}" \
-            | sort -r | head -1 | awk '{print $4}')
+          LATEST=""
+          PREFIX=""
+          for CANDIDATE_PREFIX in daily weekly monthly; do
+            CANDIDATE=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${CANDIDATE_PREFIX}/" \
+              --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+              | sort -r | head -1 | awk '{print $4}' || true)
+            if [ -n "${CANDIDATE}" ]; then
+              LATEST="${CANDIDATE}"
+              PREFIX="${CANDIDATE_PREFIX}"
+              break
+            fi
+          done
 
-          if [ -z "${LATEST}" ]; then
-            echo "No daily backup found, checking weekly..."
-            LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/weekly/" \
-              --endpoint-url "${R2_ENDPOINT}" \
-              | sort -r | head -1 | awk '{print $4}')
-            PREFIX="weekly"
-          else
-            PREFIX="daily"
+          if [ -z "${LATEST}" ] || [ -z "${PREFIX}" ]; then
+            echo "::error::No backup found in daily, weekly, or monthly prefixes."
+            exit 1
           fi
 
           echo "Downloading: backups/${PREFIX}/${LATEST}"
@@ -299,25 +314,9 @@ jobs:
             /tmp/verify_backup.sql.gz.gpg \
             --endpoint-url "${R2_ENDPOINT}"
 
-      - name: Start local PostgreSQL
+      - name: Start local Supabase stack
         if: steps.preflight.outputs.secrets_ok == 'true'
-        run: |
-          sudo systemctl start postgresql
-          sudo -u postgres createuser -s runner 2>/dev/null || true
-          createdb backup_verify_test 2>/dev/null || true
-
-      - name: Install Supabase-compatible extensions
-        if: steps.preflight.outputs.secrets_ok == 'true'
-        run: |
-          # Supabase dumps reference extensions that aren't in default PostgreSQL.
-          # Install common ones so the restore can create tables that depend on them.
-          PG_VERSION=$(pg_config --version | grep -oP '\d+' | head -1)
-          sudo apt-get install -y \
-            postgresql-${PG_VERSION}-pgcrypto 2>/dev/null || true
-
-          # Pre-create extensions that Supabase uses so CREATE EXTENSION doesn't fail
-          psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>/dev/null || true
-          psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
+        run: supabase start
 
       - name: Decrypt backup
         if: steps.preflight.outputs.secrets_ok == 'true'
@@ -330,27 +329,41 @@ jobs:
 
       - name: Test restore
         if: steps.preflight.outputs.secrets_ok == 'true'
+        env:
+          PGPASSWORD: postgres
         run: |
-          # The dump uses --clean which generates DROP/ALTER for objects that
-          # don't exist in a fresh database. Pipe through psql with ON_ERROR_STOP
-          # disabled so those harmless errors don't abort the restore.
-          gunzip -c /tmp/verify_backup.sql.gz \
-            | psql -v ON_ERROR_STOP=0 backup_verify_test 2>&1 \
-            | tail -20
+          set -euo pipefail
 
-          # Verify key tables exist in public schema
-          TABLES=$(psql backup_verify_test -t -c \
+          gunzip -c /tmp/verify_backup.sql.gz > /tmp/verify_backup.sql
+
+          # Align nightly verification with the known-good monthly restore drill:
+          # restore into the local Supabase stack rather than a bare Ubuntu
+          # PostgreSQL instance, so Supabase schemas/extensions are available.
+          psql -h localhost -p 54322 -U postgres -d postgres -f /tmp/verify_backup.sql
+
+          # Verify the restore produced a plausible application schema.
+          TABLES=$(psql -h localhost -p 54322 -U postgres -d postgres -t -c \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" \
             | tr -d '[:space:]')
           echo "Tables restored: ${TABLES}"
 
-          if [ -z "${TABLES}" ] || [ "${TABLES}" = "" ]; then
-            echo "ERROR: Could not count tables. Backup may be corrupt."
+          if [ -z "${TABLES}" ]; then
+            echo "::error::Could not count restored public tables."
             exit 1
           fi
 
           if [ "${TABLES}" -lt 5 ] 2>/dev/null; then
-            echo "ERROR: Too few tables restored (${TABLES}). Backup may be corrupt."
+            echo "::error::Too few tables restored (${TABLES}). Backup may be corrupt."
+            exit 1
+          fi
+
+          CLINICS=$(psql -h localhost -p 54322 -U postgres -d postgres -t -c \
+            "SELECT count(*) FROM clinics;" \
+            | tr -d '[:space:]')
+          echo "Clinics restored: ${CLINICS}"
+
+          if [ -z "${CLINICS}" ]; then
+            echo "::error::Smoke query failed: could not count clinics rows after restore."
             exit 1
           fi
 
@@ -359,8 +372,9 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          dropdb backup_verify_test 2>/dev/null || true
-          rm -f /tmp/verify_backup.sql.gz /tmp/verify_backup.sql.gz.gpg
+          supabase stop || true
+          rm -f /tmp/verify_backup.sql /tmp/verify_backup.sql.gz /tmp/verify_backup.sql.gz.gpg
+          rm -rf ~/.aws
           rm -rf ~/.gnupg
 
   notify:

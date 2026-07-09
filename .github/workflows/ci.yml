@@ -78,6 +78,11 @@ jobs:
       - name: Check MVP_SCOPE.md references resolve
         run: node scripts/check-mvp-scope-refs.mjs
 
+      # Migration 00187 dropped the clinical EMR tables. Prevent any handler or
+      # runtime data layer from reintroducing references to that deleted schema.
+      - name: Guard dropped clinical table refs
+        run: node scripts/check-dropped-clinical-table-refs.mjs
+
       # ADR 0013: Verify every Architecture-B route handler (clinical, ADT,
       # restaurant, veterinary) contains a scope-gating check. Prevents
       # ungated clinical/vertical API surface from shipping.
