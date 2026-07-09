@@ -165,3 +165,8 @@ export function getE2bApiKey(): string | undefined {
 export function getInsuranceProvider(): string {
   return process.env.INSURANCE_PROVIDER ?? "sandbox";
 }
+
+/** Uptime Kuma webhook secret for health-check callbacks. */
+export function getUptimeKumaWebhookSecret(): string | undefined {
+  return process.env.UPTIME_KUMA_WEBHOOK_SECRET;
+}

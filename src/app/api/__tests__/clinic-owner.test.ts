@@ -628,6 +628,56 @@ describe("Clinic Owner — Route Handlers", () => {
     });
   });
 
+  describe("PATCH /api/clinic-owner/expenses", () => {
+    it("returns updated expense in the expected response shape", async () => {
+      mockSingle.mockResolvedValueOnce({
+        data: { id: "exp-1", description: "Loyer mis à jour", amount: 1750000 },
+        error: null,
+      });
+
+      const { PATCH } = await import("@/app/api/clinic-owner/expenses/route");
+      const req = new NextRequest("http://localhost:3000/api/clinic-owner/expenses", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: "aaaaaaaa-aaaa-4aaa-baaa-aaaaaaaaaaaa",
+          description: "Loyer mis à jour",
+          amount: 1750000,
+        }),
+      });
+
+      const response = await PATCH(req);
+      const json = await response.json();
+      expect(response.status).toBe(200);
+      expect(json.ok).toBe(true);
+      expect(json.data.expense).toMatchObject({
+        id: "exp-1",
+        description: "Loyer mis à jour",
+        amount: 1750000,
+      });
+    });
+  });
+
+  describe("DELETE /api/clinic-owner/expenses", () => {
+    it("returns deleted flag in the expected response shape", async () => {
+      const { DELETE } = await import("@/app/api/clinic-owner/expenses/route");
+      const req = new NextRequest(
+        "http://localhost:3000/api/clinic-owner/expenses?id=aaaaaaaa-aaaa-4aaa-baaa-aaaaaaaaaaaa",
+        {
+          method: "DELETE",
+        },
+      );
+
+      const response = await DELETE(req);
+      const json = await response.json();
+      expect(response.status).toBe(200);
+      expect(json.ok).toBe(true);
+      expect(json.data).toEqual({ deleted: true });
+    });
+  });
+
   describe("GET /api/clinic-owner/expense-categories", () => {
     it("returns categories list", async () => {
       mockChainable.order.mockResolvedValueOnce({
@@ -671,6 +721,42 @@ describe("Clinic Owner — Route Handlers", () => {
       const json = await response.json();
       expect(response.status).toBe(201);
       expect(json.ok).toBe(true);
+      expect(json.data.category).toMatchObject({
+        id: "cat-new",
+        name: "Fournitures",
+        type: "supplies",
+      });
+    });
+  });
+
+  describe("PATCH /api/clinic-owner/expense-categories", () => {
+    it("returns updated category in the expected response shape", async () => {
+      mockSingle.mockResolvedValueOnce({
+        data: { id: "cat-1", name: "Loyer clinique", type: "rent", is_active: true },
+        error: null,
+      });
+
+      const { PATCH } = await import("@/app/api/clinic-owner/expense-categories/route");
+      const req = new NextRequest("http://localhost:3000/api/clinic-owner/expense-categories", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: "aaaaaaaa-aaaa-4aaa-baaa-aaaaaaaaaaaa",
+          name: "Loyer clinique",
+        }),
+      });
+
+      const response = await PATCH(req);
+      const json = await response.json();
+      expect(response.status).toBe(200);
+      expect(json.ok).toBe(true);
+      expect(json.data.category).toMatchObject({
+        id: "cat-1",
+        name: "Loyer clinique",
+        type: "rent",
+      });
     });
   });
 

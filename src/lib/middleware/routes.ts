@@ -41,17 +41,14 @@ const PUBLIC_PREFIXES = ["/pharmacy", "/dentist"];
  *
  * These are real authenticated staff surfaces under `src/app/(specialist)/...`
  * but they are NOT first-class auth roles in the DB. They are modeled as
- * capabilities layered on the 5 core roles (see `capabilities.ts`), gated to
- * `SPECIALIST_STAFF_ROLES` in `src/middleware.ts`.
+ * capabilities layered on the 5 core roles (see `capabilities.ts`), gated by
+ * `SPECIALIST_CAPABILITIES` in `src/lib/config/capabilities.ts`.
  *
  * P3: DERIVED from the canonical capability layer — do NOT hand-edit. To add
  * or rename a specialist surface, change `SPECIALIST_CAPABILITIES` in
  * `src/lib/config/capabilities.ts`; this list follows automatically.
  */
 export const SPECIALIST_PROTECTED_PREFIXES = CANONICAL_SPECIALIST_PREFIXES;
-
-/** Existing core staff roles that may access specialist dashboards. */
-export const SPECIALIST_STAFF_ROLES = ["clinic_admin", "receptionist", "doctor"] as const;
 
 /** Protected route prefixes (require authentication) */
 const PROTECTED_PREFIXES = [

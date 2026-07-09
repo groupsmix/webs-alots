@@ -14,6 +14,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getWorkerBinding } from "@/lib/cf-bindings";
+import { capabilityForSlug, roleHasCapability } from "@/lib/config/capabilities";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { isSupportedLocale } from "@/lib/i18n";
@@ -31,7 +32,6 @@ import {
   ROLE_ROUTE_MAP,
   ROLE_DASHBOARD_MAP,
   safeRedirectPath,
-  SPECIALIST_STAFF_ROLES,
 } from "@/lib/middleware/routes";
 import { checkSanctionedCountry } from "@/lib/middleware/sanctioned-countries";
 import {
@@ -612,12 +612,20 @@ export async function middleware(request: NextRequest) {
 
     // Specialist dashboards are protected page surfaces, but the repo models
     // them as route families / clinic types rather than first-class DB roles.
-    // Gate them behind existing authenticated staff roles instead of inventing
-    // phantom auth roles (Deep-Dive P3).
+    // P3: Gate them using the canonical capabilities map from
+    // `src/lib/config/capabilities.ts` so enforcement and identity vocabulary
+    // are unified. Extract the specialist slug from the first path segment
+    // (e.g. "/radiology/dashboard" → "radiology"), resolve its capability, and
+    // assert the profile role holds that capability.
     if (isSpecialistProtectedRoute(pathname)) {
-      if (SPECIALIST_STAFF_ROLES.some((role) => role === profile.role)) {
+      // Extract the leading segment: "/speech-therapist/foo" → "speech-therapist"
+      const slug = pathname.split("/")[1] ?? "";
+      const capability = capabilityForSlug(slug);
+      // Fail-closed: if the slug doesn't map to a known capability, deny access.
+      if (capability && roleHasCapability(profile.role, capability)) {
         return supabaseResponse;
       }
+      // Unknown capability or insufficient role — redirect to own dashboard.
       const dashboardPath = ROLE_DASHBOARD_MAP[profile.role];
       if (dashboardPath) {
         return secureRedirect(new URL(dashboardPath, request.url));

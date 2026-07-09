@@ -12,9 +12,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { defaultWebsiteConfig, type WebsiteConfig } from "@/lib/website-config";
 
+const DEFAULT_WORKING_HOUR_KEYS = defaultWebsiteConfig.location.workingHours.map(
+  (_, index) => `working-hour-${index}`,
+);
+const DEFAULT_HOW_TO_BOOK_STEP_KEYS = defaultWebsiteConfig.howToBook.steps.map(
+  (_, index) => `how-to-book-step-${index}`,
+);
+
 export default function WebsiteEditorPage() {
   const [config, setConfig] = useState<WebsiteConfig>(defaultWebsiteConfig);
   const [saved, setSaved] = useState(false);
+  const [workingHourKeys, setWorkingHourKeys] = useState(() => [...DEFAULT_WORKING_HOUR_KEYS]);
+  const [howToBookStepKeys, setHowToBookStepKeys] = useState(() => [
+    ...DEFAULT_HOW_TO_BOOK_STEP_KEYS,
+  ]);
 
   function updateHero(key: keyof WebsiteConfig["hero"], value: string) {
     setConfig((prev) => ({ ...prev, hero: { ...prev.hero, [key]: value } }));
@@ -87,6 +98,7 @@ export default function WebsiteEditorPage() {
   }
 
   function addHowToBookStep() {
+    setHowToBookStepKeys((prev) => [...prev, `how-to-book-step-${crypto.randomUUID()}`]);
     setConfig((prev) => ({
       ...prev,
       howToBook: {
@@ -98,6 +110,7 @@ export default function WebsiteEditorPage() {
   }
 
   function removeHowToBookStep(index: number) {
+    setHowToBookStepKeys((prev) => prev.filter((_, i) => i !== index));
     setConfig((prev) => {
       const steps = prev.howToBook.steps.filter((_, i) => i !== index);
       return { ...prev, howToBook: { ...prev.howToBook, steps } };
@@ -119,6 +132,8 @@ export default function WebsiteEditorPage() {
   }
 
   function handleReset() {
+    setWorkingHourKeys([...DEFAULT_WORKING_HOUR_KEYS]);
+    setHowToBookStepKeys([...DEFAULT_HOW_TO_BOOK_STEP_KEYS]);
     setConfig(defaultWebsiteConfig);
     setSaved(false);
   }
@@ -403,7 +418,7 @@ export default function WebsiteEditorPage() {
                   <Label>Working Hours</Label>
                 </div>
                 {config.location.workingHours.map((wh, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-3">
+                  <div key={workingHourKeys[i]} className="grid grid-cols-2 gap-3">
                     <Input
                       value={wh.day}
                       onChange={(e) => updateWorkingHours(i, "day", e.target.value)}
@@ -450,7 +465,7 @@ export default function WebsiteEditorPage() {
                   </Button>
                 </div>
                 {config.howToBook.steps.map((step, i) => (
-                  <div key={i} className="rounded-lg border p-4 space-y-2">
+                  <div key={howToBookStepKeys[i]} className="rounded-lg border p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-muted-foreground">
                         Step {i + 1}

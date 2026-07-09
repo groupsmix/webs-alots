@@ -1182,44 +1182,6 @@ export const apiEndpoints: ApiEndpoint[] = [
     },
   },
 
-  // Radiology
-  {
-    path: "/api/radiology/orders",
-    method: "POST",
-    summary: "Create radiology order",
-    description: "Creates a new radiology imaging order for a patient.",
-    tags: ["Radiology"],
-    security: true,
-    responses: {
-      "200": { description: "Order created" },
-      ...ERROR_RESPONSES,
-    },
-  },
-  {
-    path: "/api/radiology/upload",
-    method: "POST",
-    summary: "Upload radiology image",
-    description: "Uploads a radiology image (X-ray, scan) to R2 storage with PHI encryption.",
-    tags: ["Radiology"],
-    security: true,
-    responses: {
-      "200": { description: "Image uploaded" },
-      ...ERROR_RESPONSES,
-    },
-  },
-  {
-    path: "/api/radiology/report-pdf",
-    method: "POST",
-    summary: "Generate radiology report PDF",
-    description: "Generates a PDF report for a radiology order.",
-    tags: ["Radiology"],
-    security: true,
-    responses: {
-      "200": { description: "PDF generated" },
-      ...ERROR_RESPONSES,
-    },
-  },
-
   // Consent
   {
     path: "/api/consent",

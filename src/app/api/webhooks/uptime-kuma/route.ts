@@ -1,12 +1,15 @@
 import { type NextRequest } from "next/server";
 import { apiError, apiRateLimited, apiSuccess } from "@/lib/api-response";
+import { timingSafeEqual } from "@/lib/crypto-utils";
+import { getUptimeKumaWebhookSecret } from "@/lib/env";
 import { insertInAppNotification } from "@/lib/notification-persist";
 import { createServiceClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-webhook-secret");
-  if (!secret || secret !== process.env.UPTIME_KUMA_WEBHOOK_SECRET) {
+  const expectedSecret = getUptimeKumaWebhookSecret();
+  if (!secret || !expectedSecret || !timingSafeEqual(secret, expectedSecret)) {
     return apiError("Unauthorized", 401, "UNAUTHORIZED");
   }
 

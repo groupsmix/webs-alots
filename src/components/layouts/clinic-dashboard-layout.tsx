@@ -1,22 +1,27 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { FeatureGate } from "@/components/feature-gate";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { RouteScopeGate } from "@/components/route-scope-gate";
 import { SignOutButton } from "@/components/sign-out-button";
+import { getDashboardRequiredFlags, getScopedDashboardForPathname } from "@/lib/config/verticals";
 import type { ClinicFeatureKey } from "@/lib/features";
+import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
+
+type LucideIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 interface DashboardNavItem {
   href: string;
   label: string;
   icon: LucideIcon;
-  requiredFeature?: string;
+  requiredFeature?: ClinicFeatureKey;
 }
 
 export interface ClinicDashboardConfig {
@@ -45,18 +50,18 @@ function isNavActive(pathname: string, href: string): boolean {
 }
 
 function SidebarContent({
-  config,
   pathname,
+  navItems,
   onNavClick,
 }: {
-  config: ClinicDashboardConfig;
   pathname: string;
+  navItems: DashboardNavItem[];
   onNavClick?: () => void;
 }) {
   return (
     <>
       <nav className="space-y-1 flex-1">
-        {config.navItems.map((item) => {
+        {navItems.map((item) => {
           const isActive = isNavActive(pathname, item.href);
           return (
             <Link
@@ -88,19 +93,39 @@ export function ClinicDashboardLayout({
   children,
 }: {
   config: ClinicDashboardConfig;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const shortTitle = config.shortTitle ?? config.title;
+  const { hasFeature } = useClinicFeatures();
+  const scopedDashboard = getScopedDashboardForPathname(pathname);
+  const isHrefVisible = (href: string, requiredFeature?: ClinicFeatureKey) => {
+    if (requiredFeature) return hasFeature(requiredFeature);
 
-  const content = config.featureKey ? (
-    <FeatureGate featureKey={config.featureKey} moduleName={config.moduleName ?? config.title}>
-      {children}
-    </FeatureGate>
-  ) : (
-    children
+    const dashboard = getScopedDashboardForPathname(href);
+    const requiredFlags = dashboard ? getDashboardRequiredFlags(dashboard) : undefined;
+    return !requiredFlags || requiredFlags.some((flag) => hasFeature(flag));
+  };
+  const visibleNavItems = config.navItems.filter((item) =>
+    isHrefVisible(item.href, item.requiredFeature),
   );
+  const visibleMobileTabs = config.mobileTabs?.filter((tab) => {
+    const requiredFeature =
+      tab.requiredFeature ??
+      config.navItems.find((item) => item.href === tab.href)?.requiredFeature;
+    return isHrefVisible(tab.href, requiredFeature);
+  });
+
+  const routeScopedContent = <RouteScopeGate>{children}</RouteScopeGate>;
+  const content =
+    config.featureKey && !scopedDashboard ? (
+      <FeatureGate featureKey={config.featureKey} moduleName={config.moduleName ?? config.title}>
+        {routeScopedContent}
+      </FeatureGate>
+    ) : (
+      routeScopedContent
+    );
 
   return (
     <div className="flex min-h-screen overflow-x-hidden">
@@ -139,8 +164,8 @@ export function ClinicDashboardLayout({
               </button>
             </div>
             <SidebarContent
-              config={config}
               pathname={pathname}
+              navItems={visibleNavItems}
               onNavClick={() => setMobileOpen(false)}
             />
           </aside>
@@ -153,20 +178,20 @@ export function ClinicDashboardLayout({
           <OltigoMonogram size="sm" />
           <h2 className="text-lg font-semibold">{config.title}</h2>
         </div>
-        <SidebarContent config={config} pathname={pathname} />
+        <SidebarContent pathname={pathname} navItems={visibleNavItems} />
       </aside>
 
       <main
         id="main-content"
-        className={`flex-1 min-w-0 ${config.mobileTabs ? "p-4 pt-16 pb-20 md:p-6 md:pb-6" : "p-6 pt-16 md:pt-6"}`}
+        className={`flex-1 min-w-0 ${visibleMobileTabs?.length ? "p-4 pt-16 pb-20 md:p-6 md:pb-6" : "p-6 pt-16 md:pt-6"}`}
       >
         {content}
       </main>
 
       {/* Mobile bottom tab bar */}
-      {config.mobileTabs && (
-        <MobileTabBar tabs={config.mobileTabs} onMoreClick={() => setMobileOpen(true)} />
-      )}
+      {visibleMobileTabs?.length ? (
+        <MobileTabBar tabs={visibleMobileTabs} onMoreClick={() => setMobileOpen(true)} />
+      ) : null}
     </div>
   );
 }

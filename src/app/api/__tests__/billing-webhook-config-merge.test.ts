@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { POST } from "@/app/api/billing/webhook/route";
 
 vi.mock("@/lib/logger", () => ({
   logger: {
@@ -110,7 +111,6 @@ describe("billing/webhook — Q-01: clinic config merge", () => {
   });
 
   it("preserves operational config keys when handling checkout.session.completed", async () => {
-    const { POST } = await import("@/app/api/billing/webhook/route");
     const payload = JSON.stringify({
       id: "evt_q01_checkout_completed",
       type: "checkout.session.completed",

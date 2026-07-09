@@ -134,7 +134,7 @@ export default function AIConfigAdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [togglingFeature, setTogglingFeature] = useState<string | null>(null);
   const [memories, setMemories] = useState<AIMemoryRow[]>([]);
-  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [memoriesLoading, setMemoriesLoading] = useState(true);
   const [deletingMemory, setDeletingMemory] = useState<string | null>(null);
 
   const loadConfig = useCallback(async () => {
@@ -190,9 +190,56 @@ export default function AIConfigAdminPage() {
   };
 
   useEffect(() => {
-    loadConfig();
-    loadMemories();
-  }, [loadConfig, loadMemories]);
+    let cancelled = false;
+
+    const loadInitialConfig = async () => {
+      try {
+        const res = await fetch("/api/admin/ai-config", { credentials: "include" });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error ?? "Échec du chargement");
+        }
+        const json = await res.json();
+        if (!cancelled) {
+          setData(json.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Erreur inconnue");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const loadInitialMemories = async () => {
+      try {
+        const res = await fetch("/api/admin/ai-memories", { credentials: "include" });
+        if (res.ok) {
+          const json = await res.json();
+          if (!cancelled) {
+            setMemories(json.data?.memories ?? []);
+          }
+        }
+      } catch {
+        // Non-critical — memories section is supplementary
+      } finally {
+        if (!cancelled) {
+          setMemoriesLoading(false);
+        }
+      }
+    };
+
+    void loadInitialConfig();
+    void loadInitialMemories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleToggleFeature = async (featureKey: string, currentEnabled: boolean) => {
     setTogglingFeature(featureKey);

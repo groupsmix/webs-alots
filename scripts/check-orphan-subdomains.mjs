@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { writeFileSync } from "node:fs";
+
 /**
  * A147-01: Weekly orphan subdomain detection.
  *
@@ -20,6 +22,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SLACK_WEBHOOK = process.env.SLACK_SECURITY_ALERTS_WEBHOOK_URL;
+const OUTPUT_PATH = process.env.ORPHAN_SUBDOMAINS_OUTPUT || "";
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -83,7 +86,13 @@ async function main() {
   const activeSubdomains = await getActiveClinicSubdomains();
   const deletedSubdomains = await getDeletedClinicSubdomains();
 
-  const orphans = deletedSubdomains.filter((sub) => !activeSubdomains.has(sub));
+  const orphans = [
+    ...new Set(deletedSubdomains.filter((sub) => !activeSubdomains.has(sub))),
+  ].sort();
+
+  if (OUTPUT_PATH) {
+    writeFileSync(OUTPUT_PATH, orphans.join("\n") + (orphans.length > 0 ? "\n" : ""), "utf8");
+  }
 
   if (orphans.length === 0) {
     console.log("No orphan subdomains detected.");

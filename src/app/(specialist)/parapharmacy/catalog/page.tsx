@@ -62,9 +62,14 @@ export default function ParapharmacyCatalogPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const refreshProducts = useCallback(() => {
+  const refreshProducts = useCallback(async () => {
     if (!tenant?.clinicId) return;
-    fetchParapharmacyProducts(tenant.clinicId).then(setProducts);
+    setError(null);
+    try {
+      setProducts(await fetchParapharmacyProducts(tenant.clinicId));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    }
   }, [tenant?.clinicId]);
 
   useEffect(() => {

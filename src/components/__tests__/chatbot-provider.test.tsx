@@ -253,6 +253,40 @@ describe("6.5 — SSE branch with a line split across two reads", () => {
 
 // ── 6.6: SSE branch with complete lines ──────────────────────────────────────
 
+describe("6.5b — SSE branch ignores non-JSON data lines without warning", () => {
+  const encoder = new TextEncoder();
+
+  beforeEach(() => vi.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
+
+  it("ignores keepalive-style data lines and still renders streamed content", async () => {
+    const loggerModule = await import("@/lib/logger");
+    const stream = buildFakeStream([
+      encoder.encode(
+        'data: ping\n\ndata: {"content":"Bon"}\n\ndata: {"content":"jour"}\n\ndata: [DONE]\n\n',
+      ),
+    ]);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(buildSseResponse(stream));
+
+    renderProvider();
+
+    await act(async () => {
+      screen.getByTestId("send").click();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("idle");
+    });
+
+    expect(screen.getByTestId("msg-assistant").textContent).toBe("Bonjour");
+    expect(loggerModule.logger.warn).not.toHaveBeenCalledWith(
+      "Malformed SSE chunk skipped",
+      expect.anything(),
+    );
+  });
+});
+
 describe("6.6 — SSE branch with multiple complete lines in a single read", () => {
   const encoder = new TextEncoder();
 

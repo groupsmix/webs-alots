@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, FileText, Download, Scan, Loader2 } from "lucide-react";
+import { Search, FileText, Download, Scan } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
@@ -14,6 +14,9 @@ import type { RadiologyOrderView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
+const RADIOLOGY_PDF_DISABLED_MESSAGE =
+  "Radiology PDF generation is temporarily unavailable in this deployment.";
+
 export default function RadiologyReportsPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
@@ -24,7 +27,6 @@ export default function RadiologyReportsPage() {
   const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,39 +46,6 @@ export default function RadiologyReportsPage() {
       controller.abort();
     };
   }, [tenant?.clinicId]);
-
-  const handleGeneratePdf = async (order: RadiologyOrderView) => {
-    setGeneratingPdf(order.id);
-    try {
-      const res = await fetch("/api/radiology/report-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.id,
-          clinicId: tenant?.clinicId ?? "",
-          patientName: order.patientName,
-          modality: order.modality,
-          bodyPart: order.bodyPart,
-          findings: order.findings,
-          impression: order.impression,
-          reportText: order.reportText,
-          radiologistName: order.radiologistName,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.pdfUrl) {
-          window.open(data.pdfUrl, "_blank");
-          // Refresh to get updated pdfUrl
-          fetchRadiologyOrders(tenant?.clinicId ?? "").then((all) =>
-            setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")),
-          );
-        }
-      }
-    } finally {
-      setGeneratingPdf(null);
-    }
-  };
 
   if (loading) {
     return <PageLoader message="Loading reports..." />;
@@ -105,10 +74,15 @@ export default function RadiologyReportsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Radiology Reports</h1>
-          <p className="text-muted-foreground text-sm">Completed radiology reports</p>
+      <div className="space-y-4 mb-6">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          {RADIOLOGY_PDF_DISABLED_MESSAGE}
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Radiology Reports</h1>
+            <p className="text-muted-foreground text-sm">Completed radiology reports</p>
+          </div>
         </div>
       </div>
 
@@ -169,15 +143,11 @@ export default function RadiologyReportsPage() {
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleGeneratePdf(order);
                       }}
-                      disabled={generatingPdf === order.id}
+                      disabled
+                      title={RADIOLOGY_PDF_DISABLED_MESSAGE}
                     >
-                      {generatingPdf === order.id ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : (
-                        <Download className="h-3 w-3 mr-1" />
-                      )}
+                      <Download className="h-3 w-3 mr-1" />
                       Generate PDF
                     </Button>
                   )}

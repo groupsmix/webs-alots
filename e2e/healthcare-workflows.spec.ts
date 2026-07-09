@@ -12,7 +12,7 @@ test.describe("Healthcare API — Response shape consistency", () => {
   test("all new endpoints deny anonymous access with a standard { ok, error } shape", async ({
     request,
   }) => {
-    const endpoints = ["/api/admissions", "/api/staff-invitations", "/api/insurance-claims"];
+    const endpoints = ["/api/staff-invitations", "/api/clinic-owner/insurance-claims"];
 
     for (const endpoint of endpoints) {
       const response = await request.get(endpoint);
@@ -35,7 +35,7 @@ test.describe("Healthcare API — Response shape consistency", () => {
     // (validation ran, meaning auth was skipped) or 200/5xx.
     // Playwright's request API sends no Origin header, so CSRF middleware may
     // also fire first and return 403 — that is equally acceptable.
-    const endpoints = ["/api/admissions", "/api/staff-invitations", "/api/insurance-claims"];
+    const endpoints = ["/api/staff-invitations", "/api/clinic-owner/insurance-claims"];
 
     for (const endpoint of endpoints) {
       const response = await request.post(endpoint, { data: {} });
@@ -53,7 +53,7 @@ test.describe("Healthcare API — PATCH endpoints are auth-gated", () => {
     // BEFORE the route reads the id or body. A 404 (route missing), 422
     // (validation ran, auth was skipped), or 5xx (crash) would all be
     // real regressions.
-    const patchEndpoints = ["/api/admissions/not-a-uuid", "/api/insurance-claims/not-a-uuid"];
+    const patchEndpoints = ["/api/clinic-owner/insurance-claims/not-a-uuid"];
 
     for (const endpoint of patchEndpoints) {
       const response = await request.patch(endpoint, {
@@ -69,10 +69,7 @@ test.describe("Healthcare API — GET individual resources are auth-gated", () =
     // Auth runs first — anonymous caller must never reach DB (200 leak) or
     // trigger a server crash (5xx). 404 is also rejected because a missing
     // route would indicate the protection prefix was silently removed.
-    const endpoints = [
-      "/api/admissions/00000000-0000-0000-0000-000000000000",
-      "/api/insurance-claims/00000000-0000-0000-0000-000000000000",
-    ];
+    const endpoints = ["/api/clinic-owner/insurance-claims/00000000-0000-0000-0000-000000000000"];
 
     for (const endpoint of endpoints) {
       const response = await request.get(endpoint);

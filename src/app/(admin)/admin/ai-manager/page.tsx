@@ -137,8 +137,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {/* Data points */}
         {message.dataPoints && message.dataPoints.length > 0 && (
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {message.dataPoints.map((point, i) => (
-              <DataPointCard key={i} point={point} />
+            {message.dataPoints.map((point) => (
+              <DataPointCard
+                key={`${message.id}-${point.label}-${point.value}-${point.trend ?? "neutral"}`}
+                point={point}
+              />
             ))}
           </div>
         )}
@@ -148,8 +151,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <div className="mt-3 space-y-1">
             <span className="text-xs font-medium text-muted-foreground">Suggestions:</span>
             <ul className="space-y-1">
-              {message.suggestions.map((s, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              {message.suggestions.map((s) => (
+                <li
+                  key={`${message.id}-suggestion-${s}`}
+                  className="flex items-start gap-1.5 text-xs text-muted-foreground"
+                >
                   <Sparkles className="h-3 w-3 mt-0.5 shrink-0 text-violet-500" />
                   <span>{s}</span>
                 </li>

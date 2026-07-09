@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -34,89 +35,85 @@ const STEPS = [
 
 const STORAGE_KEY = "oltigo_admin_onboarding_draft";
 
+interface AdminOnboardingDraft {
+  currentStep?: WizardStep;
+  clinicName?: string;
+  subdomain?: string;
+  primaryColor?: string;
+  doctorName?: string;
+  doctorEmail?: string;
+  services?: ServiceFormData[];
+}
+
+function readStoredDraft(): AdminOnboardingDraft | null {
+  if (typeof window === "undefined") return null;
+
+  const saved = window.localStorage.getItem(STORAGE_KEY);
+  if (!saved) return null;
+
+  try {
+    return JSON.parse(saved) as AdminOnboardingDraft;
+  } catch (error) {
+    logger.warn("Failed to parse admin onboarding draft", {
+      context: "admin-onboarding",
+      error,
+    });
+    window.localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
 export default function AdminOnboardingWizard() {
   const { addToast } = useToast();
-  const [currentStep, setCurrentStep] = useState<WizardStep>(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) {
-        const p = JSON.parse(saved);
-        if (p.currentStep) return p.currentStep as WizardStep;
-      }
-    } catch {}
-    return 1;
-  });
+  const [currentStep, setCurrentStep] = useState<WizardStep>(
+    () => readStoredDraft()?.currentStep ?? 1,
+  );
   const [completed, setCompleted] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Step 1: Details
-  const [clinicName, setClinicName] = useState(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) return (JSON.parse(saved) as { clinicName?: string }).clinicName ?? "";
-    } catch {}
-    return "";
-  });
-  const [subdomain, setSubdomain] = useState(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) return (JSON.parse(saved) as { subdomain?: string }).subdomain ?? "";
-    } catch {}
-    return "";
-  });
+  const [clinicName, setClinicName] = useState(() => readStoredDraft()?.clinicName ?? "");
+  const [subdomain, setSubdomain] = useState(() => readStoredDraft()?.subdomain ?? "");
 
   // Step 2: Branding
-  const [primaryColor, setPrimaryColor] = useState(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) return (JSON.parse(saved) as { primaryColor?: string }).primaryColor ?? "#000000";
-    } catch {}
-    return "#000000";
-  });
+  const [primaryColor, setPrimaryColor] = useState(
+    () => readStoredDraft()?.primaryColor ?? "#000000",
+  );
 
   // Step 3: First Doctor & Schedule
-  const [doctorName, setDoctorName] = useState(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) return (JSON.parse(saved) as { doctorName?: string }).doctorName ?? "";
-    } catch {}
-    return "";
-  });
-  const [doctorEmail, setDoctorEmail] = useState(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) return (JSON.parse(saved) as { doctorEmail?: string }).doctorEmail ?? "";
-    } catch {}
-    return "";
-  });
+  const [doctorName, setDoctorName] = useState(() => readStoredDraft()?.doctorName ?? "");
+  const [doctorEmail, setDoctorEmail] = useState(() => readStoredDraft()?.doctorEmail ?? "");
 
   // Step 4: Services
-  const [services, setServices] = useState<ServiceFormData[]>(() => {
-    try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (saved) {
-        const p = JSON.parse(saved) as { services?: ServiceFormData[] };
-        if (p.services) return p.services;
-      }
-    } catch {}
-    return [{ name: "", price: "", duration_minutes: "30", category: "consultation" }];
-  });
+  const [services, setServices] = useState<ServiceFormData[]>(
+    () =>
+      readStoredDraft()?.services ?? [
+        { name: "", price: "", duration_minutes: "30", category: "consultation" },
+      ],
+  );
 
   useEffect(() => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          currentStep,
-          clinicName,
-          subdomain,
-          primaryColor,
-          doctorName,
-          doctorEmail,
-          services,
-        }),
-      );
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            currentStep,
+            clinicName,
+            subdomain,
+            primaryColor,
+            doctorName,
+            doctorEmail,
+            services,
+          }),
+        );
+      } catch (error) {
+        logger.warn("Failed to persist admin onboarding draft", {
+          context: "admin-onboarding",
+          error,
+        });
+      }
     }, 1000);
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);

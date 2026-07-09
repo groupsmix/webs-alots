@@ -54,6 +54,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           SLACK_SECURITY_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_SECURITY_ALERTS_WEBHOOK_URL }}
+          ORPHAN_SUBDOMAINS_OUTPUT: orphan-subdomains.txt
         run: node scripts/check-orphan-subdomains.mjs
 
       - name: Create GitHub issue on findings
@@ -61,22 +62,82 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
         with:
           script: |
+            const fs = require('fs');
+            const crypto = require('crypto');
+
+            const findingsPath = 'orphan-subdomains.txt';
+            if (!fs.existsSync(findingsPath)) {
+              core.info('No orphan-subdomains.txt produced; skipping issue creation.');
+              return;
+            }
+
+            const findings = [...new Set(
+              fs.readFileSync(findingsPath, 'utf8')
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
+            )].sort();
+            if (findings.length === 0) {
+              core.info('No orphaned subdomains recorded; skipping issue creation.');
+              return;
+            }
+
+            const normalizedList = findings.join('\n');
+            const fingerprint = crypto.createHash('sha256').update(normalizedList).digest('hex');
+            const marker = `<!-- orphan-subdomains-fingerprint:${fingerprint} -->`;
+            const title = `[SECURITY] Orphaned subdomains detected (${findings.length})`;
+            const body = [
+              '## Orphaned Subdomain Alert',
+              '',
+              'The weekly subdomain orphan scan found DNS records without a matching active clinic.',
+              'An attacker could claim these subdomains for phishing or session hijacking.',
+              '',
+              'Affected subdomains:',
+              '```',
+              normalizedList,
+              '```',
+              '',
+              '**Action required:**',
+              '1. Review the scan output in the workflow run logs.',
+              '2. Delete any orphaned Cloudflare DNS record via the API or dashboard.',
+              '3. Verify no pending clinic offboarding missed the DNS teardown step.',
+              '',
+              `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              marker,
+            ].join('\n');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security,high-priority',
+              per_page: 100,
+            });
+
+            const existing = issues.find((issue) =>
+              !issue.pull_request &&
+              issue.title.startsWith('[SECURITY] Orphaned subdomains detected') &&
+              ((issue.body || '').includes(marker) || issue.title.startsWith('[SECURITY] Orphaned subdomains detected'))
+            );
+
+            if (existing) {
+              if ((existing.body || '') !== body || existing.title !== title) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  title,
+                  body,
+                });
+              }
+              core.info(`Orphaned subdomains already tracked in issue #${existing.number}; skipping duplicate issue.`);
+              return;
+            }
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[SECURITY] Orphaned subdomains detected — ${new Date().toISOString().slice(0,10)}`,
-              body: [
-                '## Orphaned Subdomain Alert',
-                '',
-                'The weekly subdomain orphan scan found DNS records without a matching active clinic.',
-                'An attacker could claim these subdomains for phishing or session hijacking.',
-                '',
-                '**Action required:**',
-                '1. Review the scan output in the workflow run logs.',
-                '2. Delete any orphaned Cloudflare DNS record via the API or dashboard.',
-                '3. Verify no pending clinic offboarding missed the DNS teardown step.',
-                '',
-                `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              ].join('\n'),
+              title,
+              body,
               labels: ['security', 'high-priority'],
             });

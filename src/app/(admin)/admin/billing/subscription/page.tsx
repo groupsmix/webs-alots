@@ -12,7 +12,7 @@ import {
   Loader2,
   BarChart3,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,21 +57,54 @@ export default function SubscriptionBillingPage() {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<SubscriptionPlan | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-
-  const loadData = useCallback(async () => {
-    try {
-      const info = await fetchSubscriptionInfo(tenant?.clinicId ?? "");
-      setSubInfo(info);
-    } catch (err) {
-      logger.warn("Failed to load subscription info", { context: "subscription-page", error: err });
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant?.clinicId]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const clinicId = tenant?.clinicId ?? "";
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+
+    async function loadData() {
+      setLoading(true);
+      setLoadError(null);
+
+      if (!clinicId) {
+        if (!cancelled) {
+          setSubInfo(null);
+          setLoadError("Impossible de charger l'abonnement sans clinique active.");
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const info = await fetchSubscriptionInfo(clinicId);
+        if (cancelled) return;
+        setSubInfo(info);
+      } catch (err) {
+        if (cancelled) return;
+        logger.warn("Failed to load subscription info", {
+          context: "subscription-page",
+          error: err,
+        });
+        setSubInfo(null);
+        setLoadError(
+          err instanceof Error && err.message === "API returned 401"
+            ? "Votre session a expiré. Reconnectez-vous puis rechargez la page."
+            : "Impossible de charger les informations d'abonnement pour le moment.",
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clinicId]);
 
   const handleUpgrade = async (planId: SubscriptionPlan) => {
     setCheckoutLoading(planId);
@@ -135,6 +168,25 @@ export default function SubscriptionBillingPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError && !subInfo) {
+    return (
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Abonnement</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gérez votre abonnement et consultez votre utilisation
+          </p>
+        </div>
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="py-6">
+            <p className="font-medium text-destructive">Chargement impossible</p>
+            <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

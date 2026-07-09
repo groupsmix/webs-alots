@@ -1,7 +1,7 @@
 "use client";
 
-import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Activity, Pill, FileText, Stethoscope, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,30 +16,8 @@ import {
   type ConsultationNoteView,
 } from "@/lib/data/client";
 
-const vitals = [
-  {
-    label: "Blood Pressure",
-    value: "120/80 mmHg",
-    icon: Activity,
-    trend: "stable",
-    color: "text-blue-600",
-  },
-  {
-    label: "Heart Rate",
-    value: "72 bpm",
-    icon: TrendingUp,
-    trend: "normal",
-    color: "text-red-600",
-  },
-  {
-    label: "Temperature",
-    value: "36.8°C",
-    icon: Activity,
-    trend: "normal",
-    color: "text-orange-600",
-  },
-  { label: "Weight", value: "75 kg", icon: TrendingUp, trend: "stable", color: "text-green-600" },
-];
+const MEDICAL_HISTORY_LIMITED_MESSAGE =
+  "Demographic summary fields and latest vitals are temporarily unavailable in this deployment. Visit notes and prescription history remain available below.";
 
 const severityColors: Record<string, string> = {
   mild: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
@@ -122,7 +100,11 @@ export default function MedicalHistoryPage() {
       <Breadcrumb
         items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical History" }]}
       />
-      <h1 className="text-2xl font-bold mb-6">Medical History</h1>
+      <h1 className="text-2xl font-bold mb-4">Medical History</h1>
+
+      <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+        {MEDICAL_HISTORY_LIMITED_MESSAGE}
+      </div>
 
       <Card className="mb-6">
         <CardHeader>
@@ -135,19 +117,21 @@ export default function MedicalHistoryPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-sm text-muted-foreground">Date of Birth</p>
-              <p className="text-sm font-medium">{patient.dateOfBirth}</p>
+              <p className="text-sm font-medium">{patient.dateOfBirth || "Unavailable"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Gender</p>
-              <p className="text-sm font-medium">{patient.gender === "M" ? "Male" : "Female"}</p>
+              <p className="text-sm font-medium">
+                {patient.gender ? (patient.gender === "M" ? "Male" : "Female") : "Unavailable"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Blood Type</p>
-              <p className="text-sm font-medium">A+</p>
+              <p className="text-sm font-medium">Unavailable</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Insurance</p>
-              <p className="text-sm font-medium">{patient.insurance ?? "None"}</p>
+              <p className="text-sm font-medium">{patient.insurance || "Unavailable"}</p>
             </div>
           </div>
           {patient.allergies && patient.allergies.length > 0 && (
@@ -176,18 +160,9 @@ export default function MedicalHistoryPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-            {vitals.map((vital) => (
-              <div key={vital.label} className="text-center p-3 border rounded-lg">
-                <vital.icon className={`h-4 w-4 mx-auto mb-1 ${vital.color}`} />
-                <p className="text-xs text-muted-foreground">{vital.label}</p>
-                <p className="text-sm font-bold">{vital.value}</p>
-                <Badge variant="outline" className="text-[10px] mt-1">
-                  {vital.trend}
-                </Badge>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Latest vitals are not available in this deployment.
+          </p>
         </CardContent>
       </Card>
 
@@ -203,8 +178,11 @@ export default function MedicalHistoryPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {diagnoses.map((visit, i) => (
-              <div key={i} className="border rounded-lg p-4">
+            {diagnoses.map((visit) => (
+              <div
+                key={`${visit.date}-${visit.diagnosis}-${visit.doctor}`}
+                className="border rounded-lg p-4"
+              >
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-medium text-sm">{visit.diagnosis}</p>
@@ -222,9 +200,11 @@ export default function MedicalHistoryPage() {
                   </div>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <p>
-                    <span className="text-muted-foreground">Vitals:</span> {visit.vitals}
-                  </p>
+                  {visit.vitals && (
+                    <p>
+                      <span className="text-muted-foreground">Vitals:</span> {visit.vitals}
+                    </p>
+                  )}
                   <p>
                     <span className="text-muted-foreground">Notes:</span> {visit.notes}
                   </p>

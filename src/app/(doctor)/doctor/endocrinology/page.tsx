@@ -448,8 +448,11 @@ export default function EndocrinologyPage() {
                         <p className="text-xs font-medium mb-1 flex items-center gap-1">
                           <Pill className="h-3 w-3" /> Medications
                         </p>
-                        {d.medications.map((m, i) => (
-                          <div key={i} className="text-sm flex gap-2">
+                        {d.medications.map((m) => (
+                          <div
+                            key={`${d.id}-${m.name}-${m.dosage}-${m.frequency}`}
+                            className="text-sm flex gap-2"
+                          >
                             <span className="font-medium">{m.name}</span>
                             <span className="text-muted-foreground">
                               {m.dosage} - {m.frequency}

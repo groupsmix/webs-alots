@@ -12,6 +12,12 @@
  *
  * The wrapped handler receives the original request plus an `auth` object
  * containing the authenticated Supabase client, user, and profile.
+ *
+ * P8 refactor: the shared auth-resolution flow (getUser → profile headers →
+ * DB fallback → tenant assertion → tenant context → rate limit) now lives in
+ * the private `resolveAuthProfile` helper below. Both `withAuth` and
+ * `withAuthAnyRole` call that helper; the only difference between them is
+ * whether `allowedRoles` is checked before invoking the handler.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -84,6 +90,145 @@ export interface WithAuthOptions {
   failOpen?: boolean;
 }
 
+// ── Private resolution result ────────────────────────────────────────────────
+
+interface ResolvedAuth {
+  supabase: SupabaseClient<Database>;
+  user: AuthenticatedUser;
+  profile: { id: string; role: UserRole; clinic_id: string | null };
+}
+
+type ResolutionError = NextResponse;
+
+/**
+ * Core auth-resolution pipeline shared by `withAuth` and `withAuthAnyRole`.
+ *
+ * Returns a `ResolvedAuth` on success or a `NextResponse` (error) on failure.
+ * The caller is responsible for the role-allowlist check (if any) and for
+ * invoking the actual route handler.
+ *
+ * @param request  - The incoming Next.js request
+ * @param context  - Wrapper label used in logs ("with-auth" | "with-auth-any-role")
+ * @param failOpen - Whether tenant-context errors should fail open (default: false)
+ */
+async function resolveAuthProfile(
+  request: NextRequest,
+  context: string,
+  failOpen: boolean,
+): Promise<ResolvedAuth | ResolutionError> {
+  const supabase = await createClient();
+  const authClient = supabase.auth as unknown as {
+    getUser: () => Promise<{ data: { user: AuthenticatedUser | null } }>;
+  };
+
+  const {
+    data: { user },
+  } = await authClient.getUser();
+
+  if (!user) {
+    return apiUnauthorized("Not authenticated");
+  }
+
+  // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8).
+  // R-01: If the header HMAC key is unset, `verifyProfileHeader` returns null so we
+  //       fall through to the authoritative DB lookup below. We never trust these
+  //       headers without a valid signature.
+  // C-02: The `iat` header is now required for verification — expired headers are rejected.
+  const verified = await verifyProfileHeader({
+    id: request.headers.get(PROFILE_HEADER_NAMES.id),
+    role: request.headers.get(PROFILE_HEADER_NAMES.role),
+    clinic_id: request.headers.get(PROFILE_HEADER_NAMES.clinic),
+    signature: request.headers.get(PROFILE_HEADER_NAMES.sig),
+    iat: request.headers.get(PROFILE_HEADER_NAMES.iat),
+  });
+
+  let profile: { id: string; role: UserRole; clinic_id: string | null } | null = verified
+    ? { id: verified.id, role: verified.role as UserRole, clinic_id: verified.clinic_id }
+    : null;
+
+  if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
+    logger.warn(
+      "Profile headers present but signature could not be verified — falling back to DB",
+      { context, userId: user.id },
+    );
+  }
+
+  if (!profile) {
+    // Always fetch the real profile from the database if headers are missing or invalid
+    const { data: dbProfile } = await supabase
+      .from("users")
+      .select("id, role, clinic_id")
+      .eq("auth_id", user.id)
+      .single();
+    profile = dbProfile as { id: string; role: UserRole; clinic_id: string | null } | null;
+  }
+
+  if (!profile) {
+    return apiNotFound("User profile not found");
+  }
+
+  // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
+  // to prevent cross-tenant access via tampered profile data.
+  if (profile.clinic_id && profile.role !== "super_admin") {
+    try {
+      const tenant = await getTenant();
+      if (tenant && profile.clinic_id !== tenant.clinicId) {
+        logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
+          context,
+          profileClinicId: profile.clinic_id.slice(0, 8) + "…",
+          subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
+          userId: profile.id,
+        });
+        return apiForbidden("Forbidden — tenant mismatch");
+      }
+    } catch (tenantErr) {
+      logger.warn("Could not resolve tenant for assertion", { context, error: tenantErr });
+    }
+  }
+
+  // Set tenant context on the Supabase client so RLS policies
+  // can use app.current_clinic_id as an additional isolation check.
+  // Default behavior is fail-closed: if we cannot establish the tenant
+  // session variable, abort with 503 rather than silently relying on
+  // the weaker `get_user_clinic_id()` fallback for a tenant-scoped
+  // route. Routes that explicitly opt into `failOpen: true` (e.g. a
+  // read-only public endpoint that never touches tenant data) keep
+  // the legacy log-and-continue behavior.
+  if (profile.clinic_id) {
+    try {
+      await setTenantContext(supabase, profile.clinic_id);
+    } catch (tenantErr) {
+      if (isTenantContextPermissionError(tenantErr)) {
+        // Expected: the authenticated user role cannot set the
+        // app.current_clinic_id GUC (set_tenant_context is service_role-only).
+        // This is NOT a reason to fail closed — tenant isolation is enforced
+        // by RLS (get_user_clinic_id + the x-clinic-id tenant client), not by
+        // this best-effort session variable. Log at debug and continue.
+        logger.debug(
+          "Tenant GUC not set (expected for authenticated role); RLS enforces isolation",
+          { context, clinicId: profile.clinic_id },
+        );
+      } else {
+        logger.error(`Failed to set tenant context in ${context}`, {
+          context,
+          clinicId: profile.clinic_id,
+          failOpen,
+          error: tenantErr,
+        });
+        if (!failOpen) {
+          return apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE");
+        }
+      }
+    }
+  }
+
+  logTenantContext(profile.clinic_id, context, { userId: profile.id, role: profile.role });
+
+  return { supabase, user, profile };
+}
+
+// ── Public wrappers ──────────────────────────────────────────────────────────
+
 /**
  * Wraps a Next.js API route handler with authentication and role checks.
  *
@@ -111,59 +256,12 @@ export function withAuth<RouteCtx = unknown>(
     };
 
     try {
-      const supabase = await createClient();
-      const authClient = supabase.auth as unknown as {
-        getUser: () => Promise<{ data: { user: AuthenticatedUser | null } }>;
-      };
+      const result = await resolveAuthProfile(request, "with-auth", failOpen);
 
-      const {
-        data: { user },
-      } = await authClient.getUser();
+      // resolveAuthProfile returns a NextResponse on any auth/tenant failure.
+      if (!("supabase" in result)) return finalize(result);
 
-      if (!user) {
-        return finalize(apiUnauthorized("Not authenticated"));
-      }
-
-      // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8).
-      // R-01: If the header HMAC key is unset, `verifyProfileHeader` returns null so we
-      //       fall through to the authoritative DB lookup below. We never trust these
-      //       headers without a valid signature.
-      // C-02: The `iat` header is now required for verification — expired headers are rejected.
-      const verified = await verifyProfileHeader({
-        id: request.headers.get(PROFILE_HEADER_NAMES.id),
-        role: request.headers.get(PROFILE_HEADER_NAMES.role),
-        clinic_id: request.headers.get(PROFILE_HEADER_NAMES.clinic),
-        signature: request.headers.get(PROFILE_HEADER_NAMES.sig),
-        iat: request.headers.get(PROFILE_HEADER_NAMES.iat),
-      });
-
-      let profile: { id: string; role: UserRole; clinic_id: string | null } | null = verified
-        ? { id: verified.id, role: verified.role as UserRole, clinic_id: verified.clinic_id }
-        : null;
-
-      if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
-        logger.warn(
-          "Profile headers present but signature could not be verified — falling back to DB",
-          {
-            context: "with-auth",
-            userId: user.id,
-          },
-        );
-      }
-
-      if (!profile) {
-        // Always fetch the real profile from the database if headers are missing or invalid
-        const { data: dbProfile } = await supabase
-          .from("users")
-          .select("id, role, clinic_id")
-          .eq("auth_id", user.id)
-          .single();
-        profile = dbProfile as { id: string; role: UserRole; clinic_id: string | null } | null;
-      }
-
-      if (!profile) {
-        return finalize(apiNotFound("User profile not found"));
-      }
+      const { supabase, user, profile } = result;
 
       // If specific roles are required, enforce them.
       // R-04: withAuth no longer accepts null for allowedRoles.
@@ -171,74 +269,6 @@ export function withAuth<RouteCtx = unknown>(
       if (!allowedRoles.includes(profile.role as UserRole)) {
         return finalize(apiForbidden("Forbidden — insufficient permissions"));
       }
-
-      // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
-      // to prevent cross-tenant access via tampered profile data.
-      if (profile.clinic_id && profile.role !== "super_admin") {
-        try {
-          const tenant = await getTenant();
-          if (tenant && profile.clinic_id !== tenant.clinicId) {
-            logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
-              context: "with-auth",
-              profileClinicId: profile.clinic_id.slice(0, 8) + "…",
-              subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
-              userId: profile.id,
-            });
-            return finalize(apiForbidden("Forbidden — tenant mismatch"));
-          }
-        } catch (tenantErr) {
-          logger.warn("Could not resolve tenant for assertion", {
-            context: "with-auth",
-            error: tenantErr,
-          });
-        }
-      }
-
-      // Set tenant context on the Supabase client so RLS policies
-      // can use app.current_clinic_id as an additional isolation check.
-      // Default behavior is fail-closed: if we cannot establish the tenant
-      // session variable, abort with 503 rather than silently relying on
-      // the weaker `get_user_clinic_id()` fallback for a tenant-scoped
-      // route. Routes that explicitly opt into `failOpen: true` (e.g. a
-      // read-only public endpoint that never touches tenant data) keep
-      // the legacy log-and-continue behavior.
-      if (profile.clinic_id) {
-        try {
-          await setTenantContext(supabase, profile.clinic_id);
-        } catch (tenantErr) {
-          if (isTenantContextPermissionError(tenantErr)) {
-            // Expected: the authenticated user role cannot set the
-            // app.current_clinic_id GUC (set_tenant_context is service_role-only).
-            // This is NOT a reason to fail closed — tenant isolation is enforced
-            // by RLS (get_user_clinic_id + the x-clinic-id tenant client), not by
-            // this best-effort session variable. Log at debug and continue.
-            logger.debug(
-              "Tenant GUC not set (expected for authenticated role); RLS enforces isolation",
-              {
-                context: "with-auth",
-                clinicId: profile.clinic_id,
-              },
-            );
-          } else {
-            logger.error("Failed to set tenant context in withAuth", {
-              context: "with-auth",
-              clinicId: profile.clinic_id,
-              failOpen,
-              error: tenantErr,
-            });
-            if (!failOpen) {
-              return finalize(
-                apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE"),
-              );
-            }
-          }
-        }
-      }
-
-      logTenantContext(profile.clinic_id, "with-auth", {
-        userId: profile.id,
-        role: profile.role,
-      });
 
       // AUDIT-24 / S0-07-03: Per-user rate limiting for authenticated API
       // requests (100 req/min per user). Backed by the shared distributed
@@ -309,9 +339,6 @@ export function withAuthAnyRole<RouteCtx = unknown>(
   options: WithAuthOptions = {},
 ) {
   const failOpen = options.failOpen === true;
-  // Pass an empty array to withAuth, then check that the user is authenticated
-  // without enforcing any specific role. This is a "deny-by-default with
-  // explicit allowlist" pattern - every withAuth call must specify roles.
   return async (request: NextRequest, routeCtx?: RouteCtx): Promise<NextResponse> => {
     const finalize = (response: NextResponse): NextResponse => {
       applyRequestScopedResponseHeaders(request, response);
@@ -322,120 +349,18 @@ export function withAuthAnyRole<RouteCtx = unknown>(
     };
 
     try {
-      const supabase = await createClient();
-      const authClient = supabase.auth as unknown as {
-        getUser: () => Promise<{ data: { user: AuthenticatedUser | null } }>;
-      };
+      const result = await resolveAuthProfile(request, "with-auth-any-role", failOpen);
 
-      const {
-        data: { user },
-      } = await authClient.getUser();
+      // resolveAuthProfile returns a NextResponse on any auth/tenant failure.
+      if (!("supabase" in result)) return finalize(result);
 
-      if (!user) {
-        return finalize(apiUnauthorized("Not authenticated"));
+      const { supabase, user, profile } = result;
+
+      // withAuthAnyRole: no role check — any authenticated user is permitted.
+      // AUDIT-24 / S0-07-03: Per-user rate limiting still applies.
+      if (!(await perUserLimiter.check(`user:${profile.id}`))) {
+        return finalize(apiError("Too many requests. Please slow down.", 429, "USER_RATE_LIMIT"));
       }
-
-      // Check for signed profile headers from middleware
-      // C-02: The `iat` header is now required for verification — expired headers are rejected.
-      const verified = await verifyProfileHeader({
-        id: request.headers.get(PROFILE_HEADER_NAMES.id),
-        role: request.headers.get(PROFILE_HEADER_NAMES.role),
-        clinic_id: request.headers.get(PROFILE_HEADER_NAMES.clinic),
-        signature: request.headers.get(PROFILE_HEADER_NAMES.sig),
-        iat: request.headers.get(PROFILE_HEADER_NAMES.iat),
-      });
-
-      let profile: { id: string; role: UserRole; clinic_id: string | null } | null = verified
-        ? { id: verified.id, role: verified.role as UserRole, clinic_id: verified.clinic_id }
-        : null;
-
-      // Mirror withAuth's forgery probe signal: if a signature header was
-      // present but verifyProfileHeader rejected it, log a warning so probes
-      // with bad signatures still leave a trail. Routes migrated from
-      // withAuth(handler, null) to withAuthAnyRole would otherwise lose this.
-      if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
-        logger.warn(
-          "Profile headers present but signature could not be verified — falling back to DB",
-          {
-            context: "with-auth-any-role",
-            userId: user.id,
-          },
-        );
-      }
-
-      if (!profile) {
-        const { data: dbProfile } = await supabase
-          .from("users")
-          .select("id, role, clinic_id")
-          .eq("auth_id", user.id)
-          .single();
-        profile = dbProfile as { id: string; role: UserRole; clinic_id: string | null } | null;
-      }
-
-      if (!profile) {
-        return finalize(apiNotFound("User profile not found"));
-      }
-
-      // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
-      // to prevent cross-tenant access via tampered profile data. This must run
-      // for withAuthAnyRole too — without it, routes migrated from
-      // withAuth(handler, null) lose the defense-in-depth check.
-      if (profile.clinic_id && profile.role !== "super_admin") {
-        try {
-          const tenant = await getTenant();
-          if (tenant && profile.clinic_id !== tenant.clinicId) {
-            logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
-              context: "with-auth-any-role",
-              profileClinicId: profile.clinic_id.slice(0, 8) + "…",
-              subdomainClinicId: tenant.clinicId.slice(0, 8) + "…",
-              userId: profile.id,
-            });
-            return finalize(apiForbidden("Forbidden — tenant mismatch"));
-          }
-        } catch (tenantErr) {
-          logger.warn("Could not resolve tenant for assertion", {
-            context: "with-auth-any-role",
-            error: tenantErr,
-          });
-        }
-      }
-
-      // Set tenant context (fail-closed by default — see withAuth above).
-      if (profile.clinic_id) {
-        try {
-          await setTenantContext(supabase, profile.clinic_id);
-        } catch (tenantErr) {
-          if (isTenantContextPermissionError(tenantErr)) {
-            // Expected for the authenticated user role (set_tenant_context is
-            // service_role-only). RLS — not this GUC — enforces isolation, so
-            // continue instead of failing the request closed.
-            logger.debug(
-              "Tenant GUC not set (expected for authenticated role); RLS enforces isolation",
-              {
-                context: "with-auth-any-role",
-                clinicId: profile.clinic_id,
-              },
-            );
-          } else {
-            logger.error("Failed to set tenant context in withAuthAnyRole", {
-              context: "with-auth",
-              clinicId: profile.clinic_id,
-              failOpen,
-              error: tenantErr,
-            });
-            if (!failOpen) {
-              return finalize(
-                apiError("Tenant context unavailable", 503, "TENANT_CONTEXT_UNAVAILABLE"),
-              );
-            }
-          }
-        }
-      }
-
-      logTenantContext(profile.clinic_id, "with-auth-any-role", {
-        userId: profile.id,
-        role: profile.role,
-      });
 
       const response = await handler(
         request,
@@ -453,7 +378,7 @@ export function withAuthAnyRole<RouteCtx = unknown>(
       return finalize(response);
     } catch (err) {
       logger.error("Authentication failed in withAuthAnyRole", {
-        context: "with-auth",
+        context: "with-auth-any-role",
         error: err,
       });
       return finalize(apiInternalError("Authentication failed"));

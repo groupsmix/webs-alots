@@ -477,6 +477,8 @@ describe("withAuth", () => {
       getTenantMock.mockResolvedValue(null);
       setTenantContextMock.mockReset();
       setTenantContextMock.mockResolvedValue(undefined);
+      perUserLimiterCheck.mockReset();
+      perUserLimiterCheck.mockResolvedValue(true);
     });
 
     it("returns 403 when profile.clinic_id does not match subdomain tenant", async () => {

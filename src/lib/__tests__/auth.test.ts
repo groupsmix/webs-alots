@@ -15,6 +15,8 @@ import {
   requireRole,
   signInWithOTP,
   verifyOTP,
+  signInWithEmailOTP,
+  verifyEmailOTP,
   registerPatient,
   resetPassword,
 } from "../auth";
@@ -55,6 +57,17 @@ vi.mock("@/lib/audit-log", () => ({
 
 vi.mock("@/lib/seed-guard", () => ({
   isSeedUserBlocked: vi.fn().mockResolvedValue(false),
+}));
+
+vi.mock("@/lib/profile-header-hmac", () => ({
+  verifyProfileHeader: vi.fn().mockResolvedValue(null),
+  PROFILE_HEADER_NAMES: {
+    id: "x-profile-id",
+    role: "x-profile-role",
+    clinic: "x-profile-clinic",
+    sig: "x-profile-signature",
+    iat: "x-profile-iat",
+  },
 }));
 
 function createMockHeaders(values: Record<string, string> = {}) {
@@ -413,6 +426,122 @@ describe("verifyOTP", () => {
   });
 });
 
+describe("signInWithEmailOTP", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(headers).mockResolvedValue(
+      createMockHeaders({ "cf-connecting-ip": "10.20.30.40" }) as never,
+    );
+  });
+
+  it("rejects invalid email before touching Supabase", async () => {
+    const result = await signInWithEmailOTP("not-an-email");
+
+    expect(result.error).toBe("auth.invalidEmail");
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("rate-limits by IP first", async () => {
+    vi.mocked(otpSendLimiter.check).mockResolvedValueOnce(false);
+
+    const result = await signInWithEmailOTP("test@example.com");
+
+    expect(result.error).toBe("auth.rateLimitOtp");
+    expect(otpSendLimiter.check).toHaveBeenCalledWith("otp:email:ip:10.20.30.40");
+  });
+
+  it("rate-limits by normalized email", async () => {
+    vi.mocked(otpSendLimiter.check).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    const result = await signInWithEmailOTP("  Test@Example.COM  ");
+
+    expect(result.error).toBe("auth.rateLimitOtp");
+    expect(otpSendLimiter.check).toHaveBeenNthCalledWith(2, "otp:email:test@example.com");
+  });
+
+  it("blocks seed users before sending the OTP", async () => {
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(true);
+    const { isSeedUserBlocked } = await import("@/lib/seed-guard");
+    vi.mocked(isSeedUserBlocked).mockResolvedValueOnce(true);
+
+    const result = await signInWithEmailOTP("seed@example.com");
+
+    expect(result.error).toBe("auth.invalidCredentials");
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("returns a generic send error when Supabase rejects the email OTP", async () => {
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(true);
+    const mockSupabase = createMockSupabase({ otpError: { message: "SMTP down" } });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await signInWithEmailOTP("test@example.com");
+
+    expect(result.error).toBe("auth.emailOtpSendError");
+  });
+
+  it("normalizes email and returns null on success", async () => {
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(true);
+    const mockSupabase = createMockSupabase();
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await signInWithEmailOTP("  Test@Example.COM  ");
+
+    expect(result.error).toBeNull();
+    expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalledWith({ email: "test@example.com" });
+  });
+});
+
+describe("verifyEmailOTP", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(headers).mockResolvedValue(createMockHeaders() as never);
+  });
+
+  it("rejects invalid email or token before calling Supabase", async () => {
+    const result = await verifyEmailOTP("not-an-email", "123");
+
+    expect(result.error).toBe("auth.invalidOtp");
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("returns invalidOtp when Supabase rejects the token", async () => {
+    const mockSupabase = createMockSupabase({ verifyOtpError: { message: "bad token" } });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await verifyEmailOTP("test@example.com", "123456");
+
+    expect(result.error).toBe("auth.invalidOtp");
+  });
+
+  it("normalizes email and redirects to the role dashboard on success", async () => {
+    const mockProfile = {
+      id: "user-1",
+      auth_id: "auth-1",
+      clinic_id: "clinic-1",
+      role: "clinic_admin",
+      name: "Admin",
+      phone: null,
+      email: "test@example.com",
+      avatar_url: null,
+      is_active: true,
+      metadata: {},
+    };
+    const mockSupabase = createMockSupabase({ user: { id: "auth-1" }, profile: mockProfile });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await verifyEmailOTP("  Test@Example.COM  ", "123456");
+
+    expect(result.error).toBeNull();
+    expect(result.redirectTo).toBe("/admin/dashboard");
+    expect(mockSupabase.auth.verifyOtp).toHaveBeenCalledWith({
+      email: "test@example.com",
+      token: "123456",
+      type: "email",
+    });
+  });
+});
+
 describe("registerPatient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -570,6 +699,44 @@ describe("getUserProfile", () => {
 
     const result = await getUserProfile();
     expect(result).toEqual(mockProfile);
+  });
+
+  it("uses verified profile headers to skip the auth.getUser fallback when the row lookup succeeds", async () => {
+    const { verifyProfileHeader } = await import("@/lib/profile-header-hmac");
+    const mockProfile = {
+      id: "user-1",
+      auth_id: "auth-1",
+      clinic_id: "clinic-1",
+      role: "patient",
+      name: "Header User",
+      phone: null,
+      email: "header@example.com",
+      avatar_url: null,
+      is_active: true,
+      metadata: {},
+    };
+    const mockSupabase = createMockSupabase({ user: { id: "auth-1" }, profile: mockProfile });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+    vi.mocked(headers).mockResolvedValue(
+      createMockHeaders({
+        "x-profile-id": "user-1",
+        "x-profile-role": "patient",
+        "x-profile-clinic": "clinic-1",
+        "x-profile-signature": "sig",
+        "x-profile-iat": "1700000000",
+      }) as never,
+    );
+    vi.mocked(verifyProfileHeader).mockResolvedValue({
+      id: "user-1",
+      role: "patient",
+      clinic_id: "clinic-1",
+    });
+
+    const result = await getUserProfile();
+
+    expect(result).toEqual(mockProfile);
+    expect(verifyProfileHeader).toHaveBeenCalled();
+    expect(mockSupabase.auth.getUser).not.toHaveBeenCalled();
   });
 
   it("selects only needed columns, not select(*)", async () => {

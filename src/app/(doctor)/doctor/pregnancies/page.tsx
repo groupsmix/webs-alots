@@ -277,8 +277,8 @@ export default function PregnanciesPage() {
 
                   {p.riskFactors.length > 0 && (
                     <div className="flex gap-1 flex-wrap mb-3">
-                      {p.riskFactors.map((rf, i) => (
-                        <Badge key={i} variant="warning" className="text-xs">
+                      {p.riskFactors.map((rf) => (
+                        <Badge key={`${p.id}-${rf}`} variant="warning" className="text-xs">
                           <AlertTriangle className="h-3 w-3 mr-1" /> {rf}
                         </Badge>
                       ))}

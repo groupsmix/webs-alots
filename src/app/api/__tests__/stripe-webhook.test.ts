@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { POST } from "@/app/api/payments/webhook/route";
 
 // Mock dependencies before importing route
 vi.mock("@/lib/logger", () => ({
@@ -101,7 +102,6 @@ describe("Stripe Webhook Signature Verification", () => {
   });
 
   it("should reject requests with missing stripe-signature header", async () => {
-    const { POST } = await import("@/app/api/payments/webhook/route");
     const payload = createTestEvent();
 
     const request = new Request("http://localhost/api/payments/webhook", {
@@ -115,7 +115,6 @@ describe("Stripe Webhook Signature Verification", () => {
   });
 
   it("should reject requests with invalid v1 signature", async () => {
-    const { POST } = await import("@/app/api/payments/webhook/route");
     const payload = createTestEvent();
     const ts = Math.floor(Date.now() / 1000);
 
@@ -133,7 +132,6 @@ describe("Stripe Webhook Signature Verification", () => {
   });
 
   it("should reject replay attacks with timestamps > 5 minutes old", async () => {
-    const { POST } = await import("@/app/api/payments/webhook/route");
     const payload = createTestEvent();
 
     // Timestamp 10 minutes in the past
@@ -154,7 +152,6 @@ describe("Stripe Webhook Signature Verification", () => {
   });
 
   it("should accept valid signatures with current timestamps", async () => {
-    const { POST } = await import("@/app/api/payments/webhook/route");
     const payload = createTestEvent();
     const signature = await createStripeSignature(payload, TEST_SECRET);
 

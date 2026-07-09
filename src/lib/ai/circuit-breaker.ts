@@ -14,6 +14,7 @@
  */
 
 import { getKVBinding } from "@/lib/features";
+import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
 
 const CIRCUIT_BREAKER_KEY = "ai.circuit_breaker.v1";
@@ -290,7 +291,7 @@ export async function fetchWithAICircuitBreaker(
   }
 
   try {
-    const response = await fetch(input, init);
+    const response = await safeFetch(input, init);
     if (response.ok) {
       await recordAICircuitBreakerSuccess();
       return response;

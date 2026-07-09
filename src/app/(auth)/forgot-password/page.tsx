@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowLeft, Mail, Check, Lock } from "lucide-react";
+import { ArrowLeft, Mail, Check, Lock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { OltigoWordmark } from "@/components/brand/oltigo-mark";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import { t, type TranslationKey } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase-client";
 import { passwordPolicySchema } from "@/lib/validations/password-policy";
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordPageContent() {
   const [locale] = useLocale();
   const searchParams = useSearchParams();
   const isResetMode = searchParams.get("mode") === "reset";
@@ -284,5 +284,28 @@ export default function ForgotPasswordPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+function ForgotPasswordPageFallback() {
+  const [locale] = useLocale();
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{t(locale, "forgot.sending")}</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<ForgotPasswordPageFallback />}>
+      <ForgotPasswordPageContent />
+    </Suspense>
   );
 }

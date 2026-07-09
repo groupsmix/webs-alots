@@ -254,7 +254,7 @@ export default function UltrasoundsPage() {
                     <div className="flex gap-2 flex-wrap">
                       {u.imageUrls.map((url, i) => (
                         <a
-                          key={i}
+                          key={url}
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"

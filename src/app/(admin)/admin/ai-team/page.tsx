@@ -442,9 +442,9 @@ function AgentCard({
                         <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                         {msg.suggestions && msg.suggestions.length > 0 && (
                           <div className="mt-2 space-y-1">
-                            {msg.suggestions.map((s, i) => (
+                            {msg.suggestions.map((s) => (
                               <div
-                                key={i}
+                                key={`${msg.id}-suggestion-${s}`}
                                 className="flex items-start gap-1 text-[10px] text-muted-foreground"
                               >
                                 <Sparkles className="h-2.5 w-2.5 mt-0.5 shrink-0" />

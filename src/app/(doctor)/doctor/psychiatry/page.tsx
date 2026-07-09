@@ -393,8 +393,11 @@ export default function PsychiatryPage() {
                     {med.dosageHistory.length > 0 && (
                       <div className="mt-2 rounded-lg bg-muted/50 p-2">
                         <p className="text-xs font-medium mb-1">Dosage History</p>
-                        {med.dosageHistory.map((h, i) => (
-                          <div key={i} className="text-xs flex gap-2">
+                        {med.dosageHistory.map((h) => (
+                          <div
+                            key={`${med.id}-${h.date}-${h.dosage}`}
+                            className="text-xs flex gap-2"
+                          >
                             <span className="text-muted-foreground">{h.date}</span>
                             <span>{h.dosage}</span>
                             {h.reason && (

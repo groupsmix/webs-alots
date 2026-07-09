@@ -51,6 +51,7 @@ export function ChatbotProvider({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
   // Keep a ref to the latest messages so sendMessage doesn't recreate on
   // every message change (avoids stale closure & unnecessary re-renders).
   const messagesRef = useRef<ChatMessage[]>(messages);
@@ -60,7 +61,10 @@ export function ChatbotProvider({
 
   // Cleanup: abort any in-flight stream when the component unmounts
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
+      isMountedRef.current = false;
       abortControllerRef.current?.abort();
     };
   }, []);
@@ -85,16 +89,31 @@ export function ChatbotProvider({
         content: trimmed,
         timestamp: new Date(),
       };
+      const fallbackContent = t(locale, "chatbot.error");
 
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
 
-      try {
-        // Abort any previous in-flight request before starting a new one
-        abortControllerRef.current?.abort();
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
+      // Abort any previous in-flight request before starting a new one.
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
+      const appendAssistantMessage = (messageContent: string) => {
+        if (!isMountedRef.current || controller.signal.aborted) return;
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-${Date.now()}-assistant`,
+            role: "assistant",
+            content: messageContent,
+            timestamp: new Date(),
+          },
+        ]);
+      };
+
+      try {
         const apiMessages = [
           ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
           { role: "user" as const, content: trimmed },
@@ -108,32 +127,40 @@ export function ChatbotProvider({
         });
 
         if (!response.ok) {
-          throw new Error(`Chat API error: ${response.status}`);
+          logger.warn("Chat API returned a non-success status", {
+            context: "chatbot-provider",
+            status: response.status,
+          });
+          appendAssistantMessage(fallbackContent);
+          return;
         }
 
         const contentType = response.headers.get("content-type") || "";
 
         if (contentType.includes("text/event-stream")) {
-          // Handle streaming response
           const reader = response.body?.getReader();
-          if (!reader) throw new Error("No response body");
+          if (!reader) {
+            logger.warn("Chat API returned no response body", { context: "chatbot-provider" });
+            appendAssistantMessage(fallbackContent);
+            return;
+          }
 
           const decoder = new TextDecoder();
           const assistantMsgId = `msg-${Date.now()}-assistant`;
 
-          // Add empty assistant message to fill in
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: assistantMsgId,
-              role: "assistant",
-              content: "",
-              timestamp: new Date(),
-            },
-          ]);
+          if (isMountedRef.current && !controller.signal.aborted) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: assistantMsgId,
+                role: "assistant",
+                content: "",
+                timestamp: new Date(),
+              },
+            ]);
+          }
 
           let accumulated = "";
-
           let lineBuffer = "";
 
           while (true) {
@@ -145,51 +172,69 @@ export function ChatbotProvider({
             lineBuffer = lines.pop() ?? "";
 
             for (const line of lines) {
-              if (line === "data: [DONE]") continue;
-              if (line.startsWith("data: ")) {
-                try {
-                  const json = JSON.parse(line.slice(6));
-                  if (json.content) {
-                    accumulated += json.content;
-                    const currentContent = accumulated;
+              if (!line.startsWith("data: ")) continue;
+
+              const payloadText = line.slice(6).trim();
+              if (!payloadText || payloadText === "[DONE]") continue;
+              if (!payloadText.startsWith("{")) continue;
+
+              try {
+                const json = JSON.parse(payloadText) as { content?: string };
+                if (json.content) {
+                  accumulated += json.content;
+                  const currentContent = accumulated;
+                  if (isMountedRef.current && !controller.signal.aborted) {
                     setMessages((prev) =>
                       prev.map((m) =>
                         m.id === assistantMsgId ? { ...m, content: currentContent } : m,
                       ),
                     );
                   }
-                } catch (parseErr) {
-                  logger.warn("Malformed SSE chunk skipped", {
-                    context: "chatbot-provider",
-                    error: parseErr,
-                  });
                 }
+              } catch {
+                continue;
               }
             }
           }
+
+          if (!accumulated.trim() && isMountedRef.current && !controller.signal.aborted) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantMsgId ? { ...m, content: fallbackContent } : m)),
+            );
+          }
         } else {
-          // Handle JSON response (basic / smart mode)
-          const data = (await response.json()) as ChatJsonResponse;
-          const assistantMsg: ChatMessage = {
-            id: `msg-${Date.now()}-assistant`,
-            role: "assistant",
-            content: data.data?.message?.content || t(locale, "chatbot.error"),
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, assistantMsg]);
+          let data: ChatJsonResponse;
+
+          try {
+            data = (await response.json()) as ChatJsonResponse;
+          } catch (parseError) {
+            logger.warn("Failed to parse chatbot JSON response", {
+              context: "chatbot-provider",
+              error: parseError,
+            });
+            appendAssistantMessage(fallbackContent);
+            return;
+          }
+
+          appendAssistantMessage(data.data?.message?.content || fallbackContent);
         }
       } catch (error) {
+        const isAbort =
+          controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
+
+        if (isAbort) {
+          return;
+        }
+
         logger.warn("Failed to process chatbot message", { context: "chatbot-provider", error });
-        const errorMsg: ChatMessage = {
-          id: `msg-${Date.now()}-error`,
-          role: "assistant",
-          content: t(locale, "chatbot.error"),
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorMsg]);
+        appendAssistantMessage(fallbackContent);
       } finally {
-        abortControllerRef.current = null;
-        setIsLoading(false);
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+          if (isMountedRef.current) {
+            setIsLoading(false);
+          }
+        }
       }
     },
     [clinicId, locale],

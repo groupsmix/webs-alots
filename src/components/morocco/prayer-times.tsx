@@ -87,7 +87,11 @@ export function PrayerTimesWidget({
         setNextPrayer(upcoming?.name ?? null);
 
         setLoading(false);
-      } catch {
+      } catch (error) {
+        if (controller.signal.aborted || (error instanceof Error && error.name === "AbortError")) {
+          return;
+        }
+
         setLoading(false);
       }
     }

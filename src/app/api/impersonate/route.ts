@@ -281,6 +281,13 @@ export const DELETE = withAuth(
       response.cookies.set(COOKIE_CLINIC_ID, "", clearOpts);
       response.cookies.set(COOKIE_CLINIC_NAME, "", clearOpts);
       response.cookies.set(COOKIE_SESSION_ID, "", clearOpts);
+      response.cookies.set("impersonator_id", "", {
+        httpOnly: true,
+        secure: IS_PROD,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
 
       return response;
     } catch (err) {

@@ -4,7 +4,6 @@
 import {
   Calendar,
   Pill,
-  FlaskConical,
   ScanLine,
   CreditCard,
   FileText,
@@ -33,12 +32,6 @@ const EVENT_CONFIG: Record<
     label: "Ordonnance",
     color: "text-purple-600 dark:text-purple-400",
     dotColor: "bg-purple-500",
-  },
-  lab_result: {
-    icon: FlaskConical,
-    label: "Résultat labo",
-    color: "text-green-600 dark:text-green-400",
-    dotColor: "bg-green-500",
   },
   imaging: {
     icon: ScanLine,
@@ -186,12 +179,6 @@ function renderSummary(event: TimelineEvent) {
           {Array.isArray(meta.items)
             ? `${(meta.items as unknown[]).length} médicament(s)`
             : "Ordonnance émise"}
-        </p>
-      );
-    case "lab_result":
-      return (
-        <p className="text-sm text-foreground mt-1 truncate">
-          {(meta.title as string) ?? "Résultat d'analyse"}
         </p>
       );
     case "imaging":

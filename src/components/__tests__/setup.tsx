@@ -40,13 +40,6 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-// Mock scope-gate: allow all verticals in tests by default.
-// The dedicated scope-enforcement test (src/lib/__tests__/scope-enforcement.test.ts)
-// tests the capability matrix directly without going through route handlers.
-vi.mock("@/lib/scope-gate", () => ({
-  assertScopeGate: vi.fn().mockResolvedValue(null),
-}));
-
 // Mock next/image
 vi.mock("next/image", () => ({
   default: (props: { src: string; alt: string; [key: string]: unknown }) => {

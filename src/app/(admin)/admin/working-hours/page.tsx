@@ -95,7 +95,11 @@ export default function WorkingHoursPage() {
           );
         },
       )
-      .catch(() => {
+      .catch((err) => {
+        if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) {
+          return;
+        }
+
         /* use defaults */
       });
     return () => controller.abort();
@@ -199,7 +203,7 @@ export default function WorkingHoursPage() {
               {dayNames.map((day, i) => {
                 const daySchedule = currentSchedule.days[i];
                 return (
-                  <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                  <div key={day} className="flex items-center gap-4 p-3 border rounded-lg">
                     <div className="w-28">
                       <span className="text-sm font-medium">{day}</span>
                     </div>

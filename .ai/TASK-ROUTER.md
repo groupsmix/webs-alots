@@ -21,7 +21,7 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 
 | Task Type               | Files to Edit                                                                                                                                                                                                          | Files to NEVER Touch    |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Add new niche           | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx`                                            | Everything else         |
+| Add new niche           | `src/lib/config/clinic-types.ts`, `src/lib/features.ts`, `src/lib/config/specialist-registry.ts`, `src/lib/config/default-services.ts`, `src/lib/hooks/use-clinic-features.tsx`                                        | Everything else         |
 | Add new vertical        | `src/lib/config/verticals.ts` (add the id to the `VerticalId` union), then wire config in `src/lib/template-presets.ts`, `src/lib/config/clinic-types.ts`, `src/lib/config/default-services.ts`, `src/lib/features.ts` | Core config files       |
 | Add new template        | `src/lib/templates.ts` (style via Tailwind utility classes / tokens in `src/app/globals.css` — there is no `src/styles/` directory)                                                                                    | Core layout files       |
 | Add new template preset | `src/lib/template-presets.ts`                                                                                                                                                                                          | Templates themselves    |
@@ -173,7 +173,7 @@ export default function YourPublicPage() {
 | Feature flags (client hook)   | `src/lib/hooks/use-clinic-features.tsx`           |
 | Template definitions          | `src/lib/templates.ts`                            |
 | Vertical definitions          | `src/lib/config/verticals.ts`                     |
-| Specialist dashboards         | `src/config/specialist-registry.ts`               |
+| Specialist dashboards         | `src/lib/config/specialist-registry.ts`           |
 | Public layout (header/footer) | `src/components/layouts/clinic-public-layout.tsx` |
 | Public header                 | `src/components/public/header.tsx`                |
 | Public footer                 | `src/components/public/footer.tsx`                |
