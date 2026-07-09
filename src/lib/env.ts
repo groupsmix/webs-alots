@@ -111,6 +111,7 @@ export {
   getTwilioAccountSid,
   getTwilioApiKey,
   getTwilioApiSecret,
+  getUptimeKumaWebhookSecret,
   getWhatsAppVerifyToken,
   getWorkersAiConfig,
   getWorkersAiConfigAsync,

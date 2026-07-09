@@ -262,7 +262,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          python3 -m pip install awscli
+          # The `aws` CLI is preinstalled on `ubuntu-latest` runners.
 
       - name: Configure R2 credentials
         if: steps.preflight.outputs.secrets_ok == 'true'

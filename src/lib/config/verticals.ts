@@ -85,7 +85,7 @@ export type ScopedDashboard =
  * Each entry is OFF by default for a freshly provisioned clinic. A dashboard is
  * enabled when at least one listed feature is true for the clinic.
  */
-export const DASHBOARD_FEATURE_REQUIREMENTS: Record<ScopedDashboard, ClinicFeatureKey[]> = {
+const DASHBOARD_FEATURE_REQUIREMENTS: Record<ScopedDashboard, ClinicFeatureKey[]> = {
   "admin/departments": ["departments"],
   "admin/beds": ["bed_management"],
   "admin/machines": ["dialysis_machines"],
@@ -261,11 +261,6 @@ export const ALL_GATED_FLAGS: ClinicFeatureKey[] = [
 /** Look up which vertical scope an API group belongs to. */
 export function getVerticalForApiGroup(apiGroup: string): VerticalScope | undefined {
   return VERTICAL_SCOPES.find((v) => v.enabledApiGroups.includes(apiGroup as ScopedApiGroup));
-}
-
-/** Look up which vertical scope a dashboard group belongs to. */
-export function getVerticalForDashboard(dashboard: string): VerticalScope | undefined {
-  return VERTICAL_SCOPES.find((v) => v.enabledDashboards.includes(dashboard as ScopedDashboard));
 }
 
 /** Required flags for a dashboard group. Undefined means operational/ungated. */

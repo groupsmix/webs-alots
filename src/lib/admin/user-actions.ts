@@ -8,7 +8,7 @@ import { createScopedAdminClient } from "@/lib/supabase-server";
 import type { Json, TablesInsert, TablesUpdate } from "@/lib/types/database";
 import { adminContext, type ClinicUserRow } from "./base";
 
-export type ClinicStaffRole = "doctor" | "receptionist";
+type ClinicStaffRole = "doctor" | "receptionist";
 
 export interface CreateClinicUserInput {
   role: ClinicStaffRole;

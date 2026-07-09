@@ -21,11 +21,3 @@ export const transferSchema = z.object({
   bed_id: z.string().uuid().optional(),
   notes: z.string().max(5000).optional(),
 });
-
-/** ADT status filter for list queries. */
-export const admissionQuerySchema = z.object({
-  status: z.enum(["admitted", "discharged", "transferred"]).optional(),
-  patient_id: z.string().uuid().optional(),
-  page: z.coerce.number().int().positive().optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional(),
-});

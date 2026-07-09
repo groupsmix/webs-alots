@@ -6,10 +6,11 @@
  * directly from the domain module (e.g. `@/lib/validations/booking`).
  *
  * ADR 0013 (operations-first scope enforcement): Clinical, ADT, restaurant,
- * and veterinary schemas are re-exported from a GATED section at the bottom
- * of this file. They remain importable at build time (TypeScript needs them)
- * but route handlers MUST call `assertScopeGate()` before using them.
- * The CI guard `scripts/check-scope-enforcement.mjs` verifies this.
+ * and veterinary schemas have been removed from this barrel as their API
+ * routes were dropped in migration 00187. Remaining clinical schemas are
+ * used by active upload validation and legacy schema tests only. Gated API
+ * route handlers must still enforce scope through `isApiGroupEnabled()` or
+ * an equivalent gate; `scripts/check-scope-enforcement.mjs` verifies this.
  */
 
 export { normalizeText, safeText, safeName } from "./primitives";
