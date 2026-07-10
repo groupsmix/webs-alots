@@ -6,12 +6,11 @@ import { useState, useEffect } from "react";
 import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
 
-const navLinks: readonly { key: TranslationKey; href: string }[] = [
+const navLinks: readonly { key: TranslationKey; href: string; prefetch?: boolean }[] = [
   { key: "landing.navProduct" as TranslationKey, href: "/#product" },
   { key: "landing.navCustomers" as TranslationKey, href: "/#clients" },
   { key: "landing.navPricing", href: "/#pricing" },
-  { key: "landing.navDocs" as TranslationKey, href: "/docs" },
-  { key: "landing.navStatus" as TranslationKey, href: "/status" },
+  { key: "landing.navStatus" as TranslationKey, href: "/status", prefetch: false },
 ];
 
 /**
@@ -50,10 +49,11 @@ export function LandingHeader() {
           aria-label="Main navigation"
           className="hidden items-center gap-[var(--space-5)] md:flex"
         >
-          {navLinks.map(({ key, href }) => (
+          {navLinks.map(({ key, href, prefetch }) => (
             <Link
               key={href}
               href={href}
+              prefetch={prefetch ?? false}
               className="inline-flex items-center gap-[var(--space-1)] transition-colors text-[length:var(--text-small)] font-normal text-[var(--ink-80)] duration-[var(--duration)]"
             >
               {t(key)}
@@ -103,10 +103,11 @@ export function LandingHeader() {
           aria-label="Mobile navigation"
           className="md:hidden bg-[var(--bone)] border-b border-b-[var(--rule)]"
         >
-          {navLinks.map(({ key, href }) => (
+          {navLinks.map(({ key, href, prefetch }) => (
             <Link
               key={href}
               href={href}
+              prefetch={prefetch ?? false}
               className="block px-[var(--gutter-mobile)] py-[var(--space-3)] transition-colors text-[length:var(--text-small)] font-normal text-[var(--ink-80)] border-b border-b-[var(--rule)]"
               onClick={() => setMobileOpen(false)}
             >

@@ -55,7 +55,7 @@ async function AuditTable({
   // nosemgrep: semgrep.tenant-scoping — super_admin cross-tenant audit view
   let query = supabase
     .from("activity_logs")
-    .select("id, timestamp, action, actor, type, description, clinic_name", { count: "exact" })
+    .select("id, timestamp, action, actor, type, description, clinic_name", { count: "estimated" })
     .order("timestamp", { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
 
