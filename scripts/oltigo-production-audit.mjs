@@ -10,8 +10,8 @@
  * Usage:
  *   export PATH=/home/ubuntu/.n/bin:$PATH
  *   E2E_BASE_URL=https://oltigo.com \
- *   ADMIN_EMAIL=admin@admin.com \
- *   ADMIN_PASSWORD=123456789 \
+ *   ADMIN_EMAIL=your-email@example.com \
+ *   ADMIN_PASSWORD=your-password \
  *   node scripts/oltigo-production-audit.mjs
  */
 
@@ -23,9 +23,17 @@ import { chromium } from "@playwright/test";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 const BASE_URL = process.env.E2E_BASE_URL || "https://oltigo.com";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@admin.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456789";
+const ADMIN_EMAIL = requireEnv("ADMIN_EMAIL");
+const ADMIN_PASSWORD = requireEnv("ADMIN_PASSWORD");
 const OUTPUT_DIR = process.env.OUTPUT_DIR || "/home/ubuntu/oltigo-audit-output";
 const DELAY_MS = Number(process.env.AUDIT_DELAY_MS || 1500);
 
