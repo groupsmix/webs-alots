@@ -14,26 +14,21 @@ import { useLandingLocale } from "./landing-locale-provider";
  */
 
 const productLinks: readonly { key: TranslationKey; href: string }[] = [
-  { key: "landing.footerFeatures" as TranslationKey, href: "/product" },
+  { key: "landing.footerFeatures" as TranslationKey, href: "/#product" },
   { key: "landing.footerPricing", href: "/pricing" },
   { key: "landing.footerStatus" as TranslationKey, href: "/status" },
-  { key: "landing.footerChangelog" as TranslationKey, href: "/changelog" },
 ];
 
 const companyLinks: readonly { key: TranslationKey; href: string }[] = [
   { key: "landing.footerAbout", href: "/about" },
-  { key: "landing.footerCustomers" as TranslationKey, href: "/customers" },
+  { key: "landing.footerCustomers" as TranslationKey, href: "/testimonials" },
   { key: "landing.footerContact", href: "/contact" },
-  { key: "landing.footerCareers" as TranslationKey, href: "/careers" },
 ];
 
 const legalLinks: readonly { key: TranslationKey; href: string }[] = [
   { key: "landing.footerPrivacy", href: "/privacy/" },
   { key: "landing.footerTerms", href: "/terms/" },
-  { key: "landing.footerLaw0908" as TranslationKey, href: "/compliance/law-09-08/" },
-  { key: "landing.footerDPA" as TranslationKey, href: "/compliance/dpa/" },
-  { key: "landing.footerSubprocessors" as TranslationKey, href: "/compliance/subprocessors/" },
-  { key: "landing.footerSecurity" as TranslationKey, href: "/security/" },
+  { key: "landing.footerSubprocessors" as TranslationKey, href: "/sub-processors/" },
 ];
 
 const locales: readonly { code: Locale; label: string }[] = [
@@ -52,7 +47,11 @@ export function LandingFooter() {
         <div className="grid grid-cols-1 gap-[var(--space-7)] sm:grid-cols-2 lg:grid-cols-4">
           {/* Col 1: Wordmark + address */}
           <div>
-            <Link href="/" className="text-[17px] font-medium text-[var(--ink)] no-underline">
+            <Link
+              href="/"
+              prefetch={false}
+              className="text-[17px] font-medium text-[var(--ink)] no-underline"
+            >
               {/* eslint-disable i18next/no-literal-string -- brand name, never translated */}
               Oltig<span className="text-[var(--oltigo-green)]">o</span>
               {/* eslint-enable i18next/no-literal-string */}
@@ -76,6 +75,7 @@ export function LandingFooter() {
                   <li key={href} className="mb-[var(--space-2)]">
                     <Link
                       href={href}
+                      prefetch={false}
                       className="transition-colors text-[length:var(--text-small)] text-[var(--ink-80)] no-underline duration-[var(--duration)]"
                     >
                       {t(key)}
@@ -97,6 +97,7 @@ export function LandingFooter() {
                   <li key={href} className="mb-[var(--space-2)]">
                     <Link
                       href={href}
+                      prefetch={false}
                       className="transition-colors text-[length:var(--text-small)] text-[var(--ink-80)] no-underline duration-[var(--duration)]"
                     >
                       {t(key)}
@@ -118,6 +119,7 @@ export function LandingFooter() {
                   <li key={href} className="mb-[var(--space-2)]">
                     <Link
                       href={href}
+                      prefetch={false}
                       className="transition-colors text-[length:var(--text-small)] text-[var(--ink-80)] no-underline duration-[var(--duration)]"
                     >
                       {t(key)}
