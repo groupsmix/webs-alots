@@ -840,6 +840,16 @@ export const perClinicLimiter = createRateLimiter({
   max: 50_000,
 });
 
+/** Super-admin API namespace: 60 req / 60s per IP.
+ *  These endpoints are now reachable under /api/super-admin/* via the
+ *  middleware rewrite; apply a per-IP cap so the dashboard cannot be used to
+ *  exhaust the underlying /api/admin/* handlers. */
+const superAdminApiLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  failClosed: true,
+});
+
 /** Analytics reads: 100 req / 60s per IP. */
 const analyticsLimiter = createRateLimiter({
   windowMs: 60_000,
@@ -910,6 +920,7 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/branding", limiter: brandingLimiter, windowMs: 60_000, max: 20 },
   { prefix: "/api/notifications", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
   { prefix: "/api/analytics", limiter: analyticsLimiter, windowMs: 60_000, max: 100 },
+  { prefix: "/api/super-admin/", limiter: superAdminApiLimiter, windowMs: 60_000, max: 60 },
   // Catch-all for other API mutations (applied in middleware only to POST/PUT/PATCH/DELETE)
   { prefix: "/api/", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
 ];
