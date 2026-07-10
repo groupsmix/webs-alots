@@ -22,7 +22,7 @@ export interface CoreHealthSnapshot {
   version: string;
   nodeVersion: string | null;
   nextVersion: string | null;
-  /** Round-trip time of the /api/admin/health call, in ms (null on failure). */
+  /** Round-trip time of the /api/super-admin/health call, in ms (null on failure). */
   responseTimeMs: number | null;
   checkedAt: Date;
   /**
@@ -65,7 +65,7 @@ export async function fetchCoreHealth(): Promise<CoreHealthSnapshot> {
   let geoBlocked = false;
 
   try {
-    const res = await fetch("/api/admin/health", { credentials: "include" });
+    const res = await fetch("/api/super-admin/health", { credentials: "include" });
     responseTimeMs = Math.round(performance.now() - start);
 
     if (res.ok) {

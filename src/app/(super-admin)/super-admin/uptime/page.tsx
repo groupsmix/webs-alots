@@ -52,7 +52,7 @@ export default function UptimeSLAPage() {
   const checkHealth = useCallback(async () => {
     // Use the shared probe so this page derives Web App / Database / Auth
     // status identically to System Status. Previously this page left the
-    // database at its initial "operational" value when /api/admin/health
+    // database at its initial "operational" value when /api/super-admin/health
     // returned an error, which contradicted System Status (DB "Down").
     const snapshot = await fetchCoreHealth();
     setWebAppStatus(snapshot.webApp);

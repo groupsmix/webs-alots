@@ -57,7 +57,7 @@ export function TaskRouting() {
   const fetchData = useCallback(async () => {
     setLoadFailed(false);
     try {
-      const res = await fetch("/api/admin/ai-task-config");
+      const res = await fetch("/api/super-admin/ai-task-config");
       const json = (await res.json()) as {
         ok: boolean;
         data?: { tasks: TaskRow[]; models: Record<string, string[]>; migrated: boolean };
@@ -83,7 +83,7 @@ export function TaskRouting() {
   const update = async (taskType: string, patch: Record<string, unknown>) => {
     setSaving(taskType);
     try {
-      const res = await fetch("/api/admin/ai-task-config", {
+      const res = await fetch("/api/super-admin/ai-task-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task_type: taskType, ...patch }),
@@ -146,7 +146,7 @@ export function TaskRouting() {
                 <p className="text-sm font-medium">Couldn&apos;t load task routing</p>
                 <p className="text-xs text-muted-foreground">
                   The routing config service was unreachable (this can also be a region restriction
-                  on <span className="font-mono">/api/admin</span>). No routes can be shown or
+                  on <span className="font-mono">/api/super-admin</span>). No routes can be shown or
                   changed until it loads.
                 </p>
               </div>

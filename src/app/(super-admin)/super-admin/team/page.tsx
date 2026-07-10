@@ -131,7 +131,7 @@ export default function TeamPage() {
 
   const loadMembers = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/team");
+      const res = await fetch("/api/super-admin/team");
       const json = await res.json();
       if (json.ok) {
         setAdmins(json.data.members);
@@ -148,7 +148,7 @@ export default function TeamPage() {
   const loadBriefings = useCallback(async () => {
     setBriefingsLoading(true);
     try {
-      const res = await fetch("/api/admin/team/briefings");
+      const res = await fetch("/api/super-admin/team/briefings");
       const json = await res.json();
       if (json.ok) {
         setBriefings(json.data.entries ?? []);
@@ -203,7 +203,7 @@ export default function TeamPage() {
 
     setInviteSending(true);
     try {
-      const res = await fetch("/api/admin/team", {
+      const res = await fetch("/api/super-admin/team", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -242,7 +242,7 @@ export default function TeamPage() {
   async function handleEditRole() {
     if (!editTarget) return;
     try {
-      const res = await fetch("/api/admin/team", {
+      const res = await fetch("/api/super-admin/team", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -275,7 +275,7 @@ export default function TeamPage() {
   async function handleRemove() {
     if (!removeTarget) return;
     try {
-      const res = await fetch("/api/admin/team", {
+      const res = await fetch("/api/super-admin/team", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -300,7 +300,7 @@ export default function TeamPage() {
   async function handleGenerateBriefings() {
     setBriefingsGenerating(true);
     try {
-      const res = await fetch("/api/admin/team/briefings", {
+      const res = await fetch("/api/super-admin/team/briefings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh: true }),

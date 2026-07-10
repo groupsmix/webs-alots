@@ -52,7 +52,7 @@ export default function MarketplacePage() {
   const loadFeatures = useCallback(async () => {
     setAccessBlocked(false);
     try {
-      const res = await fetch("/api/admin/marketplace");
+      const res = await fetch("/api/super-admin/marketplace");
       // 403 here is the admin geo-restriction, not an empty catalogue.
       if (res.status === 403) {
         setAccessBlocked(true);

@@ -145,7 +145,7 @@ export default function ChurnPredictionPage() {
       if (filterRisk !== "all") params.set("risk_level", filterRisk);
       params.set("limit", "100");
 
-      const res = await fetch(`/api/admin/churn-prediction?${params.toString()}`);
+      const res = await fetch(`/api/super-admin/churn-prediction?${params.toString()}`);
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Failed to load churn data");
 
@@ -171,7 +171,7 @@ export default function ChurnPredictionPage() {
   async function handleRecalculate() {
     setRecalculating(true);
     try {
-      const res = await fetch("/api/admin/churn-prediction", { method: "POST" });
+      const res = await fetch("/api/super-admin/churn-prediction", { method: "POST" });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Recalculation failed");
       await fetchScores();

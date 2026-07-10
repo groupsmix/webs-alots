@@ -150,7 +150,7 @@ export default function SupportPage() {
       if (priorityFilter !== "all") params.set("priority", priorityFilter);
       if (search) params.set("search", search);
 
-      const res = await fetch(`/api/admin/support?${params.toString()}`);
+      const res = await fetch(`/api/super-admin/support?${params.toString()}`);
       const json = await res.json();
       if (json.ok) {
         setTickets(json.data.tickets);
@@ -188,7 +188,7 @@ export default function SupportPage() {
   const loadMessages = useCallback(async (ticketId: string) => {
     setMessagesLoading(true);
     try {
-      const res = await fetch(`/api/admin/support/messages?ticket_id=${ticketId}`);
+      const res = await fetch(`/api/super-admin/support/messages?ticket_id=${ticketId}`);
       const json = await res.json();
       if (json.ok) {
         setMessages(json.data.messages);
@@ -214,7 +214,7 @@ export default function SupportPage() {
     if (!replyText.trim()) return;
     setReplySending(true);
     try {
-      const res = await fetch("/api/admin/support/messages", {
+      const res = await fetch("/api/super-admin/support/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -240,7 +240,7 @@ export default function SupportPage() {
 
   async function handleStatusChange(ticketId: string, newStatus: string) {
     try {
-      const res = await fetch("/api/admin/support", {
+      const res = await fetch("/api/super-admin/support", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticket_id: ticketId, status: newStatus }),
@@ -259,7 +259,7 @@ export default function SupportPage() {
 
   async function handlePriorityChange(ticketId: string, newPriority: string) {
     try {
-      const res = await fetch("/api/admin/support", {
+      const res = await fetch("/api/super-admin/support", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticket_id: ticketId, priority: newPriority }),
@@ -279,7 +279,7 @@ export default function SupportPage() {
   async function handleTriage(ticketId: string) {
     setTriageLoadingId(ticketId);
     try {
-      const res = await fetch("/api/admin/support/triage", {
+      const res = await fetch("/api/super-admin/support/triage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticket_id: ticketId }),

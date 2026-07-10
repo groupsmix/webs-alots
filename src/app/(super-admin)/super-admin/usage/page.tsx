@@ -71,7 +71,7 @@ export default function UsagePage() {
     setFetchError(false);
     setGeoBlocked(false);
     try {
-      const res = await fetch("/api/admin/usage");
+      const res = await fetch("/api/super-admin/usage");
       let isGeo = false;
       try {
         const json = await res.json();
