@@ -51,6 +51,20 @@ function addIssue(entry, issue) {
   entry.issues.push(i);
 }
 
+function isSameOrigin(url, origin) {
+  try {
+    return new URL(url).origin === origin;
+  } catch {
+    return false;
+  }
+}
+
+function escapeMarkdownCell(value) {
+  // Escape backslashes first, then pipe characters and newlines so the
+  // generated markdown table cannot be broken by arbitrary issue detail text.
+  return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
 function sanitizeFilename(route) {
   return route.replace(/^\//, "").replace(/[^a-zA-Z0-9_-]/g, "_") || "home";
 }
@@ -118,10 +132,11 @@ async function auditPage(page, context, route, options = {}) {
     }
   };
   const onPageError = (err) => pageErrors.push(err.message);
+  const baseOrigin = new URL(BASE_URL).origin;
   const onResponse = (resp) => {
     const status = resp.status();
     const url = resp.url();
-    if (status >= 400 && url.startsWith(BASE_URL)) {
+    if (status >= 400 && isSameOrigin(url, baseOrigin)) {
       networkErrors.push({ status, url });
     }
   };
@@ -168,7 +183,7 @@ async function auditPage(page, context, route, options = {}) {
 
   // take screenshot for any page with an error or just a sample
   try {
-    const slug = sanitizeFilename(entry.finalUrl.replace(BASE_URL, "") || route);
+    const slug = sanitizeFilename(entry.finalUrl.replace(baseOrigin, "") || route);
     const shotPath = path.join(SCREENSHOT_DIR, `${slug}.png`);
     await page.screenshot({ path: shotPath, fullPage: true });
     entry.screenshot = shotPath;
@@ -552,11 +567,9 @@ function buildReportMarkdown(data) {
     lines.push(`| Severity | Category | Page | Title | Detail |`);
     lines.push(`| --- | --- | --- | --- | --- |`);
     for (const i of data.issues) {
-      const detail = (i.detail || "").replace(/\|/g, "\\|").replace(/\n/g, " ");
-      const title = (i.title || "").replace(/\|/g, "\\|");
-      lines.push(
-        `| ${i.severity} | ${i.category} | ${i.page} | ${title} | ${detail.slice(0, 200)} |`,
-      );
+      const detail = escapeMarkdownCell(i.detail || "").slice(0, 200);
+      const title = escapeMarkdownCell(i.title || "");
+      lines.push(`| ${i.severity} | ${i.category} | ${i.page} | ${title} | ${detail} |`);
     }
   }
   lines.push("");
