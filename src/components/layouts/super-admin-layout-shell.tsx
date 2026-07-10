@@ -497,6 +497,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           .from("users")
           .select("id, clinic_id")
           .eq("auth_id", user.id)
+          .abortSignal(AbortSignal.timeout(5000))
           .single();
         if (!profile || !mountedRef.current) return;
 
@@ -513,7 +514,10 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
           notifQuery = notifQuery.eq("clinic_id", profile.clinic_id);
         }
 
-        const { data } = await notifQuery.order("sent_at", { ascending: false }).limit(10);
+        const { data } = await notifQuery
+          .order("sent_at", { ascending: false })
+          .limit(10)
+          .abortSignal(AbortSignal.timeout(5000));
 
         if (!mountedRef.current) return;
 

@@ -55,18 +55,18 @@ async function AuditTable({
   // nosemgrep: semgrep.tenant-scoping — super_admin cross-tenant audit view
   let query = supabase
     .from("activity_logs")
-    .select("id, timestamp, action, actor, type, description, clinic_name", { count: "estimated" })
+    .select("id, timestamp, action, actor, type, description, clinic_name")
     .order("timestamp", { ascending: false })
-    .range(offset, offset + PAGE_SIZE - 1);
+    .range(offset, offset + PAGE_SIZE);
 
   if (event) query = query.ilike("action", `%${event}%`);
   if (from) query = query.gte("timestamp", from);
   if (to) query = query.lte("timestamp", `${to}T23:59:59Z`);
 
-  const { data, count } = await query;
-  const logs = (data ?? []) as AuditLogEntry[];
-  const total = count ?? 0;
-  const hasNext = offset + PAGE_SIZE < total;
+  const { data } = await query;
+  const raw = (data ?? []) as AuditLogEntry[];
+  const hasNext = raw.length > PAGE_SIZE;
+  const logs = raw.slice(0, PAGE_SIZE);
   const hasPrev = page > 1;
 
   const buildHref = (p: number) => {
@@ -84,9 +84,12 @@ async function AuditTable({
         <CardHeader className="pb-2 flex flex-row items-center justify-between gap-4 flex-wrap">
           <CardTitle className="text-base">
             Activité récente
-            <span className="ml-2 text-muted-foreground font-normal text-sm">
-              ({total.toLocaleString()} entrées)
-            </span>
+            {logs.length > 0 && (
+              <span className="ml-2 text-muted-foreground font-normal text-sm">
+                ({offset + 1}–{offset + logs.length}
+                {hasNext ? "+" : ""})
+              </span>
+            )}
           </CardTitle>
           <Link
             href={`/api/super-admin/audit-logs/export?${new URLSearchParams({
@@ -152,8 +155,8 @@ async function AuditTable({
       {/* Pagination */}
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-muted-foreground">
-          Page {page} · {Math.min(offset + 1, total)}–{Math.min(offset + PAGE_SIZE, total)} sur{" "}
-          {total.toLocaleString()}
+          Page {page} · {offset + 1}–{offset + logs.length}
+          {hasNext ? "+" : ""}
         </span>
         <div className="flex gap-2">
           {hasPrev && (

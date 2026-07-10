@@ -114,8 +114,10 @@ export default function AITeamPage() {
   const { addToast } = useToast();
 
   const fetchDashboard = useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
     try {
-      const res = await fetch("/api/ai/team/dashboard");
+      const res = await fetch("/api/ai/team/dashboard", { signal: controller.signal });
       if (!res.ok) throw new Error("Failed to fetch");
       const json = (await res.json()) as { ok: boolean; data?: DashboardData };
       if (json.ok && json.data) {
@@ -125,6 +127,7 @@ export default function AITeamPage() {
       logger.error("Failed to load AI team dashboard", { context: "ai-team-page", error: err });
       addToast("Failed to load AI team data", "error");
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }, [addToast]);

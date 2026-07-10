@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cacheLife } from "next/cache";
 import { isR2Configured } from "@/lib/r2";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
@@ -60,21 +61,34 @@ async function probeDatabase(): Promise<PublicStatusService> {
 
   const start = Date.now();
   const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
-  const { error } = await supabase.from("clinics").select("id").limit(1);
-  const latencyMs = Date.now() - start;
+  try {
+    const { error } = await supabase
+      .from("clinics")
+      .select("id")
+      .limit(1)
+      .abortSignal(AbortSignal.timeout(3000));
+    const latencyMs = Date.now() - start;
 
-  return error
-    ? {
-        name: "Database",
-        status: "degraded",
-        detail: "Database query failed",
-        latencyMs,
-      }
-    : {
-        name: "Database",
-        status: "operational",
-        latencyMs,
-      };
+    return error
+      ? {
+          name: "Database",
+          status: "degraded",
+          detail: "Database query failed",
+          latencyMs,
+        }
+      : {
+          name: "Database",
+          status: "operational",
+          latencyMs,
+        };
+  } catch {
+    return {
+      name: "Database",
+      status: "degraded",
+      detail: "Database probe timed out",
+      latencyMs: Date.now() - start,
+    };
+  }
 }
 
 function buildSyntheticServices(database: PublicStatusService): PublicStatusService[] {
@@ -101,50 +115,72 @@ function buildSyntheticServices(database: PublicStatusService): PublicStatusServ
 }
 
 export async function getPublicStatusSnapshot(): Promise<PublicStatusSnapshot> {
+  "use cache";
+  cacheLife("minutes");
+
   const admin = createUntypedAdminClient("super_admin");
 
-  const [database, uptimeRowsResult, incidentRowsResult] = await Promise.all([
-    probeDatabase(),
-    admin.from("uptime_sla_monthly").select("monitor_name, month, uptime_pct, downtime_events"),
-    admin
-      .from("uptime_events")
-      .select("id, monitor_name, event_type, message, response_time_ms, occurred_at")
-      .order("occurred_at", { ascending: false })
-      .limit(10),
-  ]);
+  try {
+    const [database, uptimeRowsResult, incidentRowsResult] = await Promise.all([
+      probeDatabase(),
+      admin
+        .from("uptime_sla_monthly")
+        .select("monitor_name, month, uptime_pct, downtime_events")
+        .abortSignal(AbortSignal.timeout(5000)),
+      admin
+        .from("uptime_events")
+        .select("id, monitor_name, event_type, message, response_time_ms, occurred_at")
+        .order("occurred_at", { ascending: false })
+        .limit(10)
+        .abortSignal(AbortSignal.timeout(5000)),
+    ]);
 
-  const services = buildSyntheticServices(database);
-  const incidents = ((incidentRowsResult.data ?? []) as Array<Record<string, unknown>>).map(
-    (row) => ({
-      id: String(row.id),
+    const services = buildSyntheticServices(database);
+    const incidents = ((incidentRowsResult.data ?? []) as Array<Record<string, unknown>>).map(
+      (row) => ({
+        id: String(row.id),
+        monitorName: String(row.monitor_name ?? "unknown"),
+        eventType: (row.event_type as "down" | "up" | "degraded") ?? "degraded",
+        message: typeof row.message === "string" ? row.message : null,
+        responseTimeMs: typeof row.response_time_ms === "number" ? row.response_time_ms : null,
+        occurredAt:
+          typeof row.occurred_at === "string" ? row.occurred_at : new Date().toISOString(),
+      }),
+    );
+
+    const uptime = ((uptimeRowsResult.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
       monitorName: String(row.monitor_name ?? "unknown"),
-      eventType: (row.event_type as "down" | "up" | "degraded") ?? "degraded",
-      message: typeof row.message === "string" ? row.message : null,
-      responseTimeMs: typeof row.response_time_ms === "number" ? row.response_time_ms : null,
-      occurredAt: typeof row.occurred_at === "string" ? row.occurred_at : new Date().toISOString(),
-    }),
-  );
+      month: String(row.month ?? ""),
+      uptimePct: typeof row.uptime_pct === "number" ? row.uptime_pct : null,
+      downtimeEvents: typeof row.downtime_events === "number" ? row.downtime_events : 0,
+    }));
 
-  const uptime = ((uptimeRowsResult.data ?? []) as Array<Record<string, unknown>>).map((row) => ({
-    monitorName: String(row.monitor_name ?? "unknown"),
-    month: String(row.month ?? ""),
-    uptimePct: typeof row.uptime_pct === "number" ? row.uptime_pct : null,
-    downtimeEvents: typeof row.downtime_events === "number" ? row.downtime_events : 0,
-  }));
+    const overallStatus = services.some((service) => service.status === "down")
+      ? "down"
+      : services.some((service) => service.status === "degraded")
+        ? "degraded"
+        : "operational";
 
-  const overallStatus = services.some((service) => service.status === "down")
-    ? "down"
-    : services.some((service) => service.status === "degraded")
-      ? "degraded"
-      : "operational";
-
-  return {
-    status: overallStatus,
-    fetchedAt: new Date().toISOString(),
-    services,
-    incidents,
-    uptime,
-  };
+    return {
+      status: overallStatus,
+      fetchedAt: new Date().toISOString(),
+      services,
+      incidents,
+      uptime,
+    };
+  } catch {
+    return {
+      status: "degraded",
+      fetchedAt: new Date().toISOString(),
+      services: buildSyntheticServices({
+        name: "Database",
+        status: "degraded",
+        detail: "Status snapshot timed out",
+      }),
+      incidents: [],
+      uptime: [],
+    };
+  }
 }
 
 export async function getSlaReportSnapshot(month: string): Promise<SlaReportSnapshot> {
