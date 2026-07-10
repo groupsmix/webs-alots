@@ -156,7 +156,7 @@ export default function AISettingsPage() {
   const fetchData = useCallback(async () => {
     setLoadError(false);
     try {
-      const res = await fetch("/api/admin/ai-config");
+      const res = await fetch("/api/super-admin/ai-config");
       if (!res.ok) throw new Error("Failed to fetch");
       const json = (await res.json()) as {
         ok: boolean;
@@ -196,7 +196,7 @@ export default function AISettingsPage() {
 
     setSaving(provider);
     try {
-      const res = await fetch("/api/admin/ai-config", {
+      const res = await fetch("/api/super-admin/ai-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, api_key: key || null }),
@@ -221,7 +221,7 @@ export default function AISettingsPage() {
   const toggleProvider = async (provider: string, active: boolean) => {
     setSaving(provider);
     try {
-      const res = await fetch("/api/admin/ai-config", {
+      const res = await fetch("/api/super-admin/ai-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, is_active: active }),
@@ -249,7 +249,7 @@ export default function AISettingsPage() {
   const updateBudget = async (provider: string, budgetDollars: number) => {
     setSaving(provider);
     try {
-      const res = await fetch("/api/admin/ai-config", {
+      const res = await fetch("/api/super-admin/ai-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, monthly_budget_cents: Math.round(budgetDollars * 100) }),
@@ -271,7 +271,7 @@ export default function AISettingsPage() {
   const toggleFeature = async (featureKey: string, enabled: boolean) => {
     setSaving(featureKey);
     try {
-      const res = await fetch("/api/admin/ai-config", {
+      const res = await fetch("/api/super-admin/ai-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ feature_key: featureKey, is_enabled: enabled }),

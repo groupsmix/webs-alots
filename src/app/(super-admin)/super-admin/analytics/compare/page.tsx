@@ -114,7 +114,7 @@ export default function ClinicComparisonPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/admin/clinic-comparison");
+        const res = await fetch("/api/super-admin/clinic-comparison");
         const json = (await res.json()) as {
           ok?: boolean;
           data?: { clinics: ClinicMetrics[] };

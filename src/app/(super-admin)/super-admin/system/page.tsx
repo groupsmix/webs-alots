@@ -209,9 +209,9 @@ export default function SystemStatusPage() {
 
       try {
         const [readinessRes, backupsRes, jobsRes] = await Promise.all([
-          fetch("/api/admin/readiness", { credentials: "include" }),
-          fetch("/api/admin/readiness/backups", { credentials: "include" }),
-          fetch("/api/admin/readiness/jobs", { credentials: "include" }),
+          fetch("/api/super-admin/readiness", { credentials: "include" }),
+          fetch("/api/super-admin/readiness/backups", { credentials: "include" }),
+          fetch("/api/super-admin/readiness/jobs", { credentials: "include" }),
         ]);
         if (readinessRes.ok) {
           const json = await readinessRes.json();

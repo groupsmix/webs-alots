@@ -584,6 +584,27 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // P0-02: Super-admin API namespace rewrite.
+  // Super-admin dashboard pages call /api/super-admin/*; internally these are
+  // still served by the existing /api/admin/* route handlers. Geo-restriction
+  // only blocks /api/admin, so this namespace lets super admins load data
+  // without relaxing the country-based restrictions on the clinic admin panel.
+  if (pathname.startsWith("/api/super-admin/")) {
+    if (!profile || profile.role !== "super_admin") {
+      return withSecurityHeaders(
+        NextResponse.json({ ok: false, error: "Forbidden", code: "FORBIDDEN" }, { status: 403 }),
+        cspHeaders,
+      );
+    }
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = "/api/admin" + pathname.slice("/api/super-admin".length);
+    const rewriteResponse = NextResponse.rewrite(rewriteUrl, {
+      request: { headers: requestHeaders },
+    });
+    applyAllSecurityHeaders(rewriteResponse, cspHeaders);
+    return rewriteResponse;
+  }
+
   // If protected route and not authenticated, redirect to login
   if (isProtectedRoute(pathname) && !user) {
     const loginUrl = new URL("/login", request.url);
@@ -608,7 +629,15 @@ export async function middleware(request: NextRequest) {
     // MFA enforcement (delegated to composable module)
     const mfaRedirect = await enforceMfa(supabase, profile.role, pathname, request.url);
     if (mfaRedirect) return mfaRedirect;
-    if (profile.role === "super_admin") return supabaseResponse;
+    if (profile.role === "super_admin") {
+      // Super admins must remain in the /super-admin namespace; /admin and role
+      // dashboards are not for them. Redirect to the super-admin dashboard.
+      if (!pathname.startsWith("/super-admin")) {
+        const dashboardPath = ROLE_DASHBOARD_MAP[profile.role];
+        return secureRedirect(new URL(dashboardPath, request.url));
+      }
+      return supabaseResponse;
+    }
 
     // Specialist dashboards are protected page surfaces, but the repo models
     // them as route families / clinic types rather than first-class DB roles.

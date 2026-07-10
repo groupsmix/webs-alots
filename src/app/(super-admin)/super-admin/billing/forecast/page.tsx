@@ -70,7 +70,7 @@ export default function RevenueForecastPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/admin/revenue-forecast?months_ahead=6");
+      const res = await fetch("/api/super-admin/revenue-forecast?months_ahead=6");
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Failed to load forecast data");
 
@@ -93,7 +93,9 @@ export default function RevenueForecastPage() {
   async function handleGenerate() {
     setGenerating(true);
     try {
-      const res = await fetch("/api/admin/revenue-forecast?months_ahead=6", { method: "POST" });
+      const res = await fetch("/api/super-admin/revenue-forecast?months_ahead=6", {
+        method: "POST",
+      });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Forecast generation failed");
       await fetchData();

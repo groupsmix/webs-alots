@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { LandingFooter } from "@/components/landing/landing-footer";
-import { LandingHeader } from "@/components/landing/landing-header";
-import { LandingLocaleProvider } from "@/components/landing/landing-locale-provider";
+import { OltigoPublicShell } from "@/components/landing/oltigo/public-shell";
 import { RegisterForm } from "@/components/onboarding/register-form";
+import { getTenant } from "@/lib/tenant";
 
 export const metadata: Metadata = {
   title: "Créer votre clinique — Oltigo",
@@ -15,16 +14,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const tenant = await getTenant();
+
+  const form = (
+    <div className="flex min-h-[calc(100vh-4rem)] flex-1 items-center justify-center px-4 py-12">
+      <RegisterForm />
+    </div>
+  );
+
+  // Subdomain → render inside the tenant public layout (light theme).
+  if (tenant) {
+    return form;
+  }
+
+  // Root domain → Oltigo landing chrome with the registration form on a light canvas.
   return (
-    <LandingLocaleProvider>
-      <div className="flex min-h-screen flex-col bg-white">
-        <LandingHeader />
-        <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <RegisterForm />
-        </main>
-        <LandingFooter />
-      </div>
-    </LandingLocaleProvider>
+    <OltigoPublicShell mainClassName="min-h-screen bg-background pt-16 text-foreground">
+      {form}
+    </OltigoPublicShell>
   );
 }

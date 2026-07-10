@@ -579,7 +579,7 @@ export default function AllClinicsPage() {
 
   const loadHealthScores = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/clinic-health?limit=500&include_alerts=true");
+      const res = await fetch("/api/super-admin/clinic-health?limit=500&include_alerts=true");
       const json = (await res.json()) as {
         ok: boolean;
         data?: {
@@ -615,7 +615,7 @@ export default function AllClinicsPage() {
   const loadPlatformNarrative = useCallback(async () => {
     try {
       setPlatformNarrativeLoading(true);
-      const res = await fetch("/api/admin/clinic-narrative", {
+      const res = await fetch("/api/super-admin/clinic-narrative", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -643,7 +643,7 @@ export default function AllClinicsPage() {
   }, []);
 
   const loadClinicNarrative = useCallback(async (clinicId: string) => {
-    const res = await fetch("/api/admin/clinic-narrative", {
+    const res = await fetch("/api/super-admin/clinic-narrative", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clinic_id: clinicId }),
@@ -668,7 +668,7 @@ export default function AllClinicsPage() {
 
       try {
         setQueryLoading(true);
-        const res = await fetch("/api/admin/clinics-query", {
+        const res = await fetch("/api/super-admin/clinics-query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question: trimmed, limit: 8 }),
@@ -1111,7 +1111,7 @@ export default function AllClinicsPage() {
   async function refreshHealthAnalytics() {
     try {
       setRefreshingHealth(true);
-      const res = await fetch("/api/admin/clinic-health", {
+      const res = await fetch("/api/super-admin/clinic-health", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ create_alerts: true }),

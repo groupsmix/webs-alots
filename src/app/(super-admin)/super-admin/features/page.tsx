@@ -134,7 +134,7 @@ export default function FeatureTogglesPage() {
     setOverridesLoading(true);
     try {
       const res = await fetch(
-        `/api/admin/clinic-feature-overrides?clinic_id=${encodeURIComponent(clinicId)}`,
+        `/api/super-admin/clinic-feature-overrides?clinic_id=${encodeURIComponent(clinicId)}`,
       );
       if (res.ok) {
         const json = await res.json();
@@ -262,7 +262,7 @@ export default function FeatureTogglesPage() {
   async function toggleClinicOverride(featureKey: string, enabled: boolean) {
     if (!selectedClinicId) return;
     try {
-      const res = await fetch("/api/admin/clinic-feature-overrides", {
+      const res = await fetch("/api/super-admin/clinic-feature-overrides", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -300,7 +300,7 @@ export default function FeatureTogglesPage() {
   async function clearClinicOverride(featureKey: string) {
     if (!selectedClinicId) return;
     try {
-      const res = await fetch("/api/admin/clinic-feature-overrides", {
+      const res = await fetch("/api/super-admin/clinic-feature-overrides", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

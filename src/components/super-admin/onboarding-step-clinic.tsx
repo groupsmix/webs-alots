@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Super-admin internal surface: French/English UI strings are the intended output language for internal-only onboarding tooling; adding them to the i18n keyset would inflate the translation backlog. */
 "use client";
 
 import { Building2, ArrowRight, Loader2 } from "lucide-react";

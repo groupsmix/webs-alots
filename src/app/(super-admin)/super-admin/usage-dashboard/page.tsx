@@ -91,7 +91,7 @@ export default function UsageDashboardPage() {
     setFetchError(false);
     setGeoBlocked(false);
     try {
-      const res = await fetch("/api/admin/usage/quota");
+      const res = await fetch("/api/super-admin/usage/quota");
       let isGeo = false;
       try {
         const json = (await res.json()) as {
@@ -120,7 +120,7 @@ export default function UsageDashboardPage() {
   const loadClinicDetail = useCallback(async (clinicId: string) => {
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/admin/usage/quota?clinic_id=${clinicId}`);
+      const res = await fetch(`/api/super-admin/usage/quota?clinic_id=${clinicId}`);
       const json = (await res.json()) as { ok: boolean; data?: ClinicDetail };
       if (json.ok && json.data) {
         setClinicDetail(json.data);

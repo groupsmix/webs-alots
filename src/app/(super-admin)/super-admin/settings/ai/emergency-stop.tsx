@@ -84,7 +84,7 @@ export function EmergencyStop() {
   const fetchState = useCallback(async () => {
     setLoadFailed(false);
     try {
-      const res = await fetch("/api/admin/ai-kill-switch");
+      const res = await fetch("/api/super-admin/ai-kill-switch");
       const json = (await res.json()) as { ok: boolean; data?: KillSwitchState };
       if (res.ok && json.ok && json.data) {
         setState(json.data);
@@ -107,7 +107,7 @@ export function EmergencyStop() {
   const flip = async (enabled: boolean) => {
     setWorking(true);
     try {
-      const res = await fetch("/api/admin/ai-kill-switch", {
+      const res = await fetch("/api/super-admin/ai-kill-switch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled, confirm: true }),

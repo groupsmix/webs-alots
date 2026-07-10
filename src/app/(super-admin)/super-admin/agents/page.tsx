@@ -101,7 +101,7 @@ export default function AIAgentsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/admin/usage")
+    fetch("/api/super-admin/usage")
       .then((res) => res.json())
       .then((json) => {
         if (!cancelled && json.ok) {

@@ -76,7 +76,7 @@ export default function ReferralsPage() {
     setFetchError(false);
     setGeoBlocked(false);
     try {
-      const res = await fetch("/api/admin/referrals");
+      const res = await fetch("/api/super-admin/referrals");
       let isGeo = false;
       try {
         const json = await res.json();
