@@ -87,6 +87,10 @@ rules:
           #                             managed by super_admin (migration 00194);
           #                             NO clinic_id column (targets tiers via
           #                             the `tiers` array, not clinics).
+          #   - `uptime_sla_monthly`  — global service-level uptime aggregates
+          #                             for the public status page; NO clinic_id.
+          #   - `uptime_events`       — global incident/outage event stream
+          #                             for the public status page; NO clinic_id.
           #
           # All other queue / processed-events tables (notification_queue,
           # processed_stripe_events, processed_whatsapp_messages,
@@ -101,7 +105,7 @@ rules:
           # annotated rather than whitelisted, so a future bare
           # .from("users").select("*") still triggers a warning.
           regex: |-
-            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements|demo_leads|document_templates|feature_definitions|pricing_tiers|promotions)["']).*$
+            ^(?!["'](clinics|ai_provider_configs|ai_task_configs|announcements|demo_leads|document_templates|feature_definitions|pricing_tiers|promotions|uptime_sla_monthly|uptime_events)["']).*$
       # Any .eq("clinic_id", ...) anywhere in the surrounding method chain
       # makes this query tenant-scoped. Semgrep normalises JS string quotes,
       # but both variants are kept for belt-and-suspenders parity with the
