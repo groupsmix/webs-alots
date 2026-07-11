@@ -1,7 +1,7 @@
 import type { StorybookConfig } from "@storybook/nextjs-vite";
 
 const config: StorybookConfig = {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+  stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
   addons: [
     "@chromatic-com/storybook",
     "@storybook/addon-vitest",
@@ -11,5 +11,13 @@ const config: StorybookConfig = {
   ],
   framework: "@storybook/nextjs-vite",
   staticDirs: ["../public"],
+  viteFinal: (config) => {
+    if (config.build) {
+      config.build.chunkSizeWarningLimit = 1536;
+    } else {
+      config.build = { chunkSizeWarningLimit: 1536 };
+    }
+    return config;
+  },
 };
 export default config;

@@ -101,18 +101,12 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        // CDN-02: Next.js hashed JS/CSS bundles under _next/static are
-        // safe to cache indefinitely. Cloudflare edge caches these via
-        // s-maxage and serves them without hitting the Worker.
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, s-maxage=31536000, immutable",
-          },
-        ],
-      },
+      // CDN-02: _next/static files are content-hashed and cached by
+      // public/_headers and Cloudflare Static Assets. The Next.js custom
+      // headers() rule for this route is redundant and triggers the
+      // "Custom Cache-Control headers for /_next/static" warning, so it is
+      // removed. Cloudflare serves these assets directly via the [assets]
+      // binding without hitting the Worker.
       {
         // Default: prevent caching of API responses (authentication, patient
         // data, mutations, etc.).  Individual routes that serve truly public

@@ -66,26 +66,43 @@ let mutated = false;
 
 // ── Patch 2: @vercel/og bundle exclusion (CF-BUNDLE-01) ──────────────
 {
-  // Turbopack emits (exact form, repeated per chunk):
+  // Turbopack emits either:
   //   case"next/dist/compiled/@vercel/og/index.node.js":raw=await import("next/dist/compiled/@vercel/og/index.edge.js");break;
-  // We replace the await import(...) with a throw. Wrangler's static
-  // analysis then no longer resolves the @vercel/og edge bundle, and
-  // resvg.wasm + yoga.wasm are not uploaded with the worker.
-  const OG_PATTERN =
+  // or (since opennextjs-cloudflare 1.18+) the case already resolves to
+  // an OpenNext shim that throws "OpenNext shim". In that case the bundle
+  // is already neutralized and no further patch is needed.
+  const OG_LEGACY_PATTERN =
     'case"next/dist/compiled/@vercel/og/index.node.js":raw=await import("next/dist/compiled/@vercel/og/index.edge.js");break;';
-  const OG_REPLACEMENT =
-    'case"next/dist/compiled/@vercel/og/index.node.js":throw new Error("ImageResponse/@vercel/og is not bundled in this Worker build (CF-BUNDLE-01). Re-enable in scripts/post-build-patch.mjs if needed.");';
+  const OG_LEGACY_REPLACEMENT =
+    'case"next/dist/compiled/@vercel/og/index.node.js":throw new Error("ImageResponse/@vercel/og is not bundled in this Worker build (CF-BUNDLE-01). Re-enable in scripts/post-build-patch.mjs if needed.");break;';
+  const OG_SHIM_PATTERN =
+    'case"next/dist/compiled/@vercel/og/index.node.js":raw=await Promise.resolve().then(()=>(init_throw(),throw_exports));break;';
+  const OG_SHIM_REPLACEMENT =
+    'case"next/dist/compiled/@vercel/og/index.node.js":throw new Error("ImageResponse/@vercel/og is not bundled in this Worker build (CF-BUNDLE-01). Re-enable in scripts/post-build-patch.mjs if needed.");break;';
   const OG_MARKER = "ImageResponse/@vercel/og is not bundled in this Worker build";
+  const OG_SHIM_MARKER = "OpenNext shim";
 
-  const ogOccurrences = content.split(OG_PATTERN).length - 1;
-  if (ogOccurrences > 0 && !content.includes(OG_MARKER)) {
-    content = content.replaceAll(OG_PATTERN, OG_REPLACEMENT);
+  const legacyOccurrences = content.split(OG_LEGACY_PATTERN).length - 1;
+  const shimOccurrences = content.split(OG_SHIM_PATTERN).length - 1;
+  if (legacyOccurrences > 0 && !content.includes(OG_MARKER)) {
+    content = content.replaceAll(OG_LEGACY_PATTERN, OG_LEGACY_REPLACEMENT);
     mutated = true;
     console.log(
-      `✓ Patched handler.mjs — @vercel/og static import neutralized (${ogOccurrences} site(s))`,
+      `✓ Patched handler.mjs — @vercel/og legacy import neutralized (${legacyOccurrences} site(s))`,
     );
+  } else if (shimOccurrences > 0 && !content.includes(OG_MARKER)) {
+    content = content.replaceAll(OG_SHIM_PATTERN, OG_SHIM_REPLACEMENT);
+    mutated = true;
+    console.log(`✓ Patched handler.mjs — @vercel/og shim neutralized (${shimOccurrences} site(s))`);
   } else if (content.includes(OG_MARKER)) {
     console.log("· @vercel/og patch already applied");
+  } else if (
+    content.includes('case"next/dist/compiled/@vercel/og/index.node.js"') &&
+    content.includes(OG_SHIM_MARKER)
+  ) {
+    console.log("· @vercel/og is already neutralized by the OpenNext shim");
+  } else if (!content.includes('"next/dist/compiled/@vercel/og/index.node.js"')) {
+    console.log("· No @vercel/og import found in handler.mjs");
   } else {
     console.log(
       "⚠ Could not find @vercel/og externalImport pattern — Turbopack output may have changed",
