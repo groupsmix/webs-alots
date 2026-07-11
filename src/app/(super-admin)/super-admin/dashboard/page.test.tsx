@@ -108,12 +108,14 @@ describe("SuperAdminDashboardPage", () => {
       expect(screen.queryByText("Loading...")).toBeNull();
     });
 
-    expect(screen.getByText("2 000,00 MAD")).toBeTruthy();
-    expect(screen.getByText("800,00 MAD")).toBeTruthy();
-    expect(screen.getByText("12")).toBeTruthy();
-    expect(screen.getByText("3")).toBeTruthy();
-    expect(screen.getByText("+2 ce mois")).toBeTruthy();
-    expect(screen.queryByText("Active Pilot Clinics")).toBeNull();
-    expect(screen.queryByText("100%")).toBeNull();
+    await waitFor(() => {
+      screen.getByText("2 000,00 MAD");
+      screen.getByText("800,00 MAD");
+      screen.getByText("12");
+      screen.getByText("3");
+      screen.getByText("+2 ce mois");
+      expect(screen.queryByText("Active Pilot Clinics")).toBeNull();
+      expect(screen.queryByText("100%")).toBeNull();
+    });
   });
 });
