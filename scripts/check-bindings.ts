@@ -79,7 +79,9 @@ const allSource = sourceFiles.map((f) => readFileSync(f, "utf8")).join("\n");
 // ASSETS is consumed by the Workers runtime, not by user code.
 // UPLOADS_BUCKET is declared for future direct R2 binding usage; currently
 // the app uses the S3-compatible API via R2_ACCESS_KEY_ID env vars.
-const RUNTIME_BINDINGS = new Set(["ASSETS", "UPLOADS_BUCKET"]);
+// NEXT_INC_CACHE_R2_BUCKET is consumed by the OpenNext R2 incremental-cache
+// override (open-next.config.ts) and does not appear in application source.
+const RUNTIME_BINDINGS = new Set(["ASSETS", "UPLOADS_BUCKET", "NEXT_INC_CACHE_R2_BUCKET"]);
 
 const unreferenced = declaredBindings.filter((b) => {
   if (RUNTIME_BINDINGS.has(b)) return false;
