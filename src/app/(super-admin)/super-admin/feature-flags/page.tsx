@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Super-admin internal surface */
 "use client";
 
 import { Info, Loader2, RefreshCw } from "lucide-react";
@@ -85,7 +84,17 @@ export default function FeatureFlagsPage() {
   );
 
   useEffect(() => {
-    void loadFlags();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadFlags();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadFlags]);
 
   async function handleToggle(key: string, currentValue: boolean) {

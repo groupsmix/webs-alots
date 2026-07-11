@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- clinic-admin internal UI; translation tracked separately */
 
 /**
  * ExceptionDayPicker
@@ -14,7 +13,7 @@
  */
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { use, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +23,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { logger } from "@/lib/logger";
 
@@ -78,6 +76,24 @@ function buildMonthGrid(year: number, month: number): Date[] {
   return cells;
 }
 
+async function fetchExceptions(doctorId: string, clinicId: string): Promise<Exception[]> {
+  try {
+    const res = await fetch(`/api/doctor-exceptions?doctorId=${doctorId}`);
+    const json = (await res.json()) as { ok: boolean; data?: { exceptions: Exception[] } };
+    if (json.ok) {
+      return json.data?.exceptions ?? [];
+    }
+  } catch (err) {
+    logger.warn("ExceptionDayPicker: failed to load exceptions", {
+      context: "schedule/exception-day-picker",
+      doctorId,
+      clinicId,
+      error: err,
+    });
+  }
+  return [];
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
@@ -85,39 +101,14 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
-  const [exceptions, setExceptions] = useState<Exception[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [promise] = useState(() => fetchExceptions(doctorId, clinicId));
+  const initialExceptions = use(promise);
+  const [exceptions, setExceptions] = useState(initialExceptions);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null); // exception id being removed
-
-  // ── Data loading ─────────────────────────────────────────────────────────
-
-  const fetchExceptions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/doctor-exceptions?doctorId=${doctorId}`);
-      const json = (await res.json()) as { ok: boolean; data?: { exceptions: Exception[] } };
-      if (json.ok) {
-        setExceptions(json.data?.exceptions ?? []);
-      }
-    } catch (err) {
-      logger.warn("ExceptionDayPicker: failed to load exceptions", {
-        context: "schedule/exception-day-picker",
-        doctorId,
-        clinicId,
-        error: err,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [doctorId, clinicId]);
-
-  useEffect(() => {
-    void fetchExceptions();
-  }, [fetchExceptions]);
 
   // ── Exception lookup ──────────────────────────────────────────────────────
 
@@ -206,10 +197,6 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
-
-  if (loading) {
-    return <Skeleton className="h-72 w-full rounded-lg" />;
-  }
 
   const cells = buildMonthGrid(year, month);
   const todayStr = toDateString(today);

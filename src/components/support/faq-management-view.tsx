@@ -150,14 +150,14 @@ export function FAQManagementView() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {}
         <h1 className="text-2xl font-bold">Gestion des FAQ</h1>
-        {/* eslint-disable i18next/no-literal-string */}
+        {}
         <Button onClick={openCreateForm}>
           <Plus className="h-4 w-4 mr-2" />
           Ajouter une FAQ
         </Button>
-        {/* eslint-enable i18next/no-literal-string */}
+        {}
       </div>
 
       {/* Filters */}
@@ -176,7 +176,7 @@ export function FAQManagementView() {
           onChange={(e) => setFilterLang(e.target.value)}
           className="border rounded-md px-3 py-2 text-sm"
         >
-          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {}
           <option value="">Toutes les langues</option>
           {SUPPORTED_LANGUAGES.map((l) => (
             <option key={l} value={l}>
@@ -189,7 +189,7 @@ export function FAQManagementView() {
           onChange={(e) => setFilterCategory(e.target.value)}
           className="border rounded-md px-3 py-2 text-sm"
         >
-          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {}
           <option value="">Toutes les catégories</option>
           {FAQ_CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -288,14 +288,14 @@ export function FAQManagementView() {
                   onChange={(e) => setFormActive(e.target.checked)}
                   id="faq-active"
                 />
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <label htmlFor="faq-active" className="text-sm">
                   Actif
                 </label>
               </div>
               <div className="flex gap-2">
                 <Button type="submit">{editingFaq ? "Mettre à jour" : "Créer"}</Button>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Annuler
                 </Button>
@@ -330,13 +330,13 @@ export function FAQManagementView() {
                       <Badge variant="secondary" className="text-xs">
                         {faq.category ?? "general"}
                       </Badge>
-                      {/* eslint-disable i18next/no-literal-string */}
+                      {}
                       {!faq.is_active && (
                         <Badge variant="destructive" className="text-xs">
                           Inactif
                         </Badge>
                       )}
-                      {/* eslint-enable i18next/no-literal-string */}
+                      {}
                     </div>
                     <p className="font-medium text-sm">{faq.question}</p>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{faq.answer}</p>
@@ -364,7 +364,7 @@ export function FAQManagementView() {
           ))}
           {filteredFaqs.length === 0 && (
             <Card>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <CardContent className="p-8 text-center text-muted-foreground">
                 Aucune FAQ trouvée. Créez votre première FAQ pour commencer.
               </CardContent>

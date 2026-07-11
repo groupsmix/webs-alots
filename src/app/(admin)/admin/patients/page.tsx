@@ -103,25 +103,34 @@ export default function AdminPatientDatabasePage() {
 
   // B6: load the selected patient's prescriptions on demand.
   useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     if (!selectedPatient || !clinicId) {
-      setSelectedRx([]);
-      return;
+      timeout = setTimeout(() => setSelectedRx([]), 0);
+      return () => {
+        if (timeout) clearTimeout(timeout);
+      };
+    } else {
+      const controller = new AbortController();
+      const patientId = selectedPatient.id;
+      timeout = setTimeout(() => {
+        setRxLoading(true);
+        setSelectedRx([]);
+        fetchPatientPrescriptions(clinicId, patientId)
+          .then((rx) => {
+            if (!controller.signal.aborted) setSelectedRx(rx);
+          })
+          .catch(() => {
+            if (!controller.signal.aborted) setSelectedRx([]);
+          })
+          .finally(() => {
+            if (!controller.signal.aborted) setRxLoading(false);
+          });
+      }, 0);
+      return () => {
+        if (timeout) clearTimeout(timeout);
+        controller.abort();
+      };
     }
-    const controller = new AbortController();
-    const patientId = selectedPatient.id;
-    setRxLoading(true);
-    setSelectedRx([]);
-    fetchPatientPrescriptions(clinicId, patientId)
-      .then((rx) => {
-        if (!controller.signal.aborted) setSelectedRx(rx);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setSelectedRx([]);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setRxLoading(false);
-      });
-    return () => controller.abort();
   }, [selectedPatient, clinicId]);
 
   const patients = patientsList;

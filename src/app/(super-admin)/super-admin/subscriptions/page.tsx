@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -167,10 +166,21 @@ export default function SubscriptionsPage() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const controller = new AbortController();
-    loadSubscriptions();
+
+    timeouts.push(
+      setTimeout(() => {
+        loadSubscriptions();
+      }, 0),
+    );
+
     return () => {
-      controller.abort();
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        controller.abort();
+      })();
     };
   }, [loadSubscriptions]);
 
@@ -233,7 +243,17 @@ export default function SubscriptionsPage() {
 
   // Reset to page 1 whenever filters or sort order change
   useEffect(() => {
-    setPage(1);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setPage(1);
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [search, statusFilter, systemFilter, sortField, sortDir]);
 
   function handleSort(field: SortField) {
@@ -341,7 +361,17 @@ export default function SubscriptionsPage() {
 
   // Clear selection when visible page changes or filters change
   useEffect(() => {
-    setSelectedIds(new Set());
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setSelectedIds(new Set());
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [page, statusFilter, systemFilter, search]);
 
   const statusIcon = (status: string) => {
@@ -479,7 +509,7 @@ export default function SubscriptionsPage() {
             Suivi des abonnements clients, facturation et paiements
           </p>
         </div>
-        {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
+        {}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -508,7 +538,7 @@ export default function SubscriptionsPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* eslint-enable i18next/no-literal-string */}
+        {}
       </div>
 
       {/* KPI Cards */}

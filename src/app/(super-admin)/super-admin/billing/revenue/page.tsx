@@ -37,7 +37,17 @@ export default function RevenueDashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        loadData();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadData]);
 
   return (

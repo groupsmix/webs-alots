@@ -97,7 +97,7 @@ async function sendStaffInvite(params: {
     const { data: resetLink, error: linkError } = await admin.auth.admin.generateLink({
       type: "recovery",
       email: params.email,
-      options: { redirectTo: `${siteUrl}/login?reset=true` },
+      options: { redirectTo: `${siteUrl}/auth/callback?type=recovery` },
     });
 
     if (linkError) {

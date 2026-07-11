@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- auth surface; strings are French inline per project convention */
 "use client";
 
 import { ShieldCheck, ArrowLeft, Key, Loader2 } from "lucide-react";

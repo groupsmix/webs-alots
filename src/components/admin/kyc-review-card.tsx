@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- super-admin internal UI; translation tracked separately */
 
 /**
  * KycReviewCard

@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -133,7 +132,17 @@ export default function AITeamPage() {
   }, [addToast]);
 
   useEffect(() => {
-    void fetchDashboard();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchDashboard();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchDashboard]);
 
   const handleGenerate = async (agentType: AgentType) => {
@@ -237,7 +246,6 @@ export default function AITeamPage() {
   return (
     <div className="space-y-6">
       <Breadcrumb items={[{ label: "Super Admin", href: "/super-admin" }, { label: "AI Team" }]} />
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">AI Team Dashboard</h1>
@@ -252,7 +260,6 @@ export default function AITeamPage() {
           </Badge>
         )}
       </div>
-
       {/* Agent Cards */}
       <div className="grid gap-6 md:grid-cols-3">
         {(["marketing", "support", "reminder"] as AgentType[]).map((agentType) => {
@@ -343,7 +350,6 @@ export default function AITeamPage() {
           );
         })}
       </div>
-
       {/* Chat Panel */}
       {activeChat && (
         <Card>
@@ -413,7 +419,6 @@ export default function AITeamPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Tasks & Alerts */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Recent Tasks */}

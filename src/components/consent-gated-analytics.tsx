@@ -29,8 +29,14 @@ export function ConsentGatedAnalytics({
   const [analyticsConsented, setAnalyticsConsented] = useState(false);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const prefs = getStoredCookiePreferences();
-    setAnalyticsConsented(prefs?.analytics === true);
+
+    timeouts.push(
+      setTimeout(() => {
+        setAnalyticsConsented(prefs?.analytics === true);
+      }, 0),
+    );
 
     const onStorage = (e: StorageEvent) => {
       if (e.key === "cookie-consent") {
@@ -47,8 +53,12 @@ export function ConsentGatedAnalytics({
     window.addEventListener("cookie-consent:changed", onConsentUpdate);
 
     return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("cookie-consent:changed", onConsentUpdate);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        window.removeEventListener("storage", onStorage);
+        window.removeEventListener("cookie-consent:changed", onConsentUpdate);
+      })();
     };
   }, []);
 

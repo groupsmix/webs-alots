@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- French UI strings */
 "use client";
 
 import { AlertTriangle, Archive, Clock, RefreshCw, Shield } from "lucide-react";
@@ -84,7 +83,17 @@ export function DataRetentionDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        fetchData();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchData]);
 
   if (loading) {

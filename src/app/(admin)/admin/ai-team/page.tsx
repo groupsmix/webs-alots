@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- French-first AI dashboard UI strings */
 "use client";
 
 /**
@@ -30,7 +29,7 @@ import {
   AlertTriangle,
   AlertCircle,
 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { use, useEffect, useRef, useState, useCallback } from "react";
 import { AITeamKanban, type TeamTask } from "@/components/admin/ai-team-kanban";
 import { FeatureGate } from "@/components/feature-gate";
 import { Badge } from "@/components/ui/badge";
@@ -664,37 +663,39 @@ function NotificationBell({
 
 // ── Main page ──
 
+async function fetchDashboardData(): Promise<{
+  data: DashboardData | null;
+  error: string | null;
+}> {
+  try {
+    const response = await fetch("/api/ai/team/dashboard");
+    const result = (await response.json()) as {
+      ok: boolean;
+      data?: DashboardData;
+      error?: string;
+    };
+    if (!response.ok || !result.ok) {
+      return { data: null, error: result.error ?? "Erreur lors du chargement" };
+    }
+    return { data: result.data ?? null, error: null };
+  } catch {
+    return { data: null, error: "Impossible de charger le tableau de bord IA" };
+  }
+}
+
 function AITeamDashboard() {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [promise] = useState(() => fetchDashboardData());
+  const initialResult = use(promise);
+  const [dashboardData, setDashboardData] = useState(initialResult.data);
+  const [error, setError] = useState(initialResult.error);
   const [expandedAgent, setExpandedAgent] = useState<AgentType | null>(null);
   const [generatingAgent, setGeneratingAgent] = useState<AgentType | null>(null);
 
-  const fetchDashboard = useCallback(async () => {
-    try {
-      const response = await fetch("/api/ai/team/dashboard");
-      const result = (await response.json()) as {
-        ok: boolean;
-        data?: DashboardData;
-        error?: string;
-      };
-      if (!response.ok || !result.ok) {
-        setError(result.error ?? "Erreur lors du chargement");
-        return;
-      }
-      setDashboardData(result.data ?? null);
-      setError(null);
-    } catch {
-      setError("Impossible de charger le tableau de bord IA");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchDashboard();
-  }, [fetchDashboard]);
+  const refresh = async () => {
+    const { data, error } = await fetchDashboardData();
+    setDashboardData(data);
+    setError(error);
+  };
 
   const generateInsights = async (agentType: AgentType) => {
     setGeneratingAgent(agentType);
@@ -704,7 +705,7 @@ function AITeamDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentType }),
       });
-      await fetchDashboard();
+      await refresh();
     } finally {
       setGeneratingAgent(null);
     }
@@ -728,10 +729,10 @@ function AITeamDashboard() {
         // continue on error
       }
     }
-    void fetchDashboard();
+    await refresh();
   };
 
-  if (loading) {
+  if (!dashboardData && !error) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -744,14 +745,7 @@ function AITeamDashboard() {
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <AlertTriangle className="h-8 w-8 text-amber-500" />
         <p className="text-sm text-muted-foreground">{error}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setLoading(true);
-            void fetchDashboard();
-          }}
-        >
+        <Button variant="outline" size="sm" onClick={() => void refresh()}>
           Réessayer
         </Button>
       </div>
@@ -788,15 +782,7 @@ function AITeamDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <NotificationBell alerts={allAlerts} onDismissAll={() => void dismissAllAlerts()} />
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => {
-              setLoading(true);
-              void fetchDashboard();
-            }}
-          >
+          <Button variant="outline" size="sm" className="text-xs" onClick={() => void refresh()}>
             <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
             Actualiser
           </Button>
@@ -836,13 +822,7 @@ function AITeamDashboard() {
               {(dashboardData.teamTasks ?? []).length}
             </Badge>
           </div>
-          <AITeamKanban
-            tasks={dashboardData.teamTasks ?? []}
-            onRefresh={() => {
-              setLoading(true);
-              void fetchDashboard();
-            }}
-          />
+          <AITeamKanban tasks={dashboardData.teamTasks ?? []} onRefresh={() => void refresh()} />
         </div>
       )}
     </div>

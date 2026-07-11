@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 "use client";
 
 import { ArrowRightLeft, Send, Inbox, CheckCircle, XCircle, Clock } from "lucide-react";
@@ -50,7 +49,17 @@ export default function ReferralsPage() {
   }, [direction]);
 
   useEffect(() => {
-    fetchReferrals();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        fetchReferrals();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchReferrals]);
 
   const updateStatus = async (

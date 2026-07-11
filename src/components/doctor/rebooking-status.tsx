@@ -69,9 +69,18 @@ export function RebookingStatus({ clinicId, doctorId }: RebookingStatusProps) {
   };
 
   useEffect(() => {
-    fetchStatus();
-    // Q-49: `fetchStatus` is intentionally excluded — it depends on `clinicId`
-    // and `doctorId` via closure and including it would cause re-render loops.
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        fetchStatus();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId, doctorId]);
 

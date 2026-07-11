@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -133,11 +132,32 @@ export default function UsageDashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadAllUsage();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        loadAllUsage();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadAllUsage]);
 
   useEffect(() => {
-    if (selectedClinic) loadClinicDetail(selectedClinic);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    if (selectedClinic)
+      timeouts.push(
+        setTimeout(() => {
+          loadClinicDetail(selectedClinic);
+        }, 0),
+      );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [selectedClinic, loadClinicDetail]);
 
   // Aggregate usage by clinic

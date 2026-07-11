@@ -303,7 +303,7 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Dépenses" }]} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {}
         <h1 className="text-2xl font-bold">Suivi des dépenses</h1>
         <div className="flex gap-2">
           <Input
@@ -313,7 +313,7 @@ export default function ExpensesPage() {
             className="w-45"
           />
           <Button variant="outline" size="sm" onClick={() => setShowCategoryAdd(true)}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Plus className="h-4 w-4 mr-1" /> Catégorie
           </Button>
           <Button
@@ -323,7 +323,7 @@ export default function ExpensesPage() {
               setShowAdd(true);
             }}
           >
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Plus className="h-4 w-4 mr-1" /> Dépense
           </Button>
         </div>
@@ -345,7 +345,7 @@ export default function ExpensesPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Total dépenses</CardTitle>
                 <Receipt className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -357,7 +357,7 @@ export default function ExpensesPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Plus grande catégorie</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -383,7 +383,7 @@ export default function ExpensesPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Nombre de dépenses</CardTitle>
                 <TrendingDown className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -397,7 +397,7 @@ export default function ExpensesPage() {
           {Object.keys(byCategory).length > 0 && (
             <Card>
               <CardHeader>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle>Répartition par catégorie</CardTitle>
               </CardHeader>
               <CardContent>
@@ -423,7 +423,7 @@ export default function ExpensesPage() {
           {/* Expenses Table */}
           <Card>
             <CardHeader>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <CardTitle>Liste des dépenses</CardTitle>
             </CardHeader>
             <CardContent>
@@ -431,15 +431,15 @@ export default function ExpensesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Date</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Description</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Catégorie</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Montant</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
@@ -450,7 +450,6 @@ export default function ExpensesPage() {
                         <td className="py-3 pr-4">
                           {exp.description}
                           {exp.is_recurring && (
-                            // eslint-disable-next-line i18next/no-literal-string
                             <Badge variant="secondary" className="ml-2">
                               Récurrent
                             </Badge>
@@ -477,7 +476,7 @@ export default function ExpensesPage() {
                     ))}
                     {expenses.length === 0 && (
                       <tr>
-                        {/* eslint-disable-next-line i18next/no-literal-string */}
+                        {}
                         <td colSpan={5} className="py-8 text-center text-muted-foreground">
                           Aucune dépense pour ce mois
                         </td>
@@ -507,13 +506,13 @@ export default function ExpensesPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Description</span>
               <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <span className="text-sm font-medium">Montant (MAD)</span>
                 <Input
                   type="number"
@@ -523,13 +522,13 @@ export default function ExpensesPage() {
                 />
               </div>
               <div>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <span className="text-sm font-medium">Date</span>
                 <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
               </div>
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Catégorie</span>
               <Select value={formCategoryId} onValueChange={setFormCategoryId}>
                 <SelectTrigger>
@@ -545,13 +544,13 @@ export default function ExpensesPage() {
               </Select>
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Notes</span>
               <Input value={formNotes} onChange={(e) => setFormNotes(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
+            {}
             <Button
               variant="outline"
               onClick={() => {
@@ -561,7 +560,7 @@ export default function ExpensesPage() {
             >
               Annuler
             </Button>
-            {/* eslint-enable i18next/no-literal-string */}
+            {}
             <Button onClick={handleSave}>{editExpense ? "Mettre à jour" : "Ajouter"}</Button>
           </DialogFooter>
         </DialogContent>
@@ -571,17 +570,17 @@ export default function ExpensesPage() {
       <Dialog open={showCategoryAdd} onOpenChange={setShowCategoryAdd}>
         <DialogContent>
           <DialogHeader>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <DialogTitle>Ajouter une catégorie</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Nom</span>
               <Input value={catName} onChange={(e) => setCatName(e.target.value)} />
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Type</span>
               <Select value={catType} onValueChange={setCatType}>
                 <SelectTrigger>
@@ -598,11 +597,11 @@ export default function ExpensesPage() {
             </div>
           </div>
           <DialogFooter>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Button variant="outline" onClick={() => setShowCategoryAdd(false)}>
               Annuler
             </Button>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Button onClick={handleAddCategory}>Ajouter</Button>
           </DialogFooter>
         </DialogContent>

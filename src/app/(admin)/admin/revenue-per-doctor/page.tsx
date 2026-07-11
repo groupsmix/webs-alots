@@ -60,7 +60,18 @@ export default function RevenuePerDoctorPage() {
   }, [period]);
 
   useEffect(() => {
-    if (tenant?.clinicId) loadData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    if (tenant?.clinicId)
+      timeouts.push(
+        setTimeout(() => {
+          loadData();
+        }, 0),
+      );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [tenant?.clinicId, loadData]);
 
   const intlLocale = LOCALE_MAP[locale ?? "fr"] ?? "fr-FR";
@@ -77,20 +88,20 @@ export default function RevenuePerDoctorPage() {
         items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Revenu par médecin" }]}
       />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {}
         <h1 className="text-2xl font-bold">Revenu par médecin</h1>
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <SelectItem value="7d">7 jours</SelectItem>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <SelectItem value="30d">30 jours</SelectItem>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <SelectItem value="90d">90 jours</SelectItem>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <SelectItem value="12m">12 mois</SelectItem>
           </SelectContent>
         </Select>
@@ -106,7 +117,7 @@ export default function RevenuePerDoctorPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Revenu total</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -118,7 +129,7 @@ export default function RevenuePerDoctorPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Rendez-vous</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -130,7 +141,7 @@ export default function RevenuePerDoctorPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Taux d&apos;annulation</CardTitle>
                 <TrendingDown className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -140,7 +151,7 @@ export default function RevenuePerDoctorPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Médecins</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -154,7 +165,7 @@ export default function RevenuePerDoctorPage() {
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle>Revenu par médecin (MAD)</CardTitle>
               </CardHeader>
               <CardContent>
@@ -181,7 +192,7 @@ export default function RevenuePerDoctorPage() {
           {/* Table */}
           <Card>
             <CardHeader>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <CardTitle>Détail par médecin</CardTitle>
             </CardHeader>
             <CardContent>
@@ -189,18 +200,18 @@ export default function RevenuePerDoctorPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Médecin</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Revenu</th>
                       <th className="py-3 pr-4 font-medium text-right">RDV</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Complétés</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Annulés</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Taux ann.</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 font-medium text-right">Moy./RDV</th>
                     </tr>
                   </thead>
@@ -222,7 +233,7 @@ export default function RevenuePerDoctorPage() {
                     ))}
                     {doctors.length === 0 && (
                       <tr>
-                        {/* eslint-disable-next-line i18next/no-literal-string */}
+                        {}
                         <td colSpan={7} className="py-8 text-center text-muted-foreground">
                           Aucune donnée disponible
                         </td>

@@ -11,7 +11,14 @@ export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    setIsOffline(typeof navigator !== "undefined" ? !navigator.onLine : false);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setIsOffline(typeof navigator !== "undefined" ? !navigator.onLine : false);
+      }, 0),
+    );
+
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => setIsOffline(false);
 
@@ -19,8 +26,12 @@ export function OfflineIndicator() {
     window.addEventListener("online", handleOnline);
 
     return () => {
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        window.removeEventListener("offline", handleOffline);
+        window.removeEventListener("online", handleOnline);
+      })();
     };
   }, []);
 

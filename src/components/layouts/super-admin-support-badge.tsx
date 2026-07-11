@@ -29,12 +29,24 @@ export function SuperAdminSupportBadge() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     mountedRef.current = true;
-    void load();
+
+    timeouts.push(
+      setTimeout(() => {
+        void load();
+      }, 0),
+    );
+
     const interval = setInterval(() => void load(), 120_000);
+
     return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        mountedRef.current = false;
+        clearInterval(interval);
+      })();
     };
   }, [load]);
 

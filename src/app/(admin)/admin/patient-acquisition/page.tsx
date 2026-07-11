@@ -75,7 +75,18 @@ export default function PatientAcquisitionPage() {
   }, []);
 
   useEffect(() => {
-    if (tenant?.clinicId) loadData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    if (tenant?.clinicId)
+      timeouts.push(
+        setTimeout(() => {
+          loadData();
+        }, 0),
+      );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [tenant?.clinicId, loadData]);
 
   const chartData = channels
@@ -93,7 +104,7 @@ export default function PatientAcquisitionPage() {
       <Breadcrumb
         items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Acquisition patients" }]}
       />
-      {/* eslint-disable-next-line i18next/no-literal-string */}
+      {}
       <h1 className="text-2xl font-bold">Coût d&apos;acquisition patient</h1>
 
       {loading ? (
@@ -106,7 +117,7 @@ export default function PatientAcquisitionPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Total patients</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -118,7 +129,7 @@ export default function PatientAcquisitionPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Patients suivis</CardTitle>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -127,14 +138,14 @@ export default function PatientAcquisitionPage() {
                   {(summary?.trackedPatients ?? 0).toLocaleString(intlLocale)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {/* eslint-disable-next-line i18next/no-literal-string */}
+                  {}
                   {summary?.untrackedPatients ?? 0} non suivis
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Budget marketing</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -146,7 +157,7 @@ export default function PatientAcquisitionPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Coût / patient</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -162,7 +173,7 @@ export default function PatientAcquisitionPage() {
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle>Patients par canal</CardTitle>
               </CardHeader>
               <CardContent>
@@ -182,7 +193,7 @@ export default function PatientAcquisitionPage() {
           {/* Channel Breakdown Table */}
           <Card>
             <CardHeader>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <CardTitle>Détail par canal</CardTitle>
             </CardHeader>
             <CardContent>
@@ -190,13 +201,13 @@ export default function PatientAcquisitionPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Canal</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Patients</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Dépenses</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 font-medium text-right">Coût/patient</th>
                     </tr>
                   </thead>
@@ -227,7 +238,7 @@ export default function PatientAcquisitionPage() {
                     {channels.filter((c) => c.patientCount > 0 || c.totalSpend > 0).length ===
                       0 && (
                       <tr>
-                        {/* eslint-disable-next-line i18next/no-literal-string */}
+                        {}
                         <td colSpan={4} className="py-8 text-center text-muted-foreground">
                           Aucune donnée d&apos;acquisition disponible
                         </td>

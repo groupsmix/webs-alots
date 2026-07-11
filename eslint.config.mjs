@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "coverage/**",
     // Open-Next build artifacts (generated; must not be linted)
     ".open-next/**",
+    // Storybook static output (generated)
+    "storybook-static/**",
   ]),
   ...storybook.configs["flat/recommended"],
   {
@@ -65,8 +67,10 @@ const eslintConfig = defineConfig([
       // AUDIT FINDING #22: Tightened config to reduce false positives from
       // Tailwind class names (gap-2, text-muted-foreground, etc.) by adding
       // ignoreCallee for utility functions and ignoreProperty for non-user-facing props.
+      // The UI is not actively localized outside auth/2fa flows, so the rule is
+      // disabled globally but still enforced as error in the auth/2fa folders below.
       "i18next/no-literal-string": [
-        "warn",
+        "off",
         {
           markupOnly: true,
           onlyAttribute: [],

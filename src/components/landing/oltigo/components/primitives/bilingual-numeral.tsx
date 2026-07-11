@@ -46,12 +46,27 @@ export function BilingualNumeral({ value, className, stagger = 70 }: Props) {
   const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     if (prefersReducedMotion()) {
-      setResolved(true);
-      return;
+      timeouts.push(
+        setTimeout(() => {
+          setResolved(true);
+        }, 0),
+      );
+
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
     }
+
     const el = ref.current;
-    if (!el) return;
+
+    if (!el)
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
+
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -68,9 +83,14 @@ export function BilingualNumeral({ value, className, stagger = 70 }: Props) {
     // Failsafe: never leave a numeral stuck in Eastern form if it is never
     // scrolled to the required ratio (e.g. very short viewports).
     const failsafe = window.setTimeout(() => setResolved(true), 6000);
+
     return () => {
-      io.disconnect();
-      window.clearTimeout(failsafe);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        io.disconnect();
+        window.clearTimeout(failsafe);
+      })();
     };
   }, []);
 

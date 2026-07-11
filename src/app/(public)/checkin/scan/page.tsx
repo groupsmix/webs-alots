@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- patient experience page */
 import type { Metadata } from "next";
 import { QrCheckinResult } from "@/components/patient-experience/qr-checkin-result";
 

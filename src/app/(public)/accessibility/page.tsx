@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Static legal/compliance page with French content */
 import type { Metadata } from "next";
 import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
 

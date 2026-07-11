@@ -134,7 +134,17 @@ export function TVQueueDisplay({
 
   // Update patients when props change
   useEffect(() => {
-    setPatients(calculateEstimatedWait(initialPatients, avgConsultationMinutes));
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setPatients(calculateEstimatedWait(initialPatients, avgConsultationMinutes));
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [initialPatients, avgConsultationMinutes]);
 
   // Supabase Realtime subscription for live updates

@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: same i18n posture as page.tsx */
 "use client";
 
 import { AlertTriangle, Loader2, OctagonX, Power } from "lucide-react";
@@ -101,7 +100,17 @@ export function EmergencyStop() {
   }, []);
 
   useEffect(() => {
-    void fetchState();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchState();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchState]);
 
   const flip = async (enabled: boolean) => {

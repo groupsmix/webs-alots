@@ -71,11 +71,20 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
   };
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     if (open && !report) {
-      generateReport();
+      timeouts.push(
+        setTimeout(() => {
+          generateReport();
+        }, 0),
+      );
     }
-    // Q-49: Intentionally depend only on `open` — `generateReport` is stable
-    // (reads state via closures) and re-including it would trigger infinite loops.
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

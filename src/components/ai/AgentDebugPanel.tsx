@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable i18next/no-literal-string -- Super-admin-only AI debugging surface. */
 import { Activity, DatabaseZap, ShieldCheck } from "lucide-react";
 import { ToolCall } from "@/components/ui/tool-call";
 import type { SiteTeamAgentType } from "@/lib/ai/prompts";

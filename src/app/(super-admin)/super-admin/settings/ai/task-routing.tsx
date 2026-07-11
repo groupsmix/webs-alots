@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: same i18n posture as page.tsx */
 "use client";
 
 import { AlertTriangle, Loader2, Route } from "lucide-react";
@@ -77,7 +76,17 @@ export function TaskRouting() {
   }, []);
 
   useEffect(() => {
-    void fetchData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchData();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchData]);
 
   const update = async (taskType: string, patch: Record<string, unknown>) => {

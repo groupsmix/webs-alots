@@ -77,10 +77,21 @@ export function MicroDashboardView() {
   }, []);
 
   useEffect(() => {
-    void fetchData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchData();
+      }, 0),
+    );
+
     // Auto-refresh every 60 seconds
     const interval = setInterval(() => void fetchData(), 60_000);
-    return () => clearInterval(interval);
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+      (() => clearInterval(interval))();
+    };
   }, [fetchData]);
 
   if (loading && !data) {

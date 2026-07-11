@@ -80,7 +80,17 @@ export function WellbeingMonitor() {
   }, [lang]);
 
   useEffect(() => {
-    void fetchData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchData();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchData]);
 
   if (loading) {

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 /**
  * Thin header overlay for the admin layout that provides:
@@ -51,12 +50,24 @@ export function AdminHeaderBar() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     mountedRef.current = true;
-    void loadTicketCount();
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadTicketCount();
+      }, 0),
+    );
+
     const interval = setInterval(() => void loadTicketCount(), 120_000);
+
     return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        mountedRef.current = false;
+        clearInterval(interval);
+      })();
     };
   }, [loadTicketCount]);
 
@@ -107,12 +118,24 @@ export function AdminSupportBadge() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     mountedRef.current = true;
-    void load();
+
+    timeouts.push(
+      setTimeout(() => {
+        void load();
+      }, 0),
+    );
+
     const interval = setInterval(() => void load(), 120_000);
+
     return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        mountedRef.current = false;
+        clearInterval(interval);
+      })();
     };
   }, [load]);
 

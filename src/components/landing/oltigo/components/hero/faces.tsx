@@ -113,19 +113,33 @@ export function WhatsappFace({ dict }: { dict: Dictionary }) {
   const [step, setStep] = useState(0); // 0 incoming · 1 reply · 2 ✓✓ confirmed
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (reduce) {
-      setStep(2);
-      return;
+      timeouts.push(
+        setTimeout(() => {
+          setStep(2);
+        }, 0),
+      );
+
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
     }
+
     let s = 0;
     const id = window.setInterval(() => {
       s = (s + 1) % 3;
       setStep(s);
     }, 1800);
-    return () => window.clearInterval(id);
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+      (() => window.clearInterval(id))();
+    };
   }, []);
 
   return (

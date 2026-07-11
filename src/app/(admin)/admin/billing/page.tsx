@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, use, useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -37,38 +37,33 @@ import { logger } from "@/lib/logger";
 import { fetchPricingTiers, type PricingTierRow } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-export default function ClientBillingPage() {
-  const [locale] = useLocale();
+async function loadBillingData(
+  clinicId: string,
+): Promise<{
+  currentSub: ClinicSubscriptionView | null;
+  allTiers: PricingTierRow[];
+  error: string | null;
+}> {
+  try {
+    const [sub, tiers] = await Promise.all([
+      fetchClinicSubscription(clinicId),
+      fetchPricingTiers(),
+    ]);
+    return { currentSub: sub, allTiers: tiers, error: null };
+  } catch (err) {
+    logger.warn("Failed to load admin billing page", { context: "page", error: err });
+    return { currentSub: null, allTiers: [], error: "Impossible de charger la facturation" };
+  }
+}
 
+function BillingContent() {
+  const [locale] = useLocale();
   const tenant = useTenant();
+  const clinicId = tenant?.clinicId ?? "";
+  const [promise] = useState(() => loadBillingData(clinicId));
+  const result = use(promise);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [selectedUpgrade, setSelectedUpgrade] = useState<SubscriptionPlan | null>(null);
-  const [currentSub, setCurrentSub] = useState<ClinicSubscriptionView | null>(null);
-  const [allTiers, setAllTiers] = useState<PricingTierRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async () => {
-    try {
-      const [sub, tiers] = await Promise.all([
-        fetchClinicSubscription(tenant?.clinicId ?? ""),
-        fetchPricingTiers(),
-      ]);
-      setCurrentSub(sub);
-      setAllTiers(tiers);
-    } catch (err) {
-      logger.warn("Failed to load admin billing page", { context: "page", error: err });
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant?.clinicId]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadData();
-    return () => {
-      controller.abort();
-    };
-  }, [loadData]);
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -98,10 +93,13 @@ export default function ClientBillingPage() {
     }
   };
 
-  if (loading) {
+  const { currentSub, allTiers, error } = result;
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="text-center py-20 text-muted-foreground">
+        <p className="mb-2">{error}</p>
+        <p className="text-sm">Veuillez réessayer plus tard.</p>
       </div>
     );
   }
@@ -477,5 +475,19 @@ export default function ClientBillingPage() {
           })()}
       </Dialog>
     </div>
+  );
+}
+
+export default function ClientBillingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <BillingContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 
 /**
  * UsageWidget — Clinic admin dashboard widget showing monthly resource usage
@@ -122,7 +121,17 @@ export function UsageWidget() {
   }, []);
 
   useEffect(() => {
-    void load();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void load();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [load]);
 
   const hasOverage =

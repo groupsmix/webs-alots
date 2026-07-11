@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";

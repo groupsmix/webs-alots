@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable i18next/no-literal-string -- Shared beta AI chat UI copy. */
 import { Loader2 } from "lucide-react";
 import type { RefObject } from "react";
 import { ChatInput } from "@/components/ui/chat-input";

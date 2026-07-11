@@ -278,13 +278,28 @@ export function CookieConsent() {
   // fresh, and apply analytics consent when it is. Runs once on the client
   // only, so it can safely touch localStorage without breaking hydration.
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const status = getConsentStatus();
+
     if (status.kind === "fresh") {
-      setPreferences(status.preferences);
+      timeouts.push(
+        setTimeout(() => {
+          setPreferences(status.preferences);
+        }, 0),
+      );
+
       applyAnalyticsConsent(status.preferences.analytics);
     } else {
-      setVisible(true);
+      timeouts.push(
+        setTimeout(() => {
+          setVisible(true);
+        }, 0),
+      );
     }
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, []);
 
   // Listen for programmatic re-open (e.g. footer "Cookie Settings" link).

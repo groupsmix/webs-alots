@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface */
 "use client";
 
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";

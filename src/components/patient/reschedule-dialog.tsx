@@ -50,28 +50,57 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
 
   // Fetch slots when date changes
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     if (!selectedDate) {
-      setAvailableSlots([]);
-      setAllSlots([]);
-      setSlotCounts({});
-      return;
+      timeouts.push(
+        setTimeout(() => {
+          setAvailableSlots([]);
+        }, 0),
+      );
+
+      timeouts.push(
+        setTimeout(() => {
+          setAllSlots([]);
+        }, 0),
+      );
+
+      timeouts.push(
+        setTimeout(() => {
+          setSlotCounts({});
+        }, 0),
+      );
+
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
     }
+
     const clinicId = tenant?.clinicId ?? "";
-    Promise.all([
-      fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
-      fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),
-      fetchSlotBookingCounts(clinicId, selectedDate, appointment.doctorId),
-    ])
-      .then(([available, all, counts]) => {
-        setAvailableSlots(available);
-        setAllSlots(all);
-        setSlotCounts(counts);
-      })
-      .catch(() => {
-        setAvailableSlots([]);
-        setAllSlots([]);
-        setSlotCounts({});
-      });
+
+    timeouts.push(
+      setTimeout(() => {
+        Promise.all([
+          fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
+          fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),
+          fetchSlotBookingCounts(clinicId, selectedDate, appointment.doctorId),
+        ])
+          .then(([available, all, counts]) => {
+            setAvailableSlots(available);
+            setAllSlots(all);
+            setSlotCounts(counts);
+          })
+          .catch(() => {
+            setAvailableSlots([]);
+            setAllSlots([]);
+            setSlotCounts({});
+          });
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [selectedDate, appointment.doctorId, tenant?.clinicId]);
 
   const handleReschedule = async () => {

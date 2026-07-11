@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- French-first AI dashboard UI strings */
 "use client";
 
 /**
