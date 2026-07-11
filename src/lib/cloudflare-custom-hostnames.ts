@@ -131,33 +131,3 @@ export async function deleteCustomHostname(
     return { success: false, error: "Failed to communicate with Cloudflare API" };
   }
 }
-
-export async function getCustomHostnameStatus(
-  customHostnameId: string,
-): Promise<CustomHostnameResponse> {
-  const auth = getAuth();
-  if (!auth) {
-    return { success: false, error: "Cloudflare credentials not configured" };
-  }
-
-  try {
-    const response = await safeFetch(
-      `https://api.cloudflare.com/client/v4/zones/${auth.zoneId}/custom_hostnames/${customHostnameId}`,
-      {
-        method: "GET",
-        headers: auth.headers,
-      },
-    );
-
-    const json = await response.json();
-    if (!json.success) {
-      const errorMsg = json.errors?.[0]?.message ?? "Unknown Cloudflare error";
-      return { success: false, error: errorMsg };
-    }
-
-    return { success: true, data: json.result };
-  } catch (error) {
-    logger.error("Cloudflare custom hostname status API error", { customHostnameId, error });
-    return { success: false, error: "Failed to communicate with Cloudflare API" };
-  }
-}

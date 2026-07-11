@@ -29,12 +29,6 @@ import { getSupabasePoolerUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /** Expected pooling configuration for serverless deployment. */
-export const POOLING_CONFIG = {
-  mode: "transaction" as const,
-  defaultPoolSize: 15,
-  maxClientConnections: 200,
-  statementTimeout: 30_000,
-} as const;
 
 /**
  * Verify that the server runtime is configured to prefer pooled Supabase access.

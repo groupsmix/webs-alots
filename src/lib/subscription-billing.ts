@@ -514,74 +514,7 @@ async function logBillingEvent(
 
 // ── Usage-Based Billing ──
 
-interface UsageBillLine {
-  resourceType: string;
-  unitCount: number;
-  costUsd: number;
-}
-
-interface ClinicUsageBill {
-  clinicId: string;
-  plan: SubscriptionPlan;
-  planCostMad: number;
-  usageLines: UsageBillLine[];
-  totalUsageCostUsd: number;
-  periodStart: string;
-  periodEnd: string;
-}
-
 /**
  * Calculate usage-based bill for a clinic for the current month.
  * Combines fixed plan price + metered usage from tenant_usage_log.
  */
-export async function calculateUsageBill(
-  clinicId: string,
-  plan: SubscriptionPlan,
-  interval: BillingInterval,
-): Promise<ClinicUsageBill> {
-  assertClinicId(clinicId, "subscription-billing:calculateUsageBill");
-
-  // Use untyped admin client — tenant_usage_log is not yet in generated DB types
-  const { createUntypedAdminClient: createAdmin } = await import("@/lib/supabase-server");
-  // nosemgrep: semgrep.tenant-scoping — scoped below by .eq("clinic_id", clinicId)
-  const supabase = createAdmin("subscription-billing");
-
-  const now = new Date();
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
-
-  const { data } = await supabase
-    .from("tenant_usage_log")
-    .select("resource_type, unit_count, cost_usd")
-    .eq("clinic_id", clinicId) // tenant-scoped
-    .gte("created_at", monthStart.toISOString())
-    .lte("created_at", monthEnd.toISOString());
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = (data ?? []) as Array<Record<string, any>>;
-  const byType: Record<string, { units: number; cost: number }> = {};
-  for (const row of rows) {
-    const rt = String(row.resource_type ?? "");
-    if (!byType[rt]) byType[rt] = { units: 0, cost: 0 };
-    byType[rt].units += Number(row.unit_count) || 0;
-    byType[rt].cost += Number(row.cost_usd) || 0;
-  }
-
-  const usageLines: UsageBillLine[] = Object.entries(byType).map(([rt, v]) => ({
-    resourceType: rt,
-    unitCount: v.units,
-    costUsd: v.cost,
-  }));
-
-  const totalUsageCostUsd = usageLines.reduce((sum, l) => sum + l.costUsd, 0);
-
-  return {
-    clinicId,
-    plan,
-    planCostMad: getPlanPrice(plan, interval),
-    usageLines,
-    totalUsageCostUsd,
-    periodStart: getLocalDateStr(monthStart),
-    periodEnd: getLocalDateStr(monthEnd),
-  };
-}

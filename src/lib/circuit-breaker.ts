@@ -205,8 +205,6 @@ export class CircuitOpenError extends Error {
 
 // ── Per-service singleton breakers ──
 
-const breakers = new Map<string, CircuitBreaker>();
-
 /**
  * Get or create a named circuit breaker singleton.
  *
@@ -214,14 +212,3 @@ const breakers = new Map<string, CircuitBreaker>();
  *   const breaker = getCircuitBreaker("openai");
  *   const result = await breaker.fire(() => fetchAllowlisted(url, init));
  */
-export function getCircuitBreaker(
-  name: string,
-  opts?: Omit<CircuitBreakerOptions, "name">,
-): CircuitBreaker {
-  let cb = breakers.get(name);
-  if (!cb) {
-    cb = new CircuitBreaker({ name, ...opts });
-    breakers.set(name, cb);
-  }
-  return cb;
-}

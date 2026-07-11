@@ -8,7 +8,6 @@
  */
 
 import { logger } from "@/lib/logger";
-import { insertInAppNotification } from "@/lib/notification-persist";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UntypedAdminClient = any;
@@ -31,7 +30,7 @@ function randomSuffix(length: number): string {
  * Generates a deterministic referral code from clinic prefix + random suffix.
  * Format: "OLTI-{PREFIX3}-{RANDOM6}" e.g. "OLTI-DAR-X7K2M9"
  */
-export function generateReferralCode(clinicName: string): string {
+function generateReferralCode(clinicName: string): string {
   // Normalise: strip diacritics, uppercase, keep only ASCII letters/digits
   const normalised = clinicName
     .normalize("NFD")
@@ -271,111 +270,3 @@ export async function applyReferralCode(
  * - Creates a referral_credits row for the referrer
  * - Sends in-app notification to a clinic_admin of the referrer
  */
-export async function triggerReferralReward(
-  supabase: UntypedAdminClient,
-  refereeClinicId: string,
-  rewardCentimes: number,
-): Promise<void> {
-  // Find the signup event for this referee
-  const { data: signupEvent, error: eventError } = await supabase
-    .from("referral_events")
-    .select("id, referral_code_id, referrer_clinic_id")
-    .eq("referee_clinic_id", refereeClinicId)
-    .eq("event_type", "signup")
-    .maybeSingle();
-
-  if (eventError || !signupEvent) {
-    logger.warn("No signup event found for referee clinic — skipping reward", {
-      context: "referral-program",
-      refereeClinicId,
-      error: eventError,
-    });
-    return;
-  }
-
-  const referrerClinicId = signupEvent.referrer_clinic_id as string;
-
-  // Avoid double-rewarding: check if first_payment event already exists
-  const { data: existingPayment } = await supabase
-    .from("referral_events")
-    .select("id")
-    .eq("referee_clinic_id", refereeClinicId)
-    .eq("event_type", "first_payment")
-    .maybeSingle();
-
-  if (existingPayment) {
-    logger.info("Referral reward already triggered for referee clinic — skipping", {
-      context: "referral-program",
-      refereeClinicId,
-    });
-    return;
-  }
-
-  // Record first_payment event
-  const { data: paymentEvent, error: paymentEventError } = await supabase
-    .from("referral_events")
-    .insert({
-      referral_code_id: signupEvent.referral_code_id,
-      referrer_clinic_id: referrerClinicId,
-      referee_clinic_id: refereeClinicId,
-      event_type: "first_payment",
-    })
-    .select("id")
-    .single();
-
-  if (paymentEventError || !paymentEvent) {
-    logger.error("Failed to record first_payment referral event", {
-      context: "referral-program",
-      refereeClinicId,
-      error: paymentEventError,
-    });
-    return;
-  }
-
-  // Create credit for the referrer
-  const { error: creditError } = await supabase.from("referral_credits").insert({
-    referral_event_id: paymentEvent.id,
-    beneficiary_clinic_id: referrerClinicId,
-    amount_centimes: rewardCentimes,
-    currency: "MAD",
-    payout_type: "account_credit",
-    status: "pending",
-  });
-
-  if (creditError) {
-    logger.error("Failed to create referral credit", {
-      context: "referral-program",
-      referrerClinicId,
-      rewardCentimes,
-      error: creditError,
-    });
-    return;
-  }
-
-  // Find a clinic_admin user for the referrer to notify
-  const { data: adminUser, error: userError } = await supabase
-    .from("users")
-    .select("id")
-    .eq("clinic_id", referrerClinicId)
-    .eq("role", "clinic_admin")
-    .limit(1)
-    .maybeSingle();
-
-  if (userError || !adminUser) {
-    logger.warn("No clinic_admin found for referrer — skipping notification", {
-      context: "referral-program",
-      referrerClinicId,
-      error: userError,
-    });
-    return;
-  }
-
-  // Send in-app notification
-  const rewardMad = (rewardCentimes / 100).toFixed(2);
-  await insertInAppNotification({
-    userId: adminUser.id as string,
-    trigger: "payment_received",
-    title: "Récompense de parrainage débloquée",
-    message: `Votre filleule a effectué son premier paiement. Vous avez gagné ${rewardMad} MAD de crédit.`,
-  });
-}

@@ -75,7 +75,7 @@ export function hasRedFlag(text: string): boolean {
 
 // ── Heuristic fallback ──
 
-export function heuristicTriage(text: string): TriageOutput {
+function heuristicTriage(text: string): TriageOutput {
   const isRedFlag = hasRedFlag(text);
   return {
     language: "fr",

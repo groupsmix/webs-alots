@@ -114,7 +114,7 @@ function getLastWeekStr(): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UntypedSupabase = any;
 
-export async function fetchClinicMetrics(
+async function fetchClinicMetrics(
   supabase: UntypedSupabase,
   clinicId: string,
   clinicName: string,
@@ -367,7 +367,7 @@ export async function fetchClinicMetrics(
 
 // ── Briefing generator ──
 
-export async function generateClinicBriefing(
+async function generateClinicBriefing(
   apiKey: string,
   model: string,
   baseUrl: string,

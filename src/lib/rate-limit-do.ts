@@ -34,73 +34,6 @@ import type { RateLimiter, RateLimiterOptions } from "./rate-limit";
  * The Worker fetches the DO stub by ID (derived from the key) and
  * sends HTTP requests to check/increment the counter.
  */
-export class RateLimiterDO {
-  private state: DurableObjectState;
-  private timestamps: number[] = [];
-  private windowMs = 60_000;
-  private max = 10;
-
-  constructor(state: DurableObjectState) {
-    this.state = state;
-  }
-
-  async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-
-    if (url.pathname === "/check") {
-      const windowMs = Number(url.searchParams.get("windowMs") || "60000");
-      const max = Number(url.searchParams.get("max") || "10");
-      this.windowMs = windowMs;
-      this.max = max;
-
-      // Load persisted timestamps on first access
-      if (this.timestamps.length === 0) {
-        const stored = await this.state.storage.get<number[]>("timestamps");
-        if (stored) this.timestamps = stored;
-      }
-
-      const now = Date.now();
-      const windowStart = now - windowMs;
-
-      // Prune expired timestamps
-      this.timestamps = this.timestamps.filter((ts) => ts > windowStart);
-
-      if (this.timestamps.length >= max) {
-        return new Response(JSON.stringify({ allowed: false }), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      // Add current request timestamp
-      this.timestamps.push(now);
-      await this.state.storage.put("timestamps", this.timestamps);
-
-      // Set alarm to clean up after window expires
-      const alarmTime = now + windowMs + 1000;
-      await this.state.storage.setAlarm(alarmTime);
-
-      return new Response(JSON.stringify({ allowed: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response("Not found", { status: 404 });
-  }
-
-  async alarm(): Promise<void> {
-    const now = Date.now();
-    const windowStart = now - this.windowMs;
-    this.timestamps = this.timestamps.filter((ts) => ts > windowStart);
-
-    if (this.timestamps.length > 0) {
-      await this.state.storage.put("timestamps", this.timestamps);
-      // Schedule next cleanup
-      await this.state.storage.setAlarm(now + this.windowMs + 1000);
-    } else {
-      await this.state.storage.deleteAll();
-    }
-  }
-}
 
 // ── Client-side factory (used by the Worker to talk to the DO) ──
 
@@ -115,17 +48,6 @@ interface DurableObjectId {
 
 interface DurableObjectStub {
   fetch(request: Request | string, init?: RequestInit): Promise<Response>;
-}
-
-interface DurableObjectState {
-  storage: DurableObjectStorage;
-}
-
-interface DurableObjectStorage {
-  get<T>(key: string): Promise<T | undefined>;
-  put(key: string, value: unknown): Promise<void>;
-  deleteAll(): Promise<void>;
-  setAlarm(time: number): Promise<void>;
 }
 
 /**

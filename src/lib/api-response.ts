@@ -132,7 +132,7 @@ export function apiInternalError(message = "Internal server error"): NextRespons
  * This helper recursively extracts the chain (up to 5 deep) so the full
  * context reaches observability tooling (Sentry, Workers Logs).
  */
-export function serializeErrorCause(err: unknown, depth = 0): Record<string, unknown> | undefined {
+function serializeErrorCause(err: unknown, depth = 0): Record<string, unknown> | undefined {
   if (depth > 5 || !err) return undefined;
   if (!(err instanceof Error)) return { raw: String(err) };
   const serialized: Record<string, unknown> = {

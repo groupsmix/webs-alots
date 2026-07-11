@@ -535,20 +535,6 @@ export async function fetchLabDeliveriesAndInvoices(clinicId: string): Promise<{
   };
 }
 
-export async function fetchClinicSales(clinicId: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("sales")
-    .select(
-      "id, clinic_id, patient_id, patient_name, items, total, currency, payment_method, has_prescription, loyalty_points_earned, date, time, created_at",
-    )
-    .eq("clinic_id", clinicId)
-    .order("date", { ascending: false });
-
-  if (error) return [];
-  return data ?? [];
-}
-
 // ============================================================
 // CONSENT FORMS (photo_consent_forms)
 // ============================================================
@@ -1121,16 +1107,6 @@ export async function createIVFProtocol(
     .single();
   if (error) throw error;
   return { id: (row as { id: string }).id };
-}
-
-export async function deleteIVFProtocol(clinicId: string, id: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("ivf_protocols")
-    .delete()
-    .eq("id", id)
-    .eq("clinic_id", clinicId);
-  if (error) throw error;
 }
 
 // ============================================================

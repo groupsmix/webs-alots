@@ -23,15 +23,6 @@ interface FeatureToggleRow {
  * Known AI feature keys. Keep this in sync with the seed in
  * supabase/migrations/00123_ai_provider_configs.sql.
  */
-export const AI_FEATURE_KEYS = [
-  "dashboard_insights",
-  "usage_analysis",
-  "support_categorize",
-  "support_draft",
-  "churn_narrative",
-  "agent_builder",
-  "smart_recommendations",
-] as const;
 
 export interface FeatureToggleState {
   isEnabled: boolean;

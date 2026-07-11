@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger";
  * Specialty to feature mapping
  * Defines which features are relevant for each medical specialty
  */
-export const SPECIALTY_FEATURES: Record<string, ClinicFeatureKey[]> = {
+const SPECIALTY_FEATURES: Record<string, ClinicFeatureKey[]> = {
   // General Practitioner - core features only
   gp: [
     "appointments",

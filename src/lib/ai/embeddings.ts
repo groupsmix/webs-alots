@@ -147,5 +147,3 @@ export function truncateForEmbedding(text: string, maxTokens = 8191): string {
   const lastPeriod = truncated.lastIndexOf(".");
   return lastPeriod > maxChars * 0.5 ? truncated.slice(0, lastPeriod + 1) : truncated;
 }
-
-export { EMBEDDING_DIMS, EMBEDDING_MODEL };

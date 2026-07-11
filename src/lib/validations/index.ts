@@ -71,97 +71,10 @@ export { v1AppointmentCreateSchema, v1PatientCreateSchema } from "./v1";
 // The restaurant-orders/menus/restaurant-tables API routes were removed because the
 // underlying database tables were dropped in migration 00187.
 
-export {
-  smartScheduleSchema,
-  smartScheduleConfirmSchema,
-  sendRemindersSchema,
-  waitlistAddSchema,
-  waitlistNotifySchema,
-  waitlistPromoteSchema,
-  noShowMarkSchema,
-} from "./receptionist-ai";
-
-export {
-  aiTeamChatSchema,
-  aiTeamTaskUpdateSchema,
-  aiTeamAlertReadSchema,
-  aiTeamGenerateSchema,
-  AI_AGENT_TYPES,
-} from "./ai-team";
 export { safeParse } from "./helpers";
 
-export {
-  faqCreateSchema,
-  faqUpdateSchema,
-  faqDeleteSchema,
-  faqSearchSchema,
-  ticketCreateSchema,
-  ticketUpdateSchema,
-  ticketRatingSchema,
-  ticketMessageSchema,
-  whatsappInboundSchema,
-  SUPPORTED_LANGUAGES,
-  FAQ_CATEGORIES,
-  TICKET_CHANNELS,
-  TICKET_STATUSES,
-  TICKET_PRIORITIES,
-} from "./support";
-export { passwordPolicySchema, evaluatePasswordStrength } from "./password-policy";
-export {
-  qrCheckinGenerateSchema,
-  qrCheckinScanSchema,
-  waitingQueueUpdateSchema,
-  npsSurveyResponseSchema,
-} from "./patient-experience";
-
-export { timelineQuerySchema, TIMELINE_EVENT_TYPES } from "./patient-timeline";
-export {
-  expenseCategoryCreateSchema,
-  expenseCategoryUpdateSchema,
-  expenseCreateSchema,
-  expenseUpdateSchema,
-  campaignCreateSchema,
-  campaignUpdateSchema,
-  patientAcquisitionCreateSchema,
-  insuranceClaimCreateSchema,
-  insuranceClaimUpdateSchema,
-  revenueQuerySchema,
-} from "./clinic-owner";
-
-export {
-  clinicProvisionSchema,
-  churnPredictionQuerySchema,
-  revenueForecastQuerySchema,
-} from "./super-admin";
-
-export {
-  oneClickCheckinSchema,
-  phoneHandlerLookupSchema,
-  attestationCreateSchema,
-  attestationSignSchema,
-  familyLinkCreateSchema,
-  doctorDelayUpdateSchema,
-  inventoryItemCreateSchema,
-  inventoryItemUpdateSchema,
-  inventoryTransactionSchema,
-} from "./batch4c";
-
-export {
-  invoiceCreateSchema,
-  invoiceUpdateSchema,
-  paymentPlanCreateSchema,
-  installmentUpdateSchema,
-  reminderSendSchema,
-  revenueInsightsQuerySchema,
-} from "./billing";
+export { faqSearchSchema } from "./support";
 
 // ── REMOVED: ADT and insurance-claims routes deleted (P9 — ADR-0013 commit) ─────────────────
 // The admissions and insurance-claims API routes were removed because the underlying
 // database tables were dropped in migration 00187.
-
-export {
-  staffInviteSchema,
-  staffInviteAcceptSchema,
-  staffInviteRevokeSchema,
-  staffInviteQuerySchema,
-} from "./staff-invitations";

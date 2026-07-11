@@ -801,5 +801,3 @@ export async function handleWhatsAppConversation(params: HandleMessageParams): P
     }
   }
 }
-
-export { detectIntent, parseBookingRequest };

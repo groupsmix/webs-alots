@@ -98,15 +98,3 @@ export function excludeSoftDeleted<Q extends { is: (column: string, value: null)
  * @returns The row unchanged (for chaining)
  * @throws Error if row.clinic_id !== expectedClinicId
  */
-export function enforceTenantScope<T extends { clinic_id: string }>(
-  row: T,
-  expectedClinicId: string,
-  entityType: string,
-): T {
-  if (row.clinic_id !== expectedClinicId) {
-    throw new Error(
-      `[TENANT SAFETY] ${entityType} row belongs to clinic "${row.clinic_id}" but current tenant is "${expectedClinicId}". IDOR blocked.`,
-    );
-  }
-  return row;
-}

@@ -23,37 +23,8 @@ import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
 /** Tool definition for AI function calling. */
-interface AITool {
-  name: string;
-  description: string;
-  parameters: Record<
-    string,
-    {
-      type: string;
-      description: string;
-      required?: boolean;
-    }
-  >;
-}
 
 /** Available tools the AI agent can invoke. */
-export const CLINIC_AI_TOOLS: AITool[] = [
-  {
-    name: "search_patients",
-    description: "Rechercher des patients dans la base de données de la clinique",
-    parameters: {
-      query: { type: "string", description: "Nom ou téléphone du patient", required: true },
-    },
-  },
-  {
-    name: "get_appointment_slots",
-    description: "Obtenir les créneaux disponibles pour un rendez-vous",
-    parameters: {
-      date: { type: "string", description: "Date au format YYYY-MM-DD", required: true },
-      doctor_id: { type: "string", description: "ID du médecin (optionnel)" },
-    },
-  },
-];
 
 /** Format an SSE chunk for streaming. */
 function formatStreamChunk(type: "text" | "tool_call" | "error" | "done", data: unknown): string {

@@ -45,7 +45,7 @@ export function invalidateTaskConfigCache(): void {
  * a missing table or DB hiccup can never take AI down.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function loadTaskConfigs(supabase?: any): Promise<Map<AITaskType, TaskPin>> {
+async function loadTaskConfigs(supabase?: any): Promise<Map<AITaskType, TaskPin>> {
   if (_cached && Date.now() < _cached.expiresAt) return _cached.pins;
 
   const pins = new Map<AITaskType, TaskPin>();

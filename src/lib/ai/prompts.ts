@@ -25,7 +25,7 @@ type AgentContext = {
   userRole?: UserRole | string;
 };
 
-export function normalizeAgentType(agentType: SiteTeamAgentType): SiteTeamAgentType {
+function normalizeAgentType(agentType: SiteTeamAgentType): SiteTeamAgentType {
   return agentType === "receptionist" ? "secretary" : agentType;
 }
 

@@ -114,9 +114,3 @@ export function detectLanguage(text: string): SupportedLanguage {
   if (enScore > frScore && enScore >= 2) return "en";
   return "fr";
 }
-
-export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  fr: "Français",
-  ar: "العربية",
-  en: "English",
-};

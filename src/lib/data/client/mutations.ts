@@ -43,78 +43,9 @@ export async function updateAppointmentStatus(
   return { success: true, data: { id: updated.id, status: updated.status } };
 }
 
-export async function createPrescription(data: {
-  clinic_id: string;
-  doctor_id: string;
-  patient_id: string;
-  items: { name: string; dosage: string; duration: string }[];
-  notes?: string;
-  appointment_id?: string;
-}): Promise<MutationResult<{ id: string }>> {
-  const supabase = createClient();
-  // Issue 45: Return created entity data via .select()
-  const { data: created, error } = await supabase
-    .from("prescriptions")
-    .insert(data)
-    .select("id")
-    .single();
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return { success: false, error: { code: error.code, message: error.message } };
-  }
-  return { success: true, data: { id: created.id } };
-}
-
 // ─────────────────────────────────────────────
 // Consultation Notes Mutations
 // ─────────────────────────────────────────────
-
-export async function createConsultationNote(data: {
-  clinic_id: string;
-  doctor_id: string;
-  patient_id: string;
-  appointment_id: string;
-  diagnosis?: string;
-  notes?: string;
-  content?: Record<string, unknown>;
-  is_private?: boolean;
-}): Promise<string | null> {
-  const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("consultation_notes")
-    .insert(data as Database["public"]["Tables"]["consultation_notes"]["Insert"])
-    .select("id")
-    .single();
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return null;
-  }
-  return result?.id ?? null;
-}
-
-export async function updateConsultationNote(
-  id: string,
-  data: {
-    diagnosis?: string;
-    notes?: string;
-    content?: Record<string, unknown>;
-    is_private?: boolean;
-  },
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("consultation_notes")
-    .update({
-      ...data,
-      updated_at: new Date().toISOString(),
-    } as Database["public"]["Tables"]["consultation_notes"]["Update"])
-    .eq("id", id);
-  if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
-    return false;
-  }
-  return true;
-}
 
 // ─────────────────────────────────────────────
 // Odontogram Mutations
