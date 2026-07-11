@@ -110,6 +110,11 @@ jobs:
           # Both production and staging use "partial" (matches wrangler.toml
           # [env.*.vars] and .env.example).
           NEXT_PUBLIC_DATA_MASKING: partial
+          # R2-01: Persist Next.js 16 `use cache` / ISR entries across Worker
+          # isolates. The bucket binding is declared in wrangler.toml and
+          # auto-created on first deploy; the build override is gated in
+          # open-next.config.ts so local builds stay green without it.
+          ENABLE_R2_INCREMENTAL_CACHE: 1
           # BG2 / Ops dashboard "Last Deployment": pin a deterministic build
           # timestamp instead of letting next.config.ts fall back to
           # `new Date()` (which makes every build non-reproducible and churns

@@ -188,9 +188,11 @@ bucket_name = "webs-alots-uploads"
 #   2. Uncomment the binding below (top level AND env.production).
 #   3. Set ENABLE_R2_INCREMENTAL_CACHE=1 in the deploy workflow (build + deploy).
 # The adapter reads the binding name `NEXT_INC_CACHE_R2_BUCKET` exactly.
-# [[r2_buckets]]
-# binding = "NEXT_INC_CACHE_R2_BUCKET"
-# bucket_name = "webs-alots-next-cache"
+# The bucket is auto-created on first deploy if it does not exist; if that
+# fails, create it manually with `wrangler r2 bucket create webs-alots-next-cache`.
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "webs-alots-next-cache"
 
 # ── Environment Variables (non-secret) ────────────────────────────────
 # Secrets (API keys, encryption keys) are set via `wrangler secret put`
@@ -297,11 +299,13 @@ dead_letter_queue = "notification-queue-dlq"
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads"
 
-# Next.js incremental cache (audit R-8) — uncomment after creating the
-# dedicated bucket (see top-level note). Do NOT reuse UPLOADS_BUCKET (PHI).
-# [[env.production.r2_buckets]]
-# binding = "NEXT_INC_CACHE_R2_BUCKET"
-# bucket_name = "webs-alots-next-cache"
+# Next.js incremental cache (audit R-8) — dedicated bucket, do NOT reuse
+# UPLOADS_BUCKET (PHI). The bucket is auto-created on first deploy if it
+# does not exist; if that fails, create it manually with
+# `wrangler r2 bucket create webs-alots-next-cache`.
+[[env.production.r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "webs-alots-next-cache"
 
 # W8-A31-01: KV namespace binding (was missing — rate limiter fell open)
 [[env.production.kv_namespaces]]
@@ -415,6 +419,12 @@ dead_letter_queue = "notification-queue-staging-dlq"
 [[env.staging.r2_buckets]]
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
+
+# Next.js incremental cache (audit R-8) — dedicated staging bucket, do NOT
+# reuse UPLOADS_BUCKET (PHI). Auto-created on first deploy if it does not exist.
+[[env.staging.r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "webs-alots-next-cache-staging"
 
 # W8-A31-01: KV namespace binding for staging.
 #
