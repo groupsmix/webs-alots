@@ -14,16 +14,16 @@
  * `secretary` vs `receptionist`) and had to be edited in several places at
  * once. This module collapses them into one map.
  *
- * DESIGN DECISION (matches `src/middleware.ts` today):
+ * DESIGN DECISION (matches `src/proxy.ts` today):
  *   Specialists / pharmacist are **capabilities layered on the existing 5
- *   core roles**, NOT new DB roles. `src/middleware.ts` already gates
+ *   core roles**, NOT new DB roles. `src/proxy.ts` already gates
  *   `SPECIALIST_PROTECTED_PREFIXES` to `SPECIALIST_STAFF_ROLES`
  *   (`clinic_admin`, `receptionist`, `doctor`). We keep that: a capability is
  *   an operational surface that one of the 5 roles may access, never a new
  *   principal in the auth system.
  *
  * This file lives in the EDIT layer (`src/lib/config/`). The SEALED Layer-1
- * files (`src/lib/middleware/routes.ts`, `src/middleware.ts`) only IMPORT the
+ * files (`src/lib/middleware/routes.ts`, `src/proxy.ts`) only IMPORT the
  * derived constants below; they do not re-declare identity.
  */
 
@@ -111,7 +111,7 @@ export const ALL_CAPABILITIES: readonly Capability[] = [
 /**
  * Which capabilities each core role carries.
  *
- * Mirrors the live gating in `src/middleware.ts`:
+ * Mirrors the live gating in `src/proxy.ts`:
  *   - Specialist surfaces are gated to SPECIALIST_STAFF_ROLES =
  *     { clinic_admin, receptionist, doctor }. So every specialist capability
  *     is granted to exactly those three roles.
@@ -343,7 +343,7 @@ export function capabilityForSlug(slug: string): Capability | null {
 
 /**
  * Capabilities granted to a role. Unknown roles → `[]` (fail-closed), matching
- * the deny-by-default posture of `src/middleware.ts`.
+ * the deny-by-default posture of `src/proxy.ts`.
  */
 export function capabilitiesForRole(role: string): Capability[] {
   return isCoreRole(role) ? CAPABILITIES[role] : [];

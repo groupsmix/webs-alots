@@ -273,8 +273,8 @@ async function validateBookingRequest(
  */
 export const POST = withValidation(bookingRequestSchema, async (body, request: NextRequest) => {
   // Defence-in-depth: per-IP rate limit for the booking endpoint.
-  // The middleware also applies bookingLimiter, but checking here guards
-  // against deployment configs that skip the middleware layer.
+  // The proxy also applies bookingLimiter, but checking here guards
+  // against deployment configs that skip the proxy layer.
   const clientIp = extractClientIp(request);
   const allowed = await bookingLimiter.check(`booking:${clientIp}`);
   if (!allowed) {

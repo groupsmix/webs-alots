@@ -1,5 +1,5 @@
 /**
- * Sec-07: CORS middleware layer.
+ * Sec-07: CORS proxy helper layer.
  *
  * Enforces a strict Origin allowlist for cross-origin API requests.
  * Only the apex domain and wildcard tenant subdomains are permitted.

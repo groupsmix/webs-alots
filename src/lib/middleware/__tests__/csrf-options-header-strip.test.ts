@@ -1,13 +1,13 @@
 /**
- * Mutation-testing gap coverage for middleware tenant header stripping.
+ * Mutation-testing gap coverage for proxy tenant header stripping.
  *
  * Gaps identified in the audit:
  *   #4: Strip-headers logic might be skipped on OPTIONS requests.
- *   #1: Forged x-clinic-id header must be rejected even without middleware
+ *   #1: Forged x-clinic-id header must be rejected even without proxy
  *       subdomain resolution (i.e. on root domain requests).
  *   #5: x-clinic-id must not be trusted even if referer looks internal.
  *
- * These tests verify the middleware-level header-stripping logic directly.
+ * These tests verify the proxy-level header-stripping logic directly.
  * They complement the existing security-headers.test.ts by focusing on
  * the tenant isolation aspect.
  */
@@ -15,17 +15,17 @@
 import { describe, it, expect } from "vitest";
 import { TENANT_HEADERS } from "@/lib/tenant";
 
-// We test the header-stripping logic by verifying that the middleware
+// We test the header-stripping logic by verifying that the proxy
 // function strips all tenant headers from the incoming request headers,
 // regardless of HTTP method (including OPTIONS).
 //
-// Since the middleware function itself depends on heavy imports
+// Since the proxy function itself depends on heavy imports
 // (Supabase, etc.), we test the header-stripping invariant in isolation
-// by replicating the exact logic from middleware.ts.
+// by replicating the exact logic from proxy.ts.
 
 describe("Tenant header stripping — method-independent (mutation gaps)", () => {
   /**
-   * Replicate the exact header-stripping logic from middleware.ts (lines 140-146).
+   * Replicate the exact header-stripping logic from proxy.ts.
    * This is the code under test — if it were mutated to skip certain methods,
    * these tests would catch it.
    */
@@ -119,7 +119,7 @@ describe("Tenant header stripping — method-independent (mutation gaps)", () =>
 
 describe("TENANT_HEADERS completeness", () => {
   it("covers all required tenant header names", () => {
-    // PR #976 added `locale` for locale propagation through middleware.
+    // PR #976 added `locale` for locale propagation through proxy.
     // When adding new tenant headers, update this assertion to match.
     const headerKeys = Object.keys(TENANT_HEADERS);
     expect(headerKeys).toEqual(

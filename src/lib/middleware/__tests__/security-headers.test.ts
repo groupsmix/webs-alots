@@ -7,8 +7,8 @@
  * blank `Content-Security-Policy` header. Code that checks for the
  * header's presence (e.g. `headers.has("Content-Security-Policy")`)
  * would see the blank header instead of either no header or the actual
- * policy. The middleware-side request-header forwarding has the same
- * guard for the same reason — see `src/middleware.ts:115`.
+ * policy. The proxy-side request-header forwarding has the same
+ * guard for the same reason — see `src/proxy.ts`.
  */
 import { NextResponse } from "next/server";
 import { describe, it, expect } from "vitest";

@@ -104,15 +104,15 @@ id = "223443c0631c4046b72ca8426f733f3c"
 # preview_id = "<paste-preview-namespace-id>"
 
 # TASK-017 / O4 (DEFERRED — provisioning task, not code): Tenant lookup cache
-# — 5-minute TTL, reduces Supabase DB reads per subdomain in middleware.
+# — 5-minute TTL, reduces Supabase DB reads per subdomain in proxy.
 # Provision via (staging + prod each get distinct IDs):
 #   wrangler kv namespace create TENANT_CACHE
 #   wrangler kv namespace create TENANT_CACHE --preview
 # Then paste the returned IDs below and uncomment.
 # Kept commented until provisioned, matching the SUBDOMAIN_KV / APP_CACHE_KV
-# convention above. The middleware falls back to SUBDOMAIN_KV and then direct
+# convention above. The proxy falls back to SUBDOMAIN_KV and then direct
 # Supabase reads when the binding is absent (see getWorkerBinding in
-# src/lib/cf-bindings.ts + src/middleware.ts:329), so leaving it off only
+# src/lib/cf-bindings.ts + src/proxy.ts), so leaving it off only
 # costs the 5-min cache, not correctness. Placeholders like
 # "<run: wrangler ...>" are rejected by Cloudflare Workers Builds validation,
 # which is why this block has to be commented (not left with placeholders)

@@ -43,7 +43,7 @@ function Setup2FAInner() {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [backupCopied, setBackupCopied] = useState(false);
 
-  // R1 fix: read ?required and ?next so the middleware can force enrolment for
+  // R1 fix: read ?required and ?next so the proxy can force enrolment for
   // privileged roles and redirect back to the original destination afterwards.
   const required = searchParams.get("required") === "1";
   const nextParam = searchParams.get("next") ?? "";

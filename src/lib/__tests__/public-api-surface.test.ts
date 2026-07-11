@@ -42,7 +42,7 @@ describe("Public API surface lock", () => {
   });
 });
 
-// Keep sorted. Every entry here is reachable without the middleware auth
+// Keep sorted. Every entry here is reachable without the proxy auth
 // gate. Adding a route to this list means it is exposed to the public
 // internet — review tenant scoping, rate limiting, and input validation
 // before doing so.

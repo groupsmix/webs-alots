@@ -6,7 +6,7 @@
  * It is intentionally dependency-free (no Next.js / Node-only imports) so it
  * can run in every context that needs it:
  *
- *   - Edge middleware + `extractSubdomain()` (request resolution)
+ *   - Edge proxy + `extractSubdomain()` (request resolution)
  *   - The public sitemap (defense-in-depth filtering)
  *   - The self-service registration endpoint (reject bad slugs)
  *   - The `scripts/check-orphan-subdomains.mjs` CI guard (Node)

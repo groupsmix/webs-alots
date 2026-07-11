@@ -1,7 +1,7 @@
 /**
  * §3.5 — MFA enforcement logic for privileged roles.
  *
- * Extracted from middleware.ts to keep the orchestrator under ~300 lines.
+ * Extracted from proxy.ts to keep the orchestrator under ~300 lines.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isMfaEnabled, isSuperAdminMfaRequired } from "@/lib/env";

@@ -8,7 +8,7 @@
 ## Architecture Overview
 
 ```
-Layer 1 (SEALED): Auth, RLS, multi-tenant → src/middleware.ts, src/lib/auth.ts (+ with-auth.ts, api-auth.ts, auth-roles.ts, auth-providers.ts, cron-auth.ts), src/lib/tenant.ts
+Layer 1 (SEALED): Auth, RLS, multi-tenant → src/proxy.ts, src/lib/auth.ts (+ with-auth.ts, api-auth.ts, auth-roles.ts, auth-providers.ts, cron-auth.ts), src/lib/tenant.ts
 Layer 2 (SEALED): Booking, payments, notifications → src/app/api/booking/, src/app/api/payments/, src/lib/whatsapp.ts
 Layer 3 (EDIT):   Config, features, niches → src/lib/config/, src/lib/features.ts, src/lib/hooks/use-clinic-features.tsx
 Layer 4 (EDIT):   Templates, UI, pages → src/lib/templates.ts, src/components/, src/app/
@@ -40,7 +40,7 @@ Layer 5 (CREATE): New features → create new files, never modify layers 1-2
 
 ## DO NOT Rules
 
-- Do **NOT** modify `src/middleware.ts` unless explicitly asked
+- Do **NOT** modify `src/proxy.ts` unless explicitly asked
 - Do **NOT** modify `src/lib/auth.ts` or the related auth modules (`with-auth.ts`, `api-auth.ts`, `auth-roles.ts`, `auth-providers.ts`, `cron-auth.ts`) unless explicitly asked
 - Do **NOT** modify RLS policies in `supabase/migrations/` unless explicitly asked
 - Do **NOT** modify existing API route handlers (create new ones instead)

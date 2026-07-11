@@ -1,5 +1,5 @@
 /**
- * A36.7: Geo-restriction middleware for admin endpoints.
+ * A36.7: Geo-restriction helper for admin endpoints.
  *
  * The platform handles Moroccan PHI; restricting admin-panel access to
  * expected geographies is a defensible default. Cloudflare injects the

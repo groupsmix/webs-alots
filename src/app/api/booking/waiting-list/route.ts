@@ -32,8 +32,8 @@ export const POST = withAuthValidation(
     }
 
     // Defence-in-depth: per-IP rate limit (Issue 51).
-    // The middleware also applies waitingListLimiter, but checking here
-    // guards against deployment configs that skip the middleware layer.
+    // The proxy also applies waitingListLimiter, but checking here
+    // guards against deployment configs that skip the proxy layer.
     const clientIp = extractClientIp(request);
     const ipAllowed = await waitingListLimiter.check(`waiting-list:${clientIp}`);
     if (!ipAllowed) {

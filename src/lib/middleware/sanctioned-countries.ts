@@ -2,7 +2,7 @@
  * F-A198 / F-A160: Sanctioned country blocking.
  *
  * Blocks requests from OFAC/EU/UN-sanctioned jurisdictions at the
- * middleware level using Cloudflare's request.cf.country geolocation.
+ * proxy level using Cloudflare's request.cf.country geolocation.
  *
  * This is a first-line defense. Full sanctions screening (OFAC SDN list
  * checks against patient/clinic names) requires a dedicated service and

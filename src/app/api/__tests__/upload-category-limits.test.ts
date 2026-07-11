@@ -5,7 +5,7 @@
  * payloads (PDFs, scanned scripts, lab reports, radiology). The route now
  * enforces `LIMITS_BY_CATEGORY` so each category gets a realistic cap and
  * unknown categories fall back to `DEFAULT_UPLOAD_LIMIT` (10 MB), bounded
- * by the middleware-level `MAX_BODY_BYTES` (25 MB).
+ * by the proxy-level `MAX_BODY_BYTES` (25 MB).
  *
  * These tests exercise the pure helpers; the POST/PUT/GET handlers are
  * covered by `upload-confirm-headobject.test.ts` and
@@ -30,7 +30,7 @@ describe("LIMITS_BY_CATEGORY", () => {
     expect(LIMITS_BY_CATEGORY.document).toBe(10 * 1024 * 1024);
   });
 
-  it("never exceeds the global middleware body cap", () => {
+  it("never exceeds the global proxy body cap", () => {
     for (const limit of Object.values(LIMITS_BY_CATEGORY)) {
       expect(limit).toBeLessThanOrEqual(MAX_UPLOAD_BYTES);
     }

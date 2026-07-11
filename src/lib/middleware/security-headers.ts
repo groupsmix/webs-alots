@@ -73,8 +73,8 @@ function getSupabaseHost(): string {
   // nosemgrep: semgrep.env-access — NODE_ENV is a standard runtime guard, not a secret
 
   if (process.env.NODE_ENV === "production") {
-    // Edge middleware — console.error is appropriate here since the
-    // structured logger may not be available in the edge runtime.
+    // Proxy runtime — console.error is appropriate here since the
+    // structured logger may not be available in the proxy runtime.
     console.error(
       // nosemgrep: no-console
       "[security-headers] NEXT_PUBLIC_SUPABASE_URL is not set; CSP connect-src falls back to placeholder.supabase.co",

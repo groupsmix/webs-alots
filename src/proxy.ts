@@ -1,5 +1,5 @@
 /**
- * Next.js Middleware
+ * Next.js Proxy (renamed from middleware in Next.js 16)
  *
  * Composable modules:
  *   - @/lib/middleware/security-headers      — CSP, HSTS, nonce generation
@@ -9,7 +9,7 @@
  *   - @/lib/middleware/subdomain-resolution  — Subdomain → clinic cache + DB lookup
  *   - @/lib/middleware/mfa-enforcement       — MFA gating per role
  *
- * This file orchestrates the modules and handles Supabase auth.
+ * This file orchestrates the middleware modules and handles Supabase auth.
  */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -52,7 +52,7 @@ import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractRawSubdomain, extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 
-interface MiddlewareUser {
+interface ProxyUser {
   id: string;
   email?: string | null;
 }
@@ -76,10 +76,10 @@ function setTenantHeaders(
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
-export async function middleware(request: NextRequest) {
-  // AUDIT-25: Record middleware start time for CPU telemetry.
+export async function proxy(request: NextRequest) {
+  // AUDIT-25: Record proxy start time for CPU telemetry.
   // Cloudflare Workers CPU budget is set to 50ms in wrangler.toml (Paid plan).
-  // This timing helps identify when middleware complexity approaches that
+  // This timing helps identify when proxy complexity approaches that
   // threshold so the team can optimize before p99 latency degrades.
   const mwStart = Date.now();
 
@@ -153,7 +153,7 @@ export async function middleware(request: NextRequest) {
   // --- Global body size limit ---
   // F-38: Check Content-Length header first (fast path), but also enforce
   // actual body size via stream reading in route handlers (see body-limit.ts).
-  // Next.js middleware doesn't fully support stream-processing the body directly,
+  // Next.js proxy doesn't fully support stream-processing the body directly,
   // so this header check is the quick reject for honest clients and the per-route
   // stream check in route handlers is the robust defense against Content-Length
   // bypasses.
@@ -217,7 +217,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Strip incoming x-auth-profile-* headers. These are set later in this
-  // middleware (after the user/profile lookup) with an HMAC signature so
+  // proxy (after the user/profile lookup) with an HMAC signature so
   // downstream API routes (`withAuth`) can trust them without re-querying
   // the DB. Allowing a client to forge them would let an attacker
   // impersonate any user, so we always overwrite with server-derived
@@ -443,11 +443,11 @@ export async function middleware(request: NextRequest) {
     .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
 
   const authClient = supabase.auth as unknown as {
-    getUser: () => Promise<{ data: { user: MiddlewareUser | null } }>;
+    getUser: () => Promise<{ data: { user: ProxyUser | null } }>;
     signOut: () => Promise<unknown>;
   };
 
-  let user: MiddlewareUser | null = null;
+  let user: ProxyUser | null = null;
   if (hasSupabaseAuthCookies) {
     const {
       data: { user: validatedUser },
@@ -529,7 +529,7 @@ export async function middleware(request: NextRequest) {
 
           // Do NOT mirror the signed x-auth-profile-* headers onto the
           // outgoing response. They are an internal trust contract between
-          // middleware and `withAuth` carried via the forwarded *request*
+          // proxy and `withAuth` carried via the forwarded *request*
           // headers; emitting them on the response leaks the user id, role,
           // clinic id and HMAC signature to the browser and any
           // intermediaries. Re-apply security and tenant headers since the
@@ -541,7 +541,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // FP-02: Enforce cron auth at middleware level for /api/cron/ routes.
+  // FP-02: Enforce cron auth at proxy level for /api/cron/ routes.
   // These routes are in PUBLIC_API_ROUTES (no session auth) but MUST carry
   // a valid CRON_SECRET bearer token. Previously only per-handler
   // verifyCronSecret guarded them — a missing guard in a new handler
@@ -569,7 +569,7 @@ export async function middleware(request: NextRequest) {
 
   // AUDIT-12 (P0-01): Deny-by-default for /api/ routes.
   // Any /api/* path not in the public allowlist must require an authenticated
-  // session at the middleware layer. Without this explicit block, non-public
+  // session at the proxy layer. Without this explicit block, non-public
   // API routes would fall through the remaining checks (which only handle
   // PROTECTED_PREFIXES page routes) and reach `return supabaseResponse`
   // unauthenticated, making every newly-added API route publicly accessible
@@ -670,13 +670,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // AUDIT-25: Log middleware execution time for CPU budget monitoring.
+  // AUDIT-25: Log proxy execution time for CPU budget monitoring.
   // CPU budget is 50ms per request (wrangler.toml). Sustained p95 above
   // ~35ms should trigger investigation and optimization.
   const mwDuration = Date.now() - mwStart;
   if (mwDuration > 5) {
     // Only log slow requests to avoid noise. Threshold tuned for edge.
-    supabaseResponse.headers.set("x-middleware-duration", String(mwDuration));
+    supabaseResponse.headers.set("x-proxy-duration", String(mwDuration));
   }
   // Always set the header so downstream can correlate
   supabaseResponse.headers.set("server-timing", `mw;dur=${mwDuration}`);
@@ -693,7 +693,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - sw.js / offline.html (service worker + offline fallback — must not be
      *   rewritten, redirected, or given the strict CSP; the offline page's
-     *   retry handler and the SW registration must work without middleware)
+     *   retry handler and the SW registration must work without proxy)
      * - .well-known/* (security.txt, mta-sts.txt — static, auth-irrelevant;
      *   excluding them keeps them reachable even if the Supabase env guard
      *   503s the app)
@@ -701,7 +701,7 @@ export const config = {
      *
      * NOTE: /manifest.webmanifest is deliberately NOT excluded — it is
      * generated by app/manifest.ts and reads the x-tenant-locale header that
-     * this middleware sets, so it must continue to run through here.
+     * this proxy sets, so it must continue to run through here.
      */
     "/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|mp4|webm|woff|woff2|ttf|eot)$).*)",
   ],

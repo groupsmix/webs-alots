@@ -60,16 +60,16 @@ const PROTECTED_PREFIXES = [
   ...SPECIALIST_PROTECTED_PREFIXES,
 ];
 
-/** Lightweight API routes that skip heavy middleware processing */
+/** Lightweight API routes that skip heavy proxy processing */
 export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health", "/api/v1/health"]);
 
 /**
  * Role to allowed route prefix mapping.
  *
  * AUDIT-LB2: Every role that has a PROTECTED_PREFIXES entry MUST appear
- * here. If a role is missing, the middleware check fails open and the
- * user bypasses route scoping. Unknown roles are denied in middleware
- * (see fail-closed block in middleware.ts).
+ * here. If a role is missing, the proxy check fails open and the
+ * user bypasses route scoping. Unknown roles are denied in proxy
+ * (see fail-closed block in proxy.ts).
  */
 /**
  * DB core role → dashboard route prefix.
@@ -78,7 +78,7 @@ export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health", "/api/v1/health"]);
  * `src/lib/config/capabilities.ts` — do NOT hand-edit. Kept as a
  * `Record<string, string>` (not `Record<CoreRole, string>`) so unknown-role
  * lookups still resolve to `undefined` (fail-closed), which the gating logic
- * in `src/middleware.ts` relies on. Route values are unchanged.
+ * in `src/proxy.ts` relies on. Route values are unchanged.
  */
 export const ROLE_ROUTE_MAP: Record<string, string> = { ...CORE_ROLE_ROUTE };
 
@@ -92,7 +92,7 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 /**
- * API routes that are intentionally public (no middleware-level auth).
+ * API routes that are intentionally public (no proxy-level auth).
  *
  * AUDIT-12 (P0-01): Previously ALL `/api/` routes were public by default,
  * relying on each handler to implement its own auth. This created a risk
@@ -119,7 +119,7 @@ const PUBLIC_API_ROUTES = [
   "/api/payments/webhook",
   "/api/payments/cmi/callback",
   // Cron jobs — FP-02: removed from public allowlist; verifyCronSecret
-  // is now enforced at the middleware level for all /api/cron/ routes.
+  // is now enforced at the proxy level for all /api/cron/ routes.
   // Public email verification
   "/api/verify-email",
   // API docs
@@ -142,7 +142,7 @@ const PUBLIC_API_ROUTES = [
   // NOTE: /api/waiting-queue is intentionally NOT public. Despite serving
   // waiting-room screens, the payload exposes patient_id, doctor_id and
   // check-in timestamps (PHI). The handler enforces withAuth(receptionist+),
-  // and it is kept under the middleware deny-by-default gate so the session
+  // and it is kept under the proxy deny-by-default gate so the session
   // check is not the handler's sole line of defence (S-1).
   // Public chatbot — basic (keyword) tier serves anonymous clinic visitors
   "/api/chat",
@@ -154,7 +154,7 @@ const PUBLIC_API_ROUTES = [
   // CSP report endpoint
   "/api/csp-report",
   // Versioned (v1) equivalents of public routes — rewrites in next.config.ts
-  // map these to the underlying unversioned handlers, but middleware auth
+  // map these to the underlying unversioned handlers, but proxy auth
   // runs before rewrites so each must be allowlisted explicitly.
   "/api/v1/booking",
   "/api/v1/booking/verify",
@@ -186,14 +186,14 @@ function isPublicApiRoute(pathname: string): boolean {
 }
 
 /**
- * Determine whether a route is public (no middleware-level auth check).
+ * Determine whether a route is public (no proxy-level auth check).
  *
  * API routes are now **protected by default**. Only routes explicitly
  * listed in PUBLIC_API_ROUTES are treated as public. All other `/api/`
- * routes require the user to be authenticated at the middleware level.
+ * routes require the user to be authenticated at the proxy level.
  *
  * Route handlers can still implement additional auth (role checks, API key
- * validation, etc.) on top of the middleware-level session check.
+ * validation, etc.) on top of the proxy-level session check.
  */
 export function isPublicRoute(pathname: string): boolean {
   if (pathname.startsWith("/api/")) {
@@ -219,7 +219,7 @@ export function isSpecialistProtectedRoute(pathname: string): boolean {
  * simple same-origin path, preventing open-redirect attacks via the
  * `?redirect=` query param.
  *
- * Lives here (not inline in middleware.ts) so it is unit-testable without
+ * Lives here (not inline in proxy.ts) so it is unit-testable without
  * pulling in the Next.js edge runtime.
  */
 export function safeRedirectPath(raw: string): string {

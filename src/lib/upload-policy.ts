@@ -80,7 +80,7 @@ export async function limitForClinicCategory(
     if (data?.max_upload_bytes) {
       // Clamp to the global ceiling regardless of what the DB row says.
       // This ensures a misconfigured or manually-inserted row cannot widen
-      // the limit beyond what the middleware body cap allows.
+      // the limit beyond what the proxy body cap allows.
       return Math.min(Number(data.max_upload_bytes), MAX_UPLOAD_BYTES_CEILING);
     }
   } catch (err) {

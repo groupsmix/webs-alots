@@ -31,7 +31,7 @@ Every database operation **must** be scoped to a `clinic_id`. Failing to do so c
 
 1. **Always filter by `clinic_id`** — Every `.from("table").select()`, `.insert()`, `.update()`, `.delete()` must include `.eq("clinic_id", clinicId)`.
 2. **Use `requireTenant()` or `requireTenantWithConfig()`** — Never hardcode or trust client-supplied clinic IDs.
-3. **Middleware strips tenant headers** — The middleware (`src/middleware.ts`) removes any incoming `x-clinic-id` headers and re-derives tenant context from the subdomain. Never trust client-supplied tenant headers.
+3. **Proxy strips tenant headers** — The proxy (`src/proxy.ts`) removes any incoming `x-clinic-id` headers and re-derives tenant context from the subdomain. Never trust client-supplied tenant headers.
 4. **RLS is defense-in-depth** — Application-level scoping is required even though database RLS policies exist. Both layers must agree.
 5. **Webhooks must resolve tenant** — In webhook handlers (WhatsApp, Stripe), resolve the `clinic_id` from the webhook payload (e.g., WABA phone number ID, Stripe metadata). If resolution fails, skip processing — never query across tenants.
 6. **Cron jobs iterate per-clinic** — Scheduled tasks must iterate over clinics and scope each operation to the current clinic's ID.
@@ -42,7 +42,7 @@ Every database operation **must** be scoped to a `clinic_id`. Failing to do so c
 - `src/lib/tenant.ts` — `requireTenant()`, `requireTenantWithConfig()`, `getTenant()`
 - `src/lib/tenant-context.ts` — `setTenantContext()`, `logTenantContext()`
 - `src/lib/assert-tenant.ts` — `assertClinicId()` runtime UUID validation
-- `src/middleware.ts` — Subdomain routing, tenant header injection, CSRF checks
+- `src/proxy.ts` — Subdomain routing, tenant header injection, CSRF checks
 
 ## Test Conventions
 

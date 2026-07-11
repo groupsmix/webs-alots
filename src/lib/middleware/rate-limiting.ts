@@ -47,7 +47,7 @@ export async function applyRateLimit(
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   // F-27: For authenticated AI/booking endpoints, prefer user ID over IP.
-  // In edge middleware we don't have the decoded user yet, so we still
+  // In proxy we don't have the decoded user yet, so we still
   // use IP here. Post-auth user-keyed limiting is done in route handlers
   // (withAuth) for /api/chat and /api/ai/* endpoints.
   const rateLimitKey = `${hostname}:${extractClientIp(request)}`;
@@ -99,7 +99,7 @@ export async function applyRateLimit(
     if (!allowed) {
       // QA-B3-fix / I3: For HTML page navigations, return a human-readable HTML
       // 429 page instead of a raw JSON body. The page must be CSP-safe: the
-      // strict middleware CSP blocks inline/`javascript:` scripts, so recovery
+      // strict proxy CSP blocks inline/`javascript:` scripts, so recovery
       // uses a `<meta http-equiv="refresh">` auto-retry (no JS) plus a plain
       // static link rather than a dead `javascript:history.back()` button.
       const retryAfterSec = 15;
@@ -161,7 +161,7 @@ export async function applyRateLimit(
   // A39-04: Per-clinic global rate cap.
   // W8-T-02/W8-RL-03: Key on clinic_id rather than hostname so custom-domain
   // aliases for the same clinic share a single counter. The subdomain cache is
-  // populated by earlier middleware invocations and is a fast Map lookup.
+  // populated by earlier proxy invocations and is a fast Map lookup.
   if (pathname.startsWith("/api/") && !pathname.startsWith("/api/analytics") && hostname) {
     let clinicKey = hostname;
     const parts = hostname.split(".");

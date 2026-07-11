@@ -2,7 +2,7 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 // P3: protected route prefixes are DERIVED from the canonical capability layer
-// so they can never drift from middleware / capabilities.ts. Relative import
+// so they can never drift from proxy / capabilities.ts. Relative import
 // (not the `@/` alias) because next.config.ts is loaded outside the bundler's
 // path-alias resolution. capabilities.ts has zero runtime deps, so it is safe
 // to import here.
@@ -31,7 +31,7 @@ function getSupabaseImageHostname(): string {
 }
 
 // Security headers (X-Frame-Options, HSTS, X-Content-Type-Options, CSP, etc.)
-// are applied exclusively in middleware.ts to avoid duplication and ensure
+// are applied exclusively in proxy.ts to avoid duplication and ensure
 // consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
@@ -63,7 +63,7 @@ const nextConfig: NextConfig = {
   // E2E suite (login-flow / registration-flow / pricing / mobile-flows specs)
   // asserts `<Link>` hrefs in their canonical form (e.g. href="/login/").
   // Removing this flag drops the trailing slash from rendered hrefs and breaks
-  // those assertions. Several middleware paths (CSRF exempt list, sitemap, the
+  // those assertions. Several proxy paths (CSRF exempt list, sitemap, the
   // CSP-via-headers rewrite map) also assume canonical-with-slash URLs.
   // Keep enabled until those paths and the E2E selectors are migrated.
   trailingSlash: true,
@@ -186,7 +186,7 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    // WWW → non-www redirect is handled in middleware.ts so it works
+    // WWW → non-www redirect is handled in proxy.ts so it works
     // on Cloudflare Workers (next.config redirects are not supported
     // by OpenNext on Workers). This block is kept for any future
     // non-host-based redirects.
