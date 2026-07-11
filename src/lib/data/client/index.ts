@@ -8,7 +8,7 @@
  */
 
 // Core infrastructure
-export { createClient, type ClinicUser, getCurrentUser } from "./_core";
+export { createClient, type ClinicUser, getCurrentUser, clearLookupCache } from "./_core";
 
 export * from "./appointments";
 export * from "./users";

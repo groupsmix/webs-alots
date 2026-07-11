@@ -468,12 +468,20 @@ export async function getPatientDashboardData(
   const { getClinicConfig } = await import("@/lib/tenant");
   const clinicCfgPromise = getClinicConfig(clinicId);
 
+  // PERF-LAT-03: The patient dashboard only renders current/upcoming appointments
+  // and recent-history. A 90-day lookback plus all future appointments bounds the
+  // payload and prevents the 1000-row ascending cap from dropping recent rows.
+  const lookbackDate = new Date();
+  lookbackDate.setDate(lookbackDate.getDate() - 90);
+  const recentCutoff = getLocalDateStr(lookbackDate);
+
   const [apptsRes, rxRes, invoicesRes, notifsRes] = await Promise.all([
     supabase
       .from("appointments")
       .select("id, doctor_id, service_id, appointment_date, start_time, status")
       .eq("clinic_id", clinicId)
       .eq("patient_id", userId)
+      .gte("appointment_date", recentCutoff)
       .order("appointment_date", { ascending: true })
       .limit(DEFAULT_QUERY_LIMIT),
     supabase

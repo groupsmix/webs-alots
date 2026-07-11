@@ -1,5 +1,6 @@
 "use client";
 
+import { getLocalDateStr } from "@/lib/utils";
 import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
 
 // ─────────────────────────────────────────────
@@ -53,6 +54,6 @@ export async function fetchInvoices(
     currency: "MAD",
     method: r.method ?? "cash",
     status: r.status === "completed" ? "paid" : r.status,
-    date: r.created_at?.split("T")[0] ?? "",
+    date: r.created_at ? getLocalDateStr(new Date(r.created_at)) : "",
   }));
 }

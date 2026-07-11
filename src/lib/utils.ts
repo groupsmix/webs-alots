@@ -15,6 +15,7 @@ export function cn(...inputs: ClassValue[]) {
  * instead of the runtime's local timezone or raw UTC boundaries.
  */
 export function getLocalDateStr(date: Date = new Date(), timezone = DEFAULT_TIMEZONE): string {
+  if (Number.isNaN(date.getTime())) return "";
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
