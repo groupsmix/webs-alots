@@ -1,23 +1,15 @@
 import fs from "fs";
+import { fileURLToPath } from "node:url";
 import path from "path";
 import { defineConfig } from "vitest/config";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // FE-006: Read coverage thresholds from a ratchet file so they can be
 // mechanically bumped upward per merged PR. Long-term targets:
 // statements: 80, branches: 70, lines: 70, functions: 60.
 const floorPath = path.resolve(__dirname, ".vitest-coverage-floor.json");
-const floorFile = JSON.parse(fs.readFileSync(floorPath, "utf-8")) as {
-  statements: number;
-  branches: number;
-  lines: number;
-  functions: number;
-  // The ratchet file also carries a `target` object documenting the
-  // long-term goals. It must NOT be forwarded to Vitest: any non-metric key
-  // in `coverage.thresholds` is interpreted as a per-glob threshold, so
-  // `target` would become a glob that matches no files (ignored at best,
-  // a "no files for threshold glob" error at worst). Pick only the metrics.
-  target?: unknown;
-};
+const floorFile = JSON.parse(fs.readFileSync(floorPath, "utf-8"));
 const floor = {
   statements: floorFile.statements,
   branches: floorFile.branches,

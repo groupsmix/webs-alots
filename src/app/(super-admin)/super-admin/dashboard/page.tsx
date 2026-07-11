@@ -54,7 +54,6 @@ interface ClinicDetail {
   type: "doctor" | "dentist" | "pharmacy";
   plan: string;
   city: string;
-  monthlyRevenue: number;
   status: "active" | "suspended" | "trial";
 }
 
@@ -82,6 +81,9 @@ export default function SuperAdminDashboardPage() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [mrr, setMrr] = useState(0);
   const [overdue, setOverdue] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [paidInvoicesThisMonth, setPaidInvoicesThisMonth] = useState(0);
+  const [newClinicsThisMonth, setNewClinicsThisMonth] = useState(0);
   const [announcementList, setAnnouncementList] = useState<Announcement[]>([]);
   const [activityLogList, setActivityLogList] = useState<ActivityLog[]>([]);
   const mountedRef = useRef(true);
@@ -89,7 +91,7 @@ export default function SuperAdminDashboardPage() {
   const loadStats = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const [stats, announcements, logs] = await Promise.all([
+      const [dashboardStats, announcements, logs] = await Promise.all([
         fetchDashboardStats(),
         fetchAnnouncements(),
         fetchActivityLogs(),
@@ -97,14 +99,17 @@ export default function SuperAdminDashboardPage() {
 
       if (!mountedRef.current) return;
 
-      setTotalClinics(stats.totalClinics);
-      setActiveClinics(stats.activeClinics);
-      setTotalPatients(stats.totalPatients);
-      setTotalRevenue(stats.totalRevenue);
-      setMrr(stats.totalRevenue);
-      setOverdue(0);
+      setTotalClinics(dashboardStats.totalClinics);
+      setActiveClinics(dashboardStats.activeClinics);
+      setTotalPatients(dashboardStats.totalPatients);
+      setTotalRevenue(dashboardStats.totalRevenue);
+      setMrr(dashboardStats.mrr);
+      setOverdue(dashboardStats.overdueInvoices);
+      setMonthlyRevenue(dashboardStats.monthlyRevenue);
+      setPaidInvoicesThisMonth(dashboardStats.paidInvoicesThisMonth);
+      setNewClinicsThisMonth(dashboardStats.newClinicsThisMonth);
 
-      const mapped: ClinicDetail[] = stats.clinics.map((c) => {
+      const mapped: ClinicDetail[] = dashboardStats.clinics.map((c) => {
         const config = (c.config ?? {}) as ClinicConfigJson;
         return {
           id: c.id,
@@ -112,7 +117,6 @@ export default function SuperAdminDashboardPage() {
           type: c.type as "doctor" | "dentist" | "pharmacy",
           plan: (c.tier as string) ?? "pro",
           city: config.city ?? "",
-          monthlyRevenue: 0,
           status: (c.status === "inactive" ? "suspended" : (c.status ?? "active")) as
             | "active"
             | "suspended"
@@ -191,8 +195,8 @@ export default function SuperAdminDashboardPage() {
       change: `${activeClinics} ${t(locale, "superAdmin.active")}`,
       color: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-50 dark:bg-blue-900/30",
-      trend: t(locale, "superAdmin.trendNewThisMonth", { count: 2 }),
-      trendDirection: "up" as const,
+      trend: t(locale, "superAdmin.trendNewThisMonth", { count: newClinicsThisMonth }),
+      trendDirection: newClinicsThisMonth > 0 ? ("up" as const) : ("neutral" as const),
     },
     {
       icon: Building2,
@@ -217,15 +221,15 @@ export default function SuperAdminDashboardPage() {
     {
       icon: TrendingUp,
       label: t(locale, "superAdmin.monthlyRevenue"),
-      value: `${formatCurrency(totalRevenue)}`,
+      value: `${formatCurrency(monthlyRevenue)}`,
       change: t(locale, "superAdmin.fromPayments"),
       color: "text-orange-600 dark:text-orange-400",
       bg: "bg-orange-50 dark:bg-orange-900/30",
       trend:
-        totalRevenue > 0
+        monthlyRevenue > 0
           ? t(locale, "superAdmin.revenueTrendingUp")
           : t(locale, "superAdmin.noRevenueYet"),
-      trendDirection: totalRevenue > 0 ? ("up" as const) : ("neutral" as const),
+      trendDirection: monthlyRevenue > 0 ? ("up" as const) : ("neutral" as const),
     },
   ];
 
@@ -244,7 +248,7 @@ export default function SuperAdminDashboardPage() {
     },
     {
       label: t(locale, "superAdmin.paidThisMonth"),
-      value: `${activeClinics}`,
+      value: paidInvoicesThisMonth.toString(),
       icon: TrendingUp,
       color: "text-blue-600 dark:text-blue-400",
     },
@@ -414,37 +418,6 @@ export default function SuperAdminDashboardPage() {
                 </CardContent>
               </Card>
             ))}
-          </div>
-
-          {/* Pilot Metrics */}
-          <div className="grid gap-4 md:grid-cols-3 mb-6">
-            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
-              <CardContent className="flex items-center gap-3 p-4">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <div>
-                  <p className="text-lg font-bold">3</p>
-                  <p className="text-xs text-muted-foreground">Active Pilot Clinics</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
-              <CardContent className="flex items-center gap-3 p-4">
-                <Activity className="h-5 w-5 text-green-600 dark:text-green-400" />
-                <div>
-                  <p className="text-lg font-bold">42</p>
-                  <p className="text-xs text-muted-foreground">Pilot Appointments Today</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
-              <CardContent className="flex items-center gap-3 p-4">
-                <Megaphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                <div>
-                  <p className="text-lg font-bold">100%</p>
-                  <p className="text-xs text-muted-foreground">WhatsApp Delivery Rate</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Compliance + System snapshot */}

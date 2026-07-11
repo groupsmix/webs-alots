@@ -25,12 +25,12 @@ import {
   type AppointmentView,
   type PatientView,
 } from "@/lib/data/client";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 
 export default function ReceptionistDashboardPage() {
   const [todayAppts, setTodayAppts] = useState<AppointmentView[]>([]);
   const [patientMap, setPatientMap] = useState<Map<string, PatientView>>(new Map());
-  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [monthRevenue, setMonthRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
@@ -57,7 +57,7 @@ export default function ReceptionistDashboardPage() {
       lookback.setDate(lookback.getDate() - 30);
       const [appts, invoices, patients] = await Promise.all([
         fetchAppointments(user.clinic_id, {
-          sinceDate: lookback.toISOString().split("T")[0],
+          sinceDate: getLocalDateStr(lookback),
         }),
         fetchInvoices(user.clinic_id, { sinceDate: lookback.toISOString() }),
         fetchPatients(user.clinic_id),
@@ -65,10 +65,11 @@ export default function ReceptionistDashboardPage() {
       if (controller.signal.aborted) return;
       setTodayAppts(appts);
       setPatientMap(new Map(patients.map((p) => [p.id, p])));
+      const monthPrefix = getLocalDateStr().slice(0, 7);
       const revenue = invoices
-        .filter((inv) => inv.status === "paid")
+        .filter((inv) => inv.status === "paid" && inv.date.startsWith(monthPrefix))
         .reduce((sum, inv) => sum + inv.amount, 0);
-      setTotalRevenue(revenue);
+      setMonthRevenue(revenue);
       setLoading(false);
     }
     load().catch((err) => {
@@ -82,14 +83,14 @@ export default function ReceptionistDashboardPage() {
     };
   }, [refreshKey]);
 
-  const todayDateStr = new Date().toISOString().split("T")[0];
+  const todayDateStr = getLocalDateStr();
   const tomorrowDate = new Date();
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrowDateStr = tomorrowDate.toISOString().split("T")[0];
+  const tomorrowDateStr = getLocalDateStr(tomorrowDate);
 
   const todayApptsFiltered = todayAppts.filter((a) => a.date === todayDateStr);
   const tomorrowAppts = todayAppts.filter((a) => a.date === tomorrowDateStr);
-  const checkedInAppts = todayAppts.filter(
+  const checkedInAppts = todayApptsFiltered.filter(
     (a) => checkedInIds.has(a.id) || a.status === "in-progress",
   );
   const waitingAppts = todayApptsFiltered.filter(
@@ -98,10 +99,6 @@ export default function ReceptionistDashboardPage() {
   const completedAppts = todayAppts.filter((a) => a.status === "completed");
   const cancelledAppts = todayAppts.filter((a) => a.status === "cancelled");
   const noShowAppts = todayAppts.filter((a) => a.status === "no-show");
-
-  const checkedInCount = todayApptsFiltered.filter(
-    (a) => a.status === "confirmed" || a.status === "in-progress",
-  ).length;
 
   const stats = [
     {
@@ -113,14 +110,14 @@ export default function ReceptionistDashboardPage() {
     {
       icon: Users,
       label: "Checked In",
-      value: (checkedInCount + checkedInIds.size).toString(),
+      value: checkedInAppts.length.toString(),
       color: "text-green-600",
     },
     { icon: UserPlus, label: "Walk-ins Today", value: "0", color: "text-purple-600" },
     {
       icon: CreditCard,
       label: "Revenue (Month)",
-      value: `${formatCurrency(totalRevenue)}`,
+      value: `${formatCurrency(monthRevenue)}`,
       color: "text-orange-600",
     },
   ];

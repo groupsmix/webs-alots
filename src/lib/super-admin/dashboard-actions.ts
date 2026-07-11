@@ -1,7 +1,10 @@
 import { logger } from "@/lib/logger";
+import { getPlanConfig } from "@/lib/subscription-billing";
 import { createClient } from "@/lib/supabase-server";
 import { mapActivityLog } from "@/lib/super-admin/helpers";
+import { resolveClinicSubscriptionPlan } from "@/lib/super-admin/subscription-helpers";
 import type { ActivityLog, Announcement, AnnouncementInput } from "@/lib/super-admin/types";
+import { getLocalDateStr } from "@/lib/utils";
 
 type SuperAdminClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -20,6 +23,11 @@ export interface DashboardStats {
   totalPatients: number;
   totalAppointments: number;
   totalRevenue: number;
+  mrr: number;
+  monthlyRevenue: number;
+  paidInvoicesThisMonth: number;
+  overdueInvoices: number;
+  newClinicsThisMonth: number;
 }
 
 type AnnouncementRow = {
@@ -74,15 +82,56 @@ async function logAnnouncementActivity(
 }
 
 export async function fetchDashboardStatsImpl(supabase: SuperAdminClient): Promise<DashboardStats> {
-  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
-    supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
-    supabase.from("users").select("id", { count: "exact", head: true }).in("role", ["patient"]),
-    supabase.from("appointments").select("id", { count: "exact", head: true }),
-    supabase.from("payments").select("amount").eq("status", "completed"),
-  ]);
+  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes, invoicesRes] =
+    await Promise.all([
+      supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
+      supabase.from("users").select("id", { count: "exact", head: true }).in("role", ["patient"]), // nosemgrep: semgrep.tenant-scoping — global super-admin aggregate across all clinics
+      supabase.from("appointments").select("id", { count: "exact", head: true }), // nosemgrep: semgrep.tenant-scoping — global super-admin aggregate across all clinics
+      supabase.from("payments").select("amount, created_at").eq("status", "completed"), // nosemgrep: semgrep.tenant-scoping — global super-admin aggregate across all clinics
+      supabase.from("invoices").select("status, due_date"), // nosemgrep: semgrep.tenant-scoping — global super-admin aggregate across all clinics
+    ]);
 
   const clinics = (clinicsRes.data ?? []) as DashboardStats["clinics"];
-  const completedPayments = (revenueRes.data ?? []) as { amount: number }[];
+  const completedPayments = (revenueRes.data ?? []) as { amount: number; created_at: string }[];
+  const invoices = (invoicesRes.data ?? []) as { status: string; due_date: string | null }[];
+
+  const now = new Date();
+  const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+  const monthEnd = getLocalDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const todayStr = getLocalDateStr();
+
+  const isInCurrentMonth = (timestamp: string | null): boolean => {
+    if (!timestamp) return false;
+    const date = getLocalDateStr(new Date(timestamp));
+    return date >= monthStart && date <= monthEnd;
+  };
+
+  const totalRevenue = completedPayments.reduce((sum, payment) => sum + (payment.amount ?? 0), 0);
+  const monthlyRevenue = completedPayments
+    .filter((payment) => isInCurrentMonth(payment.created_at))
+    .reduce((sum, payment) => sum + (payment.amount ?? 0), 0);
+  const paidInvoicesThisMonth = completedPayments.filter((payment) =>
+    isInCurrentMonth(payment.created_at),
+  ).length;
+
+  const overdueInvoices = invoices.filter((invoice) => {
+    if (invoice.status === "overdue") return true;
+    if (invoice.status === "sent" || invoice.status === "partially_paid") {
+      return !!invoice.due_date && invoice.due_date < todayStr;
+    }
+    return false;
+  }).length;
+
+  const newClinicsThisMonth = clinics.filter((clinic) => {
+    if (!clinic.created_at) return false;
+    const created = getLocalDateStr(new Date(clinic.created_at));
+    return created >= monthStart && created <= monthEnd;
+  }).length;
+
+  const mrr = clinics.reduce((sum, clinic) => {
+    const plan = resolveClinicSubscriptionPlan(clinic);
+    return sum + getPlanConfig(plan).priceMonthly;
+  }, 0);
 
   return {
     clinics,
@@ -90,7 +139,12 @@ export async function fetchDashboardStatsImpl(supabase: SuperAdminClient): Promi
     activeClinics: clinics.filter((clinic) => clinic.status === "active").length,
     totalPatients: patientCountRes.count ?? 0,
     totalAppointments: appointmentCountRes.count ?? 0,
-    totalRevenue: completedPayments.reduce((sum, payment) => sum + (payment.amount ?? 0), 0),
+    totalRevenue,
+    mrr,
+    monthlyRevenue,
+    paidInvoicesThisMonth,
+    overdueInvoices,
+    newClinicsThisMonth,
   };
 }
 
