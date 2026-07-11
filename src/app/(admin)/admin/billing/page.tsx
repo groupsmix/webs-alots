@@ -37,9 +37,7 @@ import { logger } from "@/lib/logger";
 import { fetchPricingTiers, type PricingTierRow } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-async function loadBillingData(
-  clinicId: string,
-): Promise<{
+async function loadBillingData(clinicId: string): Promise<{
   currentSub: ClinicSubscriptionView | null;
   allTiers: PricingTierRow[];
   error: string | null;
