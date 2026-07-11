@@ -102,7 +102,7 @@
     "fast-check": "4.8.0",
     "husky": "^9.1.7",
     "jest-axe": "^10.0.0",
-    "jsdom": "27.0.0",
+    "jsdom": "26.0.0",
     "knip": "^6.18.0",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
