@@ -186,7 +186,7 @@ export default function YourPublicPage() {
 | Auth wrapper                  | `src/lib/with-auth.ts`                            |
 | Tenant context                | `src/lib/tenant.ts`                               |
 | Database types                | `src/lib/types/database.ts`                       |
-| Middleware                    | `src/middleware.ts`                               |
+| Proxy                         | `src/proxy.ts`                                    |
 
 ---
 

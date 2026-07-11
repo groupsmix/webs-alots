@@ -81,7 +81,7 @@ npm run test:e2e          # E2E tests (Playwright)
 2. **PHI encryption** — Patient files must be encrypted with AES-256-GCM via `@/lib/encryption`. Each file gets a unique IV.
 3. **Audit logging** — All state-changing operations must call `logAuditEvent()` from `@/lib/audit-log`.
 4. **Input validation** — All API inputs validated with Zod schemas defined in `@/lib/validations`.
-5. **CSRF protection** — Middleware enforces Origin header checks on mutation methods (POST, PUT, PATCH, DELETE).
+5. **CSRF protection** — Proxy enforces Origin header checks on mutation methods (POST, PUT, PATCH, DELETE).
 6. **Seed user blocking** — 3-layer protection prevents seed users (with well-known passwords) from accessing production.
 7. **File uploads** — Magic byte validation + MIME type checking + path traversal prevention via `buildUploadKey()`.
 8. **Webhook signatures** — WhatsApp (HMAC-SHA256 via `X-Hub-Signature-256`) and Stripe (via `stripe-signature`) webhooks must be verified before processing.
