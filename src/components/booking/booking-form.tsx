@@ -162,24 +162,44 @@ export function BookingForm() {
 
   // Load doctors and services from Supabase on mount
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const clinicId = tenant?.clinicId;
-    if (!clinicId) return;
+
+    if (!clinicId)
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
 
     let cancelled = false;
-    setLoading(true);
-    Promise.all([fetchDoctors(clinicId), fetchServices(clinicId)])
-      .then(([dbDoctors, dbServices]) => {
-        if (cancelled) return;
-        setDoctors(dbDoctors.map(mapDoctor));
-        setServices(dbServices.map(mapService));
-        setLoading(false);
-      })
-      .catch((err) => {
-        logger.warn("Failed to submit booking form", { context: "booking-form", error: err });
-        if (!cancelled) setLoading(false);
-      });
+
+    timeouts.push(
+      setTimeout(() => {
+        setLoading(true);
+      }, 0),
+    );
+
+    timeouts.push(
+      setTimeout(() => {
+        Promise.all([fetchDoctors(clinicId), fetchServices(clinicId)])
+          .then(([dbDoctors, dbServices]) => {
+            if (cancelled) return;
+            setDoctors(dbDoctors.map(mapDoctor));
+            setServices(dbServices.map(mapService));
+            setLoading(false);
+          })
+          .catch((err) => {
+            logger.warn("Failed to submit booking form", { context: "booking-form", error: err });
+            if (!cancelled) setLoading(false);
+          });
+      }, 0),
+    );
+
     return () => {
-      cancelled = true;
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        cancelled = true;
+      })();
     };
   }, [tenant?.clinicId]);
 

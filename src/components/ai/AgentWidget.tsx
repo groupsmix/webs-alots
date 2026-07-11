@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable i18next/no-literal-string -- Role-specific AI assistant UX copy is colocated here while this beta surface is introduced. */
 import { Bot, Maximize2, Minimize2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AgentDebugPanel } from "@/components/ai/AgentDebugPanel";

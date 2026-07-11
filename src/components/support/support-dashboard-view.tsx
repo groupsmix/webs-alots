@@ -111,7 +111,7 @@ export function SupportDashboardView() {
   if (loading) {
     return (
       <div className="space-y-6 p-6">
-        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {}
         <h1 className="text-2xl font-bold">Tableau de bord support</h1>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -129,10 +129,10 @@ export function SupportDashboardView() {
   if (error) {
     return (
       <div className="p-6">
-        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {}
         <h1 className="text-2xl font-bold mb-4">Tableau de bord support</h1>
         <Card>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {}
           <CardContent className="p-6 text-red-600">Erreur : {error}</CardContent>
         </Card>
       </div>
@@ -145,40 +145,40 @@ export function SupportDashboardView() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* eslint-disable-next-line i18next/no-literal-string */}
+      {}
       <h1 className="text-2xl font-bold">Tableau de bord support</h1>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <CardTitle className="text-sm font-medium">Tickets ouverts</CardTitle>
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.open}</div>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <p className="text-xs text-muted-foreground">{summary.in_progress} en cours</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <CardTitle className="text-sm font-medium">Résolus</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.resolved}</div>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <p className="text-xs text-muted-foreground">{summary.total} tickets au total</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <CardTitle className="text-sm font-medium">Temps de réponse moyen</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
@@ -188,14 +188,14 @@ export function SupportDashboardView() {
                 ? `${summary.avg_response_time_minutes}m`
                 : "—"}
             </div>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <p className="text-xs text-muted-foreground">minutes pour résoudre</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <CardTitle className="text-sm font-medium">Satisfaction</CardTitle>
             <Star className="h-4 w-4 text-amber-500" />
           </CardHeader>
@@ -203,7 +203,7 @@ export function SupportDashboardView() {
             <div className="text-2xl font-bold">
               {summary.avg_satisfaction != null ? `${summary.avg_satisfaction}/5` : "—"}
             </div>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <p className="text-xs text-muted-foreground">note moyenne</p>
           </CardContent>
         </Card>
@@ -213,7 +213,7 @@ export function SupportDashboardView() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <CardTitle className="text-sm font-medium">Par canal</CardTitle>
           </CardHeader>
           <CardContent>
@@ -227,18 +227,18 @@ export function SupportDashboardView() {
                   <span className="text-sm font-medium">{count}</span>
                 </div>
               ))}
-              {/* eslint-disable i18next/no-literal-string */}
+              {}
               {Object.keys(channel_breakdown).length === 0 && (
                 <p className="text-sm text-muted-foreground">Aucune donnée</p>
               )}
-              {/* eslint-enable i18next/no-literal-string */}
+              {}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <CardTitle className="text-sm font-medium">Par langue</CardTitle>
           </CardHeader>
           <CardContent>
@@ -249,11 +249,11 @@ export function SupportDashboardView() {
                   <span className="text-sm font-medium">{count}</span>
                 </div>
               ))}
-              {/* eslint-disable i18next/no-literal-string */}
+              {}
               {Object.keys(language_breakdown).length === 0 && (
                 <p className="text-sm text-muted-foreground">Aucune donnée</p>
               )}
-              {/* eslint-enable i18next/no-literal-string */}
+              {}
             </div>
           </CardContent>
         </Card>
@@ -262,7 +262,7 @@ export function SupportDashboardView() {
       {/* Recent Tickets */}
       <Card>
         <CardHeader>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {}
           <CardTitle className="text-sm font-medium">Tickets récents</CardTitle>
         </CardHeader>
         <CardContent>
@@ -270,7 +270,7 @@ export function SupportDashboardView() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  {/* eslint-disable i18next/no-literal-string */}
+                  {}
                   <th className="text-left py-2 px-2">Sujet</th>
                   <th className="text-left py-2 px-2">Statut</th>
                   <th className="text-left py-2 px-2">Priorité</th>
@@ -278,7 +278,7 @@ export function SupportDashboardView() {
                   <th className="text-left py-2 px-2">Canal</th>
                   <th className="text-left py-2 px-2">Patient</th>
                   <th className="text-left py-2 px-2">Créé</th>
-                  {/* eslint-enable i18next/no-literal-string */}
+                  {}
                 </tr>
               </thead>
               <tbody>
@@ -333,7 +333,7 @@ export function SupportDashboardView() {
                 ))}
                 {recent_tickets.length === 0 && (
                   <tr>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <td colSpan={7} className="py-8 text-center text-muted-foreground">
                       Aucun ticket
                     </td>

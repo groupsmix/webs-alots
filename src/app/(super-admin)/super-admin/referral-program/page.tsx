@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -116,7 +115,17 @@ export default function SuperAdminReferralProgramPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        loadData();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadData]);
 
   const handleCreditAction = async (creditId: string, action: "approve" | "reject") => {
@@ -232,7 +241,6 @@ export default function SuperAdminReferralProgramPage() {
           { label: "Programme de parrainage" },
         ]}
       />
-
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Gift className="h-6 w-6 text-primary" />
@@ -243,7 +251,6 @@ export default function SuperAdminReferralProgramPage() {
           médecin-à-patient.
         </p>
       </div>
-
       {/* Funnel KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -292,7 +299,6 @@ export default function SuperAdminReferralProgramPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Leaderboard */}
       <Card>
         <CardHeader>
@@ -343,7 +349,6 @@ export default function SuperAdminReferralProgramPage() {
           </table>
         </div>
       </Card>
-
       {/* Pending Payouts */}
       <Card>
         <CardHeader>
@@ -416,7 +421,6 @@ export default function SuperAdminReferralProgramPage() {
           </table>
         </div>
       </Card>
-
       {/* Resolved Credits */}
       {resolvedCredits.length > 0 && (
         <Card>

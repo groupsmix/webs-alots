@@ -307,7 +307,6 @@ export const FullBoard: Story = {
  * Should render 6 empty columns with "Aucune tâche" placeholder.
  */
 export const EmptyBoard: Story = {
-  name: "Empty Board",
   args: {
     tasks: [],
   },

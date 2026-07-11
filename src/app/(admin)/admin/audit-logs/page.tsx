@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- French UI strings */
 import type { Metadata } from "next";
 import { AuditLogViewer } from "@/components/admin/audit-log-viewer";
 import { Breadcrumb } from "@/components/ui/breadcrumb";

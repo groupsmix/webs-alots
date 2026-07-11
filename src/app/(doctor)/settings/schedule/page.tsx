@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import { Suspense } from "react";
 import { ExceptionDayPicker } from "@/components/schedule/ExceptionDayPicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

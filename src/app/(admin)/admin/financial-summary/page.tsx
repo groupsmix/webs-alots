@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -91,7 +90,10 @@ export default function FinancialSummaryPage() {
   }, [period]);
 
   useEffect(() => {
-    loadData();
+    const timeout = setTimeout(() => {
+      void loadData();
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [loadData]);
 
   const askAI = async () => {

@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- French UI strings */
 "use client";
 
 import {
@@ -134,7 +133,17 @@ export function AuditLogViewer() {
   }, [page, pageSize, typeFilter, searchQuery, dateFrom, dateTo]);
 
   useEffect(() => {
-    fetchLogs();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        fetchLogs();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchLogs]);
 
   const totalPages = Math.ceil(total / pageSize);

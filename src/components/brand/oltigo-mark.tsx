@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- brand name, never translated */
 import { cn } from "@/lib/utils";
 
 type MarkSize = "sm" | "md" | "lg" | "xl";

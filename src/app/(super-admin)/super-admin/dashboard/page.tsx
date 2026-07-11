@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 import {
   Building2,
@@ -133,14 +132,26 @@ export default function SuperAdminDashboardPage() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     mountedRef.current = true;
-    loadStats();
+
+    timeouts.push(
+      setTimeout(() => {
+        loadStats();
+      }, 0),
+    );
+
     const interval = setInterval(() => {
       loadStats(true);
     }, AUTO_REFRESH_INTERVAL);
+
     return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        mountedRef.current = false;
+        clearInterval(interval);
+      })();
     };
   }, [loadStats]);
 

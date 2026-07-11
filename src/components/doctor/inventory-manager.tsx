@@ -91,7 +91,17 @@ export function InventoryManager() {
   }, [filterCategory, showLowStock, searchQuery, lang]);
 
   useEffect(() => {
-    void fetchItems();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchItems();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchItems]);
 
   const handleAdd = async (e: React.FormEvent) => {

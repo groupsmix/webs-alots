@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- French UI strings */
 import type { Metadata } from "next";
 import { DataRetentionDashboard } from "@/components/admin/data-retention-dashboard";
 import { Breadcrumb } from "@/components/ui/breadcrumb";

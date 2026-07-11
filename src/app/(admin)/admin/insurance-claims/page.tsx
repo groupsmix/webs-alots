@@ -163,7 +163,18 @@ export default function InsuranceClaimsPage() {
   }, [filterStatus, filterType]);
 
   useEffect(() => {
-    if (tenant?.clinicId) loadData();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    if (tenant?.clinicId)
+      timeouts.push(
+        setTimeout(() => {
+          loadData();
+        }, 0),
+      );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [tenant?.clinicId, loadData]);
 
   const handleCreate = async () => {
@@ -238,10 +249,10 @@ export default function InsuranceClaimsPage() {
         items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Réclamations assurance" }]}
       />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {}
         <h1 className="text-2xl font-bold">Gestion des réclamations d&apos;assurance</h1>
         <Button size="sm" onClick={() => setShowAdd(true)}>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
+          {}
           <Plus className="h-4 w-4 mr-1" /> Nouvelle réclamation
         </Button>
       </div>
@@ -256,7 +267,7 @@ export default function InsuranceClaimsPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Total réclamations</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -266,7 +277,7 @@ export default function InsuranceClaimsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">En attente</CardTitle>
                 <Clock className="h-4 w-4 text-yellow-600" />
               </CardHeader>
@@ -278,7 +289,7 @@ export default function InsuranceClaimsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Montant réclamé</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -290,7 +301,7 @@ export default function InsuranceClaimsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <CardTitle className="text-sm font-medium">Montant approuvé</CardTitle>
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </CardHeader>
@@ -309,7 +320,7 @@ export default function InsuranceClaimsPage() {
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 {Object.entries(STATUS_LABELS).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
@@ -323,7 +334,7 @@ export default function InsuranceClaimsPage() {
                 <SelectValue placeholder="Type assurance" />
               </SelectTrigger>
               <SelectContent>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <SelectItem value="all">Tous les types</SelectItem>
                 {INSURANCE_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>
@@ -337,7 +348,7 @@ export default function InsuranceClaimsPage() {
           {/* Claims Table */}
           <Card>
             <CardHeader>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <CardTitle>Réclamations</CardTitle>
             </CardHeader>
             <CardContent>
@@ -345,19 +356,19 @@ export default function InsuranceClaimsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Statut</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Type</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">N° Police</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Réclamé</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium text-right">Approuvé</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 pr-4 font-medium">Date</th>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <th className="py-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
@@ -388,7 +399,7 @@ export default function InsuranceClaimsPage() {
                             : "—"}
                         </td>
                         <td className="py-3 text-right">
-                          {/* eslint-disable-next-line i18next/no-literal-string */}
+                          {}
                           <Button variant="ghost" size="sm" onClick={() => openUpdate(claim)}>
                             Modifier
                           </Button>
@@ -397,7 +408,7 @@ export default function InsuranceClaimsPage() {
                     ))}
                     {claims.length === 0 && (
                       <tr>
-                        {/* eslint-disable-next-line i18next/no-literal-string */}
+                        {}
                         <td colSpan={7} className="py-8 text-center text-muted-foreground">
                           Aucune réclamation trouvée
                         </td>
@@ -412,7 +423,7 @@ export default function InsuranceClaimsPage() {
           {/* Insurance Form Generation (Moroccan standards) */}
           <Card>
             <CardHeader>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <CardTitle>Formulaires d&apos;assurance marocains</CardTitle>
             </CardHeader>
             <CardContent>
@@ -425,15 +436,15 @@ export default function InsuranceClaimsPage() {
                 </TabsList>
                 <TabsContent value="cnss" className="mt-4">
                   <div className="p-4 border rounded-lg space-y-2">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <h3 className="font-semibold">Formulaire de remboursement CNSS</h3>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <p className="text-sm text-muted-foreground">
                       Feuille de soins pour remboursement auprès de la CNSS. Sélectionnez une
                       réclamation approuvée pour générer le formulaire.
                     </p>
                     <div className="text-sm">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <p>
                         • Réclamations CNSS approuvées :{" "}
                         {
@@ -442,7 +453,7 @@ export default function InsuranceClaimsPage() {
                           ).length
                         }
                       </p>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <p>
                         • Réclamations CNSS en attente :{" "}
                         {
@@ -458,15 +469,15 @@ export default function InsuranceClaimsPage() {
                 </TabsContent>
                 <TabsContent value="cnops" className="mt-4">
                   <div className="p-4 border rounded-lg space-y-2">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <h3 className="font-semibold">Formulaire de remboursement CNOPS</h3>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <p className="text-sm text-muted-foreground">
                       Bordereau de soins pour la Caisse Nationale des Organismes de Prévoyance
                       Sociale.
                     </p>
                     <div className="text-sm">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <p>
                         • Réclamations CNOPS approuvées :{" "}
                         {
@@ -475,7 +486,7 @@ export default function InsuranceClaimsPage() {
                           ).length
                         }
                       </p>
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <p>
                         • Réclamations CNOPS en attente :{" "}
                         {
@@ -491,14 +502,14 @@ export default function InsuranceClaimsPage() {
                 </TabsContent>
                 <TabsContent value="amo" className="mt-4">
                   <div className="p-4 border rounded-lg space-y-2">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <h3 className="font-semibold">Formulaire AMO</h3>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <p className="text-sm text-muted-foreground">
                       Formulaire d&apos;Assurance Maladie Obligatoire pour les soins ambulatoires.
                     </p>
                     <div className="text-sm">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <p>
                         • Réclamations AMO approuvées :{" "}
                         {
@@ -512,14 +523,14 @@ export default function InsuranceClaimsPage() {
                 </TabsContent>
                 <TabsContent value="ramed" className="mt-4">
                   <div className="p-4 border rounded-lg space-y-2">
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <h3 className="font-semibold">Formulaire RAMED</h3>
-                    {/* eslint-disable-next-line i18next/no-literal-string */}
+                    {}
                     <p className="text-sm text-muted-foreground">
                       Régime d&apos;Assistance Médicale pour les personnes économiquement démunies.
                     </p>
                     <div className="text-sm">
-                      {/* eslint-disable-next-line i18next/no-literal-string */}
+                      {}
                       <p>
                         • Réclamations RAMED :{" "}
                         {claims.filter((c) => c.insurance_type === "RAMED").length}
@@ -537,12 +548,12 @@ export default function InsuranceClaimsPage() {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <DialogTitle>Nouvelle réclamation d&apos;assurance</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">ID Patient</span>
               <Input
                 value={formPatientId}
@@ -552,7 +563,7 @@ export default function InsuranceClaimsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <span className="text-sm font-medium">Type d&apos;assurance</span>
                 <Select value={formInsType} onValueChange={setFormInsType}>
                   <SelectTrigger>
@@ -568,7 +579,7 @@ export default function InsuranceClaimsPage() {
                 </Select>
               </div>
               <div>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <span className="text-sm font-medium">N° de police</span>
                 <Input
                   value={formPolicyNumber}
@@ -577,7 +588,7 @@ export default function InsuranceClaimsPage() {
               </div>
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Montant réclamé (MAD)</span>
               <Input
                 type="number"
@@ -587,27 +598,27 @@ export default function InsuranceClaimsPage() {
               />
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Code diagnostic</span>
               <Input value={formDiagnosis} onChange={(e) => setFormDiagnosis(e.target.value)} />
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Description du traitement</span>
               <Input value={formTreatment} onChange={(e) => setFormTreatment(e.target.value)} />
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Notes</span>
               <Input value={formNotes} onChange={(e) => setFormNotes(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Button variant="outline" onClick={() => setShowAdd(false)}>
               Annuler
             </Button>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Button onClick={handleCreate}>Créer</Button>
           </DialogFooter>
         </DialogContent>
@@ -617,12 +628,12 @@ export default function InsuranceClaimsPage() {
       <Dialog open={showUpdate} onOpenChange={setShowUpdate}>
         <DialogContent>
           <DialogHeader>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <DialogTitle>Mettre à jour la réclamation</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Statut</span>
               <Select value={updateStatus} onValueChange={setUpdateStatus}>
                 <SelectTrigger>
@@ -638,7 +649,7 @@ export default function InsuranceClaimsPage() {
               </Select>
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">N° de réclamation</span>
               <Input
                 value={updateClaimNumber}
@@ -646,7 +657,7 @@ export default function InsuranceClaimsPage() {
               />
             </div>
             <div>
-              {/* eslint-disable-next-line i18next/no-literal-string */}
+              {}
               <span className="text-sm font-medium">Montant approuvé (MAD)</span>
               <Input
                 type="number"
@@ -657,7 +668,7 @@ export default function InsuranceClaimsPage() {
             </div>
             {(updateStatus === "rejected" || updateStatus === "partially_approved") && (
               <div>
-                {/* eslint-disable-next-line i18next/no-literal-string */}
+                {}
                 <span className="text-sm font-medium">Motif de rejet</span>
                 <Input
                   value={updateRejectionReason}
@@ -667,11 +678,11 @@ export default function InsuranceClaimsPage() {
             )}
           </div>
           <DialogFooter>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Button variant="outline" onClick={() => setShowUpdate(false)}>
               Annuler
             </Button>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
+            {}
             <Button onClick={handleUpdate}>Mettre à jour</Button>
           </DialogFooter>
         </DialogContent>

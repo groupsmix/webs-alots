@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- patient experience UI strings */
 "use client";
 
 import { useState } from "react";

@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -168,10 +167,21 @@ export default function PricingPage() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     let active = true;
-    loadData(() => active);
+
+    timeouts.push(
+      setTimeout(() => {
+        loadData(() => active);
+      }, 0),
+    );
+
     return () => {
-      active = false;
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        active = false;
+      })();
     };
   }, [loadData]);
 
@@ -464,7 +474,6 @@ export default function PricingPage() {
           </p>
         </div>
       </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -510,7 +519,6 @@ export default function PricingPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <Button
@@ -538,7 +546,6 @@ export default function PricingPage() {
           Promotions
         </Button>
       </div>
-
       {tab === "tiers" && (
         <>
           {/* System Type Selector */}
@@ -984,7 +991,6 @@ export default function PricingPage() {
           </Card>
         </>
       )}
-
       {tab === "features" && (
         <>
           {/* Filters */}
@@ -1143,7 +1149,6 @@ export default function PricingPage() {
           </Card>
         </>
       )}
-
       {tab === "promotions" && (
         <>
           <div className="flex items-center justify-between mb-6">
@@ -1246,7 +1251,6 @@ export default function PricingPage() {
           )}
         </>
       )}
-
       {/* Confirm Save Dialog */}
       <Dialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
         <DialogContent onClose={() => setConfirmSaveOpen(false)}>
@@ -1282,7 +1286,6 @@ export default function PricingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Price History Dialog */}
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent onClose={() => setHistoryOpen(false)} className="max-w-lg">
@@ -1326,7 +1329,6 @@ export default function PricingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Create Promotion Dialog */}
       <Dialog open={promoFormOpen} onOpenChange={setPromoFormOpen}>
         <DialogContent onClose={() => setPromoFormOpen(false)} className="max-w-lg">
@@ -1414,7 +1416,6 @@ export default function PricingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Delete Promo Dialog */}
       <Dialog open={deletePromoOpen} onOpenChange={setDeletePromoOpen}>
         {deletePromoItem && (

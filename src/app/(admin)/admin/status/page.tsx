@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- internal admin monitoring page */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -111,9 +110,16 @@ export default function AdminStatusPage() {
   }, []);
 
   useEffect(() => {
-    fetchHealth();
-    const interval = setInterval(fetchHealth, 30_000);
-    return () => clearInterval(interval);
+    const initial = setTimeout(() => {
+      void fetchHealth();
+    }, 0);
+    const interval = setInterval(() => {
+      void fetchHealth();
+    }, 30_000);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
   }, [fetchHealth]);
 
   return (

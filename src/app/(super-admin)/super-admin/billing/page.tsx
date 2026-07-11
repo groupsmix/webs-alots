@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -79,10 +78,21 @@ export default function BillingPage() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const controller = new AbortController();
-    loadRecords();
+
+    timeouts.push(
+      setTimeout(() => {
+        loadRecords();
+      }, 0),
+    );
+
     return () => {
-      controller.abort();
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        controller.abort();
+      })();
     };
   }, [loadRecords]);
 
@@ -292,7 +302,7 @@ export default function BillingPage() {
             Suivi des revenus, abonnements et statuts de paiement
           </p>
         </div>
-        {/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */}
+        {}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -321,7 +331,7 @@ export default function BillingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* eslint-enable i18next/no-literal-string */}
+        {}
       </div>
 
       {loading && (

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle } from "lucide-react";
 import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
@@ -114,12 +113,24 @@ export function NotificationBell({ userId }: { userId?: string }): ReactNode {
   }, [userId]);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     mountedRef.current = true;
-    void loadNotifications();
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadNotifications();
+      }, 0),
+    );
+
     const interval = setInterval(() => void loadNotifications(), 60_000);
+
     return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        mountedRef.current = false;
+        clearInterval(interval);
+      })();
     };
   }, [loadNotifications]);
 

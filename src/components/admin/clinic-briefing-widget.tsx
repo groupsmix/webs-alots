@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Super-admin internal surface, French-first */
 
 /**
  * ClinicBriefingWidget — Super admin dashboard widget for AI-generated
@@ -185,7 +184,17 @@ export function ClinicBriefingWidget({ className }: Props) {
   }, [dateFilter]);
 
   useEffect(() => {
-    void fetchBriefings();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        void fetchBriefings();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [fetchBriefings]);
 
   const sentimentCounts = briefings.reduce(

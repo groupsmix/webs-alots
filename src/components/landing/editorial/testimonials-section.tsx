@@ -44,7 +44,7 @@ export function TestimonialsSection() {
   return (
     <section id="clients" className="bg-[var(--bone)] py-[var(--space-9)]">
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
-        {/* eslint-disable i18next/no-literal-string */}
+        {}
         {TESTIMONIALS.map((testimonial) => (
           <div key={testimonial.name}>
             <HairlineRule />
@@ -62,7 +62,7 @@ export function TestimonialsSection() {
             </div>
           </div>
         ))}
-        {/* eslint-enable i18next/no-literal-string */}
+        {}
 
         <HairlineRule />
 

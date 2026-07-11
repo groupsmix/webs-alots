@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Super-admin internal surface */
 
 import { PlayCircle, StopCircle, Activity } from "lucide-react";
 import { useState } from "react";

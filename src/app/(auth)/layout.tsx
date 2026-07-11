@@ -12,8 +12,6 @@ import { HeroVideo } from "@/components/hero-video";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { t, type Locale } from "@/lib/i18n";
 
-/* eslint-disable i18next/no-literal-string -- static French marketing copy for hero panel */
-
 const HERO_FEATURES = [
   {
     icon: CalendarCheck,

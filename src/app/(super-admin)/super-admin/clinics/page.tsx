@@ -355,7 +355,6 @@ function getOnboardingChecklist(clinic: ClinicDetail): ChecklistItem[] {
 
 // --------------- Health Score Tooltip (rich) ---------------
 
-/* eslint-disable i18next/no-literal-string -- admin-only dashboard labels */
 function HealthScoreTooltip({
   breakdown,
   visible,
@@ -394,8 +393,6 @@ function HealthScoreTooltip({
   );
 }
 
-/* eslint-enable i18next/no-literal-string */
-
 // --------------- Bulk Action Types ---------------
 
 type BulkAction =
@@ -420,7 +417,6 @@ const STATUS_OPTIONS: ("active" | "suspended")[] = ["active", "suspended"];
 
 // --------------- Skeleton ---------------
 
-/* eslint-disable i18next/no-literal-string -- admin-only table headers */
 function ClinicsTableSkeleton() {
   return (
     <Card>
@@ -483,7 +479,6 @@ function ClinicsTableSkeleton() {
     </Card>
   );
 }
-/* eslint-enable i18next/no-literal-string */
 
 export default function AllClinicsPage() {
   const [locale] = useLocale();
@@ -699,45 +694,98 @@ export default function AllClinicsPage() {
   );
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const controller = new AbortController();
-    void loadClinics();
-    void loadHealthScores();
-    void loadPlatformNarrative();
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadClinics();
+      }, 0),
+    );
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadHealthScores();
+      }, 0),
+    );
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadPlatformNarrative();
+      }, 0),
+    );
+
     return () => {
-      controller.abort();
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        controller.abort();
+      })();
     };
   }, [loadClinics, loadHealthScores, loadPlatformNarrative]);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     if (!detail) {
-      setDetailNarrative(null);
-      setDetailNarrativeLoading(false);
-      return;
+      timeouts.push(
+        setTimeout(() => {
+          setDetailNarrative(null);
+        }, 0),
+      );
+
+      timeouts.push(
+        setTimeout(() => {
+          setDetailNarrativeLoading(false);
+        }, 0),
+      );
+
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
     }
 
     let cancelled = false;
-    setDetailNarrativeLoading(true);
-    setDetailNarrative(null);
 
-    void loadClinicNarrative(detail.id)
-      .then((narrative) => {
-        if (cancelled) return;
-        setDetailNarrative(narrative);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        logger.warn("Failed to load clinic narrative", {
-          context: "clinics-page",
-          clinicId: detail.id,
-          error: err,
-        });
-      })
-      .finally(() => {
-        if (!cancelled) setDetailNarrativeLoading(false);
-      });
+    timeouts.push(
+      setTimeout(() => {
+        setDetailNarrativeLoading(true);
+      }, 0),
+    );
+
+    timeouts.push(
+      setTimeout(() => {
+        setDetailNarrative(null);
+      }, 0),
+    );
+
+    timeouts.push(
+      setTimeout(() => {
+        void loadClinicNarrative(detail.id)
+          .then((narrative) => {
+            if (cancelled) return;
+            setDetailNarrative(narrative);
+          })
+          .catch((err) => {
+            if (cancelled) return;
+            logger.warn("Failed to load clinic narrative", {
+              context: "clinics-page",
+              clinicId: detail.id,
+              error: err,
+            });
+          })
+          .finally(() => {
+            if (!cancelled) setDetailNarrativeLoading(false);
+          });
+      }, 0),
+    );
 
     return () => {
-      cancelled = true;
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        cancelled = true;
+      })();
     };
   }, [detail, loadClinicNarrative]);
 
@@ -812,12 +860,32 @@ export default function AllClinicsPage() {
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setCurrentPage(1);
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [search, typeFilter, statusFilter, healthFilter]);
 
   // Clear selection when filters/data change
   useEffect(() => {
-    setSelectedIds(new Set());
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setSelectedIds(new Set());
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [search, typeFilter, statusFilter, healthFilter, list]);
 
   // Bulk selection helpers
@@ -1155,7 +1223,7 @@ export default function AllClinicsPage() {
       <Breadcrumb
         items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Clinics" }]}
       />
-      {/* eslint-disable i18next/no-literal-string -- admin-only header and Owner AI / NL query panel labels */}
+      {}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">All Clinics</h1>
@@ -1188,7 +1256,6 @@ export default function AllClinicsPage() {
           </Link>
         </div>
       </div>
-
       <div className="mb-6 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card>
@@ -1296,7 +1363,6 @@ export default function AllClinicsPage() {
           </CardContent>
         </Card>
       </div>
-
       <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Card>
           <CardContent className="p-4">
@@ -1391,8 +1457,7 @@ export default function AllClinicsPage() {
           </CardContent>
         </Card>
       </div>
-      {/* eslint-enable i18next/no-literal-string */}
-
+      {}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1418,7 +1483,6 @@ export default function AllClinicsPage() {
           ))}
         </div>
       </div>
-
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex gap-2">
           {(["all", "active", "suspended", "trial"] as FilterStatus[]).map((s) => (
@@ -1454,7 +1518,7 @@ export default function AllClinicsPage() {
         </div>
         {}
       </div>
-      {/* eslint-disable i18next/no-literal-string -- admin-only bulk action labels */}
+      {}
       {/* Bulk Action Toolbar */}
       {selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-lg border bg-muted/50">
@@ -1505,8 +1569,7 @@ export default function AllClinicsPage() {
           </Button>
         </div>
       )}
-      {/* eslint-enable i18next/no-literal-string */}
-
+      {}
       {loadingData ? (
         <ClinicsTableSkeleton />
       ) : (
@@ -1515,7 +1578,7 @@ export default function AllClinicsPage() {
             <div className="table-mobile-scroll">
               <table className="w-full text-sm">
                 <thead>
-                  {/* eslint-disable i18next/no-literal-string -- admin-only sortable headers */}
+                  {}
                   <tr className="border-b text-muted-foreground">
                     <th className="w-10 py-3 px-4">
                       <button
@@ -1580,7 +1643,7 @@ export default function AllClinicsPage() {
                     </th>
                     <th className="text-right font-medium py-3 px-4">Actions</th>
                   </tr>
-                  {/* eslint-enable i18next/no-literal-string */}
+                  {}
                 </thead>
                 <tbody>
                   {paginatedList.map((clinic) => {
@@ -1738,7 +1801,7 @@ export default function AllClinicsPage() {
                       </tr>
                     );
                   })}
-                  {/* eslint-disable i18next/no-literal-string -- admin-only empty state, pagination, and detail dialog labels */}
+                  {}
                   {sorted.length === 0 && (
                     <tr>
                       <td colSpan={11} className="py-8 text-center text-muted-foreground">
@@ -1752,7 +1815,6 @@ export default function AllClinicsPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Pagination Controls */}
       {sorted.length > pageSize && (
         <div className="flex items-center justify-between mt-4">
@@ -1797,7 +1859,6 @@ export default function AllClinicsPage() {
           </div>
         </div>
       )}
-
       {/* Detail Dialog */}
       <Dialog open={detail !== null} onOpenChange={() => setDetail(null)}>
         {detail && (
@@ -1839,9 +1900,9 @@ export default function AllClinicsPage() {
                 </Card>
               </div>
 
-              {/* eslint-enable i18next/no-literal-string */}
+              {}
 
-              {/* eslint-disable i18next/no-literal-string -- admin-only health card labels */}
+              {}
               {/* Health Score Card */}
               {(() => {
                 const bd = healthScores.get(detail.id) ?? buildFallbackHealthScore(detail);
@@ -1924,9 +1985,9 @@ export default function AllClinicsPage() {
                   </Card>
                 );
               })()}
-              {/* eslint-enable i18next/no-literal-string */}
+              {}
 
-              {/* eslint-disable i18next/no-literal-string -- admin-only owner / account / features info labels */}
+              {}
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-2">Owner Information</h3>
@@ -2017,9 +2078,9 @@ export default function AllClinicsPage() {
                 </div>
               </div>
 
-              {/* eslint-enable i18next/no-literal-string */}
+              {}
 
-              {/* eslint-disable i18next/no-literal-string -- admin-only onboarding labels */}
+              {}
               {/* Onboarding Checklist */}
               <Separator />
               <div>
@@ -2066,9 +2127,9 @@ export default function AllClinicsPage() {
                   );
                 })()}
               </div>
-              {/* eslint-enable i18next/no-literal-string */}
+              {}
             </div>
-            {/* eslint-disable i18next/no-literal-string -- admin-only dialog footer, login-as-client, and suspend dialog labels */}
+            {}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetail(null)}>
                 Close
@@ -2088,7 +2149,6 @@ export default function AllClinicsPage() {
           </DialogContent>
         )}
       </Dialog>
-
       {/* Login As Dialog */}
       <Dialog
         open={loginOpen}
@@ -2195,7 +2255,6 @@ export default function AllClinicsPage() {
           </DialogContent>
         )}
       </Dialog>
-
       {/* Suspend/Activate Dialog */}
       <Dialog open={suspendOpen} onOpenChange={setSuspendOpen}>
         {suspendClinic && (
@@ -2281,7 +2340,6 @@ export default function AllClinicsPage() {
           </DialogContent>
         )}
       </Dialog>
-
       {/* Delete Clinic Dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         {deleteTarget && (
@@ -2355,9 +2413,8 @@ export default function AllClinicsPage() {
           </DialogContent>
         )}
       </Dialog>
-      {/* eslint-enable i18next/no-literal-string */}
-
-      {/* eslint-disable i18next/no-literal-string -- admin-only bulk action dialog labels */}
+      {}
+      {}
       {/* Bulk Action Confirmation Dialog */}
       <Dialog open={bulkAction !== null} onOpenChange={() => setBulkAction(null)}>
         {bulkAction && (
@@ -2526,7 +2583,7 @@ export default function AllClinicsPage() {
           </DialogContent>
         )}
       </Dialog>
-      {/* eslint-enable i18next/no-literal-string */}
+      {}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -266,19 +265,32 @@ export default function OnboardingPage() {
 
   // Check for existing draft on mount
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const draft = loadDraft();
+
     if (draft) {
-      setShowResumeDraft(true);
+      timeouts.push(
+        setTimeout(() => {
+          setShowResumeDraft(true);
+        }, 0),
+      );
     }
-    // Load recently onboarded clinics from localStorage
+
     try {
       const stored = localStorage.getItem("oltigo_recent_onboarded");
+
       if (stored) {
-        setRecentClinics(JSON.parse(stored) as RecentClinic[]);
+        timeouts.push(
+          setTimeout(() => {
+            setRecentClinics(JSON.parse(stored) as RecentClinic[]);
+          }, 0),
+        );
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadDraft]);
 
   // Auto-save on form changes (debounced)

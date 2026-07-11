@@ -33,5 +33,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "supabase/functions", "evals", "workers/ai"]
+  "exclude": ["node_modules", "supabase/functions", "evals", "workers/ai", "worker-cron-handler.ts"]
 }

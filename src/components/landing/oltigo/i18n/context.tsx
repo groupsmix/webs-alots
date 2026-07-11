@@ -24,11 +24,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   // Hydrate from storage / browser without causing a mismatch (runs post-mount).
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const stored = (typeof window !== "undefined" &&
       window.localStorage.getItem(STORAGE_KEY)) as Locale | null;
+
     if (stored && stored in dictionaries) {
-      setLocaleState(stored);
+      timeouts.push(
+        setTimeout(() => {
+          setLocaleState(stored);
+        }, 0),
+      );
     }
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, []);
 
   // Reflect locale onto <html> for native dir/lang + font switching.

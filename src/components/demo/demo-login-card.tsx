@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Demo UI with intentional French strings */
 "use client";
 
 import { User, Loader2, Play } from "lucide-react";
@@ -50,12 +49,23 @@ export function DemoLoginCard() {
 
   // R-10 Fix: Load Turnstile script dynamically
   useEffect(() => {
-    if (!siteKey) return;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
 
-    // Check if already loaded
+    if (!siteKey)
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
+
     if (window.turnstile) {
-      setScriptLoaded(true);
-      return;
+      timeouts.push(
+        setTimeout(() => {
+          setScriptLoaded(true);
+        }, 0),
+      );
+
+      return () => {
+        timeouts.forEach((t) => clearTimeout(t));
+      };
     }
 
     // Load the Turnstile script
@@ -66,7 +76,11 @@ export function DemoLoginCard() {
     document.body.appendChild(script);
 
     return () => {
-      // Cleanup is not needed for global script
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        // Cleanup is not needed for global script
+      })();
     };
   }, [siteKey]);
 

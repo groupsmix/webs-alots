@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- patient experience page */
 import type { Metadata } from "next";
 import { NpsSurveyForm } from "@/components/patient-experience/nps-survey-form";
 

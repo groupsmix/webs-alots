@@ -15,3 +15,6 @@ alayse and acrchiculture/
 # Generated test artifacts
 playwright-report/
 test-results/
+
+# Storybook static output
+storybook-static/

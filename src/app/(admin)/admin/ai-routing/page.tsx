@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 /**
@@ -21,7 +20,7 @@ import {
   TrendingDown,
   Shield,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, use, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,38 +82,29 @@ function formatMAD(cents: number) {
   }).format(cents / 100);
 }
 
-export default function ModelRoutingPage() {
-  const [data, setData] = useState<RoutingData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchRoutingData(): Promise<{ data: RoutingData | null; error: string | null }> {
+  try {
+    const res = await fetch("/api/admin/ai-config", { credentials: "include" });
+    if (!res.ok) throw new Error("Chargement échoué");
+    const json = (await res.json()) as { data?: RoutingData };
+    if (!json.data) throw new Error("Aucune donnée");
+    return { data: json.data, error: null };
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : "Erreur inconnue" };
+  }
+}
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/ai-config", { credentials: "include" });
-      if (!res.ok) throw new Error("Chargement échoué");
-      const json = await res.json();
-      setData(json.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  if (loading) return <PageLoader message="Chargement du routage IA..." />;
+function ModelRoutingContent() {
+  const [promise, setPromise] = useState(() => fetchRoutingData());
+  const result = use(promise);
+  const { data, error } = result;
 
   if (error || !data) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <AlertTriangle className="h-10 w-10 text-amber-500" />
         <p className="text-muted-foreground">{error ?? "Aucune donnée"}</p>
-        <Button variant="outline" onClick={loadData}>
+        <Button variant="outline" onClick={() => setPromise(fetchRoutingData())}>
           Réessayer
         </Button>
       </div>
@@ -159,7 +149,7 @@ export default function ModelRoutingPage() {
             Surveillance en temps réel du système de sélection de modèles IA
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData}>
+        <Button variant="outline" size="sm" onClick={() => setPromise(fetchRoutingData())}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Actualiser
         </Button>
@@ -371,5 +361,13 @@ export default function ModelRoutingPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function ModelRoutingPage() {
+  return (
+    <Suspense fallback={<PageLoader message="Chargement du routage IA..." />}>
+      <ModelRoutingContent />
+    </Suspense>
   );
 }

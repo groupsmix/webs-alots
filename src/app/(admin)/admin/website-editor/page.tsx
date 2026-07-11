@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Clinical/admin pages: French medical terminology is the intended output language; domain-specific strings should not be added to the general i18n keyset. */
 "use client";
 
 import { Palette, Type, ImageIcon, Eye, Save, RotateCcw, Plus, Trash2, Clock } from "lucide-react";

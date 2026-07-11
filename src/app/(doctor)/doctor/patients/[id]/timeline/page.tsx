@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 "use client";
 
 import { ArrowLeft, Clock, Printer } from "lucide-react";
@@ -68,7 +67,17 @@ export default function PatientTimelinePage() {
   }, [loadTimeline]);
 
   useEffect(() => {
-    setPage(1);
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        setPage(1);
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [activeFilter, searchQuery, dateFrom, dateTo]);
 
   const groupedEvents = groupByDate(events);

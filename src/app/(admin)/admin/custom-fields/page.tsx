@@ -121,9 +121,19 @@ export default function CustomFieldsAdminPage() {
   }, [selectedType, selectedEntity]);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     if (selectedType) {
-      loadDefinitions();
+      timeouts.push(
+        setTimeout(() => {
+          loadDefinitions();
+        }, 0),
+      );
     }
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [selectedType, selectedEntity, loadDefinitions]);
 
   const handleDelete = async (id: string) => {
@@ -370,7 +380,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">{error}</div>}
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label>Entité *</Label>
@@ -410,7 +419,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
           </Select>
         </div>
       </div>
-
       <div className="space-y-1">
         <Label>Clé du champ *</Label>
         <Input
@@ -424,7 +432,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
           placeholder="ex: tooth_number, blood_type"
         />
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label>Libellé (FR) *</Label>
@@ -444,7 +451,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
           />
         </div>
       </div>
-
       <div className="space-y-1">
         <Label>Description</Label>
         <Input
@@ -453,7 +459,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
           placeholder="Description du champ..."
         />
       </div>
-
       {(formData.field_type === "select" || formData.field_type === "multi_select") && (
         <div className="space-y-1">
           <Label>Options (une par ligne, format: Label FR | Label AR)</Label>
@@ -465,7 +470,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
           />
         </div>
       )}
-
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -475,7 +479,6 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
         />
         <Label htmlFor="is_required">Champ obligatoire</Label>
       </div>
-
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? "Création..." : "Créer le champ"}
       </Button>

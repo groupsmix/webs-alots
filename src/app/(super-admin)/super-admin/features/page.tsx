@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -119,10 +118,21 @@ export default function FeatureTogglesPage() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const controller = new AbortController();
-    loadFeatures();
+
+    timeouts.push(
+      setTimeout(() => {
+        loadFeatures();
+      }, 0),
+    );
+
     return () => {
-      controller.abort();
+      timeouts.forEach((t) => clearTimeout(t));
+
+      (() => {
+        controller.abort();
+      })();
     };
   }, [loadFeatures]);
 
@@ -151,11 +161,25 @@ export default function FeatureTogglesPage() {
   }, []);
 
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
     if (selectedClinicId) {
-      loadOverrides(selectedClinicId);
+      timeouts.push(
+        setTimeout(() => {
+          loadOverrides(selectedClinicId);
+        }, 0),
+      );
     } else {
-      setOverrides([]);
+      timeouts.push(
+        setTimeout(() => {
+          setOverrides([]);
+        }, 0),
+      );
     }
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [selectedClinicId, loadOverrides]);
 
   const [search, setSearch] = useState("");

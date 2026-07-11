@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import { Package, Search, Loader2, CheckCircle2, XCircle, X } from "lucide-react";
@@ -75,7 +74,17 @@ export default function MarketplacePage() {
   }, []);
 
   useEffect(() => {
-    loadFeatures();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        loadFeatures();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadFeatures]);
 
   const categories = useMemo(() => {

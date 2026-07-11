@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable i18next/no-literal-string -- Internal/super-admin-only surface or English-first form. The FR/AR translation backlog will catch up; do not add these strings to the i18n keyset now. */
 
 import {
   LayoutDashboard,
@@ -468,9 +467,18 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
 
   // Load command items on mount
   useEffect(() => {
-    buildCommandItems();
-    // Q-49: Mount-only effect — `buildCommandItems` reads route metadata
-    // that never changes during the component lifetime.
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        buildCommandItems();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

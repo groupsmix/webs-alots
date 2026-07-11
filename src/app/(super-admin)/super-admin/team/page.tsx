@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string -- Admin/super-admin internal surface: French UI strings are the intended output language; adding them to the i18n keyset would inflate the translation backlog for internal-only tooling. */
 "use client";
 
 import {
@@ -166,8 +165,23 @@ export default function TeamPage() {
   }, []);
 
   useEffect(() => {
-    loadMembers();
-    loadBriefings();
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    timeouts.push(
+      setTimeout(() => {
+        loadMembers();
+      }, 0),
+    );
+
+    timeouts.push(
+      setTimeout(() => {
+        loadBriefings();
+      }, 0),
+    );
+
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
   }, [loadMembers, loadBriefings]);
 
   const filtered = admins.filter((a) => {
@@ -324,7 +338,6 @@ export default function TeamPage() {
       <Breadcrumb
         items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Team" }]}
       />
-
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Team Management</h1>
@@ -337,7 +350,6 @@ export default function TeamPage() {
           Invite Team Member
         </Button>
       </div>
-
       <Card className="mb-6">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-start justify-between gap-4">
@@ -408,7 +420,6 @@ export default function TeamPage() {
           )}
         </CardContent>
       </Card>
-
       {/* Search */}
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -419,7 +430,6 @@ export default function TeamPage() {
           className="pl-10"
         />
       </div>
-
       {/* Team Members Table */}
       <Card className="mb-8">
         <CardContent className="p-0">
@@ -557,7 +567,6 @@ export default function TeamPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Invite Dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
@@ -624,7 +633,6 @@ export default function TeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Edit Role Dialog */}
       <Dialog open={editRoleOpen} onOpenChange={setEditRoleOpen}>
         <DialogContent>
@@ -655,7 +663,6 @@ export default function TeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Remove Confirmation Dialog */}
       <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
         <DialogContent>
