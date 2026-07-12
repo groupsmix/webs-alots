@@ -18,7 +18,7 @@ import type { Database } from "@/lib/types/database";
  * `/api/prescriptions` -> `prescriptions`
  * `/api/admin/users` -> `admin`
  */
-export function getApiGroupFromPathname(pathname: string): string | undefined {
+function getApiGroupFromPathname(pathname: string): string | undefined {
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length < 2 || parts[0] !== "api") return undefined;
   return parts[1];
@@ -28,7 +28,7 @@ export function getApiGroupFromPathname(pathname: string): string | undefined {
  * Fetch the merged features config for a clinic type.
  * Returns `DEFAULT_FEATURES` if the type is unknown or inactive.
  */
-export async function getClinicFeaturesConfig(
+async function getClinicFeaturesConfig(
   supabase: SupabaseClient<Database>,
   typeKey: string,
 ): Promise<FeaturesConfig> {

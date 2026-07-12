@@ -49,7 +49,7 @@ export interface InvoiceTransitionInput {
   actorId?: string;
 }
 
-export interface InvoiceTransitionResult {
+interface InvoiceTransitionResult {
   updateFields: Record<string, unknown>;
   audit: {
     action: string;

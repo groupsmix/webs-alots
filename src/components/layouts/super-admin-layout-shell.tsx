@@ -14,7 +14,6 @@ import {
   Bell,
   ChevronDown,
   Settings,
-  User,
   Megaphone,
   DollarSign,
   Receipt,
@@ -23,18 +22,15 @@ import {
   Plus,
   BarChart3,
   TrendingUp,
-  Bot,
   CheckCheck,
   Info,
   AlertTriangle,
   CheckCircle,
   Users,
   Activity,
-  Store,
   Gift,
   Gauge,
   GitCompareArrows,
-  MessageSquare,
   HeartPulse,
   Stethoscope,
 } from "lucide-react";
@@ -152,18 +148,6 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/templates", label: "Modèles", icon: FileText },
       { href: "/super-admin/features", label: "Fonctionnalités", icon: ToggleRight },
       { href: "/super-admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
-    ],
-  },
-  // Intelligence (AI features) — always rendered post-launch (was env-gated previously).
-  {
-    key: "intelligence",
-    label: "Intelligence",
-    icon: Bot,
-    items: [
-      { href: "/super-admin/agents", label: "Agents IA", icon: Bot },
-      { href: "/super-admin/ai-team", label: "Équipe IA", icon: MessageSquare },
-      { href: "/super-admin/marketplace", label: "Marketplace", icon: Store },
-      { href: "/super-admin/settings/ai", label: "Paramètres IA", icon: Settings },
     ],
   },
   {
@@ -722,10 +706,6 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
               <DropdownMenuContent>
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/super-admin/profile")}>
-                  <User className="h-4 w-4 mr-2" />
-                  Profile
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/super-admin/settings")}>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
