@@ -85,7 +85,7 @@ describe("POST /api/csp-report — hardening", () => {
 
     const [, payload] = loggerError.mock.calls[0] as [string, Record<string, unknown>];
     expect(payload.context).toBe("csp-report");
-    expect(payload.alert).toBe(true);
+    expect(payload.alert).toBe("csp_violation");
     expect((payload.blockedUri as string).length).toBe(500);
     expect(payload.violatedDirective).toBe("script-src");
     expect(payload.documentUri).toBe("https://app.example.com/page");

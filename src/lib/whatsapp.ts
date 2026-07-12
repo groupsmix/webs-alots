@@ -37,6 +37,8 @@ interface WhatsAppInteractivePayload {
   buttons: QuickReplyButton[];
   header?: string;
   footer?: string;
+  /** clinic_id for observability (structured logging) */
+  clinicId?: string;
 }
 
 interface WhatsAppSendResult {
@@ -77,6 +79,7 @@ async function sendViaMeta(
   config: WhatsAppConfig,
   to: string,
   body: string,
+  options?: { clinicId?: string; messageType?: string },
 ): Promise<WhatsAppSendResult> {
   const response = await safeFetch(`${META_API_URL}/${config.metaPhoneNumberId}/messages`, {
     method: "POST",
@@ -95,12 +98,32 @@ async function sendViaMeta(
 
   const data = await response.json();
   if (response.ok) {
+    const messageId = data.messages?.[0]?.id;
+    logger.info("WhatsApp message sent via Meta", {
+      context: "whatsapp",
+      provider: "meta",
+      messageType: options?.messageType ?? "text",
+      phone: to,
+      messageId,
+      clinicId: options?.clinicId,
+    });
     return {
       success: true,
-      messageId: data.messages?.[0]?.id,
+      messageId,
       provider: "meta",
     };
   }
+
+  logger.error("WhatsApp message failed via Meta", {
+    context: "whatsapp",
+    alert: "whatsapp_failure",
+    provider: "meta",
+    messageType: options?.messageType ?? "text",
+    phone: to,
+    clinicId: options?.clinicId,
+    error: data.error || "Unknown Meta API error",
+  });
+
   return {
     success: false,
     error: data.error?.message || "Failed to send via Meta API",
@@ -114,6 +137,7 @@ async function sendViaTwilio(
   config: WhatsAppConfig,
   to: string,
   body: string,
+  options?: { clinicId?: string; messageType?: string },
 ): Promise<WhatsAppSendResult> {
   const url = `${TWILIO_API_URL}/Accounts/${config.twilioAccountSid}/Messages.json`;
   const auth = btoa(`${config.twilioAccountSid}:${config.twilioAuthToken}`);
@@ -135,12 +159,32 @@ async function sendViaTwilio(
 
   const data = await response.json();
   if (response.ok) {
+    const messageId = data.sid;
+    logger.info("WhatsApp message sent via Twilio", {
+      context: "whatsapp",
+      provider: "twilio",
+      messageType: options?.messageType ?? "text",
+      phone: to,
+      messageId,
+      clinicId: options?.clinicId,
+    });
     return {
       success: true,
-      messageId: data.sid,
+      messageId,
       provider: "twilio",
     };
   }
+
+  logger.error("WhatsApp message failed via Twilio", {
+    context: "whatsapp",
+    alert: "whatsapp_failure",
+    provider: "twilio",
+    messageType: options?.messageType ?? "text",
+    phone: to,
+    clinicId: options?.clinicId,
+    error: data || "Unknown Twilio API error",
+  });
+
   return {
     success: false,
     error: data.message || "Failed to send via Twilio",
@@ -182,12 +226,32 @@ async function sendInteractiveViaMeta(
 
   const data = await response.json();
   if (response.ok) {
+    const messageId = data.messages?.[0]?.id;
+    logger.info("WhatsApp interactive message sent via Meta", {
+      context: "whatsapp",
+      provider: "meta",
+      messageType: "interactive",
+      phone: payload.to,
+      messageId,
+      clinicId: payload.clinicId,
+    });
     return {
       success: true,
-      messageId: data.messages?.[0]?.id,
+      messageId,
       provider: "meta",
     };
   }
+
+  logger.error("WhatsApp interactive message failed via Meta", {
+    context: "whatsapp",
+    alert: "whatsapp_failure",
+    provider: "meta",
+    messageType: "interactive",
+    phone: payload.to,
+    clinicId: payload.clinicId,
+    error: data.error || "Unknown Meta API error",
+  });
+
   return {
     success: false,
     error: data.error?.message || "Failed to send interactive message via Meta API",
@@ -207,6 +271,14 @@ export async function sendInteractiveMessage(
   const config = getWhatsAppConfig();
 
   if (!isConfigured(config)) {
+    logger.error("WhatsApp interactive message failed — not configured", {
+      context: "whatsapp",
+      alert: "whatsapp_failure",
+      provider: config.provider,
+      messageType: "interactive",
+      phone: payload.to,
+      clinicId: payload.clinicId,
+    });
     return { success: false, error: "Not configured", provider: config.provider };
   }
 
@@ -216,7 +288,10 @@ export async function sendInteractiveMessage(
       .map((btn) => `Reply ${btn.title} to ${btn.title.toLowerCase()}`)
       .join("\n");
     const body = `${payload.body}\n\n${buttonText}`;
-    return sendViaTwilio(config, payload.to, body);
+    return sendViaTwilio(config, payload.to, body, {
+      clinicId: payload.clinicId,
+      messageType: "interactive",
+    });
   }
 
   return sendInteractiveViaMeta(config, payload);
@@ -225,19 +300,30 @@ export async function sendInteractiveMessage(
 /**
  * Send a plain text WhatsApp message using the configured provider.
  */
-export async function sendTextMessage(to: string, body: string): Promise<WhatsAppSendResult> {
+export async function sendTextMessage(
+  to: string,
+  body: string,
+  clinicId?: string,
+): Promise<WhatsAppSendResult> {
   const config = getWhatsAppConfig();
 
   if (!isConfigured(config)) {
-    // WhatsApp API credentials not configured
+    logger.error("WhatsApp text message failed — not configured", {
+      context: "whatsapp",
+      alert: "whatsapp_failure",
+      provider: config.provider,
+      messageType: "text",
+      phone: to,
+      clinicId,
+    });
     return { success: false, error: "Not configured", provider: config.provider };
   }
 
   if (config.provider === "twilio") {
-    return sendViaTwilio(config, to, body);
+    return sendViaTwilio(config, to, body, { clinicId, messageType: "text" });
   }
 
-  return sendViaMeta(config, to, body);
+  return sendViaMeta(config, to, body, { clinicId, messageType: "text" });
 }
 
 // ---- DB-backed Template Loading ----
@@ -333,6 +419,8 @@ export interface WhatsAppTemplateParams {
   /** clinic_whatsapp_credentials.whatsapp_access_token for this clinic
    *  (server-only — fetched via createAdminClient). */
   accessToken: string;
+  /** clinic_id for observability (structured logging) */
+  clinicId?: string;
 }
 
 /**
@@ -347,6 +435,15 @@ export async function sendWhatsAppTemplateMessage(
   params: WhatsAppTemplateParams,
 ): Promise<WhatsAppSendResult> {
   if (!params.phoneNumberId || !params.accessToken) {
+    logger.error("WhatsApp template message failed — missing credentials", {
+      context: "whatsapp",
+      alert: "whatsapp_failure",
+      provider: "meta",
+      messageType: "template",
+      phone: params.to,
+      clinicId: params.clinicId,
+      templateName: params.templateName,
+    });
     return {
       success: false,
       error: "WhatsApp not configured for this clinic (missing phone_id or token)",
@@ -385,12 +482,34 @@ export async function sendWhatsAppTemplateMessage(
 
   const data = await response.json();
   if (response.ok) {
+    const messageId = data.messages?.[0]?.id;
+    logger.info("WhatsApp template message sent via Meta", {
+      context: "whatsapp",
+      provider: "meta",
+      messageType: "template",
+      phone: params.to,
+      messageId,
+      clinicId: params.clinicId,
+      templateName: params.templateName,
+    });
     return {
       success: true,
-      messageId: data.messages?.[0]?.id,
+      messageId,
       provider: "meta",
     };
   }
+
+  logger.error("WhatsApp template message failed via Meta", {
+    context: "whatsapp",
+    alert: "whatsapp_failure",
+    provider: "meta",
+    messageType: "template",
+    phone: params.to,
+    clinicId: params.clinicId,
+    templateName: params.templateName,
+    error: data.error || "Unknown Meta API error",
+  });
+
   return {
     success: false,
     error: data.error?.message || "Failed to send template message via Meta API",

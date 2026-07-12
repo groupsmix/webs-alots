@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       violatedDirective: truncateField(report["violated-directive"]),
       documentUri: scrubUri(report["document-uri"]),
       referrer: scrubUri(report.referrer),
-      alert: true,
+      alert: "csp_violation",
     });
   }
 

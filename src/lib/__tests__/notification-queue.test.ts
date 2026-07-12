@@ -270,6 +270,7 @@ describe("notification-queue", () => {
       expect(sendTextMessage).toHaveBeenCalledWith(
         "+212600000000",
         "Your appointment is confirmed.",
+        "clinic-001",
       );
     });
 

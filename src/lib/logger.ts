@@ -39,6 +39,14 @@ interface LogMeta {
   clinicId?: string | null;
   /** Request trace ID for correlation across log entries */
   traceId?: string;
+  /** Correlation ID for grouping related events (e.g. payment gateway session id) */
+  correlationId?: string;
+  /**
+   * Sentry alert category. When set, the error is tagged with `alert` so Sentry
+   * alert rules can route business-critical failures (payments, WhatsApp) to the
+   * on-call channel without mixing them with general application errors.
+   */
+  alert?: string;
   error?: unknown;
   [key: string]: unknown;
 }
@@ -189,19 +197,22 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
 // actual resolution is near-instant after the first await.
 type SentryModule = {
   captureException?: (err: unknown, ctx?: Record<string, unknown>) => void;
-  withScope?: (
-    cb: (scope: {
-      setTag: (k: string, v: string) => void;
-      setExtra: (k: string, v: unknown) => void;
-    }) => void,
-  ) => void;
+  withScope?: (callback: (scope: Scope) => void) => void;
   addBreadcrumb?: (crumb: Record<string, unknown>) => void;
+};
+
+type Scope = {
+  setTag: (k: string, v: string) => void;
+  setExtra: (k: string, v: unknown) => void;
+  setLevel: (level: string) => void;
 };
 
 let _sentryPromise: Promise<SentryModule> | null = null;
 function getSentry(): Promise<SentryModule> {
   if (!_sentryPromise) {
-    _sentryPromise = import("@sentry/nextjs").catch(() => ({}) as SentryModule);
+    _sentryPromise = import("@sentry/nextjs").catch(
+      () => ({}) as SentryModule,
+    ) as unknown as Promise<SentryModule>;
   }
   return _sentryPromise;
 }
@@ -216,7 +227,20 @@ async function captureSentryError(message: string, meta?: LogMeta): Promise<void
       if (meta?.context) scope.setTag("context", meta.context);
       if (meta?.clinicId) scope.setTag("clinicId", meta.clinicId);
       if (meta?.traceId) scope.setTag("traceId", meta.traceId);
-      const { context: _ctx, clinicId: _cid, traceId: _tid, error: _err, ...extra } = meta ?? {};
+      if (meta?.alert) {
+        scope.setTag("alert", meta.alert);
+        // Treat alert-tagged business events as warnings so they are routed by
+        // the `alert` tag without polluting the error issue stream.
+        scope.setLevel("warning");
+      }
+      const {
+        context: _ctx,
+        clinicId: _cid,
+        traceId: _tid,
+        alert: _alert,
+        error: _err,
+        ...extra
+      } = meta ?? {};
       for (const [k, v] of Object.entries(extra)) {
         scope.setExtra(k, v);
       }

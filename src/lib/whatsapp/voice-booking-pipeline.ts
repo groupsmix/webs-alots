@@ -325,6 +325,7 @@ export async function handleVoiceMessage(
     await sendTextMessage(
       senderPhone,
       `Désolé, la reconnaissance vocale n'est pas encore activée pour ${clinicName}. Veuillez envoyer un message texte.`,
+      clinicId,
     );
     return;
   }
@@ -335,6 +336,7 @@ export async function handleVoiceMessage(
     await sendTextMessage(
       senderPhone,
       "Désolé, nous n'avons pas pu traiter votre message vocal. Veuillez réessayer ou envoyer un message texte.",
+      clinicId,
     );
     return;
   }
@@ -345,6 +347,7 @@ export async function handleVoiceMessage(
     await sendTextMessage(
       senderPhone,
       "Désolé, nous n'avons pas pu comprendre votre message vocal. Veuillez réessayer en parlant plus clairement.",
+      clinicId,
     );
     return;
   }
@@ -395,6 +398,7 @@ export async function handleVoiceMessage(
       `Nous avons bien reçu votre message. ` +
       `Pour prendre un rendez-vous, vous pouvez dire par exemple: ` +
       `"Je veux voir Dr. Ahmed demain à 15h00"\n\n— ${clinicName}`,
+    clinicId,
   );
 }
 
@@ -419,6 +423,7 @@ async function processVoiceBooking(
       senderPhone,
       "Nous avons compris votre demande de rendez-vous, mais votre numéro n'est pas encore enregistré. " +
         `Veuillez contacter ${clinicName} pour créer votre dossier patient.`,
+      clinicId,
     );
     return;
   }
@@ -463,6 +468,7 @@ async function processVoiceBooking(
       `Nous avons compris votre message vocal mais nous n'avons pas trouvé le médecin mentionné.\n\n` +
         `Médecins disponibles:\n${doctorList ?? "Aucun médecin disponible"}\n\n` +
         `Veuillez renvoyer un message avec le nom exact du médecin.\n— ${clinicName}`,
+      clinicId,
     );
     return;
   }
@@ -476,6 +482,7 @@ async function processVoiceBooking(
       senderPhone,
       `Dr. ${doctorDisplayName} trouvé! Il manque: ${missing.join(" et ")}.\n` +
         `Veuillez renvoyer un message avec les informations manquantes.\n— ${clinicName}`,
+      clinicId,
     );
     return;
   }
@@ -504,6 +511,7 @@ async function processVoiceBooking(
     await sendTextMessage(
       senderPhone,
       "Désolé, une erreur est survenue lors de la réservation. Veuillez réessayer plus tard.",
+      clinicId,
     );
     return;
   }
@@ -526,6 +534,7 @@ async function processVoiceBooking(
       `📅 ${entities.dateStr}\n` +
       `🕐 ${entities.timeStr}\n\n` +
       `Vous recevrez une confirmation bientôt.\n— ${clinicName}`,
+    clinicId,
   );
 }
 

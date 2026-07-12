@@ -317,7 +317,28 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           item.body,
           item.trigger_type,
           metadata,
+          item.clinic_id as string,
         );
+
+        if (sendResult.success) {
+          logger.info("Notification delivered", {
+            context: "notification-queue",
+            channel: item.channel,
+            notificationId: item.id,
+            clinicId: item.clinic_id,
+            trigger: item.trigger_type,
+            messageId: sendResult.messageId,
+          });
+        } else {
+          logger.warn("Notification delivery failed", {
+            context: "notification-queue",
+            channel: item.channel,
+            notificationId: item.id,
+            clinicId: item.clinic_id,
+            trigger: item.trigger_type,
+            error: sendResult.error,
+          });
+        }
 
         if (sendResult.success) {
           // Mark as sent
@@ -505,6 +526,7 @@ async function deliverNotification(
   body: string,
   triggerType: string,
   metadata: QueueMetadata,
+  clinicId: string,
 ): Promise<DeliveryResult> {
   switch (channel) {
     case "whatsapp": {
@@ -521,6 +543,7 @@ async function deliverNotification(
           body,
           buttons: getReminderButtons(locale),
           footer: metadata.clinic_name,
+          clinicId,
         });
         return {
           success: result.success,
@@ -530,7 +553,7 @@ async function deliverNotification(
       }
 
       const { sendTextMessage } = await import("./whatsapp");
-      const result = await sendTextMessage(recipient, body);
+      const result = await sendTextMessage(recipient, body, clinicId);
       return {
         success: result.success,
         messageId: result.messageId,

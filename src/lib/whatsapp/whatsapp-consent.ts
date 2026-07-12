@@ -424,6 +424,7 @@ export async function handleConsentReply(
         `Merci! Votre consentement a été enregistré. ` +
           `Vous pouvez révoquer votre consentement à tout moment en envoyant "STOP".\n\n` +
           `— ${clinicName}`,
+        clinicId,
       );
       return true;
     }
@@ -440,6 +441,7 @@ export async function handleConsentReply(
         `Votre consentement a été révoqué. Nous ne vous enverrons plus de messages WhatsApp.\n\n` +
           `Si vous changez d'avis, contactez votre clinique.\n\n` +
           `— ${clinicName}`,
+        clinicId,
       );
       return true;
     }

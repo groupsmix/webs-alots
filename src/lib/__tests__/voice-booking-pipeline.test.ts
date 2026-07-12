@@ -427,6 +427,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("reconnaissance vocale n'est pas encore activée"),
+      "clinic-1",
     );
   });
 
@@ -440,6 +441,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("n'avons pas pu traiter votre message vocal"),
+      "clinic-1",
     );
   });
 
@@ -465,6 +467,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("n'avons pas pu comprendre"),
+      "clinic-1",
     );
   });
 
@@ -493,6 +496,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("Merci pour votre message vocal"),
+      "clinic-1",
     );
   });
 
@@ -523,6 +527,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("Rendez-vous créé"),
+      "clinic-1",
     );
   });
 
@@ -552,6 +557,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("numéro n'est pas encore enregistré"),
+      "clinic-1",
     );
   });
 
@@ -580,6 +586,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("Il manque"),
+      "clinic-1",
     );
   });
 
@@ -610,6 +617,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("Médecins disponibles"),
+      "clinic-1",
     );
   });
 
@@ -641,6 +649,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("erreur est survenue"),
+      "clinic-1",
     );
   });
 
@@ -669,6 +678,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
       expect.stringContaining("n'avons pas pu comprendre"),
+      "clinic-1",
     );
   });
 });

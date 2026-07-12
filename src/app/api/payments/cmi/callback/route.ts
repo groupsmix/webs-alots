@@ -92,12 +92,22 @@ async function readBodyWithLimit(
 }
 
 export async function POST(request: NextRequest) {
+  const traceId = request.headers.get("x-trace-id") ?? undefined;
+
   try {
     const senderAllowed = await checkWebhookSenderRateLimit(
       "cmi-callback",
       request.headers.get("cf-connecting-ip"),
     );
     if (!senderAllowed) {
+      logger.warn("CMI callback rate limit exceeded", {
+        context: "payments/cmi/callback",
+        traceId,
+        ip:
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for") ??
+          "unknown",
+      });
       return apiRateLimited("CMI callback sender rate limit exceeded.");
     }
 
@@ -105,6 +115,7 @@ export async function POST(request: NextRequest) {
     if (!isCmiSourceAllowed(request)) {
       logger.warn("CMI callback rejected: source IP not in allowlist", {
         context: "payments/cmi/callback",
+        traceId,
         ip:
           request.headers.get("cf-connecting-ip") ??
           request.headers.get("x-forwarded-for") ??
@@ -145,6 +156,7 @@ export async function POST(request: NextRequest) {
     if (!fieldResult.success) {
       logger.warn("CMI callback fields failed validation", {
         context: "payments/cmi/callback",
+        traceId,
         error: fieldResult.error.issues,
       });
       return apiError("Invalid callback fields");
@@ -153,8 +165,25 @@ export async function POST(request: NextRequest) {
     const callbackData = await verifyCmiCallback(params);
 
     if (!callbackData) {
+      logger.error("CMI callback verification failed", {
+        context: "payments/cmi/callback",
+        alert: "payment_callback_failure",
+        traceId,
+        orderId: params.orderId,
+        correlationId: params.transactionId,
+      });
       return apiError("Invalid callback");
     }
+
+    logger.info("CMI callback received", {
+      context: "payments/cmi/callback",
+      traceId,
+      correlationId: callbackData.transactionId,
+      orderId: callbackData.orderId,
+      status: callbackData.status,
+      amount: callbackData.amount,
+      currency: params.currency,
+    });
 
     // HIGH-2: Replay protection — insert into cmi_callbacks_seen before
     // any state mutation.  Uses admin client because tenant context is not
@@ -180,6 +209,8 @@ export async function POST(request: NextRequest) {
           if (dedupErr.code === "23505") {
             logger.info("CMI callback replay detected — ignoring duplicate", {
               context: "payments/cmi/callback",
+              traceId,
+              correlationId: callbackData.transactionId,
               transactionId: callbackData.transactionId,
               clinicId: dedupPayment.clinic_id,
             });
@@ -192,8 +223,12 @@ export async function POST(request: NextRequest) {
           // so CMI retries rather than risk double-processing a payment.
           logger.error("CMI dedup insert failed — fail-closed, requesting retry", {
             context: "payments/cmi/callback",
+            alert: "payment_callback_failure",
+            traceId,
+            correlationId: callbackData.transactionId,
             error: dedupErr,
             transactionId: callbackData.transactionId,
+            clinicId: dedupPayment.clinic_id,
           });
           return new NextResponse("ACTION=CALLBACK_ERROR", {
             status: 503,
@@ -239,6 +274,9 @@ export async function POST(request: NextRequest) {
         ) {
           logger.error("CMI callback amount/currency mismatch — potential tampering", {
             context: "payments/cmi/callback",
+            alert: "payment_tampering",
+            traceId,
+            correlationId: callbackData.transactionId,
             paymentId: payment.id,
             expectedAmount: payment.amount,
             callbackAmount,
@@ -281,6 +319,9 @@ export async function POST(request: NextRequest) {
           } catch (tenantErr) {
             logger.error("Failed to set tenant context for CMI callback", {
               context: "payments/cmi/callback",
+              alert: "payment_callback_failure",
+              traceId,
+              correlationId: callbackData.transactionId,
               clinicId: payment.clinic_id,
               error: tenantErr,
             });
@@ -314,18 +355,36 @@ export async function POST(request: NextRequest) {
         if (payResult.error) {
           logger.error("CMI payment update failed", {
             context: "payments/cmi/callback",
+            alert: "payment_callback_failure",
+            traceId,
+            correlationId: callbackData.transactionId,
             paymentId: payment.id,
+            clinicId: payment.clinic_id,
             error: payResult.error,
           });
         }
         if (apptResult.error) {
           logger.error("CMI appointment confirmation failed", {
             context: "payments/cmi/callback",
+            alert: "payment_callback_failure",
+            traceId,
+            correlationId: callbackData.transactionId,
             appointmentId: payment.appointment_id,
+            clinicId: payment.clinic_id,
             error: apptResult.error,
           });
         }
       }
+
+      logger.info("CMI payment completed", {
+        context: "payments/cmi/callback",
+        traceId,
+        correlationId: callbackData.transactionId,
+        orderId: callbackData.orderId,
+        paymentId: payment?.id,
+        clinicId: payment?.clinic_id,
+        amount: payment?.amount,
+      });
 
       // Payment approved — status updated in DB above
     } else {
@@ -345,7 +404,11 @@ export async function POST(request: NextRequest) {
           } catch (tenantErr) {
             logger.error("Failed to set tenant context for CMI callback (failed payment)", {
               context: "payments/cmi/callback",
+              alert: "payment_callback_failure",
+              traceId,
+              correlationId: callbackData.transactionId,
               clinicId: failedPayment.clinic_id,
+              paymentId: failedPayment.id,
               error: tenantErr,
             });
           }
@@ -355,6 +418,16 @@ export async function POST(request: NextRequest) {
           .update({ status: PAYMENT_STATUS.FAILED })
           .eq("id", failedPayment.id)
           .eq("clinic_id", failedPayment.clinic_id);
+
+        logger.info("CMI payment marked as failed", {
+          context: "payments/cmi/callback",
+          traceId,
+          correlationId: callbackData.transactionId,
+          orderId: callbackData.orderId,
+          paymentId: failedPayment.id,
+          clinicId: failedPayment.clinic_id,
+          status: callbackData.status,
+        });
       }
 
       // Payment not approved — marked as failed in DB above
@@ -369,6 +442,8 @@ export async function POST(request: NextRequest) {
     // F-A93-03: Payment callback failure is an error, not a warning
     logger.error("CMI payment callback processing failed", {
       context: "payments/cmi/callback",
+      alert: "payment_callback_failure",
+      traceId,
       error: err,
     });
     return apiInternalError("Failed to process payment callback");
