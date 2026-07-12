@@ -113,7 +113,7 @@ export async function hmacSha256Hex(secret: string, message: string): Promise<st
 /**
  * Base64-encode raw bytes in an edge-safe way (no Node `Buffer`).
  */
-export function bytesToBase64(bytes: Uint8Array): string {
+function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   // Chunk to avoid blowing the call-stack on String.fromCharCode(...spread).
   const chunkSize = 0x8000;

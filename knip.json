@@ -10,20 +10,20 @@
     "sentry.*.config.ts",
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/*/index.ts",
-    "worker-cron-handler.ts",
-    "open-next.config.ts",
-    "vitest.storybook.config.ts"
+    "evals/**/*.ts",
+    "open-next.config.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/**/*.ts",
     "e2e/**/*.ts",
+    "evals/**/*.ts",
     "*.config.{ts,mjs}"
   ],
   "ignore": ["src/lib/types/database.ts"],
-  "ignoreBinaries": ["supabase", "wait-on"],
-  "ignoreUnresolved": [".open-next/worker.js", "./.open-next/worker.js"],
+  "ignoreBinaries": ["supabase"],
+  "ignoreUnresolved": [],
   "ignoreDependencies": [
     "eslint-plugin-jsx-a11y",
     "tailwindcss",

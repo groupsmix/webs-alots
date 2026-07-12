@@ -34,6 +34,3 @@ export function impersonationCookieOptions(maxAgeSeconds: number) {
 }
 
 /** Cookie options for clearing an impersonation cookie. */
-export function clearImpersonationCookieOptions() {
-  return impersonationCookieOptions(0);
-}

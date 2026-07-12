@@ -27,13 +27,6 @@ export interface WABARoutingResult {
   whatsappPhoneNumberId: string;
 }
 
-interface PatientLookupResult {
-  patientId: string;
-  patientName: string;
-  patientPhone: string;
-  hasConsent: boolean;
-}
-
 export interface WABARoutingClient {
   from(table: string): {
     select(cols: string): {
@@ -159,69 +152,8 @@ export async function resolveClinicFromWABA(
  *
  * Vérifie aussi le statut de consentement WhatsApp du patient.
  */
-export async function resolvePatientFromPhone(
-  supabase: WABARoutingClient,
-  clinicId: string,
-  senderPhone: string,
-): Promise<PatientLookupResult | null> {
-  // Normaliser le numéro (supprimer le préfixe +)
-  const normalizedPhone = senderPhone.startsWith("+") ? senderPhone : `+${senderPhone}`;
-
-  const { data: patient } = await supabase
-    .from("users")
-    .select("id, name, phone")
-    .eq("clinic_id", clinicId)
-    .eq("phone", normalizedPhone)
-    .single();
-
-  if (!patient) {
-    // Essayer sans le + prefix
-    const withoutPlus = normalizedPhone.replace(/^\+/, "");
-    const { data: patientAlt } = await supabase
-      .from("users")
-      .select("id, name, phone")
-      .eq("clinic_id", clinicId)
-      .eq("phone", withoutPlus)
-      .single();
-
-    if (!patientAlt) return null;
-
-    const consent = await checkWhatsAppConsent(supabase, clinicId, patientAlt.id as string);
-
-    return {
-      patientId: patientAlt.id as string,
-      patientName: (patientAlt.name as string) || "Patient",
-      patientPhone: withoutPlus,
-      hasConsent: consent,
-    };
-  }
-
-  const consent = await checkWhatsAppConsent(supabase, clinicId, patient.id as string);
-
-  return {
-    patientId: patient.id as string,
-    patientName: (patient.name as string) || "Patient",
-    patientPhone: normalizedPhone,
-    hasConsent: consent,
-  };
-}
 
 // ── Vérification du consentement WhatsApp ──
-
-async function checkWhatsAppConsent(
-  supabase: WABARoutingClient,
-  clinicId: string,
-  patientId: string,
-): Promise<boolean> {
-  const { data: consent } = await supabase
-    .from("whatsapp_consent")
-    .select("status")
-    .eq("clinic_id", clinicId)
-    .eq("patient_id", patientId)
-    .maybeSingle();
-
-  return consent?.status === "granted";
-}
 
 // ── Validation du numéro WhatsApp marocain ──
 

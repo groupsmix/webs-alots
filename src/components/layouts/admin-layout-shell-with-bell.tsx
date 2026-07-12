@@ -10,7 +10,6 @@
  * hook-heavy component.
  */
 
-import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -148,4 +147,3 @@ export function AdminSupportBadge() {
 }
 
 // Re-export Bell so admin layout doesn't import lucide directly just for this
-export { Bell };

@@ -115,26 +115,3 @@ function makeEnforcement(
  * Quick guard: returns a 403 error response string if Art.18 restriction applies.
  * Import in route handlers that perform non-essential processing.
  */
-export function restrictedResponse(): { error: string; code: string; status: number } {
-  return {
-    error:
-      "Processing is restricted for your account under GDPR Art.18. " +
-      "Contact your clinic's data protection officer to lift the restriction.",
-    code: "PROCESSING_RESTRICTED",
-    status: 403,
-  };
-}
-
-export function objectedResponse(activity: ProcessingActivity): {
-  error: string;
-  code: string;
-  status: number;
-} {
-  return {
-    error:
-      `You have objected to this type of processing (${activity}) under GDPR Art.21. ` +
-      "Withdraw your objection via your account privacy settings to re-enable it.",
-    code: "PROCESSING_OBJECTED",
-    status: 403,
-  };
-}

@@ -192,6 +192,15 @@ const nextConfig: NextConfig = {
     // non-host-based redirects.
     return [];
   },
+
+  // BUNDLE-01: Suppress webpack performance warnings. The production budget
+  // is enforced by scripts/check-bundle-budget.mjs (800 kB raw shared JS +
+  // polyfills). This keeps the webpack/turbopack UI noise down while
+  // keeping the explicit guard.
+  webpack: (config) => {
+    config.performance = { hints: false };
+    return config;
+  },
 };
 
 export default withSentryConfig(withAnalyzer(nextConfig), {

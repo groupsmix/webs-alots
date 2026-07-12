@@ -392,32 +392,3 @@ export async function getWhatsAppTemplate(
 /**
  * Load all WhatsApp templates for a clinic.
  */
-export async function getClinicWhatsAppTemplates(clinicId: string): Promise<WhatsAppTemplate[]> {
-  try {
-    const supabase = await createTenantClient(clinicId);
-    // Table added in migration 00101 — not yet in generated DB types
-    const { data, error } = await (supabase as unknown as SupabaseUntyped)
-      .from("whatsapp_templates") // nosemgrep: semgrep.tenant-scoping
-      .select("*") // nosemgrep: semgrep.tenant-scoping
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      logger.warn("Failed to load clinic WhatsApp templates", {
-        context: "whatsapp/templates",
-        clinicId,
-        error,
-      });
-      return [];
-    }
-
-    return (data ?? []) as WhatsAppTemplate[];
-  } catch (err) {
-    logger.warn("Error fetching clinic WhatsApp templates", {
-      context: "whatsapp/templates",
-      clinicId,
-      error: err,
-    });
-    return [];
-  }
-}

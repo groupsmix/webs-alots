@@ -20,12 +20,6 @@ export const localeLabel: Record<Locale, string> = {
   en: "EN",
 };
 
-export const localeName: Record<Locale, string> = {
-  fr: "Français",
-  ar: "العربية",
-  en: "English",
-};
-
 type Feature = { num: string; title: string; tagline: string; bullets: string[] };
 type Step = { num: string; title: string; body: string };
 type Tier = {

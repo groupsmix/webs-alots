@@ -8,21 +8,15 @@
  *
  * Exports:
  *   lookupDrugInteraction(drugA, drugB) — exact then fuzzy match
- *   lookupDarijaTerms(query)           — search Darija/FR/AR terms
- *   getTaxonomyTags()                  — all triage taxonomy tags
- *   getTaxonomyTag(tag)                — single tag by key
  *   formatDrugInteractionForTool(r)    — LLM-ready string with version stamp
  *
  * Source CSVs (authoritative, human-editable):
  *   ./drug-interactions.csv
- *   ./darija-medical-terms.csv
- *   ./triage-taxonomy.csv
  */
 
 // ── Pack metadata ─────────────────────────────────────────────────────────────
 
 export const PACK_VERSION = "1.0.0";
-export const PACK_BUILT_AT = "2026-06-20";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,23 +29,6 @@ export interface DrugInteraction {
   mechanism: string;
   consequence: string;
   recommendation: string;
-}
-
-interface DarijaTerm {
-  /** Primary Darija term (Arabic-script transliteration or Latin) */
-  darijaTerms: string[];
-  frTerm: string;
-  arTerm: string;
-  category: "anatomy" | "symptom" | "medication" | "procedure";
-}
-
-interface TaxonomyTag {
-  tag: string;
-  labelFr: string;
-  labelAr: string;
-  description: string;
-  /** 0.0 = low-urgency signal, 1.0 = critical-urgency signal */
-  urgencyWeight: number;
 }
 
 // ── Normalisation helper ──────────────────────────────────────────────────────
@@ -306,251 +283,9 @@ const DRUG_INTERACTIONS: DrugInteraction[] = [
 // ── Darija Medical Terms data ─────────────────────────────────────────────────
 // Source: darija-medical-terms.csv (37 terms)
 
-const DARIJA_TERMS: DarijaTerm[] = [
-  {
-    darijaTerms: ["ras", "rass", "rasna"],
-    frTerm: "tête / mal de tête",
-    arTerm: "رأس",
-    category: "anatomy",
-  },
-  { darijaTerms: ["kelb", "galb", "galbna"], frTerm: "cœur", arTerm: "قلب", category: "anatomy" },
-  { darijaTerms: ["sder"], frTerm: "poitrine / thorax", arTerm: "صدر", category: "anatomy" },
-  {
-    darijaTerms: ["botna", "btne", "krch", "kerch"],
-    frTerm: "ventre / abdomen",
-    arTerm: "بطن",
-    category: "anatomy",
-  },
-  { darijaTerms: ["dhar"], frTerm: "dos / colonne vertébrale", arTerm: "ظهر", category: "anatomy" },
-  { darijaTerms: ["yed", "yad", "yadi"], frTerm: "main / bras", arTerm: "يد", category: "anatomy" },
-  {
-    darijaTerms: ["rijel", "rjel", "rejl"],
-    frTerm: "jambe / pied",
-    arTerm: "رجل",
-    category: "anatomy",
-  },
-  {
-    darijaTerms: ["wdna", "wdane", "widne", "oud en"],
-    frTerm: "oreille",
-    arTerm: "أذن",
-    category: "anatomy",
-  },
-  {
-    darijaTerms: ["3in", "3ioun", "ain"],
-    frTerm: "œil / yeux",
-    arTerm: "عين",
-    category: "anatomy",
-  },
-  { darijaTerms: ["anf", "nif"], frTerm: "nez", arTerm: "أنف", category: "anatomy" },
-  {
-    darijaTerms: ["halq", "hnouch"],
-    frTerm: "gorge / cou",
-    arTerm: "حلق / رقبة",
-    category: "anatomy",
-  },
-  {
-    darijaTerms: ["sna", "snane", "snan"],
-    frTerm: "dent / dentition",
-    arTerm: "سن",
-    category: "anatomy",
-  },
-  { darijaTerms: ["lisan"], frTerm: "langue", arTerm: "لسان", category: "anatomy" },
-  { darijaTerms: ["kbda"], frTerm: "foie", arTerm: "كبد", category: "anatomy" },
-  {
-    darijaTerms: ["klawi", "klawy"],
-    frTerm: "reins / rein",
-    arTerm: "كليتان",
-    category: "anatomy",
-  },
-  {
-    darijaTerms: ["rkba", "rkuba", "rkabna"],
-    frTerm: "genou",
-    arTerm: "ركبة",
-    category: "anatomy",
-  },
-  { darijaTerms: ["moukh"], frTerm: "cerveau / tête", arTerm: "مخ", category: "anatomy" },
-  { darijaTerms: ["rida"], frTerm: "poumon", arTerm: "رئة", category: "anatomy" },
-  { darijaTerms: ["me3da"], frTerm: "estomac", arTerm: "معدة", category: "anatomy" },
-  { darijaTerms: ["ferda"], frTerm: "cuisse / hanche", arTerm: "فخذ", category: "anatomy" },
-  {
-    darijaTerms: ["skhana", "skhona", "shkha", "sokhan"],
-    frTerm: "fièvre",
-    arTerm: "حمى",
-    category: "symptom",
-  },
-  { darijaTerms: ["wed3", "wdaa", "w daa"], frTerm: "douleur", arTerm: "وجع", category: "symptom" },
-  { darijaTerms: ["berd"], frTerm: "rhume / froid", arTerm: "برد", category: "symptom" },
-  {
-    darijaTerms: ["wahd blissa", "bli", "blissa", "8tayan"],
-    frTerm: "nausée / envie de vomir",
-    arTerm: "غثيان",
-    category: "symptom",
-  },
-  {
-    darijaTerms: ["hdiq", "hdiqa", "shhal"],
-    frTerm: "diarrhée",
-    arTerm: "إسهال",
-    category: "symptom",
-  },
-  { darijaTerms: ["imsak"], frTerm: "constipation", arTerm: "إمساك", category: "symptom" },
-  {
-    darijaTerms: ["3wara", "3ouara", "7riq"],
-    frTerm: "brûlures / irritation",
-    arTerm: "حرقان",
-    category: "symptom",
-  },
-  {
-    darijaTerms: ["dawekha", "dawkha", "ldawkha"],
-    frTerm: "vertiges / étourdissements",
-    arTerm: "دوخة",
-    category: "symptom",
-  },
-  {
-    darijaTerms: ["7rira", "hrira", "7kka"],
-    frTerm: "démangeaisons",
-    arTerm: "حكة",
-    category: "symptom",
-  },
-  {
-    darijaTerms: ["chwat", "shwat"],
-    frTerm: "crampe / spasme",
-    arTerm: "تشنج",
-    category: "symptom",
-  },
-  {
-    darijaTerms: ["dwa", "dwiya", "adwiya", "l dwa"],
-    frTerm: "médicament / traitement",
-    arTerm: "دواء",
-    category: "medication",
-  },
-  {
-    darijaTerms: ["ibra", "ibrat"],
-    frTerm: "injection / piqûre",
-    arTerm: "حقنة",
-    category: "procedure",
-  },
-  {
-    darijaTerms: ["tahlil", "tahlilat", "bilan"],
-    frTerm: "analyse / bilan sanguin",
-    arTerm: "تحليل",
-    category: "procedure",
-  },
-  {
-    darijaTerms: ["radio", "radiyo", "echographie"],
-    frTerm: "radiographie / échographie",
-    arTerm: "أشعة",
-    category: "procedure",
-  },
-  {
-    darijaTerms: ["3maliya", "3maliyat", "opération"],
-    frTerm: "opération / chirurgie",
-    arTerm: "عملية جراحية",
-    category: "procedure",
-  },
-  {
-    darijaTerms: ["dkhoul", "dkhoul l spital"],
-    frTerm: "hospitalisation",
-    arTerm: "دخول للمستشفى",
-    category: "procedure",
-  },
-  {
-    darijaTerms: ["tasdir", "tsdira"],
-    frTerm: "ordonnance / prescription",
-    arTerm: "وصفة طبية",
-    category: "procedure",
-  },
-];
-
 // ── Triage Taxonomy data ──────────────────────────────────────────────────────
 // Source: triage-taxonomy.csv (12 tags)
 // Must stay in sync with TRIAGE_TAGS in src/lib/ai/triage.ts
-
-const TAXONOMY_TAGS: TaxonomyTag[] = [
-  {
-    tag: "billing",
-    labelFr: "Facturation",
-    labelAr: "الفاتورة",
-    description: "Questions et litiges concernant la facturation et les paiements",
-    urgencyWeight: 0.2,
-  },
-  {
-    tag: "technical",
-    labelFr: "Problème technique",
-    labelAr: "مشكلة تقنية",
-    description: "Dysfonctionnements techniques sur la plateforme Oltigo",
-    urgencyWeight: 0.4,
-  },
-  {
-    tag: "onboarding",
-    labelFr: "Intégration / Inscription",
-    labelAr: "تأهيل",
-    description: "Questions liées à l'inscription et à la configuration initiale",
-    urgencyWeight: 0.2,
-  },
-  {
-    tag: "whatsapp",
-    labelFr: "WhatsApp",
-    labelAr: "واتساب",
-    description: "Problèmes liés à l'intégration ou l'envoi de messages WhatsApp",
-    urgencyWeight: 0.3,
-  },
-  {
-    tag: "account_access",
-    labelFr: "Accès au compte",
-    labelAr: "الوصول للحساب",
-    description: "Impossibilité d'accéder au compte (mot de passe oublié, verrou)",
-    urgencyWeight: 0.5,
-  },
-  {
-    tag: "appointment",
-    labelFr: "Rendez-vous",
-    labelAr: "موعد",
-    description: "Questions relatives à la prise ou gestion de rendez-vous",
-    urgencyWeight: 0.2,
-  },
-  {
-    tag: "prescription",
-    labelFr: "Ordonnance",
-    labelAr: "وصفة طبية",
-    description: "Demandes et questions concernant les prescriptions médicales",
-    urgencyWeight: 0.4,
-  },
-  {
-    tag: "lab_results",
-    labelFr: "Résultats d'analyses",
-    labelAr: "نتائج التحاليل",
-    description: "Demandes de résultats de laboratoire ou d'examens complémentaires",
-    urgencyWeight: 0.4,
-  },
-  {
-    tag: "medical_urgent",
-    labelFr: "Urgence médicale",
-    labelAr: "طوارئ طبية",
-    description: "Signes d'urgence médicale nécessitant une intervention immédiate",
-    urgencyWeight: 1.0,
-  },
-  {
-    tag: "data_privacy",
-    labelFr: "Confidentialité des données",
-    labelAr: "الخصوصية",
-    description: "Questions relatives à la protection et la confidentialité des données",
-    urgencyWeight: 0.3,
-  },
-  {
-    tag: "feature_request",
-    labelFr: "Demande de fonctionnalité",
-    labelAr: "طلب ميزة",
-    description: "Suggestions d'amélioration ou demande de nouvelles fonctionnalités souhaitées",
-    urgencyWeight: 0.1,
-  },
-  {
-    tag: "general",
-    labelFr: "Général",
-    labelAr: "عام",
-    description: "Questions générales ne correspondant pas aux catégories précédentes",
-    urgencyWeight: 0.1,
-  },
-];
 
 // ── Drug Interaction lookup ───────────────────────────────────────────────────
 
@@ -620,49 +355,18 @@ export function formatDrugInteractionNotFound(drug1: string, drug2: string): str
   ].join("\n");
 }
 
-// ── Darija Term lookup ────────────────────────────────────────────────────────
-
 /**
- * Search Darija terms by any of:
- *  - Darija term or variant
- *  - French term (partial)
- *  - Arabic term (partial)
- *
- * Returns all matching entries sorted by category.
- */
-export function lookupDarijaTerms(query: string): DarijaTerm[] {
-  if (!query.trim()) return [];
-  const q = norm(query);
 
-  return DARIJA_TERMS.filter(
-    (term) =>
-      term.darijaTerms.some(
-        (t) => fuzzyMatch(t, q) || norm(t).includes(q) || q.includes(norm(t)),
-      ) ||
-      norm(term.frTerm).includes(q) ||
-      term.arTerm.includes(query.trim()),
-  ).sort((a, b) => a.category.localeCompare(b.category));
-}
+
+
+
+ *
+
+ */
 
 // ── Taxonomy Tag lookup ───────────────────────────────────────────────────────
 
-/** Return all triage taxonomy tags. */
-export function getTaxonomyTags(): TaxonomyTag[] {
-  return TAXONOMY_TAGS;
-}
-
-/** Return a single taxonomy tag by key, or undefined if not found. */
-export function getTaxonomyTag(tag: string): TaxonomyTag | undefined {
-  return TAXONOMY_TAGS.find((t) => t.tag === tag);
-}
-
 /**
- * Given a list of tag strings, return the maximum urgency weight
- * among the matched tags (0.0 if none matched).
+
+
  */
-export function getMaxUrgencyWeight(tags: string[]): number {
-  return tags.reduce((max, tag) => {
-    const entry = getTaxonomyTag(tag);
-    return entry ? Math.max(max, entry.urgencyWeight) : max;
-  }, 0);
-}

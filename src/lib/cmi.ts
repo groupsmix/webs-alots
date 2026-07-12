@@ -86,7 +86,7 @@ export function isCmiConfigured(): boolean {
  * (`|` → `\|`). Order matters: escaping `\` last would double-escape the
  * backslash introduced by the `|` rule.
  */
-export function escapeCmiValue(value: string): string {
+function escapeCmiValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
 }
 

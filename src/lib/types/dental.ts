@@ -52,21 +52,6 @@ export interface TreatmentPlan {
 
 // ---------- Lab Orders ----------
 
-export interface LabOrder {
-  id: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  labName: string;
-  description: string;
-  status: "pending" | "sent" | "in_progress" | "ready" | "delivered";
-  dueDate: string | null;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // ---------- Sterilization Log ----------
 
 export interface SterilizationEntry {

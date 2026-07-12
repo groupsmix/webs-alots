@@ -46,7 +46,7 @@ export interface AICircuitBreakerSnapshot {
   lastFailureReason: string | null;
 }
 
-export class AICircuitBreakerOpenError extends Error {
+class AICircuitBreakerOpenError extends Error {
   readonly snapshot: AICircuitBreakerSnapshot;
 
   constructor(snapshot: AICircuitBreakerSnapshot) {
@@ -204,7 +204,7 @@ export async function assertAICircuitBreakerAllowsRequests(): Promise<
   return { ok: true, snapshot };
 }
 
-export function shouldTripAICircuitBreaker(statusCode?: number): boolean {
+function shouldTripAICircuitBreaker(statusCode?: number): boolean {
   if (statusCode === undefined) return true;
   return statusCode === 429 || statusCode >= 500;
 }

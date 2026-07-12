@@ -114,7 +114,7 @@ const SPECIALTY_STEPS: Partial<Record<ClinicSpecialty, OnboardingStep[]>> = {
   ],
 };
 
-export function getOnboardingFlow(specialty?: ClinicSpecialty): OnboardingStep[] {
+function getOnboardingFlow(specialty?: ClinicSpecialty): OnboardingStep[] {
   const extra = specialty ? (SPECIALTY_STEPS[specialty] ?? []) : [];
   return [...extra, ...BASE_STEPS];
 }

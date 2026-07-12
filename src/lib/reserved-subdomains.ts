@@ -180,8 +180,8 @@ export const RESERVED_SUBDOMAINS: ReadonlySet<string> = new Set([
  * Maximum length of a tenant subdomain label. DNS labels max out at 63 chars;
  * we stay well under that to leave room and keep URLs readable.
  */
-export const MAX_SUBDOMAIN_LENGTH = 40;
-export const MIN_SUBDOMAIN_LENGTH = 3;
+const MAX_SUBDOMAIN_LENGTH = 40;
+const MIN_SUBDOMAIN_LENGTH = 3;
 
 /**
  * True when `slug` is structurally a valid tenant subdomain label.

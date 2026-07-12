@@ -68,7 +68,7 @@ export interface QuotaCheckResult {
  * Returns the check result (never throws). Callers decide how to handle
  * a denied request (e.g. return 429).
  */
-export async function checkQuota(
+async function checkQuota(
   supabase: SupabaseClient,
   clinicId: string,
   clinicTier: string,

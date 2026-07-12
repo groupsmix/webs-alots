@@ -161,11 +161,3 @@ export async function withChaos<T>(experiment: ChaosExperiment, fn: () => Promis
  *     // ... route handler logic
  *   });
  */
-export function withChaosMiddleware<T>(
-  experiment: ChaosExperiment,
-  handler: (req: Request) => Promise<T>,
-): (req: Request) => Promise<T> {
-  return async (req: Request) => {
-    return withChaos(experiment, () => handler(req));
-  };
-}

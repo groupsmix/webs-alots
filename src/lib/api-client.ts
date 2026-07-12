@@ -5,7 +5,7 @@
  * individual data-fetching modules don't repeat boilerplate.
  */
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
@@ -62,23 +62,4 @@ async function request<T>(
 
 export function get<T>(path: string, options?: FetchOptions): Promise<T> {
   return request<T>("GET", path, options);
-}
-
-export function post<T>(path: string, body: unknown, options?: FetchOptions): Promise<T> {
-  // @ts-expect-error -- body is intentionally unknown to match fetch semantics
-  return request<T>("POST", path, { ...options, body });
-}
-
-export function put<T>(path: string, body: unknown, options?: FetchOptions): Promise<T> {
-  // @ts-expect-error -- body is intentionally unknown to match fetch semantics
-  return request<T>("PUT", path, { ...options, body });
-}
-
-export function patch<T>(path: string, body: unknown, options?: FetchOptions): Promise<T> {
-  // @ts-expect-error -- body is intentionally unknown to match fetch semantics
-  return request<T>("PATCH", path, { ...options, body });
-}
-
-export function del<T>(path: string, options?: FetchOptions): Promise<T> {
-  return request<T>("DELETE", path, options);
 }

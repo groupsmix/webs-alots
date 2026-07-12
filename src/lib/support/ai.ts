@@ -15,7 +15,7 @@ export const SUPPORT_TRIAGE_CATEGORIES = [
   "other",
 ] as const;
 
-export const supportTriageSchema = z.object({
+const supportTriageSchema = z.object({
   category: z.enum(SUPPORT_TRIAGE_CATEGORIES),
   priority: z.enum(["low", "normal", "high", "urgent"]),
   confidence: z.number().min(0).max(1),
@@ -25,7 +25,7 @@ export const supportTriageSchema = z.object({
   estimatedResolutionHours: z.number().min(1).max(168),
 });
 
-export const supportAssistSchema = z.object({
+const supportAssistSchema = z.object({
   canAutoRespond: z.boolean(),
   confidence: z.number().min(0).max(1),
   answer: z.string().min(1).max(2000),

@@ -6,7 +6,7 @@ const INTERNAL_RATE_LIMIT_REQUEST_HEADERS = {
   reset: "x-oltigo-ratelimit-reset",
 } as const;
 
-export const STANDARD_RATE_LIMIT_RESPONSE_HEADERS = {
+const STANDARD_RATE_LIMIT_RESPONSE_HEADERS = {
   limit: "X-RateLimit-Limit",
   remaining: "X-RateLimit-Remaining",
   reset: "X-RateLimit-Reset",

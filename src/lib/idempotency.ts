@@ -37,12 +37,3 @@ export async function idempotencyKey(...parts: string[]): Promise<string> {
  * Less collision-resistant than SHA-256 but sufficient for dedup keys
  * with high-entropy inputs (UUIDs).
  */
-export function idempotencyKeySync(...parts: string[]): string {
-  const input = parts.join("|");
-  let hash = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
-}
