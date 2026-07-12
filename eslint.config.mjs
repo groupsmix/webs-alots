@@ -64,52 +64,10 @@ const eslintConfig = defineConfig([
         },
       ],
       // i18n rules to catch hardcoded literal strings in UI
-      // AUDIT FINDING #22: Tightened config to reduce false positives from
-      // Tailwind class names (gap-2, text-muted-foreground, etc.) by adding
-      // ignoreCallee for utility functions and ignoreProperty for non-user-facing props.
       // The UI is not actively localized outside auth/2fa flows, so the rule is
-      // disabled globally but still enforced as error in the auth/2fa folders below.
-      "i18next/no-literal-string": [
-        "off",
-        {
-          markupOnly: true,
-          onlyAttribute: [],
-          ignoreAttribute: [
-            "data-testid",
-            "className",
-            "style",
-            "type",
-            "id",
-            "name",
-            "value",
-            "htmlFor",
-            "role",
-            "href",
-            "target",
-            "rel",
-            "src",
-            "alt",
-            "variant",
-            "size",
-            "key",
-            "placeholder",
-            "aria-label",
-          ],
-          ignoreCallee: [
-            "clsx",
-            "cn",
-            "twMerge",
-            "cva",
-            "t",
-            "z.object",
-            "z.string",
-            "z.enum",
-            "logger",
-            "console",
-          ],
-          ignoreProperty: ["displayName", "key", "as", "variant", "size", "data-testid"],
-        },
-      ],
+      // disabled globally. The auth/2fa folders are the exception and enforce it
+      // as error so translated sign-in/setup flows stay fully localised.
+      "i18next/no-literal-string": "off",
     },
   },
   {
@@ -212,12 +170,6 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
-    },
-  },
-  {
-    files: ["src/**/*.stories.{ts,tsx}"],
-    rules: {
-      "i18next/no-literal-string": "off",
     },
   },
   // ENV-001 rule: enforce process.env access through src/lib/env.ts
