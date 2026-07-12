@@ -4,7 +4,8 @@ interface MockQueryState {
   table: string;
   rows: unknown[];
   head: boolean;
-  filters: Array<{ op: string; column: string; value: unknown }>;
+  count: boolean;
+  filters: Array<{ op: string; column: string; value: unknown; operator?: string }>;
   orderBy: string | null;
   ascending: boolean;
   limit: number;
@@ -15,6 +16,7 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
     table,
     rows,
     head: false,
+    count: false,
     filters: [],
     orderBy: null,
     ascending: true,
@@ -24,6 +26,7 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
   const builder = {
     select: vi.fn((columns?: string, options?: { count?: "exact"; head?: boolean }) => {
       if (options?.head) state.head = true;
+      if (options?.count === "exact") state.count = true;
       return builder;
     }),
     eq: vi.fn((column: string, value: unknown) => {
@@ -40,6 +43,22 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
     }),
     lte: vi.fn((column: string, value: unknown) => {
       state.filters.push({ op: "lte", column, value });
+      return builder;
+    }),
+    not: vi.fn((column: string, operator: string, value: unknown) => {
+      state.filters.push({ op: "not", column, value, operator });
+      return builder;
+    }),
+    neq: vi.fn((column: string, value: unknown) => {
+      state.filters.push({ op: "neq", column, value });
+      return builder;
+    }),
+    gt: vi.fn((column: string, value: unknown) => {
+      state.filters.push({ op: "gt", column, value });
+      return builder;
+    }),
+    lt: vi.fn((column: string, value: unknown) => {
+      state.filters.push({ op: "lt", column, value });
       return builder;
     }),
     order: vi.fn((column: string, options?: { ascending?: boolean }) => {
@@ -67,6 +86,28 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
               return typeof value === "string" && value >= (filter.value as string);
             case "lte":
               return typeof value === "string" && value <= (filter.value as string);
+            case "not": {
+              const operator = filter.operator ?? "eq";
+              let matches = false;
+              if (operator === "eq") {
+                matches = value === filter.value;
+              } else if (operator === "in") {
+                const raw = String(filter.value);
+                const values = raw
+                  .replace(/[()]/g, "")
+                  .split(",")
+                  .map((s) => s.replace(/"/g, "").trim())
+                  .filter(Boolean);
+                matches = values.includes(String(value));
+              }
+              return !matches;
+            }
+            case "neq":
+              return value !== filter.value;
+            case "gt":
+              return typeof value === "string" && value > (filter.value as string);
+            case "lt":
+              return typeof value === "string" && value < (filter.value as string);
             default:
               return true;
           }
@@ -89,6 +130,10 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
 
       if (state.head) {
         return onfulfilled?.({ count: result.length, data: null });
+      }
+
+      if (state.count) {
+        return onfulfilled?.({ data: result, count: result.length });
       }
 
       return onfulfilled?.({ data: result });
