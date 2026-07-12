@@ -5,6 +5,7 @@ interface MockQueryState {
   rows: unknown[];
   head: boolean;
   count: boolean;
+  single: boolean;
   filters: Array<{ op: string; column: string; value: unknown; operator?: string }>;
   orderBy: string | null;
   ascending: boolean;
@@ -17,6 +18,7 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
     rows,
     head: false,
     count: false,
+    single: false,
     filters: [],
     orderBy: null,
     ascending: true,
@@ -70,7 +72,10 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
       state.limit = n;
       return builder;
     }),
-    single: vi.fn(() => builder),
+    single: vi.fn(() => {
+      state.single = true;
+      return builder;
+    }),
     then: vi.fn((onfulfilled?: (value: unknown) => unknown) => {
       let result = [...state.rows];
 
@@ -134,6 +139,10 @@ function createMockQueryBuilder(table: string, rows: unknown[]) {
 
       if (state.count) {
         return onfulfilled?.({ data: result, count: result.length });
+      }
+
+      if (state.single) {
+        return onfulfilled?.({ data: result[0] ?? null });
       }
 
       return onfulfilled?.({ data: result });

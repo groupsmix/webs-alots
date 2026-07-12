@@ -258,13 +258,34 @@ export interface WhatsAppTemplate {
   updated_at: string;
 }
 
-const DEFAULT_TEMPLATES: Record<string, string> = {
-  booking_confirmation:
-    "مرحبا {{patient_name}}، تم تأكيد موعدك مع {{doctor_name}} يوم {{date}} على الساعة {{time}}. {{clinic_name}}",
-  appointment_reminder:
-    "تذكير: عندك موعد غدا مع {{doctor_name}} على الساعة {{time}}. {{clinic_name}}",
-  rescheduled: "تم تغيير موعدك مع {{doctor_name}} ل {{date}} على الساعة {{time}}. {{clinic_name}}",
-  cancellation: "تم إلغاء موعدك مع {{doctor_name}} يوم {{date}}. {{clinic_name}}",
+const DEFAULT_TEMPLATES: Record<string, Record<string, string>> = {
+  booking_confirmation: {
+    ar: "مرحبا {{patient_name}}، تم تأكيد موعدك مع {{doctor_name}} يوم {{date}} على الساعة {{time}}. {{clinic_name}}",
+    fr: "Bonjour {{patient_name}}, votre rendez-vous avec {{doctor_name}} est confirmé le {{date}} à {{time}}. {{clinic_name}}",
+    darija:
+      "سلام {{patient_name}}، رانديفو ديالك مع {{doctor_name}} تأكد نهار {{date}} ف{{time}}. {{clinic_name}}",
+  },
+  appointment_reminder: {
+    ar: "تذكير: عندك موعد غدا مع {{doctor_name}} على الساعة {{time}}. {{clinic_name}}",
+    fr: "Rappel: vous avez rendez-vous demain avec {{doctor_name}} à {{time}}. {{clinic_name}}",
+    darija: "تذكار: عندك رانديفو غدا مع {{doctor_name}} ف{{time}}. {{clinic_name}}",
+  },
+  rescheduled: {
+    ar: "تم تغيير موعدك مع {{doctor_name}} ل {{date}} على الساعة {{time}}. {{clinic_name}}",
+    fr: "Votre rendez-vous avec {{doctor_name}} a été reprogrammé au {{date}} à {{time}}. {{clinic_name}}",
+    darija: "بدلنا رانديفو ديالك مع {{doctor_name}} نهار {{date}} ف{{time}}. {{clinic_name}}",
+  },
+  cancellation: {
+    ar: "تم إلغاء موعدك مع {{doctor_name}} يوم {{date}}. {{clinic_name}}",
+    fr: "Votre rendez-vous avec {{doctor_name}} du {{date}} a été annulé. {{clinic_name}}",
+    darija: "لغينا رانديفو ديالك مع {{doctor_name}} نهار {{date}}. {{clinic_name}}",
+  },
+  nps_survey: {
+    ar: "مرحبا {{patient_name}}، كيف كانت تجربتك مع الدكتور {{doctor_name}}؟ شاركنا رأيك: {{survey_url}} — {{clinic_name}}",
+    fr: "Bonjour {{patient_name}}, comment s'est passée votre consultation avec {{doctor_name}} ? Partagez votre avis : {{survey_url}} — {{clinic_name}}",
+    darija:
+      "سلام {{patient_name}}، كيفاش كانت تجربتك مع {{doctor_name}}؟ قولينا رأيك: {{survey_url}} — {{clinic_name}}",
+  },
 };
 
 // ---- Per-Clinic Template Message Sender ----
@@ -386,7 +407,7 @@ export async function getWhatsAppTemplate(
     });
   }
 
-  return DEFAULT_TEMPLATES[templateName] ?? null;
+  return DEFAULT_TEMPLATES[templateName]?.[language] ?? null;
 }
 
 /**

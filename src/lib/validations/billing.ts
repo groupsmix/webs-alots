@@ -16,7 +16,7 @@ export const invoiceCreateSchema = z.object({
   tax_rate: z.number().nonnegative().max(100).optional(),
   discount_centimes: z.number().int().nonnegative().optional(),
   payment_method: z.enum(["cash", "card", "cmi", "insurance", "bank_transfer"]).optional(),
-  insurance_type: z.enum(["CNSS", "CNOPS", "AMO", "RAMED"]).optional(),
+  insurance_type: z.enum(["CNSS", "CNOPS", "CMIM", "AMO", "RAMED"]).optional(),
   insurance_ref: z.string().max(100).optional(),
   notes: z.string().max(2000).optional(),
   due_date: z
@@ -33,7 +33,7 @@ export const invoiceUpdateSchema = z.object({
   tax_rate: z.number().nonnegative().max(100).optional(),
   discount_centimes: z.number().int().nonnegative().optional(),
   payment_method: z.enum(["cash", "card", "cmi", "insurance", "bank_transfer"]).optional(),
-  insurance_type: z.enum(["CNSS", "CNOPS", "AMO", "RAMED"]).optional(),
+  insurance_type: z.enum(["CNSS", "CNOPS", "CMIM", "AMO", "RAMED"]).optional(),
   insurance_ref: z.string().max(100).optional(),
   notes: z.string().max(2000).optional(),
   due_date: z
@@ -91,4 +91,12 @@ export const financialSummaryQuerySchema = z.object({
 
 export const revenueInsightsQuerySchema = z.object({
   question: z.string().min(1).max(500),
+});
+
+// ── Insurance Co-Pay Schema ──
+
+export const insuranceCoPaySchema = z.object({
+  total_amount: z.number().positive(),
+  policy_number: z.string().min(1).max(100),
+  insurance_type: z.enum(["CNSS", "CNOPS", "CMIM", "AMO", "RAMED", "private", "none"]),
 });

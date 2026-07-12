@@ -4,7 +4,9 @@ import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import type { ClinicFeatureKey } from "@/lib/features";
+import { t } from "@/lib/i18n";
 import { Z_INDEX } from "@/lib/z-index";
 
 type LucideIcon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -51,6 +53,7 @@ export function MobileTabBar({
   onMoreClick,
 }: MobileTabBarProps) {
   const pathname = usePathname();
+  const [locale] = useLocale();
 
   /** Check if a tab is active (exact or prefix match) */
   const isActive = (href: string): boolean => {
@@ -81,7 +84,7 @@ export function MobileTabBar({
               }`}
             >
               <TabIcon className="h-5 w-5" />
-              <span className="leading-tight">{tab.label}</span>
+              <span className="leading-tight">{t(locale, tab.label)}</span>
             </Link>
           );
         })}

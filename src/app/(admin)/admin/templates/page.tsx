@@ -25,10 +25,6 @@ import { templateList, type TemplateId } from "@/lib/templates";
 
 const VERTICAL_LABELS: Record<VerticalId, string> = {
   healthcare: "Healthcare",
-  beauty: "Beauty & Wellness",
-  restaurant: "Restaurant",
-  fitness: "Fitness",
-  veterinary: "Veterinary",
 };
 
 const VERTICAL_FILTERS: { value: string; label: string }[] = [

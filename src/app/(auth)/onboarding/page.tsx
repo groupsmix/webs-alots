@@ -68,11 +68,6 @@ const CATEGORY_TO_VERTICAL: Record<string, VerticalId> = {
   diagnostic: "healthcare",
   pharmacy_retail: "healthcare",
   clinics_centers: "healthcare",
-  dental: "healthcare",
-  beauty: "beauty",
-  restaurant: "restaurant",
-  fitness: "fitness",
-  veterinary: "veterinary",
 };
 
 // ---------------------------------------------------------------------------

@@ -1167,5 +1167,16 @@
   "aiTeam.kanban.humanEscalation": "human escalation required",
   "aiTeam.kanban.commentPlaceholder": "Comment (optional)...",
   "aiTeam.kanban.networkError": "Network error",
-  "aiTeam.kanban.transitionError": "Transition error"
+  "aiTeam.kanban.transitionError": "Transition error",
+  "admin.nav.calendar": "Calendar / Appointments",
+  "admin.nav.patients": "Patients",
+  "admin.nav.billing": "Billing",
+  "admin.nav.website": "Website",
+  "admin.nav.marketing": "Marketing",
+  "admin.nav.ai": "AI",
+  "admin.nav.settings": "Settings",
+  "admin.mobile.dashboard": "Dashboard",
+  "admin.mobile.patients": "Patients",
+  "admin.mobile.billing": "Billing",
+  "admin.mobile.settings": "Settings"
 }

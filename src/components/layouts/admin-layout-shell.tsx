@@ -1,45 +1,21 @@
 "use client";
 
 import {
-  Activity,
-  LayoutDashboard,
-  UserCog,
-  Stethoscope,
+  Calendar,
+  Globe,
+  Megaphone,
   Settings,
-  BarChart3,
-  Star,
   Users,
-  CalendarOff,
-  Bell,
-  Clock,
-  UserCheck,
-  Palette,
-  Paintbrush,
+  CreditCard,
+  Brain,
   Menu,
   X,
-  CreditCard,
-  LayoutTemplate,
-  ToggleRight,
-  Building2,
-  BedDouble,
-  Monitor,
-  Boxes,
-  FileText,
-  Brain,
-  Cpu,
-  Route,
-  ScrollText,
-  DatabaseZap,
-  Gift,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { OltigoMonogram } from "@/components/brand/oltigo-mark";
-import {
-  AdminHeaderBar,
-  AdminSupportBadge,
-} from "@/components/layouts/admin-layout-shell-with-bell";
+import { AdminHeaderBar } from "@/components/layouts/admin-layout-shell-with-bell";
 import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
@@ -64,78 +40,13 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/doctors", label: "Doctors", icon: UserCog },
-  {
-    href: "/admin/services",
-    label: "Services & Prices",
-    icon: Stethoscope,
-    requiredFeature: "appointments",
-  },
-  {
-    href: "/admin/working-hours",
-    label: "Working Hours",
-    icon: Clock,
-    requiredFeature: "appointments",
-  },
-  {
-    href: "/admin/holidays",
-    label: "Holidays / Closures",
-    icon: CalendarOff,
-    requiredFeature: "appointments",
-  },
-  { href: "/admin/receptionists", label: "Receptionists", icon: UserCheck },
-  { href: "/admin/patients", label: "Patient Database", icon: Users },
-  { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/support", label: "Support", icon: FileText },
-  { href: "/admin/status", label: "System Status", icon: Activity },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admin/reviews", label: "Reviews", icon: Star },
-  { href: "/admin/branding", label: "Branding", icon: Paintbrush },
-  { href: "/admin/templates", label: "Layout Templates", icon: LayoutTemplate },
-  { href: "/admin/sections", label: "Section Control", icon: ToggleRight },
-  { href: "/admin/website-editor", label: "Website Editor", icon: Palette },
-  { href: "/admin/billing", label: "Billing & Plan", icon: CreditCard },
-  { href: "/admin/referral-program", label: "Referral Program", icon: Gift },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-  // Phase 6: Clinics & Centers
-  {
-    href: "/admin/departments",
-    label: "Departments",
-    icon: Building2,
-    requiredFeature: "departments",
-  },
-  {
-    href: "/admin/beds",
-    label: "Bed Management",
-    icon: BedDouble,
-    requiredFeature: "bed_management",
-  },
-  {
-    href: "/admin/machines",
-    label: "Dialysis Machines",
-    icon: Monitor,
-    requiredFeature: "dialysis_machines",
-  },
-  {
-    href: "/admin/lab-materials",
-    label: "Lab Materials",
-    icon: Boxes,
-    requiredFeature: "lab_materials",
-  },
-  {
-    href: "/admin/lab-invoices",
-    label: "Lab Invoices",
-    icon: FileText,
-    requiredFeature: "lab_invoices",
-  },
-  // AI-powered features (Professional+ plan)
-  { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
-  { href: "/admin/ai-config", label: "AI Models", icon: Cpu },
-  { href: "/admin/ai-routing", label: "AI Routing", icon: Route },
-  // Security & Compliance
-  { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
-  { href: "/admin/data-retention", label: "Data Retention", icon: DatabaseZap },
+  { href: "/admin/dashboard", label: "admin.nav.calendar", icon: Calendar },
+  { href: "/admin/patients", label: "admin.nav.patients", icon: Users },
+  { href: "/admin/billing", label: "admin.nav.billing", icon: CreditCard },
+  { href: "/admin/website", label: "admin.nav.website", icon: Globe },
+  { href: "/admin/marketing", label: "admin.nav.marketing", icon: Megaphone },
+  { href: "/admin/ai", label: "admin.nav.ai", icon: Brain },
+  { href: "/admin/settings", label: "admin.nav.settings", icon: Settings },
 ];
 
 function OnboardingChecklistSidebar() {
@@ -178,6 +89,7 @@ function isNavActive(pathname: string, href: string): boolean {
 
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
   const { hasFeature } = useClinicFeatures();
+  const [locale] = useLocale();
 
   const visibleItems = navItems.filter(
     (item) => !item.requiredFeature || hasFeature(item.requiredFeature),
@@ -189,7 +101,6 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
       <nav className="space-y-1 flex-1">
         {visibleItems.map((item) => {
           const isActive = isNavActive(pathname, item.href);
-          const isSupport = item.href === "/admin/support";
           return (
             <Link
               key={item.href}
@@ -203,8 +114,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
               }`}
             >
               <item.icon className="h-4 w-4" />
-              <span className="flex-1">{item.label}</span>
-              {isSupport && <AdminSupportBadge />}
+              <span className="flex-1">{t(locale, item.label)}</span>
             </Link>
           );
         })}
@@ -222,10 +132,10 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
   const [locale] = useLocale();
 
   const adminMobileTabs: MobileTabItem[] = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/patients", label: "Patients", icon: Users },
-    { href: "/admin/reports", label: "Analytics", icon: BarChart3 },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/dashboard", label: "admin.mobile.dashboard", icon: Calendar },
+    { href: "/admin/patients", label: "admin.mobile.patients", icon: Users },
+    { href: "/admin/billing", label: "admin.mobile.billing", icon: CreditCard },
+    { href: "/admin/settings", label: "admin.mobile.settings", icon: Settings },
   ];
 
   return (

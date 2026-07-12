@@ -62,12 +62,12 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       }
     });
 
-    it("should have clinical, ADT, veterinary, and restaurant verticals defined", () => {
+    it("should have only clinical and ADT vertical scopes defined (non-healthcare verticals removed)", () => {
       const ids = VERTICAL_SCOPES.map((v) => v.id);
       expect(ids).toContain("clinical");
       expect(ids).toContain("adt");
-      expect(ids).toContain("veterinary");
-      expect(ids).toContain("restaurant");
+      expect(ids).not.toContain("veterinary");
+      expect(ids).not.toContain("restaurant");
     });
   });
 
@@ -80,11 +80,10 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
           "radiology",
           "insurance-claims",
           "admissions",
-          "pets",
-          "menus",
-          "restaurant-orders",
-          "restaurant-tables",
         ]),
+      );
+      expect(ALL_GATED_API_GROUPS).not.toEqual(
+        expect.arrayContaining(["pets", "menus", "restaurant-orders", "restaurant-tables"]),
       );
     });
 
@@ -139,16 +138,6 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       expect(isApiGroupEnabled("prescriptions", config)).toBe(true);
     });
 
-    it("should allow pets when pet_profiles flag is enabled", () => {
-      const config: FeaturesConfig = { pet_profiles: true };
-      expect(isApiGroupEnabled("pets", config)).toBe(true);
-    });
-
-    it("should allow restaurant-orders when menu_management flag is enabled", () => {
-      const config: FeaturesConfig = { menu_management: true };
-      expect(isApiGroupEnabled("restaurant-orders", config)).toBe(true);
-    });
-
     it("should allow admissions when bed_management flag is enabled", () => {
       const config: FeaturesConfig = { bed_management: true };
       expect(isApiGroupEnabled("admissions", config)).toBe(true);
@@ -166,18 +155,10 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       expect(isDashboardEnabled("radiology-dashboard", { radiology_reports: true })).toBe(true);
     });
 
-    it("should NOT allow cross-vertical access (pet flag does not enable restaurant)", () => {
-      const config: FeaturesConfig = { pet_profiles: true };
-      expect(isApiGroupEnabled("restaurant-orders", config)).toBe(false);
-      expect(isApiGroupEnabled("menus", config)).toBe(false);
-    });
-
-    it("should NOT allow clinical access with only restaurant flags", () => {
+    it("should NOT allow clinical access with non-clinical flags", () => {
       const config: FeaturesConfig = {
-        menu_management: true,
-        table_management: true,
-        qr_ordering: true,
-        reservations: true,
+        appointments: true,
+        website: true,
       };
       expect(isApiGroupEnabled("prescriptions", config)).toBe(false);
       expect(isApiGroupEnabled("vitals", config)).toBe(false);
@@ -200,14 +181,11 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       expect(getVerticalForApiGroup("admissions")?.id).toBe("adt");
     });
 
-    it("maps pets to the veterinary vertical", () => {
-      expect(getVerticalForApiGroup("pets")?.id).toBe("veterinary");
-    });
-
-    it("maps restaurant groups to the restaurant vertical", () => {
-      expect(getVerticalForApiGroup("menus")?.id).toBe("restaurant");
-      expect(getVerticalForApiGroup("restaurant-orders")?.id).toBe("restaurant");
-      expect(getVerticalForApiGroup("restaurant-tables")?.id).toBe("restaurant");
+    it("returns undefined for removed non-healthcare API groups", () => {
+      expect(getVerticalForApiGroup("pets")).toBeUndefined();
+      expect(getVerticalForApiGroup("menus")).toBeUndefined();
+      expect(getVerticalForApiGroup("restaurant-orders")).toBeUndefined();
+      expect(getVerticalForApiGroup("restaurant-tables")).toBeUndefined();
     });
 
     it("returns undefined for operational groups", () => {

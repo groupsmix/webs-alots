@@ -9,7 +9,7 @@
 import type { ClinicFeatureKey } from "@/lib/features";
 
 /** Vertical ID — each business vertical has a unique string identifier. */
-export type VerticalId = "healthcare" | "beauty" | "restaurant" | "fitness" | "veterinary";
+export type VerticalId = "healthcare";
 
 /**
  * Scope group identifiers for gated API route groups.
@@ -131,8 +131,8 @@ const DASHBOARD_FEATURE_REQUIREMENTS: Record<ScopedDashboard, ClinicFeatureKey[]
   psychologist: ["therapy_notes", "therapy_plans"],
   "radiology-dashboard": ["radiology_reports", "imaging"],
   "speech-therapist": ["speech_sessions", "speech_exercises", "speech_reports"],
-  restaurant: ["menu_management", "table_management", "qr_ordering", "reservations"],
-  veterinary: ["pet_profiles"],
+  restaurant: [],
+  veterinary: [],
 };
 
 /** Defines the scope for a single vertical. */
@@ -223,20 +223,6 @@ export const VERTICAL_SCOPES: VerticalScope[] = [
     enabledApiGroups: ["admissions"],
     enabledDashboards: ["admin/beds"],
     enabledFlags: ["bed_management"],
-  },
-  {
-    id: "veterinary",
-    label: "Veterinary",
-    enabledApiGroups: ["pets"],
-    enabledDashboards: ["veterinary"],
-    enabledFlags: ["pet_profiles"],
-  },
-  {
-    id: "restaurant",
-    label: "Restaurant",
-    enabledApiGroups: ["menus", "restaurant-orders", "restaurant-tables"],
-    enabledDashboards: ["restaurant"],
-    enabledFlags: ["menu_management", "table_management", "qr_ordering", "reservations"],
   },
 ];
 

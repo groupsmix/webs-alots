@@ -22,7 +22,14 @@
 import { getInsuranceProvider } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
-export type MoroccanInsuranceType = "AMO" | "CNOPS" | "CNSS" | "RAMED" | "private" | "none";
+export type MoroccanInsuranceType =
+  | "AMO"
+  | "CNOPS"
+  | "CMIM"
+  | "CNSS"
+  | "RAMED"
+  | "private"
+  | "none";
 
 export interface EligibilityResult {
   eligible: boolean;
@@ -99,6 +106,7 @@ export async function submitClaim(params: {
 const COVERAGE_RATES: Record<MoroccanInsuranceType, { coverage: number; coPay: number }> = {
   AMO: { coverage: 70, coPay: 30 },
   CNOPS: { coverage: 80, coPay: 20 },
+  CMIM: { coverage: 80, coPay: 20 },
   CNSS: { coverage: 70, coPay: 30 },
   RAMED: { coverage: 100, coPay: 0 },
   private: { coverage: 90, coPay: 10 },

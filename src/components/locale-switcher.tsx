@@ -18,6 +18,7 @@ const LOCALE_LABELS: Record<Locale, { label: string; flag: string }> = {
   fr: { label: "Français", flag: "🇫🇷" },
   ar: { label: "العربية", flag: "🇲🇦" },
   en: { label: "English", flag: "🇬🇧" },
+  ary: { label: "Darija", flag: "🇲🇦" },
 };
 
 interface LocaleSwitcherProps {
@@ -28,7 +29,7 @@ interface LocaleSwitcherProps {
 function getStoredLocale(): Locale {
   if (typeof window === "undefined") return "fr";
   const stored = Cookies.get(LOCALE_STORAGE_KEY) || localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (stored === "fr" || stored === "ar" || stored === "en") return stored;
+  if (stored === "fr" || stored === "ar" || stored === "en" || stored === "ary") return stored;
   return "fr";
 }
 

@@ -305,7 +305,7 @@ export default function LoginPage() {
   return (
     <div className="w-full max-w-md mx-auto">
       {/* Mobile-only branding header */}
-      {/* eslint-disable i18next/no-literal-string -- brand name and tagline */}
+
       <div className="mb-6 text-center lg:hidden">
         <div className="flex items-center justify-center gap-2 mb-2">
           <HeartPulse className="h-6 w-6 text-primary" />
@@ -313,7 +313,6 @@ export default function LoginPage() {
         </div>
         <p className="text-sm text-muted-foreground">Votre plateforme santé de confiance</p>
       </div>
-      {/* eslint-enable i18next/no-literal-string */}
 
       <Card className="shadow-lg border-0 sm:border">
         <CardHeader className="pb-4 text-center">

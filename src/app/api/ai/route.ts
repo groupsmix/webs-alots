@@ -19,6 +19,7 @@
 import { NextRequest } from "next/server";
 import { isAIFeatureEnabled, loadFeatureToggles } from "@/lib/ai/feature-toggles";
 import { routeAIRequest, loadProviderConfigs, AllProvidersFailedError } from "@/lib/ai/router";
+import { isDiagnosticRequest, NON_DIAGNOSTIC_POLICY } from "@/lib/ai/safety-guard";
 import type { AIRequest, AITaskType, TaskComplexity, AIProvider } from "@/lib/ai/types";
 import { alertIfAiDailyBudgetExceeded } from "@/lib/ai-budget-alerts";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
@@ -86,6 +87,20 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
       : undefined;
 
   const systemPromptOverride = (body.system_prompt as string) ?? undefined;
+
+  const safetyText = `${prompt} ${systemPromptOverride ?? ""}`.trim();
+  if (isDiagnosticRequest(safetyText)) {
+    logger.info("AI diagnostic request blocked by safety guard", {
+      context: "ai-route",
+      userId: auth.user.id,
+      task,
+    });
+    return apiError(
+      "Diagnostic or clinical-decision requests are not allowed. AI is restricted to internal tooling, support triage, and non-diagnostic FAQ.",
+      403,
+      "DIAGNOSTIC_AI_BLOCKED",
+    );
+  }
   if (systemPromptOverride) {
     // AUDIT P2-17: system_prompt overrides bypass the curated prompt
     // library — record that it happened (length only, never content, since
@@ -102,7 +117,9 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     task: task as AITaskType,
     complexity: complexity as TaskComplexity,
     prompt: prompt.trim(),
-    systemPrompt: systemPromptOverride,
+    systemPrompt: systemPromptOverride
+      ? `${systemPromptOverride}\n\n${NON_DIAGNOSTIC_POLICY}`
+      : NON_DIAGNOSTIC_POLICY,
     maxTokens,
     temperature: typeof body.temperature === "number" ? body.temperature : undefined,
     forceProvider: (body.force_provider as AIProvider) ?? undefined,
