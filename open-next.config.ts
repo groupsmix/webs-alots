@@ -11,33 +11,14 @@ import { withRegionalCache } from "@opennextjs/cloudflare/overrides/incremental-
  * incremental cache (fronted by the per-isolate regional cache) fixes that by
  * persisting entries in object storage shared across all isolates.
  *
- * DEPLOY-TIME GATE — why this is behind a flag
- * --------------------------------------------
- * `r2IncrementalCache` reads the `NEXT_INC_CACHE_R2_BUCKET` binding. Its "degrades
- * gracefully when the binding is absent" behaviour only applies at REQUEST time
- * (a missing binding raises an IgnorableError that the runtime treats as a no-op).
- * At DEPLOY time it is NOT graceful: `opennextjs-cloudflare deploy` runs a
- * `populate-cache` step that hard-throws
+ * The `NEXT_INC_CACHE_R2_BUCKET` binding is declared in wrangler.toml and the
+ * `ENABLE_R2_INCREMENTAL_CACHE=1` env is set in `package.json` (build:cf/deploy)
+ * and `.github/workflows/deploy.yml` so the durable cache is used by default.
+ * The override is still gated on `ENABLE_R2_INCREMENTAL_CACHE` as an explicit
+ * opt-out (set `ENABLE_R2_INCREMENTAL_CACHE=0` to fall back to the no-op cache).
  *
- *     Error: No R2 binding "NEXT_INC_CACHE_R2_BUCKET" found!
- *
- * whenever the override is configured but the binding / bucket has not been
- * provisioned. wrangler.toml intentionally ships that binding commented out
- * (the dedicated bucket must be created first — it must NOT reuse the PHI
- * UPLOADS_BUCKET), so wiring the override unconditionally made every
- * `wrangler deploy` fail. That is the deploy failure this gate resolves.
- *
- * Default (flag unset): OpenNext's built-in no-op cache — matches the
- * "safe to ship before the bucket is provisioned" intent documented in
- * wrangler.toml, and lets `wrangler deploy` succeed.
- *
- * To ACTIVATE durable caching (all three must be done together, in one deploy):
- *   1. wrangler r2 bucket create webs-alots-next-cache   (+ -staging variant)
- *   2. Uncomment the NEXT_INC_CACHE_R2_BUCKET r2_buckets blocks in wrangler.toml
- *      (top level AND [env.production] / [env.staging]).
- *   3. Set ENABLE_R2_INCREMENTAL_CACHE=1 in the deploy workflow env (it must be
- *      present for BOTH the build and deploy steps so the bundle and the
- *      populate-cache step agree).
+ * The bucket is auto-created on first deploy if it does not exist; if that
+ * fails, create it manually with `wrangler r2 bucket create webs-alots-next-cache`.
  */
 const r2IncrementalCacheEnabled = process.env.ENABLE_R2_INCREMENTAL_CACHE === "1";
 
