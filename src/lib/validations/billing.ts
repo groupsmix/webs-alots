@@ -35,6 +35,8 @@ export const invoiceUpdateSchema = z.object({
   payment_method: z.enum(["cash", "card", "cmi", "insurance", "bank_transfer"]).optional(),
   insurance_type: z.enum(["CNSS", "CNOPS", "CMIM", "AMO", "RAMED"]).optional(),
   insurance_ref: z.string().max(100).optional(),
+  /** Patient insurance policy number — used for co-pay calculation on partially_paid. */
+  policy_number: z.string().min(1).max(100).optional(),
   notes: z.string().max(2000).optional(),
   due_date: z
     .string()
