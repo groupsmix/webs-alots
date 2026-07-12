@@ -10,6 +10,7 @@
     "sentry.*.config.ts",
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/*/index.ts",
+    "evals/**/*.ts",
     "open-next.config.ts"
   ],
   "project": [
@@ -17,6 +18,7 @@
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/**/*.ts",
     "e2e/**/*.ts",
+    "evals/**/*.ts",
     "*.config.{ts,mjs}"
   ],
   "ignore": ["src/lib/types/database.ts"],
