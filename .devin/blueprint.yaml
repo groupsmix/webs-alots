@@ -1,0 +1,27 @@
+# https://docs.devin.ai/onboard-devin/environment-yaml
+initialize:
+  - uses: github.com/actions/setup-node@v4
+    with:
+      node-version: "22.13.0"
+  - run: npm install
+maintenance: |
+  npm install
+knowledge:
+  - name: lint
+    contents: |
+      npm run lint
+  - name: test
+    contents: |
+      npm run test
+  - name: coverage
+    contents: |
+      npm run test:coverage
+  - name: build
+    contents: |
+      npm run build:cf
+  - name: node
+    contents: |
+      node -v
+  - name: husky
+    contents: |
+      npx husky install
