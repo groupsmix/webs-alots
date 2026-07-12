@@ -22,6 +22,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest, type NextResponse } from "next/server";
+import { isApiGroupAllowed } from "@/lib/api-gating";
 import {
   apiError,
   apiForbidden,
@@ -279,6 +280,29 @@ export function withAuth<RouteCtx = unknown>(
         return finalize(apiError("Too many requests. Please slow down.", 429, "USER_RATE_LIMIT"));
       }
 
+      // ADR-0013 / Lane-A: Gate Architecture-B API groups by feature flag.
+      // Operational groups are not gated. If tenant context cannot be resolved
+      // the gate falls closed for gated groups and open for operational groups.
+      let tenantTypeKey: string | undefined;
+      try {
+        const tenant = await getTenant();
+        tenantTypeKey = tenant?.clinicType;
+      } catch (tenantErr) {
+        logger.warn("Could not resolve tenant for API gate", {
+          context: "with-auth",
+          error: tenantErr,
+        });
+      }
+      if (!(await isApiGroupAllowed(supabase, request.nextUrl.pathname, tenantTypeKey))) {
+        logger.warn("API route gated by feature flag", {
+          context: "with-auth",
+          path: request.nextUrl.pathname,
+          userId: profile.id,
+          clinicId: profile.clinic_id,
+        });
+        return finalize(apiForbidden("Feature not enabled for this clinic"));
+      }
+
       // F-A93-04: Log 100% of read access for PHI-bearing endpoints.
       // Under Moroccan Law 09-08 (HIPAA-equivalent), access logs for patient
       // data must be fully retained. Non-PHI endpoints (health, docs, features)
@@ -360,6 +384,27 @@ export function withAuthAnyRole<RouteCtx = unknown>(
       // AUDIT-24 / S0-07-03: Per-user rate limiting still applies.
       if (!(await perUserLimiter.check(`user:${profile.id}`))) {
         return finalize(apiError("Too many requests. Please slow down.", 429, "USER_RATE_LIMIT"));
+      }
+
+      // ADR-0013 / Lane-A: Gate Architecture-B API groups by feature flag.
+      let tenantTypeKey: string | undefined;
+      try {
+        const tenant = await getTenant();
+        tenantTypeKey = tenant?.clinicType;
+      } catch (tenantErr) {
+        logger.warn("Could not resolve tenant for API gate", {
+          context: "with-auth-any-role",
+          error: tenantErr,
+        });
+      }
+      if (!(await isApiGroupAllowed(supabase, request.nextUrl.pathname, tenantTypeKey))) {
+        logger.warn("API route gated by feature flag", {
+          context: "with-auth-any-role",
+          path: request.nextUrl.pathname,
+          userId: profile.id,
+          clinicId: profile.clinic_id,
+        });
+        return finalize(apiForbidden("Feature not enabled for this clinic"));
       }
 
       const response = await handler(

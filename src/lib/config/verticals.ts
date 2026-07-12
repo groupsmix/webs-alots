@@ -77,7 +77,16 @@ export type ScopedDashboard =
   | "radiology-dashboard"
   | "speech-therapist"
   | "restaurant"
-  | "veterinary";
+  | "veterinary"
+  // Patient portal PHI surfaces
+  | "patient/medical-history"
+  | "patient/prescriptions"
+  | "patient/documents"
+  | "patient/treatment-plan"
+  | "patient/tooth-map"
+  | "patient/before-after"
+  | "patient/family"
+  | "patient/payment-plan";
 
 /**
  * Per-dashboard feature requirements.
@@ -133,11 +142,20 @@ const DASHBOARD_FEATURE_REQUIREMENTS: Record<ScopedDashboard, ClinicFeatureKey[]
   "speech-therapist": ["speech_sessions", "speech_exercises", "speech_reports"],
   restaurant: [],
   veterinary: [],
+  // Patient portal PHI surfaces
+  "patient/medical-history": ["patient_timeline"],
+  "patient/prescriptions": ["prescriptions"],
+  "patient/documents": ["patient_documents"],
+  "patient/treatment-plan": ["treatment_packages"],
+  "patient/tooth-map": ["odontogram"],
+  "patient/before-after": ["before_after_photos"],
+  "patient/family": ["patient_family"],
+  "patient/payment-plan": ["installments"],
 };
 
 /** Defines the scope for a single vertical. */
 export interface VerticalScope {
-  id: VerticalId | "clinical" | "adt";
+  id: VerticalId | "clinical" | "adt" | "patient";
   label: string;
   /** API route groups gated by this vertical (directories under src/app/api/) */
   enabledApiGroups: ScopedApiGroup[];
@@ -224,6 +242,31 @@ export const VERTICAL_SCOPES: VerticalScope[] = [
     enabledDashboards: ["admin/beds"],
     enabledFlags: ["bed_management"],
   },
+  {
+    id: "patient",
+    label: "Patient Portal / PHI",
+    enabledApiGroups: [],
+    enabledDashboards: [
+      "patient/medical-history",
+      "patient/prescriptions",
+      "patient/documents",
+      "patient/treatment-plan",
+      "patient/tooth-map",
+      "patient/before-after",
+      "patient/family",
+      "patient/payment-plan",
+    ],
+    enabledFlags: [
+      "patient_timeline",
+      "patient_documents",
+      "patient_family",
+      "prescriptions",
+      "treatment_packages",
+      "odontogram",
+      "before_after_photos",
+      "installments",
+    ],
+  },
 ];
 
 /** All API groups that are gated (Architecture-B surfaces). */
@@ -259,7 +302,7 @@ export function getScopedDashboardForPathname(pathname: string): ScopedDashboard
   const [first, second] = pathname.split("/").filter(Boolean);
   if (!first) return undefined;
 
-  if ((first === "admin" || first === "doctor") && second) {
+  if ((first === "admin" || first === "doctor" || first === "patient") && second) {
     const candidate = `${first}/${second}` as ScopedDashboard;
     return DASHBOARD_FEATURE_REQUIREMENTS[candidate] ? candidate : undefined;
   }

@@ -62,10 +62,11 @@ describe("ADR 0013: Operations-First Scope Enforcement", () => {
       }
     });
 
-    it("should have only clinical and ADT vertical scopes defined (non-healthcare verticals removed)", () => {
+    it("should have clinical, ADT, and patient vertical scopes defined (non-healthcare verticals removed)", () => {
       const ids = VERTICAL_SCOPES.map((v) => v.id);
       expect(ids).toContain("clinical");
       expect(ids).toContain("adt");
+      expect(ids).toContain("patient");
       expect(ids).not.toContain("veterinary");
       expect(ids).not.toContain("restaurant");
     });

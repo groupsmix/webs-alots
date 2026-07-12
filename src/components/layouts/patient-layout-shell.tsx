@@ -25,6 +25,7 @@ import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { useLocale } from "@/components/locale-switcher";
+import { RouteScopeGate } from "@/components/route-scope-gate";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
@@ -173,7 +174,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
 
         <main id="main-content" className="flex-1 min-w-0 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
-          {children}
+          <RouteScopeGate>{children}</RouteScopeGate>
         </main>
       </div>
 

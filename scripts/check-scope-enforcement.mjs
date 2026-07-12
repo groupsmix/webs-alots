@@ -91,6 +91,8 @@ const GATE_PATTERNS = [
   /isGatedApiGroupEnabled/,
   /isFeatureEnabled\s*\(/,
   /isApiGroupEnabled/,
+  /withAuth\s*\(/,
+  /withAuthAnyRole\s*\(/,
   /@scope-gate-exempt/,
   /SCOPE_GATE_EXEMPT/,
 ];
