@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { mergeFeaturesConfig, type FeaturesConfig } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { withAuthAnyRole } from "@/lib/with-auth";
@@ -32,7 +33,7 @@ export const GET = withAuthAnyRole(async (request: NextRequest) => {
 
     return apiSuccess({
       type_key: typeKey,
-      features_config: data.features_config,
+      features_config: mergeFeaturesConfig(data.features_config as FeaturesConfig | null),
     });
   } catch (err) {
     logger.warn("Failed to process clinic features request", {

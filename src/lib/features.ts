@@ -86,24 +86,107 @@ export type ClinicFeatureKey =
   | "iop_tracking"
   // Store
   | "public_catalog"
-  // AI-powered features (Professional+ plan)
+  // AI-powered features (Professional+ plan) — restricted to non-diagnostic
+  // internal tooling (site builder, support triage, FAQ). See isAIEnabled().
   | "ai_manager"
   | "ai_auto_suggest"
   | "ai_rag"
   | "ai_memory"
   | "ai_team_tasks"
   | "ai_triage"
-  // Veterinary
-  | "pet_profiles"
-  | "website"
-  // Restaurant
-  | "menu_management"
-  | "table_management"
-  | "qr_ordering"
-  | "reservations";
+  // Managed public website
+  | "website";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
+
+/**
+ * Lane-A defaults for a freshly provisioned clinic in Morocco.
+ *
+ * Operational features (scheduling, reminders, billing, website, WhatsApp) are
+ * enabled by default. Clinical/PHI modules (radiology, prescriptions, patient
+ * documents, vitals, insurance claims, timeline/export) are OFF until you have
+ * CNDP / Loi 09-08 compliance and a DPA in place.
+ */
+export const DEFAULT_FEATURES: FeaturesConfig = {
+  appointments: true,
+  website: true,
+  installments: true,
+  public_catalog: false,
+  // Clinical / PHI — disabled by default
+  prescriptions: false,
+  consultations: false,
+  lab_results: false,
+  imaging: false,
+  stock: false,
+  sales: false,
+  odontogram: false,
+  before_after_photos: false,
+  exercise_programs: false,
+  meal_plans: false,
+  growth_charts: false,
+  vaccination: false,
+  bed_management: false,
+  certificates: false,
+  sterilization_log: false,
+  departments: false,
+  consent_forms: false,
+  treatment_packages: false,
+  consultation_photos: false,
+  ivf_cycles: false,
+  ivf_protocols: false,
+  dialysis_sessions: false,
+  dialysis_machines: false,
+  prosthetic_orders: false,
+  lab_materials: false,
+  lab_invoices: false,
+  physio_sessions: false,
+  progress_photos: false,
+  body_measurements: false,
+  therapy_notes: false,
+  therapy_plans: false,
+  speech_exercises: false,
+  speech_sessions: false,
+  speech_reports: false,
+  lens_inventory: false,
+  frame_catalog: false,
+  optical_prescriptions: false,
+  lab_tests: false,
+  radiology_reports: false,
+  equipment_rentals: false,
+  equipment_maintenance: false,
+  parapharmacy: false,
+  dermatology: false,
+  cardiology: false,
+  ent: false,
+  orthopedics: false,
+  psychiatry: false,
+  neurology: false,
+  urology: false,
+  pulmonology: false,
+  endocrinology: false,
+  rheumatology: false,
+  pregnancy_tracking: false,
+  ultrasound_records: false,
+  vision_tests: false,
+  iop_tracking: false,
+  // AI — disabled by default; only non-diagnostic internal tooling may be enabled
+  ai_manager: false,
+  ai_auto_suggest: false,
+  ai_rag: false,
+  ai_memory: false,
+  ai_team_tasks: false,
+  ai_triage: false,
+};
+
+/**
+ * Merge a persisted features_config with the Lane-A defaults.
+ * Persisted values take precedence, so defaults only fill missing keys.
+ */
+export function mergeFeaturesConfig(persisted: FeaturesConfig | undefined | null): FeaturesConfig {
+  if (!persisted) return { ...DEFAULT_FEATURES };
+  return { ...DEFAULT_FEATURES, ...persisted };
+}
 
 /**
  * Cloudflare KV binding type.

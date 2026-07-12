@@ -3,6 +3,7 @@
 import { Menu, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import type { Locale } from "@/lib/i18n";
 import { useLandingLocale } from "../landing-locale-provider";
 import { StatusDot } from "./status-dot";
 
@@ -10,7 +11,7 @@ import { StatusDot } from "./status-dot";
  * §5.5 Nav — 64px desktop / 56px mobile.
  * --bone background. Bottom 1px --rule. Logo left. Mono labels.
  * Active link = 2px bottom rule in --oltigo-green.
- * Right cluster: FR/AR/EN, status dot, Connexion, primary CTA.
+ * Right cluster: FR/AR/ARY/EN, status dot, Connexion, primary CTA.
  */
 export function EditorialHeader({
   lang,
@@ -18,7 +19,7 @@ export function EditorialHeader({
   onToggleLang,
   onToggleTheme,
 }: {
-  lang: "fr" | "ar" | "en";
+  lang: Locale;
   theme: "light" | "dark";
   onToggleLang: () => void;
   onToggleTheme: () => void;
@@ -78,7 +79,7 @@ export function EditorialHeader({
               className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] tracking-[var(--ls-mono)] uppercase font-medium text-[var(--ink-60)] bg-transparent border-none cursor-pointer py-1 px-0"
               aria-label="Change language"
             >
-              {lang === "fr" ? "FR" : lang === "ar" ? "AR" : "EN"}
+              {lang === "fr" ? "FR" : lang === "ar" ? "AR" : lang === "ary" ? "ARY" : "EN"}
             </button>
 
             {/* Theme toggle */}

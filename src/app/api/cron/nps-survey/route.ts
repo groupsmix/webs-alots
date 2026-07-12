@@ -28,7 +28,7 @@ async function handler(request: NextRequest) {
     // MA-04: exclude soft-deleted clinics
     const { data: clinics, error: clinicsError } = await supabase
       .from("clinics")
-      .select("id, name")
+      .select("id, name, config")
       .eq("status", "active")
       .is("deleted_at", null);
 
@@ -106,7 +106,9 @@ async function handler(request: NextRequest) {
         }
 
         const surveyUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/nps?id=${surveyId}`;
-        const templateBody = await getWhatsAppTemplate(clinicId, "nps_survey");
+        const clinicConfig = (clinic.config ?? null) as Record<string, unknown> | null;
+        const locale = (clinicConfig?.patient_message_locale as string | undefined) ?? "fr";
+        const templateBody = await getWhatsAppTemplate(clinicId, "nps_survey", locale);
         const messageBody =
           templateBody
             ?.replace("{{patient_name}}", patient.name ?? "")

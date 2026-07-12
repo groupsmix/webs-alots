@@ -75,12 +75,12 @@ function EditorialLandingPageInner() {
   }, [theme]);
 
   const cycleLang = () => {
-    const order: Array<"fr" | "ar" | "en"> = ["fr", "ar", "en"];
+    const order: Array<"fr" | "ar" | "ary" | "en"> = ["fr", "ar", "ary", "en"];
     const next = order[(order.indexOf(locale) + 1) % order.length];
     setLocale(next);
   };
 
-  const rtl = locale === "ar";
+  const rtl = locale === "ar" || locale === "ary";
 
   return (
     <div

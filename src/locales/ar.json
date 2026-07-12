@@ -1167,5 +1167,16 @@
   "aiTeam.kanban.humanEscalation": "تصعيد بشري مطلوب",
   "aiTeam.kanban.commentPlaceholder": "تعليق (اختياري)...",
   "aiTeam.kanban.networkError": "خطأ في الشبكة",
-  "aiTeam.kanban.transitionError": "خطأ في الانتقال"
+  "aiTeam.kanban.transitionError": "خطأ في الانتقال",
+  "admin.nav.calendar": "التقويم / المواعيد",
+  "admin.nav.patients": "المرضى",
+  "admin.nav.billing": "الفوترة",
+  "admin.nav.website": "الموقع",
+  "admin.nav.marketing": "التسويق",
+  "admin.nav.ai": "الذكاء الاصطناعي",
+  "admin.nav.settings": "الإعدادات",
+  "admin.mobile.dashboard": "لوحة التحكم",
+  "admin.mobile.patients": "المرضى",
+  "admin.mobile.billing": "الفوترة",
+  "admin.mobile.settings": "الإعدادات"
 }

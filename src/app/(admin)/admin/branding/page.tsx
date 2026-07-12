@@ -772,10 +772,6 @@ function PresetsGrid({
   const verticals = [
     { value: "all", label: "All Verticals" },
     { value: "healthcare", label: "Healthcare" },
-    { value: "beauty", label: "Beauty" },
-    { value: "restaurant", label: "Restaurant" },
-    { value: "fitness", label: "Fitness" },
-    { value: "veterinary", label: "Veterinary" },
   ];
 
   const filtered =

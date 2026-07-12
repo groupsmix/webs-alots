@@ -37,6 +37,7 @@ export function getLocalDateStr(date: Date = new Date(), timezone = DEFAULT_TIME
 export const LOCALE_MAP: Record<Locale, string> = {
   fr: "fr-FR",
   ar: "ar-MA",
+  ary: "ar-MA",
   en: "en-US",
 };
 

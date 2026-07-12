@@ -1,7 +1,7 @@
-export type Locale = "fr" | "ar" | "en";
+export type Locale = "fr" | "ar" | "en" | "ary";
 
-/** All supported UI locales. */
-export const LOCALES = ["fr", "ar", "en"] as const;
+/** All supported UI locales. French, Arabic, English, and Darija (ary). */
+export const LOCALES = ["fr", "ar", "en", "ary"] as const;
 
 /**
  * Type guard: true when `value` is a supported {@link Locale}.
@@ -21,6 +21,7 @@ export function isSupportedLocale(value: unknown): value is Locale {
 // via a proper i18n library (like next-intl). For now, we will maintain the existing API.
 
 import ar from "../locales/ar.json";
+import ary from "../locales/ary.json";
 import en from "../locales/en.json";
 import fr from "../locales/fr.json";
 
@@ -30,6 +31,7 @@ const translations = {
   fr,
   ar,
   en,
+  ary,
 } as const;
 
 // ── F-A92-01: CLDR plural rules ────────────────────────────────────────
@@ -46,6 +48,7 @@ const pluralRules: Record<Locale, Intl.PluralRules> = {
   fr: new Intl.PluralRules("fr"),
   ar: new Intl.PluralRules("ar"),
   en: new Intl.PluralRules("en"),
+  ary: new Intl.PluralRules("ary"),
 };
 
 /**
@@ -124,7 +127,7 @@ export function t(
 }
 
 export function isRTL(locale: Locale): boolean {
-  return locale === "ar";
+  return locale === "ar" || locale === "ary";
 }
 
 export function getDirection(locale: Locale): "rtl" | "ltr" {
