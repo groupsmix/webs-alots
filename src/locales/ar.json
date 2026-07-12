@@ -1178,5 +1178,12 @@
   "admin.mobile.dashboard": "لوحة التحكم",
   "admin.mobile.patients": "المرضى",
   "admin.mobile.billing": "الفوترة",
-  "admin.mobile.settings": "الإعدادات"
+  "admin.mobile.settings": "الإعدادات",
+  "password.minLength": "8 أحرف على الأقل",
+  "password.hasUppercase": "حرف كبير على الأقل",
+  "password.hasLowercase": "حرف صغير على الأقل",
+  "password.hasNumber": "رقم على الأقل",
+  "password.hasSpecial": "رمز خاص على الأقل",
+  "sw.update": "تحديث",
+  "sw.updateAvailable": "يتوفر إصدار جديد."
 }

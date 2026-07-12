@@ -35,7 +35,7 @@ export function clinicDateTime(dateStr: string, timeStr: string, timezone?: stri
   const [year, month, day] = dateStr.split("-").map(Number);
   const [hour, minute] = timeStr.split(":").map(Number);
 
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone: tz,
     year: "numeric",
     month: "2-digit",
@@ -44,6 +44,7 @@ export function clinicDateTime(dateStr: string, timeStr: string, timezone?: stri
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
+    hourCycle: "h23",
   });
 
   const get = (parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) =>

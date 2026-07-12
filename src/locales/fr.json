@@ -1178,5 +1178,12 @@
   "admin.mobile.dashboard": "Tableau de bord",
   "admin.mobile.patients": "Patients",
   "admin.mobile.billing": "Facturation",
-  "admin.mobile.settings": "Paramètres"
+  "admin.mobile.settings": "Paramètres",
+  "password.minLength": "8 caractères minimum",
+  "password.hasUppercase": "Au moins une majuscule",
+  "password.hasLowercase": "Au moins une minuscule",
+  "password.hasNumber": "Au moins un chiffre",
+  "password.hasSpecial": "Au moins un caractère spécial",
+  "sw.update": "Mettre à jour",
+  "sw.updateAvailable": "Une nouvelle version est disponible."
 }

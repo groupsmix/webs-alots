@@ -1084,10 +1084,10 @@
   "superAdmin.platformUsers": "Platform Users",
   "superAdmin.recentActivity": "Recent Activity",
   "superAdmin.refresh": "Refresh",
-  "superAdmin.refreshing": "Refreshing\u2026",
+  "superAdmin.refreshing": "Refreshing…",
   "superAdmin.registeredAccounts": "registered accounts",
-  "superAdmin.reportGenerated": "Report PDF generated \u2014 use Save as PDF in the print dialog",
-  "superAdmin.reportTitle": "Dashboard Report \u2014 Oltigo Health",
+  "superAdmin.reportGenerated": "Report PDF generated — use Save as PDF in the print dialog",
+  "superAdmin.reportTitle": "Dashboard Report — Oltigo Health",
   "superAdmin.revenueTrendingUp": "Revenue trending up",
   "superAdmin.statusLabel": "Status: {status}",
   "superAdmin.totalClinics": "Total Clinics",
@@ -1178,5 +1178,12 @@
   "admin.mobile.dashboard": "Dashboard",
   "admin.mobile.patients": "Patients",
   "admin.mobile.billing": "Billing",
-  "admin.mobile.settings": "Settings"
+  "admin.mobile.settings": "Settings",
+  "password.minLength": "At least 8 characters",
+  "password.hasUppercase": "At least one uppercase letter",
+  "password.hasLowercase": "At least one lowercase letter",
+  "password.hasNumber": "At least one number",
+  "password.hasSpecial": "At least one special character",
+  "sw.update": "Update",
+  "sw.updateAvailable": "A new version is available."
 }
