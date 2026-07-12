@@ -51,9 +51,9 @@ export const faqSearchSchema = z.object({
 
 // ── Support Ticket Schemas ───────────────────────────────────────────
 
-const TICKET_CHANNELS = ["chat", "whatsapp", "email", "phone"] as const;
-const TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
-const TICKET_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+export const TICKET_CHANNELS = ["chat", "whatsapp", "email", "phone"] as const;
+export const TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
+export const TICKET_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
 export const ticketCreateSchema = z.object({
   subject: safeName.pipe(z.string().min(3).max(300)),

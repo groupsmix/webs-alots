@@ -73,6 +73,21 @@ export function createIncident(input: IncidentCreateInput): SecurityIncident {
   };
 }
 
+export function classifyIncidentSeverity(params: {
+  dataBreached: boolean;
+  patientsAffected: number;
+  systemsAffected: number;
+  serviceImpacted: boolean;
+}): IncidentSeverity {
+  const { dataBreached, patientsAffected, systemsAffected, serviceImpacted } = params;
+
+  if (dataBreached && patientsAffected > 100) return "critical";
+  if (dataBreached && patientsAffected > 0) return "high";
+  if (serviceImpacted && systemsAffected > 2) return "high";
+  if (serviceImpacted || systemsAffected > 1) return "medium";
+  return "low";
+}
+
 export function getContainmentProcedures(category: IncidentCategory): string[] {
   switch (category) {
     case "data_breach":
@@ -131,4 +146,18 @@ export function getContainmentProcedures(category: IncidentCategory): string[] {
         "Preserve relevant logs",
       ];
   }
+}
+
+export function isNotifiable(incident: SecurityIncident): boolean {
+  if (incident.category === "data_breach" && (incident.affectedPatientCount ?? 0) > 0) {
+    return true;
+  }
+  if (incident.severity === "critical") return true;
+  return false;
+}
+
+export function getNotificationDeadlineHours(incident: SecurityIncident): number {
+  if (incident.category === "data_breach") return 72;
+  if (incident.severity === "critical") return 24;
+  return 168;
 }
