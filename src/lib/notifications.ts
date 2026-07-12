@@ -28,7 +28,8 @@ export type NotificationTrigger =
   | "new_patient_registered"
   | "rescheduled"
   | "doctor_assigned"
-  | "follow_up";
+  | "follow_up"
+  | "nps_survey";
 
 export type NotificationChannel = "whatsapp" | "in_app" | "email" | "sms";
 
@@ -354,6 +355,11 @@ export const triggerMetadata: Record<
     label: "Follow-up",
     description: "Follow-up reminder after a visit",
     icon: "RefreshCw",
+  },
+  nps_survey: {
+    label: "NPS Survey",
+    description: "Patient satisfaction survey after a visit",
+    icon: "MessageSquare",
   },
 };
 

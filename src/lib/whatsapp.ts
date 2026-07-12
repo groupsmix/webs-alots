@@ -270,6 +270,24 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, string>> = {
     fr: "Rappel: vous avez rendez-vous demain avec {{doctor_name}} à {{time}}. {{clinic_name}}",
     darija: "تذكار: عندك رانديفو غدا مع {{doctor_name}} ف{{time}}. {{clinic_name}}",
   },
+  reminder_24h: {
+    ar: "مرحبا {{patient_name}}، تذكير: عندك موعد غدا مع {{doctor_name}} على الساعة {{time}}. {{clinic_name}}",
+    fr: "Bonjour {{patient_name}}, rappel: vous avez rendez-vous demain avec {{doctor_name}} à {{time}}. {{clinic_name}}",
+    darija:
+      "سلام {{patient_name}}، تذكار: عندك رانديفو غدا مع {{doctor_name}} ف{{time}}. {{clinic_name}}",
+  },
+  reminder_1h: {
+    ar: "مرحبا {{patient_name}}، تذكير: موعدك بعد ساعة مع {{doctor_name}} على الساعة {{time}}. {{clinic_name}}",
+    fr: "Bonjour {{patient_name}}, rappel: votre rendez-vous avec {{doctor_name}} est dans 1 heure à {{time}}. {{clinic_name}}",
+    darija:
+      "سلام {{patient_name}}، تذكار: رانديفو ديالك بعد ساعة مع {{doctor_name}} ف{{time}}. {{clinic_name}}",
+  },
+  reminder_2h: {
+    ar: "مرحبا {{patient_name}}، تذكير: موعدك بعد ساعتين مع {{doctor_name}} على الساعة {{time}}. {{clinic_name}}",
+    fr: "Bonjour {{patient_name}}, rappel: votre rendez-vous avec {{doctor_name}} est dans 2 heures à {{time}}. {{clinic_name}}",
+    darija:
+      "سلام {{patient_name}}، تذكار: رانديفو ديالك بعد ساعتين مع {{doctor_name}} ف{{time}}. {{clinic_name}}",
+  },
   rescheduled: {
     ar: "تم تغيير موعدك مع {{doctor_name}} ل {{date}} على الساعة {{time}}. {{clinic_name}}",
     fr: "Votre rendez-vous avec {{doctor_name}} a été reprogrammé au {{date}} à {{time}}. {{clinic_name}}",
@@ -279,6 +297,12 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, string>> = {
     ar: "تم إلغاء موعدك مع {{doctor_name}} يوم {{date}}. {{clinic_name}}",
     fr: "Votre rendez-vous avec {{doctor_name}} du {{date}} a été annulé. {{clinic_name}}",
     darija: "لغينا رانديفو ديالك مع {{doctor_name}} نهار {{date}}. {{clinic_name}}",
+  },
+  no_show: {
+    ar: "مرحبا {{patient_name}}، لاحظنا أنك لم تحضر إلى موعدك مع {{doctor_name}} يوم {{date}}. هل تريد إعادة تحديد موعد؟ {{clinic_phone}} — {{clinic_name}}",
+    fr: "Bonjour {{patient_name}}, nous avons remarqué que vous n'êtes pas venu(e) à votre rendez-vous avec {{doctor_name}} le {{date}}. Souhaitez-vous en reprogrammer un ? {{clinic_phone}} — {{clinic_name}}",
+    darija:
+      "سلام {{patient_name}}، لاحظنا بلي ما جيتيش للرانديفو ديالك مع {{doctor_name}} نهار {{date}}. بغيتي ترجع تحدد موعد؟ {{clinic_phone}} — {{clinic_name}}",
   },
   nps_survey: {
     ar: "مرحبا {{patient_name}}، كيف كانت تجربتك مع الدكتور {{doctor_name}}؟ شاركنا رأيك: {{survey_url}} — {{clinic_name}}",

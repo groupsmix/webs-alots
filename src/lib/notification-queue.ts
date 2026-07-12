@@ -5,16 +5,21 @@
  * Messages are enqueued as "pending" and processed by a cron job.
  * Failed sends are retried with exponential backoff up to max_attempts.
  *
- * Queue states: pending → processing → sent | failed (terminal: dead-lettered
- * via next_attempt_at = far future when attempts >= max_attempts)
+ * Queue states: pending → processing → sent | failed | dead_letter
+ *
+ * Per-clinic rate limiting and explicit WhatsApp consent checks are enforced
+ * during processing for patient-facing communications.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { logAuditEvent } from "@/lib/audit-log";
 import { getProcessingEnforcement } from "@/lib/gdpr-enforcement";
 import { logger } from "@/lib/logger";
+import type { Database as BaseDatabase } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database-extended";
 import type { NotificationQueueMessage } from "./cf-notification-queue";
 import type { NotificationTrigger, NotificationChannel } from "./notifications";
+import { hasWhatsAppConsent, type ConsentClient } from "./whatsapp/whatsapp-consent";
 
 // We use the extended Database interface to properly type the notification_queue table
 type ExtendedClient = SupabaseClient<Database>;
@@ -38,6 +43,15 @@ export interface ProcessResult {
   deadLettered: number;
 }
 
+interface QueueMetadata {
+  recipient_id?: string;
+  appointment_id?: string;
+  clinic_name?: string;
+  locale?: string;
+  interactive?: string;
+  [key: string]: string | undefined;
+}
+
 // ── Constants ──
 
 /** Base delay in milliseconds for exponential backoff (30 seconds). */
@@ -46,8 +60,18 @@ const BASE_RETRY_DELAY_MS = 30_000;
 /** Maximum number of items to process per cron invocation. */
 const BATCH_SIZE = 50;
 
+/** Per-clinic throttle: max WhatsApp messages a single worker can send per run. */
+const MAX_PER_CLINIC_PER_RUN = 30;
+
 /** Far-future timestamp so dead-lettered items are never picked up again. */
-const DEAD_LETTER_NEXT_ATTEMPT = "9999-12-31T23:59:59Z";
+const DEAD_LETTER_NEXT_RETRY = "9999-12-31T23:59:59Z";
+
+/**
+ * Triggers that require explicit WhatsApp consent.
+ * Appointment reminders, confirmations, and cancellations are transactional
+ * and are allowed without a separate opt-in.
+ */
+const WHATSAPP_CONSENT_REQUIRED_TRIGGERS: string[] = ["no_show", "nps_survey"];
 
 // ── Backoff Calculation ──
 
@@ -85,11 +109,14 @@ export async function enqueueNotification(params: EnqueueParams): Promise<string
         clinic_id: params.clinicId,
         channel: params.channel,
         recipient: params.recipient,
-        payload: { body: params.body, trigger: params.trigger, metadata: params.metadata },
+        body: params.body,
+        trigger_type: params.trigger,
         status: "pending",
         attempts: 0,
         max_attempts: params.maxAttempts ?? 5,
-        next_attempt_at: new Date().toISOString(),
+        next_retry_at: new Date().toISOString(),
+        last_error: null,
+        metadata: params.metadata ?? null,
       })
       .select("id")
       .single();
@@ -151,7 +178,7 @@ export async function enqueueNotification(params: EnqueueParams): Promise<string
  * Process pending notifications from the queue.
  * Called by the cron handler on a regular schedule.
  *
- * 1. Fetch BATCH_SIZE items where status='pending' and next_retry_at <= now
+ * 1. Fetch BATCH_SIZE items where status='pending'/'failed' and next_retry_at <= now
  * 2. Mark them as 'processing' (claim)
  * 3. Attempt delivery via the appropriate channel
  * 4. On success: mark 'sent' with sent_at timestamp
@@ -169,11 +196,11 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
     const { data: items, error: fetchError } = await supabase
       .from("notification_queue")
       .select(
-        "id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at",
+        "id, clinic_id, channel, recipient, body, trigger_type, status, attempts, max_attempts, next_retry_at, last_error, metadata, created_at",
       )
       .in("status", ["pending", "failed"])
-      .lte("next_attempt_at", new Date().toISOString())
-      .order("next_attempt_at", { ascending: true })
+      .lte("next_retry_at", new Date().toISOString())
+      .order("next_retry_at", { ascending: true })
       .limit(BATCH_SIZE);
 
     if (fetchError || !items || items.length === 0) {
@@ -193,28 +220,25 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
       .update({ status: "processing", updated_at: new Date().toISOString() })
       .in("id", itemIds);
 
+    // Per-clinic rate limiter for this run
+    const clinicSendCount = new Map<string, number>();
+
     // Process each item
     for (const item of items) {
       result.processed++;
 
-      try {
-        const payload = item.payload as {
-          body: string;
-          trigger?: string;
-          metadata?: Record<string, string>;
-          userId?: string;
-        };
+      const metadata = (item.metadata as QueueMetadata | null) ?? {};
 
+      try {
         // A62-F2: GDPR Art.21 — skip sending to patients who have objected
         // to WhatsApp/notification processing under legitimate interest.
-        // Only check when a userId is recorded in the notification payload.
-        if (payload.userId) {
-          const enforcement = await getProcessingEnforcement(supabase, payload.userId);
+        if (metadata.recipient_id) {
+          const enforcement = await getProcessingEnforcement(supabase, metadata.recipient_id);
           if (enforcement.restricted || enforcement.objectsTo("whatsapp_reminders")) {
             logger.info("notification-queue: skipping — GDPR Art.18/21 restriction", {
               context: "notification-queue",
               notificationId: item.id,
-              userId: payload.userId,
+              userId: metadata.recipient_id,
               restricted: enforcement.restricted,
               objectedActivities: enforcement.objectedActivities,
             });
@@ -228,22 +252,96 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           }
         }
 
+        // Explicit WhatsApp opt-in check for non-transactional messages
+        if (
+          item.channel === "whatsapp" &&
+          WHATSAPP_CONSENT_REQUIRED_TRIGGERS.includes(item.trigger_type)
+        ) {
+          if (metadata.recipient_id) {
+            const consent = await hasWhatsAppConsent(
+              supabase as unknown as ConsentClient,
+              item.clinic_id,
+              metadata.recipient_id,
+            );
+            if (!consent) {
+              logger.info("notification-queue: skipping — WhatsApp consent not granted", {
+                context: "notification-queue",
+                notificationId: item.id,
+                clinicId: item.clinic_id,
+                userId: metadata.recipient_id,
+                trigger: item.trigger_type,
+              });
+              await logAuditEvent({
+                supabase: supabase as unknown as SupabaseClient<BaseDatabase>,
+                action: "whatsapp_consent_denied_skip",
+                type: "patient",
+                clinicId: item.clinic_id,
+                actor: metadata.recipient_id,
+                description: `Skipped ${item.trigger_type} WhatsApp message — explicit consent not granted`,
+                metadata: { notification_id: item.id, trigger: item.trigger_type },
+              });
+              await supabase
+                .from("notification_queue")
+                .update({ status: "sent", updated_at: new Date().toISOString() })
+                .eq("id", item.id);
+              result.sent++;
+              continue;
+            }
+          }
+        }
+
+        // Per-clinic rate limiter
+        const currentCount = clinicSendCount.get(item.clinic_id) ?? 0;
+        if (currentCount >= MAX_PER_CLINIC_PER_RUN) {
+          logger.info("notification-queue: per-clinic rate limit reached — deferring", {
+            context: "notification-queue",
+            notificationId: item.id,
+            clinicId: item.clinic_id,
+          });
+          await supabase
+            .from("notification_queue")
+            .update({
+              status: "failed",
+              next_retry_at: new Date(Date.now() + 60_000).toISOString(),
+              last_error: "Per-clinic rate limit exceeded",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", item.id);
+          result.failed++;
+          continue;
+        }
+
         const sendResult = await deliverNotification(
           item.channel as NotificationChannel,
           item.recipient,
-          payload.body,
+          item.body,
+          item.trigger_type,
+          metadata,
         );
 
         if (sendResult.success) {
           // Mark as sent
+          const updatedMetadata: Record<string, string> = {};
+          for (const [key, value] of Object.entries(metadata)) {
+            if (value !== undefined) {
+              updatedMetadata[key] = value;
+            }
+          }
+          if (sendResult.messageId) {
+            updatedMetadata.message_id = sendResult.messageId;
+          }
+
           await supabase
             .from("notification_queue")
             .update({
               status: "sent",
+              sent_at: new Date().toISOString(),
+              metadata: updatedMetadata,
               updated_at: new Date().toISOString(),
             })
             .eq("id", item.id);
           result.sent++;
+          clinicSendCount.set(item.clinic_id, currentCount + 1);
 
           // Meter usage (fire-and-forget)
           if (item.clinic_id) {
@@ -267,14 +365,14 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           const maxAttempts = item.max_attempts ?? 5;
 
           if (newAttempts >= maxAttempts) {
-            // Move to dead letter — set next_attempt_at to far future so it's never picked up again
+            // Move to dead letter
             await supabase
               .from("notification_queue")
               .update({
-                status: "failed",
+                status: "dead_letter",
                 attempts: newAttempts,
-                next_attempt_at: DEAD_LETTER_NEXT_ATTEMPT,
-                error_message: sendResult.error ?? "Unknown error",
+                next_retry_at: DEAD_LETTER_NEXT_RETRY,
+                last_error: sendResult.error ?? "Unknown error",
                 updated_at: new Date().toISOString(),
               })
               .eq("id", item.id);
@@ -316,8 +414,8 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
               .update({
                 status: "failed",
                 attempts: newAttempts,
-                next_attempt_at: nextRetry.toISOString(),
-                error_message: sendResult.error ?? "Unknown error",
+                next_retry_at: nextRetry.toISOString(),
+                last_error: sendResult.error ?? "Unknown error",
                 updated_at: new Date().toISOString(),
               })
               .eq("id", item.id);
@@ -336,13 +434,13 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
         await supabase
           .from("notification_queue")
           .update({
-            status: "failed",
+            status: newAttempts >= maxAttempts ? "dead_letter" : "failed",
             attempts: newAttempts,
-            next_attempt_at:
+            next_retry_at:
               newAttempts >= maxAttempts
-                ? DEAD_LETTER_NEXT_ATTEMPT
+                ? DEAD_LETTER_NEXT_RETRY
                 : calculateNextRetry(newAttempts).toISOString(),
-            error_message: errorMsg,
+            last_error: errorMsg,
             updated_at: new Date().toISOString(),
           })
           .eq("id", item.id);
@@ -377,6 +475,26 @@ interface DeliveryResult {
   error?: string;
 }
 
+function getReminderButtons(locale: string): { id: string; title: string }[] {
+  if (locale === "ar" || locale === "ary") {
+    return [
+      { id: "CONFIRM", title: "تأكيد" },
+      { id: "CANCEL", title: "إلغاء" },
+    ];
+  }
+  if (locale === "fr") {
+    return [
+      { id: "CONFIRM", title: "Confirmer" },
+      { id: "CANCEL", title: "Annuler" },
+    ];
+  }
+  // Default: Darija / French fallback
+  return [
+    { id: "CONFIRM", title: "Oui" },
+    { id: "CANCEL", title: "Non" },
+  ];
+}
+
 /**
  * Deliver a notification via the specified channel.
  * This is the actual send operation — called by the queue processor.
@@ -385,9 +503,32 @@ async function deliverNotification(
   channel: NotificationChannel,
   recipient: string,
   body: string,
+  triggerType: string,
+  metadata: QueueMetadata,
 ): Promise<DeliveryResult> {
   switch (channel) {
     case "whatsapp": {
+      // Reminder templates use Meta interactive quick-reply buttons
+      if (
+        triggerType === "reminder_24h" ||
+        triggerType === "reminder_1h" ||
+        triggerType === "reminder_2h"
+      ) {
+        const { sendInteractiveMessage } = await import("./whatsapp");
+        const locale = metadata.locale ?? "fr";
+        const result = await sendInteractiveMessage({
+          to: recipient,
+          body,
+          buttons: getReminderButtons(locale),
+          footer: metadata.clinic_name,
+        });
+        return {
+          success: result.success,
+          messageId: result.messageId,
+          error: result.error,
+        };
+      }
+
       const { sendTextMessage } = await import("./whatsapp");
       const result = await sendTextMessage(recipient, body);
       return {

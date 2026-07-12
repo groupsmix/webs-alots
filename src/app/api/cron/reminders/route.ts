@@ -4,8 +4,8 @@ import { assertClinicId } from "@/lib/assert-tenant";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
-import { dispatchNotification } from "@/lib/notifications";
-import { substituteVariables, defaultNotificationTemplates } from "@/lib/notifications";
+import { enqueueNotification } from "@/lib/notification-queue";
+import { dispatchNotification, substituteVariables } from "@/lib/notifications";
 import { withSentryCron } from "@/lib/sentry-cron";
 // B-02: Cron jobs run without user session cookies, so the cookie-based
 // `createClient()` would execute queries as anon under RLS, returning 0
@@ -14,7 +14,7 @@ import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
-import { sendInteractiveMessage } from "@/lib/whatsapp";
+import { getWhatsAppTemplate } from "@/lib/whatsapp";
 
 /**
  * Minimal KV namespace surface used by this file. The Cloudflare Workers
@@ -126,7 +126,7 @@ async function handler(request: NextRequest) {
       patients:patient_id (id, name, phone),
       doctors:doctor_id (id, name),
       services:service_id (name),
-      clinics:clinic_id (name)
+      clinics:clinic_id (name, config)
     ` as const;
 
     // Note: PostgREST chaining pattern — apply gt() filter if cursor exists
@@ -354,38 +354,45 @@ async function handler(request: NextRequest) {
       const clinicRaw = appt.clinics;
       const clinic = Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw;
       const clinicName = clinic?.name ?? "Clinic";
+      const clinicConfig = (clinic?.config ?? null) as Record<string, unknown> | null;
+      const locale = (clinicConfig?.patient_message_locale as string | undefined) ?? "fr";
+      const clinicId = (appt.clinic_id as string) ?? "";
 
       const templateVars = {
         patient_name: patient.name,
         doctor_name: doctor?.name ?? "Doctor",
         clinic_name: clinicName,
+        clinic_id: (appt.clinic_id as string) ?? "",
+        clinic_address: "",
         date: displayDate,
         time: displayTime,
         service_name: service?.name ?? "Appointment",
-        clinic_address: "",
       };
 
       dispatchQueue.push({
         apptId: appt.id,
         trigger,
         fn: async () => {
-          // Send interactive WhatsApp message with CONFIRM/CANCEL quick replies
+          // Send WhatsApp reminder via the persistent queue (localized, retryable)
           if (patient.phone) {
-            const tpl = defaultNotificationTemplates.find(
-              (t) => t.trigger === trigger && t.enabled && t.channels.includes("whatsapp"),
-            );
-            const body = tpl
-              ? substituteVariables(tpl.whatsappBody, templateVars)
+            const templateBody = await getWhatsAppTemplate(clinicId, trigger, locale);
+            const body = templateBody
+              ? substituteVariables(templateBody, templateVars)
               : `Reminder: Your appointment is ${trigger === "reminder_24h" ? "tomorrow" : "in 1 hour"} at ${displayTime}. ${clinicName}`;
 
-            await sendInteractiveMessage({
-              to: patient.phone,
+            await enqueueNotification({
+              clinicId,
+              channel: "whatsapp",
+              recipient: patient.phone,
               body,
-              buttons: [
-                { id: "CONFIRM", title: "Confirm" },
-                { id: "CANCEL", title: "Cancel" },
-              ],
-              footer: clinicName,
+              trigger,
+              metadata: {
+                recipient_id: patient.id,
+                appointment_id: appt.id,
+                clinic_name: clinicName,
+                locale,
+                interactive: "true",
+              },
             });
           }
 
@@ -393,7 +400,7 @@ async function handler(request: NextRequest) {
           return dispatchNotification(trigger, templateVars, patient.id, ["sms", "in_app"]);
         },
         patient,
-        clinicId: (appt.clinic_id as string) ?? "",
+        clinicId,
       });
     }
 
