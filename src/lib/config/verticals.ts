@@ -23,7 +23,11 @@ export type ScopedApiGroup =
   | "vitals"
   | "radiology"
   | "insurance-claims"
-  | "admissions";
+  | "admissions"
+  | "pets"
+  | "menus"
+  | "restaurant-orders"
+  | "restaurant-tables";
 
 /** Scope group identifiers for gated dashboard/page route groups. */
 export type ScopedDashboard =
@@ -71,7 +75,9 @@ export type ScopedDashboard =
   | "physiotherapist"
   | "psychologist"
   | "radiology-dashboard"
-  | "speech-therapist";
+  | "speech-therapist"
+  | "restaurant"
+  | "veterinary";
 
 /**
  * Per-dashboard feature requirements.
@@ -125,6 +131,8 @@ const DASHBOARD_FEATURE_REQUIREMENTS: Record<ScopedDashboard, ClinicFeatureKey[]
   psychologist: ["therapy_notes", "therapy_plans"],
   "radiology-dashboard": ["radiology_reports", "imaging"],
   "speech-therapist": ["speech_sessions", "speech_exercises", "speech_reports"],
+  restaurant: [],
+  veterinary: [],
 };
 
 /** Defines the scope for a single vertical. */
