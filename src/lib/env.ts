@@ -85,6 +85,7 @@ export {
   getPhiEncryptionKey,
   getPhiEncryptionKeyOld,
   getProfileHeaderHmacKey,
+  getPublicAppVersion,
   getRateLimitBackend,
   getRootDomain,
   getSiteUrl,

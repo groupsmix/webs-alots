@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getPublicAppVersion, getSupabaseAnonKey, getSupabaseUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 export type ReadinessStatus = "ready" | "not_ready";
@@ -29,8 +30,8 @@ export async function GET(request: NextRequest) {
   let supabaseCheck: "ok" | "down" | "degraded" = "ok";
 
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseUrl = getSupabaseUrl();
+    const supabaseAnonKey = getSupabaseAnonKey();
 
     if (!supabaseUrl || !supabaseAnonKey) {
       supabaseCheck = "degraded";
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   const ready: ReadinessStatus = supabaseCheck === "ok" ? "ready" : "not_ready";
 
-  const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0";
+  const version = getPublicAppVersion();
 
   const payload: ReadinessResponse = {
     status: ready,

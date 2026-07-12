@@ -20,13 +20,14 @@ async function handler(request: NextRequest) {
   if (auth) return auth;
 
   try {
+    // nosemgrep: semgrep.admin-client-guard — cross-tenant cron sweep iterating all clinics
     const supabase = createAdminClient("cron");
     const untypedSupabase = supabase as unknown as SupabaseUntyped;
     const now = new Date();
     const windowStart = new Date(now.getTime() - CRON_WINDOW_MINUTES * 60 * 1000).toISOString();
 
     const { data: records, error } = await supabase
-      .from("no_show_records")
+      .from("no_show_records") // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; per-clinic dispatch happens row-by-row downstream
       .select(
         `
         id,
