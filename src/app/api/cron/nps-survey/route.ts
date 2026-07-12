@@ -3,9 +3,11 @@ import { apiInternalError, apiSuccess } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { enqueueNotification } from "@/lib/notification-queue";
+import { substituteVariables } from "@/lib/notifications";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
-import { sendTextMessage, getWhatsAppTemplate } from "@/lib/whatsapp";
+import { getWhatsAppTemplate } from "@/lib/whatsapp";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseUntyped = { from(table: string): any };
@@ -109,28 +111,42 @@ async function handler(request: NextRequest) {
         const clinicConfig = (clinic.config ?? null) as Record<string, unknown> | null;
         const locale = (clinicConfig?.patient_message_locale as string | undefined) ?? "fr";
         const templateBody = await getWhatsAppTemplate(clinicId, "nps_survey", locale);
-        const messageBody =
-          templateBody
-            ?.replace("{{patient_name}}", patient.name ?? "")
-            .replace("{{doctor_name}}", doctor?.name ?? "")
-            .replace("{{clinic_name}}", clinic.name ?? "")
-            .replace("{{survey_url}}", surveyUrl) ??
-          `مرحبا ${patient.name ?? ""}, كيف كانت تجربتك مع الدكتور ${doctor?.name ?? ""}؟ شاركنا رأيك: ${surveyUrl} — ${clinic.name ?? ""}`;
+        const templateVars = {
+          patient_name: patient.name ?? "",
+          doctor_name: doctor?.name ?? "",
+          clinic_name: clinic.name ?? "",
+          survey_url: surveyUrl,
+        };
+        const messageBody = templateBody
+          ? substituteVariables(templateBody, templateVars)
+          : `مرحبا ${patient.name ?? ""}, كيف كانت تجربتك مع الدكتور ${doctor?.name ?? ""}؟ شاركنا رأيك: ${surveyUrl} — ${clinic.name ?? ""}`;
 
-        const result = await sendTextMessage(patient.phone, messageBody);
+        const queueId = await enqueueNotification({
+          clinicId,
+          channel: "whatsapp",
+          recipient: patient.phone,
+          body: messageBody,
+          trigger: "nps_survey",
+          metadata: {
+            recipient_id: patient.id,
+            appointment_id: appt.id,
+            clinic_name: clinic.name ?? "",
+            locale,
+            survey_id: surveyId,
+          },
+        });
 
-        if (result.success) {
+        if (queueId) {
           await untypedSupabase
             .from("nps_surveys")
-            .update({ whatsapp_message_id: result.messageId })
+            .update({ notification_queue_id: queueId })
             .eq("id", surveyId)
             .eq("clinic_id", clinicId);
           totalSent++;
         } else {
-          logger.warn("Failed to send NPS WhatsApp", {
+          logger.warn("Failed to enqueue NPS WhatsApp", {
             context: "cron/nps-survey",
             clinicId,
-            error: result.error,
           });
           totalErrors++;
         }

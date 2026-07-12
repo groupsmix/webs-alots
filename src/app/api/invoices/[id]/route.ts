@@ -3,6 +3,12 @@ import { apiSuccess, apiError, apiNotFound } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import {
+  computeInsurancePartialPayment,
+  transitionInvoiceStatus,
+  type InvoiceState,
+  type InvoiceStatus,
+} from "@/lib/billing/invoice-state-machine";
 import { invoicesTable, invoiceLineItemsTable } from "@/lib/billing-db";
 import { logger } from "@/lib/logger";
 import { invoiceUpdateSchema } from "@/lib/validations/billing";
@@ -55,7 +61,9 @@ export const PATCH = withAuthValidation(
 
     // nosemgrep: semgrep.tenant-scoping
     const { data: existing, error: fetchError } = await invoicesTable(supabase)
-      .select("id, status, invoice_number") // nosemgrep: semgrep.tenant-scoping
+      .select(
+        "id, status, invoice_number, total_centimes, amount_paid_centimes, payment_method, insurance_type, insurance_ref", // nosemgrep: semgrep.tenant-scoping
+      )
       .eq("id", id)
       .eq("clinic_id", clinicId)
       .single();
@@ -64,7 +72,6 @@ export const PATCH = withAuthValidation(
 
     const updateFields: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-    if (body.status !== undefined) updateFields.status = body.status;
     if (body.tax_rate !== undefined) updateFields.tax_rate = body.tax_rate;
     if (body.discount_centimes !== undefined)
       updateFields.discount_centimes = body.discount_centimes;
@@ -73,11 +80,59 @@ export const PATCH = withAuthValidation(
     if (body.insurance_ref !== undefined) updateFields.insurance_ref = body.insurance_ref;
     if (body.notes !== undefined) updateFields.notes = body.notes;
     if (body.due_date !== undefined) updateFields.due_date = body.due_date;
-    if (body.amount_paid_centimes !== undefined)
-      updateFields.amount_paid_centimes = body.amount_paid_centimes;
 
-    if (body.status === "paid") updateFields.paid_at = new Date().toISOString();
-    if (body.status === "sent") updateFields.sent_at = new Date().toISOString();
+    let auditEvent: {
+      action: string;
+      description: string;
+      metadata: Record<string, unknown>;
+    } | null = null;
+
+    if (body.status !== undefined) {
+      const invoiceState: InvoiceState = {
+        id: existing.id,
+        status: existing.status as InvoiceStatus,
+        totalCentimes: existing.total_centimes ?? 0,
+        amountPaidCentimes: existing.amount_paid_centimes ?? 0,
+        paymentMethod: existing.payment_method ?? null,
+        insuranceType: existing.insurance_type ?? null,
+        insuranceRef: existing.insurance_ref ?? null,
+        invoiceNumber: existing.invoice_number,
+        clinicId,
+      };
+
+      const transition = transitionInvoiceStatus(invoiceState, {
+        targetStatus: body.status,
+        amountPaidCentimes: body.amount_paid_centimes,
+        policyNumber: body.policy_number,
+        actorId: profile.id,
+      });
+
+      if (!transition.ok) {
+        return apiError(transition.error, 400, transition.code ?? "INVOICE_TRANSITION_ERROR");
+      }
+
+      // For insurance-driven partially_paid, compute the patient/insurance split.
+      if (
+        body.status === "partially_paid" &&
+        invoiceState.paymentMethod === "insurance" &&
+        invoiceState.insuranceType
+      ) {
+        const policyNumber = body.policy_number || invoiceState.insuranceRef || "";
+        const partialPayment = await computeInsurancePartialPayment(invoiceState, policyNumber);
+        Object.assign(updateFields, partialPayment.updateFields);
+        auditEvent = partialPayment.audit;
+      } else {
+        Object.assign(updateFields, transition.result.updateFields);
+        auditEvent = transition.result.audit;
+      }
+    }
+
+    if (
+      body.amount_paid_centimes !== undefined &&
+      updateFields.amount_paid_centimes === undefined
+    ) {
+      updateFields.amount_paid_centimes = body.amount_paid_centimes;
+    }
 
     // nosemgrep: semgrep.tenant-scoping
     const { data: updated, error: updateError } = await invoicesTable(supabase)
@@ -92,15 +147,27 @@ export const PATCH = withAuthValidation(
       return apiError("Failed to update invoice", 500);
     }
 
-    await logAuditEvent({
-      supabase,
-      action: "invoice.updated",
-      type: "payment",
-      clinicId,
-      actor: profile.id,
-      description: `Invoice ${existing.invoice_number} updated`,
-      metadata: { invoice_id: id, changes: Object.keys(updateFields) },
-    });
+    if (auditEvent) {
+      await logAuditEvent({
+        supabase,
+        action: auditEvent.action,
+        type: "payment",
+        clinicId,
+        actor: profile.id,
+        description: auditEvent.description,
+        metadata: { ...auditEvent.metadata, actor_id: profile.id },
+      });
+    } else {
+      await logAuditEvent({
+        supabase,
+        action: "invoice.updated",
+        type: "payment",
+        clinicId,
+        actor: profile.id,
+        description: `Invoice ${existing.invoice_number} updated`,
+        metadata: { invoice_id: id, changes: Object.keys(updateFields) },
+      });
+    }
 
     return apiSuccess({ invoice: updated });
   },

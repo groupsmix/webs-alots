@@ -782,7 +782,7 @@ export async function handleWhatsAppConversation(params: HandleMessageParams): P
       }
     }
 
-    await sendTextMessage(senderPhone, response);
+    await sendTextMessage(senderPhone, response, clinicId);
   } catch (err) {
     logger.warn("WhatsApp conversation handler error", {
       context: "whatsapp/conversation",
@@ -795,6 +795,7 @@ export async function handleWhatsAppConversation(params: HandleMessageParams): P
       await sendTextMessage(
         senderPhone,
         `Désolé, une erreur est survenue. Veuillez réessayer ou contacter la clinique directement. — ${clinicName}`,
+        clinicId,
       );
     } catch {
       // Sending error message failed

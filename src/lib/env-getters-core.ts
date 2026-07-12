@@ -76,6 +76,15 @@ export function getDemoUrl(): string {
   return process.env.NEXT_PUBLIC_DEMO_URL || "https://demo.oltigo.com";
 }
 
+/**
+ * Public app version exposed to `/api/ready` and other non-secret surfaces.
+ * `NEXT_PUBLIC_*` so it can be inlined at build time. Falls back to a stable
+ * default when unset.
+ */
+export function getPublicAppVersion(): string {
+  return process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0";
+}
+
 /** Rate-limit backend selection. */
 export function getRateLimitBackend(): string {
   return process.env.RATE_LIMIT_BACKEND ?? "kv";

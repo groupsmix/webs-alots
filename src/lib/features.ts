@@ -94,6 +94,10 @@ export type ClinicFeatureKey =
   | "ai_memory"
   | "ai_team_tasks"
   | "ai_triage"
+  // Patient portal PHI surfaces
+  | "patient_timeline"
+  | "patient_documents"
+  | "patient_family"
   // Managed public website
   | "website";
 
@@ -177,6 +181,10 @@ export const DEFAULT_FEATURES: FeaturesConfig = {
   ai_memory: false,
   ai_team_tasks: false,
   ai_triage: false,
+  // Patient portal PHI — disabled by default
+  patient_timeline: false,
+  patient_documents: false,
+  patient_family: false,
 };
 
 /**

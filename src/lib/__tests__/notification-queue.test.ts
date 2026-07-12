@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase-server";
 import { pushToNotificationQueue } from "../cf-notification-queue";
 import { getProcessingEnforcement } from "../gdpr-enforcement";
 import { sendTextMessage } from "../whatsapp";
+import { hasWhatsAppConsent } from "../whatsapp/whatsapp-consent";
 
 // Mock Supabase admin client before importing the module
 vi.mock("@/lib/supabase-server", () => ({
@@ -64,6 +65,10 @@ vi.mock("../gdpr-enforcement", () => ({
   ),
 }));
 
+vi.mock("../whatsapp/whatsapp-consent", () => ({
+  hasWhatsAppConsent: vi.fn(() => Promise.resolve(true)),
+}));
+
 vi.mock("../tenant-metering", () => ({
   recordUsage: vi.fn(() => Promise.resolve()),
 }));
@@ -87,12 +92,14 @@ function makeQueueItem(overrides: Record<string, unknown> = {}) {
     clinic_id: "clinic-001",
     channel: "whatsapp",
     recipient: "+212600000000",
-    payload: { body: "Your appointment is confirmed." },
+    body: "Your appointment is confirmed.",
+    trigger_type: "booking_confirmation",
+    metadata: null,
     status: "pending",
     attempts: 0,
     max_attempts: 5,
-    next_attempt_at: new Date().toISOString(),
-    error_message: null,
+    next_retry_at: new Date().toISOString(),
+    last_error: null,
     created_at: new Date().toISOString(),
     ...overrides,
   };
@@ -139,6 +146,7 @@ describe("notification-queue", () => {
       objectedActivities: [],
       objectsTo: () => false,
     });
+    vi.mocked(hasWhatsAppConsent).mockResolvedValue(true);
     vi.mocked(sendTextMessage).mockResolvedValue({
       success: true,
       messageId: "wa-msg-001",
@@ -262,6 +270,7 @@ describe("notification-queue", () => {
       expect(sendTextMessage).toHaveBeenCalledWith(
         "+212600000000",
         "Your appointment is confirmed.",
+        "clinic-001",
       );
     });
 
@@ -269,7 +278,7 @@ describe("notification-queue", () => {
       const queue = createQueueClient([
         makeQueueItem({
           id: "queue-restricted-1",
-          payload: { body: "Restricted", userId: "patient-123" },
+          metadata: { recipient_id: "patient-123" },
         }),
       ]);
       vi.mocked(createAdminClient).mockReturnValue(queue.client as never);
@@ -291,6 +300,30 @@ describe("notification-queue", () => {
       expect(sendTextMessage).not.toHaveBeenCalled();
       expect(queue.spies.update.mock.calls[1][0]).toMatchObject({ status: "sent" });
       expect(queue.spies.updateEq).toHaveBeenCalledWith("id", "queue-restricted-1");
+    });
+
+    it("skips WhatsApp messages that require explicit consent when consent is not granted", async () => {
+      const queue = createQueueClient([
+        makeQueueItem({
+          id: "queue-no-consent-1",
+          trigger_type: "nps_survey",
+          metadata: { recipient_id: "patient-123" },
+        }),
+      ]);
+      vi.mocked(createAdminClient).mockReturnValue(queue.client as never);
+      vi.mocked(hasWhatsAppConsent).mockResolvedValue(false);
+
+      const { processNotificationQueue } = await import("../notification-queue");
+      const result = await processNotificationQueue();
+
+      expect(result).toEqual({
+        processed: 1,
+        sent: 1,
+        failed: 0,
+        deadLettered: 0,
+      });
+      expect(sendTextMessage).not.toHaveBeenCalled();
+      expect(queue.spies.update.mock.calls[1][0]).toMatchObject({ status: "sent" });
     });
 
     it("moves exhausted deliveries to dead-letter state and reports to Sentry", async () => {
@@ -319,10 +352,10 @@ describe("notification-queue", () => {
         deadLettered: 1,
       });
       expect(queue.spies.update.mock.calls[1][0]).toMatchObject({
-        status: "failed",
+        status: "dead_letter",
         attempts: 5,
-        next_attempt_at: "9999-12-31T23:59:59Z",
-        error_message: "Meta API unavailable",
+        next_retry_at: "9999-12-31T23:59:59Z",
+        last_error: "Meta API unavailable",
       });
       expect(Sentry.captureException).toHaveBeenCalledTimes(1);
     });

@@ -32,6 +32,24 @@ npm run dev
 5. Get at least one review approval
 6. Squash and merge
 
+## Feature Freeze Rule
+
+Until we have **5 live paying Moroccan pilot clinics**, the following are frozen:
+
+- New verticals (non-healthcare: restaurant, fitness, beauty, veterinary, etc.)
+- New clinical modules that store or process PHI (prescriptions, vitals, radiology, patient documents, timeline/export)
+- New AI diagnostic or clinical decision-support features
+- New super-admin-only consoles that do not directly support pilot operations
+
+Allowed work during the freeze:
+
+- Bug fixes, security hardening, and observability on the Lane A revenue path
+- WhatsApp-first patient journey improvements
+- i18n and Moroccan payment/billing improvements
+- Pilot onboarding and operational tooling
+
+To request an exception, open a PR with a one-page business case showing a pilot clinic explicitly requested the feature and will pay for it.
+
 ## Commit Messages
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):

@@ -32,7 +32,7 @@ export async function sendFeedbackRequest(params: FeedbackFlowParams): Promise<{
   messageId?: string;
   error?: string;
 }> {
-  const { patientName, patientPhone, clinicName, doctorName } = params;
+  const { patientName, patientPhone, clinicId, clinicName, doctorName } = params;
 
   try {
     const result = await sendInteractiveMessage({
@@ -45,6 +45,7 @@ export async function sendFeedbackRequest(params: FeedbackFlowParams): Promise<{
         { id: "RATING_5", title: "Excellent!" },
       ],
       footer: "Tap to rate your experience",
+      clinicId,
     });
 
     return {
@@ -55,6 +56,7 @@ export async function sendFeedbackRequest(params: FeedbackFlowParams): Promise<{
   } catch (err) {
     logger.error("Failed to send feedback request", {
       context: "post-appointment-feedback",
+      clinicId: params.clinicId,
       error: err,
     });
     return { success: false, error: String(err) };
@@ -76,7 +78,8 @@ export async function handleFeedbackResponse(params: {
   googlePlaceId?: string | null;
   adminUserId?: string | null;
 }): Promise<void> {
-  const { clinicName, patientPhone, patientName, rating, googlePlaceId, adminUserId } = params;
+  const { clinicId, clinicName, patientPhone, patientName, rating, googlePlaceId, adminUserId } =
+    params;
 
   if (rating >= 4 && googlePlaceId) {
     // Positive rating — send Google Review link
@@ -86,12 +89,14 @@ export async function handleFeedbackResponse(params: {
       `Thank you for the great rating, ${patientName}! 🙏\n\n` +
         `We'd love it if you could share your experience on Google to help others find us:\n${reviewUrl}\n\n` +
         `— ${clinicName}`,
+      clinicId,
     );
   } else if (rating >= 4) {
     // Positive but no Google Place ID configured
     await sendTextMessage(
       patientPhone,
       `Thank you for the great feedback, ${patientName}! We're glad you had a good experience at ${clinicName}. 🙏`,
+      clinicId,
     );
   } else {
     // Low rating — thank them privately, ask for details
@@ -100,6 +105,7 @@ export async function handleFeedbackResponse(params: {
       `Thank you for your feedback, ${patientName}. We're sorry your experience wasn't perfect.\n\n` +
         `Your feedback is important to us and has been shared with our team. ` +
         `If you'd like to share more details, please reply to this message.\n\n— ${clinicName}`,
+      clinicId,
     );
 
     // Notify clinic admin about the low rating

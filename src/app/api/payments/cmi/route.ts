@@ -2,6 +2,7 @@ import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
+import { logger } from "@/lib/logger";
 import { cmiPaymentSchema } from "@/lib/validations";
 
 /**
@@ -67,8 +68,18 @@ function validateRedirectUrl(
  */
 export const POST = withAuthValidation(
   cmiPaymentSchema,
-  async (body, request, { user }) => {
+  async (body, request, { user, profile }) => {
+    const traceId = request.headers.get("x-trace-id") ?? undefined;
+    const clinicId = profile.clinic_id;
+
     if (!isCmiConfigured()) {
+      logger.error("CMI payment gateway not configured", {
+        context: "payments/cmi/initiate",
+        alert: "payment_gateway_misconfigured",
+        traceId,
+        clinicId,
+        userId: user.id,
+      });
       return apiError(
         "CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY.",
         503,
@@ -87,6 +98,17 @@ export const POST = withAuthValidation(
     const origin = request.nextUrl.origin;
     const orderId = `ord_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
 
+    logger.info("CMI payment initiated", {
+      context: "payments/cmi/initiate",
+      traceId,
+      clinicId,
+      userId: user.id,
+      orderId,
+      amount,
+      appointmentId,
+      patientId,
+    });
+
     const result = await createCmiPayment({
       amount,
       orderId,
@@ -99,10 +121,21 @@ export const POST = withAuthValidation(
         patient_id: patientId || "",
         appointment_id: appointmentId || "",
         user_id: user.id,
+        clinic_id: clinicId || "",
       },
     });
 
     if (!result.success) {
+      logger.error("CMI payment session creation failed", {
+        context: "payments/cmi/initiate",
+        alert: "payment_initiation_failure",
+        traceId,
+        clinicId,
+        userId: user.id,
+        orderId,
+        amount,
+        error: result.error,
+      });
       return apiInternalError(result.error || "Failed to create CMI payment");
     }
 

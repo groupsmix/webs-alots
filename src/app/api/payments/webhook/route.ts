@@ -30,10 +30,16 @@ import { checkWebhookSenderRateLimit } from "@/lib/webhook-rate-limit";
 const MAX_WEBHOOK_BYTES = 1 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
+  const traceId = request.headers.get("x-trace-id") ?? undefined;
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripeSecretKey) {
+    logger.error("Stripe webhook not configured", {
+      context: "payments/webhook",
+      alert: "payment_gateway_misconfigured",
+      traceId,
+    });
     return apiError("Stripe not configured", 503);
   }
 
@@ -47,20 +53,28 @@ export async function POST(request: NextRequest) {
 
     // Verify webhook signature — webhook secret MUST be configured
     if (!webhookSecret) {
+      logger.error("Stripe webhook secret not configured", {
+        context: "payments/webhook",
+        alert: "payment_gateway_misconfigured",
+        traceId,
+      });
       return apiError("Webhook signature verification not configured", 503);
     }
 
     if (!signature) {
+      logger.warn("Stripe webhook missing signature", { context: "payments/webhook", traceId });
       return apiError("Missing stripe-signature header");
     }
 
     const senderAllowed = await checkWebhookSenderRateLimit("stripe-payments", signature);
     if (!senderAllowed) {
+      logger.warn("Stripe webhook rate limit exceeded", { context: "payments/webhook", traceId });
       return apiRateLimited("Stripe webhook sender rate limit exceeded.");
     }
 
     const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);
     if (!isValid) {
+      logger.warn("Stripe webhook invalid signature", { context: "payments/webhook", traceId });
       return apiError("Invalid signature");
     }
 
@@ -71,12 +85,14 @@ export async function POST(request: NextRequest) {
       if (!result.success) {
         logger.warn("Stripe webhook event failed validation", {
           context: "payments/webhook",
+          traceId,
           error: result.error.issues,
         });
         return apiError("Invalid webhook event payload");
       }
       event = result.data;
     } catch {
+      logger.warn("Stripe webhook invalid JSON", { context: "payments/webhook", traceId });
       return apiError("Invalid JSON in webhook body");
     }
 
@@ -97,6 +113,9 @@ export async function POST(request: NextRequest) {
           } catch (tenantErr) {
             logger.error("Invalid tenant context in Stripe webhook", {
               context: "payments/webhook",
+              alert: "payment_callback_failure",
+              traceId,
+              correlationId: session.id,
               clinicId,
               error: tenantErr,
             });
@@ -122,6 +141,9 @@ export async function POST(request: NextRequest) {
                 "Stripe webhook: appointment.clinic_id does not match metadata.clinic_id",
                 {
                   context: "payments/webhook",
+                  alert: "payment_tampering",
+                  traceId,
+                  correlationId: session.id,
                   appointmentClinicId: appt.clinic_id,
                   metadataClinicId: clinicId,
                   appointmentId,
@@ -185,6 +207,19 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        if (clinicId) {
+          logger.info("Stripe payment completed", {
+            context: "payments/webhook",
+            traceId,
+            correlationId: session.id,
+            clinicId,
+            sessionId: session.id,
+            appointmentId,
+            amount: session.amount_total,
+            stripeEventId: event.id,
+          });
+        }
+
         // Payment completed — recorded in DB above
         break;
       }
@@ -204,6 +239,9 @@ export async function POST(request: NextRequest) {
           } catch (tenantErr) {
             logger.error("Invalid tenant context in Stripe webhook (failed payment)", {
               context: "payments/webhook",
+              alert: "payment_callback_failure",
+              traceId,
+              correlationId: intent.id,
               clinicId: failedClinicId,
               error: tenantErr,
             });
@@ -220,8 +258,11 @@ export async function POST(request: NextRequest) {
             .maybeSingle();
 
           if (existingFailed) {
-            logger.info(`Stripe failed payment event already processed: ${intent.id}`, {
+            logger.info("Stripe failed payment event already processed", {
               context: "payments/webhook",
+              traceId,
+              correlationId: intent.id,
+              intentId: intent.id,
             });
             break;
           }
@@ -275,6 +316,19 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        if (failedClinicId) {
+          logger.info("Stripe payment failed", {
+            context: "payments/webhook",
+            traceId,
+            correlationId: intent.id,
+            clinicId: failedClinicId,
+            intentId: intent.id,
+            appointmentId: failedAppointmentId,
+            amount: intent.amount,
+            stripeEventId: event.id,
+          });
+        }
+
         // Payment failed — recorded in DB above
         break;
       }
@@ -286,7 +340,12 @@ export async function POST(request: NextRequest) {
     return apiSuccess({ received: true });
   } catch (err) {
     // F-A93-03: Webhook processing failure is an error, not a warning
-    logger.error("Stripe webhook processing failed", { context: "payments/webhook", error: err });
+    logger.error("Stripe webhook processing failed", {
+      context: "payments/webhook",
+      alert: "payment_callback_failure",
+      traceId,
+      error: err,
+    });
     return apiInternalError("Failed to process webhook");
   }
 }

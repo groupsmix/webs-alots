@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { safeFetch } from "@/lib/fetch-wrapper";
+import { logger } from "@/lib/logger";
 import { stripeCheckoutSchema } from "@/lib/validations";
 
 /**
@@ -45,9 +46,18 @@ function validateRedirectUrl(
 export const POST = withAuthValidation(
   stripeCheckoutSchema,
   async (body, request, { user, profile }) => {
+    const traceId = request.headers.get("x-trace-id") ?? undefined;
+    const clinicId = profile.clinic_id;
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
     if (!stripeSecretKey) {
+      logger.error("Stripe checkout not configured", {
+        context: "payments/create-checkout",
+        alert: "payment_gateway_misconfigured",
+        traceId,
+        clinicId,
+        userId: user.id,
+      });
       return apiError("Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.", 503);
     }
 
@@ -62,21 +72,38 @@ export const POST = withAuthValidation(
       metadata = {},
     } = body;
 
+    logger.info("Stripe checkout initiated", {
+      context: "payments/create-checkout",
+      traceId,
+      clinicId,
+      userId: user.id,
+      appointmentId,
+      patientId,
+      amount,
+      currency,
+    });
+
     // AUDIT-09: When an appointmentId is provided, verify the amount against
     // the trusted database record to prevent client-supplied price manipulation.
     // A staff user or compromised account could otherwise create a checkout
     // session with an arbitrarily low amount for a real appointment.
-    if (appointmentId && profile.clinic_id) {
+    if (appointmentId && clinicId) {
       const { createClient: createServiceClient } = await import("@/lib/supabase-server");
       const dbClient = await createServiceClient();
       const { data: appt } = await dbClient
         .from("appointments")
         .select("id, service_id, clinic_id")
         .eq("id", appointmentId)
-        .eq("clinic_id", profile.clinic_id)
+        .eq("clinic_id", clinicId)
         .single();
 
       if (!appt) {
+        logger.warn("Stripe checkout rejected: appointment not found in clinic", {
+          context: "payments/create-checkout",
+          traceId,
+          clinicId,
+          appointmentId,
+        });
         return apiError("Appointment not found in this clinic", 404);
       }
 
@@ -86,13 +113,21 @@ export const POST = withAuthValidation(
           .from("services")
           .select("price")
           .eq("id", appt.service_id)
-          .eq("clinic_id", profile.clinic_id)
+          .eq("clinic_id", clinicId)
           .single();
 
         if (service?.price != null) {
           // Service price is stored in main currency units; amount is in centimes
           const expectedCentimes = Math.round(service.price * 100);
           if (amount < expectedCentimes) {
+            logger.warn("Stripe checkout rejected: amount below service price", {
+              context: "payments/create-checkout",
+              traceId,
+              clinicId,
+              appointmentId,
+              amount,
+              expectedCentimes,
+            });
             return apiError(
               `Payment amount (${amount}) is less than the service price (${expectedCentimes} centimes)`,
               400,
@@ -126,8 +161,8 @@ export const POST = withAuthValidation(
     if (appointmentId) params.append("metadata[appointment_id]", appointmentId);
     params.append("metadata[user_id]", user.id);
     // Always include clinic_id so the webhook handler can record the payment
-    if (profile.clinic_id) {
-      params.append("metadata[clinic_id]", profile.clinic_id);
+    if (clinicId) {
+      params.append("metadata[clinic_id]", clinicId);
     }
     for (const [key, value] of Object.entries(metadata)) {
       params.append(`metadata[${key}]`, value);
@@ -135,7 +170,7 @@ export const POST = withAuthValidation(
 
     // MEDIUM-2: Idempotency-Key prevents duplicate Checkout Sessions from
     // network retries, double-clicks, or redirect loops.
-    const idempotencyKey = `checkout_${profile.clinic_id}_${user.id}_${appointmentId ?? "none"}_${Date.now()}`;
+    const idempotencyKey = `checkout_${clinicId}_${user.id}_${appointmentId ?? "none"}_${Date.now()}`;
 
     const stripeResponse = await safeFetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
@@ -151,9 +186,30 @@ export const POST = withAuthValidation(
     const session = await stripeResponse.json();
 
     if (!stripeResponse.ok) {
-      void session;
+      logger.error("Stripe checkout session creation failed", {
+        context: "payments/create-checkout",
+        alert: "payment_initiation_failure",
+        traceId,
+        clinicId,
+        userId: user.id,
+        appointmentId,
+        amount,
+        currency,
+        error: session,
+      });
       return apiError("Failed to create checkout session");
     }
+
+    logger.info("Stripe checkout session created", {
+      context: "payments/create-checkout",
+      traceId,
+      clinicId,
+      userId: user.id,
+      appointmentId,
+      amount,
+      currency,
+      sessionId: session.id,
+    });
 
     return apiSuccess({
       sessionId: session.id,

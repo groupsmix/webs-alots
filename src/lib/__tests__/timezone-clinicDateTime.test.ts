@@ -6,11 +6,12 @@ describe("clinicDateTime", () => {
     const dt = clinicDateTime("2026-06-15", "10:00", "Africa/Casablanca");
     // The resulting Date should represent 10:00 in Africa/Casablanca
     // We verify by formatting back to the timezone and checking
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Casablanca",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      hourCycle: "h23",
     }).formatToParts(dt);
     const hour = parts.find((p) => p.type === "hour")?.value;
     const minute = parts.find((p) => p.type === "minute")?.value;
@@ -20,11 +21,12 @@ describe("clinicDateTime", () => {
 
   it("accepts an explicit timezone parameter", () => {
     const dt = clinicDateTime("2026-06-15", "14:30", "Europe/Paris");
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Europe/Paris",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      hourCycle: "h23",
     }).formatToParts(dt);
     const hour = parts.find((p) => p.type === "hour")?.value;
     const minute = parts.find((p) => p.type === "minute")?.value;
@@ -34,11 +36,12 @@ describe("clinicDateTime", () => {
 
   it("handles midnight correctly", () => {
     const dt = clinicDateTime("2026-01-15", "00:00", "Africa/Casablanca");
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Casablanca",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      hourCycle: "h23",
     }).formatToParts(dt);
     const hour = parts.find((p) => p.type === "hour")?.value;
     expect(hour).toBe("00");
@@ -46,11 +49,12 @@ describe("clinicDateTime", () => {
 
   it("handles end of day (23:59)", () => {
     const dt = clinicDateTime("2026-01-15", "23:59", "Africa/Casablanca");
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Casablanca",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      hourCycle: "h23",
     }).formatToParts(dt);
     const hour = parts.find((p) => p.type === "hour")?.value;
     const minute = parts.find((p) => p.type === "minute")?.value;
@@ -60,7 +64,7 @@ describe("clinicDateTime", () => {
 
   it("preserves the correct date (no date drift)", () => {
     const dt = clinicDateTime("2026-03-15", "09:00", "Africa/Casablanca");
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Casablanca",
       year: "numeric",
       month: "2-digit",

@@ -94,6 +94,7 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
         bodyParameters: [patient.name, slotLabel, claimUrl, "2 heures"],
         phoneNumberId: clinic.whatsapp_phone_id,
         accessToken: creds.whatsapp_access_token,
+        clinicId: params.clinicId,
       });
     } else {
       logger.warn("promoteWaitlist: clinic has no WhatsApp credentials configured", {

@@ -83,6 +83,7 @@ export function formatDisplayDate(
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
+        hourCycle: "h23",
       }).format(date);
 
     case "datetime":
@@ -93,6 +94,7 @@ export function formatDisplayDate(
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
+        hourCycle: "h23",
       }).format(date);
 
     case "relative":

@@ -12,9 +12,6 @@ import {
   MessageSquare,
   Menu,
   X,
-  Heart,
-  ClipboardList,
-  Camera,
   CreditCard as CreditCardIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +22,7 @@ import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { useLocale } from "@/components/locale-switcher";
+import { RouteScopeGate } from "@/components/route-scope-gate";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
@@ -48,9 +46,6 @@ const navItems: NavItem[] = [
   { href: "/patient/family", labelKey: "patientNav.family", icon: Users },
   { href: "/patient/notifications", labelKey: "patientNav.notifications", icon: Bell },
   { href: "/patient/feedback", labelKey: "patientNav.feedback", icon: MessageSquare },
-  { href: "/patient/treatment-plan", labelKey: "patientNav.treatmentPlan", icon: ClipboardList },
-  { href: "/patient/tooth-map", labelKey: "patientNav.toothMap", icon: Heart },
-  { href: "/patient/before-after", labelKey: "patientNav.beforeAfter", icon: Camera },
   { href: "/patient/payment-plan", labelKey: "patientNav.paymentPlan", icon: CreditCardIcon },
 ];
 
@@ -173,7 +168,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
 
         <main id="main-content" className="flex-1 min-w-0 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
-          {children}
+          <RouteScopeGate>{children}</RouteScopeGate>
         </main>
       </div>
 

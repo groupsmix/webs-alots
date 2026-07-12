@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { safeText } from "./primitives";
 
-export const AI_AGENT_TYPES = ["marketing", "support", "reminder"] as const;
+const AI_AGENT_TYPES = ["marketing", "support", "reminder"] as const;
 export type AIAgentType = (typeof AI_AGENT_TYPES)[number];
 
 export const aiTeamChatSchema = z.object({
@@ -35,7 +35,7 @@ export const aiTeamGenerateSchema = z.object({
 
 // ── Phase C1: New task state machine schemas ──
 
-export const TASK_STATUS_VALUES = [
+const TASK_STATUS_VALUES = [
   "backlog",
   "in_progress",
   "review",
