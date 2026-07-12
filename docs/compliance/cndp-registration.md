@@ -20,7 +20,7 @@ Healthcare platforms processing PHI require an **autorisation préalable** (prio
    - Formulaire de demande d'autorisation (available at https://www.cndp.ma/)
    - Description of data processing activities (see `docs/compliance/data-flow-map.md`)
    - Data Protection Impact Assessment (see `docs/compliance/dpia.md`)
-   - Security measures documentation (see `docs/FULL_AUDIT_REPORT.md`)
+   - Security measures documentation (see `docs/archive/audit/FULL_AUDIT_REPORT.md`)
    - Data retention policy (see `docs/compliance/retention.md`)
    - Data processing agreements with sub-processors (see `docs/compliance/dpa-template.md`)
 

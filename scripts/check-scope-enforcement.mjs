@@ -10,7 +10,7 @@
  * The script intentionally uses static/textual checks and no TypeScript imports so it
  * can run in minimal CI environments before the full app is built.
  *
- * @see docs/adr/0013-operations-first-scope.md
+ * @see docs/archive/adr/0013-operations-first-scope.md
  * @see src/lib/config/verticals.ts — VERTICAL_SCOPES / ALL_GATED_* constants
  */
 
@@ -271,7 +271,7 @@ if (failures > 0) {
   console.error(
     "\nFix: restore ADR-0013 scope modeling/gates or add explicit @scope-gate-exempt notes.",
   );
-  console.error("See: docs/adr/0013-operations-first-scope.md\n");
+  console.error("See: docs/archive/adr/0013-operations-first-scope.md\n");
   process.exit(1);
 }
 

@@ -10,16 +10,11 @@ If you are new to the repo, start with the canonical documents below instead of 
 
 - `docs/architecture.md` — canonical architecture overview
 - `docs/architecture/` — focused architecture maps and guardrails
-- `docs/adr/` — architectural decisions and rationale
 
 ### Current audit / quality status
 
-- `docs/audit/README.md` — how to read the audit folder
-- `docs/audit/CURRENT-STATUS.md` — stable entry point for current audit status
-- `docs/audit/executive-summary-2026-06.md` — concise leadership summary
-- `docs/audit/repo-grounded-operational-audit-2026-06.md` — detailed repo-grounded audit
-- `docs/audit/baseline.md` — frozen historical baseline for cleanup comparisons
-- `docs/audit/remediation-tracker-2026-06.md` — tracked remediation work
+- `docs/archive/adr/` — architectural decisions and rationale (archived)
+- `docs/archive/audit/` — audit summaries, trackers, baselines, and archived reports
 
 ### Security, compliance, and operations
 
@@ -44,11 +39,11 @@ If you are new to the repo, start with the canonical documents below instead of 
 
 | Path                          | Purpose                                                    |
 | ----------------------------- | ---------------------------------------------------------- |
-| `docs/adr/`                   | Architecture decision records                              |
 | `docs/ai/`                    | AI-specific reviews and notes                              |
 | `docs/architecture/`          | Living architecture reference docs                         |
 | `docs/architecture-analysis/` | Historical one-off architecture analyses                   |
-| `docs/audit/`                 | Audit summaries, trackers, baselines, and archived reports |
+| `docs/archive/adr/`           | Architecture decision records (archived)                   |
+| `docs/archive/audit/`         | Audit summaries, trackers, baselines, and archived reports |
 | `docs/chaos-experiments/`     | Chaos and resilience exercise docs                         |
 | `docs/comms-templates/`       | Incident/customer/regulator communication templates        |
 | `docs/compliance/`            | Compliance and regulatory documentation                    |
@@ -60,5 +55,5 @@ If you are new to the repo, start with the canonical documents below instead of 
 ## Reading Rules
 
 1. Prefer **living docs** over point-in-time snapshots.
-2. Treat `docs/audit/archive/` and `docs/architecture-analysis/` as **historical context**, not the current source of truth.
-3. For current repo health, trust recent CI/build/test results and the canonical audit docs above rather than older “production-ready” declarations.
+2. Treat `docs/archive/adr/` and `docs/archive/audit/` as **historical context**, not the current source of truth.
+3. For current repo health, trust recent CI/build/test results and the canonical architecture docs above rather than older “production-ready” declarations.

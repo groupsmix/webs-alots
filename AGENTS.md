@@ -134,7 +134,7 @@ return apiError("Not found", 404, "NOT_FOUND");
 
 ## Audit Baseline
 
-The pre-existing quality baseline is documented in [`docs/audit/baseline.md`](docs/audit/baseline.md).
+The pre-existing quality baseline is documented in [`docs/archive/audit/baseline.md`](docs/archive/audit/baseline.md).
 Any cleanup PR should reference this file to compare before/after metrics.
 
 ## CI Pipeline
