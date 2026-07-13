@@ -77,10 +77,17 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-      <div className="absolute inset-0 bg-black/60" onClick={handleDismiss} />
-      <Card className="relative z-10 w-full max-w-lg mx-4 shadow-2xl">
+    // Non-blocking floating panel: anchored to the bottom (centered on mobile,
+    // bottom-end on larger screens) with no full-screen backdrop, so the
+    // dashboard behind it stays visible and interactive. `pointer-events-none`
+    // on the wrapper lets clicks pass through everywhere except the card, which
+    // re-enables them via `pointer-events-auto`.
+    <div
+      role="dialog"
+      aria-label="Welcome to Your Clinic"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-4 sm:inset-x-auto sm:end-4 sm:justify-end"
+    >
+      <Card className="pointer-events-auto relative z-10 w-full max-w-lg shadow-2xl border-primary/20">
         <CardContent className="p-0">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-primary/5">

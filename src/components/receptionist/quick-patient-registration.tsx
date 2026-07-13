@@ -5,19 +5,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/data/client";
 import { isMinorByDob, MINOR_AGE_THRESHOLD } from "@/lib/minors";
-import type { TablesInsert } from "@/lib/types/database";
 
 interface QuickPatientRegistrationProps {
-  clinicId: string;
+  /**
+   * Kept for call-site gating (the dashboard only renders this once a clinic
+   * context exists); the create request derives the clinic from the session.
+   */
+  clinicId?: string;
   onRegistered?: (patient: { id: string; name: string; phone: string }) => void;
 }
 
-export function QuickPatientRegistration({
-  clinicId,
-  onRegistered,
-}: QuickPatientRegistrationProps) {
+export function QuickPatientRegistration({ onRegistered }: QuickPatientRegistrationProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -43,63 +42,39 @@ export function QuickPatientRegistration({
     setError("");
 
     try {
-      const supabase = createClient();
+      // Front-desk patient creation goes through an authenticated API route:
+      // direct client inserts into `users` are rejected by RLS
+      // (`users_insert_self_only`) for staff-created, auth-less patients.
+      const res = await fetch("/api/receptionist/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          dateOfBirth: dateOfBirth || undefined,
+        }),
+      });
 
-      // Check if patient already exists with this phone number
-      const { data: existing } = await supabase
-        .from("users")
-        .select("id, name, phone")
-        .eq("phone", phone.trim())
-        .eq("clinic_id", clinicId)
-        .eq("role", "patient")
-        .limit(1)
-        .single();
+      const json = (await res.json().catch(() => null)) as {
+        data?: { patient?: { id: string; name: string; phone: string } };
+        error?: string;
+      } | null;
 
-      if (existing) {
-        onRegistered?.({ id: existing.id, name: existing.name, phone: existing.phone ?? "" });
-        setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-          setName("");
-          setPhone("");
-          setDateOfBirth("");
-        }, 2000);
+      if (!res.ok || !json?.data?.patient) {
+        setError(json?.error ?? "Failed to register patient. Please try again.");
         setSubmitting(false);
         return;
       }
 
-      // Create new patient. date_of_birth is a real users column but is not in
-      // the curated DB types, so build a loose payload and cast (same pattern as
-      // the /api/v1/patients route).
-      const insertPayload: Record<string, unknown> = {
-        name: name.trim(),
-        phone: phone.trim(),
-        date_of_birth: dateOfBirth || null,
-        clinic_id: clinicId,
-        role: "patient",
-      };
-      const { data: newPatient, error: insertError } = await supabase
-        .from("users")
-        .insert(insertPayload as TablesInsert<"users">)
-        .select("id, name, phone")
-        .single();
-
-      if (insertError) {
-        setError("Failed to register patient. Please try again.");
-        setSubmitting(false);
-        return;
-      }
-
-      if (newPatient) {
-        onRegistered?.({ id: newPatient.id, name: newPatient.name, phone: newPatient.phone ?? "" });
-        setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-          setName("");
-          setPhone("");
-          setDateOfBirth("");
-        }, 2000);
-      }
+      const patient = json.data.patient;
+      onRegistered?.({ id: patient.id, name: patient.name, phone: patient.phone });
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        setName("");
+        setPhone("");
+        setDateOfBirth("");
+      }, 2000);
     } catch {
       setError("An error occurred. Please try again.");
     } finally {

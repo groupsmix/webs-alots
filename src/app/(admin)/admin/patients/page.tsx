@@ -14,8 +14,10 @@ import {
   Ban,
   CheckCircle,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,7 @@ import {
   type PrescriptionView,
 } from "@/lib/data/client";
 import { exportPatients } from "@/lib/export-data";
+import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 
 type Patient = PatientView;
@@ -63,6 +66,7 @@ export default function AdminPatientDatabasePage() {
   const [error, setError] = useState<Error | null>(null);
 
   const { addToast } = useToast();
+  const [locale] = useLocale();
   const [editing, setEditing] = useState<Patient | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Patient | null>(null);
   const [saving, setSaving] = useState(false);
@@ -70,6 +74,14 @@ export default function AdminPatientDatabasePage() {
   const [formPhone, setFormPhone] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formInsurance, setFormInsurance] = useState("");
+
+  const [adding, setAdding] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addPhone, setAddPhone] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addDob, setAddDob] = useState("");
+  const [addError, setAddError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -204,6 +216,70 @@ export default function AdminPatientDatabasePage() {
     }
   };
 
+  const resetAddForm = () => {
+    setAddName("");
+    setAddPhone("");
+    setAddEmail("");
+    setAddDob("");
+    setAddError("");
+  };
+
+  const handleCreate = async () => {
+    if (!addName.trim() || !addPhone.trim()) return;
+    setCreating(true);
+    setAddError("");
+    try {
+      const res = await fetch("/api/receptionist/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: addName.trim(),
+          phone: addPhone.trim(),
+          email: addEmail.trim() || undefined,
+          dateOfBirth: addDob || undefined,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        data?: { patient?: { id: string; name: string; phone: string }; existing?: boolean };
+        error?: string;
+      } | null;
+
+      if (!res.ok || !json?.data?.patient) {
+        setAddError(json?.error ?? "Failed to add patient. Please try again.");
+        return;
+      }
+
+      const created = json.data.patient;
+      if (json.data.existing) {
+        addToast("A patient with this phone already exists", "info");
+      } else {
+        setPatientsList((prev) => {
+          if (prev.some((p) => p.id === created.id)) return prev;
+          const newPatient: Patient = {
+            id: created.id,
+            name: created.name,
+            phone: created.phone,
+            email: addEmail.trim(),
+            age: 0,
+            gender: "M",
+            dateOfBirth: addDob,
+            registeredAt: new Date().toISOString().slice(0, 10),
+            active: true,
+          };
+          return [newPatient, ...prev];
+        });
+        addToast("Patient added", "success");
+      }
+      setAdding(false);
+      resetAddForm();
+    } catch (err) {
+      logger.warn("Failed to add patient", { context: "admin/patients", error: err });
+      setAddError("An error occurred. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const toggleActive = async (patient: Patient) => {
     const next = !patient.active;
     setPatientsList((prev) => prev.map((p) => (p.id === patient.id ? { ...p, active: next } : p)));
@@ -242,10 +318,22 @@ export default function AdminPatientDatabasePage() {
           <h1 className="text-2xl font-bold">Patient Database</h1>
           <Badge variant="outline">{patients.length} patients</Badge>
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportPatients(filtered)}>
-          <Download className="h-4 w-4 mr-1" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportPatients(filtered)}>
+            <Download className="h-4 w-4 mr-1" />
+            Export CSV
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              resetAddForm();
+              setAdding(true);
+            }}
+          >
+            <UserPlus className="h-4 w-4 mr-1" />
+            {t(locale, "admin.patients.add")}
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-6">
@@ -554,6 +642,89 @@ export default function AdminPatientDatabasePage() {
             <Button onClick={handleSaveEdit} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Patient Dialog */}
+      <Dialog
+        open={adding}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAdding(false);
+            resetAddForm();
+          }
+        }}
+      >
+        <DialogContent
+          onClose={() => {
+            setAdding(false);
+            resetAddForm();
+          }}
+          className="max-w-md"
+        >
+          <DialogHeader>
+            <DialogTitle>{t(locale, "admin.patients.add")}</DialogTitle>
+            <DialogDescription>{t(locale, "admin.patients.addDescription")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                placeholder="Patient name"
+                disabled={creating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input
+                value={addPhone}
+                onChange={(e) => setAddPhone(e.target.value)}
+                placeholder="+212 6XX XX XX XX"
+                disabled={creating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                disabled={creating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Date of Birth</Label>
+              <Input
+                type="date"
+                value={addDob}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setAddDob(e.target.value)}
+                disabled={creating}
+              />
+            </div>
+            {addError && <p className="text-sm text-red-600">{addError}</p>}
+          </div>
+          <DialogFooter className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAdding(false);
+                resetAddForm();
+              }}
+              disabled={creating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={creating || !addName.trim() || !addPhone.trim()}
+            >
+              {creating && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {t(locale, "admin.patients.add")}
             </Button>
           </DialogFooter>
         </DialogContent>

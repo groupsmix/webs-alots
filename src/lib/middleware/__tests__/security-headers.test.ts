@@ -11,7 +11,7 @@
  * guard for the same reason — see `src/middleware.ts:115`.
  */
 import { NextResponse } from "next/server";
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   withSecurityHeaders,
   applyAllSecurityHeaders,
@@ -64,5 +64,31 @@ describe("applyAllSecurityHeaders — CSP guard", () => {
 
     expect(response.headers.has("Content-Security-Policy")).toBe(false);
     expect(response.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+  });
+});
+
+describe("buildCspHeaderValues — Supabase connect-src host", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function connectSrc(csp: string): string {
+    return (csp.split(";").find((d) => d.trim().startsWith("connect-src")) ?? "").trim();
+  }
+
+  it("includes the explicit non-default port for a local Supabase URL", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+    const { enforce } = buildCspHeaderValues("nonce");
+
+    expect(connectSrc(enforce)).toContain("127.0.0.1:54321");
+    expect(connectSrc(enforce)).toContain("wss://127.0.0.1:54321");
+  });
+
+  it("emits a bare host (no :443) for a production https Supabase URL", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcdefgh.supabase.co");
+    const { enforce } = buildCspHeaderValues("nonce");
+
+    expect(connectSrc(enforce)).toContain("abcdefgh.supabase.co");
+    expect(connectSrc(enforce)).not.toContain("abcdefgh.supabase.co:443");
   });
 });
