@@ -32,10 +32,14 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { tierColors, type SubscriptionPlan, type SystemType } from "@/lib/config/pricing";
-import { fetchClinicSubscription, type ClinicSubscriptionView } from "@/lib/data/client";
+import {
+  fetchActivePricingTiers,
+  fetchClinicSubscription,
+  type ClinicSubscriptionView,
+} from "@/lib/data/client";
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
-import { fetchPricingTiers, type PricingTierRow } from "@/lib/super-admin-actions";
+import type { PricingTierRow } from "@/lib/super-admin/types";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 async function loadBillingData(clinicId: string): Promise<{
@@ -46,7 +50,7 @@ async function loadBillingData(clinicId: string): Promise<{
   try {
     const [sub, tiers] = await Promise.all([
       fetchClinicSubscription(clinicId),
-      fetchPricingTiers(),
+      fetchActivePricingTiers(),
     ]);
     return { currentSub: sub, allTiers: tiers, error: null };
   } catch (err) {
