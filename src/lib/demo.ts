@@ -84,6 +84,7 @@ const DEMO_ALLOWED_PATHS = new Set([
  * the production environment — it exists for QA and pilot walkthroughs.
  */
 function demoMutationsAllowed(): boolean {
+  // nosemgrep: semgrep.env-access — operator-tunable QA/pilot escape hatch; secure-by-default (any value but "true" keeps the demo tenant read-only)
   return process.env.DEMO_ALLOW_MUTATIONS === "true";
 }
 

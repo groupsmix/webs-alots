@@ -639,6 +639,7 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
  * weakening the secure default when the override is absent or malformed.
  */
 function envPositiveInt(name: string, fallback: number): number {
+  // nosemgrep: semgrep.env-access — operator-tunable rate-limit override; falls back to the secure default when unset/malformed
   const raw = process.env[name];
   if (!raw) return fallback;
   const parsed = Number(raw);

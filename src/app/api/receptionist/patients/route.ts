@@ -99,6 +99,7 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     };
 
     const { data: created, error } = await supabase
+      // nosemgrep: semgrep.tenant-scoping — insert row carries clinic_id (from requireTenant()) in insertPayload; .eq() is not applicable to inserts
       .from("users")
       .insert(insertPayload as TablesInsert<"users">)
       .select("id, name, phone")
