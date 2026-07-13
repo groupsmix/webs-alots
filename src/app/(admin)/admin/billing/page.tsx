@@ -31,8 +31,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { tierColors, type SubscriptionPlan } from "@/lib/config/pricing";
+import { tierColors, type SubscriptionPlan, type SystemType } from "@/lib/config/pricing";
 import { fetchClinicSubscription, type ClinicSubscriptionView } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { fetchPricingTiers, type PricingTierRow } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -103,9 +104,74 @@ function BillingContent() {
   }
 
   if (!currentSub) {
+    const systemType = (tenant?.clinicType ?? "doctor") as SystemType;
+    const availableTiers = allTiers.filter((tier) => tier.slug !== "enterprise");
     return (
-      <div className="text-center py-20 text-muted-foreground">
-        Aucun abonnement trouvé pour cette clinique.
+      <div>
+        <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Billing" }]} />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">{t(locale, "admin.billing.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t(locale, "admin.billing.gerezVotreAbonnementConsultez")}
+          </p>
+        </div>
+
+        <Card className="border-primary/20">
+          <CardContent className="py-10 px-6 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <CreditCard className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-lg font-semibold">
+              {t(locale, "admin.billing.noActiveSubscription")}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+              {t(locale, "admin.billing.noSubscriptionDescription")}
+            </p>
+          </CardContent>
+        </Card>
+
+        {availableTiers.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ArrowUpRight className="h-4 w-4" />
+                {t(locale, "admin.billing.availablePlans")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {availableTiers.map((tier) => {
+                  const price = tier.pricing[systemType]?.monthly ?? 0;
+                  return (
+                    <div
+                      key={tier.id}
+                      className={`rounded-lg border p-4 ${tier.popular ? "border-primary bg-primary/5" : ""}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {tierIcon(tier.slug)}
+                        <p className="text-sm font-medium">{tier.name}</p>
+                        {tier.popular && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Populaire
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-2 text-lg font-bold">
+                        {formatCurrency(
+                          price,
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "MAD",
+                        )}
+                        <span className="text-xs font-normal text-muted-foreground"> / mois</span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">{tier.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }

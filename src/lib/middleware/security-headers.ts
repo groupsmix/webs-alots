@@ -57,14 +57,22 @@ const PERMISSIONS_POLICY = [
 const CSP_REPORT_URI = process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
 
 /**
- * R-08: Derive the project-specific Supabase hostname from
+ * R-08: Derive the project-specific Supabase host from
  * NEXT_PUBLIC_SUPABASE_URL instead of allowing *.supabase.co.
+ *
+ * Uses `URL.host` (which includes an explicit non-default port) rather than
+ * `URL.hostname`. In production Supabase is reached over https on the default
+ * :443 port, so `host === hostname` and the emitted CSP is unchanged. For
+ * self-hosted / local Supabase served on a non-standard port (e.g.
+ * `http://127.0.0.1:54321`), dropping the port would emit a `connect-src` of
+ * `127.0.0.1` that does not match the `:54321` origin, blocking the browser
+ * Supabase client. Keeping the port makes the directive correct in both cases.
  */
 function getSupabaseHost(): string {
   const url = getSupabaseUrl();
   if (url) {
     try {
-      return new URL(url).hostname;
+      return new URL(url).host;
     } catch {
       // fall through to default
     }
