@@ -138,6 +138,7 @@ export async function fetchPatients(clinicId: string): Promise<PatientView[]> {
       ["role", "patient"],
     ],
     order: ["name", { ascending: true }],
+    tenantClinicId: clinicId,
   });
   return rows.map(mapPatient);
 }

@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  LayoutDashboard,
   Globe,
   Megaphone,
   Settings,
@@ -40,7 +41,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/admin/dashboard", label: "admin.nav.calendar", icon: Calendar },
+  { href: "/admin/dashboard", label: "admin.nav.dashboard", icon: LayoutDashboard },
   { href: "/admin/patients", label: "admin.nav.patients", icon: Users },
   { href: "/admin/billing", label: "admin.nav.billing", icon: CreditCard },
   { href: "/admin/website", label: "admin.nav.website", icon: Globe },

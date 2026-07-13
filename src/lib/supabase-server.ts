@@ -253,6 +253,7 @@ export type AdminAuditLabel =
   | "seed-guard"
   | "rag-chat"
   | "ai-embed"
+  | "patient-registration"
   | "ai-memory"
   | "ai-memory-consolidate"
   | "ai-team-tasks"
