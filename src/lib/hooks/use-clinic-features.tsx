@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import type { FeaturesConfig, ClinicFeatureKey } from "@/lib/features";
 import { isFeatureEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-client";
 
 /**
  * Specialty to feature mapping
@@ -229,6 +230,21 @@ export function ClinicFeaturesProvider({
 
     async function fetchConfig() {
       try {
+        // `/api/clinic-features` requires authentication. On public pages
+        // (e.g. /login on a clinic subdomain) there is no session, so skip the
+        // fetch entirely to avoid a guaranteed 401 and noisy warnings. Gated
+        // features stay disabled until an authenticated dashboard loads.
+        const {
+          data: { session },
+        } = await createClient().auth.getSession();
+        if (!session) {
+          if (!cancelled) {
+            setConfig(null);
+            setLoaded(true);
+          }
+          return;
+        }
+
         const res = await fetch(
           `/api/clinic-features?type_key=${encodeURIComponent(clinicTypeKey!)}`,
         );
