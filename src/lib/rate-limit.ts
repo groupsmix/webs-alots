@@ -633,15 +633,37 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
 }
 
 /**
+ * Read a positive-integer override from an environment variable, falling back
+ * to `fallback` when the variable is unset, non-numeric, or non-positive.
+ * Used to make security-sensitive rate limits tunable per environment without
+ * weakening the secure default when the override is absent or malformed.
+ */
+function envPositiveInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.floor(parsed);
+}
+
+/**
  * Pre-configured limiters for abuse-prone endpoints.
  * Each limiter is a singleton — the Map persists across requests
  * within the same Worker isolate.
  */
 
-/** Login attempts: 5 req / 60s per key (applied per-email and per-IP in handler, per-IP in middleware) */
+/**
+ * Login attempts: 5 req / 60s per key by default (applied per-email and per-IP
+ * in handler, per-IP in middleware).
+ *
+ * The window and max are overridable via `LOGIN_RATE_LIMIT_WINDOW_MS` and
+ * `LOGIN_RATE_LIMIT_MAX` so QA/pilot environments can relax the limit for
+ * scripted walkthroughs. Production keeps the strict 5/60s brute-force
+ * protection unless an operator deliberately overrides it.
+ */
 export const loginLimiter = createRateLimiter({
-  windowMs: 60_000,
-  max: 5,
+  windowMs: envPositiveInt("LOGIN_RATE_LIMIT_WINDOW_MS", 60_000),
+  max: envPositiveInt("LOGIN_RATE_LIMIT_MAX", 5),
   failClosed: true,
 });
 
