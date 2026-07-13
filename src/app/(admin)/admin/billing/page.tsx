@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { Suspense, use, useState } from "react";
+import { Suspense, use, useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -31,21 +31,28 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { tierColors, type SubscriptionPlan } from "@/lib/config/pricing";
-import { fetchClinicSubscription, type ClinicSubscriptionView } from "@/lib/data/client";
+import { tierColors, type SubscriptionPlan, type SystemType } from "@/lib/config/pricing";
+import {
+  fetchActivePricingTiers,
+  fetchClinicSubscription,
+  type ClinicSubscriptionView,
+} from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
-import { fetchPricingTiers, type PricingTierRow } from "@/lib/super-admin-actions";
+import type { PricingTierRow } from "@/lib/super-admin/types";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-async function loadBillingData(clinicId: string): Promise<{
+interface BillingData {
   currentSub: ClinicSubscriptionView | null;
   allTiers: PricingTierRow[];
   error: string | null;
-}> {
+}
+
+async function loadBillingData(clinicId: string): Promise<BillingData> {
   try {
     const [sub, tiers] = await Promise.all([
       fetchClinicSubscription(clinicId),
-      fetchPricingTiers(),
+      fetchActivePricingTiers(),
     ]);
     return { currentSub: sub, allTiers: tiers, error: null };
   } catch (err) {
@@ -54,12 +61,10 @@ async function loadBillingData(clinicId: string): Promise<{
   }
 }
 
-function BillingContent() {
+function BillingContent({ dataPromise }: { dataPromise: Promise<BillingData> }) {
   const [locale] = useLocale();
   const tenant = useTenant();
-  const clinicId = tenant?.clinicId ?? "";
-  const [promise] = useState(() => loadBillingData(clinicId));
-  const result = use(promise);
+  const result = use(dataPromise);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [selectedUpgrade, setSelectedUpgrade] = useState<SubscriptionPlan | null>(null);
 
@@ -103,9 +108,74 @@ function BillingContent() {
   }
 
   if (!currentSub) {
+    const systemType = (tenant?.clinicType ?? "doctor") as SystemType;
+    const availableTiers = allTiers.filter((tier) => tier.slug !== "enterprise");
     return (
-      <div className="text-center py-20 text-muted-foreground">
-        Aucun abonnement trouvé pour cette clinique.
+      <div>
+        <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Billing" }]} />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">{t(locale, "admin.billing.title")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t(locale, "admin.billing.gerezVotreAbonnementConsultez")}
+          </p>
+        </div>
+
+        <Card className="border-primary/20">
+          <CardContent className="py-10 px-6 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <CreditCard className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-lg font-semibold">
+              {t(locale, "admin.billing.noActiveSubscription")}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+              {t(locale, "admin.billing.noSubscriptionDescription")}
+            </p>
+          </CardContent>
+        </Card>
+
+        {availableTiers.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ArrowUpRight className="h-4 w-4" />
+                {t(locale, "admin.billing.availablePlans")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {availableTiers.map((tier) => {
+                  const price = tier.pricing[systemType]?.monthly ?? 0;
+                  return (
+                    <div
+                      key={tier.id}
+                      className={`rounded-lg border p-4 ${tier.popular ? "border-primary bg-primary/5" : ""}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {tierIcon(tier.slug)}
+                        <p className="text-sm font-medium">{tier.name}</p>
+                        {tier.popular && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Populaire
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-2 text-lg font-bold">
+                        {formatCurrency(
+                          price,
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "MAD",
+                        )}
+                        <span className="text-xs font-normal text-muted-foreground"> / mois</span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">{tier.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
@@ -476,16 +546,27 @@ function BillingContent() {
   );
 }
 
-export default function ClientBillingPage() {
+function BillingLoader() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      }
-    >
-      <BillingContent />
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+export default function ClientBillingPage() {
+  const tenant = useTenant();
+  const clinicId = tenant?.clinicId ?? "";
+  // Create the data promise in this non-suspending parent (not inside
+  // BillingContent). A promise created inside the suspending component would be
+  // re-created on every suspense retry, causing an infinite fetch loop.
+  const dataPromise = useMemo(() => (clinicId ? loadBillingData(clinicId) : null), [clinicId]);
+
+  if (!dataPromise) return <BillingLoader />;
+
+  return (
+    <Suspense fallback={<BillingLoader />}>
+      <BillingContent dataPromise={dataPromise} />
     </Suspense>
   );
 }

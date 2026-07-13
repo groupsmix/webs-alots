@@ -75,6 +75,19 @@ const DEMO_ALLOWED_PATHS = new Set([
 ]);
 
 /**
+ * QA/pilot escape hatch: when `DEMO_ALLOW_MUTATIONS=true`, destructive
+ * requests on the demo tenant are permitted so the demo can be exercised
+ * end-to-end (walk-in registration, branding changes, etc.).
+ *
+ * Secure by default: any value other than the exact string "true" (including
+ * unset) keeps the demo tenant read-only. This flag must never be enabled in
+ * the production environment — it exists for QA and pilot walkthroughs.
+ */
+function demoMutationsAllowed(): boolean {
+  return process.env.DEMO_ALLOW_MUTATIONS === "true";
+}
+
+/**
  * Check if a request should be blocked in demo mode.
  * Returns true if the request is a destructive action on the demo tenant.
  */
@@ -84,6 +97,7 @@ export function shouldBlockDemoRequest(
   clinicId: string | null | undefined,
 ): boolean {
   if (!isDemoClinic(clinicId)) return false;
+  if (demoMutationsAllowed()) return false;
   if (!DESTRUCTIVE_METHODS.has(method.toUpperCase())) return false;
 
   // Allow certain paths through even for demo

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import type { FeaturesConfig, ClinicFeatureKey } from "@/lib/features";
-import { isFeatureEnabled } from "@/lib/features";
+import { isFeatureEnabled, mergeFeaturesConfig } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
 
@@ -248,6 +248,18 @@ export function ClinicFeaturesProvider({
         const res = await fetch(
           `/api/clinic-features?type_key=${encodeURIComponent(clinicTypeKey!)}`,
         );
+        if (res.status === 404) {
+          // The clinic type key has no per-type row in `clinic_types` (e.g. a
+          // legacy clinic identified only by the coarse `type` column). Apply
+          // the Lane-A defaults instead of disabling every feature: operational
+          // modules (appointments, website) work while clinical/PHI modules
+          // stay off by default. This is fail-safe, not fail-open.
+          if (!cancelled) {
+            setConfig(mergeFeaturesConfig(null));
+            setLoaded(true);
+          }
+          return;
+        }
         if (!res.ok) throw new Error("fetch failed");
         const data = (await res.json()) as { features_config: FeaturesConfig };
         if (!cancelled) {

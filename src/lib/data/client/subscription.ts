@@ -1,6 +1,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase-client";
+import { mapPricingTierRow } from "@/lib/super-admin/catalog-helpers";
+import type { PricingTierRow } from "@/lib/super-admin/types";
 import { getLocalDateStr } from "@/lib/utils";
 
 // Clinic Subscription (for admin billing page)
@@ -53,6 +55,26 @@ const TIER_NAMES: Record<string, string> = {
   enterprise: "SaaS Mensuel",
 };
 
+/**
+ * Fetch active platform pricing tiers using the caller's tenant-scoped session.
+ *
+ * Unlike the super-admin `fetchPricingTiers` action (which requires the
+ * `super_admin` role), this reads the publicly-selectable active tiers via the
+ * `pricing_tiers_select` RLS policy, so a `clinic_admin` can view available
+ * plans on the billing page without being redirected.
+ */
+export async function fetchActivePricingTiers(): Promise<PricingTierRow[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("pricing_tiers")
+    .select("id, slug, name, description, is_popular, pricing, features, limits, created_at")
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+
+  return data.map(mapPricingTierRow);
+}
+
 export async function fetchClinicSubscription(
   clinicId: string,
 ): Promise<ClinicSubscriptionView | null> {
@@ -75,7 +97,7 @@ export async function fetchClinicSubscription(
     .from("pricing_tiers")
     .select("id, slug, name, description, features, limits, pricing")
     .eq("slug", SubscriptionPlan)
-    .single();
+    .maybeSingle();
 
   // Fetch recent payments as invoices
   const { data: paymentsData } = await supabase
