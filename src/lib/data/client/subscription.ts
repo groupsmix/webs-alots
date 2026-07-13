@@ -97,7 +97,7 @@ export async function fetchClinicSubscription(
     .from("pricing_tiers")
     .select("id, slug, name, description, features, limits, pricing")
     .eq("slug", SubscriptionPlan)
-    .single();
+    .maybeSingle();
 
   // Fetch recent payments as invoices
   const { data: paymentsData } = await supabase

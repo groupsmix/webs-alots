@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { Suspense, use, useState } from "react";
+import { Suspense, use, useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -42,11 +42,13 @@ import { logger } from "@/lib/logger";
 import type { PricingTierRow } from "@/lib/super-admin/types";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-async function loadBillingData(clinicId: string): Promise<{
+interface BillingData {
   currentSub: ClinicSubscriptionView | null;
   allTiers: PricingTierRow[];
   error: string | null;
-}> {
+}
+
+async function loadBillingData(clinicId: string): Promise<BillingData> {
   try {
     const [sub, tiers] = await Promise.all([
       fetchClinicSubscription(clinicId),
@@ -59,12 +61,10 @@ async function loadBillingData(clinicId: string): Promise<{
   }
 }
 
-function BillingContent() {
+function BillingContent({ dataPromise }: { dataPromise: Promise<BillingData> }) {
   const [locale] = useLocale();
   const tenant = useTenant();
-  const clinicId = tenant?.clinicId ?? "";
-  const [promise] = useState(() => loadBillingData(clinicId));
-  const result = use(promise);
+  const result = use(dataPromise);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [selectedUpgrade, setSelectedUpgrade] = useState<SubscriptionPlan | null>(null);
 
@@ -546,16 +546,27 @@ function BillingContent() {
   );
 }
 
-export default function ClientBillingPage() {
+function BillingLoader() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      }
-    >
-      <BillingContent />
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+export default function ClientBillingPage() {
+  const tenant = useTenant();
+  const clinicId = tenant?.clinicId ?? "";
+  // Create the data promise in this non-suspending parent (not inside
+  // BillingContent). A promise created inside the suspending component would be
+  // re-created on every suspense retry, causing an infinite fetch loop.
+  const dataPromise = useMemo(() => (clinicId ? loadBillingData(clinicId) : null), [clinicId]);
+
+  if (!dataPromise) return <BillingLoader />;
+
+  return (
+    <Suspense fallback={<BillingLoader />}>
+      <BillingContent dataPromise={dataPromise} />
     </Suspense>
   );
 }
