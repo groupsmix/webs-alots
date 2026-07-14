@@ -11,6 +11,7 @@ import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { RouteScopeGate } from "@/components/route-scope-gate";
 import { SignOutButton } from "@/components/sign-out-button";
+import { HelpFeedback } from "@/components/support/help-feedback";
 import { getDashboardRequiredFlags, getScopedDashboardForPathname } from "@/lib/config/verticals";
 import type { ClinicFeatureKey } from "@/lib/features";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
@@ -192,6 +193,7 @@ export function ClinicDashboardLayout({
       {visibleMobileTabs?.length ? (
         <MobileTabBar tabs={visibleMobileTabs} onMoreClick={() => setMobileOpen(true)} />
       ) : null}
+      <HelpFeedback />
     </div>
   );
 }

@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_feedback: {
+        Row: {
+          id: string
+          clinic_id: string | null
+          user_id: string | null
+          role: string | null
+          rating: number | null
+          message: string
+          page_url: string | null
+          status: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          clinic_id?: string | null
+          user_id?: string | null
+          role?: string | null
+          rating?: number | null
+          message: string
+          page_url?: string | null
+          status?: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          clinic_id?: string | null
+          user_id?: string | null
+          role?: string | null
+          rating?: number | null
+          message?: string
+          page_url?: string | null
+          status?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           action: string
