@@ -26,6 +26,7 @@ import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboa
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
+import { HelpFeedback } from "@/components/support/help-feedback";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
@@ -201,6 +202,7 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
 
         {/* Mobile bottom tab bar */}
         <MobileTabBar tabs={adminMobileTabs} onMoreClick={() => setMobileOpen(true)} />
+        <HelpFeedback />
       </div>
     </OnboardingProvider>
   );

@@ -33,6 +33,7 @@ import {
   GitCompareArrows,
   HeartPulse,
   Stethoscope,
+  MessageSquarePlus,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -45,6 +46,7 @@ import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { SuperAdminSupportBadge } from "@/components/layouts/super-admin-support-badge";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
+import { HelpFeedback } from "@/components/support/help-feedback";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -160,6 +162,7 @@ const navGroups: NavGroup[] = [
       { href: "/super-admin/system/sla", label: "SLA disponibilité", icon: Shield },
       { href: "/super-admin/compliance", label: "Conformité", icon: Scale },
       { href: "/super-admin/support", label: "Support", icon: LifeBuoy },
+      { href: "/super-admin/feedback", label: "Retours produit", icon: MessageSquarePlus },
     ],
   },
 ];
@@ -750,6 +753,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
         items={cmdItems}
         placeholder="Search pages, clinics, or actions..."
       />
+      <HelpFeedback />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { PatientSearchPalette } from "@/components/patient-search-palette";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
+import { HelpFeedback } from "@/components/support/help-feedback";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
@@ -143,6 +144,7 @@ export default function ReceptionistLayoutShell({ children }: { children: React.
 
       <SessionTimeoutWarning onLogout={() => signOut()} />
       <PatientSearchPalette basePath="/receptionist/patients" />
+      <HelpFeedback />
     </div>
   );
 }

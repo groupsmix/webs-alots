@@ -25,6 +25,7 @@ import { useLocale } from "@/components/locale-switcher";
 import { RouteScopeGate } from "@/components/route-scope-gate";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { SignOutButton } from "@/components/sign-out-button";
+import { HelpFeedback } from "@/components/support/help-feedback";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
@@ -176,6 +177,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
       <MobileTabBar tabs={patientMobileTabs} onMoreClick={() => setMobileMenuOpen(true)} />
 
       <SessionTimeoutWarning onLogout={() => signOut()} />
+      <HelpFeedback />
     </div>
   );
 }
