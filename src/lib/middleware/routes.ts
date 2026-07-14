@@ -151,6 +151,10 @@ const PUBLIC_API_ROUTES = [
   "/api/leads",
   // Demo login (dev/staging only, guarded in handler)
   "/api/auth/demo-login",
+  // Root-domain login funnel — resolves which clinic subdomain an email
+  // belongs to before any session/tenant context exists. Returns only
+  // {subdomain, name}; rate-limited and enumeration-safe in the handler.
+  "/api/auth/resolve-clinic",
   // CSP report endpoint
   "/api/csp-report",
   // Versioned (v1) equivalents of public routes — rewrites in next.config.ts
