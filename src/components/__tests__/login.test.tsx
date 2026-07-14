@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import LoginPage from "@/app/(auth)/login/page";
+import { LoginForm } from "@/app/(auth)/login/login-form";
 
 // Mock the auth module
 vi.mock("@/lib/auth", () => ({
@@ -75,66 +75,66 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-describe("LoginPage", () => {
+describe("LoginForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders without error", () => {
-    const { container } = render(<LoginPage />);
+    const { container } = render(<LoginForm />);
     expect(container).toBeDefined();
   });
 
   it("renders the login card", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     expect(screen.getByTestId("card")).toBeDefined();
   });
 
   it("has email input field", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const emailInput = document.querySelector('input[type="email"]');
     expect(emailInput).toBeDefined();
   });
 
   it("has password input field", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const passwordInput = document.querySelector('input[type="password"]');
     expect(passwordInput).toBeDefined();
   });
 
   it("has submit button", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const buttons = document.querySelectorAll("button");
     expect(buttons.length).toBeGreaterThan(0);
   });
 
   it("can be rendered with form inputs", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const inputs = document.querySelectorAll("input");
     expect(inputs.length).toBeGreaterThanOrEqual(2);
   });
 
   it("renders pill tabs for auth method selection", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     expect(screen.getAllByText("E-mail").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Code e-mail")).toBeDefined();
   });
 
   it("renders French text for login title", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     // The login title comes from t(locale, "auth.login") which renders French
     const card = screen.getByTestId("card");
     expect(card).toBeDefined();
   });
 
   it("has a password visibility toggle button", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const toggleBtn = document.querySelector("button[aria-label]");
     expect(toggleBtn).toBeDefined();
   });
 
   it("toggles password visibility when eye icon is clicked", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const passwordInput = document.querySelector('input[type="password"]');
     expect(passwordInput).toBeDefined();
 
@@ -147,7 +147,7 @@ describe("LoginPage", () => {
   });
 
   it("switches to email-otp method when Code e-mail tab is clicked", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const emailOtpTab = screen.getByText("Code e-mail");
     fireEvent.click(emailOtpTab);
 
@@ -159,19 +159,19 @@ describe("LoginPage", () => {
   });
 
   it("has forgot password link", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const forgotLink = document.querySelector('a[href="/forgot-password"]');
     expect(forgotLink).toBeDefined();
   });
 
   it("has register link in footer", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const registerLink = document.querySelector('a[href="/register"]');
     expect(registerLink).toBeDefined();
   });
 
   it("shows mobile branding header with Oltigo Health", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     expect(screen.getByText("Oltigo Health")).toBeDefined();
   });
 });
