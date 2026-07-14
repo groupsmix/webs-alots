@@ -1,15 +1,19 @@
 "use client";
 
 import {
-  Calendar,
-  LayoutDashboard,
-  Globe,
-  Megaphone,
-  Settings,
-  Users,
+  Activity,
+  CalendarDays,
+  CircleDollarSign,
   CreditCard,
-  Brain,
+  Globe,
+  LayoutDashboard,
+  LifeBuoy,
+  Megaphone,
   Menu,
+  Settings,
+  Sparkles,
+  Stethoscope,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,18 +41,42 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  /** When set, this item is only shown if the feature is enabled. */
   requiredFeature?: ClinicFeatureKey;
 }
 
-const navItems: NavItem[] = [
-  { href: "/admin/dashboard", label: "admin.nav.dashboard", icon: LayoutDashboard },
-  { href: "/admin/patients", label: "admin.nav.patients", icon: Users },
-  { href: "/admin/billing", label: "admin.nav.billing", icon: CreditCard },
-  { href: "/admin/website", label: "admin.nav.website", icon: Globe },
-  { href: "/admin/marketing", label: "admin.nav.marketing", icon: Megaphone },
-  { href: "/admin/ai", label: "admin.nav.ai", icon: Brain },
-  { href: "/admin/settings", label: "admin.nav.settings", icon: Settings },
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: "admin.navGroup.manage",
+    items: [
+      { href: "/admin/dashboard", label: "admin.nav.today", icon: LayoutDashboard },
+      { href: "/admin/agenda", label: "admin.nav.agenda", icon: CalendarDays },
+      { href: "/admin/patients", label: "admin.nav.patients", icon: Users },
+      { href: "/admin/analytics", label: "admin.nav.performance", icon: Activity },
+      { href: "/admin/financial-summary", label: "admin.nav.payments", icon: CircleDollarSign },
+      { href: "/admin/doctors", label: "admin.nav.team", icon: Stethoscope },
+    ],
+  },
+  {
+    label: "admin.navGroup.grow",
+    items: [
+      { href: "/admin/marketing", label: "admin.nav.growth", icon: Megaphone },
+      { href: "/admin/website", label: "admin.nav.website", icon: Globe },
+    ],
+  },
+  {
+    label: "admin.navGroup.tools",
+    items: [
+      { href: "/admin/support", label: "admin.nav.support", icon: LifeBuoy },
+      { href: "/admin/ai", label: "admin.nav.assistant", icon: Sparkles },
+      { href: "/admin/billing", label: "admin.nav.subscription", icon: CreditCard },
+      { href: "/admin/settings", label: "admin.nav.settings", icon: Settings },
+    ],
+  },
 ];
 
 function OnboardingChecklistSidebar() {
@@ -93,33 +121,47 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
   const { hasFeature } = useClinicFeatures();
   const [locale] = useLocale();
 
-  const visibleItems = navItems.filter(
-    (item) => !item.requiredFeature || hasFeature(item.requiredFeature),
-  );
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.requiredFeature || hasFeature(item.requiredFeature),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <>
       <OnboardingChecklistSidebar />
-      <nav className="space-y-1 flex-1">
-        {visibleItems.map((item) => {
-          const isActive = isNavActive(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavClick}
-              aria-current={isActive ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="flex-1">{t(locale, item.label)}</span>
-            </Link>
-          );
-        })}
+      <nav className="flex-1 space-y-5">
+        {visibleGroups.map((group) => (
+          <div key={group.label}>
+            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+              {t(locale, group.label)}
+            </p>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = isNavActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavClick}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="flex-1">{t(locale, item.label)}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="pt-6 border-t mt-6">
         <SignOutButton />
@@ -134,10 +176,14 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
   const [locale] = useLocale();
 
   const adminMobileTabs: MobileTabItem[] = [
-    { href: "/admin/dashboard", label: "admin.mobile.dashboard", icon: Calendar },
+    { href: "/admin/dashboard", label: "admin.mobile.today", icon: LayoutDashboard },
+    { href: "/admin/agenda", label: "admin.mobile.agenda", icon: CalendarDays },
     { href: "/admin/patients", label: "admin.mobile.patients", icon: Users },
-    { href: "/admin/billing", label: "admin.mobile.billing", icon: CreditCard },
-    { href: "/admin/settings", label: "admin.mobile.settings", icon: Settings },
+    {
+      href: "/admin/financial-summary",
+      label: "admin.mobile.payments",
+      icon: CircleDollarSign,
+    },
   ];
 
   return (
@@ -146,12 +192,12 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
         {/* Skip to content link for keyboard accessibility */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
         >
           {t(locale, "nav.skipToContent")}
         </a>
         {/* Mobile header bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
+        <div className="fixed inset-x-0 top-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
           <button
             onClick={() => setMobileOpen(true)}
             className="rounded-md p-1.5 hover:bg-muted"
@@ -184,7 +230,7 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
         )}
 
         {/* Desktop sidebar */}
-        <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
+        <aside className="hidden w-64 shrink-0 overflow-y-auto border-e bg-card p-4 md:flex md:flex-col">
           <div className="flex items-center gap-2 mb-6">
             <OltigoMonogram size="sm" />
             <h2 className="text-lg font-semibold">{t(locale, "nav.clinicAdmin")}</h2>

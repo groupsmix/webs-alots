@@ -71,7 +71,7 @@ export function AdminHeaderBar() {
   }, [loadTicketCount]);
 
   return (
-    <div className="fixed top-0 right-0 left-64 z-30 hidden h-12 items-center justify-end gap-2 border-b bg-background px-4 md:flex">
+    <div className="fixed end-0 start-64 top-0 z-30 hidden h-12 items-center justify-end gap-2 border-b bg-background px-4 md:flex">
       <NotificationBell />
       {openTickets != null && openTickets > 0 && (
         <Link href="/admin/support" className="flex items-center">
