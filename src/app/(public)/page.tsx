@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { JsonLd } from "@/components/json-ld";
 import { LandingPage } from "@/components/landing/landing-page";
 import { HeroSection } from "@/components/public/hero-section";
 import {
@@ -19,6 +18,7 @@ import { ServicesPreview } from "@/components/public/services-preview";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
 import { t, type Locale } from "@/lib/i18n";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
 import { mergeSectionVisibility } from "@/lib/section-visibility";
 import { getTemplate } from "@/lib/templates";
@@ -165,8 +165,18 @@ export default async function HomePage() {
     };
     return (
       <>
-        <JsonLd data={saasJsonLd} nonce={nonce} />
-        <JsonLd data={softwareJsonLd} nonce={nonce} />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
+        />
         <LandingPage />
       </>
     );
@@ -245,7 +255,12 @@ export default async function HomePage() {
 
   return (
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
-      <JsonLd data={clinicSchema} nonce={nonce} />
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
+      />
       {/* Hero — always visible */}
       {sections.hero && (
         <HeroSection
