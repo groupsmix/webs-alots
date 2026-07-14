@@ -55,6 +55,10 @@ describe("Public API surface lock", () => {
 // (see audit finding AZ-2 on prefix-match scope).
 const EXPECTED_PUBLIC_ROUTES: string[] = [
   "/api/auth/demo-login",
+  // Root-domain login funnel: email -> clinic subdomain resolver. Reachable
+  // pre-session/pre-tenant; returns only {subdomain, name}, rate-limited and
+  // enumeration-safe in the handler.
+  "/api/auth/resolve-clinic",
   "/api/billing/webhook",
   "/api/booking",
   "/api/booking/cancel",
