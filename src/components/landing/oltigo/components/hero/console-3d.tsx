@@ -2,7 +2,7 @@
 
 import { ContactShadows, Html, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Component, type ReactNode, useRef } from "react";
+import { Component, type ReactNode, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Dictionary } from "@/components/landing/oltigo/i18n/dictionaries";
 import { ConsoleStatic } from "./console-static";
@@ -177,6 +177,26 @@ class WebGLBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
+/**
+ * Probe for a usable WebGL context. A failed `<Canvas>` render logs
+ * "A WebGL context could not be created" and leaves an empty (black) canvas
+ * instead of throwing — so the error boundary never fires. Detecting support
+ * up front lets us swap in the static console before three.js ever runs.
+ */
+function detectWebGL(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl2") ??
+      canvas.getContext("webgl") ??
+      canvas.getContext("experimental-webgl");
+    return Boolean(gl);
+  } catch {
+    return false;
+  }
+}
+
 export default function Console3D({
   onFocus,
   dict,
@@ -184,6 +204,10 @@ export default function Console3D({
   onFocus: (i: number) => void;
   dict: Dictionary;
 }) {
+  const [webglSupported] = useState(detectWebGL);
+
+  if (!webglSupported) return <ConsoleStatic />;
+
   return (
     <WebGLBoundary>
       <div className="h-[520px] w-full">

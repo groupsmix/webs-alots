@@ -40,12 +40,6 @@ export function PublicNav() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
         <Link href="/" className="flex items-center gap-2.5" aria-label="OLTIGO">
           <Wordmark />
-          <span className="hidden items-center gap-1.5 sm:flex">
-            <span className="size-1.5 animate-soft-pulse rounded-full bg-emerald" />
-            <span className="telemetry text-[10px] uppercase tracking-[0.16em] text-text-muted">
-              {dict.nav.status}
-            </span>
-          </span>
         </Link>
 
         <div className="hidden items-center gap-7 md:flex">

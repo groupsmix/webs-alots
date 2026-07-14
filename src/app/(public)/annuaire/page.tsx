@@ -11,7 +11,9 @@ import { safeJsonLdStringify } from "@/lib/json-ld";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
 export const metadata: Metadata = {
-  title: "Annuaire Médical au Maroc — Trouvez votre médecin | Oltigo",
+  // Root layout's title template appends " | Oltigo"; omit it here to avoid
+  // the brand appearing twice in the <title>.
+  title: "Annuaire Médical au Maroc — Trouvez votre médecin",
   description:
     "Trouvez un médecin, dentiste ou spécialiste près de chez vous au Maroc. Annuaire médical complet avec prise de rendez-vous en ligne à Casablanca, Rabat, Marrakech et plus.",
   openGraph: {

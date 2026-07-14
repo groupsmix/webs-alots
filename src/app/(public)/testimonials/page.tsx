@@ -1,11 +1,13 @@
 import { Star, Quote, Calendar } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
+import { t, type Locale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Témoignages Patients",
@@ -17,9 +19,13 @@ export const metadata: Metadata = {
   },
 };
 
-function StarRating({ rating }: { rating: number }) {
+function StarRating({ rating, locale }: { rating: number; locale: Locale }) {
   return (
-    <div className="flex gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
+    <div
+      className="flex gap-0.5"
+      role="img"
+      aria-label={t(locale, "testimonials.starsAria", { rating })}
+    >
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
@@ -34,6 +40,8 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default async function TestimonialsPage() {
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
   const [reviews, avgRating, branding] = await Promise.all([
     getPublicReviews(),
     getPublicAverageRating(),
@@ -53,9 +61,9 @@ export default async function TestimonialsPage() {
     <div className="container mx-auto px-4 py-12">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">Patient Testimonials</h1>
+        <h1 className="text-3xl font-bold mb-4">{t(locale, "testimonials.heading")}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-          Real experiences from patients at {branding.clinicName}
+          {t(locale, "testimonials.subtitle", { clinic: branding.clinicName })}
         </p>
       </div>
 
@@ -67,9 +75,15 @@ export default async function TestimonialsPage() {
               {/* Average Rating */}
               <div className="text-center">
                 <p className="text-5xl font-bold mb-2">{avgRating.toFixed(1)}</p>
-                <StarRating rating={Math.round(avgRating)} />
+                <StarRating rating={Math.round(avgRating)} locale={locale} />
                 <p className="text-sm text-muted-foreground mt-2">
-                  {reviews.length} verified review{reviews.length !== 1 ? "s" : ""}
+                  {t(
+                    locale,
+                    reviews.length === 1
+                      ? "testimonials.verifiedReview"
+                      : "testimonials.verifiedReviews",
+                    { count: reviews.length },
+                  )}
                 </p>
               </div>
 
@@ -101,7 +115,7 @@ export default async function TestimonialsPage() {
 
       {/* Testimonials Grid */}
       {reviews.length === 0 ? (
-        <p className="text-center text-muted-foreground">No testimonials yet.</p>
+        <p className="text-center text-muted-foreground">{t(locale, "testimonials.empty")}</p>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
           {reviews.map((review) => (
@@ -119,7 +133,7 @@ export default async function TestimonialsPage() {
                   <div className="flex-1">
                     <p className="font-medium text-sm">{review.patientName}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <StarRating rating={review.rating} />
+                      <StarRating rating={review.rating} locale={locale} />
                     </div>
                   </div>
                   <Badge variant="outline" className="text-xs">
@@ -140,10 +154,10 @@ export default async function TestimonialsPage() {
 
       {/* CTA */}
       <div className="text-center mt-12">
-        <p className="text-muted-foreground mb-4">Trusted by our patients for quality healthcare</p>
+        <p className="text-muted-foreground mb-4">{t(locale, "testimonials.ctaText")}</p>
         <Link href="/book" className={buttonVariants({ size: "lg" })}>
           <Calendar className="h-4 w-4 mr-2" />
-          Book Your Appointment
+          {t(locale, "testimonials.ctaButton")}
         </Link>
       </div>
     </div>

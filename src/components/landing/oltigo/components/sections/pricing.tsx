@@ -8,7 +8,7 @@ import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "./section-kit";
 
-export function Pricing() {
+export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
   const { dict } = useI18n();
   return (
     <section id="pricing" className="relative border-b border-hairline py-24 sm:py-32">
@@ -18,6 +18,7 @@ export function Pricing() {
           title={dict.pricing.title}
           sub={dict.pricing.sub}
           align="center"
+          as={headingAs}
         />
 
         <div className="mt-16 grid gap-4 lg:grid-cols-4">

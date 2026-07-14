@@ -22,11 +22,14 @@ export function SectionHeading({
   title,
   sub,
   align = "start",
+  as: Heading = "h2",
 }: {
   eyebrow: string;
   title: string;
   sub?: string;
   align?: "start" | "center";
+  /** Heading level — use "h1" when the section is a page's primary heading. */
+  as?: "h1" | "h2";
 }) {
   return (
     <div className={cn("max-w-2xl", align === "center" && "mx-auto text-center")}>
@@ -34,7 +37,7 @@ export function SectionHeading({
         <Eyebrow>{eyebrow}</Eyebrow>
       </Reveal>
       <Reveal delay={60}>
-        <h2 className="mt-4 text-[clamp(1.75rem,3.4vw,2.6rem)] text-text">{title}</h2>
+        <Heading className="mt-4 text-[clamp(1.75rem,3.4vw,2.6rem)] text-text">{title}</Heading>
       </Reveal>
       {sub ? (
         <Reveal delay={120}>

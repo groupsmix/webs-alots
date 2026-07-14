@@ -50,7 +50,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   if (!tenant) {
-    const metaTitle = `Oltigo \u2014 ${t(locale, "public.meta.title")}`;
+    // The root layout's title template already appends " | Oltigo"; don't
+    // prefix the brand here or it renders twice ("Oltigo — … | Oltigo").
+    const metaTitle = t(locale, "public.meta.title");
     const metaDescription = t(locale, "public.meta.description");
     return {
       title: metaTitle,
@@ -166,11 +168,13 @@ export default async function HomePage() {
         <script
           type="application/ld+json"
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
         />
         <script
           type="application/ld+json"
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
         />
         <LandingPage />
@@ -254,6 +258,7 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         nonce={nonce}
+        suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
       />
       {/* Hero — always visible */}
