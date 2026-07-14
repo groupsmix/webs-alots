@@ -1,6 +1,7 @@
 import { Clock, CreditCard } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
   Card,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
@@ -25,6 +27,14 @@ export const metadata: Metadata = {
 };
 
 export default async function ServicesPage() {
+  // On the root marketing domain there is no tenant, so there are no
+  // clinic-scoped services to show. Send visitors to the product features
+  // section instead of rendering an empty, clinic-framed services page.
+  const tenant = await getTenant();
+  if (!tenant) {
+    redirect("/#features");
+  }
+
   const cfg = defaultWebsiteConfig.services;
 
   const services = await getPublicServices();
