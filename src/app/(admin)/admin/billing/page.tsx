@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Suspense, use, useMemo, useState } from "react";
+import { UsageWidget } from "@/components/admin/usage-widget";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -457,6 +458,10 @@ function BillingContent({ dataPromise }: { dataPromise: Promise<BillingData> }) 
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mb-6">
+        <UsageWidget />
       </div>
 
       {/* Upgrade Dialog */}
