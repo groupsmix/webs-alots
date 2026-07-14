@@ -1,5 +1,6 @@
 import { ArrowRight, Check, X, Minus } from "lucide-react";
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   COMPETITORS,
   COMPARISON_FEATURES,
@@ -86,8 +87,8 @@ export function FullComparisonTable() {
           </thead>
           <tbody>
             {categories.map((category) => (
-              <>
-                <tr key={`cat-${category}`}>
+              <Fragment key={category}>
+                <tr>
                   <td
                     colSpan={COMPETITORS.length + 1}
                     className="pb-2 pt-6 font-mono text-xs font-bold uppercase tracking-[0.2em] text-primary"
@@ -108,7 +109,7 @@ export function FullComparisonTable() {
                     ))}
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

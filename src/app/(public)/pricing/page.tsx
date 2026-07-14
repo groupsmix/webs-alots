@@ -30,7 +30,7 @@ export default async function PricingPage() {
   // Root domain → Oltigo landing chrome with the dedicated pricing section.
   return (
     <OltigoPublicShell mainClassName="pt-16">
-      <Pricing />
+      <Pricing headingAs="h1" />
     </OltigoPublicShell>
   );
 }

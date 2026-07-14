@@ -613,6 +613,11 @@ export function BookingForm() {
                   {stepErrors.doctor}
                 </p>
               )}
+              {doctors.length === 0 && (
+                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  {t(locale, "booking.noDoctors")}
+                </p>
+              )}
               <div className="grid gap-2">
                 {doctors.map((d) => (
                   <button

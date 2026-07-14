@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { LandingPage } from "@/components/landing/landing-page";
 import { HeroSection } from "@/components/public/hero-section";
 import {
@@ -18,7 +19,6 @@ import { ServicesPreview } from "@/components/public/services-preview";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
 import { mergeSectionVisibility } from "@/lib/section-visibility";
 import { getTemplate } from "@/lib/templates";
@@ -50,7 +50,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   if (!tenant) {
-    const metaTitle = `Oltigo \u2014 ${t(locale, "public.meta.title")}`;
+    // The root layout's title template already appends " | Oltigo"; don't
+    // prefix the brand here or it renders twice ("Oltigo — … | Oltigo").
+    const metaTitle = t(locale, "public.meta.title");
     const metaDescription = t(locale, "public.meta.description");
     return {
       title: metaTitle,
@@ -163,16 +165,8 @@ export default async function HomePage() {
     };
     return (
       <>
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
-        />
+        <JsonLd data={saasJsonLd} nonce={nonce} />
+        <JsonLd data={softwareJsonLd} nonce={nonce} />
         <LandingPage />
       </>
     );
@@ -251,11 +245,7 @@ export default async function HomePage() {
 
   return (
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
-      />
+      <JsonLd data={clinicSchema} nonce={nonce} />
       {/* Hero — always visible */}
       {sections.hero && (
         <HeroSection

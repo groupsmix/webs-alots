@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { BookingForm } from "@/components/booking/booking-form";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { getTenant } from "@/lib/tenant";
 
@@ -26,7 +28,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function BookingPage() {
+export default async function BookingPage() {
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
 
   const bookingSchema = {
@@ -51,6 +55,7 @@ export default function BookingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(bookingSchema) }}
       />
+      <h1 className="sr-only">{t(locale, "booking.title")}</h1>
       <ErrorBoundary section="Booking Form">
         <BookingForm />
       </ErrorBoundary>
