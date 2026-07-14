@@ -61,10 +61,15 @@ export async function POST(request: NextRequest) {
   const email = result.data.email.trim().toLowerCase();
 
   try {
+    // nosemgrep: semgrep.admin-client-guard — intentional cross-tenant read: the
+    // root login funnel resolves WHICH clinic(s) an email belongs to, so there is
+    // no single clinic_id to scope to and no user session on the root domain.
     const supabase = createAdminClient("resolve_clinic");
 
+    // nosemgrep: semgrep.tenant-scoping — cross-tenant by design: the email→clinic
+    // lookup exists precisely to discover the clinic_id, so it cannot filter by one.
     const { data: profiles, error: usersError } = await supabase
-      .from("users")
+      .from("users") // nosemgrep: semgrep.tenant-scoping
       .select("clinic_id")
       .ilike("email", email)
       .eq("is_active", true);

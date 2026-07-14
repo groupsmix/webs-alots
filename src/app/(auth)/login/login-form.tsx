@@ -40,6 +40,7 @@ import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 import { createClient } from "@/lib/supabase-client";
+// nosemgrep: semgrep.env-access — NEXT_PUBLIC_* is a client-side public build-time flag (inlined by the bundler; env.ts is server-only)
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export function LoginForm() {
