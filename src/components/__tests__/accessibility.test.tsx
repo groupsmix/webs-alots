@@ -2,7 +2,7 @@ import { render } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { SearchIcon } from "lucide-react";
 import { describe, it, expect, vi } from "vitest";
-import LoginPage from "@/app/(auth)/login/page";
+import { LoginForm } from "@/app/(auth)/login/login-form";
 import { BookingForm } from "@/components/booking/booking-form";
 import { ContactForm } from "@/components/public/contact-form";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -132,7 +132,7 @@ vi.mock("@/lib/hooks/use-form-validation", () => ({
 
 describe("Accessibility (WCAG)", () => {
   it("login page has no critical accessibility violations", async () => {
-    const { container } = render(<LoginPage />);
+    const { container } = render(<LoginForm />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

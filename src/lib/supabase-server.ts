@@ -215,6 +215,7 @@ export async function createTenantClient(clinicId: string) {
  */
 export type AdminAuditLabel =
   | "auth_admin"
+  | "resolve_clinic"
   | "cron"
   | "audit_log"
   | "notification"
