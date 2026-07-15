@@ -199,7 +199,7 @@ export default function UsageDashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+        <Loader2 className="me-2 h-6 w-6 animate-spin" />
         Chargement des données d&apos;utilisation…
       </div>
     );
@@ -239,7 +239,7 @@ export default function UsageDashboardPage() {
             indisponible).
           </span>
           <Button variant="outline" size="sm" onClick={() => loadAllUsage()}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            <RefreshCw className="h-3.5 w-3.5 me-1" />
             Réessayer
           </Button>
         </div>
@@ -307,7 +307,7 @@ export default function UsageDashboardPage() {
                 <button
                   key={clinicId}
                   onClick={() => setSelectedClinic(clinicId)}
-                  className={`hover:bg-muted flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                  className={`hover:bg-muted flex w-full items-center justify-between rounded-lg border p-3 text-start transition-colors ${
                     selectedClinic === clinicId ? "border-primary bg-muted" : ""
                   }`}
                 >

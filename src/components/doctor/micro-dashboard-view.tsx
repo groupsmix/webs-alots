@@ -115,7 +115,7 @@ export function MicroDashboardView() {
             <AlertTriangle className="text-destructive mx-auto mb-3 h-8 w-8" />
             <p className="text-sm">{error}</p>
             <Button onClick={() => void fetchData()} className="mt-4" size="sm" variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
+              <RefreshCw className="me-2 h-4 w-4" />
               Réessayer
             </Button>
           </CardContent>
@@ -173,7 +173,7 @@ export function MicroDashboardView() {
                     {formatTime(data.nextPatient.appointmentTime)}
                     {data.nextPatient.phone && (
                       <>
-                        <Phone className="ml-1 h-3 w-3" />
+                        <Phone className="ms-1 h-3 w-3" />
                         {data.nextPatient.phone}
                       </>
                     )}
@@ -221,7 +221,7 @@ export function MicroDashboardView() {
             <Link href={`/doctor/patients/${data.nextPatient.id}/timeline`}>
               <Button size="sm" variant="outline" className="w-full">
                 Voir le dossier patient
-                <ChevronRight className="ml-1 h-4 w-4" />
+                <ChevronRight className="ms-1 h-4 w-4" />
               </Button>
             </Link>
           </CardContent>

@@ -53,7 +53,7 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search exercises..."
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

@@ -124,7 +124,7 @@ function TypePicker({
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-4">
         <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
+          <ArrowLeft className="h-4 w-4 me-1" />
           Retour
         </Button>
         <div className="flex-1 text-center">
@@ -181,7 +181,7 @@ function PresetCard({
   return (
     <button
       type="button"
-      className={`text-left rounded-xl border-2 p-4 transition-all hover:shadow-lg ${
+      className={`text-start rounded-xl border-2 p-4 transition-all hover:shadow-lg ${
         selected
           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
           : "border-border hover:border-primary/50"
@@ -569,7 +569,7 @@ export default function OnboardingPage() {
           <div className="flex-1" />
           <Button onClick={handleNext} disabled={!ownerName || !phone}>
             Continuer
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-4 w-4 ms-1" />
           </Button>
         </div>
       </CardContent>
@@ -596,7 +596,7 @@ export default function OnboardingPage() {
             <CategoryPicker onSelect={handleSelectCategory} />
             <div className="flex gap-2 mt-6">
               <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 Retour
               </Button>
             </div>
@@ -628,7 +628,7 @@ export default function OnboardingPage() {
           <CardHeader>
             <div className="flex items-center gap-2 mb-2">
               <Button variant="ghost" size="sm" onClick={handleBackToType}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 Changer de sp&eacute;cialit&eacute;
               </Button>
             </div>
@@ -678,13 +678,13 @@ export default function OnboardingPage() {
             </div>
             <div className="flex gap-2 mt-6">
               <Button variant="outline" onClick={handleBackToType}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 Retour
               </Button>
               <div className="flex-1" />
               <Button onClick={handleNext} disabled={!clinicName || !selectedType}>
                 Continuer
-                <ArrowRight className="h-4 w-4 ml-1" />
+                <ArrowRight className="h-4 w-4 ms-1" />
               </Button>
             </div>
           </CardContent>
@@ -729,19 +729,19 @@ export default function OnboardingPage() {
         )}
         <div className="flex gap-2 mt-6">
           <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             Retour
           </Button>
           <div className="flex-1" />
           {!selectedPreset && (
             <Button variant="ghost" onClick={handleNext}>
-              <SkipForward className="h-4 w-4 mr-1" />
+              <SkipForward className="h-4 w-4 me-1" />
               Passer
             </Button>
           )}
           <Button onClick={handleNext}>
             Continuer
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-4 w-4 ms-1" />
           </Button>
         </div>
       </CardContent>
@@ -817,17 +817,17 @@ export default function OnboardingPage() {
         </div>
         <div className="flex gap-2 mt-6">
           <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             Retour
           </Button>
           <div className="flex-1" />
           <Button variant="ghost" onClick={handleNext}>
-            <SkipForward className="h-4 w-4 mr-1" />
+            <SkipForward className="h-4 w-4 me-1" />
             Passer
           </Button>
           <Button onClick={handleNext}>
             Continuer
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-4 w-4 ms-1" />
           </Button>
         </div>
       </CardContent>
@@ -914,7 +914,7 @@ export default function OnboardingPage() {
                 <div>
                   <span className="text-muted-foreground">Logo</span>
                   <p className="font-medium text-green-700">
-                    <Check className="h-3 w-3 inline mr-1" />
+                    <Check className="h-3 w-3 inline me-1" />
                     T&eacute;l&eacute;charg&eacute;
                   </p>
                 </div>
@@ -945,18 +945,18 @@ export default function OnboardingPage() {
         </div>
         <div className="flex gap-2 mt-6">
           <Button variant="outline" onClick={handleBack} disabled={loading}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             Retour
           </Button>
           <Button className="flex-1" size="lg" disabled={loading} onClick={handleGoLive}>
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
                 Mise en ligne...
               </>
             ) : (
               <>
-                <Rocket className="h-4 w-4 mr-2" />
+                <Rocket className="h-4 w-4 me-2" />
                 Mettre en ligne maintenant
               </>
             )}

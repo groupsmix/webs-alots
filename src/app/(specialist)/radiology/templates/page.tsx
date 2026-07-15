@@ -60,7 +60,7 @@ export default function RadiologyTemplatesPage() {
           placeholder="Search templates..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="ps-9"
         />
       </div>
 
@@ -108,7 +108,7 @@ export default function RadiologyTemplatesPage() {
                       navigator.clipboard.writeText(text);
                     }}
                   >
-                    <Copy className="h-3 w-3 mr-1" /> Copy Template
+                    <Copy className="h-3 w-3 me-1" /> Copy Template
                   </Button>
                 </div>
               )}

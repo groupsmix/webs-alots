@@ -122,7 +122,7 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button variant="outline" size="sm">
-            <Phone className="h-4 w-4 mr-1" />
+            <Phone className="h-4 w-4 me-1" />
             Manual Booking
           </Button>
         )}

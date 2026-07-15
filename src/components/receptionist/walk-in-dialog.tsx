@@ -116,7 +116,7 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button size="sm">
-            <UserPlus className="h-4 w-4 mr-1" />
+            <UserPlus className="h-4 w-4 me-1" />
             Walk-in Registration
           </Button>
         )}

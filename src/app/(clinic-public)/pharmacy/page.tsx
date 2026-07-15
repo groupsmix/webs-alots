@@ -66,11 +66,11 @@ export default async function PharmacyHomePage() {
               <div className="flex items-center gap-2 mb-4">
                 {onDuty ? (
                   <Badge className="bg-emerald-600 text-white animate-pulse">
-                    <Clock className="h-3 w-3 mr-1" /> On Duty Now
+                    <Clock className="h-3 w-3 me-1" /> On Duty Now
                   </Badge>
                 ) : nextDuty ? (
                   <Badge variant="outline" className="border-emerald-600 text-emerald-600">
-                    <Clock className="h-3 w-3 mr-1" /> Next on duty: {nextDuty.date}
+                    <Clock className="h-3 w-3 me-1" /> Next on duty: {nextDuty.date}
                   </Badge>
                 ) : null}
               </div>
@@ -83,11 +83,11 @@ export default async function PharmacyHomePage() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/pharmacy/prescription-upload" className={linkBtnPrimary}>
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload className="me-2 h-4 w-4" />
                   Upload Prescription
                 </Link>
                 <Link href="/pharmacy/catalog" className={linkBtnOutline}>
-                  <Search className="mr-2 h-4 w-4" />
+                  <Search className="me-2 h-4 w-4" />
                   Browse Products
                 </Link>
               </div>
@@ -174,7 +174,7 @@ export default async function PharmacyHomePage() {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold">Featured Products</h2>
             <Link href="/pharmacy/catalog" className={linkBtnOutline}>
-              View All <ArrowRight className="ml-2 h-4 w-4" />
+              View All <ArrowRight className="ms-2 h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -229,7 +229,7 @@ export default async function PharmacyHomePage() {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold">Our Services</h2>
             <Link href="/pharmacy/services" className={linkBtnOutline}>
-              All Services <ArrowRight className="ml-2 h-4 w-4" />
+              All Services <ArrowRight className="ms-2 h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
@@ -285,14 +285,14 @@ export default async function PharmacyHomePage() {
               href="/pharmacy/contact"
               className="inline-flex items-center justify-center rounded-lg bg-white text-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-50 transition-colors"
             >
-              <Phone className="mr-2 h-4 w-4" />
+              <Phone className="me-2 h-4 w-4" />
               Call Us
             </Link>
             <Link
               href="/pharmacy/contact"
               className="inline-flex items-center justify-center rounded-lg border border-white/50 text-white px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
             >
-              <MapPin className="mr-2 h-4 w-4" />
+              <MapPin className="me-2 h-4 w-4" />
               Find Us
             </Link>
           </div>
@@ -308,7 +308,7 @@ export default async function PharmacyHomePage() {
             notify you via WhatsApp when they&apos;re ready.
           </p>
           <Link href="/pharmacy/prescription-upload" className={linkBtnPrimary}>
-            <Upload className="mr-2 h-4 w-4" />
+            <Upload className="me-2 h-4 w-4" />
             Upload Prescription Now
           </Link>
         </div>

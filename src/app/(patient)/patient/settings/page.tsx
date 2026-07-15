@@ -128,7 +128,7 @@ function ProcessingPreferencesCard() {
                   disabled={loading === activity.id}
                   onClick={() => objectTo(activity.id)}
                 >
-                  <Lock className="h-3 w-3 mr-1" />
+                  <Lock className="h-3 w-3 me-1" />
                   Refuser
                 </Button>
                 <Button
@@ -281,11 +281,11 @@ export default function PatientSettingsPage() {
           </p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => handleExport("json")} disabled={exportLoading}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {exportLoading ? "Export..." : "Exporter en JSON"}
             </Button>
             <Button variant="outline" onClick={() => handleExport("csv")} disabled={exportLoading}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {exportLoading ? "Export..." : "Exporter en CSV"}
             </Button>
           </div>
@@ -364,7 +364,7 @@ export default function PatientSettingsPage() {
             </div>
           ) : (
             <Button variant="destructive" onClick={handleDeleteRequest} disabled={deleteLoading}>
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 me-2" />
               {deleteLoading ? "Traitement..." : "Demander la suppression"}
             </Button>
           )}

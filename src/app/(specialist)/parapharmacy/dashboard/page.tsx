@@ -77,7 +77,7 @@ export default function ParapharmacyDashboardPage() {
           <p className="text-muted-foreground text-sm">Overview of your parapharmacy operations</p>
         </div>
         <Badge variant="outline" className="text-pink-600 border-pink-600">
-          <Clock className="h-3 w-3 mr-1" />
+          <Clock className="h-3 w-3 me-1" />
           {new Date().toLocaleDateString("en-US", {
             weekday: "long",
             month: "long",
@@ -102,7 +102,7 @@ export default function ParapharmacyDashboardPage() {
               href="/parapharmacy/catalog"
               className="text-sm text-pink-600 hover:underline mt-2 inline-flex items-center"
             >
-              View Catalog <ArrowRight className="h-3 w-3 ml-1" />
+              View Catalog <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -136,7 +136,7 @@ export default function ParapharmacyDashboardPage() {
               href="/parapharmacy/inventory"
               className="text-sm text-pink-600 hover:underline mt-2 inline-flex items-center"
             >
-              Manage Stock <ArrowRight className="h-3 w-3 ml-1" />
+              Manage Stock <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>

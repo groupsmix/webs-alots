@@ -67,7 +67,7 @@ export default function DicomViewerPage() {
                 href="https://viewer.ohif.org/"
                 className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
               >
-                <ExternalLinkIcon className="h-4 w-4 mr-2" />
+                <ExternalLinkIcon className="h-4 w-4 me-2" />
                 Open OHIF Viewer
               </ExternalLink>
             </div>
@@ -110,7 +110,7 @@ export default function DicomViewerPage() {
                               href={`https://viewer.ohif.org/viewer?StudyInstanceUIDs=${order.images.find((img) => img.dicomStudyUid)?.dicomStudyUid}`}
                               className="inline-flex items-center rounded-md bg-indigo-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-indigo-700 transition-colors"
                             >
-                              <ExternalLinkIcon className="h-3 w-3 mr-1" /> Open in OHIF
+                              <ExternalLinkIcon className="h-3 w-3 me-1" /> Open in OHIF
                             </ExternalLink>
                           )}
                         </div>
@@ -170,7 +170,7 @@ export default function DicomViewerPage() {
         </>
       )}
 
-      <div className="mt-6 p-4 bg-muted/50 rounded-lg text-left max-w-lg">
+      <div className="mt-6 p-4 bg-muted/50 rounded-lg text-start max-w-lg">
         <div className="flex items-start gap-3">
           <Info className="h-5 w-5 text-blue-600 mt-0.5" />
           <div>

@@ -96,7 +96,7 @@ export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomP
                     className="h-7 text-xs"
                     onClick={() => onCallIn?.(apt.id)}
                   >
-                    <UserCheck className="h-3 w-3 mr-1" />
+                    <UserCheck className="h-3 w-3 me-1" />
                     Call In
                   </Button>
                   <div className="flex gap-1">

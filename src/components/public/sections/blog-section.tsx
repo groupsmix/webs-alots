@@ -41,7 +41,7 @@ export async function BlogSection() {
         <div className="mt-10 text-center">
           <Link href="/blog" className={linkBtnOutline}>
             Voir tous les articles
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4" />
           </Link>
         </div>
       </div>

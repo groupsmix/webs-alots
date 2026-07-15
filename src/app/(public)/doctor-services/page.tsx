@@ -87,7 +87,7 @@ export default async function DoctorServicesPage() {
                     className: "w-full",
                   })}
                 >
-                  <Calendar className="h-4 w-4 mr-1" />
+                  <Calendar className="h-4 w-4 me-1" />
                   Book Now
                 </Link>
               </CardFooter>

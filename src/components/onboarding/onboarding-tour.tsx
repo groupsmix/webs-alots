@@ -153,7 +153,7 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
             <div className="mt-6">
               <Button onClick={handleGoToStep} className="w-full" size="sm">
                 {isStepCompleted ? "Review this step" : "Set up now"}
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4 ms-1" />
               </Button>
             </div>
           </div>
@@ -161,7 +161,7 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
           {/* Footer navigation */}
           <div className="flex items-center justify-between p-4 border-t bg-muted/30">
             <Button variant="ghost" size="sm" onClick={handlePrev} disabled={isFirstStep}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <ChevronLeft className="h-4 w-4 me-1" />
               Previous
             </Button>
 
@@ -176,7 +176,7 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
             ) : (
               <Button variant="ghost" size="sm" onClick={handleNext}>
                 Next
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4 ms-1" />
               </Button>
             )}
           </div>

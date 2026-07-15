@@ -98,7 +98,7 @@ function MessageBubble({ message }: { message: Message }) {
         }`}
       >
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
-        <p className="mt-1 text-[10px] text-muted-foreground text-right">
+        <p className="mt-1 text-[10px] text-muted-foreground text-end">
           {new Date(message.created_at).toLocaleString("fr-MA")}
           {isBot && " · AI"}
         </p>
@@ -232,7 +232,7 @@ export default function TicketDetailPage() {
         <p className="text-muted-foreground">Ticket not found.</p>
         <Link href="/admin/support">
           <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             Back to support
           </Button>
         </Link>
@@ -256,7 +256,7 @@ export default function TicketDetailPage() {
       <div className="flex items-start gap-3 flex-wrap">
         <Link href="/admin/support">
           <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             Back
           </Button>
         </Link>
@@ -271,7 +271,7 @@ export default function TicketDetailPage() {
             </Badge>
             {ticket.sla_breached && (
               <Badge variant="destructive" className="text-[10px]">
-                <AlertTriangle className="h-3 w-3 mr-1" />
+                <AlertTriangle className="h-3 w-3 me-1" />
                 SLA Breached
               </Badge>
             )}
@@ -284,12 +284,12 @@ export default function TicketDetailPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleTriage} disabled={triaging}>
-            <Sparkles className={`h-4 w-4 mr-1 ${triaging ? "animate-spin" : ""}`} />
+            <Sparkles className={`h-4 w-4 me-1 ${triaging ? "animate-spin" : ""}`} />
             {triaging ? "Triaging..." : "AI Triage"}
           </Button>
           {ticket.status !== "resolved" && ticket.status !== "closed" && (
             <Button variant="outline" size="sm" onClick={() => handleStatusUpdate("resolved")}>
-              <CheckCircle2 className="h-4 w-4 mr-1" />
+              <CheckCircle2 className="h-4 w-4 me-1" />
               Resolve
             </Button>
           )}
@@ -335,7 +335,7 @@ export default function TicketDetailPage() {
                     </Badge>
                   )}
                   {ticket.ai_confidence != null && (
-                    <span className="text-xs text-muted-foreground ml-auto">
+                    <span className="text-xs text-muted-foreground ms-auto">
                       {Math.round(ticket.ai_confidence * 100)}% conf.
                     </span>
                   )}
@@ -413,7 +413,7 @@ export default function TicketDetailPage() {
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">Ctrl+Enter to send</p>
                 <Button onClick={() => void handleSend()} disabled={!reply.trim() || sending}>
-                  <Send className="h-4 w-4 mr-1" />
+                  <Send className="h-4 w-4 me-1" />
                   {sending ? "Sending..." : "Send Reply"}
                 </Button>
               </div>
@@ -525,7 +525,7 @@ export default function TicketDetailPage() {
                   className="w-full"
                   onClick={() => handleStatusUpdate("resolved")}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  <CheckCircle2 className="h-4 w-4 me-1" />
                   Resolve
                 </Button>
               )}

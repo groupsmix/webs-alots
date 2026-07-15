@@ -101,7 +101,7 @@ function BriefingCard({ briefing }: { briefing: Briefing }) {
         </div>
         {sentimentConfig && (
           <Badge className={`shrink-0 text-xs ${sentimentConfig.badgeClass}`}>
-            <SentimentIcon className={`mr-1 h-3 w-3 ${sentimentConfig.iconClass}`} />
+            <SentimentIcon className={`me-1 h-3 w-3 ${sentimentConfig.iconClass}`} />
             {sentimentConfig.label}
           </Badge>
         )}
@@ -282,7 +282,7 @@ export function ClinicBriefingWidget({ className }: Props) {
             <p className="mt-1 text-xs">Le cron s&apos;exécute à 06h00 (heure Maroc).</p>
           </div>
         ) : (
-          <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
+          <div className="max-h-96 space-y-3 overflow-y-auto pe-1">
             {briefings.map((briefing) => (
               <BriefingCard key={briefing.id} briefing={briefing} />
             ))}

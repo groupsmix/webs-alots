@@ -120,11 +120,11 @@ function SortIndicator({
   sortField: SortField;
   sortDir: "asc" | "desc";
 }) {
-  if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
+  if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ms-1 opacity-30" />;
   return sortDir === "asc" ? (
-    <ChevronUp className="h-3 w-3 ml-1" />
+    <ChevronUp className="h-3 w-3 ms-1" />
   ) : (
-    <ChevronDown className="h-3 w-3 ml-1" />
+    <ChevronDown className="h-3 w-3 ms-1" />
   );
 }
 
@@ -519,21 +519,21 @@ export default function SubscriptionsPage() {
               aria-label={isExporting ? "Export en cours…" : "Exporter"}
             >
               {isExporting ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <Loader2 className="h-4 w-4 me-1 animate-spin" />
               ) : (
-                <Download className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 me-1" />
               )}
               {isExporting ? "Export…" : "Exporter"}
-              <ChevronDown className="h-3 w-3 ml-1" />
+              <ChevronDown className="h-3 w-3 ms-1" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleExportSubscriptionsCSV} disabled={isExporting}>
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              <FileSpreadsheet className="h-4 w-4 me-2" />
               Export CSV
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleExportSubscriptionsPDF} disabled={isExporting}>
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 me-2" />
               Export PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -604,7 +604,7 @@ export default function SubscriptionsPage() {
           </span>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={handleBulkExport}>
-            <Download className="h-3.5 w-3.5 mr-1.5" />
+            <Download className="h-3.5 w-3.5 me-1.5" />
             Exporter CSV
           </Button>
           <Button
@@ -616,7 +616,7 @@ export default function SubscriptionsPage() {
               setBulkConfirmOpen(true);
             }}
           >
-            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+            <CheckCircle className="h-3.5 w-3.5 me-1.5" />
             Activer
           </Button>
           <Button
@@ -628,7 +628,7 @@ export default function SubscriptionsPage() {
               setBulkConfirmOpen(true);
             }}
           >
-            <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+            <AlertTriangle className="h-3.5 w-3.5 me-1.5" />
             Suspendre
           </Button>
           <Button
@@ -640,7 +640,7 @@ export default function SubscriptionsPage() {
               setBulkConfirmOpen(true);
             }}
           >
-            <X className="h-3.5 w-3.5 mr-1.5" />
+            <X className="h-3.5 w-3.5 me-1.5" />
             Annuler abonnement
           </Button>
           <Button
@@ -661,13 +661,13 @@ export default function SubscriptionsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher par nom de client..."
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-1">
-          <Filter className="h-4 w-4 text-muted-foreground mr-1" />
+          <Filter className="h-4 w-4 text-muted-foreground me-1" />
           {(["all", "doctor", "dentist", "pharmacy"] as SystemFilter[]).map((s) => (
             <Button
               key={s}
@@ -693,7 +693,7 @@ export default function SubscriptionsPage() {
               className="text-xs"
             >
               {s === "all" ? "Tous" : statusLabel(s as ClientSubscription["status"])}
-              <Badge variant="secondary" className="ml-1 text-[10px] px-1">
+              <Badge variant="secondary" className="ms-1 text-[10px] px-1">
                 {s === "all"
                   ? subscriptions.length
                   : subscriptions.filter((sub) => sub.status === s).length}
@@ -729,7 +729,7 @@ export default function SubscriptionsPage() {
                       className="h-4 w-4 cursor-pointer accent-primary"
                     />
                   </th>
-                  <th className="text-left font-medium py-3 px-4">
+                  <th className="text-start font-medium py-3 px-4">
                     <button
                       onClick={() => handleSort("clinicName")}
                       className="flex items-center hover:text-foreground transition-colors"
@@ -738,8 +738,8 @@ export default function SubscriptionsPage() {
                       <SortIndicator field="clinicName" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
-                  <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Type</th>
-                  <th className="text-left font-medium py-3 px-4">
+                  <th className="text-start font-medium py-3 px-4 hidden md:table-cell">Type</th>
+                  <th className="text-start font-medium py-3 px-4">
                     <button
                       onClick={() => handleSort("tierName")}
                       className="flex items-center hover:text-foreground transition-colors"
@@ -748,8 +748,8 @@ export default function SubscriptionsPage() {
                       <SortIndicator field="tierName" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
-                  <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Cycle</th>
-                  <th className="text-left font-medium py-3 px-4">
+                  <th className="text-start font-medium py-3 px-4 hidden lg:table-cell">Cycle</th>
+                  <th className="text-start font-medium py-3 px-4">
                     <button
                       onClick={() => handleSort("amount")}
                       className="flex items-center hover:text-foreground transition-colors"
@@ -758,7 +758,7 @@ export default function SubscriptionsPage() {
                       <SortIndicator field="amount" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
-                  <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">
+                  <th className="text-start font-medium py-3 px-4 hidden lg:table-cell">
                     <button
                       onClick={() => handleSort("lastPayment")}
                       className="flex items-center hover:text-foreground transition-colors"
@@ -768,7 +768,7 @@ export default function SubscriptionsPage() {
                       <SortIndicator field="lastPayment" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
-                  <th className="text-left font-medium py-3 px-4">
+                  <th className="text-start font-medium py-3 px-4">
                     <button
                       onClick={() => handleSort("status")}
                       className="flex items-center hover:text-foreground transition-colors"
@@ -777,7 +777,7 @@ export default function SubscriptionsPage() {
                       <SortIndicator field="status" sortField={sortField} sortDir={sortDir} />
                     </button>
                   </th>
-                  <th className="text-right font-medium py-3 px-4">Actions</th>
+                  <th className="text-end font-medium py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -854,7 +854,7 @@ export default function SubscriptionsPage() {
                           </Badge>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4 text-end">
                         <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
@@ -874,9 +874,9 @@ export default function SubscriptionsPage() {
                             <Receipt className="h-3.5 w-3.5" />
                             {sub.invoices.length > 0 &&
                               (isInvoicesOpen ? (
-                                <ChevronUp className="h-3 w-3 ml-0.5" />
+                                <ChevronUp className="h-3 w-3 ms-0.5" />
                               ) : (
-                                <ChevronDown className="h-3 w-3 ml-0.5" />
+                                <ChevronDown className="h-3 w-3 ms-0.5" />
                               ))}
                           </Button>
                           {(() => {
@@ -1020,7 +1020,7 @@ export default function SubscriptionsPage() {
               <DialogTitle>{detailSub.clinicName}</DialogTitle>
               <DialogDescription>Détails de l&apos;abonnement</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pe-1">
               {/* S19: financial summary strip -------------------------------- */}
               {(() => {
                 const paid = detailSub.invoices.filter((i) => i.status === "paid");
@@ -1121,7 +1121,7 @@ export default function SubscriptionsPage() {
                         className="flex items-center justify-between text-sm rounded-lg border p-2"
                       >
                         <div>
-                          <span className="font-mono text-xs text-muted-foreground mr-2">
+                          <span className="font-mono text-xs text-muted-foreground me-2">
                             {inv.id}
                           </span>
                           <span>{inv.date}</span>
@@ -1239,9 +1239,9 @@ export default function SubscriptionsPage() {
                     <Separator />
                     <div>
                       <h4 className="text-sm font-semibold mb-3">Activité</h4>
-                      <ol className="ml-2 border-l border-border space-y-3">
+                      <ol className="ms-2 border-l border-border space-y-3">
                         {events.map((evt, i) => (
-                          <li key={i} className="ml-4 relative">
+                          <li key={i} className="ms-4 relative">
                             <span
                               className={`absolute -left-[1.375rem] flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold leading-none ${evt.dot}`}
                             >
@@ -1306,7 +1306,7 @@ export default function SubscriptionsPage() {
                   );
                 }}
               >
-                <Send className="h-4 w-4 mr-1" />
+                <Send className="h-4 w-4 me-1" />
                 Envoyer le rappel
               </Button>
             </DialogFooter>

@@ -170,7 +170,7 @@ export default function ExpiryTrackerPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b text-left text-sm text-muted-foreground">
+                <tr className="border-b text-start text-sm text-muted-foreground">
                   <th className="py-3 px-2 font-medium">Status</th>
                   <th className="py-3 px-2 font-medium">Product</th>
                   <th className="py-3 px-2 font-medium">Category</th>

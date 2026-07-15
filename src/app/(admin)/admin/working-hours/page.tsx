@@ -172,7 +172,7 @@ export default function WorkingHoursPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Working Hours</h1>
         <Button onClick={handleSave} disabled={saving}>
-          <Save className="h-4 w-4 mr-1" />
+          <Save className="h-4 w-4 me-1" />
           {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </Button>
       </div>
@@ -218,7 +218,7 @@ export default function WorkingHoursPage() {
                       {daySchedule.enabled ? "Open" : "Closed"}
                     </Badge>
                     {daySchedule.enabled && (
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 ms-4">
                         <Label className="text-xs text-muted-foreground">From</Label>
                         <Input
                           type="time"

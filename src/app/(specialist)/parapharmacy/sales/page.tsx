@@ -207,7 +207,7 @@ export default function ParapharmacySalesPage() {
           <p className="text-muted-foreground text-sm">Parapharmacy sales records</p>
         </div>
         <Button onClick={() => setPosOpen(true)}>
-          <ShoppingCart className="h-4 w-4 mr-2" /> New Sale
+          <ShoppingCart className="h-4 w-4 me-2" /> New Sale
         </Button>
         <Card className="p-3">
           <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function ParapharmacySalesPage() {
           placeholder="Search sales..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="ps-9"
         />
       </div>
 
@@ -249,7 +249,7 @@ export default function ParapharmacySalesPage() {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <p className="font-semibold">{formatCurrency(sale.total)}</p>
                   <Badge variant="outline" className="text-xs capitalize">
                     {sale.paymentMethod}
@@ -322,7 +322,7 @@ export default function ParapharmacySalesPage() {
                     <button
                       key={p.id}
                       type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex justify-between"
+                      className="w-full text-start px-3 py-2 hover:bg-muted text-sm flex justify-between"
                       onClick={() => {
                         addToCart(p);
                         setProductSearch("");
@@ -385,7 +385,7 @@ export default function ParapharmacySalesPage() {
                       >
                         <Trash2 className="h-3 w-3" aria-hidden="true" />
                       </Button>
-                      <span className="w-16 text-right font-medium">
+                      <span className="w-16 text-end font-medium">
                         {(item.quantity * item.unitPrice).toFixed(2)}
                       </span>
                     </div>
@@ -406,7 +406,7 @@ export default function ParapharmacySalesPage() {
               onClick={handleCreateSale}
               disabled={saving || cart.length === 0 || !customerName}
             >
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               Complete Sale ({formatCurrency(cartTotal)})
             </Button>
           </DialogFooter>

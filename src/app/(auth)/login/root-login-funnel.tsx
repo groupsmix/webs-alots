@@ -123,7 +123,7 @@ export function RootLoginFunnel() {
                   key={clinic.subdomain}
                   type="button"
                   onClick={() => window.location.assign(tenantLoginUrl(clinic.subdomain))}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-start transition-colors hover:bg-muted/50"
                 >
                   <span className="flex items-center gap-2.5">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -166,7 +166,7 @@ export function RootLoginFunnel() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     {t(locale, "auth.funnelSearching" as TranslationKey)}
                   </>
                 ) : (

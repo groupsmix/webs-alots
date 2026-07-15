@@ -87,7 +87,7 @@ export default function RadiologyDashboardPage() {
             </p>
           </div>
           <Badge variant="outline" className="text-indigo-600 border-indigo-600">
-            <Clock className="h-3 w-3 mr-1" />
+            <Clock className="h-3 w-3 me-1" />
             {new Date().toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
@@ -113,7 +113,7 @@ export default function RadiologyDashboardPage() {
               href="/radiology/orders"
               className="text-sm text-indigo-600 hover:underline mt-2 inline-flex items-center"
             >
-              View Orders <ArrowRight className="h-3 w-3 ml-1" />
+              View Orders <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -133,7 +133,7 @@ export default function RadiologyDashboardPage() {
               href="/radiology/images"
               className="text-sm text-indigo-600 hover:underline mt-2 inline-flex items-center"
             >
-              Image Gallery <ArrowRight className="h-3 w-3 ml-1" />
+              Image Gallery <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -153,7 +153,7 @@ export default function RadiologyDashboardPage() {
               href="/radiology/reports"
               className="text-sm text-indigo-600 hover:underline mt-2 inline-flex items-center"
             >
-              View Reports <ArrowRight className="h-3 w-3 ml-1" />
+              View Reports <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>

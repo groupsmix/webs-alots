@@ -295,7 +295,7 @@ export default function ChatbotSettingsPage() {
           </p>
         </div>
         <Button onClick={saveConfig} disabled={saving}>
-          <Save className="h-4 w-4 mr-1" />
+          <Save className="h-4 w-4 me-1" />
           {saving ? "Sauvegarde..." : savedMessage || "Sauvegarder"}
         </Button>
       </div>
@@ -342,7 +342,7 @@ export default function ChatbotSettingsPage() {
                 <button
                   key={level.value}
                   onClick={() => setConfig({ ...config, intelligence: level.value })}
-                  className={`relative flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
+                  className={`relative flex flex-col items-start gap-2 rounded-lg border p-4 text-start transition-colors ${
                     isSelected
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "hover:bg-muted/50"
@@ -353,7 +353,7 @@ export default function ChatbotSettingsPage() {
                       className={`h-5 w-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
                     />
                     <span className="font-medium text-sm">{level.label}</span>
-                    <Badge variant={level.badgeVariant} className="ml-auto text-[10px]">
+                    <Badge variant={level.badgeVariant} className="ms-auto text-[10px]">
                       {level.badge}
                     </Badge>
                   </div>
@@ -413,7 +413,7 @@ export default function ChatbotSettingsPage() {
               </Badge>
             </CardTitle>
             <Button size="sm" variant="outline" onClick={addFaq}>
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 me-1" />
               Ajouter
             </Button>
           </div>
@@ -430,7 +430,7 @@ export default function ChatbotSettingsPage() {
                 Ajoutez des questions fréquentes pour aider vos patients
               </p>
               <Button size="sm" variant="outline" className="mt-3" onClick={addFaq}>
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 me-1" />
                 Ajouter une FAQ
               </Button>
             </div>

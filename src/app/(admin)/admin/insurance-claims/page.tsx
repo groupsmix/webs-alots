@@ -253,7 +253,7 @@ export default function InsuranceClaimsPage() {
         <h1 className="text-2xl font-bold">Gestion des réclamations d&apos;assurance</h1>
         <Button size="sm" onClick={() => setShowAdd(true)}>
           {}
-          <Plus className="h-4 w-4 mr-1" /> Nouvelle réclamation
+          <Plus className="h-4 w-4 me-1" /> Nouvelle réclamation
         </Button>
       </div>
 
@@ -355,50 +355,50 @@ export default function InsuranceClaimsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left">
+                    <tr className="border-b text-start">
                       {}
-                      <th className="py-3 pr-4 font-medium">Statut</th>
+                      <th className="py-3 pe-4 font-medium">Statut</th>
                       {}
-                      <th className="py-3 pr-4 font-medium">Type</th>
+                      <th className="py-3 pe-4 font-medium">Type</th>
                       {}
-                      <th className="py-3 pr-4 font-medium">N° Police</th>
+                      <th className="py-3 pe-4 font-medium">N° Police</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Réclamé</th>
+                      <th className="py-3 pe-4 font-medium text-end">Réclamé</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Approuvé</th>
+                      <th className="py-3 pe-4 font-medium text-end">Approuvé</th>
                       {}
-                      <th className="py-3 pr-4 font-medium">Date</th>
+                      <th className="py-3 pe-4 font-medium">Date</th>
                       {}
-                      <th className="py-3 font-medium text-right">Actions</th>
+                      <th className="py-3 font-medium text-end">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {claims.map((claim) => (
                       <tr key={claim.id} className="border-b last:border-0">
-                        <td className="py-3 pr-4">
+                        <td className="py-3 pe-4">
                           <div className="flex items-center gap-2">
                             <StatusIcon status={claim.status} />
                             <StatusBadge status={claim.status} />
                           </div>
                         </td>
-                        <td className="py-3 pr-4">
+                        <td className="py-3 pe-4">
                           {INSURANCE_LABELS[claim.insurance_type] ?? claim.insurance_type}
                         </td>
-                        <td className="py-3 pr-4">{claim.policy_number ?? "—"}</td>
-                        <td className="py-3 pr-4 text-right">
+                        <td className="py-3 pe-4">{claim.policy_number ?? "—"}</td>
+                        <td className="py-3 pe-4 text-end">
                           {formatCurrency(claim.amount_claimed / 100, locale ?? "fr")}
                         </td>
-                        <td className="py-3 pr-4 text-right">
+                        <td className="py-3 pe-4 text-end">
                           {claim.amount_approved != null
                             ? formatCurrency(claim.amount_approved / 100, locale ?? "fr")
                             : "—"}
                         </td>
-                        <td className="py-3 pr-4">
+                        <td className="py-3 pe-4">
                           {claim.created_at
                             ? new Date(claim.created_at).toLocaleDateString("fr-FR")
                             : "—"}
                         </td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 text-end">
                           {}
                           <Button variant="ghost" size="sm" onClick={() => openUpdate(claim)}>
                             Modifier

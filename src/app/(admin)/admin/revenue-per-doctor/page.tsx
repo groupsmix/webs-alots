@@ -199,34 +199,34 @@ export default function RevenuePerDoctorPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left">
+                    <tr className="border-b text-start">
                       {}
-                      <th className="py-3 pr-4 font-medium">Médecin</th>
+                      <th className="py-3 pe-4 font-medium">Médecin</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Revenu</th>
-                      <th className="py-3 pr-4 font-medium text-right">RDV</th>
+                      <th className="py-3 pe-4 font-medium text-end">Revenu</th>
+                      <th className="py-3 pe-4 font-medium text-end">RDV</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Complétés</th>
+                      <th className="py-3 pe-4 font-medium text-end">Complétés</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Annulés</th>
+                      <th className="py-3 pe-4 font-medium text-end">Annulés</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Taux ann.</th>
+                      <th className="py-3 pe-4 font-medium text-end">Taux ann.</th>
                       {}
-                      <th className="py-3 font-medium text-right">Moy./RDV</th>
+                      <th className="py-3 font-medium text-end">Moy./RDV</th>
                     </tr>
                   </thead>
                   <tbody>
                     {doctors.map((d) => (
                       <tr key={d.doctorId} className="border-b last:border-0">
-                        <td className="py-3 pr-4">{d.doctorName}</td>
-                        <td className="py-3 pr-4 text-right">
+                        <td className="py-3 pe-4">{d.doctorName}</td>
+                        <td className="py-3 pe-4 text-end">
                           {formatCurrency(d.totalRevenue / 100, locale ?? "fr")}
                         </td>
-                        <td className="py-3 pr-4 text-right">{d.totalAppointments}</td>
-                        <td className="py-3 pr-4 text-right">{d.completedAppointments}</td>
-                        <td className="py-3 pr-4 text-right">{d.cancelledAppointments}</td>
-                        <td className="py-3 pr-4 text-right">{d.cancellationRate}%</td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 pe-4 text-end">{d.totalAppointments}</td>
+                        <td className="py-3 pe-4 text-end">{d.completedAppointments}</td>
+                        <td className="py-3 pe-4 text-end">{d.cancelledAppointments}</td>
+                        <td className="py-3 pe-4 text-end">{d.cancellationRate}%</td>
+                        <td className="py-3 text-end">
                           {formatCurrency(d.avgRevenuePerAppointment / 100, locale ?? "fr")}
                         </td>
                       </tr>

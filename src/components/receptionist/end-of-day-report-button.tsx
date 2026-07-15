@@ -98,7 +98,7 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button variant="outline" size="sm">
-            <FileText className="h-4 w-4 mr-1" />
+            <FileText className="h-4 w-4 me-1" />
             End of Day Report
           </Button>
         )}
@@ -240,12 +240,12 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
             </Button>
             <a href="/receptionist/daily-report">
               <Button variant="outline">
-                <FileText className="h-4 w-4 mr-1" />
+                <FileText className="h-4 w-4 me-1" />
                 Full Report
               </Button>
             </a>
             <Button onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-1" />
+              <Printer className="h-4 w-4 me-1" />
               Print
             </Button>
           </DialogFooter>

@@ -86,7 +86,7 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search brand, model, color..."
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -171,11 +171,11 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
                       variant="outline"
                       className="text-[10px] text-orange-600 border-orange-300"
                     >
-                      <AlertTriangle className="h-3 w-3 mr-0.5" /> {frame.stock_quantity} left
+                      <AlertTriangle className="h-3 w-3 me-0.5" /> {frame.stock_quantity} left
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-[10px]">
-                      <Package className="h-3 w-3 mr-0.5" /> {frame.stock_quantity}
+                      <Package className="h-3 w-3 me-0.5" /> {frame.stock_quantity}
                     </Badge>
                   )}
                 </div>

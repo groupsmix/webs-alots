@@ -426,7 +426,7 @@ function BillingContent({ dataPromise }: { dataPromise: Promise<BillingData> }) 
                           <p className="text-xs text-muted-foreground">{tier.description}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <p className="text-sm font-bold">
                           {formatCurrency(
                             price,
@@ -494,7 +494,7 @@ function BillingContent({ dataPromise }: { dataPromise: Promise<BillingData> }) 
                       </p>
                     </div>
                     <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-sm text-muted-foreground">Nouveau plan</p>
                       <p className="font-medium">{upgradeTier.name}</p>
                       <p className="text-sm font-bold text-primary">
@@ -539,7 +539,7 @@ function BillingContent({ dataPromise }: { dataPromise: Promise<BillingData> }) 
                     Annuler
                   </Button>
                   <Button onClick={() => setUpgradeOpen(false)}>
-                    <Crown className="h-4 w-4 mr-1" />
+                    <Crown className="h-4 w-4 me-1" />
                     Confirmer le changement
                   </Button>
                 </DialogFooter>

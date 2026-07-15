@@ -263,29 +263,29 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2 px-1">Date</th>
-                    <th className="text-right py-2 px-1">Weight</th>
-                    <th className="text-right py-2 px-1">BMI</th>
-                    <th className="text-right py-2 px-1">Fat %</th>
-                    <th className="text-right py-2 px-1">Waist</th>
-                    <th className="text-right py-2 px-1">Hip</th>
+                    <th className="text-start py-2 px-1">Date</th>
+                    <th className="text-end py-2 px-1">Weight</th>
+                    <th className="text-end py-2 px-1">BMI</th>
+                    <th className="text-end py-2 px-1">Fat %</th>
+                    <th className="text-end py-2 px-1">Waist</th>
+                    <th className="text-end py-2 px-1">Hip</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...sorted].reverse().map((m) => (
                     <tr key={m.id} className="border-b last:border-0">
                       <td className="py-2 px-1">{m.measurement_date}</td>
-                      <td className="text-right py-2 px-1">{m.weight_kg ?? "—"}</td>
-                      <td className="text-right py-2 px-1">
+                      <td className="text-end py-2 px-1">{m.weight_kg ?? "—"}</td>
+                      <td className="text-end py-2 px-1">
                         {m.bmi ? (
                           <span className={getBMICategory(m.bmi).color}>{m.bmi.toFixed(1)}</span>
                         ) : (
                           "—"
                         )}
                       </td>
-                      <td className="text-right py-2 px-1">{m.body_fat_pct ?? "—"}</td>
-                      <td className="text-right py-2 px-1">{m.waist_cm ?? "—"}</td>
-                      <td className="text-right py-2 px-1">{m.hip_cm ?? "—"}</td>
+                      <td className="text-end py-2 px-1">{m.body_fat_pct ?? "—"}</td>
+                      <td className="text-end py-2 px-1">{m.waist_cm ?? "—"}</td>
+                      <td className="text-end py-2 px-1">{m.hip_cm ?? "—"}</td>
                     </tr>
                   ))}
                 </tbody>

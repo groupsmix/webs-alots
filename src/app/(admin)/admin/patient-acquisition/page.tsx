@@ -200,15 +200,15 @@ export default function PatientAcquisitionPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left">
+                    <tr className="border-b text-start">
                       {}
-                      <th className="py-3 pr-4 font-medium">Canal</th>
+                      <th className="py-3 pe-4 font-medium">Canal</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Patients</th>
+                      <th className="py-3 pe-4 font-medium text-end">Patients</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Dépenses</th>
+                      <th className="py-3 pe-4 font-medium text-end">Dépenses</th>
                       {}
-                      <th className="py-3 font-medium text-right">Coût/patient</th>
+                      <th className="py-3 font-medium text-end">Coût/patient</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -217,18 +217,18 @@ export default function PatientAcquisitionPage() {
                       .sort((a, b) => b.patientCount - a.patientCount)
                       .map((c) => (
                         <tr key={c.channel} className="border-b last:border-0">
-                          <td className="py-3 pr-4 flex items-center gap-2">
+                          <td className="py-3 pe-4 flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: CHANNEL_COLORS[c.channel] ?? "#607D8B" }}
                             />
                             {CHANNEL_LABELS[c.channel] ?? c.channel}
                           </td>
-                          <td className="py-3 pr-4 text-right">{c.patientCount}</td>
-                          <td className="py-3 pr-4 text-right">
+                          <td className="py-3 pe-4 text-end">{c.patientCount}</td>
+                          <td className="py-3 pe-4 text-end">
                             {formatCurrency(c.totalSpend / 100, locale ?? "fr")}
                           </td>
-                          <td className="py-3 text-right font-medium">
+                          <td className="py-3 text-end font-medium">
                             {c.costPerPatient > 0
                               ? formatCurrency(c.costPerPatient / 100, locale ?? "fr")
                               : "—"}

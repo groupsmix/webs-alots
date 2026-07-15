@@ -103,7 +103,7 @@ export function ComplianceWidget() {
           <span className={`font-medium ${s.overdueDsars > 0 ? "text-destructive" : ""}`}>
             {s.openDsars}
             {s.overdueDsars > 0 && (
-              <span className="ml-1 text-[10px] text-destructive">({s.overdueDsars} overdue)</span>
+              <span className="ms-1 text-[10px] text-destructive">({s.overdueDsars} overdue)</span>
             )}
           </span>
         </div>

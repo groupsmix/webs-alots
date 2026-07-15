@@ -526,7 +526,7 @@ export default function PricingPage() {
           size="sm"
           onClick={() => setTab("tiers")}
         >
-          <DollarSign className="h-4 w-4 mr-1" />
+          <DollarSign className="h-4 w-4 me-1" />
           Grille tarifaire
         </Button>
         <Button
@@ -534,7 +534,7 @@ export default function PricingPage() {
           size="sm"
           onClick={() => setTab("features")}
         >
-          <Settings className="h-4 w-4 mr-1" />
+          <Settings className="h-4 w-4 me-1" />
           Fonctionnalités
         </Button>
         <Button
@@ -542,7 +542,7 @@ export default function PricingPage() {
           size="sm"
           onClick={() => setTab("promotions")}
         >
-          <Tag className="h-4 w-4 mr-1" />
+          <Tag className="h-4 w-4 me-1" />
           Promotions
         </Button>
       </div>
@@ -561,13 +561,13 @@ export default function PricingPage() {
                     size="sm"
                     onClick={() => setSelectedSystem(type)}
                   >
-                    <Icon className="h-4 w-4 mr-1" />
+                    <Icon className="h-4 w-4 me-1" />
                     {systemTypeLabels[type]}
                   </Button>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 sm:ml-auto">
+            <div className="flex items-center gap-2 sm:ms-auto">
               <span className="text-sm text-muted-foreground">Cycle :</span>
               <Button
                 variant={billingCycle === "monthly" ? "default" : "outline"}
@@ -582,7 +582,7 @@ export default function PricingPage() {
                 onClick={() => setBillingCycle("yearly")}
               >
                 Annuel
-                <Badge variant="secondary" className="ml-1 text-[10px]">
+                <Badge variant="secondary" className="ms-1 text-[10px]">
                   -17%
                 </Badge>
               </Button>
@@ -659,7 +659,7 @@ export default function PricingPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                <p className="text-[10px] text-muted-foreground mt-1 text-end">
                   La barre en couleur pleine = tier <span className="font-medium">Populaire</span>
                 </p>
               </div>
@@ -800,7 +800,7 @@ export default function PricingPage() {
                             className="h-7 text-xs flex-1"
                             onClick={requestSaveTier}
                           >
-                            <Save className="h-3 w-3 mr-1" />
+                            <Save className="h-3 w-3 me-1" />
                             Enregistrer
                           </Button>
                           <Button
@@ -924,14 +924,14 @@ export default function PricingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4">Client</th>
-                      <th className="text-left font-medium py-3 px-4">Type</th>
-                      <th className="text-left font-medium py-3 px-4">Tier</th>
-                      <th className="text-left font-medium py-3 px-4 hidden md:table-cell">
+                      <th className="text-start font-medium py-3 px-4">Client</th>
+                      <th className="text-start font-medium py-3 px-4">Type</th>
+                      <th className="text-start font-medium py-3 px-4">Tier</th>
+                      <th className="text-start font-medium py-3 px-4 hidden md:table-cell">
                         Cycle
                       </th>
-                      <th className="text-left font-medium py-3 px-4">Montant</th>
-                      <th className="text-left font-medium py-3 px-4">Statut</th>
+                      <th className="text-start font-medium py-3 px-4">Montant</th>
+                      <th className="text-start font-medium py-3 px-4">Statut</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -999,13 +999,13 @@ export default function PricingPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher une fonctionnalité..."
-                className="pl-10"
+                className="ps-10"
                 value={featureSearch}
                 onChange={(e) => setFeatureSearch(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-1">
-              <Filter className="h-4 w-4 text-muted-foreground mr-1" />
+              <Filter className="h-4 w-4 text-muted-foreground me-1" />
               {(["all", "doctor", "dentist", "pharmacy"] as SystemFilter[]).map((s) => (
                 <Button
                   key={s}
@@ -1065,7 +1065,7 @@ export default function PricingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4 min-w-[200px]">
+                      <th className="text-start font-medium py-3 px-4 min-w-[200px]">
                         Fonctionnalité
                       </th>
                       <th className="text-center font-medium py-3 px-4">Global</th>
@@ -1159,7 +1159,7 @@ export default function PricingPage() {
               </p>
             </div>
             <Button onClick={openCreatePromo}>
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 me-1" />
               Nouvelle promotion
             </Button>
           </div>
@@ -1177,7 +1177,7 @@ export default function PricingPage() {
                     periods.
                   </p>
                   <Button onClick={openCreatePromo}>
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-4 w-4 me-1" />
                     Create your first promotion
                   </Button>
                 </div>
@@ -1280,7 +1280,7 @@ export default function PricingPage() {
               Annuler
             </Button>
             <Button onClick={() => void confirmSaveTier()}>
-              <Save className="h-4 w-4 mr-1" />
+              <Save className="h-4 w-4 me-1" />
               Confirmer
             </Button>
           </DialogFooter>
@@ -1357,7 +1357,7 @@ export default function PricingPage() {
                   onChange={(e) => setPromoDiscount(e.target.value)}
                   min="1"
                   max="100"
-                  className="pr-8"
+                  className="pe-8"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                   %
@@ -1438,7 +1438,7 @@ export default function PricingPage() {
                 Annuler
               </Button>
               <Button variant="destructive" onClick={() => void handleDeletePromo()}>
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 me-1" />
                 Supprimer
               </Button>
             </DialogFooter>

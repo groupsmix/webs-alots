@@ -108,7 +108,7 @@ export function LocaleSwitcher({ className, onLocaleChange }: LocaleSwitcherProp
               >
                 <span className="text-lg">{LOCALE_LABELS[l].flag}</span>
                 <span>{LOCALE_LABELS[l].label}</span>
-                {locale === l && <span className="ml-auto text-blue-500">✓</span>}
+                {locale === l && <span className="ms-auto text-blue-500">✓</span>}
               </button>
             ))}
           </div>

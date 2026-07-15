@@ -170,13 +170,13 @@ export function UsageWidget() {
             )}
             {hasOverage && (
               <Badge variant="destructive" className="text-xs">
-                <AlertTriangle className="mr-1 h-3 w-3" />
+                <AlertTriangle className="me-1 h-3 w-3" />
                 Limite atteinte
               </Badge>
             )}
             {hasWarning && (
               <Badge variant="warning" className="text-xs">
-                <AlertTriangle className="mr-1 h-3 w-3" />
+                <AlertTriangle className="me-1 h-3 w-3" />
                 80% utilisé
               </Badge>
             )}

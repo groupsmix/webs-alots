@@ -322,7 +322,7 @@ export function ExerciseProgramBuilder({
                         className="w-full"
                         onClick={() => setAdding(program.id)}
                       >
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Exercise
+                        <Plus className="h-3.5 w-3.5 me-1" /> Add Exercise
                       </Button>
                     )}
                   </div>

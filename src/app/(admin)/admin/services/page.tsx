@@ -208,7 +208,7 @@ export default function ManageServicesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Services & Prices</h1>
         <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           Add Service
         </Button>
       </div>
@@ -247,7 +247,7 @@ export default function ManageServicesPage() {
                   className="flex-1"
                   onClick={() => openEditDialog(service)}
                 >
-                  <Edit className="h-3.5 w-3.5 mr-1" />
+                  <Edit className="h-3.5 w-3.5 me-1" />
                   Edit
                 </Button>
                 <Button
@@ -328,7 +328,7 @@ export default function ManageServicesPage() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
               {editingService ? "Save Changes" : "Add Service"}
             </Button>
           </DialogFooter>

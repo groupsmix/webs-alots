@@ -296,7 +296,7 @@ export default function AIConfigAdminPage() {
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={loadConfig}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 me-2" />
           Actualiser
         </Button>
       </div>
@@ -379,12 +379,12 @@ export default function AIConfigAdminPage() {
                       )}
                       {provider.is_active ? (
                         <Badge className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200">
-                          <CheckCircle className="h-3 w-3 mr-1" />
+                          <CheckCircle className="h-3 w-3 me-1" />
                           Actif
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-[10px]">
-                          <XCircle className="h-3 w-3 mr-1 text-muted-foreground" />
+                          <XCircle className="h-3 w-3 me-1 text-muted-foreground" />
                           Inactif
                         </Badge>
                       )}

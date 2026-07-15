@@ -57,7 +57,7 @@ export default function SuperAdminFeedbackPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          <Loader2 className="me-2 h-5 w-5 animate-spin" />
           {t(locale, "help.adminLoading")}
         </div>
       ) : items.length === 0 ? (

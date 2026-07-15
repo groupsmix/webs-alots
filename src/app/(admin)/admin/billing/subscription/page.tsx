@@ -207,9 +207,9 @@ export default function SubscriptionBillingPage() {
         {currentPlan !== "free" && (
           <Button variant="outline" onClick={handleManageSubscription} disabled={portalLoading}>
             {portalLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className="h-4 w-4 animate-spin me-2" />
             ) : (
-              <Settings className="h-4 w-4 mr-2" />
+              <Settings className="h-4 w-4 me-2" />
             )}
             Gérer l&apos;abonnement
           </Button>
@@ -396,7 +396,7 @@ export default function SubscriptionBillingPage() {
                         disabled={checkoutLoading !== null}
                       >
                         {checkoutLoading === slug ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          <Loader2 className="h-4 w-4 animate-spin me-1" />
                         ) : null}
                         Upgrader
                       </Button>
@@ -407,7 +407,7 @@ export default function SubscriptionBillingPage() {
                         className="w-full text-muted-foreground"
                         disabled
                       >
-                        <X className="h-3.5 w-3.5 mr-1" />
+                        <X className="h-3.5 w-3.5 me-1" />
                         Inférieur
                       </Button>
                     ) : null}

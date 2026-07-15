@@ -94,7 +94,7 @@ export function OpsSummaryStrip() {
             VPN autorisé
           </span>
         </Link>
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
           <Link href="/super-admin/system" className="hover:text-foreground">
             Système
           </Link>
@@ -117,7 +117,7 @@ export function OpsSummaryStrip() {
             <span className="underline">le tableau de bord système</span>
           </span>
         </Link>
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
           <Link href="/super-admin/system" className="hover:text-foreground">
             Système
           </Link>
@@ -164,7 +164,7 @@ export function OpsSummaryStrip() {
           </>
         )}
       </Link>
-      <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
         <Link href="/super-admin/system" className="hover:text-foreground">
           Système
         </Link>

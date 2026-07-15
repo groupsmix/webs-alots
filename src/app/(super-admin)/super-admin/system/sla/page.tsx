@@ -78,7 +78,7 @@ export default async function SLAPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left">
+                <tr className="border-b text-start">
                   <th className="p-3">Service</th>
                   <th className="p-3">Mois</th>
                   <th className="p-3">Uptime %</th>

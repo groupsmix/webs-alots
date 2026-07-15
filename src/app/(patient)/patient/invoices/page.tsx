@@ -127,13 +127,13 @@ export default function PatientInvoicesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="text-left font-medium py-3 pr-4">Invoice</th>
-                  <th className="text-left font-medium py-3 pr-4">Date</th>
-                  <th className="text-left font-medium py-3 pr-4">Patient</th>
-                  <th className="text-left font-medium py-3 pr-4">Amount</th>
-                  <th className="text-left font-medium py-3 pr-4">Method</th>
-                  <th className="text-left font-medium py-3 pr-4">Status</th>
-                  <th className="text-right font-medium py-3">Actions</th>
+                  <th className="text-start font-medium py-3 pe-4">Invoice</th>
+                  <th className="text-start font-medium py-3 pe-4">Date</th>
+                  <th className="text-start font-medium py-3 pe-4">Patient</th>
+                  <th className="text-start font-medium py-3 pe-4">Amount</th>
+                  <th className="text-start font-medium py-3 pe-4">Method</th>
+                  <th className="text-start font-medium py-3 pe-4">Status</th>
+                  <th className="text-end font-medium py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,17 +142,17 @@ export default function PatientInvoicesPage() {
                     key={inv.id}
                     className="border-b last:border-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="py-3 pr-4 font-medium">{inv.id.toUpperCase()}</td>
-                    <td className="py-3 pr-4 text-muted-foreground">{inv.date}</td>
-                    <td className="py-3 pr-4">{inv.patientName}</td>
-                    <td className="py-3 pr-4 font-semibold">
+                    <td className="py-3 pe-4 font-medium">{inv.id.toUpperCase()}</td>
+                    <td className="py-3 pe-4 text-muted-foreground">{inv.date}</td>
+                    <td className="py-3 pe-4">{inv.patientName}</td>
+                    <td className="py-3 pe-4 font-semibold">
                       {inv.amount} {inv.currency}
                     </td>
-                    <td className="py-3 pr-4 capitalize text-muted-foreground">{inv.method}</td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pe-4 capitalize text-muted-foreground">{inv.method}</td>
+                    <td className="py-3 pe-4">
                       <Badge variant={statusVariant[inv.status]}>{inv.status}</Badge>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-end">
                       <div className="flex gap-1 justify-end">
                         <Button variant="ghost" size="sm" title="Receipt unavailable" disabled>
                           <Download className="h-3.5 w-3.5" />
@@ -183,7 +183,7 @@ export default function PatientInvoicesPage() {
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
-                    <Download className="h-3.5 w-3.5 mr-1" />
+                    <Download className="h-3.5 w-3.5 me-1" />
                     Receipt unavailable
                   </Button>
                 </div>

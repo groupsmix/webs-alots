@@ -278,7 +278,7 @@ export function ReceptionistBookingCalendar() {
           <ManualBookingDialog
             trigger={
               <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 me-1" />
                 New Booking
               </Button>
             }
@@ -287,7 +287,7 @@ export function ReceptionistBookingCalendar() {
           <WalkInDialog
             trigger={
               <Button size="sm" variant="outline">
-                <User className="h-4 w-4 mr-1" />
+                <User className="h-4 w-4 me-1" />
                 Walk-in
               </Button>
             }
@@ -309,7 +309,7 @@ export function ReceptionistBookingCalendar() {
           <table className="w-full min-w-[700px]">
             <thead>
               <tr>
-                <th className="w-16 text-xs text-muted-foreground font-normal text-left p-2">
+                <th className="w-16 text-xs text-muted-foreground font-normal text-start p-2">
                   <Clock className="h-3 w-3" />
                 </th>
                 {weekDates.map((date, i) => {

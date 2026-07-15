@@ -212,15 +212,15 @@ export function DailyReport() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => exportAppointments(todayAppointments)}>
-            <Download className="h-4 w-4 mr-1" />
+            <Download className="h-4 w-4 me-1" />
             Export Appointments
           </Button>
           <Button variant="outline" onClick={() => exportInvoices(todayInvoices)}>
-            <Download className="h-4 w-4 mr-1" />
+            <Download className="h-4 w-4 me-1" />
             Export Invoices
           </Button>
           <Button onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-1" />
+            <Printer className="h-4 w-4 me-1" />
             Print Report
           </Button>
         </div>
@@ -319,19 +319,19 @@ export function DailyReport() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-start py-2 px-3 font-medium text-muted-foreground">
                           Time
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-start py-2 px-3 font-medium text-muted-foreground">
                           Patient
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-start py-2 px-3 font-medium text-muted-foreground">
                           Service
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-start py-2 px-3 font-medium text-muted-foreground">
                           Status
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-start py-2 px-3 font-medium text-muted-foreground">
                           Insurance
                         </th>
                       </tr>
@@ -348,7 +348,7 @@ export function DailyReport() {
                                 <div>
                                   <span>{apt.patientName}</span>
                                   {apt.isFirstVisit && (
-                                    <Badge variant="secondary" className="ml-2 text-[10px]">
+                                    <Badge variant="secondary" className="ms-2 text-[10px]">
                                       New
                                     </Badge>
                                   )}

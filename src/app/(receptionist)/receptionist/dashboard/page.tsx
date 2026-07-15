@@ -153,7 +153,7 @@ export default function ReceptionistDashboardPage() {
       );
     }
     return (
-      <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[500px] overflow-y-auto pe-1">
         {appointments.map((apt) => (
           <AppointmentCard
             key={apt.id}
@@ -214,7 +214,7 @@ export default function ReceptionistDashboardPage() {
           <ManualBookingDialog
             trigger={
               <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-1" />
+                <Calendar className="h-4 w-4 me-1" />
                 Manual Booking
               </Button>
             }
@@ -345,7 +345,7 @@ export default function ReceptionistDashboardPage() {
           <WalkInDialog
             trigger={
               <Button className="w-full">
-                <UserPlus className="h-4 w-4 mr-1" />
+                <UserPlus className="h-4 w-4 me-1" />
                 Walk-in Registration
               </Button>
             }
@@ -368,14 +368,14 @@ export default function ReceptionistDashboardPage() {
             <CardContent className="space-y-2">
               <a href="/receptionist/daily-report" className="block">
                 <Button variant="outline" size="sm" className="w-full justify-start">
-                  <FileText className="h-3.5 w-3.5 mr-2" />
+                  <FileText className="h-3.5 w-3.5 me-2" />
                   Full Daily Report
                 </Button>
               </a>
               <PaymentDialog
                 trigger={
                   <Button variant="outline" size="sm" className="w-full justify-start">
-                    <CreditCard className="h-3.5 w-3.5 mr-2" />
+                    <CreditCard className="h-3.5 w-3.5 me-2" />
                     Advanced Payment
                   </Button>
                 }

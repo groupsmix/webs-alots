@@ -152,7 +152,7 @@ export function MealPlanBuilder({
                           <div className="flex items-center gap-2 mb-2">
                             <Utensils className="h-4 w-4 text-muted-foreground" />
                             <h4 className="text-sm font-medium">{MEAL_LABELS[slot]}</h4>
-                            <Badge variant="outline" className="text-[10px] ml-auto">
+                            <Badge variant="outline" className="text-[10px] ms-auto">
                               {items.reduce((s, i) => s + i.calories, 0)} kcal
                             </Badge>
                           </div>
@@ -164,7 +164,7 @@ export function MealPlanBuilder({
                                 <div key={idx} className="flex items-center gap-2 text-xs py-1">
                                   <span className="flex-1">{item.name}</span>
                                   <span className="text-muted-foreground">{item.quantity}</span>
-                                  <span className="w-14 text-right">{item.calories} kcal</span>
+                                  <span className="w-14 text-end">{item.calories} kcal</span>
                                   {editable && onRemoveMealItem && (
                                     <button
                                       type="button"

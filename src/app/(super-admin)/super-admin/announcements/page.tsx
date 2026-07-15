@@ -318,7 +318,7 @@ export default function AnnouncementsPage() {
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           Nouvelle annonce
         </Button>
       </div>
@@ -363,7 +363,7 @@ export default function AnnouncementsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher des annonces…"
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -509,7 +509,7 @@ export default function AnnouncementsPage() {
               description="Créez des annonces pour informer les propriétaires de cliniques des mises à jour système, fenêtres de maintenance, nouvelles fonctionnalités et avis importants."
               action={
                 <Button onClick={openCreate}>
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-4 w-4 me-1" />
                   Créer votre première annonce
                 </Button>
               }
@@ -644,7 +644,7 @@ export default function AnnouncementsPage() {
                     size="sm"
                     onClick={() => setFormScheduleMode("now")}
                   >
-                    <Send className="h-3.5 w-3.5 mr-1" />
+                    <Send className="h-3.5 w-3.5 me-1" />
                     Envoyer maintenant
                   </Button>
                   <Button
@@ -653,7 +653,7 @@ export default function AnnouncementsPage() {
                     size="sm"
                     onClick={() => setFormScheduleMode("later")}
                   >
-                    <Clock className="h-3.5 w-3.5 mr-1" />
+                    <Clock className="h-3.5 w-3.5 me-1" />
                     Planifier
                   </Button>
                 </div>
@@ -721,7 +721,7 @@ export default function AnnouncementsPage() {
                 size="sm"
                 onClick={() => setShowFormPreview(!showFormPreview)}
               >
-                <Eye className="h-3.5 w-3.5 mr-1" />
+                <Eye className="h-3.5 w-3.5 me-1" />
                 {showFormPreview ? "Retour à l'édition" : "Aperçu"}
               </Button>
               <div className="flex items-center gap-2">
@@ -792,7 +792,7 @@ export default function AnnouncementsPage() {
                 Annuler
               </Button>
               <Button variant="destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 me-1" />
                 Supprimer
               </Button>
             </DialogFooter>

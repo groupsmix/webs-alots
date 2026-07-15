@@ -446,7 +446,7 @@ export default function SupportPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher par sujet ou nom de clinique..."
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -503,7 +503,7 @@ export default function SupportPage() {
                       <button
                         type="button"
                         onClick={() => handleExpandTicket(ticket.id)}
-                        className="font-semibold text-sm truncate hover:underline text-left"
+                        className="font-semibold text-sm truncate hover:underline text-start"
                       >
                         {ticket.subject}
                       </button>
@@ -737,7 +737,7 @@ export default function SupportPage() {
 
                     {/* Status change buttons */}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                      <span className="text-xs text-muted-foreground mr-1">Statut :</span>
+                      <span className="text-xs text-muted-foreground me-1">Statut :</span>
                       {(["open", "in_progress", "resolved", "closed"] as const).map((s) => (
                         <Button
                           key={s}

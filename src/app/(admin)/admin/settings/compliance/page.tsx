@@ -41,7 +41,7 @@ export default function CompliancePage() {
               Le sous-traitant traite les données personnelles des patients uniquement pour fournir
               les services de gestion de cabinet définis dans le contrat de service, incluant :
             </p>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
+            <ul className="list-disc ps-5 mt-2 space-y-1">
               <li>Gestion des rendez-vous et de la file d&apos;attente</li>
               <li>Dossiers patients et historique médical</li>
               <li>Facturation et paiements</li>
@@ -54,7 +54,7 @@ export default function CompliancePage() {
             <h3 className="text-base font-medium text-foreground mb-2">
               3. Types de Données Traitées
             </h3>
-            <ul className="list-disc pl-5 space-y-1">
+            <ul className="list-disc ps-5 space-y-1">
               <li>
                 <strong>Données d&apos;identification :</strong> nom, prénom, email, téléphone
               </li>
@@ -75,7 +75,7 @@ export default function CompliancePage() {
             <h3 className="text-base font-medium text-foreground mb-2">
               4. Obligations du Sous-traitant
             </h3>
-            <ul className="list-disc pl-5 space-y-1">
+            <ul className="list-disc ps-5 space-y-1">
               <li>Traiter les données uniquement sur instruction documentée du responsable</li>
               <li>Garantir la confidentialité des personnes autorisées à traiter les données</li>
               <li>
@@ -102,7 +102,7 @@ export default function CompliancePage() {
               Le sous-traitant aide le responsable à répondre aux demandes d&apos;exercice des
               droits des patients :
             </p>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
+            <ul className="list-disc ps-5 mt-2 space-y-1">
               <li>Droit d&apos;accès (export des données en JSON/CSV)</li>
               <li>Droit de rectification</li>
               <li>Droit à l&apos;effacement (suppression avec délai de grâce de 30 jours)</li>
@@ -116,7 +116,7 @@ export default function CompliancePage() {
               6. Sous-traitance Ultérieure
             </h3>
             <p>Oltigo utilise les sous-traitants suivants pour fournir le service :</p>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
+            <ul className="list-disc ps-5 mt-2 space-y-1">
               <li>
                 <strong>Supabase (AWS eu-west)</strong> — Base de données et authentification
               </li>

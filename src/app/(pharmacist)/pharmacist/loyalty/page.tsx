@@ -143,7 +143,7 @@ export default function LoyaltyPage() {
           </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-2 h-4 w-4" /> Add Member
+          <Plus className="me-2 h-4 w-4" /> Add Member
         </Button>
       </div>
 
@@ -246,13 +246,13 @@ export default function LoyaltyPage() {
           }}
           className={`px-4 py-2 rounded-lg text-sm ${view === "members" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
         >
-          <Users className="h-4 w-4 inline mr-1" /> Members
+          <Users className="h-4 w-4 inline me-1" /> Members
         </button>
         <button
           onClick={() => setView("transactions")}
           className={`px-4 py-2 rounded-lg text-sm ${view === "transactions" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
         >
-          <History className="h-4 w-4 inline mr-1" /> Transactions
+          <History className="h-4 w-4 inline me-1" /> Transactions
         </button>
       </div>
 
@@ -263,7 +263,7 @@ export default function LoyaltyPage() {
           placeholder="Search by name, phone, or referral code..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="ps-10"
         />
       </div>
 
@@ -348,7 +348,7 @@ export default function LoyaltyPage() {
                     {member.referredBy && <p>Referred by: {member.referredBy}</p>}
                     {member.birthdayRewardClaimed && (
                       <Badge className="bg-pink-100 text-pink-700 border-0 text-xs">
-                        <Cake className="h-3 w-3 mr-1" /> Birthday reward claimed (
+                        <Cake className="h-3 w-3 me-1" /> Birthday reward claimed (
                         {member.birthdayRewardYear})
                       </Badge>
                     )}
@@ -364,13 +364,13 @@ export default function LoyaltyPage() {
                         setView("transactions");
                       }}
                     >
-                      <History className="mr-1 h-3 w-3" /> History
+                      <History className="me-1 h-3 w-3" /> History
                     </Button>
                     <Button
                       size="sm"
                       className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
                     >
-                      <Gift className="mr-1 h-3 w-3" /> Redeem
+                      <Gift className="me-1 h-3 w-3" /> Redeem
                     </Button>
                   </div>
                 </CardContent>
@@ -396,12 +396,12 @@ export default function LoyaltyPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b text-left text-sm text-muted-foreground">
+                  <tr className="border-b text-start text-sm text-muted-foreground">
                     <th className="py-3 px-2 font-medium">Date</th>
                     <th className="py-3 px-2 font-medium">Member</th>
                     <th className="py-3 px-2 font-medium">Type</th>
                     <th className="py-3 px-2 font-medium">Description</th>
-                    <th className="py-3 px-2 font-medium text-right">Points</th>
+                    <th className="py-3 px-2 font-medium text-end">Points</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -421,7 +421,7 @@ export default function LoyaltyPage() {
                         </td>
                         <td className="py-3 px-2 text-muted-foreground">{tx.description}</td>
                         <td
-                          className={`py-3 px-2 text-right font-bold ${tx.points > 0 ? "text-emerald-600" : "text-red-600"}`}
+                          className={`py-3 px-2 text-end font-bold ${tx.points > 0 ? "text-emerald-600" : "text-red-600"}`}
                         >
                           <span className="flex items-center justify-end gap-1">
                             {tx.points > 0 ? (

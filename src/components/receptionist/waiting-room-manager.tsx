@@ -256,13 +256,13 @@ export function WaitingRoomManager() {
         <WalkInDialog
           trigger={
             <Button size="sm">
-              <UserPlus className="h-4 w-4 mr-1" />
+              <UserPlus className="h-4 w-4 me-1" />
               Walk-in Check-in
             </Button>
           }
         />
         <Button variant="outline" size="sm" onClick={callNext} disabled={waitingCount === 0}>
-          <Bell className="h-4 w-4 mr-1" />
+          <Bell className="h-4 w-4 me-1" />
           Call Next
         </Button>
       </div>
@@ -338,7 +338,7 @@ export function WaitingRoomManager() {
 
                   <div className="flex items-center gap-2">
                     {patient.status === "waiting" && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mr-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground me-2">
                         <Timer className="h-3 w-3" />
                         <span>~{patient.estimatedWait}min</span>
                       </div>

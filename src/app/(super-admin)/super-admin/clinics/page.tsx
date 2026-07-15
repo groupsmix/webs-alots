@@ -425,16 +425,16 @@ function ClinicsTableSkeleton() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-muted-foreground">
-                <th className="text-left font-medium py-3 px-4">Clinic</th>
-                <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
-                <th className="text-left font-medium py-3 px-4">Type</th>
-                <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
-                <th className="text-left font-medium py-3 px-4">Users</th>
-                <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Revenue</th>
-                <th className="text-left font-medium py-3 px-4">Plan</th>
-                <th className="text-left font-medium py-3 px-4">Health</th>
-                <th className="text-left font-medium py-3 px-4">Status</th>
-                <th className="text-right font-medium py-3 px-4">Actions</th>
+                <th className="text-start font-medium py-3 px-4">Clinic</th>
+                <th className="text-start font-medium py-3 px-4 hidden md:table-cell">Owner</th>
+                <th className="text-start font-medium py-3 px-4">Type</th>
+                <th className="text-start font-medium py-3 px-4 hidden lg:table-cell">City</th>
+                <th className="text-start font-medium py-3 px-4">Users</th>
+                <th className="text-start font-medium py-3 px-4 hidden lg:table-cell">Revenue</th>
+                <th className="text-start font-medium py-3 px-4">Plan</th>
+                <th className="text-start font-medium py-3 px-4">Health</th>
+                <th className="text-start font-medium py-3 px-4">Status</th>
+                <th className="text-end font-medium py-3 px-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -467,8 +467,8 @@ function ClinicsTableSkeleton() {
                   <td className="py-3 px-4">
                     <div className="h-5 w-14 bg-muted animate-pulse rounded-full" />
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="h-6 w-20 bg-muted animate-pulse rounded ml-auto" />
+                  <td className="py-3 px-4 text-end">
+                    <div className="h-6 w-20 bg-muted animate-pulse rounded ms-auto" />
                   </td>
                 </tr>
               ))}
@@ -1238,19 +1238,19 @@ export default function AllClinicsPage() {
             disabled={refreshingHealth || loadingData}
           >
             {refreshingHealth ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="h-4 w-4 me-1 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-4 w-4 me-1" />
             )}
             Refresh Health
           </Button>
           <Button variant="outline" onClick={handleExportCSV} disabled={filtered.length === 0}>
-            <Download className="h-4 w-4 mr-1" />
+            <Download className="h-4 w-4 me-1" />
             Export CSV
           </Button>
           <Link href="/super-admin/onboarding">
             <Button>
-              <UserPlus className="h-4 w-4 mr-1" />
+              <UserPlus className="h-4 w-4 me-1" />
               New Client Setup
             </Button>
           </Link>
@@ -1441,7 +1441,7 @@ export default function AllClinicsPage() {
                         .map(([key, value]) => (
                           <div key={key} className="flex justify-between gap-3 py-0.5">
                             <span className="text-muted-foreground">{key.replace(/_/g, " ")}</span>
-                            <span className="text-right font-medium">{String(value ?? "—")}</span>
+                            <span className="text-end font-medium">{String(value ?? "—")}</span>
                           </div>
                         ))}
                     </div>
@@ -1463,7 +1463,7 @@ export default function AllClinicsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name, city, or owner..."
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -1494,7 +1494,7 @@ export default function AllClinicsPage() {
               className="capitalize text-xs"
             >
               {s === "all" ? "All" : s}
-              <Badge variant="secondary" className="ml-1 text-[10px] px-1">
+              <Badge variant="secondary" className="ms-1 text-[10px] px-1">
                 {s === "all" ? list.length : list.filter((c) => c.status === s).length}
               </Badge>
             </Button>
@@ -1527,27 +1527,27 @@ export default function AllClinicsPage() {
           </span>
           <Separator orientation="vertical" className="h-6 mx-1" />
           <Button variant="outline" size="sm" onClick={() => openBulkAction("change-tier")}>
-            <Shield className="h-3.5 w-3.5 mr-1" />
+            <Shield className="h-3.5 w-3.5 me-1" />
             Change Tier
           </Button>
           <Button variant="outline" size="sm" onClick={() => openBulkAction("send-announcement")}>
-            <Send className="h-3.5 w-3.5 mr-1" />
+            <Send className="h-3.5 w-3.5 me-1" />
             Send Announcement
           </Button>
           <Button variant="outline" size="sm" onClick={() => openBulkAction("enable-feature")}>
-            <Zap className="h-3.5 w-3.5 mr-1" />
+            <Zap className="h-3.5 w-3.5 me-1" />
             Enable Feature
           </Button>
           <Button variant="outline" size="sm" onClick={() => openBulkAction("suspend")}>
-            <Ban className="h-3.5 w-3.5 mr-1" />
+            <Ban className="h-3.5 w-3.5 me-1" />
             Suspend
           </Button>
           <Button variant="outline" size="sm" onClick={() => openBulkAction("export")}>
-            <Download className="h-3.5 w-3.5 mr-1" />
+            <Download className="h-3.5 w-3.5 me-1" />
             Export
           </Button>
           <Button variant="outline" size="sm" onClick={() => openBulkAction("change-status")}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            <RefreshCw className="h-3.5 w-3.5 me-1" />
             Change Status
           </Button>
           <Button
@@ -1556,14 +1556,14 @@ export default function AllClinicsPage() {
             className="text-red-600 hover:text-red-700"
             onClick={() => openBulkAction("delete")}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            <Trash2 className="h-3.5 w-3.5 me-1" />
             Delete
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedIds(new Set())}
-            className="ml-auto text-xs"
+            className="ms-auto text-xs"
           >
             Clear selection
           </Button>
@@ -1594,7 +1594,7 @@ export default function AllClinicsPage() {
                         ) : null}
                       </button>
                     </th>
-                    <th className="text-left font-medium py-3 px-4">
+                    <th className="text-start font-medium py-3 px-4">
                       <button
                         type="button"
                         className="flex items-center gap-1 hover:text-foreground"
@@ -1604,14 +1604,14 @@ export default function AllClinicsPage() {
                         {sortField === "name" && <ArrowUpDown className="h-3 w-3" />}
                       </button>
                     </th>
-                    <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
-                    <th className="text-left font-medium py-3 px-4">Type</th>
-                    <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
-                    <th className="text-left font-medium py-3 px-4">Users</th>
-                    <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">
+                    <th className="text-start font-medium py-3 px-4 hidden md:table-cell">Owner</th>
+                    <th className="text-start font-medium py-3 px-4">Type</th>
+                    <th className="text-start font-medium py-3 px-4 hidden lg:table-cell">City</th>
+                    <th className="text-start font-medium py-3 px-4">Users</th>
+                    <th className="text-start font-medium py-3 px-4 hidden lg:table-cell">
                       Revenue
                     </th>
-                    <th className="text-left font-medium py-3 px-4">
+                    <th className="text-start font-medium py-3 px-4">
                       <button
                         type="button"
                         className="flex items-center gap-1 hover:text-foreground"
@@ -1621,7 +1621,7 @@ export default function AllClinicsPage() {
                         {sortField === "plan" && <ArrowUpDown className="h-3 w-3" />}
                       </button>
                     </th>
-                    <th className="text-left font-medium py-3 px-4">
+                    <th className="text-start font-medium py-3 px-4">
                       <button
                         type="button"
                         className="flex items-center gap-1 hover:text-foreground"
@@ -1631,7 +1631,7 @@ export default function AllClinicsPage() {
                         {sortField === "health" && <ArrowUpDown className="h-3 w-3" />}
                       </button>
                     </th>
-                    <th className="text-left font-medium py-3 px-4">
+                    <th className="text-start font-medium py-3 px-4">
                       <button
                         type="button"
                         className="flex items-center gap-1 hover:text-foreground"
@@ -1641,7 +1641,7 @@ export default function AllClinicsPage() {
                         {sortField === "status" && <ArrowUpDown className="h-3 w-3" />}
                       </button>
                     </th>
-                    <th className="text-right font-medium py-3 px-4">Actions</th>
+                    <th className="text-end font-medium py-3 px-4">Actions</th>
                   </tr>
                   {}
                 </thead>
@@ -1743,7 +1743,7 @@ export default function AllClinicsPage() {
                             {clinic.status}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3 px-4 text-end">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
@@ -2142,7 +2142,7 @@ export default function AllClinicsPage() {
                   setDetail(null);
                 }}
               >
-                <LogIn className="h-4 w-4 mr-1" />
+                <LogIn className="h-4 w-4 me-1" />
                 Login as Client
               </Button>
             </DialogFooter>
@@ -2247,8 +2247,8 @@ export default function AllClinicsPage() {
                   }
                 }}
               >
-                {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <LogIn className="h-4 w-4 mr-1" />
+                {actionLoading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
+                <LogIn className="h-4 w-4 me-1" />
                 Continue as {loginClinic.ownerName.split(" ")[0] || "Admin"}
               </Button>
             </DialogFooter>
@@ -2323,15 +2323,15 @@ export default function AllClinicsPage() {
                   (suspendClinic.status !== "suspended" && confirmName !== suspendClinic.name)
                 }
               >
-                {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                {actionLoading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
                 {suspendClinic.status === "suspended" ? (
                   <>
-                    <CheckCircle className="h-4 w-4 mr-1" />
+                    <CheckCircle className="h-4 w-4 me-1" />
                     Activate
                   </>
                 ) : (
                   <>
-                    <Ban className="h-4 w-4 mr-1" />
+                    <Ban className="h-4 w-4 me-1" />
                     Suspend
                   </>
                 )}
@@ -2405,8 +2405,8 @@ export default function AllClinicsPage() {
                 onClick={handleDeleteClinic}
                 disabled={actionLoading || deleteConfirmName !== deleteTarget.name}
               >
-                {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <Trash2 className="h-4 w-4 mr-1" />
+                {actionLoading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
+                <Trash2 className="h-4 w-4 me-1" />
                 Delete permanently
               </Button>
             </DialogFooter>
@@ -2564,12 +2564,12 @@ export default function AllClinicsPage() {
               >
                 {bulkAction === "suspend" ? (
                   <>
-                    <Ban className="h-4 w-4 mr-1" />
+                    <Ban className="h-4 w-4 me-1" />
                     Suspend {selectedClinics.length} Clinic{selectedClinics.length !== 1 ? "s" : ""}
                   </>
                 ) : bulkAction === "delete" ? (
                   <>
-                    <Trash2 className="h-4 w-4 mr-1" />
+                    <Trash2 className="h-4 w-4 me-1" />
                     Delete {selectedClinics.length} Clinic{selectedClinics.length !== 1 ? "s" : ""}
                   </>
                 ) : (

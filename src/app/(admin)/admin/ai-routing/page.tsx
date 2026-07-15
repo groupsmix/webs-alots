@@ -150,7 +150,7 @@ function ModelRoutingContent() {
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setPromise(fetchRoutingData())}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 me-2" />
           Actualiser
         </Button>
       </div>
@@ -176,8 +176,8 @@ function ModelRoutingContent() {
               )}
             </div>
             {!activeProvider && (
-              <Badge variant="destructive" className="ml-auto">
-                <AlertTriangle className="h-3 w-3 mr-1" />
+              <Badge variant="destructive" className="ms-auto">
+                <AlertTriangle className="h-3 w-3 me-1" />
                 Dégradé
               </Badge>
             )}

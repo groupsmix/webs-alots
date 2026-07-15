@@ -101,7 +101,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <header className="mb-10">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <Badge variant="secondary">
-            <Tag className="h-3 w-3 mr-1" />
+            <Tag className="h-3 w-3 me-1" />
             {BLOG_CATEGORIES[post.category]}
           </Badge>
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -148,7 +148,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             href="/blog"
             className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="me-2 h-4 w-4" />
             Voir tous les articles
           </Link>
         </div>

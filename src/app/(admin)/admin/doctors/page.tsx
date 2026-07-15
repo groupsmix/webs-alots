@@ -225,7 +225,7 @@ export default function ManageDoctorsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Doctors</h1>
         <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           Add Doctor
         </Button>
       </div>
@@ -256,7 +256,7 @@ export default function ManageDoctorsPage() {
                   ))}
                 </div>
               </div>
-              <div className="text-right text-sm text-muted-foreground">
+              <div className="text-end text-sm text-muted-foreground">
                 <p>Consultation: {formatCurrency(doctor.consultationFee)}</p>
                 <p>{doctor.phone}</p>
                 <p className="text-xs">{doctor.email}</p>
@@ -368,7 +368,7 @@ export default function ManageDoctorsPage() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
               {editingDoctor ? "Save Changes" : "Add Doctor"}
             </Button>
           </DialogFooter>

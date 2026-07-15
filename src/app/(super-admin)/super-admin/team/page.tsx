@@ -346,7 +346,7 @@ export default function TeamPage() {
           </p>
         </div>
         <Button onClick={() => setInviteOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
+          <UserPlus className="h-4 w-4 me-2" />
           Invite Team Member
         </Button>
       </div>
@@ -370,9 +370,9 @@ export default function TeamPage() {
               disabled={briefingsGenerating}
             >
               {briefingsGenerating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
               ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4 me-2" />
               )}
               Generate today&apos;s briefings
             </Button>
@@ -427,7 +427,7 @@ export default function TeamPage() {
           placeholder="Search by name, email, or role..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
+          className="ps-10"
         />
       </div>
       {/* Team Members Table */}
@@ -438,18 +438,18 @@ export default function TeamPage() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="w-8 py-3 px-4" />
-                  <th className="text-left py-3 px-4 font-medium">Name</th>
-                  <th className="text-left py-3 px-4 font-medium">Email</th>
-                  <th className="text-left py-3 px-4 font-medium">Role</th>
-                  <th className="text-left py-3 px-4 font-medium">Last Login</th>
-                  <th className="text-left py-3 px-4 font-medium">Actions</th>
+                  <th className="text-start py-3 px-4 font-medium">Name</th>
+                  <th className="text-start py-3 px-4 font-medium">Email</th>
+                  <th className="text-start py-3 px-4 font-medium">Role</th>
+                  <th className="text-start py-3 px-4 font-medium">Last Login</th>
+                  <th className="text-start py-3 px-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                      <Loader2 className="h-5 w-5 animate-spin inline me-2" />
                       Loading team members...
                     </td>
                   </tr>
@@ -499,7 +499,7 @@ export default function TeamPage() {
                             variant={ROLE_COLORS[admin.role] ?? "secondary"}
                             className="text-xs"
                           >
-                            <Shield className="h-3 w-3 mr-1" />
+                            <Shield className="h-3 w-3 me-1" />
                             {ROLE_LABELS[admin.role] ?? admin.role}
                           </Badge>
                         </td>
@@ -515,7 +515,7 @@ export default function TeamPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openEditRole(admin)}>
-                                <Shield className="h-4 w-4 mr-2" />
+                                <Shield className="h-4 w-4 me-2" />
                                 Edit Role
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -523,7 +523,7 @@ export default function TeamPage() {
                                 className="text-destructive"
                                 onClick={() => openRemove(admin)}
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
+                                <Trash2 className="h-4 w-4 me-2" />
                                 Remove
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -534,7 +534,7 @@ export default function TeamPage() {
                       {isExpanded && (
                         <tr className="bg-muted/20">
                           <td colSpan={6} className="px-4 py-3">
-                            <div className="ml-12 space-y-1 text-xs text-muted-foreground">
+                            <div className="ms-12 space-y-1 text-xs text-muted-foreground">
                               <p>
                                 <strong>ID:</strong> {admin.id}
                               </p>
@@ -551,7 +551,7 @@ export default function TeamPage() {
                               )}
                               <Link href="/super-admin/analytics">
                                 <Button variant="ghost" size="sm" className="text-xs mt-1">
-                                  <Eye className="h-3 w-3 mr-1" />
+                                  <Eye className="h-3 w-3 me-1" />
                                   View Full Audit Log
                                 </Button>
                               </Link>
@@ -624,9 +624,9 @@ export default function TeamPage() {
             </Button>
             <Button onClick={handleInvite} disabled={inviteSending}>
               {inviteSending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
               ) : (
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-4 w-4 me-2" />
               )}
               Envoyer l&apos;invitation
             </Button>
@@ -678,7 +678,7 @@ export default function TeamPage() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleRemove}>
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 me-2" />
               Remove
             </Button>
           </DialogFooter>

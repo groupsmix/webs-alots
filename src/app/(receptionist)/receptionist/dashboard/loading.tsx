@@ -22,7 +22,7 @@ export default function ReceptionistDashboardLoading() {
                 <Skeleton className="h-4 w-28" />
                 <Skeleton className="h-3 w-20" />
               </div>
-              <div className="space-y-1 text-right">
+              <div className="space-y-1 text-end">
                 <Skeleton className="h-4 w-12" />
                 <Skeleton className="h-5 w-16 rounded" />
               </div>

@@ -787,12 +787,12 @@ export default function OnboardingPage() {
                   setShowResumeDraft(false);
                 }}
               >
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 me-1" />
                 Start Fresh
               </Button>
               {draft && (
                 <Button onClick={() => restoreDraft(draft)}>
-                  <RotateCcw className="h-4 w-4 mr-1" />
+                  <RotateCcw className="h-4 w-4 me-1" />
                   Resume Draft
                 </Button>
               )}
@@ -968,7 +968,7 @@ export default function OnboardingPage() {
                 {doctorSlots.map((d) => (
                   <div key={d.doctorId}>
                     <span className="font-medium">{d.doctorName}</span>
-                    <span className="text-muted-foreground ml-2">({d.slots.length} slot(s))</span>
+                    <span className="text-muted-foreground ms-2">({d.slots.length} slot(s))</span>
                   </div>
                 ))}
               </div>
@@ -1016,24 +1016,24 @@ export default function OnboardingPage() {
             </div>
             <Separator className="my-6" />
             {/* Staff Login Credentials */}
-            <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
+            <div className="bg-muted/50 rounded-lg p-4 text-start text-sm mb-6">
               <h3 className="font-semibold mb-3">Staff Login Credentials:</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 pr-4 font-medium">Role</th>
-                      <th className="text-left py-2 pr-4 font-medium">Name</th>
-                      <th className="text-left py-2 pr-4 font-medium">Email (Login)</th>
-                      <th className="text-left py-2 font-medium">Access</th>
+                      <th className="text-start py-2 pe-4 font-medium">Role</th>
+                      <th className="text-start py-2 pe-4 font-medium">Name</th>
+                      <th className="text-start py-2 pe-4 font-medium">Email (Login)</th>
+                      <th className="text-start py-2 font-medium">Access</th>
                     </tr>
                   </thead>
                   <tbody>
                     {createdUsers.map((u) => (
                       <tr key={u.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4 capitalize">{u.role.replace("_", " ")}</td>
-                        <td className="py-2 pr-4">{u.name}</td>
-                        <td className="py-2 pr-4 font-mono text-xs">
+                        <td className="py-2 pe-4 capitalize">{u.role.replace("_", " ")}</td>
+                        <td className="py-2 pe-4">{u.name}</td>
+                        <td className="py-2 pe-4 font-mono text-xs">
                           {u.email ? (
                             u.email
                           ) : (
@@ -1086,7 +1086,7 @@ export default function OnboardingPage() {
                 </p>
               )}
             </div>
-            <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
+            <div className="bg-muted/50 rounded-lg p-4 text-start text-sm mb-6">
               <h3 className="font-semibold mb-2">Clinic is Live:</h3>
               <div className="space-y-2 text-muted-foreground">
                 {clinicForm.subdomain && (
@@ -1128,7 +1128,7 @@ export default function OnboardingPage() {
                 <Button variant="outline">View All Clinics</Button>
               </Link>
               <Button onClick={() => window.location.reload()}>
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 me-1" />
                 Onboard Another
               </Button>
             </div>
@@ -1160,11 +1160,11 @@ export default function OnboardingPage() {
           {!createdClinicId && (
             <>
               <Button variant="outline" size="sm" onClick={saveDraft}>
-                <Save className="h-4 w-4 mr-1" />
+                <Save className="h-4 w-4 me-1" />
                 Save as Draft
               </Button>
               <Button variant="ghost" size="sm" onClick={clearDraft}>
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 me-1" />
                 Clear Draft
               </Button>
             </>
@@ -1244,7 +1244,7 @@ export default function OnboardingPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto text-destructive"
+            className="ms-auto text-destructive"
             onClick={() => setError(null)}
           >
             Dismiss
@@ -1314,12 +1314,12 @@ export default function OnboardingPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="text-left py-3 px-4 font-medium">Name</th>
-                        <th className="text-left py-3 px-4 font-medium">Type</th>
-                        <th className="text-left py-3 px-4 font-medium">Tier</th>
-                        <th className="text-left py-3 px-4 font-medium">Created</th>
-                        <th className="text-left py-3 px-4 font-medium">Status</th>
-                        <th className="text-left py-3 px-4 font-medium">Actions</th>
+                        <th className="text-start py-3 px-4 font-medium">Name</th>
+                        <th className="text-start py-3 px-4 font-medium">Type</th>
+                        <th className="text-start py-3 px-4 font-medium">Tier</th>
+                        <th className="text-start py-3 px-4 font-medium">Created</th>
+                        <th className="text-start py-3 px-4 font-medium">Status</th>
+                        <th className="text-start py-3 px-4 font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1346,7 +1346,7 @@ export default function OnboardingPage() {
                           <td className="py-3 px-4">
                             <Link href="/super-admin/clinics">
                               <Button variant="ghost" size="sm">
-                                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                                <ExternalLink className="h-3.5 w-3.5 me-1" />
                                 View
                               </Button>
                             </Link>

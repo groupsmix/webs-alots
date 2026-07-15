@@ -343,7 +343,7 @@ export default function ProvisioningWizardPage() {
 
             <div className="flex justify-end">
               <Button onClick={() => setWizardStep(2)}>
-                Suivant : Infrastructure <ArrowRight className="h-4 w-4 ml-1" />
+                Suivant : Infrastructure <ArrowRight className="h-4 w-4 ms-1" />
               </Button>
             </div>
           </CardContent>
@@ -423,12 +423,12 @@ export default function ProvisioningWizardPage() {
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setWizardStep(1)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+                <ArrowLeft className="h-4 w-4 me-1" /> Retour
               </Button>
               <Button onClick={handleProvision} disabled={loading}>
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Provisionnement...
+                    <Loader2 className="h-4 w-4 me-1 animate-spin" /> Provisionnement...
                   </>
                 ) : (
                   "Provisionner la clinique"

@@ -171,7 +171,7 @@ export default function MedicalHistoryPage() {
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Past Visits & Diagnoses
-            <Badge variant="secondary" className="ml-auto">
+            <Badge variant="secondary" className="ms-auto">
               {completedVisits.length + diagnoses.length} records
             </Badge>
           </CardTitle>

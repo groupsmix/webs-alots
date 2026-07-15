@@ -580,7 +580,7 @@ export function AnalyticsDashboard({
                     <table className="w-full text-xs">
                       <thead>
                         <tr>
-                          <th className="text-left pb-2 text-muted-foreground" />
+                          <th className="text-start pb-2 text-muted-foreground" />
                           {Array.from({ length: 12 }, (_, i) => (
                             <th key={i} className="text-center pb-2 text-muted-foreground px-0.5">
                               {i + 8}h
@@ -591,7 +591,7 @@ export function AnalyticsDashboard({
                       <tbody>
                         {DAY_NAMES.map((dayName, dayIdx) => (
                           <tr key={dayIdx}>
-                            <td className="pr-2 text-muted-foreground font-medium">{dayName}</td>
+                            <td className="pe-2 text-muted-foreground font-medium">{dayName}</td>
                             {heatmapData[dayIdx].map((count, hourIdx) => {
                               const intensity = Math.min(5, Math.round((count / heatmapMax) * 5));
                               return (
@@ -631,7 +631,7 @@ export function AnalyticsDashboard({
                         <div key={svc.name}>
                           <div className="flex items-center justify-between text-sm mb-1">
                             <span className="truncate">{svc.name}</span>
-                            <span className="font-medium ml-2 whitespace-nowrap">
+                            <span className="font-medium ms-2 whitespace-nowrap">
                               {formatMAD(svc.revenue)}
                             </span>
                           </div>

@@ -57,7 +57,7 @@ export function FeatureGate({ featureKey, moduleName, children }: FeatureGatePro
               href="/admin/dashboard"
               className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="me-2 h-4 w-4" />
               {t(locale, "featureGate.backToDashboard")}
             </Link>
           </CardContent>

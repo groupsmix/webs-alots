@@ -273,7 +273,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
             >
               <group.icon className="h-3.5 w-3.5" />
-              <span className="flex-1 text-left">{group.label}</span>
+              <span className="flex-1 text-start">{group.label}</span>
               <ChevronDown
                 className={`h-3.5 w-3.5 transition-transform duration-200 ${
                   isExpanded ? "rotate-0" : "-rotate-90"
@@ -313,7 +313,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                           {item.label}
                         </Link>
                         {isActive && (
-                          <div className="ml-4 border-l pl-3 space-y-0.5">
+                          <div className="ms-4 border-l ps-3 space-y-0.5">
                             {item.children.map((child) => {
                               const childActive = pathname === child.href;
                               return (
@@ -609,7 +609,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
             >
               <Search className="h-3.5 w-3.5" />
               <span>Rechercher...</span>
-              <kbd className="ml-2 rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">
+              <kbd className="ms-2 rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">
                 Ctrl+K
               </kbd>
             </button>
@@ -710,7 +710,7 @@ export default function SuperAdminLayoutShell({ children }: { children: React.Re
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/super-admin/settings")}>
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 me-2" />
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

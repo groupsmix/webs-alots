@@ -115,15 +115,15 @@ export default function ClinicErrorBoundary({
           {/* Primary recovery row — three options so the user is never stuck. */}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button onClick={reset} size="lg">
-              <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+              <RefreshCw className="me-2 h-4 w-4" aria-hidden="true" />
               {t(locale, "error.retry")}
             </Button>
             <Button onClick={() => router.back()} size="lg" variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+              <ArrowLeft className="me-2 h-4 w-4 rtl:rotate-180" aria-hidden="true" />
               {t(locale, "error.goBack" as TranslationKey)}
             </Button>
             <Button onClick={() => router.push(dashboardHref)} size="lg" variant="ghost">
-              <Home className="mr-2 h-4 w-4" aria-hidden="true" />
+              <Home className="me-2 h-4 w-4" aria-hidden="true" />
               {t(locale, "error.goToDashboard" as TranslationKey)}
             </Button>
           </div>
@@ -131,7 +131,7 @@ export default function ClinicErrorBoundary({
           {/* Dev-only error details. Hidden in production so we don't leak
               internals to end users — they get the digest + recovery row. */}
           {isDev && (error.message || error.stack) && (
-            <details className="mt-6 rounded-md border border-destructive/20 bg-destructive/5 p-3 text-left text-xs">
+            <details className="mt-6 rounded-md border border-destructive/20 bg-destructive/5 p-3 text-start text-xs">
               <summary className="cursor-pointer font-medium text-destructive">
                 Dev: error details
               </summary>

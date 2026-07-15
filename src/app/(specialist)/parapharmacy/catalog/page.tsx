@@ -203,7 +203,7 @@ export default function ParapharmacyCatalogPage() {
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" /> Add Product
+          <Plus className="h-4 w-4 me-2" /> Add Product
         </Button>
       </div>
 
@@ -214,7 +214,7 @@ export default function ParapharmacyCatalogPage() {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -288,7 +288,7 @@ export default function ParapharmacyCatalogPage() {
                 )}
                 <div className="flex gap-1 mt-3 pt-3 border-t">
                   <Button size="sm" variant="ghost" onClick={() => openEdit(product)}>
-                    <Pencil className="h-3 w-3 mr-1" /> Edit
+                    <Pencil className="h-3 w-3 me-1" /> Edit
                   </Button>
                   <Button
                     size="sm"
@@ -296,7 +296,7 @@ export default function ParapharmacyCatalogPage() {
                     className="text-red-600 hover:text-red-700"
                     onClick={() => setDeleteId(product.id)}
                   >
-                    <Trash2 className="h-3 w-3 mr-1" /> Delete
+                    <Trash2 className="h-3 w-3 me-1" /> Delete
                   </Button>
                 </div>
               </CardContent>
@@ -414,7 +414,7 @@ export default function ParapharmacyCatalogPage() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving || !form.name}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {editingId ? "Update" : "Create"}
             </Button>
           </DialogFooter>

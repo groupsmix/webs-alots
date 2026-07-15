@@ -155,7 +155,7 @@ export default function ReferralsPage() {
             Impossible de charger les références (erreur réseau ou API indisponible).
           </span>
           <Button variant="outline" size="sm" onClick={() => loadReferrals()}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            <RefreshCw className="h-3.5 w-3.5 me-1" />
             Réessayer
           </Button>
         </div>
@@ -231,19 +231,19 @@ export default function ReferralsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">Clinique</th>
-                <th className="text-left p-3 font-medium">Médecin référent</th>
-                <th className="text-left p-3 font-medium">Médecin destinataire</th>
-                <th className="text-left p-3 font-medium">Motif</th>
-                <th className="text-left p-3 font-medium">Statut</th>
-                <th className="text-left p-3 font-medium">Date</th>
+                <th className="text-start p-3 font-medium">Clinique</th>
+                <th className="text-start p-3 font-medium">Médecin référent</th>
+                <th className="text-start p-3 font-medium">Médecin destinataire</th>
+                <th className="text-start p-3 font-medium">Motif</th>
+                <th className="text-start p-3 font-medium">Statut</th>
+                <th className="text-start p-3 font-medium">Date</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                    <Loader2 className="h-5 w-5 animate-spin inline me-2" />
                     Chargement des références…
                   </td>
                 </tr>

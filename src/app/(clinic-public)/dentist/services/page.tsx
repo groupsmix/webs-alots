@@ -186,7 +186,7 @@ export default async function DentistServicesPage() {
                             className: "w-full",
                           })}
                         >
-                          <Calendar className="h-4 w-4 mr-1" />
+                          <Calendar className="h-4 w-4 me-1" />
                           Book This Treatment
                         </Link>
                       </CardFooter>

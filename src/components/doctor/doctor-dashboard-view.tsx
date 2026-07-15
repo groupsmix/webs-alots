@@ -359,7 +359,7 @@ export function DoctorDashboardView({
                 <div className="flex flex-wrap gap-2">
                   <Link href="/doctor/schedule">
                     <Button size="sm">
-                      <Calendar className="h-4 w-4 mr-1" />
+                      <Calendar className="h-4 w-4 me-1" />
                       {t(locale, "dashboard.setupSchedule" as TranslationKey)}
                     </Button>
                   </Link>
@@ -399,7 +399,7 @@ export function DoctorDashboardView({
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
               {t(locale, "dashboard.todaySchedule")}
-              <Badge variant="outline" className="ml-auto text-xs">
+              <Badge variant="outline" className="ms-auto text-xs">
                 {completedToday}/{todayAppts.length} {t(locale, "dashboard.completed")}
               </Badge>
             </CardTitle>
@@ -427,7 +427,7 @@ export function DoctorDashboardView({
                       <p className="text-sm font-medium truncate">{apt.patientName}</p>
                       <p className="text-xs text-muted-foreground">{apt.serviceName}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-sm font-medium">{apt.time}</p>
                       <Badge variant={statusVariant[apt.status]} className="text-xs">
                         {apt.status}
@@ -483,7 +483,7 @@ export function DoctorDashboardView({
                 <Clock className="h-4 w-4" />
                 {t(locale, "dashboard.waitingRoom")}
                 {waitingRoomEntries.length > 0 && (
-                  <Badge variant="destructive" className="ml-auto text-xs">
+                  <Badge variant="destructive" className="ms-auto text-xs">
                     {waitingRoomEntries.length}
                   </Badge>
                 )}
@@ -533,7 +533,7 @@ export function DoctorDashboardView({
                 <CalendarClock className="h-4 w-4" />
                 {t(locale, "dashboard.upcomingFollowUps")}
                 {upcomingFollowUps.length > 0 && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
+                  <Badge variant="secondary" className="ms-auto text-xs">
                     {upcomingFollowUps.length}
                   </Badge>
                 )}
@@ -562,7 +562,7 @@ export function DoctorDashboardView({
                         <p className="text-sm font-medium truncate">{apt.patientName}</p>
                         <p className="text-xs text-muted-foreground">{apt.serviceName}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <p className="text-xs font-medium">
                           {formatDisplayDate(apt.date, locale, "short")}
                         </p>
@@ -588,7 +588,7 @@ export function DoctorDashboardView({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t(locale, "dashboard.searchPlaceholder")}
-                  className="pl-10"
+                  className="ps-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />

@@ -85,7 +85,7 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button>
-            <UserPlus className="h-4 w-4 mr-1" />
+            <UserPlus className="h-4 w-4 me-1" />
             Register New Patient
           </Button>
         )}

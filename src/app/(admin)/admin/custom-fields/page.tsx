@@ -208,7 +208,7 @@ export default function CustomFieldsAdminPage() {
                 <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                   <DialogTrigger asChild>
                     <Button>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4 me-2" />
                       Nouveau champ
                     </Button>
                   </DialogTrigger>

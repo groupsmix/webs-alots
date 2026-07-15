@@ -47,11 +47,11 @@ function SortIcon({
   sortKey: SortKey | null;
   sortDir: "asc" | "desc";
 }) {
-  if (sortKey !== columnKey) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+  if (sortKey !== columnKey) return <ArrowUpDown className="h-3 w-3 ms-1 opacity-40" />;
   return sortDir === "asc" ? (
-    <ChevronUp className="h-3 w-3 ml-1" />
+    <ChevronUp className="h-3 w-3 ms-1" />
   ) : (
-    <ChevronDown className="h-3 w-3 ml-1" />
+    <ChevronDown className="h-3 w-3 ms-1" />
   );
 }
 
@@ -184,7 +184,7 @@ export default function UsagePage() {
             indisponible). Les chiffres affichés peuvent être incomplets.
           </span>
           <Button variant="outline" size="sm" onClick={() => loadUsage()}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            <RefreshCw className="h-3.5 w-3.5 me-1" />
             Réessayer
           </Button>
         </div>
@@ -260,7 +260,7 @@ export default function UsagePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">
+                <th className="text-start p-3 font-medium">
                   <button
                     type="button"
                     className="inline-flex items-center hover:text-foreground"
@@ -270,9 +270,9 @@ export default function UsagePage() {
                     <SortIcon columnKey="name" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
-                <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Statut</th>
-                <th className="text-right p-3 font-medium">
+                <th className="text-start p-3 font-medium">Type</th>
+                <th className="text-start p-3 font-medium">Statut</th>
+                <th className="text-end p-3 font-medium">
                   <button
                     type="button"
                     className="inline-flex items-center hover:text-foreground"
@@ -282,7 +282,7 @@ export default function UsagePage() {
                     <SortIcon columnKey="appointments" sortKey={sortKey} sortDir={sortDir} />
                   </button>
                 </th>
-                <th className="text-right p-3 font-medium">
+                <th className="text-end p-3 font-medium">
                   <button
                     type="button"
                     className="inline-flex items-center hover:text-foreground"
@@ -299,7 +299,7 @@ export default function UsagePage() {
               {loading && (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
+                    <Loader2 className="h-5 w-5 animate-spin inline me-2" />
                     Chargement des données d&apos;utilisation…
                   </td>
                 </tr>
@@ -325,8 +325,8 @@ export default function UsagePage() {
                       {clinic.status === "active" ? "Actif" : clinic.status}
                     </Badge>
                   </td>
-                  <td className="p-3 text-right">{clinic.appointments}</td>
-                  <td className="p-3 text-right">{clinic.users}</td>
+                  <td className="p-3 text-end">{clinic.appointments}</td>
+                  <td className="p-3 text-end">{clinic.users}</td>
                   <td className="p-3">
                     <Link
                       href={`/super-admin/usage/clinic?id=${clinic.id}`}

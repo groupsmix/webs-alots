@@ -52,7 +52,7 @@ export function SuperAdminSupportBadge() {
 
   if (!count || count === 0) return null;
   return (
-    <Badge variant="destructive" className="ml-auto text-[9px] h-4 px-1">
+    <Badge variant="destructive" className="ms-auto text-[9px] h-4 px-1">
       {count > 99 ? "99+" : count}
     </Badge>
   );

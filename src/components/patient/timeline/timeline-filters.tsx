@@ -126,7 +126,7 @@ export function TimelineFilters({
             Filtre : {EVENT_FILTER_CONFIG[activeFilter].label}
             <button
               onClick={() => onFilterChange(undefined)}
-              className="ml-1 hover:text-destructive"
+              className="ms-1 hover:text-destructive"
               aria-label="Effacer le filtre"
             >
               <X className="h-3 w-3" />

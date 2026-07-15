@@ -310,7 +310,7 @@ export default function ClinicSettingsPage() {
                   Clinic Profile
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("profile")}>
-                  <Save className="h-4 w-4 mr-1" />
+                  <Save className="h-4 w-4 me-1" />
                   {savingSection === "profile"
                     ? "Saving..."
                     : savedSection === "profile"
@@ -449,7 +449,7 @@ export default function ClinicSettingsPage() {
                   Payment Settings
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("payment")}>
-                  <Save className="h-4 w-4 mr-1" />
+                  <Save className="h-4 w-4 me-1" />
                   {savingSection === "payment"
                     ? "Saving..."
                     : savedSection === "payment"
@@ -534,7 +534,7 @@ export default function ClinicSettingsPage() {
                   Booking Rules
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("booking")}>
-                  <Save className="h-4 w-4 mr-1" />
+                  <Save className="h-4 w-4 me-1" />
                   {savingSection === "booking"
                     ? "Saving..."
                     : savedSection === "booking"
@@ -685,7 +685,7 @@ export default function ClinicSettingsPage() {
                   WhatsApp Notification Templates
                 </CardTitle>
                 <Button size="sm" onClick={() => handleSave("whatsapp")}>
-                  <Save className="h-4 w-4 mr-1" />
+                  <Save className="h-4 w-4 me-1" />
                   {savingSection === "whatsapp"
                     ? "Saving..."
                     : savedSection === "whatsapp"
@@ -777,7 +777,7 @@ export default function ClinicSettingsPage() {
                     Patient Self-Check-In Kiosk
                   </CardTitle>
                   <Button size="sm" onClick={() => handleSave("features")}>
-                    <Save className="h-4 w-4 mr-1" />
+                    <Save className="h-4 w-4 me-1" />
                     {savingSection === "features"
                       ? "Saving..."
                       : savedSection === "features"

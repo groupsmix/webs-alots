@@ -154,7 +154,7 @@ export function FAQManagementView() {
         <h1 className="text-2xl font-bold">Gestion des FAQ</h1>
         {}
         <Button onClick={openCreateForm}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           Ajouter une FAQ
         </Button>
         {}
@@ -168,7 +168,7 @@ export function FAQManagementView() {
             placeholder="Rechercher des FAQ..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <select

@@ -369,7 +369,7 @@ export default function EquipmentMaintenancePage() {
             placeholder={`${t("search")}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <div className="flex gap-2 flex-wrap">

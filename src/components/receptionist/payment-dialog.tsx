@@ -68,7 +68,7 @@ export function PaymentDialog({
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button variant="outline" size="sm">
-            <CreditCard className="h-4 w-4 mr-1" />
+            <CreditCard className="h-4 w-4 me-1" />
             Collect Payment
           </Button>
         )}

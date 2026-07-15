@@ -468,7 +468,7 @@ export function BookingForm() {
             {t(locale, "booking.success.whatsappConfirm", { phone: patientPhone })}
           </p>
 
-          <div className="rounded-lg border p-4 max-w-sm mx-auto text-left text-sm space-y-1">
+          <div className="rounded-lg border p-4 max-w-sm mx-auto text-start text-sm space-y-1">
             <p>
               <span className="text-muted-foreground">
                 {t(locale, "booking.success.labelService")}
@@ -576,7 +576,7 @@ export function BookingForm() {
                 {i < step ? <Check className="h-4 w-4" /> : i + 1}
               </div>
               <span
-                className={`text-xs ml-2 hidden sm:block ${i <= step ? "font-medium" : "text-muted-foreground"}`}
+                className={`text-xs ms-2 hidden sm:block ${i <= step ? "font-medium" : "text-muted-foreground"}`}
               >
                 {s}
               </span>
@@ -626,7 +626,7 @@ export function BookingForm() {
                       setSelectedDoctor(d.id);
                       setSelectedService("");
                     }}
-                    className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
+                    className={`rounded-lg border p-3 min-h-11 text-start transition-colors ${
                       selectedDoctor === d.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                     }`}
                   >
@@ -664,7 +664,7 @@ export function BookingForm() {
                     <button
                       key={s.id}
                       onClick={() => setSelectedService(s.id)}
-                      className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
+                      className={`rounded-lg border p-3 min-h-11 text-start transition-colors ${
                         selectedService === s.id
                           ? "border-primary bg-primary/5"
                           : "hover:bg-muted/50"
@@ -956,7 +956,7 @@ export function BookingForm() {
         {/* Navigation */}
         <div className="flex justify-between mt-6">
           <Button variant="outline" onClick={() => goToStep(step - 1)} disabled={step === 0}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ChevronLeft className="h-4 w-4 me-1" />
             {t(locale, "action.back")}
           </Button>
           {step < 2 ? (
@@ -971,11 +971,11 @@ export function BookingForm() {
               }}
             >
               {t(locale, "booking.next")}
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="h-4 w-4 ms-1" />
             </Button>
           ) : (
             <Button onClick={handleConfirm} disabled={isSubmitting || !canNext()}>
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {isSubmitting
                 ? (verificationStatus ?? t(locale, "booking.submitting"))
                 : t(locale, "booking.confirm")}

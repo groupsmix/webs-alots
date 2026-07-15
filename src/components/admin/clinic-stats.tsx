@@ -191,7 +191,7 @@ export function ClinicStats() {
                       data-width={Math.round((hour.count / maxCount) * 100)}
                     />
                   </div>
-                  <span className="text-xs font-medium w-6 text-right">{hour.count}</span>
+                  <span className="text-xs font-medium w-6 text-end">{hour.count}</span>
                 </div>
               ))}
             </div>
