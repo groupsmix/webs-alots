@@ -1,15 +1,10 @@
 import { TrendingUp } from "lucide-react";
-import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchTherapySessionNotes } from "@/lib/data/para-medical";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
 import { getLocaleFromTenant, requireTenant } from "@/lib/tenant";
-
-const MoodChart = dynamic(() => import("./mood-chart").then((m) => m.MoodChart), {
-  ssr: false,
-  loading: () => <div className="h-[300px] animate-pulse bg-muted rounded-lg" />,
-});
+import { MoodChart } from "./mood-chart";
 
 export default async function ProgressTrackingPage() {
   const tenant = await requireTenant();
