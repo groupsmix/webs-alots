@@ -18,6 +18,18 @@ export function getStripeWebhookSecret(): string | undefined {
   return process.env.STRIPE_WEBHOOK_SECRET;
 }
 
+/**
+ * R2 orphan-rate alert threshold (0..1). Returns `defaultValue` when the env
+ * variable is missing or invalid.
+ */
+export function getR2OrphanRateAlertThreshold(defaultValue = 0.1): number {
+  const raw = process.env.R2_ORPHAN_RATE_ALERT_THRESHOLD;
+  if (!raw) return defaultValue;
+  const parsed = Number.parseFloat(raw);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) return defaultValue;
+  return parsed;
+}
+
 /** Cloudflare R2 credentials. */
 export function getR2Config(): {
   accountId: string | undefined;
