@@ -6,17 +6,9 @@ import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { AdminAgendaAppointment } from "@/lib/data/admin-agenda";
 import { t } from "@/lib/i18n";
-import { getLocalDateStr } from "@/lib/utils";
-
-export interface AdminAgendaAppointment {
-  id: string;
-  slotStart: string;
-  status: string;
-  patientName: string;
-  doctorName: string;
-  serviceName: string;
-}
+import { getLocalDateStr, MOROCCO_LOCALE_MAP } from "@/lib/utils";
 
 interface AdminAgendaViewProps {
   appointments: AdminAgendaAppointment[];
@@ -38,15 +30,9 @@ const statusVariants: Record<
   rescheduled: "outline",
 };
 
-function localeTag(locale: string): string {
-  if (locale === "ar" || locale === "ary") return "ar-MA";
-  if (locale === "en") return "en-MA";
-  return "fr-MA";
-}
-
 export function AdminAgendaView({ appointments, today, timezone }: AdminAgendaViewProps) {
   const [locale] = useLocale();
-  const intlLocale = localeTag(locale);
+  const intlLocale = MOROCCO_LOCALE_MAP[locale];
 
   const appointmentsByDate = appointments.reduce<Map<string, AdminAgendaAppointment[]>>(
     (groups, appointment) => {

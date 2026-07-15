@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { t, isSupportedLocale, LOCALES } from "../i18n";
+import { t, getDirection, isRTL, isSupportedLocale, LOCALES } from "../i18n";
+import { MOROCCO_LOCALE_MAP } from "../utils";
 
 // Mock en and ar locale modules so we have a synthetic empty key for
 // fallback tests. The real locale files now have 100% coverage.
@@ -83,5 +84,30 @@ describe("isSupportedLocale", () => {
     ["ar"],
   ])("rejects unsupported / malformed value %p", (value) => {
     expect(isSupportedLocale(value as unknown)).toBe(false);
+  });
+});
+
+describe("locale direction and Morocco formatting", () => {
+  it("uses RTL for Arabic and Darija", () => {
+    expect(isRTL("ar")).toBe(true);
+    expect(isRTL("ary")).toBe(true);
+    expect(getDirection("ar")).toBe("rtl");
+    expect(getDirection("ary")).toBe("rtl");
+  });
+
+  it("uses LTR for French and English", () => {
+    expect(isRTL("fr")).toBe(false);
+    expect(isRTL("en")).toBe(false);
+    expect(getDirection("fr")).toBe("ltr");
+    expect(getDirection("en")).toBe("ltr");
+  });
+
+  it("uses Morocco locale tags for all supported languages", () => {
+    expect(MOROCCO_LOCALE_MAP).toEqual({
+      fr: "fr-MA",
+      ar: "ar-MA",
+      en: "en-MA",
+      ary: "ar-MA",
+    });
   });
 });
