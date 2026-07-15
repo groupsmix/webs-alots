@@ -90,6 +90,30 @@ export function getRateLimitBackend(): string {
   return process.env.RATE_LIMIT_BACKEND ?? "kv";
 }
 
+/**
+ * Login rate-limit window in milliseconds. Overridable via
+ * `LOGIN_RATE_LIMIT_WINDOW_MS`; defaults to 60 seconds.
+ */
+export function getLoginRateLimitWindowMs(): number {
+  const raw = process.env.LOGIN_RATE_LIMIT_WINDOW_MS;
+  if (!raw) return 60_000;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 60_000;
+  return Math.floor(parsed);
+}
+
+/**
+ * Login rate-limit maximum attempts. Overridable via `LOGIN_RATE_LIMIT_MAX`;
+ * defaults to 5 attempts per window.
+ */
+export function getLoginRateLimitMax(): number {
+  const raw = process.env.LOGIN_RATE_LIMIT_MAX;
+  if (!raw) return 5;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 5;
+  return Math.floor(parsed);
+}
+
 /** Profile-header HMAC key. */
 export function getProfileHeaderHmacKey(): string | undefined {
   return process.env.PROFILE_HEADER_HMAC_KEY;
