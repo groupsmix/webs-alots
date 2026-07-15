@@ -136,7 +136,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
       <nav className="flex-1 space-y-5">
         {visibleGroups.map((group) => (
           <div key={group.label}>
-            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {t(locale, group.label)}
             </p>
             <div className="space-y-1">

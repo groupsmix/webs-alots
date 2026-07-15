@@ -9,6 +9,7 @@
  * OWASP A04: All DB queries scoped to clinic_id.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveAIConfig } from "@/lib/ai/config";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { isAIEnabled } from "@/lib/features";
@@ -497,10 +498,7 @@ Génère le briefing exécutif.`;
 
 // ── Main exported function — called by cron ──
 
-export async function generateDailyClinicBriefings(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-): Promise<number> {
+export async function generateDailyClinicBriefings(supabase: SupabaseClient): Promise<number> {
   // F-AI-01: Kill switch
   if (!(await isAIEnabled())) {
     logger.info("AI briefings skipped — AI features disabled", {

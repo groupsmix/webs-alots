@@ -21,6 +21,8 @@
  *   }
  */
 
+import { containsPotentialPHI, sanitizeErrorMessage } from "@/lib/phi-compliance";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 /**
@@ -66,11 +68,12 @@ function formatError(err: unknown): Record<string, unknown> {
   if (err instanceof Error) {
     return {
       name: err.name,
-      message: err.message,
+      message: containsPotentialPHI(err.message) ? sanitizeErrorMessage(err.message) : err.message,
       stack: err.stack,
     };
   }
-  return { raw: String(err) };
+  const raw = String(err);
+  return { raw: containsPotentialPHI(raw) ? sanitizeErrorMessage(raw) : raw };
 }
 
 // F-A93-07: PHI field names that must be auto-redacted from log metadata.
@@ -99,6 +102,8 @@ function redactPhi(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (PHI_FIELD_PATTERNS.has(key.toLowerCase())) {
+      result[key] = "[REDACTED]";
+    } else if (typeof value === "string" && containsPotentialPHI(value)) {
       result[key] = "[REDACTED]";
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) =>

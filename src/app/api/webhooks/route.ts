@@ -483,7 +483,10 @@ export async function POST(request: NextRequest) {
                 };
               };
             };
-            const rbClient = supabase as unknown as RebookClient;
+            // F4: rebooking_requests now has a typed migration (00210).  Webhooks
+            // are unauthenticated, so we use the service-role admin client that
+            // has already resolved the clinic and verified the Meta signature.
+            const rbClient = admin as unknown as RebookClient;
 
             // Find the rebooking request
             const { data: rebookReq } = await rbClient
@@ -509,7 +512,7 @@ export async function POST(request: NextRequest) {
 
               if (chosen && patientId) {
                 // Create new appointment with the chosen slot
-                await supabase.from("appointments").insert({
+                await admin.from("appointments").insert({
                   patient_id: patientId,
                   doctor_id: rebookReq.doctor_id,
                   clinic_id: clinicId,
@@ -522,7 +525,7 @@ export async function POST(request: NextRequest) {
                 });
 
                 // Cancel the original appointment
-                await supabase
+                await admin
                   .from("appointments")
                   .update({
                     status: "cancelled",

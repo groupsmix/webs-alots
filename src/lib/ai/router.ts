@@ -16,6 +16,7 @@
  * column (not a quadratic estimate of token counts).
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getWorkerBinding } from "@/lib/cf-bindings";
 import { logger } from "@/lib/logger";
 import { getCachedConfigs, invalidateConfigCache, setCachedConfigs } from "./config-cache";
@@ -72,8 +73,7 @@ function markRateLimitedInMemory(provider: AIProvider, retryAfterMs: number): vo
 
 /** Persist a rate-limit cooldown across serverless invocations. */
 async function persistRateLimit(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: SupabaseClient,
   provider: AIProvider,
   retryAfterMs: number,
 ): Promise<void> {
@@ -204,8 +204,7 @@ export async function selectAvailableProvider(
 export async function routeAIRequest(
   request: AIRequest,
   configs: Map<AIProvider, ProviderConfig>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase?: any,
+  supabase?: SupabaseClient,
 ): Promise<AIResponse> {
   // F-AI-14 / AUDIT P1-11: default a reproducibility seed so every routed
   // request is replayable. It is passed to the provider (providers.ts) and
@@ -385,8 +384,7 @@ async function tryProviderWithFallback(
   request: AIRequest,
   provider: AIProvider,
   configs: Map<AIProvider, ProviderConfig>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase?: any,
+  supabase?: SupabaseClient,
 ): Promise<AIResponse> {
   const availability = await checkProviderAvailable(provider, configs);
 
@@ -455,8 +453,7 @@ async function tryProviderWithFallback(
 // ── Load provider configs from DB (cached) ──
 
 export async function loadProviderConfigs(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: SupabaseClient,
   options: { forceRefresh?: boolean } = {},
 ): Promise<Map<AIProvider, ProviderConfig>> {
   if (!options.forceRefresh) {

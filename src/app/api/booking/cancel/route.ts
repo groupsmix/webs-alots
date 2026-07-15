@@ -8,13 +8,14 @@ import {
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { isCancellableStatus } from "@/lib/booking-utils";
 import { logger } from "@/lib/logger";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { clinicDateTime } from "@/lib/timezone";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import type { UserRole } from "@/lib/types/database";
+import type { AppointmentStatus, UserRole } from "@/lib/types/database";
 import { bookingCancelSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
@@ -48,11 +49,7 @@ export const POST = withAuthValidation(
       return apiForbidden("Forbidden");
     }
 
-    if (
-      appt.status === APPOINTMENT_STATUS.CANCELLED ||
-      appt.status === APPOINTMENT_STATUS.COMPLETED ||
-      appt.status === APPOINTMENT_STATUS.RESCHEDULED
-    ) {
+    if (!isCancellableStatus(appt.status as AppointmentStatus)) {
       return apiError("Appointment cannot be cancelled in its current state");
     }
 

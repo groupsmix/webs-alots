@@ -75,7 +75,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
         </Link>
 
         {/* Desktop navigation */}
-        <nav aria-label="Navigation principale" className="hidden items-center gap-6 md:flex">
+        <nav aria-label={t(locale, "public.navMain")} className="hidden items-center gap-6 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -107,7 +107,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
       {mobileMenuOpen && (
         <nav
           id="clinic-mobile-nav"
-          aria-label="Navigation mobile"
+          aria-label={t(locale, "public.navMobile")}
           className="border-t px-4 py-4 md:hidden"
         >
           <div className="flex flex-col gap-3">

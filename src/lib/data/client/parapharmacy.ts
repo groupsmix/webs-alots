@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-client";
-import type { Database } from "@/lib/types/database";
+import type { Database, TablesInsert } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
 import { fetchRows } from "./_core";
 import type { ProductView, ProductRaw, StockRaw } from "./pharmacy";
@@ -107,8 +107,7 @@ export async function createParapharmacySale(data: {
       time: now.toTimeString().slice(0, 5),
       items: data.items,
       is_parapharmacy: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+    } as unknown as TablesInsert<"sales">)
     .select("id")
     .single();
   if (error) {

@@ -803,9 +803,6 @@ async function getAvailableSlots(input: ToolInput, ctx: AgentToolContext): Promi
 
 // ── C2: Agent-to-agent handoff ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UntypedClient = { from(table: string): any };
-
 async function handoffToAgent(input: ToolInput, ctx: AgentToolContext): Promise<ToolResult> {
   if (!ctx.clinicId) return { ok: false, error: "Clinic context is required", code: "NO_CLINIC" };
 
@@ -855,9 +852,7 @@ async function handoffToAgent(input: ToolInput, ctx: AgentToolContext): Promise<
     };
   }
 
-  const untypedSupa = ctx.supabase as unknown as UntypedClient;
-
-  const result = await createTeamTask(untypedSupa, ctx.clinicId, {
+  const result = await createTeamTask(ctx.supabase, ctx.clinicId, {
     title: taskSummary.slice(0, 255),
     description: context?.slice(0, 2000),
     agentType: targetType,
@@ -876,7 +871,7 @@ async function handoffToAgent(input: ToolInput, ctx: AgentToolContext): Promise<
   });
 
   try {
-    await untypedSupa
+    await ctx.supabase
       .from("ai_team_tasks")
       .update({
         history_events: [event],

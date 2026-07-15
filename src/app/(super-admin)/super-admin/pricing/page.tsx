@@ -26,8 +26,8 @@ import {
   Percent,
   AlertTriangle,
 } from "lucide-react";
-import { useState, useEffect, useCallback, type ComponentProps } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,11 @@ import {
   type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+
+const PricingComparisonChart = dynamic(() => import("./_pricing-comparison-chart"), {
+  ssr: false,
+  loading: () => <div className="h-[130px] animate-pulse rounded-md bg-muted mb-6" />,
+});
 
 type TabView = "tiers" | "features" | "promotions";
 type SystemFilter = "all" | SystemType;
@@ -133,57 +138,53 @@ export default function PricingPage() {
   const [deletePromoOpen, setDeletePromoOpen] = useState(false);
   const [deletePromoItem, setDeletePromoItem] = useState<Promotion | null>(null);
 
-  const loadData = useCallback(async (isActive: () => boolean) => {
-    // Each section loads independently: a single slow or failing action must not
-    // blank the whole page or flash a misleading "Failed to load" — we render
-    // whatever resolved and only warn on the parts that didn't. isActive() guards
-    // against applying results after the component has unmounted.
-    const [subsRes, tiersRes, togglesRes, promosRes, historyRes] = await Promise.allSettled([
-      fetchClientSubscriptions(),
-      fetchPricingTiers(),
-      fetchFeatureToggles(),
-      fetchPromotions(),
-      fetchPriceHistory(),
-    ]);
-    if (!isActive()) return;
-
-    if (subsRes.status === "fulfilled") setSubscriptions(subsRes.value);
-    else logger.warn("Failed to load subscriptions", { context: "page", error: subsRes.reason });
-
-    if (tiersRes.status === "fulfilled") setTiers(tiersRes.value);
-    else logger.warn("Failed to load pricing tiers", { context: "page", error: tiersRes.reason });
-
-    if (togglesRes.status === "fulfilled") setToggles(togglesRes.value);
-    else
-      logger.warn("Failed to load feature toggles", { context: "page", error: togglesRes.reason });
-
-    if (promosRes.status === "fulfilled") setPromotions(promosRes.value);
-    else logger.warn("Failed to load promotions", { context: "page", error: promosRes.reason });
-
-    if (historyRes.status === "fulfilled") setPriceHistory(historyRes.value);
-    else logger.warn("Failed to load price history", { context: "page", error: historyRes.reason });
-
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
     let active = true;
+    const isActive = () => active;
 
-    timeouts.push(
-      setTimeout(() => {
-        loadData(() => active);
-      }, 0),
-    );
+    async function loadData() {
+      // Each section loads independently: a single slow or failing action must not
+      // blank the whole page or flash a misleading "Failed to load" — we render
+      // whatever resolved and only warn on the parts that didn't. isActive() guards
+      // against applying results after the component has unmounted.
+      const [subsRes, tiersRes, togglesRes, promosRes, historyRes] = await Promise.allSettled([
+        fetchClientSubscriptions(),
+        fetchPricingTiers(),
+        fetchFeatureToggles(),
+        fetchPromotions(),
+        fetchPriceHistory(),
+      ]);
+      if (!isActive()) return;
+
+      if (subsRes.status === "fulfilled") setSubscriptions(subsRes.value);
+      else logger.warn("Failed to load subscriptions", { context: "page", error: subsRes.reason });
+
+      if (tiersRes.status === "fulfilled") setTiers(tiersRes.value);
+      else logger.warn("Failed to load pricing tiers", { context: "page", error: tiersRes.reason });
+
+      if (togglesRes.status === "fulfilled") setToggles(togglesRes.value);
+      else
+        logger.warn("Failed to load feature toggles", {
+          context: "page",
+          error: togglesRes.reason,
+        });
+
+      if (promosRes.status === "fulfilled") setPromotions(promosRes.value);
+      else logger.warn("Failed to load promotions", { context: "page", error: promosRes.reason });
+
+      if (historyRes.status === "fulfilled") setPriceHistory(historyRes.value);
+      else
+        logger.warn("Failed to load price history", { context: "page", error: historyRes.reason });
+
+      setLoading(false);
+    }
+
+    loadData();
 
     return () => {
-      timeouts.forEach((t) => clearTimeout(t));
-
-      (() => {
-        active = false;
-      })();
+      active = false;
     };
-  }, [loadData]);
+  }, []);
 
   const stats = {
     active: subscriptions.filter((s) => s.status === "active").length,
@@ -600,71 +601,12 @@ export default function PricingPage() {
           {/* S7: Price comparison bar chart — shows tier prices side-by-side for
               the active system type + billing cycle. Helps admins instantly spot
               tier positioning gaps and pricing outliers (e.g. SaaS < Premium). */}
-          {(() => {
-            const chartData = tiers
-              .filter((t) => (t.pricing[selectedSystem]?.[billingCycle] ?? 0) >= 0)
-              .map((t) => ({
-                name: t.name,
-                price: t.pricing[selectedSystem]?.[billingCycle] ?? 0,
-                popular: t.popular,
-                slug: t.slug,
-              }));
-            if (chartData.every((d) => d.price === 0)) return null;
-            return (
-              <div className="rounded-xl border bg-card p-4 mb-6">
-                <p className="text-xs font-medium text-muted-foreground mb-3">
-                  Comparaison des prix — {systemTypeLabels[selectedSystem]} ·{" "}
-                  {billingCycle === "monthly" ? "Mensuel" : "Annuel"}
-                </p>
-                <ResponsiveContainer width="100%" height={130}>
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-                    barCategoryGap="28%"
-                  >
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={46}
-                      tickFormatter={(v: number) =>
-                        v === 0 ? "Gratuit" : `${(v / 1000).toFixed(0)}k`
-                      }
-                    />
-                    <Tooltip
-                      formatter={
-                        ((value: number) => [
-                          value === 0 ? "Gratuit" : formatCurrency(value, "fr", "MAD"),
-                          "Prix",
-                        ]) as unknown as ComponentProps<typeof Tooltip>["formatter"]
-                      }
-                      labelStyle={{ fontSize: 11 }}
-                      contentStyle={{ fontSize: 11 }}
-                      cursor={{ fill: "var(--muted)" }}
-                    />
-                    <Bar dataKey="price" radius={[3, 3, 0, 0]}>
-                      {chartData.map((entry, i) => (
-                        <Cell
-                          key={`cell-${i}`}
-                          fill="var(--primary)"
-                          fillOpacity={entry.popular ? 1 : 0.45}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-                <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                  La barre en couleur pleine = tier <span className="font-medium">Populaire</span>
-                </p>
-              </div>
-            );
-          })()}
+          <PricingComparisonChart
+            tiers={tiers}
+            selectedSystem={selectedSystem}
+            billingCycle={billingCycle}
+            systemTypeLabels={systemTypeLabels}
+          />
 
           {/* Pricing Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

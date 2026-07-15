@@ -321,7 +321,7 @@ function ModelRoutingContent() {
                     <div className="flex items-center gap-2 px-8 py-0.5">
                       <div className="h-px flex-1 border-t border-dashed border-muted-foreground/30" />
                       <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
-                      <p className="text-[9px] text-muted-foreground/50 uppercase">fallback</p>
+                      <p className="text-[9px] text-muted-foreground uppercase">fallback</p>
                     </div>
                   )}
                 </div>

@@ -89,18 +89,16 @@ async function handlePost(req: NextRequest, auth: AuthContext) {
     // Pick specific columns only — never spread the request body (mass
     // assignment guard). `date_of_birth` is a real column not yet in the
     // generated types, hence the loose payload + cast.
-    const insertPayload: Record<string, unknown> = {
-      clinic_id: clinicId,
-      role: "patient",
-      name,
-      phone,
-      email,
-      date_of_birth: dateOfBirth,
-    };
-
     const { data: created, error } = await supabase
       .from("users")
-      .insert(insertPayload as TablesInsert<"users">)
+      .insert({
+        clinic_id: clinicId,
+        role: "patient",
+        name,
+        phone,
+        email,
+        date_of_birth: dateOfBirth,
+      } as TablesInsert<"users">)
       .select("id, name, phone")
       .single();
 

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -118,15 +119,14 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
 
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-      <span onClick={() => setOpen(true)}>
+      <DialogTrigger asChild onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button variant="outline" size="sm">
-            <Phone className="h-4 w-4 mr-1" />
+            <Phone className="h-4 w-4 me-1" />
             Manual Booking
           </Button>
         )}
-      </span>
+      </DialogTrigger>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[500px]" onClose={() => setOpen(false)}>
           <DialogHeader>

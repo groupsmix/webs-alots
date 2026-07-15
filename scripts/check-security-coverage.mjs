@@ -36,12 +36,27 @@ if (!existsSync(COVERAGE_PATH)) {
 }
 
 const summary = JSON.parse(readFileSync(COVERAGE_PATH, "utf-8"));
+const cwd = process.cwd().replace(/\\/g, "/");
+
+// Vitest may write absolute paths when running under CI; normalize to the
+// repo-relative paths used by the threshold map.
+const normalizedSummary = Object.fromEntries(
+  Object.entries(summary).map(([key, value]) => {
+    const normalizedKey =
+      typeof key === "string" && key.replace(/\\/g, "/").startsWith(`${cwd}/`)
+        ? key.replace(/\\/g, "/").slice(cwd.length + 1)
+        : key;
+    return [normalizedKey, value];
+  }),
+);
+
 let failures = 0;
 
 for (const [file, thresholds] of Object.entries(THRESHOLDS)) {
-  const data = summary[file];
+  const data = normalizedSummary[file];
   if (!data) {
-    console.warn(`⚠  ${file} — not found in coverage report (not tested?)`);
+    console.error(`❌ ${file} — not found in coverage report (required security-critical file)`);
+    failures++;
     continue;
   }
 

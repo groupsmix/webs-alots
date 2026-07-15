@@ -34,6 +34,7 @@
 import * as Sentry from "@sentry/nextjs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertClinicId } from "@/lib/assert-tenant";
+import { getR2OrphanRateAlertThreshold } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { deleteFromR2, listR2Objects } from "@/lib/r2";
 
@@ -77,18 +78,7 @@ type AnySupabase = SupabaseClient<any, any, any>;
 
 /** Resolve the orphan-rate alert threshold from env with safe fallbacks. */
 export function readOrphanRateAlertThreshold(): number {
-  const raw = process.env.R2_ORPHAN_RATE_ALERT_THRESHOLD;
-  if (!raw) return DEFAULT_ORPHAN_RATE_THRESHOLD;
-  const parsed = Number.parseFloat(raw);
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
-    logger.warn("Ignoring invalid R2_ORPHAN_RATE_ALERT_THRESHOLD, using default", {
-      context: "r2-cleanup",
-      raw,
-      default: DEFAULT_ORPHAN_RATE_THRESHOLD,
-    });
-    return DEFAULT_ORPHAN_RATE_THRESHOLD;
-  }
-  return parsed;
+  return getR2OrphanRateAlertThreshold(DEFAULT_ORPHAN_RATE_THRESHOLD);
 }
 
 export interface FindAbandonedOptions {
