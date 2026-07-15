@@ -16,6 +16,8 @@ export async function fetchFeedback(
   options: { status?: string; limit?: number } = {},
 ): Promise<FeedbackItem[]> {
   const supabase = await createClient();
+  // nosemgrep: tenant-scoping
+  // Super-admin feedback view is intentionally cross-tenant; RLS restricts this to super_admin only.
   let query = supabase
     .from("app_feedback")
     .select("*")
