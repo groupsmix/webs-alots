@@ -108,3 +108,13 @@ export function isProduction(): boolean {
 export function isCi(): boolean {
   return process.env.CI === "true";
 }
+
+/**
+ * QA/pilot escape hatch for the demo tenant. When `DEMO_ALLOW_MUTATIONS=true`,
+ * destructive requests on the demo tenant are permitted so the demo can be
+ * exercised end-to-end. Secure by default: any value other than the exact
+ * string "true" keeps the demo tenant read-only.
+ */
+export function isDemoMutationsAllowed(): boolean {
+  return process.env.DEMO_ALLOW_MUTATIONS === "true";
+}

@@ -79,6 +79,8 @@ vi.mock("@/lib/email-templates", () => ({
   staffWelcomeEmail: (...args: unknown[]) => mockStaffWelcomeEmail(...args),
 }));
 vi.mock("@/lib/env", () => ({
+  getLoginRateLimitMax: () => 5,
+  getLoginRateLimitWindowMs: () => 60_000,
   getSupabaseServiceRoleKey: (...args: unknown[]) => mockGetSupabaseServiceRoleKey(...args),
   getSiteUrl: (...args: unknown[]) => mockGetSiteUrl(...args),
 }));

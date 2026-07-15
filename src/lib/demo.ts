@@ -5,6 +5,8 @@
  * whether the current request / tenant is the demo tenant.
  */
 
+import { isDemoMutationsAllowed } from "@/lib/env";
+
 /** The well-known UUID for the demo clinic (seeded in migration 00046). */
 const DEMO_CLINIC_ID = process.env.DEMO_CLINIC_ID || "c0000000-de00-0000-0000-000000000001";
 
@@ -84,7 +86,7 @@ const DEMO_ALLOWED_PATHS = new Set([
  * the production environment — it exists for QA and pilot walkthroughs.
  */
 function demoMutationsAllowed(): boolean {
-  return process.env.DEMO_ALLOW_MUTATIONS === "true";
+  return isDemoMutationsAllowed();
 }
 
 /**
