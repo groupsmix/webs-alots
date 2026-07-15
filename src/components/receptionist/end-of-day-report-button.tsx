@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
+  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -34,58 +35,41 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
     firstVisits: number;
   } | null>(null);
 
-  const generateReport = async () => {
-    setLoading(true);
-    try {
-      const user = await getCurrentUser();
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-
-      const today = getLocalDateStr();
-      const [appts, invoices] = await Promise.all([
-        fetchTodayAppointments(user.clinic_id),
-        fetchInvoices(user.clinic_id),
-      ]);
-
-      const todayInvoices = invoices.filter((inv) => inv.date === today);
-
-      setReport({
-        totalAppointments: appts.length,
-        completed: appts.filter((a) => a.status === "completed").length,
-        noShows: appts.filter((a) => a.status === "no-show").length,
-        cancelled: appts.filter((a) => a.status === "cancelled").length,
-        pending: appts.filter((a) => a.status === "scheduled" || a.status === "confirmed").length,
-        totalRevenue: todayInvoices.reduce((sum, inv) => sum + inv.amount, 0),
-        paidCount: todayInvoices.filter((inv) => inv.status === "paid").length,
-        pendingPayments: todayInvoices.filter((inv) => inv.status === "pending").length,
-        uniquePatients: new Set(appts.map((a) => a.patientId)).size,
-        firstVisits: appts.filter((a) => a.isFirstVisit).length,
-      });
-    } catch {
-      // Report generation failed silently
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    if (!open) return;
+    async function loadReport() {
+      setLoading(true);
+      try {
+        const user = await getCurrentUser();
+        if (!user?.clinic_id) return;
 
-    if (open && !report) {
-      timeouts.push(
-        setTimeout(() => {
-          generateReport();
-        }, 0),
-      );
+        const today = getLocalDateStr();
+        const [appts, invoices] = await Promise.all([
+          fetchTodayAppointments(user.clinic_id),
+          fetchInvoices(user.clinic_id),
+        ]);
+
+        const todayInvoices = invoices.filter((inv) => inv.date === today);
+
+        setReport({
+          totalAppointments: appts.length,
+          completed: appts.filter((a) => a.status === "completed").length,
+          noShows: appts.filter((a) => a.status === "no-show").length,
+          cancelled: appts.filter((a) => a.status === "cancelled").length,
+          pending: appts.filter((a) => a.status === "scheduled" || a.status === "confirmed").length,
+          totalRevenue: todayInvoices.reduce((sum, inv) => sum + inv.amount, 0),
+          paidCount: todayInvoices.filter((inv) => inv.status === "paid").length,
+          pendingPayments: todayInvoices.filter((inv) => inv.status === "pending").length,
+          uniquePatients: new Set(appts.map((a) => a.patientId)).size,
+          firstVisits: appts.filter((a) => a.isFirstVisit).length,
+        });
+      } catch {
+        // Report generation failed silently
+      } finally {
+        setLoading(false);
+      }
     }
-
-    return () => {
-      timeouts.forEach((t) => clearTimeout(t));
-    };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadReport();
   }, [open]);
 
   const handlePrint = () => {
@@ -94,15 +78,14 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
 
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-      <span onClick={() => setOpen(true)}>
+      <DialogTrigger asChild onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button variant="outline" size="sm">
-            <FileText className="h-4 w-4 mr-1" />
+            <FileText className="h-4 w-4 me-1" />
             End of Day Report
           </Button>
         )}
-      </span>
+      </DialogTrigger>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[600px]" onClose={() => setOpen(false)}>
           <DialogHeader>
@@ -240,12 +223,12 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
             </Button>
             <a href="/receptionist/daily-report">
               <Button variant="outline">
-                <FileText className="h-4 w-4 mr-1" />
+                <FileText className="h-4 w-4 me-1" />
                 Full Report
               </Button>
             </a>
             <Button onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-1" />
+              <Printer className="h-4 w-4 me-1" />
               Print
             </Button>
           </DialogFooter>

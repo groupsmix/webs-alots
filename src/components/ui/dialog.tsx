@@ -16,13 +16,27 @@ function Dialog({ open, children }: DialogProps) {
   return <>{open ? children : null}</>;
 }
 
-function DialogTrigger({
-  children,
-  onClick,
-  ...props
-}: React.ComponentProps<"button"> & { asChild?: boolean }) {
+interface DialogTriggerProps extends Omit<React.ComponentProps<"button">, "onClick"> {
+  asChild?: boolean;
+  onClick?: React.MouseEventHandler<HTMLElement>;
+}
+
+function DialogTrigger({ children, asChild, onClick, ...props }: DialogTriggerProps) {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+      ...props,
+      onClick: (e: React.MouseEvent<HTMLElement>) => {
+        (children.props as { onClick?: React.MouseEventHandler<HTMLElement> }).onClick?.(e);
+        onClick?.(e);
+      },
+    });
+  }
   return (
-    <button type="button" onClick={onClick} {...props}>
+    <button
+      type="button"
+      onClick={onClick as React.MouseEventHandler<HTMLButtonElement> | undefined}
+      {...props}
+    >
       {children}
     </button>
   );
