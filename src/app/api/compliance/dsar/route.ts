@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiRateLimited, apiSuccess } from "@/lib/api-response";
 import { insertInAppNotification } from "@/lib/notification-persist";
+import { extractClientIp, createRateLimiter } from "@/lib/rate-limit";
 import { createServiceClient, createUntypedAdminClient } from "@/lib/supabase-server";
 
 const dsarSchema = z.object({
@@ -13,7 +14,19 @@ const dsarSchema = z.object({
   description: z.string().min(20).max(2000),
 });
 
+// F5: cap public DSAR submissions per IP to prevent notification spam and bot abuse.
+const dsarLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  failClosed: true,
+});
+
 export async function POST(request: NextRequest) {
+  const clientIp = extractClientIp(request);
+  if (!(await dsarLimiter.check(clientIp))) {
+    return apiRateLimited("Too many DSAR requests from this IP. Please try again later.");
+  }
+
   let payload: unknown;
   try {
     payload = await request.json();
