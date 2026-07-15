@@ -443,16 +443,14 @@ function wrapChaosBuilder<T extends object>(builder: T): T {
           onRejected?: (reason: unknown) => unknown,
         ) =>
           withChaos("database_timeout", () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const thenable = target as unknown as PromiseLike<any>;
+            const thenable = target as unknown as PromiseLike<unknown>;
             return Promise.resolve(thenable);
           }).then(onFulfilled, onRejected);
       }
 
       const value = Reflect.get(target, prop, receiver);
       if (typeof value === "function") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (...args: any[]) => {
+        return (...args: unknown[]) => {
           const result = (value as (...a: unknown[]) => unknown).apply(target, args);
           // Re-wrap chainable builders (objects that are still thenable) so
           // chaos continues to apply no matter how deep the chain goes.
