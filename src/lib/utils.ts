@@ -41,6 +41,13 @@ export const LOCALE_MAP: Record<Locale, string> = {
   en: "en-US",
 };
 
+export const MOROCCO_LOCALE_MAP: Record<Locale, string> = {
+  fr: "fr-MA",
+  ar: "ar-MA",
+  ary: "ar-MA",
+  en: "en-MA",
+};
+
 /**
  * Format a date string or Date for display, respecting the user's locale.
  *
