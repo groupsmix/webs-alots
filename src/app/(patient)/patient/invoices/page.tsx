@@ -1,13 +1,11 @@
-"use client";
-
 import { Download, CreditCard, FileText, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchInvoices, type InvoiceView } from "@/lib/data/client";
+import type { InvoiceView } from "@/lib/data/client/invoices";
+import { fetchInvoices } from "@/lib/data/invoices";
+import { requireTenant } from "@/lib/tenant";
 import { formatCurrency } from "@/lib/utils";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
@@ -19,50 +17,9 @@ const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
 const INVOICE_RECEIPT_DISABLED_MESSAGE =
   "Invoice receipt downloads are temporarily unavailable in this deployment.";
 
-export default function PatientInvoicesPage() {
-  const [invoices, setInvoices] = useState<InvoiceView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const invs = await fetchInvoices(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setInvoices(invs);
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  if (loading) {
-    return <PageLoader message="Loading invoices..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+export default async function PatientInvoicesPage() {
+  const tenant = await requireTenant();
+  const invoices = await fetchInvoices(tenant.clinicId);
 
   const totalPaid = invoices
     .filter((i) => i.status === "paid")
@@ -127,32 +84,32 @@ export default function PatientInvoicesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="text-left font-medium py-3 pr-4">Invoice</th>
-                  <th className="text-left font-medium py-3 pr-4">Date</th>
-                  <th className="text-left font-medium py-3 pr-4">Patient</th>
-                  <th className="text-left font-medium py-3 pr-4">Amount</th>
-                  <th className="text-left font-medium py-3 pr-4">Method</th>
-                  <th className="text-left font-medium py-3 pr-4">Status</th>
-                  <th className="text-right font-medium py-3">Actions</th>
+                  <th className="text-start font-medium py-3 pe-4">Invoice</th>
+                  <th className="text-start font-medium py-3 pe-4">Date</th>
+                  <th className="text-start font-medium py-3 pe-4">Patient</th>
+                  <th className="text-start font-medium py-3 pe-4">Amount</th>
+                  <th className="text-start font-medium py-3 pe-4">Method</th>
+                  <th className="text-start font-medium py-3 pe-4">Status</th>
+                  <th className="text-end font-medium py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((inv) => (
+                {invoices.map((inv: InvoiceView) => (
                   <tr
                     key={inv.id}
                     className="border-b last:border-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="py-3 pr-4 font-medium">{inv.id.toUpperCase()}</td>
-                    <td className="py-3 pr-4 text-muted-foreground">{inv.date}</td>
-                    <td className="py-3 pr-4">{inv.patientName}</td>
-                    <td className="py-3 pr-4 font-semibold">
+                    <td className="py-3 pe-4 font-medium">{inv.id.toUpperCase()}</td>
+                    <td className="py-3 pe-4 text-muted-foreground">{inv.date}</td>
+                    <td className="py-3 pe-4">{inv.patientName}</td>
+                    <td className="py-3 pe-4 font-semibold">
                       {inv.amount} {inv.currency}
                     </td>
-                    <td className="py-3 pr-4 capitalize text-muted-foreground">{inv.method}</td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pe-4 capitalize text-muted-foreground">{inv.method}</td>
+                    <td className="py-3 pe-4">
                       <Badge variant={statusVariant[inv.status]}>{inv.status}</Badge>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-end">
                       <div className="flex gap-1 justify-end">
                         <Button variant="ghost" size="sm" title="Receipt unavailable" disabled>
                           <Download className="h-3.5 w-3.5" />
@@ -166,7 +123,7 @@ export default function PatientInvoicesPage() {
           </div>
 
           <div className="md:hidden space-y-3">
-            {invoices.map((inv) => (
+            {invoices.map((inv: InvoiceView) => (
               <div key={inv.id} className="border rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-sm">{inv.id.toUpperCase()}</p>
@@ -183,7 +140,7 @@ export default function PatientInvoicesPage() {
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
-                    <Download className="h-3.5 w-3.5 mr-1" />
+                    <Download className="h-3.5 w-3.5 me-1" />
                     Receipt unavailable
                   </Button>
                 </div>
