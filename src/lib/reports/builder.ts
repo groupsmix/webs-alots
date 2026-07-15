@@ -83,8 +83,7 @@ export async function executeReport(
 
   const selectStr = safeFields.join(", ");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (supabase as SupabaseClient)
     .from(dataSource)
     .select(selectStr, { count: "exact" })
     .eq("clinic_id", clinicId);
@@ -137,7 +136,7 @@ export async function executeReport(
 
   return {
     columns: safeFields,
-    rows: (data ?? []) as Record<string, unknown>[],
+    rows: (data ?? []) as unknown as Record<string, unknown>[],
     totalRows: count ?? 0,
     generatedAt: new Date().toISOString(),
   };

@@ -10,6 +10,7 @@
  * provider at or above the feature's required tier is available.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { getCachedFeatureToggles, setCachedFeatureToggles } from "./config-cache";
 
@@ -32,8 +33,9 @@ export interface FeatureToggleState {
 /**
  * Load feature toggle state from DB (with caching).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function loadFeatureToggles(supabase: any): Promise<Map<string, FeatureToggleState>> {
+export async function loadFeatureToggles(
+  supabase: SupabaseClient,
+): Promise<Map<string, FeatureToggleState>> {
   const cached = getCachedFeatureToggles();
   if (cached) return cached;
 

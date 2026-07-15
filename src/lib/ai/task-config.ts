@@ -15,6 +15,7 @@
  * (config-cache.ts) — same staleness bound, same multi-instance caveat.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 import { ALLOWED_MODELS, resolveModelAlias } from "./models";
@@ -44,8 +45,7 @@ export function invalidateTaskConfigCache(): void {
  * Fails open to an empty map (auto routing for everything) on any error so
  * a missing table or DB hiccup can never take AI down.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function loadTaskConfigs(supabase?: any): Promise<Map<AITaskType, TaskPin>> {
+async function loadTaskConfigs(supabase?: SupabaseClient): Promise<Map<AITaskType, TaskPin>> {
   if (_cached && Date.now() < _cached.expiresAt) return _cached.pins;
 
   const pins = new Map<AITaskType, TaskPin>();
@@ -111,8 +111,10 @@ async function loadTaskConfigs(supabase?: any): Promise<Map<AITaskType, TaskPin>
 }
 
 /** Resolve the pin for a single task. Null = full auto. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getTaskPin(task: AITaskType, supabase?: any): Promise<TaskPin | null> {
+export async function getTaskPin(
+  task: AITaskType,
+  supabase?: SupabaseClient,
+): Promise<TaskPin | null> {
   const pins = await loadTaskConfigs(supabase);
   return pins.get(task) ?? null;
 }
