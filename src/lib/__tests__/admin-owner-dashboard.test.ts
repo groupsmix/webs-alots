@@ -2,6 +2,22 @@ import { describe, expect, it } from "vitest";
 import { calculateNoShowRate, getOwnerAttentionItems } from "@/lib/admin-owner-dashboard";
 import type { DashboardStats } from "@/lib/data/dashboard";
 
+function makeToday(
+  overrides: Partial<Parameters<typeof getOwnerAttentionItems>[1]> = {},
+): NonNullable<Parameters<typeof getOwnerAttentionItems>[1]> {
+  return {
+    totalAppointments: 0,
+    unconfirmedAppointments: 0,
+    confirmedAppointments: 0,
+    checkedInAppointments: 0,
+    inProgressAppointments: 0,
+    completedAppointments: 0,
+    cancelledAppointments: 0,
+    noShowAppointments: 0,
+    ...overrides,
+  };
+}
+
 function makeStats(overrides: Partial<DashboardStats> = {}): DashboardStats {
   return {
     totalPatients: 20,
@@ -30,6 +46,19 @@ describe("calculateNoShowRate", () => {
 describe("getOwnerAttentionItems", () => {
   it("returns no alerts when the available totals are healthy", () => {
     expect(getOwnerAttentionItems(makeStats())).toEqual([]);
+  });
+
+  it("puts today's operational alerts first without repeating the no-show alert", () => {
+    expect(
+      getOwnerAttentionItems(
+        makeStats({ noShowCount: 20 }),
+        makeToday({
+          unconfirmedAppointments: 3,
+          checkedInAppointments: 2,
+          noShowAppointments: 1,
+        }),
+      ).map((item) => item.kind),
+    ).toEqual(["unconfirmedToday", "waitingToday", "noShowToday"]);
   });
 
   it("returns setup alerts for clinics without doctors or patients", () => {
