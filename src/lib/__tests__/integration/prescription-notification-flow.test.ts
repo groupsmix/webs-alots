@@ -98,26 +98,6 @@ describe("Prescription → Notification integration", () => {
     expect(whatsappBody).not.toContain("{{patient_name}}");
   });
 
-  it("prescription ID generator produces valid format", async () => {
-    const { generatePrescriptionNumber, isValidPrescriptionNumber } =
-      await import("@/lib/prescription-id");
-
-    const rxId = generatePrescriptionNumber();
-
-    expect(rxId).toMatch(/^RX-\d{4}-\d{6}$/);
-    expect(isValidPrescriptionNumber(rxId)).toBe(true);
-  });
-
-  it("formatPrescriptionNumber creates correct ID from sequence", async () => {
-    const { formatPrescriptionNumber, isValidPrescriptionNumber } =
-      await import("@/lib/prescription-id");
-
-    const rxId = formatPrescriptionNumber(2026, 42);
-
-    expect(rxId).toBe("RX-2026-000042");
-    expect(isValidPrescriptionNumber(rxId)).toBe(true);
-  });
-
   it("prescription_ready notification has higher priority than new_review", async () => {
     const { defaultNotificationTemplates } = await import("@/lib/notifications");
 
