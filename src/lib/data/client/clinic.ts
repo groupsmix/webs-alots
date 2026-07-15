@@ -1,5 +1,6 @@
 "use client";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   fetchRows,
   ensureLookups,
@@ -154,9 +155,8 @@ export async function fetchInstallmentPlans(clinicId: string): Promise<Installme
 }
 
 // clinic_holidays.{type,recurring} columns (migration 00192) are not yet in the
-// generated DB types. Cast through this minimal shape — matches whatsapp.ts.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseUntyped = { from(table: string): any };
+// generated DB types. Cast through the generic client shape.
+type SupabaseUntyped = SupabaseClient;
 
 // ============================================================
 // HOLIDAYS (clinic_holidays)

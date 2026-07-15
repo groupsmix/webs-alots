@@ -7,8 +7,6 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
-  ArrowUpRight,
-  ArrowDownRight,
   BarChart3,
   Activity,
 } from "lucide-react";
@@ -28,6 +26,7 @@ import {
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChangeIndicator } from "@/components/ui/change-indicator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency, LOCALE_MAP } from "@/lib/utils";
 
@@ -121,20 +120,6 @@ const HEATMAP_COLORS = [
 ];
 
 // ── Sub-components (declared outside render to satisfy react-hooks/static-components) ──
-
-function ChangeIndicator({ value }: { value: number }) {
-  if (value === 0) return <span className="text-xs text-muted-foreground">0%</span>;
-  const positive = value > 0;
-  return (
-    <span
-      className={`inline-flex items-center gap-0.5 text-xs font-medium ${positive ? "text-[var(--signal-green)]" : "text-[var(--signal-red)]"}`}
-    >
-      {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-      {positive ? "+" : ""}
-      {value}%
-    </span>
-  );
-}
 
 function StatCard({
   icon: Icon,
@@ -930,23 +915,7 @@ function ComparisonItem({
           <p className="text-lg font-bold">{current}</p>
           <p className="text-xs text-muted-foreground">vs {previous}</p>
         </div>
-        <span
-          className={`inline-flex items-center gap-0.5 text-sm font-medium ${
-            change > 0
-              ? "text-[var(--signal-green)]"
-              : change < 0
-                ? "text-[var(--signal-red)]"
-                : "text-muted-foreground"
-          }`}
-        >
-          {change > 0 ? (
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          ) : change < 0 ? (
-            <ArrowDownRight className="h-3.5 w-3.5" />
-          ) : null}
-          {change > 0 ? "+" : ""}
-          {change}%
-        </span>
+        <ChangeIndicator value={change} className="text-sm" />
       </div>
     </div>
   );

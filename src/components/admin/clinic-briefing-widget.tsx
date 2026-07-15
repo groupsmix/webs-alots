@@ -130,7 +130,7 @@ function BriefingCard({ briefing }: { briefing: Briefing }) {
       )}
 
       {briefing.ai_model && (
-        <p className="mt-2 text-xs text-muted-foreground/60">Modèle: {briefing.ai_model}</p>
+        <p className="mt-2 text-xs text-muted-foreground">Modèle: {briefing.ai_model}</p>
       )}
     </div>
   );

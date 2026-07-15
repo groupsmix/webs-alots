@@ -7,9 +7,18 @@
  */
 
 import { logAuditEvent } from "@/lib/audit-log";
+import { getSiteUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { createAdminClient, createClient } from "@/lib/supabase-server";
 import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp";
+
+interface WaitlistEntryWithRelations {
+  id: string;
+  patient_id: string;
+  clinic_id: string;
+  patient: { name: string; phone: string | null } | null;
+  clinic: { name: string; whatsapp_phone_id: string | null } | null;
+}
 
 export interface PromoteWaitlistParams {
   doctorId: string;
@@ -42,6 +51,10 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
 
   if (!entry) return; // no one waiting
 
+  const typedEntry = entry as unknown as WaitlistEntryWithRelations;
+  const patient = typedEntry.patient;
+  const clinic = typedEntry.clinic;
+
   const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1_000); // 2 h
 
   await supabase
@@ -50,26 +63,18 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
       notified_at: new Date().toISOString(),
       expires_at: expiresAt.toISOString(),
     })
-    .eq("id", entry.id)
+    .eq("id", typedEntry.id)
     .eq("clinic_id", params.clinicId);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const patient = (entry as any).patient as { name: string; phone: string | null } | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const clinic = (entry as any).clinic as {
-    name: string;
-    whatsapp_phone_id: string | null;
-  } | null;
 
   if (!patient?.phone) {
     logger.warn("promoteWaitlist: patient has no phone, skipping WhatsApp", {
       context: "waitlist",
-      entryId: entry.id,
+      entryId: typedEntry.id,
     });
     return;
   }
 
-  const claimUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/booking/claim/${entry.id}`;
+  const claimUrl = `${getSiteUrl() || "https://oltigo.com"}/booking/claim/${typedEntry.id}`;
   const slotLabel = new Date(params.cancelledSlot).toLocaleString("fr-MA", {
     timeZone: "Africa/Casablanca",
     dateStyle: "full",
@@ -109,7 +114,7 @@ export async function promoteWaitlist(params: PromoteWaitlistParams): Promise<vo
     action: "waitlist_patient_notified",
     type: "booking",
     clinicId: params.clinicId,
-    description: `Waitlist entry ${entry.id} promoted after slot ${params.cancelledSlot} freed`,
-    metadata: { entryId: entry.id, patientId: entry.patient_id },
+    description: `Waitlist entry ${typedEntry.id} promoted after slot ${params.cancelledSlot} freed`,
+    metadata: { entryId: typedEntry.id, patientId: typedEntry.patient_id },
   });
 }

@@ -20,8 +20,8 @@ import {
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo, type ComponentProps } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import dynamic from "next/dynamic";
+import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,11 @@ import { logger } from "@/lib/logger";
 import { fetchBillingRecords, type BillingRecord } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber, getLocalDateStr } from "@/lib/utils";
 
+const BillingTrendChart = dynamic(() => import("./_billing-trend-chart"), {
+  ssr: false,
+  loading: () => <div className="h-[140px] animate-pulse rounded-md bg-muted" />,
+});
+
 type StatusFilter = "all" | "paid" | "pending" | "overdue" | "cancelled";
 
 export default function BillingPage() {
@@ -66,35 +71,28 @@ export default function BillingPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const loadRecords = useCallback(async () => {
-    try {
-      const data = await fetchBillingRecords();
-      setRecords(data);
-    } catch (err) {
-      logger.warn("Failed to load super-admin billing", { context: "page", error: err });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-    const controller = new AbortController();
-
-    timeouts.push(
-      setTimeout(() => {
-        loadRecords();
-      }, 0),
-    );
-
+    let active = true;
+    async function loadRecords() {
+      try {
+        const data = await fetchBillingRecords();
+        if (!active) return;
+        setRecords(data);
+      } catch (err) {
+        if (active) {
+          logger.warn("Failed to load super-admin billing", { context: "page", error: err });
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    loadRecords();
     return () => {
-      timeouts.forEach((t) => clearTimeout(t));
-
-      (() => {
-        controller.abort();
-      })();
+      active = false;
     };
-  }, [loadRecords]);
+  }, []);
 
   // Derive a human-readable invoice number from the payment UUID + invoice date.
   // The raw UUID stays available via tooltip/detail for support lookups.
@@ -414,49 +412,10 @@ export default function BillingPage() {
                 </span>
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-0">
-                <ResponsiveContainer width="100%" height={140}>
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-                    barCategoryGap="30%"
-                  >
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={44}
-                      tickFormatter={(v: number) =>
-                        v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
-                      }
-                    />
-                    <Tooltip
-                      formatter={
-                        ((value: number) => [
-                          formatCurrency(value, "fr", "MAD"),
-                          "Encaissé",
-                        ]) as unknown as ComponentProps<typeof Tooltip>["formatter"]
-                      }
-                      labelStyle={{ fontSize: 11 }}
-                      contentStyle={{ fontSize: 11 }}
-                      cursor={{ fill: "var(--muted)" }}
-                    />
-                    <Bar dataKey="amount" radius={[3, 3, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill="var(--primary)"
-                          fillOpacity={index === chartData.length - 1 ? 1 : 0.45}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <BillingTrendChart
+                  data={chartData}
+                  formatter={(value) => formatCurrency(value, "fr", "MAD")}
+                />
               </CardContent>
             </Card>
           )}

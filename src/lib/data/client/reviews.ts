@@ -1,5 +1,6 @@
 "use client";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchRows, ensureLookups, _activeUserMap, createClient } from "./_core";
 
 // ─────────────────────────────────────────────
@@ -56,9 +57,8 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
 // ─────────────────────────────────────────────
 
 // notification_preferences (migration 00161) is not yet in the generated DB
-// types. Cast through this minimal shape — matches src/lib/whatsapp.ts.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseUntyped = { from(table: string): any };
+// types. Cast through the generic client shape.
+type SupabaseUntyped = SupabaseClient;
 
 export async function createReview(data: {
   clinicId: string;

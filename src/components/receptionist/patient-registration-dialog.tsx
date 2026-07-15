@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -81,15 +82,14 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
 
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-      <span onClick={() => setOpen(true)}>
+      <DialogTrigger asChild onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button>
             <UserPlus className="h-4 w-4 me-1" />
             Register New Patient
           </Button>
         )}
-      </span>
+      </DialogTrigger>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto"

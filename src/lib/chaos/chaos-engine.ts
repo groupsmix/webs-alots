@@ -37,6 +37,11 @@ interface ChaosConfig {
   statusCode?: number;
 }
 
+interface ChaosError extends Error {
+  chaosExperiment?: ChaosExperiment;
+  statusCode?: number;
+}
+
 const CHAOS_CONFIGS: Record<ChaosExperiment, ChaosConfig> = {
   database_timeout: {
     probability: 0.1, // 10% of DB calls
@@ -136,11 +141,9 @@ export async function withChaos<T>(experiment: ChaosExperiment, fn: () => Promis
   }
 
   if (config.errorMessage) {
-    const error = new Error(config.errorMessage);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (error as any).chaosExperiment = experiment;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (error as any).statusCode = config.statusCode;
+    const error = new Error(config.errorMessage) as ChaosError;
+    error.chaosExperiment = experiment;
+    error.statusCode = config.statusCode;
     throw error;
   }
 

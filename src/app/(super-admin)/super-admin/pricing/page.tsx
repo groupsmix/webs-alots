@@ -26,8 +26,8 @@ import {
   Percent,
   AlertTriangle,
 } from "lucide-react";
-import { useState, useEffect, useCallback, type ComponentProps } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,11 @@ import {
   type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+
+const PricingComparisonChart = dynamic(() => import("./_pricing-comparison-chart"), {
+  ssr: false,
+  loading: () => <div className="h-[130px] animate-pulse rounded-md bg-muted mb-6" />,
+});
 
 type TabView = "tiers" | "features" | "promotions";
 type SystemFilter = "all" | SystemType;
@@ -133,57 +138,53 @@ export default function PricingPage() {
   const [deletePromoOpen, setDeletePromoOpen] = useState(false);
   const [deletePromoItem, setDeletePromoItem] = useState<Promotion | null>(null);
 
-  const loadData = useCallback(async (isActive: () => boolean) => {
-    // Each section loads independently: a single slow or failing action must not
-    // blank the whole page or flash a misleading "Failed to load" — we render
-    // whatever resolved and only warn on the parts that didn't. isActive() guards
-    // against applying results after the component has unmounted.
-    const [subsRes, tiersRes, togglesRes, promosRes, historyRes] = await Promise.allSettled([
-      fetchClientSubscriptions(),
-      fetchPricingTiers(),
-      fetchFeatureToggles(),
-      fetchPromotions(),
-      fetchPriceHistory(),
-    ]);
-    if (!isActive()) return;
-
-    if (subsRes.status === "fulfilled") setSubscriptions(subsRes.value);
-    else logger.warn("Failed to load subscriptions", { context: "page", error: subsRes.reason });
-
-    if (tiersRes.status === "fulfilled") setTiers(tiersRes.value);
-    else logger.warn("Failed to load pricing tiers", { context: "page", error: tiersRes.reason });
-
-    if (togglesRes.status === "fulfilled") setToggles(togglesRes.value);
-    else
-      logger.warn("Failed to load feature toggles", { context: "page", error: togglesRes.reason });
-
-    if (promosRes.status === "fulfilled") setPromotions(promosRes.value);
-    else logger.warn("Failed to load promotions", { context: "page", error: promosRes.reason });
-
-    if (historyRes.status === "fulfilled") setPriceHistory(historyRes.value);
-    else logger.warn("Failed to load price history", { context: "page", error: historyRes.reason });
-
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
     let active = true;
+    const isActive = () => active;
 
-    timeouts.push(
-      setTimeout(() => {
-        loadData(() => active);
-      }, 0),
-    );
+    async function loadData() {
+      // Each section loads independently: a single slow or failing action must not
+      // blank the whole page or flash a misleading "Failed to load" — we render
+      // whatever resolved and only warn on the parts that didn't. isActive() guards
+      // against applying results after the component has unmounted.
+      const [subsRes, tiersRes, togglesRes, promosRes, historyRes] = await Promise.allSettled([
+        fetchClientSubscriptions(),
+        fetchPricingTiers(),
+        fetchFeatureToggles(),
+        fetchPromotions(),
+        fetchPriceHistory(),
+      ]);
+      if (!isActive()) return;
+
+      if (subsRes.status === "fulfilled") setSubscriptions(subsRes.value);
+      else logger.warn("Failed to load subscriptions", { context: "page", error: subsRes.reason });
+
+      if (tiersRes.status === "fulfilled") setTiers(tiersRes.value);
+      else logger.warn("Failed to load pricing tiers", { context: "page", error: tiersRes.reason });
+
+      if (togglesRes.status === "fulfilled") setToggles(togglesRes.value);
+      else
+        logger.warn("Failed to load feature toggles", {
+          context: "page",
+          error: togglesRes.reason,
+        });
+
+      if (promosRes.status === "fulfilled") setPromotions(promosRes.value);
+      else logger.warn("Failed to load promotions", { context: "page", error: promosRes.reason });
+
+      if (historyRes.status === "fulfilled") setPriceHistory(historyRes.value);
+      else
+        logger.warn("Failed to load price history", { context: "page", error: historyRes.reason });
+
+      setLoading(false);
+    }
+
+    loadData();
 
     return () => {
-      timeouts.forEach((t) => clearTimeout(t));
-
-      (() => {
-        active = false;
-      })();
+      active = false;
     };
-  }, [loadData]);
+  }, []);
 
   const stats = {
     active: subscriptions.filter((s) => s.status === "active").length,
@@ -526,7 +527,7 @@ export default function PricingPage() {
           size="sm"
           onClick={() => setTab("tiers")}
         >
-          <DollarSign className="h-4 w-4 me-1" />
+          <DollarSign className="h-4 w-4 mr-1" />
           Grille tarifaire
         </Button>
         <Button
@@ -534,7 +535,7 @@ export default function PricingPage() {
           size="sm"
           onClick={() => setTab("features")}
         >
-          <Settings className="h-4 w-4 me-1" />
+          <Settings className="h-4 w-4 mr-1" />
           Fonctionnalités
         </Button>
         <Button
@@ -542,7 +543,7 @@ export default function PricingPage() {
           size="sm"
           onClick={() => setTab("promotions")}
         >
-          <Tag className="h-4 w-4 me-1" />
+          <Tag className="h-4 w-4 mr-1" />
           Promotions
         </Button>
       </div>
@@ -561,13 +562,13 @@ export default function PricingPage() {
                     size="sm"
                     onClick={() => setSelectedSystem(type)}
                   >
-                    <Icon className="h-4 w-4 me-1" />
+                    <Icon className="h-4 w-4 mr-1" />
                     {systemTypeLabels[type]}
                   </Button>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 sm:ms-auto">
+            <div className="flex items-center gap-2 sm:ml-auto">
               <span className="text-sm text-muted-foreground">Cycle :</span>
               <Button
                 variant={billingCycle === "monthly" ? "default" : "outline"}
@@ -582,7 +583,7 @@ export default function PricingPage() {
                 onClick={() => setBillingCycle("yearly")}
               >
                 Annuel
-                <Badge variant="secondary" className="ms-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 text-[10px]">
                   -17%
                 </Badge>
               </Button>
@@ -600,71 +601,12 @@ export default function PricingPage() {
           {/* S7: Price comparison bar chart — shows tier prices side-by-side for
               the active system type + billing cycle. Helps admins instantly spot
               tier positioning gaps and pricing outliers (e.g. SaaS < Premium). */}
-          {(() => {
-            const chartData = tiers
-              .filter((t) => (t.pricing[selectedSystem]?.[billingCycle] ?? 0) >= 0)
-              .map((t) => ({
-                name: t.name,
-                price: t.pricing[selectedSystem]?.[billingCycle] ?? 0,
-                popular: t.popular,
-                slug: t.slug,
-              }));
-            if (chartData.every((d) => d.price === 0)) return null;
-            return (
-              <div className="rounded-xl border bg-card p-4 mb-6">
-                <p className="text-xs font-medium text-muted-foreground mb-3">
-                  Comparaison des prix — {systemTypeLabels[selectedSystem]} ·{" "}
-                  {billingCycle === "monthly" ? "Mensuel" : "Annuel"}
-                </p>
-                <ResponsiveContainer width="100%" height={130}>
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-                    barCategoryGap="28%"
-                  >
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={46}
-                      tickFormatter={(v: number) =>
-                        v === 0 ? "Gratuit" : `${(v / 1000).toFixed(0)}k`
-                      }
-                    />
-                    <Tooltip
-                      formatter={
-                        ((value: number) => [
-                          value === 0 ? "Gratuit" : formatCurrency(value, "fr", "MAD"),
-                          "Prix",
-                        ]) as unknown as ComponentProps<typeof Tooltip>["formatter"]
-                      }
-                      labelStyle={{ fontSize: 11 }}
-                      contentStyle={{ fontSize: 11 }}
-                      cursor={{ fill: "var(--muted)" }}
-                    />
-                    <Bar dataKey="price" radius={[3, 3, 0, 0]}>
-                      {chartData.map((entry, i) => (
-                        <Cell
-                          key={`cell-${i}`}
-                          fill="var(--primary)"
-                          fillOpacity={entry.popular ? 1 : 0.45}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-                <p className="text-[10px] text-muted-foreground mt-1 text-end">
-                  La barre en couleur pleine = tier <span className="font-medium">Populaire</span>
-                </p>
-              </div>
-            );
-          })()}
+          <PricingComparisonChart
+            tiers={tiers}
+            selectedSystem={selectedSystem}
+            billingCycle={billingCycle}
+            systemTypeLabels={systemTypeLabels}
+          />
 
           {/* Pricing Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -800,7 +742,7 @@ export default function PricingPage() {
                             className="h-7 text-xs flex-1"
                             onClick={requestSaveTier}
                           >
-                            <Save className="h-3 w-3 me-1" />
+                            <Save className="h-3 w-3 mr-1" />
                             Enregistrer
                           </Button>
                           <Button
@@ -924,14 +866,14 @@ export default function PricingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-start font-medium py-3 px-4">Client</th>
-                      <th className="text-start font-medium py-3 px-4">Type</th>
-                      <th className="text-start font-medium py-3 px-4">Tier</th>
-                      <th className="text-start font-medium py-3 px-4 hidden md:table-cell">
+                      <th className="text-left font-medium py-3 px-4">Client</th>
+                      <th className="text-left font-medium py-3 px-4">Type</th>
+                      <th className="text-left font-medium py-3 px-4">Tier</th>
+                      <th className="text-left font-medium py-3 px-4 hidden md:table-cell">
                         Cycle
                       </th>
-                      <th className="text-start font-medium py-3 px-4">Montant</th>
-                      <th className="text-start font-medium py-3 px-4">Statut</th>
+                      <th className="text-left font-medium py-3 px-4">Montant</th>
+                      <th className="text-left font-medium py-3 px-4">Statut</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -999,13 +941,13 @@ export default function PricingPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher une fonctionnalité..."
-                className="ps-10"
+                className="pl-10"
                 value={featureSearch}
                 onChange={(e) => setFeatureSearch(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-1">
-              <Filter className="h-4 w-4 text-muted-foreground me-1" />
+              <Filter className="h-4 w-4 text-muted-foreground mr-1" />
               {(["all", "doctor", "dentist", "pharmacy"] as SystemFilter[]).map((s) => (
                 <Button
                   key={s}
@@ -1065,7 +1007,7 @@ export default function PricingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-start font-medium py-3 px-4 min-w-[200px]">
+                      <th className="text-left font-medium py-3 px-4 min-w-[200px]">
                         Fonctionnalité
                       </th>
                       <th className="text-center font-medium py-3 px-4">Global</th>
@@ -1159,7 +1101,7 @@ export default function PricingPage() {
               </p>
             </div>
             <Button onClick={openCreatePromo}>
-              <Plus className="h-4 w-4 me-1" />
+              <Plus className="h-4 w-4 mr-1" />
               Nouvelle promotion
             </Button>
           </div>
@@ -1177,7 +1119,7 @@ export default function PricingPage() {
                     periods.
                   </p>
                   <Button onClick={openCreatePromo}>
-                    <Plus className="h-4 w-4 me-1" />
+                    <Plus className="h-4 w-4 mr-1" />
                     Create your first promotion
                   </Button>
                 </div>
@@ -1280,7 +1222,7 @@ export default function PricingPage() {
               Annuler
             </Button>
             <Button onClick={() => void confirmSaveTier()}>
-              <Save className="h-4 w-4 me-1" />
+              <Save className="h-4 w-4 mr-1" />
               Confirmer
             </Button>
           </DialogFooter>
@@ -1357,7 +1299,7 @@ export default function PricingPage() {
                   onChange={(e) => setPromoDiscount(e.target.value)}
                   min="1"
                   max="100"
-                  className="pe-8"
+                  className="pr-8"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                   %
@@ -1438,7 +1380,7 @@ export default function PricingPage() {
                 Annuler
               </Button>
               <Button variant="destructive" onClick={() => void handleDeletePromo()}>
-                <Trash2 className="h-4 w-4 me-1" />
+                <Trash2 className="h-4 w-4 mr-1" />
                 Supprimer
               </Button>
             </DialogFooter>

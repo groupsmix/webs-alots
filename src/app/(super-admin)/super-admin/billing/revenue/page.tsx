@@ -1,9 +1,8 @@
 "use client";
 
 import { TrendingUp, DollarSign, Users, AlertTriangle, BarChart3, Loader2 } from "lucide-react";
-import type React from "react";
-import { useState, useEffect, useCallback } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,34 +20,37 @@ import {
 } from "@/lib/super-admin-actions";
 import { formatCurrency } from "@/lib/utils";
 
+const RevenueLineChart = dynamic(() => import("./_revenue-line-chart"), {
+  ssr: false,
+  loading: () => <div className="h-[240px] animate-pulse rounded-md bg-muted" />,
+});
+
 export default function RevenueDashboardPage() {
   const [stats, setStats] = useState<RevenueStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    try {
-      const data = await fetchRevenueStatsAction();
-      setStats(data);
-    } catch (err) {
-      logger.warn("Failed to load revenue stats", { context: "revenue-page", error: err });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    timeouts.push(
-      setTimeout(() => {
-        loadData();
-      }, 0),
-    );
-
+    let active = true;
+    async function loadData() {
+      try {
+        const data = await fetchRevenueStatsAction();
+        if (!active) return;
+        setStats(data);
+      } catch (err) {
+        if (active) {
+          logger.warn("Failed to load revenue stats", { context: "revenue-page", error: err });
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+    loadData();
     return () => {
-      timeouts.forEach((t) => clearTimeout(t));
+      active = false;
     };
-  }, [loadData]);
+  }, []);
 
   return (
     <div>
@@ -175,44 +177,10 @@ export default function RevenueDashboardPage() {
             </CardHeader>
             <CardContent>
               {stats.revenueByMonth.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <LineChart
-                    data={stats.revenueByMonth}
-                    margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
-                  >
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
-                      width={40}
-                    />
-                    <Tooltip
-                      formatter={
-                        ((value: number) => [
-                          formatCurrency(value),
-                          "Revenus",
-                        ]) as unknown as React.ComponentProps<typeof Tooltip>["formatter"]
-                      }
-                      labelStyle={{ fontSize: 12 }}
-                      contentStyle={{ fontSize: 12 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="var(--primary)"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <RevenueLineChart
+                  data={stats.revenueByMonth}
+                  formatter={(value: number) => formatCurrency(value)}
+                />
               ) : (
                 <div className="text-center py-8">
                   <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 opacity-50" />
