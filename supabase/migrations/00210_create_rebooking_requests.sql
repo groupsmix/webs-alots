@@ -37,7 +37,8 @@ ALTER TABLE public.rebooking_requests ENABLE ROW LEVEL SECURITY;
 
 -- Service role (cron, webhooks) is fully privileged once it has resolved the
 -- clinic; it always filters by clinic_id in application code.
-CREATE POLICY IF NOT EXISTS rebooking_requests_service_all
+DROP POLICY IF EXISTS rebooking_requests_service_all ON public.rebooking_requests;
+CREATE POLICY rebooking_requests_service_all
   ON public.rebooking_requests
   FOR ALL
   TO service_role
@@ -45,7 +46,8 @@ CREATE POLICY IF NOT EXISTS rebooking_requests_service_all
   WITH CHECK (true);
 
 -- Authenticated clinic staff may only access rows belonging to their clinic.
-CREATE POLICY IF NOT EXISTS rebooking_requests_staff_all
+DROP POLICY IF EXISTS rebooking_requests_staff_all ON public.rebooking_requests;
+CREATE POLICY rebooking_requests_staff_all
   ON public.rebooking_requests
   FOR ALL
   USING (
@@ -58,7 +60,8 @@ CREATE POLICY IF NOT EXISTS rebooking_requests_staff_all
   );
 
 -- Super-admins can read/modify rebooking requests for support.
-CREATE POLICY IF NOT EXISTS rebooking_requests_super_admin_all
+DROP POLICY IF EXISTS rebooking_requests_super_admin_all ON public.rebooking_requests;
+CREATE POLICY rebooking_requests_super_admin_all
   ON public.rebooking_requests
   FOR ALL
   USING (is_super_admin())
