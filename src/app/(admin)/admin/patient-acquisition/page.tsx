@@ -1,8 +1,8 @@
 "use client";
 
 import { DollarSign, Users, Target, TrendingUp } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -49,6 +49,11 @@ const CHANNEL_COLORS: Record<string, string> = {
   other: "#607D8B",
 };
 
+const AcquisitionBarChart = dynamic(() => import("./_acquisition-bar-chart"), {
+  ssr: false,
+  loading: () => <div className="h-[300px] animate-pulse rounded-md bg-muted" />,
+});
+
 export default function PatientAcquisitionPage() {
   const [locale] = useLocale();
   const tenant = useTenant();
@@ -58,36 +63,34 @@ export default function PatientAcquisitionPage() {
 
   const intlLocale = LOCALE_MAP[locale ?? "fr"] ?? "fr-FR";
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/clinic-owner/patient-acquisition");
-      const json = await res.json();
-      if (json.ok) {
-        setChannels(json.data.channels);
-        setSummary(json.data.summary);
-      }
-    } catch (err) {
-      logger.warn("Failed to load acquisition data", { context: "page", error: err });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    if (tenant?.clinicId)
-      timeouts.push(
-        setTimeout(() => {
-          loadData();
-        }, 0),
-      );
-
-    return () => {
-      timeouts.forEach((t) => clearTimeout(t));
-    };
-  }, [tenant?.clinicId, loadData]);
+    const controller = new AbortController();
+    async function loadData() {
+      if (!tenant?.clinicId) return;
+      setLoading(true);
+      try {
+        const res = await fetch("/api/clinic-owner/patient-acquisition", {
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        if (controller.signal.aborted) return;
+        if (json.ok) {
+          setChannels(json.data.channels);
+          setSummary(json.data.summary);
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          logger.warn("Failed to load acquisition data", { context: "page", error: err });
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+    loadData();
+    return () => controller.abort();
+  }, [tenant?.clinicId]);
 
   const chartData = channels
     .filter((c) => c.patientCount > 0)
@@ -104,7 +107,6 @@ export default function PatientAcquisitionPage() {
       <Breadcrumb
         items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Acquisition patients" }]}
       />
-      {}
       <h1 className="text-2xl font-bold">Coût d&apos;acquisition patient</h1>
 
       {loading ? (
@@ -117,7 +119,6 @@ export default function PatientAcquisitionPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {}
                 <CardTitle className="text-sm font-medium">Total patients</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -129,7 +130,6 @@ export default function PatientAcquisitionPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {}
                 <CardTitle className="text-sm font-medium">Patients suivis</CardTitle>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -138,14 +138,12 @@ export default function PatientAcquisitionPage() {
                   {(summary?.trackedPatients ?? 0).toLocaleString(intlLocale)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {}
                   {summary?.untrackedPatients ?? 0} non suivis
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {}
                 <CardTitle className="text-sm font-medium">Budget marketing</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -157,7 +155,6 @@ export default function PatientAcquisitionPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                {}
                 <CardTitle className="text-sm font-medium">Coût / patient</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -173,19 +170,10 @@ export default function PatientAcquisitionPage() {
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                {}
                 <CardTitle>Patients par canal</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="channel" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="patients" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <AcquisitionBarChart data={chartData} />
               </CardContent>
             </Card>
           )}
@@ -193,22 +181,17 @@ export default function PatientAcquisitionPage() {
           {/* Channel Breakdown Table */}
           <Card>
             <CardHeader>
-              {}
               <CardTitle>Détail par canal</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left">
-                      {}
-                      <th className="py-3 pr-4 font-medium">Canal</th>
-                      {}
-                      <th className="py-3 pr-4 font-medium text-right">Patients</th>
-                      {}
-                      <th className="py-3 pr-4 font-medium text-right">Dépenses</th>
-                      {}
-                      <th className="py-3 font-medium text-right">Coût/patient</th>
+                    <tr className="border-b text-start">
+                      <th className="py-3 pe-4 font-medium">Canal</th>
+                      <th className="py-3 pe-4 text-end font-medium">Patients</th>
+                      <th className="py-3 pe-4 text-end font-medium">Dépenses</th>
+                      <th className="py-3 text-end font-medium">Coût/patient</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -217,18 +200,18 @@ export default function PatientAcquisitionPage() {
                       .sort((a, b) => b.patientCount - a.patientCount)
                       .map((c) => (
                         <tr key={c.channel} className="border-b last:border-0">
-                          <td className="py-3 pr-4 flex items-center gap-2">
+                          <td className="py-3 pe-4 flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: CHANNEL_COLORS[c.channel] ?? "#607D8B" }}
                             />
                             {CHANNEL_LABELS[c.channel] ?? c.channel}
                           </td>
-                          <td className="py-3 pr-4 text-right">{c.patientCount}</td>
-                          <td className="py-3 pr-4 text-right">
+                          <td className="py-3 pe-4 text-end">{c.patientCount}</td>
+                          <td className="py-3 pe-4 text-end">
                             {formatCurrency(c.totalSpend / 100, locale ?? "fr")}
                           </td>
-                          <td className="py-3 text-right font-medium">
+                          <td className="py-3 text-end font-medium">
                             {c.costPerPatient > 0
                               ? formatCurrency(c.costPerPatient / 100, locale ?? "fr")
                               : "—"}
@@ -238,7 +221,6 @@ export default function PatientAcquisitionPage() {
                     {channels.filter((c) => c.patientCount > 0 || c.totalSpend > 0).length ===
                       0 && (
                       <tr>
-                        {}
                         <td colSpan={4} className="py-8 text-center text-muted-foreground">
                           Aucune donnée d&apos;acquisition disponible
                         </td>
