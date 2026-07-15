@@ -1345,5 +1345,9 @@
   "password.hasSpecial": "رمز خاص على الأقل",
   "sw.update": "تحديث",
   "sw.updateAvailable": "يتوفر إصدار جديد.",
-  "bodyMeasurementsTitle": "القياسات الجسدية"
+  "bodyMeasurementsTitle": "القياسات الجسدية",
+  "physioSessionsTitle": "جلسات العلاج الطبيعي",
+  "progressPhotosTitle": "صور التقدم",
+  "therapySessionNotesTitle": "ملاحظات جلسة العلاج",
+  "speechProgressReportsTitle": "تقارير تقدم النطق"
 }

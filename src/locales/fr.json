@@ -1345,5 +1345,9 @@
   "password.hasSpecial": "Au moins un caractère spécial",
   "sw.update": "Mettre à jour",
   "sw.updateAvailable": "Une nouvelle version est disponible.",
-  "bodyMeasurementsTitle": "Mesures corporelles"
+  "bodyMeasurementsTitle": "Mesures corporelles",
+  "physioSessionsTitle": "Séances de physiothérapie",
+  "progressPhotosTitle": "Photos de progression",
+  "therapySessionNotesTitle": "Notes de séance de thérapie",
+  "speechProgressReportsTitle": "Rapports de progression orthophonie"
 }

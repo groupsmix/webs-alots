@@ -1,61 +1,20 @@
-"use client";
-
 import { FileText } from "lucide-react";
-import { useState, useEffect } from "react";
 import { SpeechProgressReports } from "@/components/para-medical/speech-progress-reports";
-import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchSpeechProgressReports } from "@/lib/data/client";
-import { logger } from "@/lib/logger";
-import type { SpeechProgressReport } from "@/lib/types/para-medical";
+import { fetchSpeechProgressReports } from "@/lib/data/para-medical";
+import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromTenant, requireTenant } from "@/lib/tenant";
 
-export default function SpeechReportsPage() {
-  const [reports, setReports] = useState<SpeechProgressReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const data = await fetchSpeechProgressReports(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setReports(data);
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        logger.warn("Failed to load speech reports", {
-          context: "speech-therapist/reports",
-          error: err,
-        });
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => controller.abort();
-  }, []);
-
-  if (loading) return <PageLoader message="Loading reports..." />;
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load progress reports.</p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+export default async function SpeechReportsPage() {
+  const tenant = await requireTenant();
+  const reports = await fetchSpeechProgressReports(tenant.clinicId);
+  const locale = getLocaleFromTenant(tenant) as Locale;
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
         <FileText className="h-6 w-6 text-teal-600" />
-        <h1 className="text-2xl font-bold">Progress Reports</h1>
+        <h1 className="text-2xl font-bold">{t(locale, "speechProgressReportsTitle")}</h1>
       </div>
       <SpeechProgressReports reports={reports} />
     </div>
