@@ -2,6 +2,7 @@ import { CircleAlert, HeartPulse } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import type { OwnerAttentionItem } from "@/lib/admin-owner-dashboard";
+import type { OwnerTodaySummary } from "@/lib/data/admin-owner-dashboard";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
 
@@ -10,6 +11,7 @@ interface OwnerAttentionProps {
   locale: Locale;
   noShowRate: number;
   averageRating: number;
+  today: OwnerTodaySummary;
 }
 
 function getAttentionCopy(
@@ -17,8 +19,33 @@ function getAttentionCopy(
   item: OwnerAttentionItem,
   noShowRate: number,
   averageRating: number,
+  today: OwnerTodaySummary,
 ) {
   switch (item.kind) {
+    case "unconfirmedToday":
+      return {
+        title: t(locale, "admin.owner.unconfirmedAttention", {
+          count: today.unconfirmedAppointments,
+        }),
+        description: t(locale, "admin.owner.unconfirmedAttentionDesc"),
+        action: t(locale, "admin.owner.viewAgenda"),
+      };
+    case "waitingToday":
+      return {
+        title: t(locale, "admin.owner.waitingAttention", {
+          count: today.checkedInAppointments,
+        }),
+        description: t(locale, "admin.owner.waitingAttentionDesc"),
+        action: t(locale, "admin.owner.viewAgenda"),
+      };
+    case "noShowToday":
+      return {
+        title: t(locale, "admin.owner.todayNoShowAttention", {
+          count: today.noShowAppointments,
+        }),
+        description: t(locale, "admin.owner.todayNoShowAttentionDesc"),
+        action: t(locale, "admin.owner.viewAgenda"),
+      };
     case "missingDoctor":
       return {
         title: t(locale, "admin.owner.addFirstDoctor"),
@@ -48,7 +75,13 @@ function getAttentionCopy(
   }
 }
 
-export function OwnerAttention({ items, locale, noShowRate, averageRating }: OwnerAttentionProps) {
+export function OwnerAttention({
+  items,
+  locale,
+  noShowRate,
+  averageRating,
+  today,
+}: OwnerAttentionProps) {
   return (
     <section aria-labelledby="attention-title">
       <div className="mb-3">
@@ -61,7 +94,7 @@ export function OwnerAttention({ items, locale, noShowRate, averageRating }: Own
       {items.length > 0 ? (
         <div className="grid gap-3 lg:grid-cols-2">
           {items.map((item) => {
-            const copy = getAttentionCopy(locale, item, noShowRate, averageRating);
+            const copy = getAttentionCopy(locale, item, noShowRate, averageRating, today);
             return (
               <Card key={item.kind} className="overflow-hidden">
                 <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start">
