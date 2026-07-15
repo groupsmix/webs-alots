@@ -320,7 +320,7 @@ export function AITeamKanban({ tasks, onRefresh }: { tasks: TeamTask[]; onRefres
 
             <div className="space-y-0">
               {col.tasks.length === 0 ? (
-                <p className="py-4 text-center text-xs text-muted-foreground/50">Aucune tâche</p>
+                <p className="py-4 text-center text-xs text-muted-foreground">Aucune tâche</p>
               ) : (
                 col.tasks.map((task) => (
                   <TaskCard
