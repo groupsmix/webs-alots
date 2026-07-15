@@ -1350,5 +1350,9 @@
   "progressPhotosTitle": "صور التقدم",
   "therapySessionNotesTitle": "ملاحظات جلسة العلاج",
   "speechProgressReportsTitle": "تقارير تقدم النطق",
-  "speechSessionsTitle": "جلسات علاج النطق"
+  "speechSessionsTitle": "جلسات علاج النطق",
+  "speechExerciseLibraryTitle": "مكتبة التمارين",
+  "therapyProgressTitle": "متابعة التقدم",
+  "therapyProgressEmptyMessage": "لا توجد بيانات كافية لعرض مخططات التقدم.",
+  "therapyProgressEmptyHint": "ستظهر متابعة التقدم بعد تسجيل جلسات العلاج مع تقييمات المزاج."
 }

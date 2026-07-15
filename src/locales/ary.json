@@ -1350,5 +1350,9 @@
   "progressPhotosTitle": "صور التقدم",
   "therapySessionNotesTitle": "ملاحظات جلسة العلاج",
   "speechProgressReportsTitle": "تقارير تقدم النطق",
-  "speechSessionsTitle": "جلسات علاج النطق"
+  "speechSessionsTitle": "جلسات علاج النطق",
+  "speechExerciseLibraryTitle": "مكتبة التمارين",
+  "therapyProgressTitle": "متابعة التقدم",
+  "therapyProgressEmptyMessage": "ماكاينش بيانات بزاف باش نوريو الرسومات ديال التقدم.",
+  "therapyProgressEmptyHint": "متابعة التقدم غادي تبان من بعد ما تسجل جلسات العلاج مع تقييمات المزاج."
 }

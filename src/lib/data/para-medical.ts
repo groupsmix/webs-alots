@@ -5,6 +5,7 @@ import type {
   BodyMeasurement,
   PhysioSession,
   ProgressPhoto,
+  SpeechExercise,
   SpeechProgressReport,
   SpeechSession,
   TherapySessionNote,
@@ -234,5 +235,33 @@ export async function fetchSpeechSessions(clinicId: string): Promise<SpeechSessi
     notes: row.notes,
     home_practice: row.home_practice,
     created_at: row.created_at,
+  }));
+}
+
+export async function fetchSpeechExercises(clinicId: string): Promise<SpeechExercise[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("speech_exercises")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .order("name", { ascending: true })
+    .limit(1000);
+
+  if (error) {
+    throw new Error(`Failed to load speech exercises: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as Tables<"speech_exercises">[];
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category as SpeechExercise["category"],
+    description: row.description,
+    difficulty: row.difficulty as SpeechExercise["difficulty"],
+    target_sounds: (row.target_sounds as string[] | null) ?? [],
+    instructions: row.instructions,
+    materials_needed: row.materials_needed,
+    duration_minutes: row.duration_minutes,
   }));
 }

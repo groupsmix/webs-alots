@@ -1350,5 +1350,9 @@
   "progressPhotosTitle": "Progress Photos",
   "therapySessionNotesTitle": "Therapy Session Notes",
   "speechProgressReportsTitle": "Speech Progress Reports",
-  "speechSessionsTitle": "Speech Therapy Sessions"
+  "speechSessionsTitle": "Speech Therapy Sessions",
+  "speechExerciseLibraryTitle": "Exercise Library",
+  "therapyProgressTitle": "Progress Tracking",
+  "therapyProgressEmptyMessage": "Not enough data to display progress charts.",
+  "therapyProgressEmptyHint": "Progress tracking will appear after recording therapy sessions with mood ratings."
 }
