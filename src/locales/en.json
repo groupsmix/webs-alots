@@ -1349,5 +1349,15 @@
   "password.hasNumber": "At least one number",
   "password.hasSpecial": "At least one special character",
   "sw.update": "Update",
-  "sw.updateAvailable": "A new version is available."
+  "sw.updateAvailable": "A new version is available.",
+  "bodyMeasurementsTitle": "Body Measurements",
+  "physioSessionsTitle": "Physiotherapy Sessions",
+  "progressPhotosTitle": "Progress Photos",
+  "therapySessionNotesTitle": "Therapy Session Notes",
+  "speechProgressReportsTitle": "Speech Progress Reports",
+  "speechSessionsTitle": "Speech Therapy Sessions",
+  "speechExerciseLibraryTitle": "Exercise Library",
+  "therapyProgressTitle": "Progress Tracking",
+  "therapyProgressEmptyMessage": "Not enough data to display progress charts.",
+  "therapyProgressEmptyHint": "Progress tracking will appear after recording therapy sessions with mood ratings."
 }

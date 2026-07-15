@@ -1349,5 +1349,15 @@
   "password.hasNumber": "Au moins un chiffre",
   "password.hasSpecial": "Au moins un caractère spécial",
   "sw.update": "Mettre à jour",
-  "sw.updateAvailable": "Une nouvelle version est disponible."
+  "sw.updateAvailable": "Une nouvelle version est disponible.",
+  "bodyMeasurementsTitle": "Mesures corporelles",
+  "physioSessionsTitle": "Séances de physiothérapie",
+  "progressPhotosTitle": "Photos de progression",
+  "therapySessionNotesTitle": "Notes de séance de thérapie",
+  "speechProgressReportsTitle": "Rapports de progression orthophonie",
+  "speechSessionsTitle": "Séances d'orthophonie",
+  "speechExerciseLibraryTitle": "Bibliothèque d'exercices",
+  "therapyProgressTitle": "Suivi des progrès",
+  "therapyProgressEmptyMessage": "Pas assez de données pour afficher les graphiques de progrès.",
+  "therapyProgressEmptyHint": "Le suivi des progrès apparaîtra après avoir enregistré des séances de thérapie avec des évaluations d'humeur."
 }

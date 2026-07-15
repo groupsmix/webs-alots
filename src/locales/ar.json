@@ -1349,5 +1349,15 @@
   "password.hasNumber": "رقم على الأقل",
   "password.hasSpecial": "رمز خاص على الأقل",
   "sw.update": "تحديث",
-  "sw.updateAvailable": "يتوفر إصدار جديد."
+  "sw.updateAvailable": "يتوفر إصدار جديد.",
+  "bodyMeasurementsTitle": "القياسات الجسدية",
+  "physioSessionsTitle": "جلسات العلاج الطبيعي",
+  "progressPhotosTitle": "صور التقدم",
+  "therapySessionNotesTitle": "ملاحظات جلسة العلاج",
+  "speechProgressReportsTitle": "تقارير تقدم النطق",
+  "speechSessionsTitle": "جلسات علاج النطق",
+  "speechExerciseLibraryTitle": "مكتبة التمارين",
+  "therapyProgressTitle": "متابعة التقدم",
+  "therapyProgressEmptyMessage": "لا توجد بيانات كافية لعرض مخططات التقدم.",
+  "therapyProgressEmptyHint": "ستظهر متابعة التقدم بعد تسجيل جلسات العلاج مع تقييمات المزاج."
 }

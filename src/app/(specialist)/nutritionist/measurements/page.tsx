@@ -1,72 +1,20 @@
-"use client";
-
 import { Scale } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
-// eslint-disable-next-line import/order
-import { getCurrentUser, fetchBodyMeasurements } from "@/lib/data/client";
+import { BodyMeasurementTracker } from "@/components/para-medical/body-measurement-tracker";
+import { fetchBodyMeasurements } from "@/lib/data/para-medical";
+import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromTenant, requireTenant } from "@/lib/tenant";
 
-const BodyMeasurementTracker = dynamic(
-  () =>
-    import("@/components/para-medical/body-measurement-tracker").then(
-      (m) => m.BodyMeasurementTracker,
-    ),
-  { ssr: false, loading: () => <div className="h-[400px] animate-pulse bg-muted rounded-lg" /> },
-);
-import type { BodyMeasurement } from "@/lib/types/para-medical";
-// eslint-disable-next-line import/order
-import { logger } from "@/lib/logger";
-// eslint-disable-next-line import/order
-import { PageLoader } from "@/components/ui/page-loader";
-
-export default function MeasurementsPage() {
-  const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const data = await fetchBodyMeasurements(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setMeasurements(data);
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        logger.warn("Failed to load body measurements", {
-          context: "nutritionist/measurements",
-          error: err,
-        });
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => controller.abort();
-  }, []);
-
-  if (loading) return <PageLoader message="Loading measurements..." />;
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load measurements.</p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+export default async function MeasurementsPage() {
+  const tenant = await requireTenant();
+  const measurements = await fetchBodyMeasurements(tenant.clinicId);
+  const locale = getLocaleFromTenant(tenant) as Locale;
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
         <Scale className="h-6 w-6 text-blue-600" />
-        <h1 className="text-2xl font-bold">Body Measurements</h1>
+        <h1 className="text-2xl font-bold">{t(locale, "bodyMeasurementsTitle")}</h1>
       </div>
       <BodyMeasurementTracker measurements={measurements} />
     </div>
