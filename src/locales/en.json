@@ -1344,5 +1344,6 @@
   "password.hasNumber": "At least one number",
   "password.hasSpecial": "At least one special character",
   "sw.update": "Update",
-  "sw.updateAvailable": "A new version is available."
+  "sw.updateAvailable": "A new version is available.",
+  "bodyMeasurementsTitle": "Body Measurements"
 }

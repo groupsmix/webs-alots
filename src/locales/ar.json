@@ -1344,5 +1344,6 @@
   "password.hasNumber": "رقم على الأقل",
   "password.hasSpecial": "رمز خاص على الأقل",
   "sw.update": "تحديث",
-  "sw.updateAvailable": "يتوفر إصدار جديد."
+  "sw.updateAvailable": "يتوفر إصدار جديد.",
+  "bodyMeasurementsTitle": "القياسات الجسدية"
 }
