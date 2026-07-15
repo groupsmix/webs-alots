@@ -250,12 +250,10 @@ jobs:
 
       # R-02: Per-file coverage thresholds for security-critical modules.
       # Reads the JSON summary produced by the coverage step above.
-      # FR-203/FR-281: Advisory-only (continue-on-error: true) until the
-      # overall coverage floor reaches 40%+, at which point security-critical
-      # files should be above their per-file thresholds consistently.
+      # Fails closed if a required security-critical file is absent from the
+      # coverage report or below its per-file threshold.
       - name: Security coverage thresholds
         run: node scripts/check-security-coverage.mjs
-        continue-on-error: true
 
       # MEDIUM-4: Coverage ratchet — fail if actual coverage dropped below the floor.
       # The floor file is committed and acts as a monotonic-increase ratchet.
@@ -926,8 +924,17 @@ jobs:
           PGTAP_FAILED=0
           for f in supabase/tests/*.test.sql; do
             echo "── $(basename "$f") ──"
-            if ! psql "${{ env.SUPABASE_DB_URL }}" -f "$f"; then
-              echo "::error::pgTAP test failed: $(basename "$f")"
+            # psql exits 0 even when pgTAP writes "not ok", so we capture the
+            # full TAP output and fail on any failing assertion.
+            output=$(psql "${{ env.SUPABASE_DB_URL }}" -f "$f" 2>&1) || {
+              echo "$output"
+              echo "::error::pgTAP test SQL error: $(basename "$f")"
+              PGTAP_FAILED=1
+              continue
+            }
+            echo "$output"
+            if echo "$output" | grep -qE '^[[:space:]]*not ok'; then
+              echo "::error::pgTAP assertion failed in $(basename "$f")"
               PGTAP_FAILED=1
             fi
           done
