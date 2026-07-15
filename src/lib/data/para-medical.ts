@@ -6,6 +6,7 @@ import type {
   PhysioSession,
   ProgressPhoto,
   SpeechProgressReport,
+  SpeechSession,
   TherapySessionNote,
 } from "@/lib/types/para-medical";
 
@@ -194,6 +195,44 @@ export async function fetchSpeechProgressReports(
     recommendations: row.recommendations,
     next_steps: row.next_steps,
     overall_progress: row.overall_progress as SpeechProgressReport["overall_progress"],
+    created_at: row.created_at,
+  }));
+}
+
+export async function fetchSpeechSessions(clinicId: string): Promise<SpeechSession[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("speech_sessions")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .order("session_date", { ascending: false })
+    .limit(1000);
+
+  if (error) {
+    throw new Error(`Failed to load speech sessions: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as Tables<"speech_sessions">[];
+  const nameMap = await fetchUserNameMap(
+    supabase,
+    clinicId,
+    rows.map((r) => r.patient_id),
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    clinic_id: row.clinic_id,
+    patient_id: row.patient_id,
+    patient_name: nameMap.get(row.patient_id) ?? "Inconnu",
+    therapist_id: row.therapist_id,
+    session_date: row.session_date,
+    duration_minutes: row.duration_minutes,
+    attended: row.attended,
+    exercises_assigned: (row.exercises_assigned as string[] | null) ?? [],
+    exercises_completed: (row.exercises_completed as string[] | null) ?? [],
+    accuracy_pct: row.accuracy_pct,
+    notes: row.notes,
+    home_practice: row.home_practice,
     created_at: row.created_at,
   }));
 }

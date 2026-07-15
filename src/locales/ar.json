@@ -1349,5 +1349,6 @@
   "physioSessionsTitle": "جلسات العلاج الطبيعي",
   "progressPhotosTitle": "صور التقدم",
   "therapySessionNotesTitle": "ملاحظات جلسة العلاج",
-  "speechProgressReportsTitle": "تقارير تقدم النطق"
+  "speechProgressReportsTitle": "تقارير تقدم النطق",
+  "speechSessionsTitle": "جلسات علاج النطق"
 }

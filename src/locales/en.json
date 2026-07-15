@@ -1349,5 +1349,6 @@
   "physioSessionsTitle": "Physiotherapy Sessions",
   "progressPhotosTitle": "Progress Photos",
   "therapySessionNotesTitle": "Therapy Session Notes",
-  "speechProgressReportsTitle": "Speech Progress Reports"
+  "speechProgressReportsTitle": "Speech Progress Reports",
+  "speechSessionsTitle": "Speech Therapy Sessions"
 }

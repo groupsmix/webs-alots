@@ -1,61 +1,20 @@
-"use client";
-
 import { ClipboardList } from "lucide-react";
-import { useState, useEffect } from "react";
 import { SpeechSessionTracker } from "@/components/para-medical/speech-session-tracker";
-import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchSpeechSessions } from "@/lib/data/client";
-import { logger } from "@/lib/logger";
-import type { SpeechSession } from "@/lib/types/para-medical";
+import { fetchSpeechSessions } from "@/lib/data/para-medical";
+import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromTenant, requireTenant } from "@/lib/tenant";
 
-export default function SpeechSessionsPage() {
-  const [sessions, setSessions] = useState<SpeechSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const data = await fetchSpeechSessions(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setSessions(data);
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        logger.warn("Failed to load speech sessions", {
-          context: "speech-therapist/sessions",
-          error: err,
-        });
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => controller.abort();
-  }, []);
-
-  if (loading) return <PageLoader message="Loading sessions..." />;
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load sessions.</p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+export default async function SpeechSessionsPage() {
+  const tenant = await requireTenant();
+  const sessions = await fetchSpeechSessions(tenant.clinicId);
+  const locale = getLocaleFromTenant(tenant) as Locale;
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
         <ClipboardList className="h-6 w-6 text-teal-600" />
-        <h1 className="text-2xl font-bold">Session Tracking</h1>
+        <h1 className="text-2xl font-bold">{t(locale, "speechSessionsTitle")}</h1>
       </div>
       <SpeechSessionTracker sessions={sessions} />
     </div>

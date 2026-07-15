@@ -1349,5 +1349,6 @@
   "physioSessionsTitle": "Séances de physiothérapie",
   "progressPhotosTitle": "Photos de progression",
   "therapySessionNotesTitle": "Notes de séance de thérapie",
-  "speechProgressReportsTitle": "Rapports de progression orthophonie"
+  "speechProgressReportsTitle": "Rapports de progression orthophonie",
+  "speechSessionsTitle": "Séances d'orthophonie"
 }
