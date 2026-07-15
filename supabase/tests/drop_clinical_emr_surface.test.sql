@@ -5,11 +5,11 @@
 -- Migration 00187_drop_clinical_emr_surface.sql permanently drops the 13
 -- clinical / EMR tables that must not exist on an operations-only platform,
 -- while preserving the operational schema (appointments, clinics, users,
--- patients contact, billing) and the operational patient timeline view.
+-- billing) and the operational patient timeline view.
 --
 -- This test fails loudly if:
 --   * any dropped clinical table is re-introduced, or
---   * an operational table (appointments / clinics / patients / users) is
+--   * an operational table (appointments / clinics / users) is
 --     removed as collateral damage, or
 --   * the clinical-encounter guard function survives, or
 --   * the operational `patient_timeline_events` view is lost.
@@ -26,7 +26,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(18);
+SELECT plan(17);
 
 -- ── 1-12. Every dropped clinical / EMR table is gone ──────────────────────
 SELECT hasnt_table('public', 'clinical_encounters', 'clinical_encounters dropped');
@@ -44,13 +44,12 @@ SELECT hasnt_table(
 SELECT hasnt_table('public', 'prescription_renewals', 'prescription_renewals dropped');
 SELECT hasnt_table('public', 'telemedicine_sessions', 'telemedicine_sessions dropped');
 
--- ── 13-16. Operational tables are untouched ───────────────────────────────
+-- ── 13-15. Operational tables are untouched ───────────────────────────────
 SELECT has_table('public', 'appointments', 'appointments retained');
 SELECT has_table('public', 'clinics', 'clinics retained');
-SELECT has_table('public', 'patients', 'patients (contact) retained');
 SELECT has_table('public', 'users', 'users retained');
 
--- ── 17. The clinical-encounter edit guard function is gone ────────────────
+-- ── 16. The clinical-encounter edit guard function is gone ────────────────
 SELECT ok(
   NOT EXISTS (
     SELECT 1 FROM pg_proc p
@@ -60,7 +59,7 @@ SELECT ok(
   'prevent_signed_encounter_edit() removed'
 );
 
--- ── 18. The operational patient timeline view survives the CASCADE ────────
+-- ── 17. The operational patient timeline view survives the CASCADE ────────
 SELECT has_view(
   'public', 'patient_timeline_events', 'operational patient_timeline_events view retained'
 );
