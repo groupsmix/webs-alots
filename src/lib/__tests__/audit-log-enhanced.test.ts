@@ -80,8 +80,8 @@ describe("logAuditEvent — enhanced fields", () => {
     );
   });
 
-  it("supports all new event types", async () => {
-    const types = ["auth", "config", "security"] as const;
+  it("supports all emitted audit event types", async () => {
+    const types = ["admin", "auth", "booking", "config", "patient", "payment", "security"] as const;
     for (const type of types) {
       const mock = createMockSupabase();
       await logAuditEvent({
@@ -136,7 +136,7 @@ describe("logAuthEvent", () => {
     );
   });
 
-  it("defaults clinicId to 'system' when not provided", async () => {
+  it("defaults clinicId to null when not provided", async () => {
     const mock = createMockSupabase();
     await logAuthEvent({
       supabase: mock as never,
@@ -147,7 +147,7 @@ describe("logAuthEvent", () => {
 
     expect(mock._insert).toHaveBeenCalledWith(
       expect.objectContaining({
-        clinic_id: "system",
+        clinic_id: null,
         metadata: { success: false },
       }),
     );
@@ -219,7 +219,7 @@ describe("logSecurityEvent", () => {
       supabase: mock as never,
       action: "impersonate.end",
       actor: "admin@test.com",
-      clinicId: "system",
+      clinicId: "00000000-0000-0000-0000-000000000000",
     });
 
     expect(mock._insert).toHaveBeenCalledWith(
@@ -227,7 +227,7 @@ describe("logSecurityEvent", () => {
         type: "security",
         action: "impersonate.end",
         actor: "admin@test.com",
-        clinic_id: "system",
+        clinic_id: "00000000-0000-0000-0000-000000000000",
         ip_address: null,
         user_agent: null,
         metadata: null,

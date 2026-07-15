@@ -11,15 +11,33 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import type { Database, Json } from "@/lib/types/database";
 
-/** Audit event categories for structured filtering. */
-type AuditEventType = "booking" | "patient" | "payment" | "admin" | "auth" | "config" | "security";
+/** Audit event categories for structured filtering.
+ *
+ * Must stay in sync with the `activity_logs.type` CHECK constraint
+ * (widened in migration 00209 to include every value the app writes).
+ */
+type AuditEventType =
+  | "admin"
+  | "announcement"
+  | "auth"
+  | "billing"
+  | "booking"
+  | "clinic"
+  | "config"
+  | "feature"
+  | "patient"
+  | "payment"
+  | "security"
+  | "template";
 
 interface AuditLogParams {
   supabase: SupabaseClient<Database>;
   action: string;
   type: AuditEventType;
-  /** clinic_id is required for healthcare compliance — every audit entry must be scoped to a tenant */
-  clinicId: string;
+  /** clinic_id is required for healthcare compliance where a tenant exists.
+   *  Auth/security events that occur before a clinic is resolved (e.g. failed
+   *  logins) must pass `null` instead of a sentinel like "system". */
+  clinicId?: string | null;
   actor?: string | null;
   clinicName?: string | null;
   description?: string | null;
@@ -156,7 +174,7 @@ export async function logAuthEvent(params: {
     action: params.action,
     type: "auth",
     actor: params.actor,
-    clinicId: params.clinicId ?? "system",
+    clinicId: params.clinicId ?? null,
     description: params.description,
     ipAddress: params.ipAddress,
     userAgent: params.userAgent,
