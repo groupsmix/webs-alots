@@ -41,6 +41,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChangeIndicator } from "@/components/ui/change-indicator";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -70,26 +71,6 @@ const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
   quarter: "This Quarter",
   year: "This Year",
 };
-
-function ChangeIndicator({ value, inverted = false }: { value: number; inverted?: boolean }) {
-  const isPositive = inverted ? value < 0 : value > 0;
-  const isNegative = inverted ? value > 0 : value < 0;
-  return (
-    <Badge
-      variant="outline"
-      className={`text-xs ${
-        isPositive
-          ? "text-green-600 border-green-200"
-          : isNegative
-            ? "text-red-600 border-red-200"
-            : ""
-      }`}
-    >
-      {value > 0 ? "+" : ""}
-      {value}%
-    </Badge>
-  );
-}
 
 export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "doctor" }) {
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
@@ -259,7 +240,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <Users className="h-5 w-5 text-blue-600" />
-              <ChangeIndicator value={periodComparison.patientChange} />
+              <ChangeIndicator value={periodComparison.patientChange} variant="badge" />
             </div>
             <p className="text-2xl font-bold">{periodComparison.currentPatients}</p>
             <p className="text-xs text-muted-foreground">Patients ({PERIOD_LABELS[timePeriod]})</p>
@@ -272,7 +253,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="h-5 w-5 text-green-600" />
-              <ChangeIndicator value={periodComparison.revenueChange} />
+              <ChangeIndicator value={periodComparison.revenueChange} variant="badge" />
             </div>
             <p className="text-2xl font-bold">{formatCurrency(periodComparison.currentRevenue)}</p>
             <p className="text-xs text-muted-foreground">Revenue ({PERIOD_LABELS[timePeriod]})</p>
@@ -285,7 +266,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <XCircle className="h-5 w-5 text-red-500" />
-              <ChangeIndicator value={periodComparison.noShowChange} inverted />
+              <ChangeIndicator value={periodComparison.noShowChange} inverted variant="badge" />
             </div>
             <p className="text-2xl font-bold">{noShowRate}%</p>
             <p className="text-xs text-muted-foreground">No-show Rate</p>
@@ -298,7 +279,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <Footprints className="h-5 w-5 text-purple-600" />
-              <ChangeIndicator value={periodComparison.appointmentChange} />
+              <ChangeIndicator value={periodComparison.appointmentChange} variant="badge" />
             </div>
             <p className="text-2xl font-bold">{periodComparison.currentAppointments}</p>
             <p className="text-xs text-muted-foreground">
