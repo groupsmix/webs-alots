@@ -1,14 +1,12 @@
-"use client";
-
-import { Star, MessageSquare } from "lucide-react";
-import { useEffect, useState } from "react";
+import { MessageSquare, Star } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchReviews, type ReviewView } from "@/lib/data/client";
+import type { ReviewView } from "@/lib/data/client/reviews";
+import { fetchReviews } from "@/lib/data/reviews";
+import { requireTenant } from "@/lib/tenant";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -23,57 +21,34 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function ReviewManagementPage() {
-  const [reviews, setReviews] = useState<ReviewView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+interface ReviewStats {
+  reviews: ReviewView[];
+  avgRating: number;
+  roundedAvg: number;
+  ratingCounts: { stars: number; count: number }[];
+}
 
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const r = await fetchReviews(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setReviews(r);
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  if (loading) {
-    return <PageLoader message="Loading reviews..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
-
+function computeStats(reviews: ReviewView[]): ReviewStats {
   const avgRating =
     reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const ratingCounts = [5, 4, 3, 2, 1].map((r) => ({
     stars: r,
     count: reviews.filter((rv) => rv.rating === r).length,
   }));
+
+  return {
+    reviews,
+    avgRating,
+    roundedAvg: Math.round(avgRating),
+    ratingCounts,
+  };
+}
+
+export default async function ReviewManagementPage() {
+  const tenant = await requireTenant();
+  const { reviews, avgRating, roundedAvg, ratingCounts } = computeStats(
+    await fetchReviews(tenant.clinicId),
+  );
 
   return (
     <div>
@@ -84,7 +59,7 @@ export default function ReviewManagementPage() {
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-4xl font-bold">{avgRating.toFixed(1)}</p>
-            <StarRating rating={Math.round(avgRating)} />
+            <StarRating rating={roundedAvg} />
             <p className="text-sm text-muted-foreground mt-1">{reviews.length} reviews</p>
           </CardContent>
         </Card>
@@ -133,7 +108,7 @@ export default function ReviewManagementPage() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
                   <Button variant="outline" size="sm" className="mt-3">
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    <MessageSquare className="h-3.5 w-3.5 me-1" />
                     Reply
                   </Button>
                 </div>
