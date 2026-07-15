@@ -1,55 +1,11 @@
-"use client";
-
 import { Package } from "lucide-react";
-import { useState, useEffect } from "react";
 import { LensInventoryManager } from "@/components/para-medical/lens-inventory-manager";
-import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchLensInventory } from "@/lib/data/client";
-import { logger } from "@/lib/logger";
-import type { LensInventoryItem } from "@/lib/types/para-medical";
+import { fetchLensInventory } from "@/lib/data/optician";
+import { requireTenant } from "@/lib/tenant";
 
-export default function LensInventoryPage() {
-  const [items, setItems] = useState<LensInventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const data = await fetchLensInventory(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setItems(data);
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        logger.warn("Failed to load lens inventory", {
-          context: "optician/lens-inventory",
-          error: err,
-        });
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => controller.abort();
-  }, []);
-
-  if (loading) return <PageLoader message="Loading lens inventory..." />;
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load lens inventory.</p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+export default async function LensInventoryPage() {
+  const tenant = await requireTenant();
+  const items = await fetchLensInventory(tenant.clinicId);
 
   return (
     <div>
