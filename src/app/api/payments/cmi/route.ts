@@ -3,6 +3,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
 import { logger } from "@/lib/logger";
+import { PAYMENT_STATUS } from "@/lib/types/database";
 import { cmiPaymentSchema } from "@/lib/validations";
 
 /**
@@ -68,7 +69,7 @@ function validateRedirectUrl(
  */
 export const POST = withAuthValidation(
   cmiPaymentSchema,
-  async (body, request, { user, profile }) => {
+  async (body, request, { user, profile, supabase }) => {
     const traceId = request.headers.get("x-trace-id") ?? undefined;
     const clinicId = profile.clinic_id;
 
@@ -97,6 +98,55 @@ export const POST = withAuthValidation(
 
     const origin = request.nextUrl.origin;
     const orderId = `ord_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+
+    // P2-2: Persist a pending payment record before redirecting to the
+    // gateway. The CMI server-to-server callback looks up payments by
+    // gateway_session_id; if the initiating request succeeded but the
+    // callback arrives before we could create a row, the completed payment
+    // would be lost.
+    let effectivePatientId = patientId;
+    if (!effectivePatientId && appointmentId && clinicId) {
+      const { data: appt } = await supabase
+        .from("appointments")
+        .select("patient_id")
+        .eq("id", appointmentId)
+        .eq("clinic_id", clinicId)
+        .single();
+      if (appt?.patient_id) {
+        effectivePatientId = appt.patient_id;
+      }
+    }
+
+    if (clinicId && effectivePatientId) {
+      const { error: pendingError } = await supabase.from("payments").insert({
+        clinic_id: clinicId,
+        patient_id: effectivePatientId,
+        appointment_id: appointmentId || null,
+        amount,
+        method: "online",
+        status: PAYMENT_STATUS.PENDING,
+        payment_type: appointmentId ? "appointment" : "full",
+        reference: orderId,
+        gateway_session_id: orderId,
+        refunded_amount: 0,
+      });
+
+      if (pendingError) {
+        logger.error("Failed to persist pending CMI payment", {
+          context: "payments/cmi/initiate",
+          alert: "payment_persistence_failure",
+          traceId,
+          clinicId,
+          userId: user.id,
+          orderId,
+          amount,
+          appointmentId,
+          patientId: effectivePatientId,
+          error: pendingError,
+        });
+        return apiInternalError("Failed to initiate payment");
+      }
+    }
 
     logger.info("CMI payment initiated", {
       context: "payments/cmi/initiate",
