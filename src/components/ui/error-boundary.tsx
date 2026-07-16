@@ -78,7 +78,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 : t(locale, "error.sectionTitle")}
             </p>
             <Button variant="outline" size="sm" onClick={this.handleReset}>
-              <RefreshCw className="mr-1 h-3 w-3" />
+              <RefreshCw className="me-1 h-3 w-3" />
               {t(locale, "error.retry")}
             </Button>
           </div>
@@ -97,12 +97,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             {t(locale, "error.sectionDescription")}
           </p>
           {process.env.NODE_ENV === "development" && this.state.error && (
-            <pre className="mt-2 mb-4 rounded bg-muted p-3 text-left text-xs overflow-auto max-h-40">
+            <pre className="mt-2 mb-4 rounded bg-muted p-3 text-start text-xs overflow-auto max-h-40">
               {this.state.error.message}
             </pre>
           )}
           <Button variant="outline" size="sm" onClick={this.handleReset}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            <RefreshCw className="me-1.5 h-3.5 w-3.5" />
             {t(locale, "error.retry")}
           </Button>
         </div>

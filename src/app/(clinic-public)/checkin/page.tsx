@@ -216,7 +216,7 @@ export default function CheckInKioskPage() {
                 onClick={handlePhoneSubmit}
                 disabled={phone.length < 8 || loading}
               >
-                {loading ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : null}
+                {loading ? <Loader2 className="h-6 w-6 animate-spin me-2" /> : null}
                 Find My Appointment
               </Button>
             </CardContent>

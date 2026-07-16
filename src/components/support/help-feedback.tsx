@@ -239,7 +239,7 @@ export function HelpFeedback() {
                     />
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     <Button className="w-full" onClick={submitFeedback} disabled={submitting}>
-                      <Send className="mr-2 h-4 w-4" />
+                      <Send className="me-2 h-4 w-4" />
                       {submitting ? t(locale, "help.sending") : t(locale, "help.submit")}
                     </Button>
                   </div>
@@ -279,7 +279,7 @@ export function HelpFeedback() {
                     </div>
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     <Button className="w-full" onClick={submitSupport} disabled={submitting}>
-                      <Send className="mr-2 h-4 w-4" />
+                      <Send className="me-2 h-4 w-4" />
                       {submitting ? t(locale, "help.sending") : t(locale, "help.supportSubmit")}
                     </Button>
                   </div>

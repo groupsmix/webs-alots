@@ -113,7 +113,7 @@ export default function StockPage() {
           <p className="text-muted-foreground text-sm">Manage your pharmacy inventory</p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-2 h-4 w-4" /> Add Product
+          <Plus className="me-2 h-4 w-4" /> Add Product
         </Button>
       </div>
 
@@ -161,7 +161,7 @@ export default function StockPage() {
               placeholder="Search products..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
           <div className="flex gap-2">
@@ -187,7 +187,7 @@ export default function StockPage() {
               {cat.label}
             </button>
           ))}
-          <div className="ml-auto flex gap-2">
+          <div className="ms-auto flex gap-2">
             <button
               onClick={() => setSortBy("name")}
               className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 ${sortBy === "name" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
@@ -216,7 +216,7 @@ export default function StockPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b text-left text-sm text-muted-foreground">
+                <tr className="border-b text-start text-sm text-muted-foreground">
                   <th className="py-3 px-2 font-medium">Product</th>
                   <th className="py-3 px-2 font-medium">Category</th>
                   <th className="py-3 px-2 font-medium">Price</th>
@@ -278,7 +278,7 @@ export default function StockPage() {
                       </td>
                       <td className="py-3 px-2">
                         <Button variant="ghost" size="sm" className="text-xs">
-                          <ShoppingCart className="h-3 w-3 mr-1" /> Reorder
+                          <ShoppingCart className="h-3 w-3 me-1" /> Reorder
                         </Button>
                       </td>
                     </tr>

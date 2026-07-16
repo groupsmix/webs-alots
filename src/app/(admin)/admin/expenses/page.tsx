@@ -314,7 +314,7 @@ export default function ExpensesPage() {
           />
           <Button variant="outline" size="sm" onClick={() => setShowCategoryAdd(true)}>
             {}
-            <Plus className="h-4 w-4 mr-1" /> Catégorie
+            <Plus className="h-4 w-4 me-1" /> Catégorie
           </Button>
           <Button
             size="sm"
@@ -324,7 +324,7 @@ export default function ExpensesPage() {
             }}
           >
             {}
-            <Plus className="h-4 w-4 mr-1" /> Dépense
+            <Plus className="h-4 w-4 me-1" /> Dépense
           </Button>
         </div>
       </div>
@@ -430,41 +430,41 @@ export default function ExpensesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left">
+                    <tr className="border-b text-start">
                       {}
-                      <th className="py-3 pr-4 font-medium">Date</th>
+                      <th className="py-3 pe-4 font-medium">Date</th>
                       {}
-                      <th className="py-3 pr-4 font-medium">Description</th>
+                      <th className="py-3 pe-4 font-medium">Description</th>
                       {}
-                      <th className="py-3 pr-4 font-medium">Catégorie</th>
+                      <th className="py-3 pe-4 font-medium">Catégorie</th>
                       {}
-                      <th className="py-3 pr-4 font-medium text-right">Montant</th>
+                      <th className="py-3 pe-4 font-medium text-end">Montant</th>
                       {}
-                      <th className="py-3 font-medium text-right">Actions</th>
+                      <th className="py-3 font-medium text-end">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {expenses.map((exp) => (
                       <tr key={exp.id} className="border-b last:border-0">
-                        <td className="py-3 pr-4">{exp.expense_date}</td>
-                        <td className="py-3 pr-4">
+                        <td className="py-3 pe-4">{exp.expense_date}</td>
+                        <td className="py-3 pe-4">
                           {exp.description}
                           {exp.is_recurring && (
-                            <Badge variant="secondary" className="ml-2">
+                            <Badge variant="secondary" className="ms-2">
                               Récurrent
                             </Badge>
                           )}
                         </td>
-                        <td className="py-3 pr-4">
+                        <td className="py-3 pe-4">
                           {exp.expense_categories
                             ? (CATEGORY_LABELS[exp.expense_categories.type] ??
                               exp.expense_categories.name)
                             : "—"}
                         </td>
-                        <td className="py-3 pr-4 text-right font-medium">
+                        <td className="py-3 pe-4 text-end font-medium">
                           {formatCurrency(exp.amount / 100, locale ?? "fr")}
                         </td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 text-end">
                           <Button variant="ghost" size="sm" onClick={() => openEdit(exp)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>

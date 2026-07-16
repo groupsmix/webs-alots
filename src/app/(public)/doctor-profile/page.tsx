@@ -81,13 +81,13 @@ export default async function DoctorProfilePage() {
                       <h2 className="text-2xl font-bold">{doctor.name}</h2>
                       {doctor.specialty && (
                         <Badge variant="secondary" className="mt-1">
-                          <Stethoscope className="h-3 w-3 mr-1" />
+                          <Stethoscope className="h-3 w-3 me-1" />
                           {doctor.specialty}
                         </Badge>
                       )}
                     </div>
                     <Link href="/book" className={buttonVariants({ size: "sm" })}>
-                      <Calendar className="h-4 w-4 mr-1" />
+                      <Calendar className="h-4 w-4 me-1" />
                       Book Appointment
                     </Link>
                   </div>
@@ -127,16 +127,16 @@ export default async function DoctorProfilePage() {
                   {/* Diplomas / Credentials placeholder */}
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline" className="text-xs">
-                      <GraduationCap className="h-3 w-3 mr-1" />
+                      <GraduationCap className="h-3 w-3 me-1" />
                       Board Certified
                     </Badge>
                     <Badge variant="outline" className="text-xs">
-                      <Briefcase className="h-3 w-3 mr-1" />
+                      <Briefcase className="h-3 w-3 me-1" />
                       {tenant.clinicType === "dentist" ? "Dental Surgery" : "General Medicine"}
                     </Badge>
                     {branding.address && (
                       <Badge variant="outline" className="text-xs">
-                        <MapPin className="h-3 w-3 mr-1" />
+                        <MapPin className="h-3 w-3 me-1" />
                         {branding.address}
                       </Badge>
                     )}

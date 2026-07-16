@@ -210,12 +210,12 @@ function DoctorProfileView({
               <h1 className="text-2xl font-bold mb-1">{doctor.name}</h1>
               <div className="flex items-center gap-2 mb-3">
                 <Badge variant="secondary">
-                  <Stethoscope className="h-3 w-3 mr-1" />
+                  <Stethoscope className="h-3 w-3 me-1" />
                   {doctor.specialty}
                 </Badge>
                 {city && (
                   <Badge variant="outline">
-                    <MapPin className="h-3 w-3 mr-1" />
+                    <MapPin className="h-3 w-3 me-1" />
                     {city.name}
                   </Badge>
                 )}
@@ -262,7 +262,7 @@ function DoctorProfileView({
               )}
               {bookingUrl && (
                 <a href={bookingUrl} className={buttonVariants({ size: "lg" })}>
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   Prendre rendez-vous en ligne
                 </a>
               )}
@@ -416,7 +416,7 @@ function CityListingView({
                   className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted transition-colors"
                 >
                   {specInfo?.nameFr ?? spec.name}
-                  <Badge variant="secondary" className="ml-1 text-xs">
+                  <Badge variant="secondary" className="ms-1 text-xs">
                     {spec.count}
                   </Badge>
                 </Link>
@@ -474,7 +474,7 @@ function CityListingView({
                     )}
                     {doctor.clinicSubdomain && (
                       <span className={buttonVariants({ variant: "outline", size: "sm" })}>
-                        <Calendar className="h-3 w-3 mr-1" />
+                        <Calendar className="h-3 w-3 me-1" />
                         Rendez-vous
                       </span>
                     )}

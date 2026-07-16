@@ -33,7 +33,7 @@ export async function ServicesPreview() {
         <div className="mt-10 text-center">
           <Link href="/services" className={linkBtnOutline}>
             Voir tous les services
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4" />
           </Link>
         </div>
       </div>

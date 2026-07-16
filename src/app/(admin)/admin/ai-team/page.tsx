@@ -316,7 +316,7 @@ function AgentCard({
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-[10px]">
-              <div className="mr-1 h-1.5 w-1.5 rounded-full bg-green-500" />
+              <div className="me-1 h-1.5 w-1.5 rounded-full bg-green-500" />
               Actif
             </Badge>
             {agentData.alerts.length > 0 && (
@@ -354,9 +354,9 @@ function AgentCard({
             disabled={generating}
           >
             {generating ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
             ) : (
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              <RefreshCw className="h-3.5 w-3.5 me-1.5" />
             )}
             Générer insights
           </Button>
@@ -366,7 +366,7 @@ function AgentCard({
             className="text-xs"
             onClick={() => setChatOpen(!chatOpen)}
           >
-            <Bot className="h-3.5 w-3.5 mr-1.5" />
+            <Bot className="h-3.5 w-3.5 me-1.5" />
             {chatOpen ? "Fermer chat" : "Discuter"}
           </Button>
         </div>
@@ -783,7 +783,7 @@ function AITeamDashboard() {
         <div className="flex items-center gap-2">
           <NotificationBell alerts={allAlerts} onDismissAll={() => void dismissAllAlerts()} />
           <Button variant="outline" size="sm" className="text-xs" onClick={() => void refresh()}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            <RefreshCw className="h-3.5 w-3.5 me-1.5" />
             Actualiser
           </Button>
         </div>

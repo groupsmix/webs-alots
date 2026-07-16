@@ -1,71 +1,37 @@
-"use client";
-
 import { AlertTriangle, Check, Clock, X } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
-import { useLocale } from "@/components/locale-switcher";
-import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
-import { fetchProducts, getExpiryStatus } from "@/lib/data/client";
-import type { ProductView } from "@/lib/data/client";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import type { ProductView } from "@/lib/data/client/pharmacy";
+import { fetchProducts, getExpiryStatus } from "@/lib/data/pharmacy";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromTenant, requireTenant } from "@/lib/tenant";
+import { formatCurrency } from "@/lib/utils";
 
-export default function ExpiryTrackerPage() {
-  const [locale] = useLocale();
+interface ProductWithExpiry extends ProductView {
+  expiryStatus: "red" | "yellow" | "green";
+  daysUntilExpiry: number;
+}
 
-  const tenant = useTenant();
-  const [allProducts, setAllProducts] = useState<ProductView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+function getDaysUntilExpiry(expiryDate: string): number {
+  if (!expiryDate) return Infinity;
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+  return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchProducts(tenant?.clinicId ?? "")
-      .then((d) => {
-        if (!controller.signal.aborted) setAllProducts(d);
-      })
-      .catch((err) => {
-        if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [tenant?.clinicId]);
+export default async function ExpiryTrackerPage() {
+  const tenant = await requireTenant();
+  const locale = getLocaleFromTenant(tenant) as Locale;
+  const allProducts = await fetchProducts(tenant.clinicId);
 
-  const products = useMemo(() => {
-    return allProducts
-      .filter((p) => p.active)
-      .map((p) => ({
-        ...p,
-        expiryStatus: getExpiryStatus(p.expiryDate),
-        daysUntilExpiry: Math.ceil(
-          (new Date(p.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
-        ),
-      }))
-      .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-  }, [allProducts]);
-
-  if (loading) {
-    return <PageLoader message="Loading expiry data..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+  const products: ProductWithExpiry[] = allProducts
+    .filter((p) => p.active)
+    .map((p) => ({
+      ...p,
+      expiryStatus: getExpiryStatus(p.expiryDate),
+      daysUntilExpiry: getDaysUntilExpiry(p.expiryDate),
+    }))
+    .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 
   const expired = products.filter((p) => p.expiryStatus === "red");
   const expiringSoon = products.filter((p) => p.expiryStatus === "yellow");
@@ -170,7 +136,7 @@ export default function ExpiryTrackerPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b text-left text-sm text-muted-foreground">
+                <tr className="border-b text-start text-sm text-muted-foreground">
                   <th className="py-3 px-2 font-medium">Status</th>
                   <th className="py-3 px-2 font-medium">Product</th>
                   <th className="py-3 px-2 font-medium">Category</th>
@@ -214,11 +180,7 @@ export default function ExpiryTrackerPage() {
                       </td>
                       <td className="py-3 px-2">{product.stockQuantity}</td>
                       <td className="py-3 px-2 font-medium">
-                        {formatCurrency(
-                          product.price * product.stockQuantity,
-                          typeof locale !== "undefined" ? locale : "fr",
-                          "MAD",
-                        )}
+                        {formatCurrency(product.price * product.stockQuantity, locale, "MAD")}
                       </td>
                     </tr>
                   );

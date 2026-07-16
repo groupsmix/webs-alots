@@ -54,7 +54,7 @@ export function ContactFormSection() {
                   <Textarea placeholder="Comment pouvons-nous vous aider ?" rows={4} required />
                 </div>
                 <Button type="submit" className="w-full">
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="h-4 w-4 me-2" />
                   Envoyer le message
                 </Button>
               </form>

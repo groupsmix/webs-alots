@@ -414,7 +414,7 @@ export function LoginForm() {
                   setMfaFactorId(null);
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 {t(locale, "action.back")}
               </Button>
             </form>
@@ -455,7 +455,7 @@ export function LoginForm() {
                   setError(null);
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 {t(locale, "auth.mfaUseTOTP" as TranslationKey)}
               </Button>
             </form>
@@ -500,7 +500,7 @@ export function LoginForm() {
                   setError(null);
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 {t(locale, "auth.useAnotherNumber")}
               </Button>
             </form>
@@ -549,7 +549,7 @@ export function LoginForm() {
                   setError(null);
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 {t(locale, "auth.useAnotherEmail" as TranslationKey)}
               </Button>
             </form>
@@ -622,7 +622,7 @@ export function LoginForm() {
                             setFieldErrors((prev) => ({ ...prev, password: undefined }));
                         }}
                         required
-                        className={`h-11 pr-12 text-base ${fieldErrors.password ? "border-destructive" : ""}`}
+                        className={`h-11 pe-12 text-base ${fieldErrors.password ? "border-destructive" : ""}`}
                         aria-invalid={!!fieldErrors.password}
                         aria-describedby={fieldErrors.password ? "password-error" : undefined}
                       />
@@ -659,7 +659,7 @@ export function LoginForm() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="me-2 h-4 w-4 animate-spin" />
                         {t(locale, "auth.signingIn")}
                       </>
                     ) : (
@@ -760,7 +760,7 @@ export function LoginForm() {
                   }
                 }}
               >
-                <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 me-2" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                     fill="#4285F4"
@@ -804,7 +804,7 @@ export function LoginForm() {
                   }
                 }}
               >
-                <Fingerprint className="h-5 w-5 mr-2" />
+                <Fingerprint className="h-5 w-5 me-2" />
                 {passkeyLoading
                   ? t(locale, "auth.passkeySigningIn" as TranslationKey)
                   : t(locale, "auth.passkeySignIn" as TranslationKey)}

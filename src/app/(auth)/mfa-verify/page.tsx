@@ -187,7 +187,7 @@ function MfaVerifyInner() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : null}
                 Vérifier
               </Button>
               <div className="text-center">
@@ -221,7 +221,7 @@ function MfaVerifyInner() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading || backupCode.length < 8}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin me-2" /> : null}
                 Vérifier le code de secours
               </Button>
               <Button
@@ -234,7 +234,7 @@ function MfaVerifyInner() {
                   setBackupCode("");
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 Utiliser mon application 2FA
               </Button>
             </form>

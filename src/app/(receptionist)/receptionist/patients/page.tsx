@@ -87,7 +87,7 @@ export default function ReceptionistPatientsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search patients by name, phone, or CIN..."
-          className="pl-10"
+          className="ps-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -135,7 +135,7 @@ export default function ReceptionistPatientsPage() {
                       onClick={() => handleCheckIn(patient.id)}
                       title="Check In"
                     >
-                      <CheckCircle className="h-3.5 w-3.5 text-green-600 mr-1" />
+                      <CheckCircle className="h-3.5 w-3.5 text-green-600 me-1" />
                       Check In
                     </Button>
                   )}

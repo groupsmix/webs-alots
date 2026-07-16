@@ -121,14 +121,14 @@ export function QuickPatientRegistration({ onRegistered }: QuickPatientRegistrat
           >
             {success ? (
               <>
-                <Check className="h-4 w-4 mr-1" />
+                <Check className="h-4 w-4 me-1" />
                 Registered!
               </>
             ) : submitting ? (
               "Registering..."
             ) : (
               <>
-                <UserPlus className="h-4 w-4 mr-1" />
+                <UserPlus className="h-4 w-4 me-1" />
                 Register (5s)
               </>
             )}

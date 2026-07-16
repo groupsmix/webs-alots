@@ -237,12 +237,12 @@ export function AuditLogViewer() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium">Date</th>
-              <th className="px-4 py-3 text-left font-medium">Type</th>
-              <th className="px-4 py-3 text-left font-medium">Action</th>
-              <th className="px-4 py-3 text-left font-medium">Utilisateur</th>
-              <th className="px-4 py-3 text-left font-medium">Description</th>
-              <th className="px-4 py-3 text-left font-medium">IP</th>
+              <th className="px-4 py-3 text-start font-medium">Date</th>
+              <th className="px-4 py-3 text-start font-medium">Type</th>
+              <th className="px-4 py-3 text-start font-medium">Action</th>
+              <th className="px-4 py-3 text-start font-medium">Utilisateur</th>
+              <th className="px-4 py-3 text-start font-medium">Description</th>
+              <th className="px-4 py-3 text-start font-medium">IP</th>
             </tr>
           </thead>
           <tbody className="divide-y">

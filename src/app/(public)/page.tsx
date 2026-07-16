@@ -319,7 +319,7 @@ export default async function HomePage() {
                   const pct = Math.round((count / reviews.length) * 100);
                   return (
                     <div key={star} className="flex items-center gap-2 text-sm">
-                      <span className="w-6 text-right font-medium">
+                      <span className="w-6 text-end font-medium">
                         {star}
                         <span className="text-yellow-400">&#9733;</span>
                       </span>
@@ -368,7 +368,7 @@ export default async function HomePage() {
             <div className="mt-10 text-center">
               <Link href="/reviews" className={linkBtnOutline}>
                 {t(locale, "public.reviews.viewAll")}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ms-2 h-4 w-4" />
               </Link>
             </div>
           </div>

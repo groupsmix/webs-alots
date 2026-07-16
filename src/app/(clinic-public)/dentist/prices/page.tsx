@@ -71,7 +71,7 @@ export default async function DentistPricesPage() {
                           </p>
                         )}
                       </div>
-                      <div className="text-right ml-4">
+                      <div className="text-end ms-4">
                         {service.price > 0 ? (
                           <span className="font-bold text-sky-600">
                             {service.price} {service.currency}
@@ -124,7 +124,7 @@ export default async function DentistPricesPage() {
               consultation for an accurate estimate.
             </p>
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
-              <Calendar className="h-4 w-4 mr-2" />
+              <Calendar className="h-4 w-4 me-2" />
               Book Consultation
             </Link>
           </div>

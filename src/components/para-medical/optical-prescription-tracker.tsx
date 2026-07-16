@@ -146,7 +146,7 @@ export function OpticalPrescriptionTracker({
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-2 px-2"></th>
+                        <th className="text-start py-2 px-2"></th>
                         <th className="text-center py-2 px-2">Sphere (SPH)</th>
                         <th className="text-center py-2 px-2">Cylinder (CYL)</th>
                         <th className="text-center py-2 px-2">Axis</th>

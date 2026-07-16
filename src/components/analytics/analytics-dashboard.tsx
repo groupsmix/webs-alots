@@ -224,11 +224,11 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               );
             }}
           >
-            <Download className="h-4 w-4 mr-1" />
+            <Download className="h-4 w-4 me-1" />
             Export CSV
           </Button>
           <Badge variant="outline" className="text-xs">
-            <RefreshCw className="h-3 w-3 mr-1" />
+            <RefreshCw className="h-3 w-3 me-1" />
             Live Data
           </Badge>
         </div>
@@ -493,7 +493,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
           <CardContent>
             <div className="overflow-x-auto">
               <div className="min-w-[400px]">
-                <div className="flex gap-1 mb-1 pl-10">
+                <div className="flex gap-1 mb-1 ps-10">
                   {[9, 10, 11, 12, 14, 15, 16, 17].map((h) => (
                     <div key={h} className="flex-1 text-center text-[10px] text-muted-foreground">
                       {h}:00

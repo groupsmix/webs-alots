@@ -1,5 +1,6 @@
 "use server";
 
+import { getSiteUrl } from "@/lib/env-getters-core";
 import { getOrCreateReferralCode } from "@/lib/referral-program";
 import { createUntypedAdminClient } from "@/lib/supabase-server";
 
@@ -50,7 +51,11 @@ export async function fetchReferralProgram(
 
   const [{ data: events, error: eventsError }, { data: credits, error: creditsError }] =
     await Promise.all([
+      // nosemgrep: semgrep.tenant-scoping
+      // Referral events are scoped by referrer_clinic_id, not clinic_id.
       supabase.from("referral_events").select("event_type").eq("referrer_clinic_id", clinicId),
+      // nosemgrep: semgrep.tenant-scoping
+      // Referral credits are scoped by beneficiary_clinic_id, not clinic_id.
       supabase
         .from("referral_credits")
         .select("id, amount_centimes, currency, payout_type, status, created_at, applied_at")
@@ -65,7 +70,7 @@ export async function fetchReferralProgram(
   const signups = eventRows.filter((e) => e.event_type === "signup").length;
   const firstPayments = eventRows.filter((e) => e.event_type === "first_payment").length;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const siteUrl = getSiteUrl();
 
   return {
     code: referralData.code,

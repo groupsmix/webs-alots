@@ -191,7 +191,7 @@ export default function SuperAdminReferralProgramPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        <Loader2 className="h-5 w-5 animate-spin me-2" />
         Chargement du programme de parrainage...
       </div>
     );
@@ -311,11 +311,11 @@ export default function SuperAdminReferralProgramPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">#</th>
-                <th className="text-left p-3 font-medium">Clinique</th>
-                <th className="text-left p-3 font-medium">Code</th>
-                <th className="text-right p-3 font-medium">Inscriptions</th>
-                <th className="text-right p-3 font-medium">Crédits gagnés</th>
+                <th className="text-start p-3 font-medium">#</th>
+                <th className="text-start p-3 font-medium">Clinique</th>
+                <th className="text-start p-3 font-medium">Code</th>
+                <th className="text-end p-3 font-medium">Inscriptions</th>
+                <th className="text-end p-3 font-medium">Crédits gagnés</th>
               </tr>
             </thead>
             <tbody>
@@ -339,8 +339,8 @@ export default function SuperAdminReferralProgramPage() {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="p-3 text-right font-bold">{row.signups}</td>
-                  <td className="p-3 text-right text-muted-foreground">
+                  <td className="p-3 text-end font-bold">{row.signups}</td>
+                  <td className="p-3 text-end text-muted-foreground">
                     {formatMAD(row.totalCreditsCentimes)}
                   </td>
                 </tr>
@@ -360,11 +360,11 @@ export default function SuperAdminReferralProgramPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">Clinique</th>
-                <th className="text-right p-3 font-medium">Montant</th>
-                <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Date</th>
-                <th className="text-left p-3 font-medium">Actions</th>
+                <th className="text-start p-3 font-medium">Clinique</th>
+                <th className="text-end p-3 font-medium">Montant</th>
+                <th className="text-start p-3 font-medium">Type</th>
+                <th className="text-start p-3 font-medium">Date</th>
+                <th className="text-start p-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -380,7 +380,7 @@ export default function SuperAdminReferralProgramPage() {
                   <td className="p-3 font-medium">
                     {credit.clinics?.name ?? credit.beneficiary_clinic_id.slice(0, 8) + "..."}
                   </td>
-                  <td className="p-3 text-right font-bold">{formatMAD(credit.amount_centimes)}</td>
+                  <td className="p-3 text-end font-bold">{formatMAD(credit.amount_centimes)}</td>
                   <td className="p-3 text-muted-foreground capitalize">
                     {credit.payout_type.replace(/_/g, " ")}
                   </td>
@@ -431,11 +431,11 @@ export default function SuperAdminReferralProgramPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium">Clinique</th>
-                  <th className="text-right p-3 font-medium">Montant</th>
-                  <th className="text-left p-3 font-medium">Statut</th>
-                  <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-left p-3 font-medium">Appliqué le</th>
+                  <th className="text-start p-3 font-medium">Clinique</th>
+                  <th className="text-end p-3 font-medium">Montant</th>
+                  <th className="text-start p-3 font-medium">Statut</th>
+                  <th className="text-start p-3 font-medium">Date</th>
+                  <th className="text-start p-3 font-medium">Appliqué le</th>
                 </tr>
               </thead>
               <tbody>
@@ -444,7 +444,7 @@ export default function SuperAdminReferralProgramPage() {
                     <td className="p-3 font-medium">
                       {credit.clinics?.name ?? credit.beneficiary_clinic_id.slice(0, 8) + "..."}
                     </td>
-                    <td className="p-3 text-right">{formatMAD(credit.amount_centimes)}</td>
+                    <td className="p-3 text-end">{formatMAD(credit.amount_centimes)}</td>
                     <td className="p-3">
                       <Badge variant={STATUS_VARIANTS[credit.status]} className="text-xs">
                         {STATUS_LABELS[credit.status]}

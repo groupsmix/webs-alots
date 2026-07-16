@@ -183,16 +183,16 @@ function Setup2FAInner() {
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={handleCopyBackupCodes}>
                 {backupCopied ? (
-                  <Check className="h-4 w-4 mr-1" />
+                  <Check className="h-4 w-4 me-1" />
                 ) : (
-                  <Copy className="h-4 w-4 mr-1" />
+                  <Copy className="h-4 w-4 me-1" />
                 )}
                 {backupCopied
                   ? t(locale, "action.copied" as TranslationKey) || "Copié"
                   : t(locale, "action.copy" as TranslationKey) || "Copier"}
               </Button>
               <Button variant="outline" className="flex-1" onClick={handleDownloadBackupCodes}>
-                <Download className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 me-1" />
                 {t(locale, "mfa.downloadCodes")}
               </Button>
             </div>
@@ -343,7 +343,7 @@ function Setup2FAInner() {
                   setError(null);
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 {t(locale, "action.back" as TranslationKey) || "Retour"}
               </Button>
             </form>

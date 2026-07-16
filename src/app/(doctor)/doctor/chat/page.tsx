@@ -106,7 +106,7 @@ export default function DoctorChatPage() {
               <CardTitle className="text-base">Receptionist Sara</CardTitle>
               <p className="text-xs text-muted-foreground">Reception Desk</p>
             </div>
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ms-auto flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-green-500" />
               <span className="text-xs text-muted-foreground">Online</span>
             </div>
@@ -126,7 +126,7 @@ export default function DoctorChatPage() {
                         {isDoctor ? "Dr" : "RS"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className={`max-w-[70%] ${isDoctor ? "text-right" : ""}`}>
+                    <div className={`max-w-[70%] ${isDoctor ? "text-end" : ""}`}>
                       <div
                         className={`rounded-lg px-3 py-2 text-sm ${
                           isDoctor ? "bg-primary text-primary-foreground" : "bg-muted"
@@ -137,7 +137,7 @@ export default function DoctorChatPage() {
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {formatTime(msg.timestamp)}
                         {!msg.read && !isDoctor && (
-                          <span className="ml-2 text-blue-500 font-medium">New</span>
+                          <span className="ms-2 text-blue-500 font-medium">New</span>
                         )}
                       </p>
                     </div>

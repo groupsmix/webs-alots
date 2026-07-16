@@ -241,9 +241,9 @@ export default function ChurnPredictionPage() {
         </div>
         <Button onClick={handleRecalculate} disabled={recalculating} variant="outline">
           {recalculating ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            <Loader2 className="h-4 w-4 me-1 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4 mr-1" />
+            <RefreshCw className="h-4 w-4 me-1" />
           )}
           Recalculate
         </Button>
@@ -437,7 +437,7 @@ export default function ChurnPredictionPage() {
               <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                 <div className="flex-1 space-y-2">
                   <label htmlFor="alert-email" className="text-sm font-medium">
-                    <Mail className="h-3.5 w-3.5 inline mr-1" />
+                    <Mail className="h-3.5 w-3.5 inline me-1" />
                     Notification Email
                   </label>
                   <input
@@ -451,7 +451,7 @@ export default function ChurnPredictionPage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="alert-threshold" className="text-sm font-medium">
-                    <AlertTriangle className="h-3.5 w-3.5 inline mr-1" />
+                    <AlertTriangle className="h-3.5 w-3.5 inline me-1" />
                     Churn Risk Threshold
                   </label>
                   <div className="flex items-center gap-2">
@@ -472,12 +472,12 @@ export default function ChurnPredictionPage() {
                 <Button onClick={handleSaveAlert} variant="default" className="shrink-0">
                   {alertSaved ? (
                     <>
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      <CheckCircle2 className="h-4 w-4 me-1" />
                       Saved
                     </>
                   ) : (
                     <>
-                      <Bell className="h-4 w-4 mr-1" />
+                      <Bell className="h-4 w-4 me-1" />
                       Save Alert
                     </>
                   )}
@@ -498,7 +498,7 @@ export default function ChurnPredictionPage() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <Lightbulb className="h-4 w-4" />
                   At-Risk Clinics — Recommended Actions
-                  <Badge variant="destructive" className="ml-auto">
+                  <Badge variant="destructive" className="ms-auto">
                     {atRiskClinics.length}
                   </Badge>
                 </CardTitle>
@@ -609,7 +609,7 @@ export default function ChurnPredictionPage() {
                             <span>Plan: {score.clinic_tier}</span>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <div className={`text-2xl font-bold ${getScoreColor(score.score)}`}>
                             {score.score}
                           </div>

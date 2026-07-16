@@ -122,7 +122,7 @@ export default function EquipmentDashboardPage() {
           <p className="text-muted-foreground text-sm">{t("dashboardSubtitle")}</p>
         </div>
         <Badge variant="outline" className="text-amber-600 border-amber-600">
-          <Clock className="h-3 w-3 mr-1" />
+          <Clock className="h-3 w-3 me-1" />
           {now.toLocaleDateString(dateFmt, { weekday: "long", month: "long", day: "numeric" })}
         </Badge>
       </div>

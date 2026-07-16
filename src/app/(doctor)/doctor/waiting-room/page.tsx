@@ -161,7 +161,7 @@ export default function WaitingRoomPage() {
                       className="w-full"
                       onClick={() => handleStartConsultation(entry.id)}
                     >
-                      <ArrowRight className="h-4 w-4 mr-1" />
+                      <ArrowRight className="h-4 w-4 me-1" />
                       Start Consultation
                     </Button>
                   </CardContent>
@@ -207,7 +207,7 @@ export default function WaitingRoomPage() {
                       className="w-full text-green-600"
                       onClick={() => handleMarkDone(entry.id)}
                     >
-                      <CheckCircle className="h-4 w-4 mr-1" />
+                      <CheckCircle className="h-4 w-4 me-1" />
                       Mark as Done
                     </Button>
                   </CardContent>

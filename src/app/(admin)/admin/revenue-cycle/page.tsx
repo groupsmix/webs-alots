@@ -225,11 +225,11 @@ export default function RevenueCyclePage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={loadData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 me-2" />
             Actualiser
           </Button>
           <Button size="sm" onClick={() => (window.location.href = "/admin/insurance-claims")}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             Nouvelle Réclamation
           </Button>
         </div>
@@ -389,7 +389,7 @@ export default function RevenueCyclePage() {
                   <button
                     type="button"
                     key={claim.id}
-                    className="w-full text-left flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                    className="w-full text-start flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => (window.location.href = `/admin/insurance-claims/${claim.id}`)}
                   >
                     <Icon
@@ -420,7 +420,7 @@ export default function RevenueCyclePage() {
                         {claim.notes && ` · ${claim.notes.slice(0, 40)}...`}
                       </p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-end shrink-0">
                       <p className="font-semibold text-sm">{formatMAD(claim.amount_claimed)}</p>
                       {claim.amount_paid !== null && claim.amount_paid > 0 && (
                         <p className="text-xs text-green-600">
@@ -435,7 +435,7 @@ export default function RevenueCyclePage() {
               {filteredClaims.length > 15 && (
                 <p className="text-center text-xs text-muted-foreground py-2">
                   +{filteredClaims.length - 15} réclamations supplémentaires
-                  <a href="/admin/insurance-claims" className="text-primary ml-1 hover:underline">
+                  <a href="/admin/insurance-claims" className="text-primary ms-1 hover:underline">
                     Voir tout
                   </a>
                 </p>

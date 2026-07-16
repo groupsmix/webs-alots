@@ -432,24 +432,24 @@ export default function FeatureTogglesPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={filtered.length === 0}>
-                <Download className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 me-1" />
                 Exporter
-                <ChevronDown className="h-3 w-3 ml-1" />
+                <ChevronDown className="h-3 w-3 ms-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleExportFeaturesCSV}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                <FileSpreadsheet className="h-4 w-4 me-2" />
                 Exporter en CSV
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportFeaturesPDF}>
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 me-2" />
                 Exporter en PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" onClick={() => setBulkOpen(true)}>
-            <ToggleLeft className="h-4 w-4 mr-1" />
+            <ToggleLeft className="h-4 w-4 me-1" />
             Actions groupées
           </Button>
         </div>
@@ -490,7 +490,7 @@ export default function FeatureTogglesPage() {
           <TabsTrigger value="overrides">
             Dérogations cliniques
             {overrideCount > 0 && (
-              <Badge variant="secondary" className="ml-2 text-[10px]">
+              <Badge variant="secondary" className="ms-2 text-[10px]">
                 {overrideCount}
               </Badge>
             )}
@@ -504,7 +504,7 @@ export default function FeatureTogglesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher des fonctionnalités…"
-                className="pl-10"
+                className="ps-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -540,7 +540,7 @@ export default function FeatureTogglesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4 min-w-[250px]">
+                      <th className="text-start font-medium py-3 px-4 min-w-[250px]">
                         Fonctionnalité
                       </th>
                       <th className="text-center font-medium py-3 px-4">Globale</th>
@@ -658,7 +658,7 @@ export default function FeatureTogglesPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b text-muted-foreground">
-                            <th className="text-left font-medium py-3 px-4 min-w-[250px]">
+                            <th className="text-start font-medium py-3 px-4 min-w-[250px]">
                               Fonctionnalité
                             </th>
                             <th className="text-center font-medium py-3 px-4">Statut</th>
@@ -798,7 +798,7 @@ export default function FeatureTogglesPage() {
               Annuler
             </Button>
             <Button onClick={handleBulkAction}>
-              <ToggleLeft className="h-4 w-4 mr-1" />
+              <ToggleLeft className="h-4 w-4 me-1" />
               Appliquer à toutes les fonctionnalités
             </Button>
           </DialogFooter>

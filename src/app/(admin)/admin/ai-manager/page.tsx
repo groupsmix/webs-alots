@@ -310,7 +310,7 @@ function AiManagerChat() {
         </div>
         {messages.length > 0 && (
           <Button variant="ghost" size="sm" onClick={handleClearChat}>
-            <Trash2 className="h-4 w-4 mr-1.5" />
+            <Trash2 className="h-4 w-4 me-1.5" />
             Effacer
           </Button>
         )}
@@ -349,7 +349,7 @@ function AiManagerChat() {
                     type="button"
                     onClick={() => void sendMessage(q.question)}
                     disabled={loading}
-                    className="flex items-center gap-2.5 rounded-xl border bg-card px-4 py-3 text-left text-sm transition-colors hover:bg-muted disabled:opacity-50"
+                    className="flex items-center gap-2.5 rounded-xl border bg-card px-4 py-3 text-start text-sm transition-colors hover:bg-muted disabled:opacity-50"
                   >
                     <q.icon className="h-4 w-4 text-violet-600 dark:text-violet-400 shrink-0" />
                     <span>{q.label}</span>

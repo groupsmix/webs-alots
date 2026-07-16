@@ -21,7 +21,7 @@ export function PromptSuggestions({
         <button
           key={suggestion}
           type="button"
-          className="rounded-lg border bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-lg border bg-card px-3 py-2 text-start text-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => onSuggestionClick(suggestion)}
         >
           {suggestion}

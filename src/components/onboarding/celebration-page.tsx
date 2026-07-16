@@ -149,7 +149,7 @@ export function CelebrationPage({ clinicName, subdomain, ownerName, phone }: Cel
 
               <button
                 type="button"
-                className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors w-full text-left"
+                className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent transition-colors w-full text-start"
                 onClick={() => {
                   void navigator.clipboard.writeText(clinicUrl);
                 }}
@@ -175,7 +175,7 @@ export function CelebrationPage({ clinicName, subdomain, ownerName, phone }: Cel
         {/* Action Buttons */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Button size="lg" className="w-full" onClick={() => router.push("/admin/dashboard")}>
-            <LayoutDashboard className="h-4 w-4 mr-2" />
+            <LayoutDashboard className="h-4 w-4 me-2" />
             Acc&eacute;der au tableau de bord
           </Button>
 
@@ -185,7 +185,7 @@ export function CelebrationPage({ clinicName, subdomain, ownerName, phone }: Cel
             className="w-full"
             onClick={() => router.push("/admin/appointments")}
           >
-            <CalendarPlus className="h-4 w-4 mr-2" />
+            <CalendarPlus className="h-4 w-4 me-2" />
             R&eacute;server un premier rendez-vous
           </Button>
         </div>

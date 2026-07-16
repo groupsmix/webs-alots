@@ -211,11 +211,11 @@ export default function ReferralProgramClient({ initialData }: ReferralProgramCl
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">Montant</th>
-                <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Statut</th>
-                <th className="text-left p-3 font-medium">Date</th>
-                <th className="text-left p-3 font-medium">Appliqué le</th>
+                <th className="text-start p-3 font-medium">Montant</th>
+                <th className="text-start p-3 font-medium">Type</th>
+                <th className="text-start p-3 font-medium">Statut</th>
+                <th className="text-start p-3 font-medium">Date</th>
+                <th className="text-start p-3 font-medium">Appliqué le</th>
               </tr>
             </thead>
             <tbody>

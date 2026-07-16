@@ -77,7 +77,7 @@ export function ImpersonationBanner() {
         {t(locale, "impersonation.viewingAs")} <strong>{state.clinicName}</strong>{" "}
         {t(locale, "impersonation.sessionActive")}
         {state.reason && (
-          <span className="ml-1 text-amber-800">
+          <span className="ms-1 text-amber-800">
             ({t(locale, "impersonation.reason").replace("{reason}", state.reason)})
           </span>
         )}
@@ -85,11 +85,11 @@ export function ImpersonationBanner() {
       <Button
         variant="outline"
         size="sm"
-        className="ml-2 h-7 border-amber-700 bg-amber-600 text-amber-50 hover:bg-amber-700 hover:text-white"
+        className="ms-2 h-7 border-amber-700 bg-amber-600 text-amber-50 hover:bg-amber-700 hover:text-white"
         onClick={endImpersonation}
         disabled={ending}
       >
-        <X className="h-3 w-3 mr-1" />
+        <X className="h-3 w-3 me-1" />
         {t(locale, "impersonation.endSession")}
       </Button>
     </div>

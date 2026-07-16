@@ -21,7 +21,7 @@ export default function PublicError({
         href="/"
         className="mt-3 inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors"
       >
-        <Home className="mr-2 h-4 w-4" />
+        <Home className="me-2 h-4 w-4" />
         {t(locale, "notFound.backHome")}
       </Link>
     </ClinicErrorBoundary>

@@ -143,14 +143,14 @@ export default function FamilyMembersPage() {
           </p>
         </div>
         <Button onClick={openAdd} disabled={loading || !!loadError}>
-          <UserPlus className="h-4 w-4 mr-1" />
+          <UserPlus className="h-4 w-4 me-1" />
           Add Member
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+          <Loader2 className="h-5 w-5 animate-spin me-2" />
           Loading family members...
         </div>
       ) : loadError ? (
@@ -205,7 +205,7 @@ export default function FamilyMembersPage() {
                     className="flex-1"
                     onClick={() => openEdit(member)}
                   >
-                    <Edit2 className="h-3.5 w-3.5 mr-1" />
+                    <Edit2 className="h-3.5 w-3.5 me-1" />
                     Edit
                   </Button>
                   <Button
@@ -299,7 +299,7 @@ export default function FamilyMembersPage() {
               className="flex-1"
               onClick={() => deleteId && handleDelete(deleteId)}
             >
-              <Trash2 className="h-4 w-4 mr-1" />
+              <Trash2 className="h-4 w-4 me-1" />
               Remove
             </Button>
           </div>

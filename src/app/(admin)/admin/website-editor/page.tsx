@@ -151,11 +151,11 @@ export default function WebsiteEditorPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleReset}>
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="h-4 w-4 me-2" />
             Reset
           </Button>
           <Button size="sm" onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 me-2" />
             {saved ? "Saved!" : "Save Changes"}
           </Button>
           <a
@@ -173,15 +173,15 @@ export default function WebsiteEditorPage() {
       <Tabs defaultValue="content" className="space-y-6">
         <TabsList>
           <TabsTrigger value="content">
-            <Type className="h-4 w-4 mr-2" />
+            <Type className="h-4 w-4 me-2" />
             Content
           </TabsTrigger>
           <TabsTrigger value="images">
-            <ImageIcon className="h-4 w-4 mr-2" />
+            <ImageIcon className="h-4 w-4 me-2" />
             Images
           </TabsTrigger>
           <TabsTrigger value="theme">
-            <Palette className="h-4 w-4 mr-2" />
+            <Palette className="h-4 w-4 me-2" />
             Theme
           </TabsTrigger>
         </TabsList>
@@ -459,7 +459,7 @@ export default function WebsiteEditorPage() {
                 <div className="flex items-center justify-between">
                   <Label>Steps</Label>
                   <Button variant="outline" size="sm" onClick={addHowToBookStep}>
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-4 w-4 me-1" />
                     Add Step
                   </Button>
                 </div>

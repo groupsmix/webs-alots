@@ -268,25 +268,25 @@ export default function SuperAdminDashboardPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => loadStats(true)} disabled={refreshing}>
             {refreshing ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="h-4 w-4 me-1 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-4 w-4 me-1" />
             )}
             {t(locale, "superAdmin.refresh")}
           </Button>
           <Button variant="outline" size="sm" disabled={loading} onClick={handleDownloadReport}>
-            <Download className="h-4 w-4 mr-1" />
+            <Download className="h-4 w-4 me-1" />
             {t(locale, "superAdmin.downloadReport")}
           </Button>
           <Link href="/super-admin/onboarding">
             <Button size="sm">
-              <UserPlus className="h-4 w-4 mr-1" />
+              <UserPlus className="h-4 w-4 me-1" />
               {t(locale, "superAdmin.newClinic")}
             </Button>
           </Link>
           <Link href="/super-admin/announcements">
             <Button variant="outline" size="sm">
-              <Megaphone className="h-4 w-4 mr-1" />
+              <Megaphone className="h-4 w-4 me-1" />
               {t(locale, "superAdmin.announce")}
             </Button>
           </Link>
@@ -294,7 +294,7 @@ export default function SuperAdminDashboardPage() {
               enable two-factor authentication from here at any time. */}
           <Link href="/setup-2fa?next=%2Fsuper-admin%2Fdashboard">
             <Button variant="outline" size="sm">
-              <ShieldCheck className="h-4 w-4 mr-1" />
+              <ShieldCheck className="h-4 w-4 me-1" />
               Sécurité (2FA)
             </Button>
           </Link>
@@ -437,7 +437,7 @@ export default function SuperAdminDashboardPage() {
                   <Link href="/super-admin/clinics">
                     <Button variant="ghost" size="sm" className="text-xs">
                       {t(locale, "superAdmin.viewAll")}
-                      <ArrowUpRight className="h-3 w-3 ml-1" />
+                      <ArrowUpRight className="h-3 w-3 ms-1" />
                     </Button>
                   </Link>
                 </div>
@@ -455,7 +455,7 @@ export default function SuperAdminDashboardPage() {
                           {clinic.type} &middot; {clinic.city}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 ml-2">
+                      <div className="flex items-center gap-2 ms-2">
                         <Badge
                           variant={
                             clinic.plan === "premium"
@@ -499,7 +499,7 @@ export default function SuperAdminDashboardPage() {
                     <Link href="/super-admin/announcements">
                       <Button variant="ghost" size="sm" className="text-xs">
                         {t(locale, "superAdmin.manage")}
-                        <ArrowUpRight className="h-3 w-3 ml-1" />
+                        <ArrowUpRight className="h-3 w-3 ms-1" />
                       </Button>
                     </Link>
                   </div>
@@ -545,7 +545,7 @@ export default function SuperAdminDashboardPage() {
                     <Link href="/super-admin/clinics">
                       <Button variant="ghost" size="sm" className="text-xs">
                         {t(locale, "superAdmin.viewAll")}
-                        <ArrowUpRight className="h-3 w-3 ml-1" />
+                        <ArrowUpRight className="h-3 w-3 ms-1" />
                       </Button>
                     </Link>
                   </div>

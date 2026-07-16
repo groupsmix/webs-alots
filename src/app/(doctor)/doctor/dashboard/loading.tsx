@@ -35,7 +35,7 @@ export default function DoctorDashboardLoading() {
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-24" />
               </div>
-              <div className="space-y-1 text-right">
+              <div className="space-y-1 text-end">
                 <Skeleton className="h-4 w-12" />
                 <Skeleton className="h-5 w-16 rounded" />
               </div>

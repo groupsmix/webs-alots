@@ -129,7 +129,7 @@ export default function RadiologyImagesPage() {
           <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
             <DialogTrigger asChild>
               <Button disabled title={RADIOLOGY_UPLOAD_DISABLED_MESSAGE}>
-                <Upload className="h-4 w-4 mr-2" /> Upload Images
+                <Upload className="h-4 w-4 me-2" /> Upload Images
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
@@ -192,7 +192,7 @@ export default function RadiologyImagesPage() {
                         key={i}
                         className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2"
                       >
-                        <span className="truncate mr-2">
+                        <span className="truncate me-2">
                           {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
                         </span>
                         <Button
@@ -227,7 +227,7 @@ export default function RadiologyImagesPage() {
           placeholder="Search by patient, modality, body part..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="ps-9"
         />
       </div>
 
@@ -273,7 +273,7 @@ export default function RadiologyImagesPage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors"
                   >
-                    <Eye className="h-3 w-3 mr-1" /> View
+                    <Eye className="h-3 w-3 me-1" /> View
                   </a>
                 )}
                 {order.images.some((img) => img.isDicom) && (
@@ -281,7 +281,7 @@ export default function RadiologyImagesPage() {
                     href={`/radiology/viewer?study=${order.images.find((img) => img.dicomStudyUid)?.dicomStudyUid ?? ""}&order=${order.id}`}
                     className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors"
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" /> DICOM
+                    <ExternalLink className="h-3 w-3 me-1" /> DICOM
                   </Link>
                 )}
               </div>
@@ -295,7 +295,7 @@ export default function RadiologyImagesPage() {
           <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">No images found</p>
           <Button variant="outline" className="mt-4" onClick={() => setUploadOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" /> Upload your first images
+            <Upload className="h-4 w-4 me-2" /> Upload your first images
           </Button>
         </div>
       )}

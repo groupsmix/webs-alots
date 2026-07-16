@@ -198,7 +198,7 @@ function ForgotPasswordPageContent() {
               href="/login"
               className="inline-flex items-center text-sm text-primary hover:underline font-medium"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
+              <ArrowLeft className="h-4 w-4 me-1" />
               {t(locale, "forgot.backToLogin")}
             </Link>
           </CardFooter>
@@ -278,7 +278,7 @@ function ForgotPasswordPageContent() {
             href="/login"
             className="inline-flex items-center text-sm text-primary hover:underline font-medium"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             {t(locale, "forgot.backToLogin")}
           </Link>
         </CardFooter>

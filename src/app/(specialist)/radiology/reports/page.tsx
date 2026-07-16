@@ -92,7 +92,7 @@ export default function RadiologyReportsPage() {
           placeholder="Search by patient, order, modality..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="ps-9"
         />
       </div>
 
@@ -135,7 +135,7 @@ export default function RadiologyReportsPage() {
                       className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Download className="h-3 w-3 mr-1" /> PDF
+                      <Download className="h-3 w-3 me-1" /> PDF
                     </a>
                   ) : (
                     <Button
@@ -147,7 +147,7 @@ export default function RadiologyReportsPage() {
                       disabled
                       title={RADIOLOGY_PDF_DISABLED_MESSAGE}
                     >
-                      <Download className="h-3 w-3 mr-1" />
+                      <Download className="h-3 w-3 me-1" />
                       Generate PDF
                     </Button>
                   )}

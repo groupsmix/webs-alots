@@ -212,7 +212,7 @@ export default function DoctorsClient({ initialDoctors }: DoctorsClientProps) {
                   ))}
                 </div>
               </div>
-              <div className="text-right text-sm text-muted-foreground">
+              <div className="text-end text-sm text-muted-foreground">
                 <p>Consultation: {formatCurrency(doctor.consultationFee)}</p>
                 <p>{doctor.phone}</p>
                 <p className="text-xs">{doctor.email}</p>

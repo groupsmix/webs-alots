@@ -105,9 +105,9 @@ export function PatientFinanceView() {
   };
 
   return (
-    <div className={`space-y-6 ${isRtl ? "text-right" : ""}`} dir={isRtl ? "rtl" : "ltr"}>
+    <div className={`space-y-6 ${isRtl ? "text-end" : ""}`} dir={isRtl ? "rtl" : "ltr"}>
       <h1 className="text-2xl font-bold text-gray-900">
-        <CreditCard className="mr-2 inline-block h-6 w-6" />
+        <CreditCard className="me-2 inline-block h-6 w-6" />
         {lang === "ar" ? "الملف المالي للمريض" : "Profil financier du patient"}
       </h1>
 
@@ -157,7 +157,7 @@ export function PatientFinanceView() {
                   </p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 <p className="text-sm opacity-80">
                   {lang === "ar" ? "نسبة التغطية" : "Couverture"}
                 </p>

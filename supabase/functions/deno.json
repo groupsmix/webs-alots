@@ -13,6 +13,7 @@
     "lineWidth": 100
   },
   "imports": {
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.107.0"
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.107.0",
+    "https://esm.sh/aws4fetch@1.0.19": "npm:aws4fetch@1.0.19"
   }
 }

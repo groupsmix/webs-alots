@@ -101,7 +101,7 @@ export function AITracesPanel() {
     return (
       <Card>
         <CardContent className="p-6 text-red-600">
-          <AlertTriangle className="h-4 w-4 inline mr-2" />
+          <AlertTriangle className="h-4 w-4 inline me-2" />
           {error}
         </CardContent>
       </Card>
@@ -215,13 +215,13 @@ export function AITracesPanel() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-1 px-2">Date</th>
+                    <th className="text-start py-1 px-2">Date</th>
                     {[...allFeatures].map((f) => (
-                      <th key={f} className="text-right py-1 px-2">
+                      <th key={f} className="text-end py-1 px-2">
                         {f}
                       </th>
                     ))}
-                    <th className="text-right py-1 px-2 font-semibold">Total</th>
+                    <th className="text-end py-1 px-2 font-semibold">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,11 +231,11 @@ export function AITracesPanel() {
                       <tr key={day} className="border-b hover:bg-muted/50">
                         <td className="py-1 px-2">{day}</td>
                         {[...allFeatures].map((f) => (
-                          <td key={f} className="text-right py-1 px-2">
+                          <td key={f} className="text-end py-1 px-2">
                             {(featureCosts[f] ?? 0).toFixed(2)}
                           </td>
                         ))}
-                        <td className="text-right py-1 px-2 font-semibold">{total.toFixed(2)}</td>
+                        <td className="text-end py-1 px-2 font-semibold">{total.toFixed(2)}</td>
                       </tr>
                     );
                   })}
@@ -298,15 +298,15 @@ export function AITracesPanel() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-2">Time</th>
-                  <th className="text-left py-2 px-2">Feature</th>
-                  <th className="text-left py-2 px-2">Provider</th>
-                  <th className="text-left py-2 px-2">Model</th>
-                  <th className="text-left py-2 px-2">Status</th>
-                  <th className="text-right py-2 px-2">Tokens</th>
-                  <th className="text-right py-2 px-2">Latency</th>
-                  <th className="text-right py-2 px-2">Cost</th>
-                  <th className="text-left py-2 px-2">Fallback</th>
+                  <th className="text-start py-2 px-2">Time</th>
+                  <th className="text-start py-2 px-2">Feature</th>
+                  <th className="text-start py-2 px-2">Provider</th>
+                  <th className="text-start py-2 px-2">Model</th>
+                  <th className="text-start py-2 px-2">Status</th>
+                  <th className="text-end py-2 px-2">Tokens</th>
+                  <th className="text-end py-2 px-2">Latency</th>
+                  <th className="text-end py-2 px-2">Cost</th>
+                  <th className="text-start py-2 px-2">Fallback</th>
                 </tr>
               </thead>
               <tbody>
@@ -323,11 +323,11 @@ export function AITracesPanel() {
                         {trace.status}
                       </Badge>
                     </td>
-                    <td className="py-1 px-2 text-right">
+                    <td className="py-1 px-2 text-end">
                       {trace.input_tokens + trace.output_tokens}
                     </td>
-                    <td className="py-1 px-2 text-right">{trace.latency_ms}ms</td>
-                    <td className="py-1 px-2 text-right">{(trace.cost_cents / 100).toFixed(4)}</td>
+                    <td className="py-1 px-2 text-end">{trace.latency_ms}ms</td>
+                    <td className="py-1 px-2 text-end">{(trace.cost_cents / 100).toFixed(4)}</td>
                     <td className="py-1 px-2">
                       {trace.fallback_chain.length > 0 ? (
                         <Badge variant="outline" className="bg-orange-50 text-orange-700 text-xs">

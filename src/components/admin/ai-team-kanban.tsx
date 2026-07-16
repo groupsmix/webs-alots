@@ -116,7 +116,7 @@ function TaskCard({
             )}
             {task.review_cycles > 0 && (
               <span className="mt-1 inline-flex items-center text-[10px] text-muted-foreground">
-                <RotateCcw className="mr-0.5 h-3 w-3" />
+                <RotateCcw className="me-0.5 h-3 w-3" />
                 Cycle {task.review_cycles}
                 {task.review_cycles > 2 && " — escalade humaine requise"}
               </span>
@@ -144,9 +144,9 @@ function TaskCard({
                 }}
               >
                 {isTransitioning ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  <Loader2 className="me-1 h-3 w-3 animate-spin" />
                 ) : (
-                  <action.icon className="mr-1 h-3 w-3" />
+                  <action.icon className="me-1 h-3 w-3" />
                 )}
                 {action.label}
               </Button>
@@ -177,7 +177,7 @@ function TaskCard({
         </button>
 
         {historyOpen && (task.history_events ?? []).length > 0 && (
-          <div className="mt-1 space-y-1 border-l-2 border-muted pl-2">
+          <div className="mt-1 space-y-1 border-l-2 border-muted ps-2">
             {(task.history_events ?? []).map((evt, i) => (
               <div key={`${evt.at}-${evt.type}-${i}`} className="text-[10px] text-muted-foreground">
                 <span className="font-medium">{evt.type}</span>
@@ -187,7 +187,7 @@ function TaskCard({
                     {evt.payload.from} → {evt.payload.to}
                   </span>
                 )}
-                <span className="ml-1 opacity-60">
+                <span className="ms-1 opacity-60">
                   {new Date(evt.at).toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "short",

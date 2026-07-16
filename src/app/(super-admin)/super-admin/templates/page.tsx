@@ -313,7 +313,7 @@ export default function TemplateManagerPage() {
           </p>
         </div>
         <Button onClick={openCreate}>
-          <FilePlus className="h-4 w-4 mr-1" />
+          <FilePlus className="h-4 w-4 me-1" />
           Nouveau modèle
         </Button>
       </div>
@@ -358,7 +358,7 @@ export default function TemplateManagerPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Rechercher des modèles…"
-              className="pl-10"
+              className="ps-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -583,7 +583,7 @@ export default function TemplateManagerPage() {
               onClick={handleSave}
               disabled={saving || !formName.trim() || !formContent.trim()}
             >
-              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              {saving ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : null}
               {editItem ? "Mettre à jour le modèle" : "Créer le modèle"}
             </Button>
           </DialogFooter>
@@ -632,7 +632,7 @@ export default function TemplateManagerPage() {
                   openEdit(previewItem);
                 }}
               >
-                <Edit className="h-4 w-4 mr-1" />
+                <Edit className="h-4 w-4 me-1" />
                 Modifier
               </Button>
             </DialogFooter>
@@ -663,9 +663,9 @@ export default function TemplateManagerPage() {
               </Button>
               <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
                 {deleting ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 me-1 animate-spin" />
                 ) : (
-                  <Trash2 className="h-4 w-4 mr-1" />
+                  <Trash2 className="h-4 w-4 me-1" />
                 )}
                 Supprimer
               </Button>

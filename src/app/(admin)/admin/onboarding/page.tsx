@@ -360,15 +360,15 @@ export default function AdminOnboardingWizard() {
       {/* Footer Navigation */}
       <div className="flex justify-between mt-8">
         <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="me-2 h-4 w-4" /> Back
         </Button>
         {currentStep < 5 ? (
           <Button onClick={handleNext}>
-            Next <ArrowRight className="ml-2 h-4 w-4" />
+            Next <ArrowRight className="ms-2 h-4 w-4" />
           </Button>
         ) : (
           <Button onClick={handleFinish} disabled={completed}>
-            <Check className="mr-2 h-4 w-4" /> Complete Setup
+            <Check className="me-2 h-4 w-4" /> Complete Setup
           </Button>
         )}
       </div>

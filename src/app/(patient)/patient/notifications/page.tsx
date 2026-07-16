@@ -230,11 +230,11 @@ export default function PatientNotificationsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setPrefsOpen(true)}>
-            <Settings className="h-4 w-4 mr-1" />
+            <Settings className="h-4 w-4 me-1" />
             Preferences
           </Button>
           <Button variant="outline" size="sm" onClick={markAllRead} disabled={unreadCount === 0}>
-            <CheckCircle2 className="h-4 w-4 mr-1" />
+            <CheckCircle2 className="h-4 w-4 me-1" />
             Mark All Read
           </Button>
         </div>

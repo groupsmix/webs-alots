@@ -1,61 +1,19 @@
-"use client";
-
 import { Download, Pill, FileText, Clock } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
-import { getCurrentUser, fetchPrescriptions, type PrescriptionView } from "@/lib/data/client";
+import { getCurrentUserProfile } from "@/lib/data/current-user";
+import { fetchPatientPrescriptions } from "@/lib/data/prescriptions";
+import { requireTenant } from "@/lib/tenant";
 
 const PRESCRIPTION_PDF_DISABLED_MESSAGE =
   "Prescription PDF downloads are temporarily unavailable in this deployment.";
 
-export default function PatientPrescriptionsPage() {
-  const [patientPrescriptions, setPatientPrescriptions] = useState<PrescriptionView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted) return;
-      if (!user?.clinic_id) {
-        setLoading(false);
-        return;
-      }
-      const rxs = await fetchPrescriptions(user.clinic_id);
-      if (controller.signal.aborted) return;
-      setPatientPrescriptions(rxs.filter((rx) => rx.patientId === user.id));
-      setLoading(false);
-    }
-    load().catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
-      }
-    });
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  if (loading) {
-    return <PageLoader message="Loading prescriptions..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
+export default async function PatientPrescriptionsPage() {
+  const tenant = await requireTenant();
+  const profile = await getCurrentUserProfile(tenant.clinicId);
+  const prescriptions = await fetchPatientPrescriptions(tenant.clinicId, profile.id);
 
   return (
     <div>
@@ -66,7 +24,7 @@ export default function PatientPrescriptionsPage() {
         <div>
           <h1 className="text-2xl font-bold">My Prescriptions</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {patientPrescriptions.length} prescription{patientPrescriptions.length !== 1 ? "s" : ""}
+            {prescriptions.length} prescription{prescriptions.length !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
@@ -75,7 +33,7 @@ export default function PatientPrescriptionsPage() {
         {PRESCRIPTION_PDF_DISABLED_MESSAGE}
       </div>
 
-      {patientPrescriptions.length === 0 ? (
+      {prescriptions.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Pill className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
@@ -84,7 +42,7 @@ export default function PatientPrescriptionsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {patientPrescriptions.map((rx) => (
+          {prescriptions.map((rx) => (
             <Card key={rx.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -101,16 +59,16 @@ export default function PatientPrescriptionsPage() {
                     </Badge>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground ml-10">By {rx.doctorName}</p>
+                <p className="text-sm text-muted-foreground ms-10">By {rx.doctorName}</p>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border p-3 mb-3">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground">
-                        <th className="text-left font-medium pb-2">Medication</th>
-                        <th className="text-left font-medium pb-2">Dosage</th>
-                        <th className="text-left font-medium pb-2">Duration</th>
+                        <th className="text-start font-medium pb-2">Medication</th>
+                        <th className="text-start font-medium pb-2">Dosage</th>
+                        <th className="text-start font-medium pb-2">Duration</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -134,7 +92,7 @@ export default function PatientPrescriptionsPage() {
                   </div>
                 )}
                 <Button variant="outline" size="sm" disabled>
-                  <Download className="h-4 w-4 mr-1" />
+                  <Download className="h-4 w-4 me-1" />
                   PDF unavailable
                 </Button>
               </CardContent>

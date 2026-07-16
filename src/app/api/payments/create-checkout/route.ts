@@ -1,8 +1,9 @@
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { safeFetch } from "@/lib/fetch-wrapper";
 import { logger } from "@/lib/logger";
+import { PAYMENT_STATUS } from "@/lib/types/database";
 import { stripeCheckoutSchema } from "@/lib/validations";
 
 /**
@@ -45,7 +46,7 @@ function validateRedirectUrl(
  */
 export const POST = withAuthValidation(
   stripeCheckoutSchema,
-  async (body, request, { user, profile }) => {
+  async (body, request, { user, profile, supabase }) => {
     const traceId = request.headers.get("x-trace-id") ?? undefined;
     const clinicId = profile.clinic_id;
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -198,6 +199,53 @@ export const POST = withAuthValidation(
         error: session,
       });
       return apiError("Failed to create checkout session");
+    }
+
+    // P2-2: Persist a pending payment record as soon as Stripe confirms the
+    // session. The webhook will upsert by reference (session.id) when the
+    // checkout completes, but having a pending row ensures the payment is
+    // visible and traceable even if the webhook is delayed or fails.
+    let effectivePatientId = patientId;
+    if (!effectivePatientId && appointmentId && clinicId) {
+      const { data: appt } = await supabase
+        .from("appointments")
+        .select("patient_id")
+        .eq("id", appointmentId)
+        .eq("clinic_id", clinicId)
+        .single();
+      if (appt?.patient_id) {
+        effectivePatientId = appt.patient_id;
+      }
+    }
+
+    if (clinicId && effectivePatientId && session.id) {
+      const { error: pendingError } = await supabase.from("payments").insert({
+        clinic_id: clinicId,
+        patient_id: effectivePatientId,
+        appointment_id: appointmentId || null,
+        amount: Math.round(amount) / 100,
+        method: "online",
+        status: PAYMENT_STATUS.PENDING,
+        payment_type: appointmentId ? "appointment" : "full",
+        reference: session.id,
+        gateway_session_id: session.id,
+        refunded_amount: 0,
+      });
+
+      if (pendingError) {
+        logger.error("Failed to persist pending Stripe payment", {
+          context: "payments/create-checkout",
+          alert: "payment_persistence_failure",
+          traceId,
+          clinicId,
+          userId: user.id,
+          sessionId: session.id,
+          appointmentId,
+          patientId: effectivePatientId,
+          error: pendingError,
+        });
+        return apiInternalError("Failed to create checkout session");
+      }
     }
 
     logger.info("Stripe checkout session created", {

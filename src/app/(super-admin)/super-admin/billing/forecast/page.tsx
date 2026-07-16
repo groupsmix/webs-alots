@@ -162,9 +162,9 @@ export default function RevenueForecastPage() {
         </div>
         <Button onClick={handleGenerate} disabled={generating} variant="outline">
           {generating ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            <Loader2 className="h-4 w-4 me-1 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4 mr-1" />
+            <RefreshCw className="h-4 w-4 me-1" />
           )}
           Générer la prévision
         </Button>
@@ -254,31 +254,31 @@ export default function RevenueForecastPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 pr-4 font-medium">Mois</th>
-                        <th className="text-right py-3 px-4 font-medium">MRR prévu</th>
-                        <th className="text-right py-3 px-4 font-medium">ARR prévu</th>
-                        <th className="text-right py-3 px-4 font-medium">Estimation basse</th>
-                        <th className="text-right py-3 px-4 font-medium">Estimation haute</th>
-                        <th className="text-right py-3 pl-4 font-medium">Taux de croissance</th>
+                        <th className="text-start py-3 pe-4 font-medium">Mois</th>
+                        <th className="text-end py-3 px-4 font-medium">MRR prévu</th>
+                        <th className="text-end py-3 px-4 font-medium">ARR prévu</th>
+                        <th className="text-end py-3 px-4 font-medium">Estimation basse</th>
+                        <th className="text-end py-3 px-4 font-medium">Estimation haute</th>
+                        <th className="text-end py-3 ps-4 font-medium">Taux de croissance</th>
                       </tr>
                     </thead>
                     <tbody>
                       {forecasts.map((f) => (
                         <tr key={f.id ?? f.forecast_month} className="border-b last:border-0">
-                          <td className="py-3 pr-4 font-medium">{formatMonth(f.forecast_month)}</td>
-                          <td className="py-3 px-4 text-right font-mono">
+                          <td className="py-3 pe-4 font-medium">{formatMonth(f.forecast_month)}</td>
+                          <td className="py-3 px-4 text-end font-mono">
                             {formatCurrency(f.predicted_mrr)}
                           </td>
-                          <td className="py-3 px-4 text-right font-mono">
+                          <td className="py-3 px-4 text-end font-mono">
                             {formatCurrency(f.predicted_arr)}
                           </td>
-                          <td className="py-3 px-4 text-right font-mono text-muted-foreground">
+                          <td className="py-3 px-4 text-end font-mono text-muted-foreground">
                             {formatCurrency(f.confidence_low)}
                           </td>
-                          <td className="py-3 px-4 text-right font-mono text-muted-foreground">
+                          <td className="py-3 px-4 text-end font-mono text-muted-foreground">
                             {formatCurrency(f.confidence_high)}
                           </td>
-                          <td className="py-3 pl-4 text-right">
+                          <td className="py-3 ps-4 text-end">
                             <span className="text-green-600">
                               +{f.assumptions?.growth_rate ?? 0}%
                             </span>

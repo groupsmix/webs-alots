@@ -47,7 +47,7 @@ export default function PrescriptionUploadPage() {
           Your prescription has been submitted successfully. Our pharmacist will review it shortly
           and notify you via WhatsApp when your medications are ready.
         </p>
-        <div className="bg-muted rounded-lg p-4 mb-6 text-left">
+        <div className="bg-muted rounded-lg p-4 mb-6 text-start">
           <h3 className="font-semibold mb-2">What happens next?</h3>
           <ol className="text-sm text-muted-foreground space-y-2">
             <li className="flex items-start gap-2">
@@ -175,7 +175,7 @@ export default function PrescriptionUploadPage() {
                         );
                       }}
                     >
-                      <Camera className="mr-2 h-4 w-4" />
+                      <Camera className="me-2 h-4 w-4" />
                       Take Photo
                     </Button>
                     <Button
@@ -186,7 +186,7 @@ export default function PrescriptionUploadPage() {
                         );
                       }}
                     >
-                      <Upload className="mr-2 h-4 w-4" />
+                      <Upload className="me-2 h-4 w-4" />
                       Browse Files
                     </Button>
                   </div>
@@ -247,7 +247,7 @@ export default function PrescriptionUploadPage() {
                 <div className="grid grid-cols-2 gap-3 mt-2">
                   <button
                     onClick={() => setFormData({ ...formData, deliveryOption: "pickup" })}
-                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                    className={`p-4 rounded-lg border-2 text-start transition-colors ${
                       formData.deliveryOption === "pickup"
                         ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/10"
                         : "border-muted hover:border-emerald-300"
@@ -259,7 +259,7 @@ export default function PrescriptionUploadPage() {
                   </button>
                   <button
                     onClick={() => setFormData({ ...formData, deliveryOption: "delivery" })}
-                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                    className={`p-4 rounded-lg border-2 text-start transition-colors ${
                       formData.deliveryOption === "delivery"
                         ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/10"
                         : "border-muted hover:border-emerald-300"
@@ -346,11 +346,11 @@ export default function PrescriptionUploadPage() {
                     <Badge variant="outline" className="capitalize">
                       {formData.deliveryOption === "delivery" ? (
                         <>
-                          <Truck className="h-3 w-3 mr-1" /> Delivery
+                          <Truck className="h-3 w-3 me-1" /> Delivery
                         </>
                       ) : (
                         <>
-                          <MapPin className="h-3 w-3 mr-1" /> Pickup
+                          <MapPin className="h-3 w-3 me-1" /> Pickup
                         </>
                       )}
                     </Badge>
@@ -358,7 +358,7 @@ export default function PrescriptionUploadPage() {
                   {formData.deliveryOption === "delivery" && formData.deliveryAddress && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Address</span>
-                      <span className="font-medium text-right max-w-[200px]">
+                      <span className="font-medium text-end max-w-[200px]">
                         {formData.deliveryAddress}
                       </span>
                     </div>
@@ -396,7 +396,7 @@ export default function PrescriptionUploadPage() {
                 Back
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit}>
-                <MessageCircle className="mr-2 h-4 w-4" />
+                <MessageCircle className="me-2 h-4 w-4" />
                 Submit Prescription
               </Button>
             </div>

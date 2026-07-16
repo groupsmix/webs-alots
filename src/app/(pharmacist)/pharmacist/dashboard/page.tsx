@@ -186,7 +186,7 @@ export default function PharmacistDashboardPage() {
           <p className="text-muted-foreground text-sm">Overview of your pharmacy operations</p>
         </div>
         <Badge variant="outline" className="text-emerald-600 border-emerald-600">
-          <Clock className="h-3 w-3 mr-1" />
+          <Clock className="h-3 w-3 me-1" />
           {new Date().toLocaleDateString("en-US", {
             weekday: "long",
             month: "long",
@@ -218,7 +218,7 @@ export default function PharmacistDashboardPage() {
               href="/pharmacist/sales"
               className="text-sm text-emerald-600 hover:underline mt-2 inline-flex items-center"
             >
-              View Sales <ArrowRight className="h-3 w-3 ml-1" />
+              View Sales <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -245,7 +245,7 @@ export default function PharmacistDashboardPage() {
               href="/pharmacist/stock"
               className="text-sm text-emerald-600 hover:underline mt-2 inline-flex items-center"
             >
-              Manage Stock <ArrowRight className="h-3 w-3 ml-1" />
+              Manage Stock <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -268,7 +268,7 @@ export default function PharmacistDashboardPage() {
               href="/pharmacist/prescriptions"
               className="text-sm text-emerald-600 hover:underline mt-2 inline-flex items-center"
             >
-              View Prescriptions <ArrowRight className="h-3 w-3 ml-1" />
+              View Prescriptions <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -291,7 +291,7 @@ export default function PharmacistDashboardPage() {
               href="/pharmacist/prescriptions"
               className="text-sm text-emerald-600 hover:underline mt-2 inline-flex items-center"
             >
-              View Queue <ArrowRight className="h-3 w-3 ml-1" />
+              View Queue <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -637,10 +637,10 @@ export default function PharmacistDashboardPage() {
                               : "bg-emerald-100 text-emerald-700 border-0"
                       }
                     >
-                      {rx.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
-                      {rx.status === "reviewing" && <Eye className="h-3 w-3 mr-1" />}
-                      {rx.status === "partially-ready" && <AlertCircle className="h-3 w-3 mr-1" />}
-                      {rx.status === "ready" && <Check className="h-3 w-3 mr-1" />}
+                      {rx.status === "pending" && <Clock className="h-3 w-3 me-1" />}
+                      {rx.status === "reviewing" && <Eye className="h-3 w-3 me-1" />}
+                      {rx.status === "partially-ready" && <AlertCircle className="h-3 w-3 me-1" />}
+                      {rx.status === "ready" && <Check className="h-3 w-3 me-1" />}
                       {rx.status.replace("-", " ")}
                     </Badge>
                   </div>
@@ -676,7 +676,7 @@ export default function PharmacistDashboardPage() {
                       {sale.time} - {sale.items.map((i) => i.productName).join(", ")}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="font-semibold text-sm">{formatCurrency(sale.total)}</p>
                     <Badge variant="outline" className="text-xs capitalize">
                       {sale.paymentMethod}
@@ -715,7 +715,7 @@ export default function PharmacistDashboardPage() {
                       {order.expectedDelivery}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="font-semibold text-sm">
                       {formatCurrency(
                         order.totalAmount,

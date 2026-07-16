@@ -137,12 +137,12 @@ export default function SubProcessorsPage() {
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left p-3 font-semibold">Sous-traitant</th>
-              <th className="text-left p-3 font-semibold">Données traitées</th>
-              <th className="text-left p-3 font-semibold">Région</th>
-              <th className="text-left p-3 font-semibold">Base de transfert</th>
-              <th className="text-left p-3 font-semibold">Certification</th>
-              <th className="text-left p-3 font-semibold">DPA</th>
+              <th className="text-start p-3 font-semibold">Sous-traitant</th>
+              <th className="text-start p-3 font-semibold">Données traitées</th>
+              <th className="text-start p-3 font-semibold">Région</th>
+              <th className="text-start p-3 font-semibold">Base de transfert</th>
+              <th className="text-start p-3 font-semibold">Certification</th>
+              <th className="text-start p-3 font-semibold">DPA</th>
             </tr>
           </thead>
           <tbody className="divide-y">

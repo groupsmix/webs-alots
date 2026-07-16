@@ -94,7 +94,7 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by material or supplier..."
-            className="pl-10"
+            className="ps-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -128,14 +128,14 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="text-left py-2.5 px-3">Type</th>
-                    <th className="text-left py-2.5 px-3">Material</th>
-                    <th className="text-left py-2.5 px-3">Coating</th>
-                    <th className="text-left py-2.5 px-3">Power Range</th>
-                    <th className="text-right py-2.5 px-3">Stock</th>
-                    <th className="text-right py-2.5 px-3">Cost</th>
-                    <th className="text-right py-2.5 px-3">Price</th>
-                    <th className="text-left py-2.5 px-3">Supplier</th>
+                    <th className="text-start py-2.5 px-3">Type</th>
+                    <th className="text-start py-2.5 px-3">Material</th>
+                    <th className="text-start py-2.5 px-3">Coating</th>
+                    <th className="text-start py-2.5 px-3">Power Range</th>
+                    <th className="text-end py-2.5 px-3">Stock</th>
+                    <th className="text-end py-2.5 px-3">Cost</th>
+                    <th className="text-end py-2.5 px-3">Price</th>
+                    <th className="text-start py-2.5 px-3">Supplier</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -154,18 +154,18 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
                         <td className="py-2.5 px-3 font-medium">{item.material}</td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.coating ?? "—"}</td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.power_range}</td>
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-2.5 px-3 text-end">
                           <span className={isLow ? "text-orange-600 font-medium" : ""}>
                             {item.stock_quantity}
                           </span>
                           {isLow && (
-                            <AlertTriangle className="h-3 w-3 text-orange-600 inline ml-1" />
+                            <AlertTriangle className="h-3 w-3 text-orange-600 inline ms-1" />
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-muted-foreground">
+                        <td className="py-2.5 px-3 text-end text-muted-foreground">
                           {formatCurrency(item.unit_cost)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-medium">
+                        <td className="py-2.5 px-3 text-end font-medium">
                           {formatCurrency(item.selling_price)}
                         </td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.supplier}</td>

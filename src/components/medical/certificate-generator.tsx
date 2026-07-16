@@ -190,7 +190,7 @@ export function CertificateGenerator({
         <div />
         {onCreateCertificate && (
           <Button size="sm" onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             New Certificate
           </Button>
         )}
@@ -226,7 +226,7 @@ export function CertificateGenerator({
                         size="sm"
                         onClick={() => generateCertificateSVG(cert)}
                       >
-                        <Download className="h-3.5 w-3.5 mr-1" />
+                        <Download className="h-3.5 w-3.5 me-1" />
                         Download
                       </Button>
                       <Button
@@ -234,7 +234,7 @@ export function CertificateGenerator({
                         size="sm"
                         onClick={() => printCertificate(cert, clinic)}
                       >
-                        <Printer className="h-3.5 w-3.5 mr-1" />
+                        <Printer className="h-3.5 w-3.5 me-1" />
                         Print
                       </Button>
                     </div>
