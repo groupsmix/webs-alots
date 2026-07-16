@@ -1,37 +1,16 @@
-"use client";
-
 import { AlertTriangle, MessageSquare, Send } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getCurrentUser } from "@/lib/data/client";
-import {
-  fetchNotificationDashboardData,
-  type NotificationDashboardData,
-} from "@/lib/data/client/notification-dashboard";
+import { fetchNotificationDashboardData } from "@/lib/data/notification-dashboard";
+import { requireTenant } from "@/lib/tenant";
 
-export default function AdminNotificationsPage() {
-  const [data, setData] = useState<NotificationDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      const user = await getCurrentUser();
-      if (user?.clinic_id) {
-        const dashboardData = await fetchNotificationDashboardData(user.clinic_id);
-        setData(dashboardData);
-      }
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  if (loading) return <div className="p-8">Loading...</div>;
-  if (!data) return <div className="p-8 text-red-500">Failed to load notification data.</div>;
-
-  const { templates, recentLogs, queueStatus } = data;
+export default async function AdminNotificationsPage() {
+  const tenant = await requireTenant();
+  const { templates, recentLogs, queueStatus } = await fetchNotificationDashboardData(
+    tenant.clinicId,
+  );
 
   return (
     <div className="space-y-6">
