@@ -264,7 +264,7 @@ export function TVQueueDisplay({
           >
             <Maximize className="h-5 w-5" />
           </button>
-          <div className={isRTL ? "text-left" : "text-right"}>
+          <div className={isRTL ? "text-start" : "text-end"}>
             <p className="text-3xl font-mono font-bold">
               {time.toLocaleTimeString(locale === "ar" ? "ar-MA" : "fr-MA", {
                 hour: "2-digit",

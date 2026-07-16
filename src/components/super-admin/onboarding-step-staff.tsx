@@ -123,19 +123,19 @@ export function OnboardingStepStaff({
         ))}
 
         <Button variant="outline" onClick={onAddUser}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           Add Another Staff Member
         </Button>
 
         <div className="flex justify-between pt-4">
           <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 me-1" />
             Back
           </Button>
           <Button onClick={onSubmit} disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
             Save Staff & Continue
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-4 w-4 ms-1" />
           </Button>
         </div>
       </CardContent>

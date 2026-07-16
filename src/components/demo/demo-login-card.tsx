@@ -167,7 +167,7 @@ export function DemoLoginCard() {
           type="button"
           onClick={() => handleDemoLogin()}
           disabled={loading}
-          className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors ${PATIENT_DEMO.color} disabled:opacity-50`}
+          className={`flex w-full items-center gap-4 rounded-xl border p-4 text-start transition-colors ${PATIENT_DEMO.color} disabled:opacity-50`}
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/80">
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}

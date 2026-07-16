@@ -129,7 +129,7 @@ export default function DoctorSchedulePage() {
                     <p className="text-sm font-medium">{apt.patientName}</p>
                     <p className="text-xs text-muted-foreground">{apt.serviceName}</p>
                   </div>
-                  <div className="text-right flex items-center gap-2">
+                  <div className="text-end flex items-center gap-2">
                     <div>
                       <p className="text-sm">{apt.date}</p>
                       <p className="text-xs text-muted-foreground">{apt.time}</p>

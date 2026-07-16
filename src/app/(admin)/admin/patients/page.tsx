@@ -320,7 +320,7 @@ export default function AdminPatientDatabasePage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => exportPatients(filtered)}>
-            <Download className="h-4 w-4 mr-1" />
+            <Download className="h-4 w-4 me-1" />
             Export CSV
           </Button>
           <Button
@@ -330,7 +330,7 @@ export default function AdminPatientDatabasePage() {
               setAdding(true);
             }}
           >
-            <UserPlus className="h-4 w-4 mr-1" />
+            <UserPlus className="h-4 w-4 me-1" />
             {t(locale, "admin.patients.add")}
           </Button>
         </div>
@@ -342,7 +342,7 @@ export default function AdminPatientDatabasePage() {
           placeholder="Search by name, phone, or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
+          className="ps-10"
         />
       </div>
 
@@ -640,7 +640,7 @@ export default function AdminPatientDatabasePage() {
               Cancel
             </Button>
             <Button onClick={handleSaveEdit} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -723,7 +723,7 @@ export default function AdminPatientDatabasePage() {
               onClick={handleCreate}
               disabled={creating || !addName.trim() || !addPhone.trim()}
             >
-              {creating && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {creating && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
               {t(locale, "admin.patients.add")}
             </Button>
           </DialogFooter>

@@ -129,21 +129,21 @@ export function ProductDetailModal({
               rel="noopener noreferrer"
               className="flex-1 inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors"
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
+              <MessageCircle className="h-4 w-4 me-2" />
               Order via WhatsApp
             </a>
             <a
               href={`tel:${clinicPhone.replace(/\s+/g, "")}`}
               className="flex-1 inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
             >
-              <Phone className="h-4 w-4 mr-2" />
+              <Phone className="h-4 w-4 me-2" />
               Call
             </a>
           </div>
 
           {/* Close button for mobile */}
           <Button variant="ghost" className="w-full sm:hidden" onClick={onClose}>
-            <X className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 me-2" />
             Close
           </Button>
         </div>

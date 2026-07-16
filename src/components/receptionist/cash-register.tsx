@@ -130,12 +130,12 @@ export function CashRegister({ onPaymentRecorded }: CashRegisterProps) {
           >
             {success ? (
               <>
-                <Check className="h-4 w-4 mr-1" />
+                <Check className="h-4 w-4 me-1" />
                 Payment Recorded!
               </>
             ) : (
               <>
-                <CreditCard className="h-4 w-4 mr-1" />
+                <CreditCard className="h-4 w-4 me-1" />
                 Record Payment
               </>
             )}

@@ -165,11 +165,11 @@ export default function TemplatesPage() {
       <Tabs defaultValue="presets">
         <TabsList className="mb-6">
           <TabsTrigger value="presets">
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="h-4 w-4 me-2" />
             Presets
           </TabsTrigger>
           <TabsTrigger value="templates">
-            <Layout className="h-4 w-4 mr-2" />
+            <Layout className="h-4 w-4 me-2" />
             Base Templates
           </TabsTrigger>
         </TabsList>
@@ -227,7 +227,7 @@ export default function TemplatesPage() {
                             className="h-6 w-6 rounded-full border"
                             style={{ backgroundColor: preset.theme.accentColor }}
                           />
-                          <span className="text-xs text-muted-foreground ml-auto">
+                          <span className="text-xs text-muted-foreground ms-auto">
                             {preset.templateId}
                           </span>
                         </div>
@@ -243,7 +243,7 @@ export default function TemplatesPage() {
                           className="flex-1"
                           onClick={() => setPreviewPreset(preset)}
                         >
-                          <Eye className="h-3.5 w-3.5 mr-1" />
+                          <Eye className="h-3.5 w-3.5 me-1" />
                           Preview
                         </Button>
                         <Button
@@ -254,17 +254,17 @@ export default function TemplatesPage() {
                         >
                           {justApplied ? (
                             <>
-                              <Check className="h-3.5 w-3.5 mr-1" />
+                              <Check className="h-3.5 w-3.5 me-1" />
                               Applied!
                             </>
                           ) : isApplying ? (
                             <>
-                              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                              <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" />
                               Applying...
                             </>
                           ) : (
                             <>
-                              <Wand2 className="h-3.5 w-3.5 mr-1" />
+                              <Wand2 className="h-3.5 w-3.5 me-1" />
                               Apply
                             </>
                           )}
@@ -272,7 +272,7 @@ export default function TemplatesPage() {
                       </div>
                       <a href={`/admin/branding?preset=${preset.id}`} className="mt-2 block">
                         <Button variant="ghost" size="sm" className="w-full text-xs">
-                          <Palette className="h-3.5 w-3.5 mr-1" />
+                          <Palette className="h-3.5 w-3.5 me-1" />
                           Customize
                         </Button>
                       </a>
@@ -296,7 +296,7 @@ export default function TemplatesPage() {
             </p>
             <a href="/admin/branding">
               <Button variant="outline">
-                <Palette className="h-4 w-4 mr-2" />
+                <Palette className="h-4 w-4 me-2" />
                 Open Branding Editor
               </Button>
             </a>
@@ -307,7 +307,7 @@ export default function TemplatesPage() {
         <TabsContent value="templates">
           <div className="flex justify-end mb-4">
             <Button onClick={handleSave} disabled={saving || !hasChanges}>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 me-2" />
               {saving ? "Saving..." : hasChanges ? "Save Template" : "Saved"}
             </Button>
           </div>
@@ -487,7 +487,7 @@ export default function TemplatesPage() {
                   setPreviewPreset(null);
                 }}
               >
-                <Wand2 className="h-4 w-4 mr-2" />
+                <Wand2 className="h-4 w-4 me-2" />
                 Apply Preset
               </Button>
             </div>

@@ -62,11 +62,11 @@ export default async function DentistHomePage() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/book" className={linkBtnPrimary}>
-                  <CalendarCheck className="mr-2 h-4 w-4" />
+                  <CalendarCheck className="me-2 h-4 w-4" />
                   Book Appointment
                 </Link>
                 <Link href="/dentist/services" className={linkBtnOutline}>
-                  <Smile className="mr-2 h-4 w-4" />
+                  <Smile className="me-2 h-4 w-4" />
                   Our Services
                 </Link>
               </div>
@@ -106,7 +106,7 @@ export default async function DentistHomePage() {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold">Dental Services</h2>
             <Link href="/dentist/services" className={linkBtnOutline}>
-              All Services <ArrowRight className="ml-2 h-4 w-4" />
+              All Services <ArrowRight className="ms-2 h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -130,7 +130,7 @@ export default async function DentistHomePage() {
                     )}
                     {service.duration > 0 && (
                       <span className="text-muted-foreground">
-                        <Clock className="h-3 w-3 inline mr-1" />
+                        <Clock className="h-3 w-3 inline me-1" />
                         {service.duration} min
                       </span>
                     )}
@@ -151,7 +151,7 @@ export default async function DentistHomePage() {
             treatments.
           </p>
           <Link href="/dentist/gallery" className={linkBtnPrimary}>
-            View Gallery <ArrowRight className="ml-2 h-4 w-4" />
+            View Gallery <ArrowRight className="ms-2 h-4 w-4" />
           </Link>
         </div>
       </section>
@@ -211,7 +211,7 @@ export default async function DentistHomePage() {
                 href={`tel:${branding.phone}`}
                 className="inline-flex items-center justify-center rounded-lg bg-red-600 text-white px-6 py-2.5 text-sm font-medium hover:bg-red-700 transition-colors"
               >
-                <Phone className="mr-2 h-4 w-4" />
+                <Phone className="me-2 h-4 w-4" />
                 Call Now: {branding.phone}
               </a>
             )}
@@ -219,7 +219,7 @@ export default async function DentistHomePage() {
               href="/book"
               className="inline-flex items-center justify-center rounded-lg border border-red-300 text-red-600 px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
             >
-              <MapPin className="mr-2 h-4 w-4" />
+              <MapPin className="me-2 h-4 w-4" />
               Find Us
             </Link>
           </div>

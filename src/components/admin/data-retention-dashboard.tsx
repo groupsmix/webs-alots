@@ -99,7 +99,7 @@ export function DataRetentionDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
-        <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+        <RefreshCw className="h-5 w-5 animate-spin me-2" />
         Chargement...
       </div>
     );
@@ -172,11 +172,11 @@ export function DataRetentionDashboard() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="px-4 py-3 text-left font-medium">Table</th>
-                <th className="px-4 py-3 text-left font-medium">Archivés</th>
-                <th className="px-4 py-3 text-left font-medium">En attente</th>
-                <th className="px-4 py-3 text-left font-medium">Supprimés</th>
-                <th className="px-4 py-3 text-left font-medium">Conservation</th>
+                <th className="px-4 py-3 text-start font-medium">Table</th>
+                <th className="px-4 py-3 text-start font-medium">Archivés</th>
+                <th className="px-4 py-3 text-start font-medium">En attente</th>
+                <th className="px-4 py-3 text-start font-medium">Supprimés</th>
+                <th className="px-4 py-3 text-start font-medium">Conservation</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -227,10 +227,10 @@ export function DataRetentionDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="px-4 py-3 text-left font-medium">Type</th>
-                  <th className="px-4 py-3 text-left font-medium">ID source</th>
-                  <th className="px-4 py-3 text-left font-medium">Date d&apos;archivage</th>
-                  <th className="px-4 py-3 text-left font-medium">Expire dans</th>
+                  <th className="px-4 py-3 text-start font-medium">Type</th>
+                  <th className="px-4 py-3 text-start font-medium">ID source</th>
+                  <th className="px-4 py-3 text-start font-medium">Date d&apos;archivage</th>
+                  <th className="px-4 py-3 text-start font-medium">Expire dans</th>
                 </tr>
               </thead>
               <tbody className="divide-y">

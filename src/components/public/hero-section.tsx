@@ -22,7 +22,7 @@ export function HeroSection({ overrides }: HeroSectionProps) {
     <section className="relative bg-gradient-to-br from-primary/5 to-primary/10 py-24">
       <div className="container mx-auto px-4">
         <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-start">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               {cfg.title}
             </h1>

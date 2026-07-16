@@ -118,7 +118,7 @@ export default function AdminHolidaysPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        <Loader2 className="h-5 w-5 animate-spin me-2" />
         Loading holidays...
       </div>
     );
@@ -139,7 +139,7 @@ export default function AdminHolidaysPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Holidays & Closures</h1>
         <Button size="sm" onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           Add Holiday
         </Button>
       </div>
@@ -186,7 +186,7 @@ export default function AdminHolidaysPage() {
                 <Button
                   onClick={addHoliday}
                   disabled={saving || !newName.trim() || !newDate}
-                  className="ml-auto"
+                  className="ms-auto"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
                 </Button>

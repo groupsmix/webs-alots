@@ -133,7 +133,7 @@ export default function ReviewManagementPage() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
                   <Button variant="outline" size="sm" className="mt-3">
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    <MessageSquare className="h-3.5 w-3.5 me-1" />
                     Reply
                   </Button>
                 </div>

@@ -170,7 +170,7 @@ export default function PatientFeedbackPage() {
                       </button>
                     ))}
                     {rating > 0 && (
-                      <span className="ml-2 text-sm text-muted-foreground self-center">
+                      <span className="ms-2 text-sm text-muted-foreground self-center">
                         {rating}/5
                       </span>
                     )}
@@ -192,7 +192,7 @@ export default function PatientFeedbackPage() {
                   onClick={handleSubmit}
                   disabled={!selectedDoctor || rating === 0 || submitting}
                 >
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="h-4 w-4 me-2" />
                   {submitting ? "Submitting..." : "Submit Feedback"}
                 </Button>
               </div>

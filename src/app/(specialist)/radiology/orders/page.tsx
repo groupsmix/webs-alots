@@ -188,7 +188,7 @@ export default function RadiologyOrdersPage() {
           <Dialog open={newOrderOpen} onOpenChange={setNewOrderOpen}>
             <DialogTrigger asChild>
               <Button disabled title={RADIOLOGY_ACTIONS_DISABLED_MESSAGE}>
-                <Plus className="h-4 w-4 mr-2" /> New Order
+                <Plus className="h-4 w-4 me-2" /> New Order
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
@@ -301,7 +301,7 @@ export default function RadiologyOrdersPage() {
             placeholder="Search by patient, order number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -442,7 +442,7 @@ export default function RadiologyOrdersPage() {
                         disabled
                         title={RADIOLOGY_ACTIONS_DISABLED_MESSAGE}
                       >
-                        <FileText className="h-3 w-3 mr-1" /> Write Report
+                        <FileText className="h-3 w-3 me-1" /> Write Report
                       </Button>
                     )}
                     {(order.status === "reported" || order.status === "validated") &&

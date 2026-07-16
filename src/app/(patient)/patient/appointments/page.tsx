@@ -147,7 +147,7 @@ export default function PatientAppointmentsPage() {
         </div>
         <Link href="/book">
           <Button>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             Book New
           </Button>
         </Link>
@@ -171,7 +171,7 @@ export default function PatientAppointmentsPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto"
+            className="ms-auto"
             aria-label="Dismiss"
             onClick={() => setCancelError(null)}
           >
@@ -186,7 +186,7 @@ export default function PatientAppointmentsPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto"
+            className="ms-auto"
             aria-label="Dismiss"
             onClick={() => setCancelSuccess(null)}
           >
@@ -222,13 +222,13 @@ export default function PatientAppointmentsPage() {
                       <p className="font-medium">{appt.serviceName}</p>
                       {appt.isEmergency && (
                         <Badge variant="destructive" className="text-xs">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          <AlertTriangle className="h-3 w-3 me-1" />
                           Emergency
                         </Badge>
                       )}
                       {appt.recurrenceGroupId && (
                         <Badge variant="outline" className="text-xs">
-                          <Repeat className="h-3 w-3 mr-1" />
+                          <Repeat className="h-3 w-3 me-1" />
                           {appt.recurrencePattern}
                         </Badge>
                       )}
@@ -265,7 +265,7 @@ export default function PatientAppointmentsPage() {
                       size="sm"
                       onClick={() => setRescheduleApptId(appt.id)}
                     >
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      <RefreshCw className="h-3.5 w-3.5 me-1" />
                       Reschedule
                     </Button>
                     <Button
@@ -275,7 +275,7 @@ export default function PatientAppointmentsPage() {
                       onClick={() => handleCancel(appt.id)}
                       disabled={cancellingId === appt.id}
                     >
-                      <X className="h-3.5 w-3.5 mr-1" />
+                      <X className="h-3.5 w-3.5 me-1" />
                       {cancellingId === appt.id ? "Cancelling..." : "Cancel"}
                     </Button>
                   </div>

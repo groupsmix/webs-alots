@@ -46,7 +46,7 @@ export function BlogSearch({ posts, categories }: BlogSearchProps) {
         <Input
           type="search"
           placeholder="Rechercher un article..."
-          className="pl-10"
+          className="ps-10"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -94,7 +94,7 @@ export function BlogSearch({ posts, categories }: BlogSearchProps) {
                 <CardHeader>
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <Badge variant="secondary">
-                      <Tag className="h-3 w-3 mr-1" />
+                      <Tag className="h-3 w-3 me-1" />
                       {BLOG_CATEGORIES[post.category]}
                     </Badge>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">

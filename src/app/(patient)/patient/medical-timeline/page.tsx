@@ -141,7 +141,7 @@ export default async function MedicalTimelinePage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="relative space-y-4 pl-6 before:absolute before:left-2 before:top-0 before:h-full before:w-0.5 before:bg-border">
+        <div className="relative space-y-4 ps-6 before:absolute before:left-2 before:top-0 before:h-full before:w-0.5 before:bg-border">
           {timeline.map((event) => (
             <div key={event.id} className="relative">
               <div className="absolute -left-4 top-1 h-3 w-3 rounded-full border-2 border-background bg-primary" />

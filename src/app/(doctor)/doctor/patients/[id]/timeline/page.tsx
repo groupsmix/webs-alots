@@ -140,7 +140,7 @@ export default function PatientTimelinePage() {
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
-          <Button variant="outline" size="sm" className="ml-3" onClick={loadTimeline}>
+          <Button variant="outline" size="sm" className="ms-3" onClick={loadTimeline}>
             Réessayer
           </Button>
         </div>

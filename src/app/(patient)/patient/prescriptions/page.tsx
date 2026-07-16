@@ -101,16 +101,16 @@ export default function PatientPrescriptionsPage() {
                     </Badge>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground ml-10">By {rx.doctorName}</p>
+                <p className="text-sm text-muted-foreground ms-10">By {rx.doctorName}</p>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border p-3 mb-3">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-muted-foreground">
-                        <th className="text-left font-medium pb-2">Medication</th>
-                        <th className="text-left font-medium pb-2">Dosage</th>
-                        <th className="text-left font-medium pb-2">Duration</th>
+                        <th className="text-start font-medium pb-2">Medication</th>
+                        <th className="text-start font-medium pb-2">Dosage</th>
+                        <th className="text-start font-medium pb-2">Duration</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -134,7 +134,7 @@ export default function PatientPrescriptionsPage() {
                   </div>
                 )}
                 <Button variant="outline" size="sm" disabled>
-                  <Download className="h-4 w-4 mr-1" />
+                  <Download className="h-4 w-4 me-1" />
                   PDF unavailable
                 </Button>
               </CardContent>

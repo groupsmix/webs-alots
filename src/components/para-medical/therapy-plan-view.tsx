@@ -176,7 +176,7 @@ export function TherapyPlanView({
                                       {ms.description}
                                     </span>
                                     {ms.target_date && (
-                                      <span className="text-[10px] text-muted-foreground ml-auto">
+                                      <span className="text-[10px] text-muted-foreground ms-auto">
                                         {ms.target_date}
                                       </span>
                                     )}

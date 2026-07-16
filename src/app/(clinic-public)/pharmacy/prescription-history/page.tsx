@@ -275,7 +275,7 @@ export default function PrescriptionHistoryPage() {
                       )}
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-end">
                       {rx.totalPrice > 0 && (
                         <p className="text-lg font-bold text-emerald-600">
                           {rx.totalPrice} {rx.currency}
@@ -284,11 +284,11 @@ export default function PrescriptionHistoryPage() {
                       <Badge variant="outline" className="mt-1 capitalize text-xs">
                         {rx.deliveryOption === "delivery" ? (
                           <>
-                            <Truck className="h-3 w-3 mr-1" /> Delivery
+                            <Truck className="h-3 w-3 me-1" /> Delivery
                           </>
                         ) : (
                           <>
-                            <Package className="h-3 w-3 mr-1" /> Pickup
+                            <Package className="h-3 w-3 me-1" /> Pickup
                           </>
                         )}
                       </Badge>

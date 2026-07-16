@@ -75,7 +75,7 @@ export const WithIcon: Story = {
   args: { children: "Envoyer" },
   render: (args) => (
     <Button {...args}>
-      <Mail className="mr-2 h-4 w-4" />
+      <Mail className="me-2 h-4 w-4" />
       {args.children}
     </Button>
   ),
@@ -94,7 +94,7 @@ export const Loading: Story = {
   args: { disabled: true, children: "Chargement..." },
   render: (args) => (
     <Button {...args}>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      <Loader2 className="me-2 h-4 w-4 animate-spin" />
       {args.children}
     </Button>
   ),
@@ -105,7 +105,7 @@ export const WithTrailingIcon: Story = {
   render: (args) => (
     <Button {...args}>
       {args.children}
-      <ChevronRight className="ml-2 h-4 w-4" />
+      <ChevronRight className="ms-2 h-4 w-4" />
     </Button>
   ),
 };

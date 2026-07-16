@@ -202,7 +202,7 @@ export default function ManageReceptionistsPage() {
           </p>
         </div>
         <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           Add Receptionist
         </Button>
       </div>
@@ -310,7 +310,7 @@ export default function ManageReceptionistsPage() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
               {editing ? "Save Changes" : "Add Receptionist"}
             </Button>
           </DialogFooter>

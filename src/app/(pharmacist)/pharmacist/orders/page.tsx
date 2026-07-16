@@ -100,7 +100,7 @@ export default function OrdersPage() {
           <p className="text-muted-foreground text-sm">Order from suppliers and track deliveries</p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-2 h-4 w-4" /> New Order
+          <Plus className="me-2 h-4 w-4" /> New Order
         </Button>
       </div>
 
@@ -192,9 +192,9 @@ export default function OrdersPage() {
                     <div className="bg-muted/50 rounded-lg p-3">
                       <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium mb-2 px-1">
                         <span>Product</span>
-                        <span className="text-right">Qty</span>
-                        <span className="text-right">Unit Price</span>
-                        <span className="text-right">Total</span>
+                        <span className="text-end">Qty</span>
+                        <span className="text-end">Unit Price</span>
+                        <span className="text-end">Total</span>
                       </div>
                       {order.items.map((item, idx) => (
                         <div
@@ -202,9 +202,9 @@ export default function OrdersPage() {
                           className="grid grid-cols-4 gap-2 text-sm py-1.5 px-1 border-t border-muted"
                         >
                           <span>{item.productName}</span>
-                          <span className="text-right">{item.quantity}</span>
-                          <span className="text-right">{formatCurrency(item.unitPrice)}</span>
-                          <span className="text-right font-medium">
+                          <span className="text-end">{item.quantity}</span>
+                          <span className="text-end">{formatCurrency(item.unitPrice)}</span>
+                          <span className="text-end font-medium">
                             {formatCurrency(
                               item.quantity * item.unitPrice,
                               typeof locale !== "undefined" ? locale : "fr",
@@ -224,7 +224,7 @@ export default function OrdersPage() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2 min-w-[160px]">
-                    <div className="text-right mb-2">
+                    <div className="text-end mb-2">
                       <p className="text-2xl font-bold text-emerald-600">
                         {formatCurrency(
                           order.totalAmount,
@@ -238,12 +238,12 @@ export default function OrdersPage() {
                     </div>
                     {order.status === "draft" && (
                       <Button className="bg-blue-600 hover:bg-blue-700 w-full">
-                        <Send className="mr-2 h-4 w-4" /> Send to Supplier
+                        <Send className="me-2 h-4 w-4" /> Send to Supplier
                       </Button>
                     )}
                     {order.status === "shipped" && (
                       <Button className="bg-emerald-600 hover:bg-emerald-700 w-full">
-                        <Package className="mr-2 h-4 w-4" /> Mark Delivered
+                        <Package className="me-2 h-4 w-4" /> Mark Delivered
                       </Button>
                     )}
                     {order.status === "delivered" && order.deliveredAt && (

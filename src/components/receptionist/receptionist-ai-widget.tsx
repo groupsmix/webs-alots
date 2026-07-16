@@ -259,7 +259,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             className="h-7 text-xs"
             onClick={() => setActiveTab("schedule")}
           >
-            <TrendingUp className="h-3 w-3 mr-1" />
+            <TrendingUp className="h-3 w-3 me-1" />
             Aperçu
           </Button>
           <Button
@@ -268,10 +268,10 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             className="h-7 text-xs"
             onClick={() => setActiveTab("waitlist")}
           >
-            <ListOrdered className="h-3 w-3 mr-1" />
+            <ListOrdered className="h-3 w-3 me-1" />
             Liste d&apos;attente
             {waitlistEntries.length > 0 && (
-              <Badge variant="secondary" className="ml-1 h-4 text-[10px]">
+              <Badge variant="secondary" className="ms-1 h-4 text-[10px]">
                 {waitlistEntries.length}
               </Badge>
             )}
@@ -282,10 +282,10 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             className="h-7 text-xs"
             onClick={() => setActiveTab("noshow")}
           >
-            <UserX className="h-3 w-3 mr-1" />
+            <UserX className="h-3 w-3 me-1" />
             Absences
             {noShowAlerts.length > 0 && (
-              <Badge variant="destructive" className="ml-1 h-4 text-[10px]">
+              <Badge variant="destructive" className="ms-1 h-4 text-[10px]">
                 {noShowAlerts.length}
               </Badge>
             )}
@@ -296,7 +296,7 @@ export function ReceptionistAIWidget({ clinicId }: ReceptionistAIWidgetProps) {
             className="h-7 text-xs"
             onClick={() => setActiveTab("reminders")}
           >
-            <Bell className="h-3 w-3 mr-1" />
+            <Bell className="h-3 w-3 me-1" />
             Rappels
           </Button>
         </div>

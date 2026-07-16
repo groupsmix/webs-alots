@@ -91,7 +91,7 @@ export default async function TestimonialsPage() {
               <div className="flex-1 space-y-2 w-full">
                 {ratingDistribution.map((dist) => (
                   <div key={dist.stars} className="flex items-center gap-2 text-sm">
-                    <span className="w-8 text-right">
+                    <span className="w-8 text-end">
                       {dist.stars}{" "}
                       <Star
                         aria-hidden="true"
@@ -144,7 +144,7 @@ export default async function TestimonialsPage() {
               <CardContent>
                 <div className="relative">
                   <Quote className="h-6 w-6 text-primary/20 absolute -top-1 -left-1" />
-                  <p className="text-sm text-muted-foreground pl-4 italic">{review.comment}</p>
+                  <p className="text-sm text-muted-foreground ps-4 italic">{review.comment}</p>
                 </div>
               </CardContent>
             </Card>
@@ -156,7 +156,7 @@ export default async function TestimonialsPage() {
       <div className="text-center mt-12">
         <p className="text-muted-foreground mb-4">{t(locale, "testimonials.ctaText")}</p>
         <Link href="/book" className={buttonVariants({ size: "lg" })}>
-          <Calendar className="h-4 w-4 mr-2" />
+          <Calendar className="h-4 w-4 me-2" />
           {t(locale, "testimonials.ctaButton")}
         </Link>
       </div>

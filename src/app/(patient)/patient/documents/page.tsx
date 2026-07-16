@@ -216,7 +216,7 @@ export default function PatientDocumentsPage() {
           <p className="text-sm text-muted-foreground mt-1">{documents.length} documents</p>
         </div>
         <Button onClick={() => setUploadOpen(true)}>
-          <Upload className="h-4 w-4 mr-1" />
+          <Upload className="h-4 w-4 me-1" />
           Upload Document
         </Button>
       </div>
@@ -235,7 +235,7 @@ export default function PatientDocumentsPage() {
       <Tabs defaultValue="all" className="mb-6">
         <TabsList>
           <TabsTrigger value="all" onClick={() => setFilter("all")}>
-            <Filter className="h-3 w-3 mr-1" />
+            <Filter className="h-3 w-3 me-1" />
             All ({documents.length})
           </TabsTrigger>
           <TabsTrigger value="analysis" onClick={() => setFilter("analysis")}>
@@ -394,7 +394,7 @@ export default function PatientDocumentsPage() {
               disabled={deleting}
               onClick={() => deleteId && handleDelete(deleteId)}
             >
-              <Trash2 className="h-4 w-4 mr-1" />
+              <Trash2 className="h-4 w-4 me-1" />
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           </div>

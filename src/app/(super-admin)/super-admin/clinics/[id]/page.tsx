@@ -352,7 +352,7 @@ export default function ClinicDetailPage() {
             </div>
             {clinic.subdomain && (
               <p className="text-sm text-muted-foreground mt-0.5">
-                <Globe className="inline h-3.5 w-3.5 mr-1" />
+                <Globe className="inline h-3.5 w-3.5 me-1" />
                 {clinic.subdomain}.oltigo.com
               </p>
             )}
@@ -361,9 +361,9 @@ export default function ClinicDetailPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled={impersonating} onClick={handleImpersonate}>
             {impersonating ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="h-4 w-4 me-1 animate-spin" />
             ) : (
-              <LogIn className="h-4 w-4 mr-1" />
+              <LogIn className="h-4 w-4 me-1" />
             )}
             Impersonate
           </Button>
@@ -373,21 +373,21 @@ export default function ClinicDetailPage() {
             disabled={actionLoading}
             onClick={handleToggleStatus}
           >
-            {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            {actionLoading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
             {clinic.status === "suspended" ? (
               <>
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4 me-1" />
                 Activate
               </>
             ) : (
               <>
-                <Ban className="h-4 w-4 mr-1" />
+                <Ban className="h-4 w-4 me-1" />
                 Suspend
               </>
             )}
           </Button>
           <Button variant="outline" size="sm" onClick={openEditDialog}>
-            <Pencil className="h-4 w-4 mr-1" />
+            <Pencil className="h-4 w-4 me-1" />
             Edit
           </Button>
         </div>
@@ -540,7 +540,7 @@ export default function ClinicDetailPage() {
                         key={feature.id}
                         className="flex items-center justify-between rounded-lg border p-3"
                       >
-                        <div className="flex-1 mr-4">
+                        <div className="flex-1 me-4">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">{feature.name}</p>
                             <Badge variant="outline" className="text-[10px] capitalize">
@@ -648,7 +648,7 @@ export default function ClinicDetailPage() {
               Cancel
             </Button>
             <Button onClick={handleSaveEdit} disabled={savingEdit}>
-              {savingEdit && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {savingEdit && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
               Save
             </Button>
           </DialogFooter>

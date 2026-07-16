@@ -310,21 +310,21 @@ export default function BillingPage() {
               aria-label={isExporting ? "Export en cours…" : "Exporter"}
             >
               {isExporting ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <Loader2 className="h-4 w-4 me-1 animate-spin" />
               ) : (
-                <Download className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 me-1" />
               )}
               {isExporting ? "Export…" : "Exporter"}
-              <ChevronDown className="h-3 w-3 ml-1" />
+              <ChevronDown className="h-3 w-3 ms-1" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleExportBillingCSV} disabled={isExporting}>
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              <FileSpreadsheet className="h-4 w-4 me-2" />
               Exporter en CSV
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleExportBillingPDF} disabled={isExporting}>
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 me-2" />
               Exporter en PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -426,7 +426,7 @@ export default function BillingPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher par clinique ou numéro de facture..."
-                className="pl-10"
+                className="ps-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -478,7 +478,7 @@ export default function BillingPage() {
                 }}
                 title="Effacer les dates"
               >
-                <X className="h-3.5 w-3.5 mr-1" />
+                <X className="h-3.5 w-3.5 me-1" />
                 Effacer
               </Button>
             )}
@@ -497,15 +497,17 @@ export default function BillingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4">Facture</th>
-                      <th className="text-left font-medium py-3 px-4">Clinique</th>
-                      <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Plan</th>
-                      <th className="text-left font-medium py-3 px-4">Montant</th>
-                      <th className="text-left font-medium py-3 px-4 hidden md:table-cell">
+                      <th className="text-start font-medium py-3 px-4">Facture</th>
+                      <th className="text-start font-medium py-3 px-4">Clinique</th>
+                      <th className="text-start font-medium py-3 px-4 hidden md:table-cell">
+                        Plan
+                      </th>
+                      <th className="text-start font-medium py-3 px-4">Montant</th>
+                      <th className="text-start font-medium py-3 px-4 hidden md:table-cell">
                         Échéance
                       </th>
-                      <th className="text-left font-medium py-3 px-4">Statut</th>
-                      <th className="text-right font-medium py-3 px-4">Actions</th>
+                      <th className="text-start font-medium py-3 px-4">Statut</th>
+                      <th className="text-end font-medium py-3 px-4">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -557,7 +559,7 @@ export default function BillingPage() {
                             </Badge>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3 px-4 text-end">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
@@ -633,7 +635,7 @@ export default function BillingPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Plan :</span>{" "}
-                  <Badge variant="outline" className="capitalize ml-1">
+                  <Badge variant="outline" className="capitalize ms-1">
                     {detailRecord.plan}
                   </Badge>
                 </div>
@@ -696,7 +698,7 @@ export default function BillingPage() {
               </Button>
               {detailRecord.status !== "paid" && (
                 <Button onClick={() => handleMarkPaid(detailRecord)}>
-                  <CreditCard className="h-4 w-4 mr-1" />
+                  <CreditCard className="h-4 w-4 me-1" />
                   Marquer comme payé
                 </Button>
               )}
@@ -730,7 +732,7 @@ export default function BillingPage() {
                 Annuler
               </Button>
               <Button onClick={handleSendReminder}>
-                <Send className="h-4 w-4 mr-1" />
+                <Send className="h-4 w-4 me-1" />
                 Envoyer le rappel
               </Button>
             </DialogFooter>

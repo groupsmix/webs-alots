@@ -130,7 +130,7 @@ export function PrayerTimesWidget({
             <span>
               {locale === "ar" ? prayer.nameAr : prayer.nameFr}
               {nextPrayer === prayer.name && (
-                <span className="text-[10px] ml-1 bg-green-500/30 px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] ms-1 bg-green-500/30 px-1.5 py-0.5 rounded-full">
                   {locale === "ar" ? "التالية" : "Suivante"}
                 </span>
               )}

@@ -180,9 +180,9 @@ export function OnboardingStepClinic({
 
         <div className="flex justify-end pt-4">
           <Button onClick={onSubmit} disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
             Create Clinic & Continue
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-4 w-4 ms-1" />
           </Button>
         </div>
       </CardContent>

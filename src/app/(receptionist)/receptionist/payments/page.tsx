@@ -158,7 +158,7 @@ export default function PaymentsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search by patient name..."
-          className="pl-10"
+          className="ps-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -186,7 +186,7 @@ export default function PaymentsPage() {
                     <p className="text-sm font-medium">{entry.patientName}</p>
                     <p className="text-xs text-muted-foreground">{entry.serviceName}</p>
                   </div>
-                  <div className="text-right mr-2">
+                  <div className="text-end me-2">
                     <p className="text-sm font-bold">{formatCurrency(entry.amount)}</p>
                     {entry.status === "paid" && (
                       <p className="text-xs text-muted-foreground capitalize">{entry.method}</p>
@@ -207,7 +207,7 @@ export default function PaymentsPage() {
                         <PaymentDialog
                           trigger={
                             <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                              <CreditCard className="h-3 w-3 mr-1" />
+                              <CreditCard className="h-3 w-3 me-1" />
                               Collect
                             </Button>
                           }

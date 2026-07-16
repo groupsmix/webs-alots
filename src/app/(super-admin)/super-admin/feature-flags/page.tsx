@@ -159,9 +159,9 @@ export default function FeatureFlagsPage() {
           disabled={loading || refreshing}
         >
           {refreshing ? (
-            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            <Loader2 className="me-1 h-4 w-4 animate-spin" />
           ) : (
-            <RefreshCw className="mr-1 h-4 w-4" />
+            <RefreshCw className="me-1 h-4 w-4" />
           )}
           Actualiser
         </Button>

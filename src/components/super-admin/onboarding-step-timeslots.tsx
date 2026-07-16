@@ -64,7 +64,7 @@ export function OnboardingStepTimeSlots({
             </p>
             <div className="flex gap-3 justify-center">
               <Button variant="outline" onClick={onBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 Back to Add Staff
               </Button>
               <Button onClick={onSkip}>Skip & Finish</Button>
@@ -84,7 +84,7 @@ export function OnboardingStepTimeSlots({
                   {doctor.doctorName}
                 </h3>
 
-                <div className="space-y-2 pl-2">
+                <div className="space-y-2 ps-2">
                   {doctor.slots.map((slot, sIndex) => (
                     <div key={sIndex} className="flex items-center gap-2 flex-wrap">
                       <select
@@ -127,7 +127,7 @@ export function OnboardingStepTimeSlots({
                 </div>
 
                 <Button variant="outline" size="sm" onClick={() => onAddSlot(dIndex)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <Plus className="h-3.5 w-3.5 me-1" />
                   Add Slot
                 </Button>
 
@@ -137,7 +137,7 @@ export function OnboardingStepTimeSlots({
 
             <div className="flex justify-between pt-4">
               <Button variant="outline" onClick={onBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 me-1" />
                 Back
               </Button>
               <div className="flex gap-2">
@@ -145,9 +145,9 @@ export function OnboardingStepTimeSlots({
                   Skip
                 </Button>
                 <Button onClick={onSubmit} disabled={loading}>
-                  {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                  {loading && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
                   Save Slots & Finish
-                  <Check className="h-4 w-4 ml-1" />
+                  <Check className="h-4 w-4 ms-1" />
                 </Button>
               </div>
             </div>

@@ -290,7 +290,7 @@ export function ExceptionDayPicker({ doctorId, clinicId }: Props) {
                 <button
                   onClick={() => void handleRemove(ex.id)}
                   disabled={removing === ex.id}
-                  className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                  className="ms-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
                   aria-label={`Supprimer l'exception du ${ex.date}`}
                 >
                   <X className="h-3.5 w-3.5" />

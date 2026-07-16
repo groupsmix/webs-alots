@@ -84,7 +84,7 @@ export default function SalesPage() {
           <p className="text-muted-foreground text-sm">Track daily transactions and revenue</p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-2 h-4 w-4" /> New Sale
+          <Plus className="me-2 h-4 w-4" /> New Sale
         </Button>
       </div>
 
@@ -177,7 +177,7 @@ export default function SalesPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b text-left text-sm text-muted-foreground">
+                <tr className="border-b text-start text-sm text-muted-foreground">
                   <th className="py-3 px-2 font-medium">Time</th>
                   <th className="py-3 px-2 font-medium">Patient</th>
                   <th className="py-3 px-2 font-medium">Items</th>

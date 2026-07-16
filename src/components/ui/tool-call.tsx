@@ -28,9 +28,9 @@ export function ToolCall({ name, state = "running", description, className }: To
         <span className="font-medium">{name}</span>
         <Badge
           variant={state === "error" ? "destructive" : "secondary"}
-          className="ml-auto text-[10px]"
+          className="ms-auto text-[10px]"
         >
-          <span className="mr-1">{icon}</span>
+          <span className="me-1">{icon}</span>
           {state}
         </Badge>
       </div>

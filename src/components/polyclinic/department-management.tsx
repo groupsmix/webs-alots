@@ -52,13 +52,13 @@ export function DepartmentManagement({
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Building2 className="h-5 w-5" />
           Departments
-          <Badge variant="secondary" className="ml-1">
+          <Badge variant="secondary" className="ms-1">
             {departments.length}
           </Badge>
         </h2>
         {editable && onAdd && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             Add Department
           </Button>
         )}

@@ -247,7 +247,7 @@ export default function CatalogPage() {
             placeholder="Search by name, brand, or category..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10"
+            className="ps-10"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -261,7 +261,7 @@ export default function CatalogPage() {
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
-              {cat.value === "all" && <Filter className="mr-1 h-3 w-3" />}
+              {cat.value === "all" && <Filter className="me-1 h-3 w-3" />}
               {cat.label}
             </button>
           ))}

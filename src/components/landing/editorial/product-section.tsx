@@ -189,7 +189,7 @@ function WhatsAppPreviewMock() {
             <span className="block font-[var(--font-sans-landing)] text-[length:11px] leading-tight text-[var(--ink)]">
               {msg.text}
             </span>
-            <span className="block mt-1 font-[var(--font-mono-landing)] text-[length:8px] tracking-[var(--ls-mono)] text-[var(--ink-60)] text-right">
+            <span className="block mt-1 font-[var(--font-mono-landing)] text-[length:8px] tracking-[var(--ls-mono)] text-[var(--ink-60)] text-end">
               {msg.time}
             </span>
           </div>

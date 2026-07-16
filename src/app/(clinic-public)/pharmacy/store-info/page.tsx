@@ -59,12 +59,12 @@ export default async function StoreInfoPage() {
         </p>
         {onDuty && (
           <Badge className="mt-4 bg-emerald-600 text-white animate-pulse">
-            <Clock className="h-3 w-3 mr-1" /> On Duty Now
+            <Clock className="h-3 w-3 me-1" /> On Duty Now
           </Badge>
         )}
         {!onDuty && nextDuty && (
           <Badge variant="outline" className="mt-4 border-emerald-600 text-emerald-600">
-            <Clock className="h-3 w-3 mr-1" /> Next on duty: {nextDuty.date}
+            <Clock className="h-3 w-3 me-1" /> Next on duty: {nextDuty.date}
           </Badge>
         )}
       </div>

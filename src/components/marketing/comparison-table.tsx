@@ -70,7 +70,7 @@ export function FullComparisonTable() {
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b border-border">
-              <th className="py-4 pr-4 text-left font-medium text-muted-foreground">
+              <th className="py-4 pe-4 text-start font-medium text-muted-foreground">
                 Fonctionnalité
               </th>
               {COMPETITORS.map((c) => (
@@ -101,7 +101,7 @@ export function FullComparisonTable() {
                     key={feature.label}
                     className={idx % 2 === 0 ? "bg-transparent" : "bg-muted/50"}
                   >
-                    <td className="py-3 pr-4 text-foreground">{feature.label}</td>
+                    <td className="py-3 pe-4 text-foreground">{feature.label}</td>
                     {COMPETITORS.map((c) => (
                       <td key={c.id} className="px-4 py-3 text-center">
                         <SupportIcon value={feature.values[c.id]} />

@@ -23,7 +23,7 @@ export function TimelineSearch({ value, onChange, className }: TimelineSearchPro
         placeholder="Rechercher dans l'historique..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-9 pr-8 h-9"
+        className="ps-9 pe-8 h-9"
       />
       {value && (
         <button

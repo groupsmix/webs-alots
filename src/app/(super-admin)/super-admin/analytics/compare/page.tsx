@@ -269,7 +269,7 @@ export default function ClinicComparisonPage() {
           </p>
         </div>
         <Button variant="outline" onClick={handleExport}>
-          <Download className="h-4 w-4 mr-1" />
+          <Download className="h-4 w-4 me-1" />
           Export Report
         </Button>
       </div>
@@ -286,7 +286,7 @@ export default function ClinicComparisonPage() {
                 className="flex items-center justify-between w-full rounded-md border px-3 py-2 text-sm bg-background"
               >
                 <span className="truncate">{selectedClinics.map((c) => c.name).join(", ")}</span>
-                <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
+                <ChevronDown className="h-4 w-4 ms-2 shrink-0" />
               </button>
               {dropdownOpen && (
                 <div className="absolute z-50 mt-1 w-full rounded-md border bg-background shadow-lg max-h-60 overflow-auto">
@@ -299,7 +299,7 @@ export default function ClinicComparisonPage() {
                         type="button"
                         disabled={disabled && !selected}
                         onClick={() => toggleClinic(clinic.id)}
-                        className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors ${
+                        className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-start transition-colors ${
                           selected ? "bg-primary/10 text-primary" : "hover:bg-muted"
                         } ${disabled && !selected ? "opacity-40 cursor-not-allowed" : ""}`}
                       >
@@ -313,7 +313,7 @@ export default function ClinicComparisonPage() {
                           {selected && "✓"}
                         </div>
                         <span>{clinic.name}</span>
-                        <Badge variant="outline" className="ml-auto text-xs">
+                        <Badge variant="outline" className="ms-auto text-xs">
                           {clinic.type}
                         </Badge>
                       </button>
@@ -435,7 +435,7 @@ export default function ClinicComparisonPage() {
                     data-width={Math.round(width)}
                   />
                 </div>
-                <span className="text-sm font-medium w-24 text-right">
+                <span className="text-sm font-medium w-24 text-end">
                   {currentMetric.format(value)} {currentMetric.unit}
                 </span>
               </div>
@@ -475,7 +475,7 @@ export default function ClinicComparisonPage() {
                         <span className="truncate">
                           {i + 1}. {clinic.name}
                         </span>
-                        <span className="ml-2 shrink-0">
+                        <span className="ms-2 shrink-0">
                           {metric.format(metric.getValue(clinic))}
                         </span>
                       </div>

@@ -91,7 +91,7 @@ export function MarkUnavailableDialog({
   return (
     <>
       <Button variant="destructive" size="sm" onClick={() => setOpen(true)}>
-        <CalendarOff className="h-4 w-4 mr-1" />
+        <CalendarOff className="h-4 w-4 me-1" />
         Mark Unavailable
       </Button>
       <Dialog

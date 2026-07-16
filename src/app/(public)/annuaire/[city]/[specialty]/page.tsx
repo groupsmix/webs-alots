@@ -196,7 +196,7 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
                       </Link>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs">
-                          <Stethoscope className="h-3 w-3 mr-1" />
+                          <Stethoscope className="h-3 w-3 me-1" />
                           {doctor.specialty}
                         </Badge>
                       </div>
@@ -240,7 +240,7 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
                       </Link>
                       {bookingUrl && (
                         <a href={bookingUrl} className={buttonVariants({ size: "sm" })}>
-                          <Calendar className="h-3 w-3 mr-1" />
+                          <Calendar className="h-3 w-3 me-1" />
                           Prendre RDV
                         </a>
                       )}

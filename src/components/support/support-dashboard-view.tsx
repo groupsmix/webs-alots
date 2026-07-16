@@ -271,13 +271,13 @@ export function SupportDashboardView() {
               <thead>
                 <tr className="border-b">
                   {}
-                  <th className="text-left py-2 px-2">Sujet</th>
-                  <th className="text-left py-2 px-2">Statut</th>
-                  <th className="text-left py-2 px-2">Priorité</th>
-                  <th className="text-left py-2 px-2">AI Urgence</th>
-                  <th className="text-left py-2 px-2">Canal</th>
-                  <th className="text-left py-2 px-2">Patient</th>
-                  <th className="text-left py-2 px-2">Créé</th>
+                  <th className="text-start py-2 px-2">Sujet</th>
+                  <th className="text-start py-2 px-2">Statut</th>
+                  <th className="text-start py-2 px-2">Priorité</th>
+                  <th className="text-start py-2 px-2">AI Urgence</th>
+                  <th className="text-start py-2 px-2">Canal</th>
+                  <th className="text-start py-2 px-2">Patient</th>
+                  <th className="text-start py-2 px-2">Créé</th>
                   {}
                 </tr>
               </thead>

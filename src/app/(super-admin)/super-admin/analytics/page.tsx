@@ -254,7 +254,7 @@ export default function MultiClinicAnalyticsPage() {
                 </div>
 
                 <div className="flex items-center gap-6">
-                  <div className="text-right">
+                  <div className="text-end">
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
                       <span className="text-sm font-medium">
@@ -264,7 +264,7 @@ export default function MultiClinicAnalyticsPage() {
                     <p className="text-muted-foreground text-xs">30d revenue</p>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-end">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       <span className="text-sm font-medium">{clinic.recentAppointments}</span>
@@ -272,7 +272,7 @@ export default function MultiClinicAnalyticsPage() {
                     <p className="text-muted-foreground text-xs">30d appts</p>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-end">
                     <div className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
                       <span className="text-sm font-medium">{clinic.totalPatients}</span>

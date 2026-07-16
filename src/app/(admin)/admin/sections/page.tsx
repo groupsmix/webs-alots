@@ -117,7 +117,7 @@ export default function SectionsPage() {
           </p>
         </div>
         <Button onClick={handleSave} disabled={saving || !hasChanges}>
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="h-4 w-4 me-2" />
           {saving ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
         </Button>
       </div>

@@ -240,7 +240,7 @@ export default function BrandingPage() {
               : undefined
           }
         >
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="h-4 w-4 me-2" />
           {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
@@ -248,23 +248,23 @@ export default function BrandingPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="presets">
-            <Wand2 className="h-4 w-4 mr-2" />
+            <Wand2 className="h-4 w-4 me-2" />
             Presets
           </TabsTrigger>
           <TabsTrigger value="info">
-            <Building2 className="h-4 w-4 mr-2" />
+            <Building2 className="h-4 w-4 me-2" />
             Clinic Info
           </TabsTrigger>
           <TabsTrigger value="images">
-            <ImageIcon className="h-4 w-4 mr-2" />
+            <ImageIcon className="h-4 w-4 me-2" />
             Images
           </TabsTrigger>
           <TabsTrigger value="colors">
-            <Palette className="h-4 w-4 mr-2" />
+            <Palette className="h-4 w-4 me-2" />
             Colors
           </TabsTrigger>
           <TabsTrigger value="fonts">
-            <Type className="h-4 w-4 mr-2" />
+            <Type className="h-4 w-4 me-2" />
             Fonts
           </TabsTrigger>
         </TabsList>
@@ -421,7 +421,7 @@ export default function BrandingPage() {
                     disabled={uploading === "logo"}
                     onClick={() => logoRef.current?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 me-2" />
                     {uploading === "logo" ? "Uploading..." : "Upload Logo"}
                   </Button>
                 </div>
@@ -461,7 +461,7 @@ export default function BrandingPage() {
                     disabled={uploading === "favicon"}
                     onClick={() => faviconRef.current?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 me-2" />
                     {uploading === "favicon" ? "Uploading..." : "Upload Favicon"}
                   </Button>
                 </div>
@@ -502,7 +502,7 @@ export default function BrandingPage() {
                     disabled={uploading === "hero"}
                     onClick={() => heroRef.current?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 me-2" />
                     {uploading === "hero" ? "Uploading..." : "Upload Hero Image"}
                   </Button>
                 </div>
@@ -543,7 +543,7 @@ export default function BrandingPage() {
                     disabled={uploading === "cover"}
                     onClick={() => coverRef.current?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 me-2" />
                     {uploading === "cover" ? "Uploading..." : "Upload Cover Photo"}
                   </Button>
                 </div>
@@ -870,16 +870,16 @@ function PresetsGrid({
                       onClick={() => onApply(preset)}
                     >
                       {isApplying ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" />
                       ) : isApplied ? (
-                        <Check className="h-3.5 w-3.5 mr-1" />
+                        <Check className="h-3.5 w-3.5 me-1" />
                       ) : (
-                        <Wand2 className="h-3.5 w-3.5 mr-1" />
+                        <Wand2 className="h-3.5 w-3.5 me-1" />
                       )}
                       {isApplied ? "Applied!" : isApplying ? "Applying..." : "Apply"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => onCustomize(preset)}>
-                      <Palette className="h-3.5 w-3.5 mr-1" />
+                      <Palette className="h-3.5 w-3.5 me-1" />
                       Customize
                     </Button>
                   </div>

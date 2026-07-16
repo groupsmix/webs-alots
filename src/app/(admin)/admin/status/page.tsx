@@ -135,7 +135,7 @@ export default function AdminStatusPage() {
           )}
           <Button size="sm" variant="outline" onClick={fetchHealth} disabled={loading}>
             <span
-              className={`mr-2 inline-block h-2 w-2 rounded-full bg-current ${loading ? "animate-pulse" : "opacity-70"}`}
+              className={`me-2 inline-block h-2 w-2 rounded-full bg-current ${loading ? "animate-pulse" : "opacity-70"}`}
             />
             Refresh
           </Button>
@@ -189,7 +189,7 @@ export default function AdminStatusPage() {
         </div>
 
         {health?.timestamp && (
-          <p className="text-xs text-muted-foreground text-right">
+          <p className="text-xs text-muted-foreground text-end">
             Server timestamp: {health.timestamp}
           </p>
         )}

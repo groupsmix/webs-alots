@@ -258,7 +258,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
               </CardTitle>
               <Link href="/patient/appointments">
                 <Button variant="ghost" size="sm">
-                  {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ml-1" />
+                  {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ms-1" />
                 </Button>
               </Link>
             </CardHeader>
@@ -290,7 +290,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                           <p className="text-xs text-muted-foreground">{apt.doctorName}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <p className="text-sm font-medium">
                           {formatDisplayDate(apt.date, locale, "long")}
                         </p>
@@ -312,7 +312,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
               </CardTitle>
               <Link href="/patient/prescriptions">
                 <Button variant="ghost" size="sm">
-                  {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ml-1" />
+                  {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ms-1" />
                 </Button>
               </Link>
             </CardHeader>

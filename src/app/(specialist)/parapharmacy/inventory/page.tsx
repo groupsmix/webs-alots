@@ -80,7 +80,7 @@ export default function ParapharmacyInventoryPage() {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <div className="flex gap-2">
@@ -107,12 +107,12 @@ export default function ParapharmacyInventoryPage() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b text-left">
+            <tr className="border-b text-start">
               <th className="pb-3 font-medium">Product</th>
               <th className="pb-3 font-medium">Category</th>
-              <th className="pb-3 font-medium text-right">Price</th>
-              <th className="pb-3 font-medium text-right">Stock</th>
-              <th className="pb-3 font-medium text-right">Min</th>
+              <th className="pb-3 font-medium text-end">Price</th>
+              <th className="pb-3 font-medium text-end">Stock</th>
+              <th className="pb-3 font-medium text-end">Min</th>
               <th className="pb-3 font-medium">Expiry</th>
               <th className="pb-3 font-medium">Status</th>
             </tr>
@@ -130,9 +130,9 @@ export default function ParapharmacyInventoryPage() {
                     )}
                   </td>
                   <td className="py-3 text-muted-foreground">{p.category}</td>
-                  <td className="py-3 text-right">{formatCurrency(p.price)}</td>
-                  <td className="py-3 text-right font-medium">{p.stockQuantity}</td>
-                  <td className="py-3 text-right text-muted-foreground">{p.minimumStock}</td>
+                  <td className="py-3 text-end">{formatCurrency(p.price)}</td>
+                  <td className="py-3 text-end font-medium">{p.stockQuantity}</td>
+                  <td className="py-3 text-end text-muted-foreground">{p.minimumStock}</td>
                   <td className="py-3">
                     {p.expiryDate ? (
                       <Badge
@@ -160,7 +160,7 @@ export default function ParapharmacyInventoryPage() {
                             : "bg-emerald-100 text-emerald-700 border-0"
                       }
                     >
-                      {stockStatus === "out" && <AlertTriangle className="h-3 w-3 mr-1" />}
+                      {stockStatus === "out" && <AlertTriangle className="h-3 w-3 me-1" />}
                       {stockStatus === "out" ? "Out" : stockStatus === "low" ? "Low" : "OK"}
                     </Badge>
                   </td>

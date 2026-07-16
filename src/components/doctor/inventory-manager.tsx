@@ -139,10 +139,10 @@ export function InventoryManager() {
   };
 
   return (
-    <div className={`space-y-6 ${isRtl ? "text-right" : ""}`} dir={isRtl ? "rtl" : "ltr"}>
+    <div className={`space-y-6 ${isRtl ? "text-end" : ""}`} dir={isRtl ? "rtl" : "ltr"}>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">
-          <Package className="mr-2 inline-block h-6 w-6" />
+          <Package className="me-2 inline-block h-6 w-6" />
           {lang === "ar" ? "إدارة المخزون" : "Gestion du stock"}
         </h1>
         <div className="flex gap-2">
@@ -174,7 +174,7 @@ export function InventoryManager() {
           </span>
           <button
             onClick={() => setShowLowStock(!showLowStock)}
-            className="ml-auto text-sm font-medium text-orange-700 underline"
+            className="ms-auto text-sm font-medium text-orange-700 underline"
           >
             {showLowStock
               ? lang === "ar"
@@ -196,7 +196,7 @@ export function InventoryManager() {
             placeholder={lang === "ar" ? "بحث..." : "Rechercher..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border py-2 pl-10 pr-3 text-sm"
+            className="w-full rounded-lg border py-2 ps-10 pe-3 text-sm"
           />
         </div>
         <select
@@ -329,7 +329,7 @@ export function InventoryManager() {
       {loading ? (
         <div className="flex items-center justify-center p-12">
           <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-500">
+          <span className="ms-2 text-gray-500">
             {lang === "ar" ? "جاري التحميل..." : "Chargement..."}
           </span>
         </div>
@@ -345,22 +345,22 @@ export function InventoryManager() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">
+                <th className="px-4 py-3 text-start font-medium text-gray-600">
                   {lang === "ar" ? "المنتج" : "Article"}
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">
+                <th className="px-4 py-3 text-start font-medium text-gray-600">
                   {lang === "ar" ? "الفئة" : "Catégorie"}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">
+                <th className="px-4 py-3 text-end font-medium text-gray-600">
                   {lang === "ar" ? "الكمية" : "Quantité"}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">
+                <th className="px-4 py-3 text-end font-medium text-gray-600">
                   {lang === "ar" ? "الحد الأدنى" : "Min"}
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">
+                <th className="px-4 py-3 text-end font-medium text-gray-600">
                   {lang === "ar" ? "السعر" : "Prix (MAD)"}
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">
+                <th className="px-4 py-3 text-start font-medium text-gray-600">
                   {lang === "ar" ? "الحالة" : "Statut"}
                 </th>
               </tr>
@@ -374,11 +374,11 @@ export function InventoryManager() {
                     <td className="px-4 py-3 text-gray-600">
                       {categoryLabels[item.category]?.[lang] ?? item.category}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-900">
+                    <td className="px-4 py-3 text-end text-gray-900">
                       {item.quantity} {item.unit}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-500">{item.min_stock}</td>
-                    <td className="px-4 py-3 text-right text-gray-900">
+                    <td className="px-4 py-3 text-end text-gray-500">{item.min_stock}</td>
+                    <td className="px-4 py-3 text-end text-gray-900">
                       {item.unit_price.toFixed(2)}
                     </td>
                     <td className="px-4 py-3">

@@ -91,7 +91,7 @@ export function BedManagement({
         </h2>
         {editable && onAddRoom && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             Add Room
           </Button>
         )}
@@ -206,7 +206,7 @@ export function BedManagement({
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">
                     Room {room.roomNumber}
-                    <Badge variant="outline" className="ml-2 text-[10px]">
+                    <Badge variant="outline" className="ms-2 text-[10px]">
                       {room.roomType}
                     </Badge>
                   </CardTitle>

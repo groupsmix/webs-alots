@@ -152,7 +152,7 @@ export default function ReferralProgramPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        <Loader2 className="h-5 w-5 animate-spin me-2" />
         Chargement du programme de parrainage...
       </div>
     );
@@ -320,11 +320,11 @@ export default function ReferralProgramPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">Montant</th>
-                <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Statut</th>
-                <th className="text-left p-3 font-medium">Date</th>
-                <th className="text-left p-3 font-medium">Appliqué le</th>
+                <th className="text-start p-3 font-medium">Montant</th>
+                <th className="text-start p-3 font-medium">Type</th>
+                <th className="text-start p-3 font-medium">Statut</th>
+                <th className="text-start p-3 font-medium">Date</th>
+                <th className="text-start p-3 font-medium">Appliqué le</th>
               </tr>
             </thead>
             <tbody>

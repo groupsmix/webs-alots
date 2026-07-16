@@ -166,7 +166,7 @@ export default function PrescriptionsPage() {
             placeholder="Search by patient name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="ps-10"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -206,7 +206,7 @@ export default function PrescriptionsPage() {
                       </Badge>
                       {rx.isChronic && (
                         <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs">
-                          <RefreshCw className="h-3 w-3 mr-1" /> Chronic
+                          <RefreshCw className="h-3 w-3 me-1" /> Chronic
                         </Badge>
                       )}
                     </div>
@@ -277,31 +277,31 @@ export default function PrescriptionsPage() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2 min-w-[180px]">
-                    <div className="text-right mb-2">
+                    <div className="text-end mb-2">
                       <p className="text-2xl font-bold text-emerald-600">
                         {formatCurrency(rx.totalPrice)}
                       </p>
                     </div>
                     {rx.status === "pending" && (
                       <Button className="bg-blue-600 hover:bg-blue-700 w-full" disabled>
-                        <Eye className="mr-2 h-4 w-4" /> Review unavailable
+                        <Eye className="me-2 h-4 w-4" /> Review unavailable
                       </Button>
                     )}
                     {rx.status === "reviewing" && (
                       <Button className="bg-emerald-600 hover:bg-emerald-700 w-full" disabled>
-                        <Check className="mr-2 h-4 w-4" /> Status update unavailable
+                        <Check className="me-2 h-4 w-4" /> Status update unavailable
                       </Button>
                     )}
                     {rx.status === "ready" && (
                       <Button className="bg-emerald-600 hover:bg-emerald-700 w-full" disabled>
-                        <Package className="mr-2 h-4 w-4" /> Status update unavailable
+                        <Package className="me-2 h-4 w-4" /> Status update unavailable
                       </Button>
                     )}
                     {!rx.whatsappNotified &&
                       rx.status !== "picked-up" &&
                       rx.status !== "delivered" && (
                         <Button variant="outline" className="w-full" disabled>
-                          <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp unavailable
+                          <MessageCircle className="me-2 h-4 w-4" /> WhatsApp unavailable
                         </Button>
                       )}
                     {rx.whatsappNotified && (

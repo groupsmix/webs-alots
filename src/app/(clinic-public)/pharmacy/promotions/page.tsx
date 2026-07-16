@@ -140,7 +140,7 @@ export default function PromotionsPage() {
       {/* Header */}
       <div className="text-center mb-8">
         <Badge className="bg-emerald-600 text-white mb-4">
-          <Sparkles className="h-3 w-3 mr-1" /> Featured & Promotions
+          <Sparkles className="h-3 w-3 me-1" /> Featured & Promotions
         </Badge>
         <h1 className="text-3xl font-bold mb-4">Special Offers</h1>
         <p className="text-muted-foreground max-w-xl mx-auto">
@@ -157,7 +157,7 @@ export default function PromotionsPage() {
             placeholder="Search promotions..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10"
+            className="ps-10"
           />
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function PromotionsPage() {
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            <cat.icon className="mr-1.5 h-3.5 w-3.5" />
+            <cat.icon className="me-1.5 h-3.5 w-3.5" />
             {cat.label}
           </button>
         ))}
@@ -236,7 +236,7 @@ export default function PromotionsPage() {
                 href="/pharmacy/catalog"
                 className="inline-flex items-center text-emerald-600 hover:underline text-sm"
               >
-                Browse full catalog <ArrowRight className="ml-1 h-4 w-4" />
+                Browse full catalog <ArrowRight className="ms-1 h-4 w-4" />
               </Link>
             </div>
           )}

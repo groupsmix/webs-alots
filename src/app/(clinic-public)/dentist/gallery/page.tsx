@@ -80,7 +80,7 @@ export default async function GalleryPage() {
             transformations.
           </p>
           <Link href="/book" className={buttonVariants()}>
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="h-4 w-4 me-2" />
             Book a Consultation
           </Link>
         </div>
@@ -140,7 +140,7 @@ export default async function GalleryPage() {
       <div className="text-center mt-12">
         <p className="text-muted-foreground mb-4">Ready to transform your smile?</p>
         <Link href="/book" className={buttonVariants({ size: "lg" })}>
-          <Calendar className="h-4 w-4 mr-2" />
+          <Calendar className="h-4 w-4 me-2" />
           Book Your Consultation
         </Link>
       </div>

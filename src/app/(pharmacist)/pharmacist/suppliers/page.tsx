@@ -107,7 +107,7 @@ export default function SuppliersPage() {
           </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Supplier
+          <Plus className="me-2 h-4 w-4" /> Add Supplier
         </Button>
       </div>
 
@@ -121,7 +121,7 @@ export default function SuppliersPage() {
               className="mt-4 bg-emerald-600 hover:bg-emerald-700"
               onClick={() => setAddOpen(true)}
             >
-              <Plus className="mr-2 h-4 w-4" /> Add Supplier
+              <Plus className="me-2 h-4 w-4" /> Add Supplier
             </Button>
           </CardContent>
         </Card>
@@ -203,7 +203,7 @@ export default function SuppliersPage() {
                   {activeOrders.length > 0 && (
                     <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-950/10 rounded-lg">
                       <p className="text-xs text-blue-600 font-medium">
-                        <Package className="h-3 w-3 inline mr-1" />
+                        <Package className="h-3 w-3 inline me-1" />
                         {activeOrders.length} active order{activeOrders.length > 1 ? "s" : ""}
                       </p>
                     </div>
@@ -219,11 +219,11 @@ export default function SuppliersPage() {
                           className: "flex-1",
                         })}
                       >
-                        <Phone className="mr-2 h-3 w-3" /> Call
+                        <Phone className="me-2 h-3 w-3" /> Call
                       </a>
                     ) : (
                       <Button variant="outline" size="sm" className="flex-1" disabled>
-                        <Phone className="mr-2 h-3 w-3" /> Call
+                        <Phone className="me-2 h-3 w-3" /> Call
                       </Button>
                     )}
                     {supplier.email ? (
@@ -235,11 +235,11 @@ export default function SuppliersPage() {
                           className: "flex-1",
                         })}
                       >
-                        <Mail className="mr-2 h-3 w-3" /> Email
+                        <Mail className="me-2 h-3 w-3" /> Email
                       </a>
                     ) : (
                       <Button variant="outline" size="sm" className="flex-1" disabled>
-                        <Mail className="mr-2 h-3 w-3" /> Email
+                        <Mail className="me-2 h-3 w-3" /> Email
                       </Button>
                     )}
                     <Link
@@ -249,7 +249,7 @@ export default function SuppliersPage() {
                         className: "flex-1 bg-emerald-600 hover:bg-emerald-700",
                       })}
                     >
-                      <ShoppingCart className="mr-2 h-3 w-3" /> Order
+                      <ShoppingCart className="me-2 h-3 w-3" /> Order
                     </Link>
                   </div>
                 </CardContent>
