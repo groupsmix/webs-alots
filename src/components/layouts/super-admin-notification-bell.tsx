@@ -80,6 +80,9 @@ export function SuperAdminNotificationBell() {
         } = await supabase.auth.getUser();
         if (!user || !mountedRef.current) return;
 
+        // nosemgrep: tenant-scoping
+        // User profile lookup pinned to the authenticated auth_id; clinic_id
+        // is not known until the profile is returned, so it cannot be scoped here.
         const { data: profile } = await supabase
           .from("users")
           .select("id, clinic_id")
@@ -92,6 +95,7 @@ export function SuperAdminNotificationBell() {
         // isolation (defense-in-depth alongside RLS). user_id already pins
         // the result to the current user; clinic_id is applied when the
         // profile has one (super_admin has clinic_id = null and is unscoped).
+        // nosemgrep: tenant-scoping
         let notifQuery = supabase
           .from("notifications")
           .select("id, title, body, sent_at, is_read")
