@@ -75,7 +75,7 @@ async function handler(request: NextRequest) {
 
   try {
     // nosemgrep: semgrep.admin-client-guard — recalls run as a cross-tenant cron sweep; per-clinic scoping is enforced row-by-row below
-    const supabase = createAdminClient("cron");
+    const supabase = createAdminClient("cron"); // nosemgrep: semgrep.admin-client-guard
     const recallsClient = supabase as unknown as ExtendedClient;
 
     // Short-circuit when there are no active clinics (MA-04: exclude soft-deleted).
@@ -99,9 +99,10 @@ async function handler(request: NextRequest) {
       Date.now() - GENERATION_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    const { data: completed, error: completedError } = await supabase
-      .from("appointments")
-      .select(APPOINTMENT_RECALL_COLS) // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each row is assertClinicId-validated and clinic_id-scoped downstream
+    // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each row is assertClinicId-validated and clinic_id-scoped downstream
+    const { data: completed, error: completedError } = await supabase // nosemgrep: semgrep.tenant-scoping
+      .from("appointments") // nosemgrep: semgrep.tenant-scoping
+      .select(APPOINTMENT_RECALL_COLS) // nosemgrep: semgrep.tenant-scoping
       .eq("status", APPOINTMENT_STATUS.COMPLETED)
       .gte("updated_at", lookbackISO)
       .not("service_id", "is", null)
@@ -148,9 +149,10 @@ async function handler(request: NextRequest) {
 
     let generated = 0;
     if (recallsToCreate.length > 0) {
-      const { data: inserted, error: insertError } = await recallsClient
-        .from("patient_recalls")
-        .upsert(recallsToCreate, RECALL_UPSERT_OPTIONS) // nosemgrep: semgrep.tenant-scoping — bulk upsert; every row carries its own clinic_id (see recallsToCreate)
+      // nosemgrep: semgrep.tenant-scoping — bulk upsert; every row carries its own clinic_id (see recallsToCreate)
+      const { data: inserted, error: insertError } = await recallsClient // nosemgrep: semgrep.tenant-scoping
+        .from("patient_recalls") // nosemgrep: semgrep.tenant-scoping
+        .upsert(recallsToCreate, RECALL_UPSERT_OPTIONS) // nosemgrep: semgrep.tenant-scoping
         .select("id");
       if (insertError) {
         logger.warn("recalls cron: failed to insert recalls", {
@@ -165,9 +167,10 @@ async function handler(request: NextRequest) {
     // ── Phase 2: Dispatch due recalls ──
 
     const today = new Date().toISOString().slice(0, 10);
-    const { data: dueRecalls, error: dueError } = await recallsClient
-      .from("patient_recalls")
-      .select("id, clinic_id, patient_id, service_id, recall_type, due_date") // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each recall is assertClinicId-validated and clinic_id-scoped before dispatch/update
+    // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each recall is assertClinicId-validated and clinic_id-scoped before dispatch/update
+    const { data: dueRecalls, error: dueError } = await recallsClient // nosemgrep: semgrep.tenant-scoping
+      .from("patient_recalls") // nosemgrep: semgrep.tenant-scoping
+      .select("id, clinic_id, patient_id, service_id, recall_type, due_date") // nosemgrep: semgrep.tenant-scoping
       .eq("status", "pending")
       .lte("due_date", today)
       .order("due_date", { ascending: true })
