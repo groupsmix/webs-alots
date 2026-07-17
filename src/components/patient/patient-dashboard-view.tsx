@@ -166,12 +166,22 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">
-          {t(locale, "patient.welcome")}
-          {userName ? `, ${userName.split(" ")[0]}` : ""}
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">{t(locale, "patient.portalOverview")}</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {t(locale, "patient.welcome")}
+            {userName ? `, ${userName.split(" ")[0]}` : ""}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {t(locale, "patient.portalOverview")}
+          </p>
+        </div>
+        <Link href="/book" className="shrink-0">
+          <Button size="lg">
+            <Calendar className="h-4 w-4 me-2" />
+            {t(locale, "patient.bookAppointment")}
+          </Button>
+        </Link>
       </div>
 
       {/* Welcome banner for new patients */}
