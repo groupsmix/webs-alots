@@ -680,6 +680,58 @@ type ExtendedDatabase = GenDatabase & {
         };
         Relationships: [];
       };
+      // PR-2: patient_recalls table (00211) — recurring dental recall engine.
+      patient_recalls: {
+        Row: {
+          id: string;
+          clinic_id: string;
+          patient_id: string;
+          source_appointment_id: string | null;
+          booked_appointment_id: string | null;
+          service_id: string | null;
+          recall_type: string;
+          due_date: string;
+          status: string;
+          sent_at: string | null;
+          notification_queue_id: string | null;
+          metadata: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          clinic_id: string;
+          patient_id: string;
+          source_appointment_id?: string | null;
+          booked_appointment_id?: string | null;
+          service_id?: string | null;
+          recall_type: string;
+          due_date: string;
+          status?: string;
+          sent_at?: string | null;
+          notification_queue_id?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string;
+          patient_id?: string;
+          source_appointment_id?: string | null;
+          booked_appointment_id?: string | null;
+          service_id?: string | null;
+          recall_type?: string;
+          due_date?: string;
+          status?: string;
+          sent_at?: string | null;
+          notification_queue_id?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
   };
 };
