@@ -3,15 +3,15 @@
 import { Brain, Users, Target, TrendingUp, Calendar, Shield } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchTherapySessionNotes, fetchTherapyPlans } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import type { TherapySessionNote, TherapyPlan } from "@/lib/types/para-medical";
-
-const PRIMARY_ACTION_LABEL = "View session notes";
 
 function withinDays(dateStr: string, days: number): boolean {
   if (!dateStr) return false;
@@ -22,6 +22,7 @@ function withinDays(dateStr: string, days: number): boolean {
 
 export default function PsychologistDashboardPage() {
   const tenant = useTenant();
+  const [locale] = useLocale();
   const [notes, setNotes] = useState<TherapySessionNote[]>([]);
   const [plans, setPlans] = useState<TherapyPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,15 +50,13 @@ export default function PsychologistDashboardPage() {
   }, [tenant?.clinicId]);
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "spec.dash.loading")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">{t(locale, "spec.dash.loadError")}</p>
       </div>
     );
   }
@@ -70,15 +69,30 @@ export default function PsychologistDashboardPage() {
   ).size;
 
   const stats = [
-    { icon: Users, label: "Active Patients", value: activePatients, color: "text-blue-600" },
-    { icon: Brain, label: "Sessions This Week", value: sessionsThisWeek, color: "text-purple-600" },
+    {
+      icon: Users,
+      label: t(locale, "spec.dash.activePatients"),
+      value: activePatients,
+      color: "text-blue-600",
+    },
+    {
+      icon: Brain,
+      label: t(locale, "spec.dash.sessionsThisWeek"),
+      value: sessionsThisWeek,
+      color: "text-purple-600",
+    },
     {
       icon: Target,
-      label: "Active Therapy Plans",
+      label: t(locale, "spec.psy.activeTherapyPlans"),
       value: activePlans.length,
       color: "text-green-600",
     },
-    { icon: Shield, label: "High Risk Patients", value: highRiskPatients, color: "text-red-500" },
+    {
+      icon: Shield,
+      label: t(locale, "spec.psy.highRiskPatients"),
+      value: highRiskPatients,
+      color: "text-red-500",
+    },
   ];
 
   const recentNotes = [...notes]
@@ -89,13 +103,12 @@ export default function PsychologistDashboardPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Psychologist Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Psychologue — أخصائي نفسي</p>
+          <h1 className="text-2xl font-bold">{t(locale, "spec.psy.title")}</h1>
         </div>
         <Link href="/psychologist/session-notes" className="shrink-0">
           <Button size="lg">
             <Brain className="h-4 w-4 me-2" />
-            {PRIMARY_ACTION_LABEL}
+            {t(locale, "spec.psy.viewNotes")}
           </Button>
         </Link>
       </div>
@@ -121,18 +134,18 @@ export default function PsychologistDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Recent Session Notes
+              {t(locale, "spec.psy.recentNotes")}
             </CardTitle>
             <Link
               href="/psychologist/session-notes"
               className="text-sm text-primary hover:underline"
             >
-              View all
+              {t(locale, "spec.dash.viewAll")}
             </Link>
           </CardHeader>
           <CardContent>
             {recentNotes.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No session notes recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.psy.noNotes")}</p>
             ) : (
               <div className="space-y-3">
                 {recentNotes.map((n) => (
@@ -146,7 +159,7 @@ export default function PsychologistDashboardPage() {
                     </div>
                     {n.risk_assessment === "high" && (
                       <Badge variant="outline" className="text-red-600 border-red-600">
-                        High risk
+                        {t(locale, "spec.psy.highRisk")}
                       </Badge>
                     )}
                   </div>
@@ -160,12 +173,12 @@ export default function PsychologistDashboardPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Active Therapy Plans
+              {t(locale, "spec.psy.activeTherapyPlans")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {activePlans.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active therapy plans.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.psy.noPlans")}</p>
             ) : (
               <div className="space-y-3">
                 {activePlans.slice(0, 5).map((p) => (
@@ -179,7 +192,9 @@ export default function PsychologistDashboardPage() {
                         {p.treatment_approach}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{p.goals.length} goals</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t(locale, "spec.psy.goals", { n: p.goals.length })}
+                    </span>
                   </div>
                 ))}
               </div>

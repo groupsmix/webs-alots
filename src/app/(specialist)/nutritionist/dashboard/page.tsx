@@ -3,14 +3,14 @@
 import { Apple, Users, Scale, Calculator, Calendar, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchMealPlans, fetchBodyMeasurements } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import type { MealPlan, BodyMeasurement } from "@/lib/types/para-medical";
-
-const PRIMARY_ACTION_LABEL = "Create meal plan";
 
 function withinDays(dateStr: string, days: number): boolean {
   if (!dateStr) return false;
@@ -21,6 +21,7 @@ function withinDays(dateStr: string, days: number): boolean {
 
 export default function NutritionistDashboardPage() {
   const tenant = useTenant();
+  const [locale] = useLocale();
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,15 +49,13 @@ export default function NutritionistDashboardPage() {
   }, [tenant?.clinicId]);
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "spec.dash.loading")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">{t(locale, "spec.dash.loadError")}</p>
       </div>
     );
   }
@@ -67,15 +66,30 @@ export default function NutritionistDashboardPage() {
   const bmiAssessments = measurements.filter((m) => m.bmi != null).length;
 
   const stats = [
-    { icon: Users, label: "Active Patients", value: activePatients, color: "text-blue-600" },
-    { icon: Apple, label: "Active Meal Plans", value: activePlans.length, color: "text-green-600" },
+    {
+      icon: Users,
+      label: t(locale, "spec.dash.activePatients"),
+      value: activePatients,
+      color: "text-blue-600",
+    },
+    {
+      icon: Apple,
+      label: t(locale, "spec.nut.activeMealPlans"),
+      value: activePlans.length,
+      color: "text-green-600",
+    },
     {
       icon: Scale,
-      label: "Measurements This Week",
+      label: t(locale, "spec.nut.measurementsThisWeek"),
       value: measurementsThisWeek,
       color: "text-orange-600",
     },
-    { icon: Calculator, label: "BMI Assessments", value: bmiAssessments, color: "text-purple-600" },
+    {
+      icon: Calculator,
+      label: t(locale, "spec.nut.bmiAssessments"),
+      value: bmiAssessments,
+      color: "text-purple-600",
+    },
   ];
 
   const recentMeasurements = [...measurements]
@@ -86,13 +100,12 @@ export default function NutritionistDashboardPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Nutritionist Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Nutritionniste — أخصائي تغذية</p>
+          <h1 className="text-2xl font-bold">{t(locale, "spec.nut.title")}</h1>
         </div>
         <Link href="/nutritionist/meal-plans" className="shrink-0">
           <Button size="lg">
             <Apple className="h-4 w-4 me-2" />
-            {PRIMARY_ACTION_LABEL}
+            {t(locale, "spec.nut.createMealPlan")}
           </Button>
         </Link>
       </div>
@@ -118,15 +131,15 @@ export default function NutritionistDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Active Meal Plans
+              {t(locale, "spec.nut.activeMealPlans")}
             </CardTitle>
             <Link href="/nutritionist/meal-plans" className="text-sm text-primary hover:underline">
-              View all
+              {t(locale, "spec.dash.viewAll")}
             </Link>
           </CardHeader>
           <CardContent>
             {activePlans.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active meal plans yet.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.nut.noMealPlans")}</p>
             ) : (
               <div className="space-y-3">
                 {activePlans.slice(0, 5).map((plan) => (
@@ -152,12 +165,14 @@ export default function NutritionistDashboardPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Recent Measurements
+              {t(locale, "spec.nut.recentMeasurements")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {recentMeasurements.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No recent data to display.</p>
+              <p className="text-sm text-muted-foreground">
+                {t(locale, "spec.nut.noMeasurements")}
+              </p>
             ) : (
               <div className="space-y-3">
                 {recentMeasurements.map((m) => (

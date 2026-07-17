@@ -9,12 +9,14 @@ import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { FeatureGate } from "@/components/feature-gate";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { useLocale } from "@/components/locale-switcher";
 import { RouteScopeGate } from "@/components/route-scope-gate";
 import { SignOutButton } from "@/components/sign-out-button";
 import { HelpFeedback } from "@/components/support/help-feedback";
 import { getDashboardRequiredFlags, getScopedDashboardForPathname } from "@/lib/config/verticals";
 import type { ClinicFeatureKey } from "@/lib/features";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
+import { t } from "@/lib/i18n";
 
 type LucideIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -59,6 +61,7 @@ function SidebarContent({
   navItems: DashboardNavItem[];
   onNavClick?: () => void;
 }) {
+  const [locale] = useLocale();
   return (
     <>
       <nav className="space-y-1 flex-1">
@@ -77,7 +80,7 @@ function SidebarContent({
               }`}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              {t(locale, item.label)}
             </Link>
           );
         })}
@@ -97,6 +100,7 @@ export function ClinicDashboardLayout({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const [locale] = useLocale();
   const [mobileOpen, setMobileOpen] = useState(false);
   const shortTitle = config.shortTitle ?? config.title;
   const { hasFeature } = useClinicFeatures();
@@ -141,7 +145,7 @@ export function ClinicDashboardLayout({
         </button>
         <div className="flex items-center gap-2">
           <OltigoMonogram size="sm" />
-          <h2 className="text-sm font-semibold">{shortTitle}</h2>
+          <h2 className="text-sm font-semibold">{t(locale, shortTitle)}</h2>
         </div>
       </div>
 
@@ -154,7 +158,7 @@ export function ClinicDashboardLayout({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <OltigoMonogram size="sm" />
-                <h2 className="text-lg font-semibold">{config.title}</h2>
+                <h2 className="text-lg font-semibold">{t(locale, config.title)}</h2>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
@@ -177,7 +181,7 @@ export function ClinicDashboardLayout({
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
         <div className="flex items-center gap-2 mb-6">
           <OltigoMonogram size="sm" />
-          <h2 className="text-lg font-semibold">{config.title}</h2>
+          <h2 className="text-lg font-semibold">{t(locale, config.title)}</h2>
         </div>
         <SidebarContent pathname={pathname} navItems={visibleNavItems} />
       </aside>

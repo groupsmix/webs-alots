@@ -3,14 +3,14 @@
 import { Dumbbell, Users, ClipboardList, Camera, Calendar, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchPhysioSessions, fetchExercisePrograms, fetchProgressPhotos } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import type { PhysioSession, ExerciseProgram, ProgressPhoto } from "@/lib/types/para-medical";
-
-const PRIMARY_ACTION_LABEL = "View sessions";
 
 function withinDays(dateStr: string, days: number): boolean {
   if (!dateStr) return false;
@@ -21,6 +21,7 @@ function withinDays(dateStr: string, days: number): boolean {
 
 export default function PhysiotherapistDashboardPage() {
   const tenant = useTenant();
+  const [locale] = useLocale();
   const [sessions, setSessions] = useState<PhysioSession[]>([]);
   const [programs, setPrograms] = useState<ExerciseProgram[]>([]);
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
@@ -50,15 +51,13 @@ export default function PhysiotherapistDashboardPage() {
   }, [tenant?.clinicId]);
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "spec.dash.loading")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">{t(locale, "spec.dash.loadError")}</p>
       </div>
     );
   }
@@ -68,20 +67,30 @@ export default function PhysiotherapistDashboardPage() {
   const sessionsThisWeek = sessions.filter((s) => withinDays(s.session_date, 7)).length;
 
   const stats = [
-    { icon: Users, label: "Active Patients", value: activePatients, color: "text-blue-600" },
+    {
+      icon: Users,
+      label: t(locale, "spec.dash.activePatients"),
+      value: activePatients,
+      color: "text-blue-600",
+    },
     {
       icon: Dumbbell,
-      label: "Exercise Programs",
+      label: t(locale, "spec.physio.exercisePrograms"),
       value: activePrograms.length,
       color: "text-green-600",
     },
     {
       icon: ClipboardList,
-      label: "Sessions This Week",
+      label: t(locale, "spec.dash.sessionsThisWeek"),
       value: sessionsThisWeek,
       color: "text-orange-600",
     },
-    { icon: Camera, label: "Progress Photos", value: photos.length, color: "text-purple-600" },
+    {
+      icon: Camera,
+      label: t(locale, "spec.physio.progressPhotos"),
+      value: photos.length,
+      color: "text-purple-600",
+    },
   ];
 
   const recentSessions = [...sessions]
@@ -92,13 +101,12 @@ export default function PhysiotherapistDashboardPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Physiotherapist Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Kinésithérapeute — معالج طبيعي</p>
+          <h1 className="text-2xl font-bold">{t(locale, "spec.physio.title")}</h1>
         </div>
         <Link href="/physiotherapist/sessions" className="shrink-0">
           <Button size="lg">
             <ClipboardList className="h-4 w-4 me-2" />
-            {PRIMARY_ACTION_LABEL}
+            {t(locale, "spec.physio.viewSessions")}
           </Button>
         </Link>
       </div>
@@ -124,15 +132,15 @@ export default function PhysiotherapistDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Recent Sessions
+              {t(locale, "spec.dash.recentSessions")}
             </CardTitle>
             <Link href="/physiotherapist/sessions" className="text-sm text-primary hover:underline">
-              View all
+              {t(locale, "spec.dash.viewAll")}
             </Link>
           </CardHeader>
           <CardContent>
             {recentSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No sessions recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.dash.noSessions")}</p>
             ) : (
               <div className="space-y-3">
                 {recentSessions.map((s) => (
@@ -144,7 +152,9 @@ export default function PhysiotherapistDashboardPage() {
                       <p className="text-sm font-medium truncate">{s.patient_name}</p>
                       <p className="text-xs text-muted-foreground">{s.session_date}</p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{s.duration_minutes} min</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t(locale, "spec.physio.minutes", { n: s.duration_minutes })}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -156,12 +166,12 @@ export default function PhysiotherapistDashboardPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Active Programs
+              {t(locale, "spec.physio.activePrograms")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {activePrograms.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No active programs.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.physio.noPrograms")}</p>
             ) : (
               <div className="space-y-3">
                 {activePrograms.slice(0, 5).map((p) => (
