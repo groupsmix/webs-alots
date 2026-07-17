@@ -1,5 +1,9 @@
 import { Apple, Users, Scale, Calculator, Calendar, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const PRIMARY_ACTION_LABEL = "Create meal plan";
 
 const stats = [
   { icon: Users, label: "Active Patients", value: "0", color: "text-blue-600" },
@@ -11,8 +15,18 @@ const stats = [
 export default function NutritionistDashboardPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Nutritionist Dashboard</h1>
-      <p className="text-sm text-muted-foreground mb-6">Nutritionniste — أخصائي تغذية</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Nutritionist Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Nutritionniste — أخصائي تغذية</p>
+        </div>
+        <Link href="/nutritionist/meal-plans" className="shrink-0">
+          <Button size="lg">
+            <Apple className="h-4 w-4 me-2" />
+            {PRIMARY_ACTION_LABEL}
+          </Button>
+        </Link>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat) => (
