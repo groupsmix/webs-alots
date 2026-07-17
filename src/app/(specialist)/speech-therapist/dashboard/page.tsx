@@ -3,6 +3,7 @@
 import { Mic, Users, BookOpen, FileText, Calendar, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +13,8 @@ import {
   fetchSpeechExercises,
   fetchSpeechProgressReports,
 } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import type { SpeechSession, SpeechExercise, SpeechProgressReport } from "@/lib/types/para-medical";
-
-const PRIMARY_ACTION_LABEL = "View sessions";
 
 function withinDays(dateStr: string, days: number): boolean {
   if (!dateStr) return false;
@@ -25,6 +25,7 @@ function withinDays(dateStr: string, days: number): boolean {
 
 export default function SpeechTherapistDashboardPage() {
   const tenant = useTenant();
+  const [locale] = useLocale();
   const [sessions, setSessions] = useState<SpeechSession[]>([]);
   const [exercises, setExercises] = useState<SpeechExercise[]>([]);
   const [reports, setReports] = useState<SpeechProgressReport[]>([]);
@@ -58,15 +59,13 @@ export default function SpeechTherapistDashboardPage() {
   }, [tenant?.clinicId]);
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "spec.dash.loading")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">{t(locale, "spec.dash.loadError")}</p>
       </div>
     );
   }
@@ -77,15 +76,30 @@ export default function SpeechTherapistDashboardPage() {
   const sessionsThisWeek = sessions.filter((s) => withinDays(s.session_date, 7)).length;
 
   const stats = [
-    { icon: Users, label: "Active Patients", value: activePatients, color: "text-blue-600" },
-    { icon: Mic, label: "Sessions This Week", value: sessionsThisWeek, color: "text-teal-600" },
+    {
+      icon: Users,
+      label: t(locale, "spec.dash.activePatients"),
+      value: activePatients,
+      color: "text-blue-600",
+    },
+    {
+      icon: Mic,
+      label: t(locale, "spec.dash.sessionsThisWeek"),
+      value: sessionsThisWeek,
+      color: "text-teal-600",
+    },
     {
       icon: BookOpen,
-      label: "Exercises in Library",
+      label: t(locale, "spec.speech.exercisesInLibrary"),
       value: exercises.length,
       color: "text-green-600",
     },
-    { icon: FileText, label: "Progress Reports", value: reports.length, color: "text-purple-600" },
+    {
+      icon: FileText,
+      label: t(locale, "spec.speech.progressReportsStat"),
+      value: reports.length,
+      color: "text-purple-600",
+    },
   ];
 
   const recentSessions = [...sessions]
@@ -99,13 +113,12 @@ export default function SpeechTherapistDashboardPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Speech Therapist Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Orthophoniste — أخصائي نطق</p>
+          <h1 className="text-2xl font-bold">{t(locale, "spec.speech.title")}</h1>
         </div>
         <Link href="/speech-therapist/sessions" className="shrink-0">
           <Button size="lg">
             <Mic className="h-4 w-4 me-2" />
-            {PRIMARY_ACTION_LABEL}
+            {t(locale, "spec.physio.viewSessions")}
           </Button>
         </Link>
       </div>
@@ -131,18 +144,18 @@ export default function SpeechTherapistDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Recent Sessions
+              {t(locale, "spec.dash.recentSessions")}
             </CardTitle>
             <Link
               href="/speech-therapist/sessions"
               className="text-sm text-primary hover:underline"
             >
-              View all
+              {t(locale, "spec.dash.viewAll")}
             </Link>
           </CardHeader>
           <CardContent>
             {recentSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No sessions recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.dash.noSessions")}</p>
             ) : (
               <div className="space-y-3">
                 {recentSessions.map((s) => (
@@ -168,15 +181,15 @@ export default function SpeechTherapistDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Recent Progress Reports
+              {t(locale, "spec.speech.recentReports")}
             </CardTitle>
             <Link href="/speech-therapist/reports" className="text-sm text-primary hover:underline">
-              View all
+              {t(locale, "spec.dash.viewAll")}
             </Link>
           </CardHeader>
           <CardContent>
             {recentReports.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No progress reports yet.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "spec.speech.noReports")}</p>
             ) : (
               <div className="space-y-3">
                 {recentReports.map((r) => (
