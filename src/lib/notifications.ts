@@ -29,6 +29,7 @@ export type NotificationTrigger =
   | "rescheduled"
   | "doctor_assigned"
   | "follow_up"
+  | "recall"
   | "nps_survey";
 
 export type NotificationChannel = "whatsapp" | "in_app" | "email" | "sms";
@@ -278,6 +279,20 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     priority: "high",
     recipientRoles: ["patient", "doctor", "receptionist"],
   },
+  {
+    id: "tpl_recall",
+    trigger: "recall",
+    name: "recall",
+    label: "Patient Recall",
+    channels: ["whatsapp", "in_app"],
+    subject: "Time for your next visit",
+    body: "Hello {{patient_name}}, it's time to schedule your next visit for {{service_name}}. Contact us to book. {{clinic_name}}",
+    whatsappBody:
+      "Hello {{patient_name}}, it's time to schedule your next visit for {{service_name}}. Reply to this message or call us to book. — {{clinic_name}}",
+    enabled: true,
+    priority: "normal",
+    recipientRoles: ["patient"],
+  },
 ];
 
 // ---- Trigger Metadata ----
@@ -355,6 +370,11 @@ export const triggerMetadata: Record<
     label: "Follow-up",
     description: "Follow-up reminder after a visit",
     icon: "RefreshCw",
+  },
+  recall: {
+    label: "Recall",
+    description: "Recurring recall to bring a patient back for care",
+    icon: "CalendarHeart",
   },
   nps_survey: {
     label: "NPS Survey",

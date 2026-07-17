@@ -27,6 +27,7 @@
  *                        /api/cron/ai-clinic-briefings (AI executive briefings)
  *   - daily 08:00    →  /api/cron/onboarding-nudges (stalled-clinic onboarding)
  *   - daily 09:00    →  /api/cron/payment-reminders (overdue + upcoming)
+ *                        /api/cron/recalls        (dental recall campaigns)
  *   - daily 06:30    →  /api/cron/trial-lifecycle (trial expiry warnings + downgrades)
  *
  * @see https://opennext.js.org/cloudflare/howtos/custom-worker
@@ -66,7 +67,7 @@ export const CRON_ROUTES: Record<string, string[]> = {
     "/api/cron/ai-embed-faqs",
   ],
   "0 8 * * *": ["/api/cron/onboarding-nudges"],
-  "0 9 * * *": ["/api/cron/payment-reminders"],
+  "0 9 * * *": ["/api/cron/payment-reminders", "/api/cron/recalls"],
   "30 6 * * *": ["/api/cron/trial-lifecycle"],
 };
 

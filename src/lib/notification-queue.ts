@@ -71,7 +71,7 @@ const DEAD_LETTER_NEXT_RETRY = "9999-12-31T23:59:59Z";
  * Appointment reminders, confirmations, and cancellations are transactional
  * and are allowed without a separate opt-in.
  */
-const WHATSAPP_CONSENT_REQUIRED_TRIGGERS: string[] = ["no_show", "nps_survey"];
+const WHATSAPP_CONSENT_REQUIRED_TRIGGERS: string[] = ["no_show", "nps_survey", "recall"];
 
 // ── Backoff Calculation ──
 

@@ -63,6 +63,7 @@ export function isTriggerEnabled(
     case "prescription_ready":
       return preferences.prescription_updates;
     case "new_review":
+    case "recall":
       return preferences.marketing_updates;
     default:
       return true;
