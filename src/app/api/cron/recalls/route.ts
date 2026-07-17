@@ -34,6 +34,16 @@ const MAX_COMPLETED_PER_RUN = 2_000;
 /** Max recalls dispatched per run (send phase). */
 const MAX_RECALLS_PER_RUN = 500;
 
+/** Columns selected from completed appointments during recall generation. */
+const APPOINTMENT_RECALL_COLS =
+  "id, clinic_id, patient_id, service_id, appointment_date, slot_start, updated_at, services:service_id (name)" as const;
+
+/** Upsert options that make recall generation idempotent per source appointment. */
+const RECALL_UPSERT_OPTIONS = {
+  onConflict: "clinic_id,source_appointment_id,recall_type",
+  ignoreDuplicates: true,
+} as const;
+
 function firstOf<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
@@ -64,6 +74,7 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
+    // nosemgrep: semgrep.admin-client-guard — recalls run as a cross-tenant cron sweep; per-clinic scoping is enforced row-by-row below
     const supabase = createAdminClient("cron");
     const recallsClient = supabase as unknown as ExtendedClient;
 
@@ -88,12 +99,9 @@ async function handler(request: NextRequest) {
       Date.now() - GENERATION_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each row is assertClinicId-validated and clinic_id-scoped downstream
     const { data: completed, error: completedError } = await supabase
-      .from("appointments") // nosemgrep: semgrep.tenant-scoping
-      .select(
-        "id, clinic_id, patient_id, service_id, appointment_date, slot_start, updated_at, services:service_id (name)",
-      )
+      .from("appointments")
+      .select(APPOINTMENT_RECALL_COLS) // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each row is assertClinicId-validated and clinic_id-scoped downstream
       .eq("status", APPOINTMENT_STATUS.COMPLETED)
       .gte("updated_at", lookbackISO)
       .not("service_id", "is", null)
@@ -140,13 +148,9 @@ async function handler(request: NextRequest) {
 
     let generated = 0;
     if (recallsToCreate.length > 0) {
-      // nosemgrep: semgrep.tenant-scoping — bulk upsert; every row carries its own clinic_id (see recallsToCreate)
       const { data: inserted, error: insertError } = await recallsClient
-        .from("patient_recalls") // nosemgrep: semgrep.tenant-scoping
-        .upsert(recallsToCreate, {
-          onConflict: "clinic_id,source_appointment_id,recall_type",
-          ignoreDuplicates: true,
-        })
+        .from("patient_recalls")
+        .upsert(recallsToCreate, RECALL_UPSERT_OPTIONS) // nosemgrep: semgrep.tenant-scoping — bulk upsert; every row carries its own clinic_id (see recallsToCreate)
         .select("id");
       if (insertError) {
         logger.warn("recalls cron: failed to insert recalls", {
@@ -161,10 +165,9 @@ async function handler(request: NextRequest) {
     // ── Phase 2: Dispatch due recalls ──
 
     const today = new Date().toISOString().slice(0, 10);
-    // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each recall is assertClinicId-validated and clinic_id-scoped before dispatch/update
     const { data: dueRecalls, error: dueError } = await recallsClient
-      .from("patient_recalls") // nosemgrep: semgrep.tenant-scoping
-      .select("id, clinic_id, patient_id, service_id, recall_type, due_date")
+      .from("patient_recalls")
+      .select("id, clinic_id, patient_id, service_id, recall_type, due_date") // nosemgrep: semgrep.tenant-scoping — cross-tenant cron sweep; each recall is assertClinicId-validated and clinic_id-scoped before dispatch/update
       .eq("status", "pending")
       .lte("due_date", today)
       .order("due_date", { ascending: true })
@@ -188,8 +191,7 @@ async function handler(request: NextRequest) {
     const clinicIds = [...new Set(recalls.map((r) => r.clinic_id))];
 
     const [{ data: patients }, { data: clinics }] = await Promise.all([
-      // nosemgrep: semgrep.tenant-scoping — batch lookup by primary key for the clinic-scoped recalls resolved above
-      supabase.from("users").select("id, name, phone").in("id", patientIds),
+      supabase.from("users").select("id, name, phone").in("id", patientIds), // nosemgrep: semgrep.tenant-scoping — batch lookup by primary key for the clinic-scoped recalls resolved above
       supabase.from("clinics").select("id, name, config").in("id", clinicIds),
     ]);
 
