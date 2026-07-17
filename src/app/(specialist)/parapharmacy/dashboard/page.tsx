@@ -1,11 +1,20 @@
 "use client";
 
-import { ShoppingBag, AlertTriangle, Clock, Package, ArrowRight, DollarSign } from "lucide-react";
+import {
+  ShoppingBag,
+  AlertTriangle,
+  Clock,
+  Package,
+  ArrowRight,
+  DollarSign,
+  Receipt,
+} from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
@@ -17,6 +26,8 @@ import {
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
+
+const PRIMARY_ACTION_LABEL = "New sale";
 
 export default function ParapharmacyDashboardPage() {
   const [locale] = useLocale();
@@ -76,14 +87,22 @@ export default function ParapharmacyDashboardPage() {
           <h1 className="text-2xl font-bold">Parapharmacy Dashboard</h1>
           <p className="text-muted-foreground text-sm">Overview of your parapharmacy operations</p>
         </div>
-        <Badge variant="outline" className="text-pink-600 border-pink-600">
-          <Clock className="h-3 w-3 me-1" />
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/parapharmacy/sales">
+            <Button size="lg">
+              <Receipt className="h-4 w-4 me-2" />
+              {PRIMARY_ACTION_LABEL}
+            </Button>
+          </Link>
+          <Badge variant="outline" className="text-pink-600 border-pink-600">
+            <Clock className="h-3 w-3 me-1" />
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">

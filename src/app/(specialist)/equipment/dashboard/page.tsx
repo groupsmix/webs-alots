@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
@@ -121,10 +122,18 @@ export default function EquipmentDashboardPage() {
           <h1 className="text-2xl font-bold">{t("dashboardTitle")}</h1>
           <p className="text-muted-foreground text-sm">{t("dashboardSubtitle")}</p>
         </div>
-        <Badge variant="outline" className="text-amber-600 border-amber-600">
-          <Clock className="h-3 w-3 me-1" />
-          {now.toLocaleDateString(dateFmt, { weekday: "long", month: "long", day: "numeric" })}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/equipment/rentals">
+            <Button size="lg">
+              <HandCoins className="h-4 w-4 me-2" />
+              {t("addRental")}
+            </Button>
+          </Link>
+          <Badge variant="outline" className="text-amber-600 border-amber-600">
+            <Clock className="h-3 w-3 me-1" />
+            {now.toLocaleDateString(dateFmt, { weekday: "long", month: "long", day: "numeric" })}
+          </Badge>
+        </div>
       </div>
 
       {/* Maintenance alerts banner */}

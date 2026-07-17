@@ -13,10 +13,13 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
+
+const PRIMARY_ACTION_LABEL = "View studies";
 
 const RADIOLOGY_LIMITED_MODE_MESSAGE =
   "This deployment is in limited radiology mode: existing studies can be viewed, but ordering, uploads, status updates, and report generation are disabled.";
@@ -86,14 +89,22 @@ export default function RadiologyDashboardPage() {
               Overview of existing imaging data and study status
             </p>
           </div>
-          <Badge variant="outline" className="text-indigo-600 border-indigo-600">
-            <Clock className="h-3 w-3 me-1" />
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/radiology/images">
+              <Button size="lg">
+                <ImageIcon className="h-4 w-4 me-2" />
+                {PRIMARY_ACTION_LABEL}
+              </Button>
+            </Link>
+            <Badge variant="outline" className="text-indigo-600 border-indigo-600">
+              <Clock className="h-3 w-3 me-1" />
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </Badge>
+          </div>
         </div>
       </div>
 
