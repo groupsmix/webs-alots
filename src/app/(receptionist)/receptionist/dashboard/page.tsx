@@ -246,12 +246,20 @@ export default function ReceptionistDashboardPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t(locale, "receptionist.dash.title")}</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ManualBookingDialog
             trigger={
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 me-1" />
+              <Button size="lg">
+                <Calendar className="h-4 w-4 me-2" />
                 {t(locale, "receptionist.dash.manualBooking")}
+              </Button>
+            }
+          />
+          <WalkInDialog
+            trigger={
+              <Button variant="secondary" size="lg">
+                <UserPlus className="h-4 w-4 me-2" />
+                {t(locale, "receptionist.dash.walkIn")}
               </Button>
             }
           />

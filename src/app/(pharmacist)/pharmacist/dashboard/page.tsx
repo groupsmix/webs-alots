@@ -19,6 +19,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -39,6 +40,7 @@ import type {
   PurchaseOrderView,
   LoyaltyMemberView,
 } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import { getLocalDateStr, formatCurrency, formatNumber } from "@/lib/utils";
 
 // ── Date helpers ──
@@ -185,14 +187,22 @@ export default function PharmacistDashboardPage() {
           <h1 className="text-2xl font-bold">Pharmacist Dashboard</h1>
           <p className="text-muted-foreground text-sm">Overview of your pharmacy operations</p>
         </div>
-        <Badge variant="outline" className="text-emerald-600 border-emerald-600">
-          <Clock className="h-3 w-3 me-1" />
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/pharmacist/prescriptions">
+            <Button size="lg">
+              <Pill className="h-4 w-4 me-2" />
+              {t(locale, "pharmacist.fillPrescription")}
+            </Button>
+          </Link>
+          <Badge variant="outline" className="text-emerald-600 border-emerald-600">
+            <Clock className="h-3 w-3 me-1" />
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </Badge>
+        </div>
       </div>
 
       {/* KPI Stats Cards */}

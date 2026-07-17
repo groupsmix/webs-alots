@@ -1366,6 +1366,7 @@
   "admin.nav.activityLog": "Journal d'activité",
   "admin.nav.privacyData": "Confidentialité et données",
   "admin.nav.systemStatus": "État du système",
+  "pharmacist.fillPrescription": "Préparer une ordonnance",
   "admin.mobile.dashboard": "Tableau de bord",
   "admin.mobile.patients": "Patients",
   "admin.mobile.billing": "Facturation",
