@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -18,6 +19,7 @@ import {
   getPublicReviews,
   getPublicAverageRating,
 } from "@/lib/data/public";
+import { t, type Locale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Cabinet Dentaire — Accueil",
@@ -35,12 +37,14 @@ const linkBtnOutline =
   "inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
 export default async function DentistHomePage() {
-  const [services, branding, reviews, avgRating] = await Promise.all([
+  const [services, branding, reviews, avgRating, h] = await Promise.all([
     getPublicServices(),
     getPublicBranding(),
     getPublicReviews(),
     getPublicAverageRating(),
+    headers(),
   ]);
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   const activeServices = services.filter((s) => s.active).slice(0, 6);
   // Issue 53: Show all reviews unfiltered (consistent with main public page)
@@ -54,20 +58,20 @@ export default async function DentistHomePage() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-4">
-                Your Smile, <span className="text-sky-600">Our Expertise</span>
+                {t(locale, "dentist.home.heroTitleLead")}{" "}
+                <span className="text-sky-600">{t(locale, "dentist.home.heroTitleAccent")}</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-                Comprehensive dental care with a gentle touch. From routine cleanings to advanced
-                cosmetic dentistry, we create beautiful, healthy smiles.
+                {t(locale, "dentist.home.heroSubtitle")}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/book" className={linkBtnPrimary}>
                   <CalendarCheck className="me-2 h-4 w-4" />
-                  Book Appointment
+                  {t(locale, "dentist.home.ctaBook")}
                 </Link>
                 <Link href="/dentist/services" className={linkBtnOutline}>
                   <Smile className="me-2 h-4 w-4" />
-                  Our Services
+                  {t(locale, "dentist.home.ctaServices")}
                 </Link>
               </div>
             </div>
@@ -81,7 +85,9 @@ export default async function DentistHomePage() {
                     <Star className="h-5 w-5 text-yellow-500" />
                     <div>
                       <p className="text-sm font-semibold">{avgRating.toFixed(1)}/5</p>
-                      <p className="text-xs text-muted-foreground">Rating</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t(locale, "dentist.home.statRating")}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -89,8 +95,12 @@ export default async function DentistHomePage() {
                   <div className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-sky-600" />
                     <div>
-                      <p className="text-sm font-semibold">15+ yrs</p>
-                      <p className="text-xs text-muted-foreground">Experience</p>
+                      <p className="text-sm font-semibold">
+                        {t(locale, "dentist.home.statExperienceValue")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t(locale, "dentist.home.statExperienceLabel")}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -104,9 +114,9 @@ export default async function DentistHomePage() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold">Dental Services</h2>
+            <h2 className="text-3xl font-bold">{t(locale, "dentist.home.servicesHeading")}</h2>
             <Link href="/dentist/services" className={linkBtnOutline}>
-              All Services <ArrowRight className="ms-2 h-4 w-4" />
+              {t(locale, "dentist.home.allServices")} <ArrowRight className="ms-2 h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -145,13 +155,12 @@ export default async function DentistHomePage() {
       {/* Before/After CTA */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">See Our Results</h2>
+          <h2 className="text-3xl font-bold mb-4">{t(locale, "dentist.home.resultsHeading")}</h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Browse our before &amp; after gallery to see real transformations from our dental
-            treatments.
+            {t(locale, "dentist.home.resultsText")}
           </p>
           <Link href="/dentist/gallery" className={linkBtnPrimary}>
-            View Gallery <ArrowRight className="ms-2 h-4 w-4" />
+            {t(locale, "dentist.home.viewGallery")} <ArrowRight className="ms-2 h-4 w-4" />
           </Link>
         </div>
       </section>
@@ -160,7 +169,9 @@ export default async function DentistHomePage() {
       {topReviews.length > 0 && (
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-8">Patient Reviews</h2>
+            <h2 className="text-3xl font-bold text-center mb-8">
+              {t(locale, "dentist.home.reviewsHeading")}
+            </h2>
             <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
               {topReviews.map((review) => (
                 <Card key={review.id}>
@@ -168,7 +179,7 @@ export default async function DentistHomePage() {
                     <div
                       className="flex gap-0.5 mb-3"
                       role="img"
-                      aria-label={`${review.rating} out of 5 stars`}
+                      aria-label={t(locale, "testimonials.starsAria", { rating: review.rating })}
                     >
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
@@ -199,11 +210,12 @@ export default async function DentistHomePage() {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <AlertTriangle className="h-6 w-6 text-red-600" />
-            <h2 className="text-2xl font-bold text-red-700 dark:text-red-400">Dental Emergency?</h2>
+            <h2 className="text-2xl font-bold text-red-700 dark:text-red-400">
+              {t(locale, "dentist.home.emergencyHeading")}
+            </h2>
           </div>
           <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-            For urgent dental issues such as severe pain, broken teeth, or swelling, contact us
-            immediately. We prioritize emergency appointments.
+            {t(locale, "dentist.home.emergencyText")}
           </p>
           <div className="flex justify-center gap-3">
             {branding.phone && (
@@ -212,7 +224,7 @@ export default async function DentistHomePage() {
                 className="inline-flex items-center justify-center rounded-lg bg-red-600 text-white px-6 py-2.5 text-sm font-medium hover:bg-red-700 transition-colors"
               >
                 <Phone className="me-2 h-4 w-4" />
-                Call Now: {branding.phone}
+                {t(locale, "dentist.home.callNow", { phone: branding.phone })}
               </a>
             )}
             <Link
@@ -220,7 +232,7 @@ export default async function DentistHomePage() {
               className="inline-flex items-center justify-center rounded-lg border border-red-300 text-red-600 px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
             >
               <MapPin className="me-2 h-4 w-4" />
-              Find Us
+              {t(locale, "dentist.home.findUs")}
             </Link>
           </div>
         </div>

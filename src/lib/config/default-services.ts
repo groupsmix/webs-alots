@@ -55,9 +55,15 @@ const OPHTHALMOLOGY_SERVICES: DefaultService[] = [
 const DENTAL_SERVICES: DefaultService[] = [
   { name: "Consultation dentaire", duration_minutes: 30, price: 200 },
   { name: "Détartrage", duration_minutes: 30, price: 300 },
+  { name: "Soin de carie", duration_minutes: 45, price: 400 },
+  { name: "Dévitalisation (traitement de canal)", duration_minutes: 60, price: 800 },
   { name: "Extraction dentaire", duration_minutes: 30, price: 400 },
-  { name: "Blanchiment dentaire", duration_minutes: 60, price: 1500 },
   { name: "Plombage", duration_minutes: 30, price: 350 },
+  { name: "Couronne dentaire", duration_minutes: 60, price: 2500 },
+  { name: "Pose d'implant", duration_minutes: 90, price: 6000 },
+  { name: "Consultation orthodontie", duration_minutes: 30, price: 300 },
+  { name: "Blanchiment dentaire", duration_minutes: 60, price: 1500 },
+  { name: "Urgence dentaire", duration_minutes: 30, price: 300 },
 ];
 
 const PHYSIOTHERAPY_SERVICES: DefaultService[] = [

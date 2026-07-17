@@ -1,5 +1,6 @@
 import { Clock, CreditCard, Calendar, Smile } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -12,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
+import { t, type Locale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Services Dentaires",
@@ -20,41 +22,45 @@ export const metadata: Metadata = {
 };
 
 const toothDiagramCategories: Record<string, { label: string; color: string; teeth: string }> = {
-  general: { label: "General Dentistry", color: "bg-sky-100 text-sky-700", teeth: "All teeth" },
+  general: {
+    label: "Dentisterie générale",
+    color: "bg-sky-100 text-sky-700",
+    teeth: "Toutes les dents",
+  },
   cosmetic: {
-    label: "Cosmetic Dentistry",
+    label: "Dentisterie esthétique",
     color: "bg-purple-100 text-purple-700",
-    teeth: "Front teeth (incisors, canines)",
+    teeth: "Dents antérieures (incisives, canines)",
   },
   orthodontics: {
-    label: "Orthodontics",
+    label: "Orthodontie",
     color: "bg-pink-100 text-pink-700",
-    teeth: "Full arch alignment",
+    teeth: "Alignement de l'arcade complète",
   },
   implants: {
-    label: "Implantology",
+    label: "Implantologie",
     color: "bg-amber-100 text-amber-700",
-    teeth: "Single or multiple tooth replacement",
+    teeth: "Remplacement d'une ou plusieurs dents",
   },
   surgery: {
-    label: "Oral Surgery",
+    label: "Chirurgie buccale",
     color: "bg-red-100 text-red-700",
-    teeth: "Wisdom teeth, extractions",
+    teeth: "Dents de sagesse, extractions",
   },
   pediatric: {
-    label: "Pediatric Dentistry",
+    label: "Dentisterie pédiatrique",
     color: "bg-green-100 text-green-700",
-    teeth: "Primary (baby) teeth",
+    teeth: "Dents de lait",
   },
   endodontics: {
-    label: "Endodontics",
+    label: "Endodontie",
     color: "bg-orange-100 text-orange-700",
-    teeth: "Root canal treatment",
+    teeth: "Traitement de canal",
   },
   periodontics: {
-    label: "Periodontics",
+    label: "Parodontie",
     color: "bg-teal-100 text-teal-700",
-    teeth: "Gums and supporting structures",
+    teeth: "Gencives et tissus de soutien",
   },
 };
 
@@ -107,7 +113,8 @@ function ToothDiagram({ category }: { category: string }) {
 }
 
 export default async function DentistServicesPage() {
-  const services = await getPublicServices();
+  const [services, h] = await Promise.all([getPublicServices(), headers()]);
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
   const activeServices = services.filter((s) => s.active);
 
   // Group by category
@@ -122,15 +129,14 @@ export default async function DentistServicesPage() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">Dental Services</h1>
+        <h1 className="text-3xl font-bold mb-4">{t(locale, "dentist.services.heading")}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Comprehensive dental care using the latest techniques and technology. Each treatment is
-          personalized to your needs.
+          {t(locale, "dentist.services.subtitle")}
         </p>
       </div>
 
       {activeServices.length === 0 ? (
-        <p className="text-center text-muted-foreground">No services available yet.</p>
+        <p className="text-center text-muted-foreground">{t(locale, "dentist.services.empty")}</p>
       ) : (
         <div className="space-y-12 max-w-5xl mx-auto">
           {Array.from(grouped.entries()).map(([category, categoryServices]) => {
@@ -187,7 +193,7 @@ export default async function DentistServicesPage() {
                           })}
                         >
                           <Calendar className="h-4 w-4 me-1" />
-                          Book This Treatment
+                          {t(locale, "dentist.services.book")}
                         </Link>
                       </CardFooter>
                     </Card>

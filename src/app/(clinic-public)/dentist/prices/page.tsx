@@ -1,23 +1,27 @@
 import { CreditCard, Calendar, Info, CheckCircle } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
+import { t, type Locale } from "@/lib/i18n";
 import { requireTenantWithConfig } from "@/lib/tenant";
 
 export const metadata: Metadata = {
-  title: "Treatment Price List",
+  title: "Grille tarifaire des soins",
   description:
-    "Transparent pricing for all dental treatments. Consultations, cleanings, implants, orthodontics, and more.",
+    "Des tarifs transparents pour tous les soins dentaires : consultations, détartrages, implants, orthodontie et plus encore.",
 };
 
 export default async function DentistPricesPage() {
-  const [services, { config: tenantConfig }] = await Promise.all([
+  const [services, { config: tenantConfig }, h] = await Promise.all([
     getPublicServices(),
     requireTenantWithConfig(),
+    headers(),
   ]);
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
   const activeServices = services.filter((s) => s.active);
 
   // Group by category
@@ -32,15 +36,14 @@ export default async function DentistPricesPage() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">Treatment Price List</h1>
+        <h1 className="text-3xl font-bold mb-4">{t(locale, "dentist.prices.heading")}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Transparent pricing for all our dental services. Prices are in {tenantConfig.currency}
-          and may vary based on treatment complexity.
+          {t(locale, "dentist.prices.subtitle", { currency: tenantConfig.currency })}
         </p>
       </div>
 
       {activeServices.length === 0 ? (
-        <p className="text-center text-muted-foreground">No services listed yet.</p>
+        <p className="text-center text-muted-foreground">{t(locale, "dentist.prices.empty")}</p>
       ) : (
         <div className="max-w-3xl mx-auto space-y-8">
           {Array.from(grouped.entries()).map(([category, categoryServices]) => (
@@ -67,7 +70,7 @@ export default async function DentistPricesPage() {
                         )}
                         {service.duration > 0 && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Duration: ~{service.duration} min
+                            {t(locale, "dentist.prices.duration", { duration: service.duration })}
                           </p>
                         )}
                       </div>
@@ -78,7 +81,7 @@ export default async function DentistPricesPage() {
                           </span>
                         ) : (
                           <Badge variant="secondary" className="text-xs">
-                            On consultation
+                            {t(locale, "dentist.prices.onConsultation")}
                           </Badge>
                         )}
                       </div>
@@ -94,24 +97,24 @@ export default async function DentistPricesPage() {
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Info className="h-5 w-5 text-sky-600" />
-                Payment Information
+                {t(locale, "dentist.prices.paymentInfo")}
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="flex items-start gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-sky-600 mt-0.5 flex-shrink-0" />
-                  <span>Cash and card payments accepted</span>
+                  <span>{t(locale, "dentist.prices.payCash")}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-sky-600 mt-0.5 flex-shrink-0" />
-                  <span>Installment plans available for major treatments</span>
+                  <span>{t(locale, "dentist.prices.payInstallments")}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-sky-600 mt-0.5 flex-shrink-0" />
-                  <span>Insurance claims (CNSS, CNOPS) supported</span>
+                  <span>{t(locale, "dentist.prices.payInsurance")}</span>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-sky-600 mt-0.5 flex-shrink-0" />
-                  <span>Free initial consultation for complex cases</span>
+                  <span>{t(locale, "dentist.prices.payFirstFree")}</span>
                 </div>
               </div>
             </CardContent>
@@ -119,13 +122,10 @@ export default async function DentistPricesPage() {
 
           {/* CTA */}
           <div className="text-center pt-4">
-            <p className="text-muted-foreground mb-4">
-              Prices are indicative and may vary based on individual treatment plans. Book a
-              consultation for an accurate estimate.
-            </p>
+            <p className="text-muted-foreground mb-4">{t(locale, "dentist.prices.ctaText")}</p>
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
               <Calendar className="h-4 w-4 me-2" />
-              Book Consultation
+              {t(locale, "dentist.prices.book")}
             </Link>
           </div>
         </div>

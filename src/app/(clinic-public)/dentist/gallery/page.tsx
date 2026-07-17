@@ -1,17 +1,19 @@
 import { Camera, Calendar, Shield } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicBranding } from "@/lib/data/public";
+import { t, type Locale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 
 export const metadata: Metadata = {
-  title: "Before & After Gallery",
+  title: "Galerie Avant / Après",
   description:
-    "Browse our dental before and after gallery. See real patient transformations from our dental treatments.",
+    "Découvrez notre galerie avant / après. De véritables transformations de patients issues de nos traitements dentaires.",
 };
 
 interface GalleryCase {
@@ -53,20 +55,24 @@ const categoryColors: Record<string, string> = {
 };
 
 export default async function GalleryPage() {
-  const [cases, branding] = await Promise.all([getApprovedBeforeAfterCases(), getPublicBranding()]);
+  const [cases, branding, h] = await Promise.all([
+    getApprovedBeforeAfterCases(),
+    getPublicBranding(),
+    headers(),
+  ]);
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">Before & After Gallery</h1>
+        <h1 className="text-3xl font-bold mb-4">{t(locale, "dentist.gallery.heading")}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Real results from our dental treatments at {branding.clinicName}. All cases shown with
-          patient consent.
+          {t(locale, "dentist.gallery.subtitle", { clinic: branding.clinicName })}
         </p>
         <div className="flex items-center justify-center gap-2 mt-4">
           <Shield className="h-4 w-4 text-sky-600" />
           <span className="text-sm text-muted-foreground">
-            Only approved cases with completed treatments are displayed
+            {t(locale, "dentist.gallery.consentNote")}
           </span>
         </div>
       </div>
@@ -74,14 +80,15 @@ export default async function GalleryPage() {
       {cases.length === 0 ? (
         <div className="text-center py-16">
           <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">Gallery Coming Soon</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            {t(locale, "dentist.gallery.comingSoonTitle")}
+          </h3>
           <p className="text-muted-foreground max-w-md mx-auto mb-6">
-            We are preparing our before and after gallery. Check back soon to see real patient
-            transformations.
+            {t(locale, "dentist.gallery.comingSoonText")}
           </p>
           <Link href="/book" className={buttonVariants()}>
             <Calendar className="h-4 w-4 me-2" />
-            Book a Consultation
+            {t(locale, "dentist.gallery.book")}
           </Link>
         </div>
       ) : (
@@ -105,13 +112,17 @@ export default async function GalleryPage() {
                     <div className="aspect-square bg-muted flex items-center justify-center border-r">
                       <div className="text-center">
                         <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
-                        <p className="text-xs text-muted-foreground font-medium">Before</p>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {t(locale, "dentist.gallery.before")}
+                        </p>
                       </div>
                     </div>
                     <div className="aspect-square bg-sky-50 dark:bg-sky-950/10 flex items-center justify-center">
                       <div className="text-center">
                         <Camera className="h-8 w-8 text-sky-600 mx-auto mb-1" />
-                        <p className="text-xs text-sky-600 font-medium">After</p>
+                        <p className="text-xs text-sky-600 font-medium">
+                          {t(locale, "dentist.gallery.after")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -126,7 +137,7 @@ export default async function GalleryPage() {
                       <span className="text-xs text-muted-foreground">{caseItem.beforeDate}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {caseItem.description || "Dental treatment transformation"}
+                      {caseItem.description || t(locale, "dentist.gallery.defaultCaption")}
                     </p>
                   </div>
                 </CardContent>
@@ -138,10 +149,10 @@ export default async function GalleryPage() {
 
       {/* CTA */}
       <div className="text-center mt-12">
-        <p className="text-muted-foreground mb-4">Ready to transform your smile?</p>
+        <p className="text-muted-foreground mb-4">{t(locale, "dentist.gallery.ctaText")}</p>
         <Link href="/book" className={buttonVariants({ size: "lg" })}>
           <Calendar className="h-4 w-4 me-2" />
-          Book Your Consultation
+          {t(locale, "dentist.gallery.book")}
         </Link>
       </div>
     </div>
