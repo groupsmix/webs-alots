@@ -261,6 +261,7 @@ export type AdminAuditLabel =
   | "ai-team-review"
   | "ai-triage"
   | "ai-tracing"
+  | "recall-dashboard"
   | "super_admin_feature_flags";
 
 /**

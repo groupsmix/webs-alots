@@ -202,7 +202,7 @@ describe("ReceptionistDashboardPage", () => {
     render(<Page />);
 
     await waitFor(() => {
-      expect(screen.queryByText("Loading...")).toBeNull();
+      expect(screen.getByText("100,00 MAD")).toBeTruthy();
     });
 
     expect(screen.getByText("2")).toBeTruthy();
