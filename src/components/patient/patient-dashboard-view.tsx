@@ -8,7 +8,6 @@ import {
   Pill,
   CreditCard,
   Users,
-  MessageSquare,
   ArrowRight,
   Activity,
   Heart,
@@ -30,22 +29,10 @@ import { formatDisplayDate } from "@/lib/utils";
 
 const quickLinkDefs = [
   {
-    icon: Calendar,
-    labelKey: "patient.myAppointments" as const,
-    descKey: "patient.myAppointmentsDesc" as const,
-    href: "/patient/appointments",
-  },
-  {
     icon: Activity,
     labelKey: "patient.medicalHistory" as const,
     descKey: "patient.medicalHistoryDesc" as const,
     href: "/patient/medical-history",
-  },
-  {
-    icon: Pill,
-    labelKey: "patient.prescriptions" as const,
-    descKey: "patient.prescriptionsDesc" as const,
-    href: "/patient/prescriptions",
   },
   {
     icon: FileText,
@@ -64,18 +51,6 @@ const quickLinkDefs = [
     labelKey: "patient.familyMembers" as const,
     descKey: "patient.familyMembersDesc" as const,
     href: "/patient/family",
-  },
-  {
-    icon: Bell,
-    labelKey: "patient.notifications" as const,
-    descKey: "patient.notificationsDesc" as const,
-    href: "/patient/notifications",
-  },
-  {
-    icon: MessageSquare,
-    labelKey: "patient.feedback" as const,
-    descKey: "patient.feedbackDesc" as const,
-    href: "/patient/feedback",
   },
 ];
 
@@ -287,8 +262,9 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
               ) : (
                 <div className="space-y-3">
                   {upcoming.slice(0, 3).map((apt) => (
-                    <div
+                    <Link
                       key={apt.id}
+                      href="/patient/appointments"
                       className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -300,13 +276,16 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                           <p className="text-xs text-muted-foreground">{apt.doctorName}</p>
                         </div>
                       </div>
-                      <div className="text-end">
-                        <p className="text-sm font-medium">
-                          {formatDisplayDate(apt.date, locale, "long")}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{apt.time}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="text-end">
+                          <p className="text-sm font-medium">
+                            {formatDisplayDate(apt.date, locale, "long")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{apt.time}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
