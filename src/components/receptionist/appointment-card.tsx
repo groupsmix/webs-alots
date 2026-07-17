@@ -20,6 +20,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { AppointmentView, PatientView } from "@/lib/data/client";
+import { t, type Locale } from "@/lib/i18n";
+
+const STATUS_LABEL_KEY: Record<string, string> = {
+  scheduled: "receptionist.apptCard.status.scheduled",
+  confirmed: "receptionist.apptCard.status.confirmed",
+  reminded: "receptionist.apptCard.status.reminded",
+  "in-progress": "receptionist.apptCard.status.inProgress",
+  completed: "receptionist.apptCard.status.completed",
+  "no-show": "receptionist.apptCard.status.noShow",
+  cancelled: "receptionist.apptCard.status.cancelled",
+};
 
 const statusVariant: Record<
   string,
@@ -38,6 +49,7 @@ export interface AppointmentCardProps {
   appointment: AppointmentView;
   patient?: PatientView;
   isCheckedIn: boolean;
+  locale: Locale;
   onCheckIn: (id: string) => void;
   onConfirm: (id: string) => void;
   onCancel: (id: string) => void;
@@ -49,6 +61,7 @@ export function AppointmentCard({
   appointment: apt,
   patient,
   isCheckedIn,
+  locale,
   onCheckIn,
   onConfirm,
   onCancel,
@@ -93,8 +106,10 @@ export function AppointmentCard({
           className="text-[11px] px-2 py-0.5"
         >
           {isCheckedIn
-            ? "Checked In"
-            : apt.status.charAt(0).toUpperCase() + apt.status.slice(1).replace("-", " ")}
+            ? t(locale, "receptionist.apptCard.checkedIn")
+            : STATUS_LABEL_KEY[apt.status]
+              ? t(locale, STATUS_LABEL_KEY[apt.status])
+              : apt.status.charAt(0).toUpperCase() + apt.status.slice(1).replace("-", " ")}
         </Badge>
       </div>
 
@@ -105,7 +120,7 @@ export function AppointmentCard({
             size="sm"
             className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-700"
             onClick={() => onCheckIn(apt.id)}
-            title="Mark Arrived"
+            title={t(locale, "receptionist.apptCard.action.markArrived")}
           >
             <CheckCircle className="h-4 w-4" />
           </Button>
@@ -117,7 +132,7 @@ export function AppointmentCard({
             size="sm"
             className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-700"
             onClick={handleWhatsApp}
-            title="Send WhatsApp Reminder"
+            title={t(locale, "receptionist.apptCard.action.sendWhatsApp")}
           >
             <MessageCircle className="h-4 w-4 text-green-600" />
           </Button>
@@ -134,19 +149,22 @@ export function AppointmentCard({
               onClick={() => onConfirm(apt.id)}
               disabled={apt.status === "confirmed"}
             >
-              <CheckCircle className="h-4 w-4 me-2 text-blue-600" /> Confirm
+              <CheckCircle className="h-4 w-4 me-2 text-blue-600" />{" "}
+              {t(locale, "receptionist.apptCard.action.confirm")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onReschedule(apt.id)}>
-              <Calendar className="h-4 w-4 me-2" /> Reschedule
+              <Calendar className="h-4 w-4 me-2" />{" "}
+              {t(locale, "receptionist.apptCard.action.reschedule")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => window.open(`/receptionist/patients/${apt.patientId}`, "_blank")}
             >
-              <FileText className="h-4 w-4 me-2" /> Open Patient File
+              <FileText className="h-4 w-4 me-2" />{" "}
+              {t(locale, "receptionist.apptCard.action.openFile")}
             </DropdownMenuItem>
             {patient && (
               <DropdownMenuItem onClick={handleCallPatient}>
-                <Phone className="h-4 w-4 me-2" /> Call Patient
+                <Phone className="h-4 w-4 me-2" /> {t(locale, "receptionist.apptCard.action.call")}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -154,13 +172,15 @@ export function AppointmentCard({
               onClick={() => onNoShow(apt.id)}
               className="text-destructive focus:text-destructive"
             >
-              <UserX className="h-4 w-4 me-2" /> Mark No-show
+              <UserX className="h-4 w-4 me-2" />{" "}
+              {t(locale, "receptionist.apptCard.action.markNoShow")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onCancel(apt.id)}
               className="text-destructive focus:text-destructive"
             >
-              <XCircle className="h-4 w-4 me-2" /> Cancel Booking
+              <XCircle className="h-4 w-4 me-2" />{" "}
+              {t(locale, "receptionist.apptCard.action.cancel")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

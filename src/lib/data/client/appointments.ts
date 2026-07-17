@@ -20,6 +20,7 @@ export interface AppointmentView {
   time: string;
   status: string;
   isFirstVisit: boolean;
+  isWalkIn?: boolean;
   hasInsurance: boolean;
   cancelledAt?: string;
   cancellationReason?: string;
@@ -75,6 +76,7 @@ function mapAppointment(raw: AppointmentRaw): AppointmentView {
     time: raw.start_time?.slice(0, 5) ?? "",
     status: raw.status?.replaceAll("_", "-") ?? "scheduled",
     isFirstVisit: raw.is_first_visit ?? false,
+    isWalkIn: raw.is_walk_in ?? false,
     hasInsurance: raw.insurance_flag ?? false,
     cancelledAt: raw.cancelled_at ?? undefined,
     cancellationReason: raw.cancellation_reason ?? undefined,

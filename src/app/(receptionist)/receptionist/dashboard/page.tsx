@@ -1,7 +1,19 @@
 "use client";
 
-import { Calendar, Users, UserPlus, Clock, CreditCard, FileText } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  UserPlus,
+  Clock,
+  CreditCard,
+  FileText,
+  CalendarCheck,
+  UserX,
+  Bell,
+  CheckCircle2,
+} from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
 import { AppointmentCard } from "@/components/receptionist/appointment-card";
 import { CashRegister } from "@/components/receptionist/cash-register";
@@ -25,6 +37,7 @@ import {
   type AppointmentView,
   type PatientView,
 } from "@/lib/data/client";
+import { t } from "@/lib/i18n";
 import { formatCurrency, getLocalDateStr } from "@/lib/utils";
 
 export default function ReceptionistDashboardPage() {
@@ -37,6 +50,9 @@ export default function ReceptionistDashboardPage() {
   const [clinicId, setClinicId] = useState("");
   const [rescheduleApptId, setRescheduleApptId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [locale] = useLocale();
+  const [activeTab, setActiveTab] = useState("today");
+  const [recallsDue, setRecallsDue] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,6 +86,18 @@ export default function ReceptionistDashboardPage() {
         .filter((inv) => inv.status === "paid" && inv.date.startsWith(monthPrefix))
         .reduce((sum, inv) => sum + inv.amount, 0);
       setMonthRevenue(revenue);
+      // Due-recall count (aggregate only — no patient data leaves the API).
+      try {
+        const res = await fetch("/api/receptionist/recalls-due");
+        if (res.ok) {
+          const json = await res.json();
+          if (!controller.signal.aborted && json?.ok) {
+            setRecallsDue(json.data?.count ?? 0);
+          }
+        }
+      } catch {
+        // Non-fatal: the recall count is supplementary to the schedule.
+      }
       setLoading(false);
     }
     load().catch((err) => {
@@ -99,24 +127,31 @@ export default function ReceptionistDashboardPage() {
   const completedAppts = todayAppts.filter((a) => a.status === "completed");
   const cancelledAppts = todayAppts.filter((a) => a.status === "cancelled");
   const noShowAppts = todayAppts.filter((a) => a.status === "no-show");
+  const toConfirmAppts = tomorrowAppts.filter((a) => a.status === "scheduled");
+  const walkInsToday = todayApptsFiltered.filter((a) => a.isWalkIn).length;
 
   const stats = [
     {
       icon: Calendar,
-      label: "Today's Bookings",
+      label: t(locale, "receptionist.dash.stat.todayBookings"),
       value: todayApptsFiltered.length.toString(),
       color: "text-blue-600",
     },
     {
       icon: Users,
-      label: "Checked In",
+      label: t(locale, "receptionist.dash.stat.checkedIn"),
       value: checkedInAppts.length.toString(),
       color: "text-green-600",
     },
-    { icon: UserPlus, label: "Walk-ins Today", value: "0", color: "text-purple-600" },
+    {
+      icon: UserPlus,
+      label: t(locale, "receptionist.dash.stat.walkIns"),
+      value: walkInsToday.toString(),
+      color: "text-purple-600",
+    },
     {
       icon: CreditCard,
-      label: "Revenue (Month)",
+      label: t(locale, "receptionist.dash.stat.revenueMonth"),
       value: `${formatCurrency(monthRevenue)}`,
       color: "text-orange-600",
     },
@@ -148,7 +183,7 @@ export default function ReceptionistDashboardPage() {
         <EmptyState
           icon={Calendar}
           title={emptyMessage}
-          description="Click Manual Booking or Walk-in Registration to add an appointment."
+          description={t(locale, "receptionist.dash.empty.hint")}
         />
       );
     }
@@ -160,6 +195,7 @@ export default function ReceptionistDashboardPage() {
             appointment={apt}
             patient={patientMap.get(apt.patientId)}
             isCheckedIn={checkedInIds.has(apt.id)}
+            locale={locale}
             onCheckIn={handleCheckIn}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
@@ -172,15 +208,13 @@ export default function ReceptionistDashboardPage() {
   };
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "receptionist.dash.loadingDashboard")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
+        <p className="text-red-600 font-medium">{t(locale, "receptionist.dash.loadError")}</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -193,7 +227,9 @@ export default function ReceptionistDashboardPage() {
   if (apptToReschedule) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Reschedule Appointment</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          {t(locale, "receptionist.dash.rescheduleTitle")}
+        </h1>
         <RescheduleDialog
           appointment={apptToReschedule}
           onClose={() => setRescheduleApptId(null)}
@@ -209,19 +245,79 @@ export default function ReceptionistDashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Reception Dashboard</h1>
+        <h1 className="text-2xl font-bold">{t(locale, "receptionist.dash.title")}</h1>
         <div className="flex gap-2">
           <ManualBookingDialog
             trigger={
               <Button variant="outline" size="sm">
                 <Calendar className="h-4 w-4 me-1" />
-                Manual Booking
+                {t(locale, "receptionist.dash.manualBooking")}
               </Button>
             }
           />
           <EndOfDayReportButton />
         </div>
       </div>
+
+      {/* À faire aujourd'hui — actionable strip */}
+      <Card className="mb-6 border-primary/30 bg-primary/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            {t(locale, "receptionist.dash.todo.title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {toConfirmAppts.length === 0 && noShowAppts.length === 0 && recallsDue === 0 ? (
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              {t(locale, "receptionist.dash.todo.allClear")}
+            </p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab("tomorrow")}
+                disabled={toConfirmAppts.length === 0}
+                className="flex items-center gap-3 rounded-lg border bg-background p-3 text-start transition-colors hover:bg-muted/50 disabled:opacity-50"
+              >
+                <CalendarCheck className="h-5 w-5 shrink-0 text-blue-600" />
+                <span className="min-w-0">
+                  <span className="block text-lg font-bold leading-none">
+                    {toConfirmAppts.length}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {t(locale, "receptionist.dash.todo.toConfirm")}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("no-show")}
+                disabled={noShowAppts.length === 0}
+                className="flex items-center gap-3 rounded-lg border bg-background p-3 text-start transition-colors hover:bg-muted/50 disabled:opacity-50"
+              >
+                <UserX className="h-5 w-5 shrink-0 text-red-600" />
+                <span className="min-w-0">
+                  <span className="block text-lg font-bold leading-none">{noShowAppts.length}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {t(locale, "receptionist.dash.todo.noShowsToRebook")}
+                  </span>
+                </span>
+              </button>
+              <div className="flex items-center gap-3 rounded-lg border bg-background p-3">
+                <Bell className="h-5 w-5 shrink-0 text-purple-600" />
+                <span className="min-w-0">
+                  <span className="block text-lg font-bold leading-none">{recallsDue}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {t(locale, "receptionist.dash.todo.recallsDue")}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats Row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -247,76 +343,76 @@ export default function ReceptionistDashboardPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Appointment Board
+              {t(locale, "receptionist.dash.board.title")}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="today" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="w-full justify-start overflow-x-auto h-auto flex-wrap mb-4 bg-transparent p-0 gap-1">
                 <TabsTrigger
                   value="today"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  Today
+                  {t(locale, "receptionist.dash.tab.today")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="tomorrow"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  Tomorrow
+                  {t(locale, "receptionist.dash.tab.tomorrow")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="checked-in"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  Checked In
+                  {t(locale, "receptionist.dash.tab.checkedIn")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="waiting"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  Waiting
+                  {t(locale, "receptionist.dash.tab.waiting")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="completed"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  Completed
+                  {t(locale, "receptionist.dash.tab.completed")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="cancelled"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  Cancelled
+                  {t(locale, "receptionist.dash.tab.cancelled")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="no-show"
                   className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border"
                 >
-                  No-show
+                  {t(locale, "receptionist.dash.tab.noShow")}
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="today" className="m-0">
-                {renderApptList(todayApptsFiltered, "No appointments scheduled for today.")}
+                {renderApptList(todayApptsFiltered, t(locale, "receptionist.dash.empty.today"))}
               </TabsContent>
               <TabsContent value="tomorrow" className="m-0">
-                {renderApptList(tomorrowAppts, "No appointments scheduled for tomorrow.")}
+                {renderApptList(tomorrowAppts, t(locale, "receptionist.dash.empty.tomorrow"))}
               </TabsContent>
               <TabsContent value="checked-in" className="m-0">
-                {renderApptList(checkedInAppts, "No patients currently checked in.")}
+                {renderApptList(checkedInAppts, t(locale, "receptionist.dash.empty.checkedIn"))}
               </TabsContent>
               <TabsContent value="waiting" className="m-0">
-                {renderApptList(waitingAppts, "No patients waiting.")}
+                {renderApptList(waitingAppts, t(locale, "receptionist.dash.empty.waiting"))}
               </TabsContent>
               <TabsContent value="completed" className="m-0">
-                {renderApptList(completedAppts, "No completed appointments yet.")}
+                {renderApptList(completedAppts, t(locale, "receptionist.dash.empty.completed"))}
               </TabsContent>
               <TabsContent value="cancelled" className="m-0">
-                {renderApptList(cancelledAppts, "No cancelled appointments.")}
+                {renderApptList(cancelledAppts, t(locale, "receptionist.dash.empty.cancelled"))}
               </TabsContent>
               <TabsContent value="no-show" className="m-0">
-                {renderApptList(noShowAppts, "No no-shows recorded.")}
+                {renderApptList(noShowAppts, t(locale, "receptionist.dash.empty.noShow"))}
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -330,11 +426,13 @@ export default function ReceptionistDashboardPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Waiting Room
+                {t(locale, "receptionist.dash.waitingRoom.title")}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <p className="text-sm text-muted-foreground">
+                {t(locale, "receptionist.dash.loading")}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -346,7 +444,7 @@ export default function ReceptionistDashboardPage() {
             trigger={
               <Button className="w-full">
                 <UserPlus className="h-4 w-4 me-1" />
-                Walk-in Registration
+                {t(locale, "receptionist.dash.walkIn")}
               </Button>
             }
           />
@@ -362,21 +460,21 @@ export default function ReceptionistDashboardPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Quick Links
+                {t(locale, "receptionist.dash.quickLinks")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <a href="/receptionist/daily-report" className="block">
                 <Button variant="outline" size="sm" className="w-full justify-start">
                   <FileText className="h-3.5 w-3.5 me-2" />
-                  Full Daily Report
+                  {t(locale, "receptionist.dash.fullDailyReport")}
                 </Button>
               </a>
               <PaymentDialog
                 trigger={
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     <CreditCard className="h-3.5 w-3.5 me-2" />
-                    Advanced Payment
+                    {t(locale, "receptionist.dash.advancedPayment")}
                   </Button>
                 }
               />
