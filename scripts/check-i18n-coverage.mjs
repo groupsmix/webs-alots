@@ -64,8 +64,6 @@ const usedKeys = new Set();
 for (const dir of SOURCE_DIRS) {
   for (const file of walk(dir)) {
     const content = readFileSync(file, "utf8");
-    // Skip equipment i18n files; their t() keys come from a different dictionary.
-    if (/useEquipmentI18n|use-equipment-i18n/.test(content)) continue;
     if (file.endsWith("src/lib/i18n.ts")) continue;
     let match;
     while ((match = tKeyPattern.exec(content)) !== null) {
