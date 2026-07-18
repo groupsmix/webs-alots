@@ -5,7 +5,7 @@
  *                              and persist the URL to the clinics table
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { meetsWCAG_AA, WCAG_SAFE_DEFAULTS } from "@/lib/contrast";
@@ -189,7 +189,10 @@ export const PUT = withAuthValidation(
       return apiInternalError("Failed to update branding");
     }
 
-    // Invalidate branding cache so public pages pick up the change
+    // Invalidate branding cache so public pages pick up the change.
+    // revalidateTag targets the `use cache` block in fetchBrandingFromDb
+    // (tagged clinic-branding-<id>); revalidatePath covers the rendered layout.
+    revalidateTag(`clinic-branding-${clinicId}`, "seconds");
     revalidatePath("/", "layout");
 
     // Invalidate subdomain cache so middleware picks up any name/config changes
@@ -270,6 +273,7 @@ export const POST = withAuth(async (request, { supabase }) => {
   }
 
   // Invalidate branding cache so public pages pick up the new image
+  revalidateTag(`clinic-branding-${clinicId}`, "seconds");
   revalidatePath("/", "layout");
 
   // Invalidate subdomain cache so middleware picks up any config changes

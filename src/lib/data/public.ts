@@ -204,9 +204,12 @@ async function fetchBrandingFromDb(
   cacheLife("minutes");
   cacheTag(`clinic-branding-${clinicId}`);
 
-  // F-03: Use anon client with x-clinic-id header instead of admin client.
-  // Inside `use cache` we cannot read cookies, so we use a cookie-free
-  // client that respects RLS via the x-clinic-id header.
+  // F-03: Use anon client instead of admin client — inside `use cache` we
+  // cannot read cookies. The `clinics` base table has no anonymous SELECT
+  // policy, so we read branding from the narrow, non-PHI
+  // `public_clinic_branding` view (migration 00213), which runs with
+  // security_invoker = off and is GRANTed to anon. Reading `clinics` directly
+  // here silently returns zero rows and falls back to DEFAULT_BRANDING.
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return { ...DEFAULT_BRANDING, clinicName: fallbackName };
   }
@@ -214,7 +217,7 @@ async function fetchBrandingFromDb(
   const supabase = createPublicAnonClient(clinicId);
 
   const { data, error } = await supabase
-    .from("clinics")
+    .from("public_clinic_branding")
     .select(
       "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address, owner_email, config",
     )

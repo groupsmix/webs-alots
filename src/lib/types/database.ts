@@ -9601,7 +9601,29 @@ export type Database = {
 
     }
     Views: {
-      [_ in never]: never
+      public_clinic_branding: {
+        Row: {
+          id: string | null
+          name: string | null
+          logo_url: string | null
+          favicon_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          heading_font: string | null
+          body_font: string | null
+          hero_image_url: string | null
+          tagline: string | null
+          cover_photo_url: string | null
+          template_id: string | null
+          section_visibility: Json | null
+          website_config: Json | null
+          phone: string | null
+          address: string | null
+          owner_email: string | null
+          config: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_my_user_id: { Args: never; Returns: string }
