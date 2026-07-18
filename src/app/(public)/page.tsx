@@ -21,6 +21,7 @@ import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/l
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
+import { publicCardClass } from "@/lib/public-theme";
 import { mergeSectionVisibility, type SectionKey } from "@/lib/section-visibility";
 import { getTemplate } from "@/lib/templates";
 import { getTenant } from "@/lib/tenant";
@@ -354,7 +355,7 @@ export default async function HomePage() {
 
         <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
           {topReviews.map((review) => (
-            <Card key={review.id}>
+            <Card key={review.id} className={publicCardClass(template.cardStyle)}>
               <CardContent className="pt-6">
                 <div
                   className="flex gap-0.5 mb-3"
@@ -395,6 +396,7 @@ export default async function HomePage() {
   if (sections.hero) {
     renderers.hero = (
       <HeroSection
+        variant={template.heroStyle}
         overrides={
           branding.websiteConfig
             ? {
@@ -407,8 +409,8 @@ export default async function HomePage() {
       />
     );
   }
-  if (sections.services) renderers.services = <ServicesPreview />;
-  if (sections.doctors) renderers.doctors = <DoctorsSection />;
+  if (sections.services) renderers.services = <ServicesPreview cardStyle={template.cardStyle} />;
+  if (sections.doctors) renderers.doctors = <DoctorsSection cardStyle={template.cardStyle} />;
   if (sections.reviews && topReviews.length > 0) renderers.reviews = reviewsSection;
   if (sections.blog) renderers.blog = <BlogSection />;
   if (sections.location) renderers.location = <LocationSection />;

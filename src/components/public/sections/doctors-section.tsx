@@ -2,8 +2,14 @@ import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicDoctors } from "@/lib/data/public";
+import { publicCardClass } from "@/lib/public-theme";
+import type { TemplateDefinition } from "@/lib/templates";
 
-export async function DoctorsSection() {
+interface DoctorsSectionProps {
+  cardStyle?: TemplateDefinition["cardStyle"];
+}
+
+export async function DoctorsSection({ cardStyle = "shadow" }: DoctorsSectionProps) {
   const doctors = await getPublicDoctors();
 
   return (
@@ -16,7 +22,7 @@ export async function DoctorsSection() {
         {doctors.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
             {doctors.map((doctor) => (
-              <Card key={doctor.id}>
+              <Card key={doctor.id} className={publicCardClass(cardStyle)}>
                 <CardContent className="pt-6 text-center">
                   {doctor.avatar ? (
                     <Image

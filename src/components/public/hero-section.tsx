@@ -8,15 +8,66 @@ interface HeroOverrides {
   subtitle?: string;
 }
 
+/** Hero layout, taken from the clinic's chosen template `heroStyle`. */
+type HeroVariant = "split" | "centered" | "fullwidth" | "overlay";
+
 interface HeroSectionProps {
   overrides?: HeroOverrides;
+  /** Layout variant from the template. Defaults to the classic split layout. */
+  variant?: HeroVariant;
 }
 
-export function HeroSection({ overrides }: HeroSectionProps) {
+export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) {
   const cfg = {
     ...defaultWebsiteConfig.hero,
     ...overrides,
   };
+
+  const ctas = (align: "center" | "start") => (
+    <div
+      className={`mt-10 flex flex-wrap items-center gap-4 ${
+        align === "center" ? "justify-center" : "justify-center lg:justify-start"
+      }`}
+    >
+      <Link href="/book" className={buttonVariants({ size: "lg" })}>
+        {cfg.ctaPrimary}
+      </Link>
+      <Link href="/services" className={buttonVariants({ variant: "outline", size: "lg" })}>
+        {cfg.ctaSecondary}
+      </Link>
+    </div>
+  );
+
+  // Centered / fullwidth / overlay all use a single stacked column. They
+  // differ in background treatment and vertical rhythm.
+  if (variant === "centered" || variant === "fullwidth" || variant === "overlay") {
+    const bg =
+      variant === "overlay"
+        ? "bg-primary text-primary-foreground"
+        : variant === "fullwidth"
+          ? "bg-gradient-to-b from-primary/10 via-primary/5 to-transparent"
+          : "bg-gradient-to-br from-primary/5 to-primary/10";
+    const isOverlay = variant === "overlay";
+    return (
+      <section className={`relative ${bg} ${variant === "fullwidth" ? "py-32" : "py-24"}`}>
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              {cfg.title}
+            </h1>
+            <p
+              className={`mx-auto mt-6 max-w-2xl text-lg ${
+                isOverlay ? "text-primary-foreground/80" : "text-muted-foreground"
+              }`}
+            >
+              {cfg.subtitle}
+            </p>
+            {ctas("center")}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative bg-gradient-to-br from-primary/5 to-primary/10 py-24">
@@ -29,14 +80,7 @@ export function HeroSection({ overrides }: HeroSectionProps) {
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground lg:mx-0">
               {cfg.subtitle}
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4 lg:justify-start">
-              <Link href="/book" className={buttonVariants({ size: "lg" })}>
-                {cfg.ctaPrimary}
-              </Link>
-              <Link href="/services" className={buttonVariants({ variant: "outline", size: "lg" })}>
-                {cfg.ctaSecondary}
-              </Link>
-            </div>
+            {ctas("start")}
           </div>
 
           <div className="hidden lg:flex justify-center">

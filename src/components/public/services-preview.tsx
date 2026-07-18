@@ -1,11 +1,18 @@
 import { ArrowRight, Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { getPublicServices } from "@/lib/data/public";
+import { publicCardClass } from "@/lib/public-theme";
+import type { TemplateDefinition } from "@/lib/templates";
+import { cn } from "@/lib/utils";
 
 const linkBtnOutline =
   "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
-export async function ServicesPreview() {
+interface ServicesPreviewProps {
+  cardStyle?: TemplateDefinition["cardStyle"];
+}
+
+export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewProps) {
   const services = await getPublicServices();
   const activeServices = services.filter((s) => s.active).slice(0, 3);
 
@@ -16,7 +23,10 @@ export async function ServicesPreview() {
         <div className="grid gap-8 md:grid-cols-3">
           {activeServices.length > 0 ? (
             activeServices.map((service) => (
-              <div key={service.id} className="rounded-xl border bg-card p-6 text-center shadow-sm">
+              <div
+                key={service.id}
+                className={cn("rounded-xl bg-card p-6 text-center", publicCardClass(cardStyle))}
+              >
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Stethoscope className="h-6 w-6 text-primary" />
                 </div>

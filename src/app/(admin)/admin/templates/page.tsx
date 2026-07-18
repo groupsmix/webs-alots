@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { TemplateThumbnail } from "@/components/admin/template-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -339,53 +340,21 @@ export default function TemplatesPage() {
                     <CardDescription>{tmpl.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {/* Template preview card */}
-                    <div className={`rounded-lg border p-4 text-xs space-y-2 ${tmpl.wrapperClass}`}>
-                      {/* Mini hero preview */}
-                      <div
-                        className={`h-12 rounded flex items-center justify-center text-[10px] font-medium ${
-                          tmpl.bgMode === "dark"
-                            ? "bg-white/10 text-white/80"
-                            : "bg-primary/10 text-primary"
-                        }`}
-                      >
-                        Hero — {tmpl.heroStyle}
-                      </div>
-                      {/* Mini cards preview */}
-                      <div className="grid grid-cols-3 gap-1">
-                        {[1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className={`h-8 rounded flex items-center justify-center text-[9px] ${
-                              tmpl.cardStyle === "shadow"
-                                ? "shadow-sm bg-white dark:bg-gray-800"
-                                : tmpl.cardStyle === "bordered"
-                                  ? "border bg-transparent"
-                                  : tmpl.cardStyle === "elevated"
-                                    ? "shadow-md bg-white dark:bg-gray-800"
-                                    : tmpl.bgMode === "dark"
-                                      ? "bg-white/5"
-                                      : "bg-gray-100"
-                            }`}
-                          >
-                            Card {i}
-                          </div>
-                        ))}
-                      </div>
-                      {/* Properties */}
-                      <div className="flex flex-wrap gap-1 pt-1">
+                    {/* Structurally-accurate template preview */}
+                    <TemplateThumbnail template={tmpl} />
+                    {/* Properties */}
+                    <div className="flex flex-wrap gap-1 pt-3">
+                      <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[9px] text-primary">
+                        {tmpl.borderRadius} radius
+                      </span>
+                      <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[9px] text-primary">
+                        {tmpl.bgMode} bg
+                      </span>
+                      {tmpl.rtl && (
                         <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[9px] text-primary">
-                          {tmpl.borderRadius} radius
+                          RTL
                         </span>
-                        <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[9px] text-primary">
-                          {tmpl.bgMode} bg
-                        </span>
-                        {tmpl.rtl && (
-                          <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[9px] text-primary">
-                            RTL
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">{tmpl.preview}</p>
                   </CardContent>
