@@ -4,6 +4,7 @@ import { DynamicHeader } from "@/components/public/dynamic-header";
 import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
 import { getPublicBranding } from "@/lib/data/public";
+import { buildPublicThemeStyle } from "@/lib/public-theme";
 import { getTemplate } from "@/lib/templates";
 
 /**
@@ -27,16 +28,7 @@ export async function ClinicPublicLayout({ children }: { children: React.ReactNo
   const useOriginalFooter = template.footerVariant === "classic-3col";
 
   return (
-    <div
-      style={
-        {
-          "--brand-primary": branding.primaryColor,
-          "--brand-secondary": branding.secondaryColor,
-          "--brand-heading-font": branding.headingFont,
-          "--brand-body-font": branding.bodyFont,
-        } as React.CSSProperties
-      }
-    >
+    <div style={buildPublicThemeStyle(branding)}>
       {useOriginalHeader ? (
         <PublicHeader logoUrl={branding.logoUrl} clinicName={branding.clinicName} />
       ) : (
