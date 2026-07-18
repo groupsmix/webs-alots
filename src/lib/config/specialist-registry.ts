@@ -15,9 +15,6 @@ import {
   // Optician
   Glasses,
   FileText,
-  // Parapharmacy
-  ShoppingBag,
-  Receipt,
   // Physiotherapist
   Dumbbell,
   ClipboardList,
@@ -28,11 +25,6 @@ import {
   TrendingUp,
   // Speech Therapist
   BookOpen,
-  // Radiology
-  Scan,
-  Image,
-  Eye,
-  FileStack,
   // Shared
   Package,
 } from "lucide-react";
@@ -53,11 +45,9 @@ import { capabilityForSlug } from "@/lib/config/capabilities";
 type SpecialistSlug =
   | "nutritionist"
   | "optician"
-  | "parapharmacy"
   | "physiotherapist"
   | "psychologist"
-  | "speech-therapist"
-  | "radiology";
+  | "speech-therapist";
 
 /** Registry of specialist dashboard configs keyed by URL slug. */
 const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
@@ -122,25 +112,6 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
       { href: "/optician/lens-inventory", label: "spec.tab.lenses", icon: Package },
       { href: "/optician/frame-catalog", label: "spec.tab.frames", icon: Glasses },
       { href: "/optician/prescriptions", label: "spec.tab.rx", icon: FileText },
-    ],
-  },
-  parapharmacy: {
-    title: "spec.title.parapharmacy",
-    icon: ShoppingBag,
-    accentColor: "pink-600",
-    featureKey: "parapharmacy",
-    moduleName: "Parapharmacy",
-    navItems: [
-      { href: "/parapharmacy/dashboard", label: "spec.nav.dashboard", icon: LayoutDashboard },
-      { href: "/parapharmacy/catalog", label: "spec.nav.productCatalog", icon: ShoppingBag },
-      { href: "/parapharmacy/sales", label: "spec.nav.sales", icon: Receipt },
-      { href: "/parapharmacy/inventory", label: "spec.nav.inventory", icon: Package },
-    ],
-    mobileTabs: [
-      { href: "/parapharmacy/dashboard", label: "spec.nav.dashboard", icon: LayoutDashboard },
-      { href: "/parapharmacy/catalog", label: "spec.tab.catalog", icon: ShoppingBag },
-      { href: "/parapharmacy/sales", label: "spec.nav.sales", icon: Receipt },
-      { href: "/parapharmacy/inventory", label: "spec.nav.inventory", icon: Package },
     ],
   },
   physiotherapist: {
@@ -238,28 +209,6 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
       { href: "/speech-therapist/sessions", label: "spec.nav.sessions", icon: ClipboardList },
       { href: "/speech-therapist/exercise-library", label: "spec.tab.exercises", icon: BookOpen },
       { href: "/speech-therapist/reports", label: "spec.nav.reports", icon: FileText },
-    ],
-  },
-  radiology: {
-    title: "spec.title.radiology",
-    shortTitle: "spec.shortTitle.radiologyCenter",
-    icon: Scan,
-    accentColor: "indigo-600",
-    featureKey: "radiology_reports",
-    moduleName: "Radiology",
-    navItems: [
-      { href: "/radiology/dashboard", label: "spec.nav.dashboard", icon: LayoutDashboard },
-      { href: "/radiology/orders", label: "spec.nav.studyOrders", icon: ClipboardList },
-      { href: "/radiology/images", label: "spec.nav.imageGallery", icon: Image },
-      { href: "/radiology/viewer", label: "spec.nav.dicomViewer", icon: Eye },
-      { href: "/radiology/reports", label: "spec.nav.reports", icon: FileText },
-      { href: "/radiology/templates", label: "spec.nav.reportTemplates", icon: FileStack },
-    ],
-    mobileTabs: [
-      { href: "/radiology/dashboard", label: "spec.nav.dashboard", icon: LayoutDashboard },
-      { href: "/radiology/orders", label: "spec.tab.orders", icon: ClipboardList },
-      { href: "/radiology/images", label: "spec.tab.images", icon: Image },
-      { href: "/radiology/reports", label: "spec.nav.reports", icon: FileText },
     ],
   },
 };

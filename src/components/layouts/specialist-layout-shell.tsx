@@ -12,11 +12,6 @@ import { getSpecialistConfigFromPathname } from "@/lib/config/specialist-registr
 export function SpecialistLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Equipment has its own nested layout — pass children through
-  if (pathname.startsWith("/equipment")) {
-    return <>{children}</>;
-  }
-
   const config = getSpecialistConfigFromPathname(pathname);
 
   if (!config) {

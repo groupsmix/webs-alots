@@ -37,13 +37,6 @@ const SPECIALIST_LAYOUT_FILE = join(
   "layouts",
   "specialist-layout-shell.tsx",
 );
-const EQUIPMENT_LAYOUT_FILE = join(
-  ROOT,
-  "src",
-  "components",
-  "layouts",
-  "equipment-layout-shell.tsx",
-);
 
 // These API groups are gated per ADR 0013. Must match VERTICAL_SCOPES in
 // src/lib/config/verticals.ts. Kept as a static list so this script has
@@ -196,7 +189,6 @@ function checkDashboardLayoutGates() {
   const doctorLayout = readRequired(DOCTOR_LAYOUT_FILE);
   const clinicDashboardLayout = readRequired(CLINIC_DASHBOARD_LAYOUT_FILE);
   const specialistLayout = readRequired(SPECIALIST_LAYOUT_FILE);
-  const equipmentLayout = readRequired(EQUIPMENT_LAYOUT_FILE);
 
   if (routeGate) {
     for (const token of [
@@ -245,17 +237,6 @@ function checkDashboardLayoutGates() {
       "src/components/layouts/specialist-layout-shell.tsx no longer delegates to ClinicDashboardLayout.",
       "Specialist surfaces must keep the shared feature-gated dashboard shell.",
     );
-  }
-
-  if (equipmentLayout) {
-    for (const token of ["useClinicFeatures", "requiredFeaturesForPathname", "visibleNavItems"]) {
-      if (!equipmentLayout.includes(token)) {
-        fail(
-          `src/components/layouts/equipment-layout-shell.tsx is missing ${token}.`,
-          "Equipment has a custom shell and must enforce its own feature split.",
-        );
-      }
-    }
   }
 }
 
