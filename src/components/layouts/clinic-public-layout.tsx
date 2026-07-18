@@ -28,7 +28,7 @@ export async function ClinicPublicLayout({ children }: { children: React.ReactNo
   const useOriginalFooter = template.footerVariant === "classic-3col";
 
   return (
-    <div style={buildPublicThemeStyle(branding)}>
+    <div style={buildPublicThemeStyle(branding, template.borderRadius)}>
       {useOriginalHeader ? (
         <PublicHeader logoUrl={branding.logoUrl} clinicName={branding.clinicName} />
       ) : (

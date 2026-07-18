@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildPublicThemeStyle, readableForeground } from "@/lib/public-theme";
+import {
+  buildPublicThemeStyle,
+  publicCardClass,
+  readableForeground,
+  templateRadius,
+} from "@/lib/public-theme";
 
 describe("readableForeground", () => {
   it("returns light (bone) text on dark brand colors", () => {
@@ -48,5 +53,44 @@ describe("buildPublicThemeStyle", () => {
     expect(style["--brand-secondary"]).toBe("#0F6E56");
     expect(style["--brand-heading-font"]).toBe("Geist");
     expect(style["--brand-body-font"]).toBe("Geist");
+  });
+
+  it("omits --radius when no borderRadius is provided", () => {
+    const style = buildPublicThemeStyle(branding) as Record<string, string>;
+    expect(style["--radius"]).toBeUndefined();
+  });
+
+  it("sets --radius from the template borderRadius token", () => {
+    expect((buildPublicThemeStyle(branding, "none") as Record<string, string>)["--radius"]).toBe(
+      "0rem",
+    );
+    expect((buildPublicThemeStyle(branding, "xl") as Record<string, string>)["--radius"]).toBe(
+      "0.875rem",
+    );
+  });
+});
+
+describe("templateRadius", () => {
+  it("maps every borderRadius token to a concrete rem value", () => {
+    expect(templateRadius("none")).toBe("0rem");
+    expect(templateRadius("sm")).toBe("0.25rem");
+    expect(templateRadius("md")).toBe("0.375rem");
+    expect(templateRadius("lg")).toBe("0.5rem");
+    expect(templateRadius("xl")).toBe("0.875rem");
+    expect(templateRadius("full")).toBe("1.5rem");
+  });
+});
+
+describe("publicCardClass", () => {
+  it("returns distinct, tailwind-merge-friendly classes per cardStyle", () => {
+    expect(publicCardClass("bordered")).toContain("border-2");
+    expect(publicCardClass("flat")).toContain("shadow-none");
+    expect(publicCardClass("elevated")).toContain("shadow-lg");
+    expect(publicCardClass("shadow")).toContain("shadow-sm");
+  });
+
+  it("gives each cardStyle a unique class string", () => {
+    const styles = (["shadow", "bordered", "flat", "elevated"] as const).map(publicCardClass);
+    expect(new Set(styles).size).toBe(4);
   });
 });

@@ -13,9 +13,50 @@
  */
 
 import type { CSSProperties } from "react";
+import type { TemplateDefinition } from "@/lib/templates";
 
 const INK = "#0b0f0e"; // dark foreground (matches --ink)
 const BONE = "#f4f1ea"; // light foreground (matches --bone)
+
+/**
+ * Base `--radius` value per template. Every Tailwind radius utility
+ * (`rounded-sm` … `rounded-4xl`) is derived from `--radius` in
+ * `globals.css`, so overriding this one variable scales the corner
+ * roundness of the whole public subtree to match the chosen template.
+ * `rounded-full` (9999px) is unaffected by design.
+ */
+const RADIUS_REM: Record<TemplateDefinition["borderRadius"], string> = {
+  none: "0rem",
+  sm: "0.25rem",
+  md: "0.375rem",
+  lg: "0.5rem",
+  xl: "0.875rem",
+  full: "1.5rem",
+};
+
+/** Resolve a template's borderRadius token to a concrete `--radius` value. */
+export function templateRadius(borderRadius: TemplateDefinition["borderRadius"]): string {
+  return RADIUS_REM[borderRadius] ?? RADIUS_REM.lg;
+}
+
+/**
+ * Tailwind classes that give a card the look of the template's `cardStyle`.
+ * Written to be tailwind-merge friendly (these are appended after a card's
+ * base classes, so the later utilities here win over the defaults).
+ */
+export function publicCardClass(cardStyle: TemplateDefinition["cardStyle"]): string {
+  switch (cardStyle) {
+    case "bordered":
+      return "border-2 border-border shadow-none";
+    case "flat":
+      return "border-transparent bg-muted/40 shadow-none";
+    case "elevated":
+      return "border-0 shadow-lg";
+    case "shadow":
+    default:
+      return "border border-border/60 shadow-sm";
+  }
+}
 
 /** Parse a #rgb / #rrggbb string into [r, g, b] (0–255), or null if invalid. */
 function parseHex(hex: string): [number, number, number] | null {
@@ -62,8 +103,16 @@ export interface PublicThemeBranding {
 /**
  * Build the inline style object that re-themes the public site to the
  * clinic's branding. Spread onto the public layout wrapper `<div>`.
+ *
+ * When a `borderRadius` token is passed (from the clinic's chosen
+ * template), `--radius` is overridden so the corner roundness of the
+ * whole public subtree matches the template — sharp for "minimal",
+ * generous for "elegant", etc.
  */
-export function buildPublicThemeStyle(branding: PublicThemeBranding): CSSProperties {
+export function buildPublicThemeStyle(
+  branding: PublicThemeBranding,
+  borderRadius?: TemplateDefinition["borderRadius"],
+): CSSProperties {
   const primaryFg = readableForeground(branding.primaryColor);
   return {
     // Raw brand values (kept for any component reading them directly).
@@ -78,5 +127,7 @@ export function buildPublicThemeStyle(branding: PublicThemeBranding): CSSPropert
     "--ring": branding.primaryColor,
     "--sidebar-primary": branding.primaryColor,
     "--sidebar-primary-foreground": primaryFg,
+    // Template corner roundness (drives all rounded-* utilities).
+    ...(borderRadius ? { "--radius": templateRadius(borderRadius) } : {}),
   } as CSSProperties;
 }

@@ -37,7 +37,7 @@ export default async function PublicLayout({ children }: { children: React.React
   const useOriginalFooter = template.footerVariant === "classic-3col";
 
   return (
-    <div style={buildPublicThemeStyle(branding)}>
+    <div style={buildPublicThemeStyle(branding, template.borderRadius)}>
       {isDemo && <DemoBanner />}
       <ConsentGatedAnalytics gaId={gaId} gtmId={gtmId} />
       {useOriginalHeader ? (
