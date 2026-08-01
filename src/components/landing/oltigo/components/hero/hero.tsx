@@ -1,34 +1,14 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
 import { BilingualNumeral } from "@/components/landing/oltigo/components/primitives/bilingual-numeral";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { ConsoleStatic } from "./console-static";
 
-// The 3D console is client-only WebGL. Lazy-load it so three.js stays out of
-// the shared bundle and never executes during SSR; the static console is both
-// the loading state and the WebGL-unavailable fallback.
-const Console3D = dynamic(() => import("./console-3d"), {
-  ssr: false,
-  loading: () => <ConsoleStatic />,
-});
-
 export function Hero() {
   const { dict } = useI18n();
-  const [wide, setWide] = useState(false);
-  const [focus, setFocus] = useState(-1);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const update = () => setWide(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
 
   return (
     <section className="relative overflow-hidden border-b border-hairline">
@@ -106,25 +86,7 @@ export function Hero() {
 
         {/* Object — RIGHT */}
         <div className="relative">
-          {wide ? <Console3D onFocus={setFocus} dict={dict} /> : <ConsoleStatic />}
-
-          {/* Explode captions, synced to the focused layer */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-            <div className="relative h-6">
-              {dict.hero.captions.map((cap, i) => (
-                <span
-                  key={i}
-                  className="telemetry absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] uppercase tracking-[0.22em] text-text-secondary transition-all duration-500"
-                  style={{
-                    opacity: focus === i ? 1 : 0,
-                    transform: `translateX(-50%) translateY(${focus === i ? 0 : 6}px)`,
-                  }}
-                >
-                  {cap}
-                </span>
-              ))}
-            </div>
-          </div>
+          <ConsoleStatic />
         </div>
       </div>
     </section>
