@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
+import { OltigoPublicShell } from "@/components/landing/oltigo/public-shell";
 
 export const metadata: Metadata = {
   title: "Politique de Confidentialité",
@@ -217,6 +218,8 @@ export default function PrivacyPage() {
   ];
 
   return (
-    <LegalDoc title="Politique de Confidentialité" lastUpdated="MARS 2026" sections={sections} />
+    <OltigoPublicShell mainClassName="pt-16">
+      <LegalDoc title="Politique de Confidentialité" lastUpdated="MARS 2026" sections={sections} />
+    </OltigoPublicShell>
   );
 }

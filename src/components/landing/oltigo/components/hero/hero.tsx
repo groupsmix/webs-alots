@@ -71,11 +71,11 @@ export function Hero() {
 
           <Reveal delay={180}>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button variant="primary" size="lg" href="#demo">
+              <Button variant="primary" size="lg" href="/register-clinic">
                 {dict.hero.ctaPrimary}
                 <ArrowRight className="size-4 rtl:rotate-180" strokeWidth={1.75} />
               </Button>
-              <Button variant="ghost" size="lg" href="#features">
+              <Button variant="ghost" size="lg" href="#demo">
                 {dict.hero.ctaSecondary}
               </Button>
             </div>

@@ -117,7 +117,7 @@ function geoBlockedHtml(country: string): string {
 <meta name="robots" content="noindex" />
 <title>Accès restreint depuis votre région · Oltigo</title>
 <style>
-  :root { color-scheme: light dark; }
+  :root { color-scheme: light; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:#f4f1ea; color:#0b0f0e; padding:24px; }
   .card { max-width:30rem; width:100%; background:#fff; border:1px solid rgba(0,0,0,.1); border-radius:14px;
@@ -126,6 +126,8 @@ function geoBlockedHtml(country: string): string {
   p { font-size:.95rem; line-height:1.55; margin:0 0 12px; color:#33403c; }
   .muted { font-size:.8rem; color:#6b7672; margin-top:20px; }
   code { background:#f0ede6; padding:1px 6px; border-radius:5px; }
+  a { color:#005a3b; text-decoration:none; font-weight:500; }
+  a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -137,9 +139,9 @@ function geoBlockedHtml(country: string): string {
     <p><strong>English:</strong> For security reasons, the Oltigo admin area is restricted
        to specific regions. Your connection appears to originate from
        <code>${country}</code>, which is not allowed.</p>
-    <p>Si vous êtes l'administrateur et devez accéder depuis cette région, ajoutez votre
-       pays à <code>GEO_RESTRICT_ADMIN</code> (ou définissez
-       <code>ADMIN_GEO_RESTRICTION_ENABLED=false</code>) dans la configuration du déploiement.</p>
+    <p>Si vous êtes l'administrateur et devez accéder depuis cette région, veuillez
+       contacter votre équipe technique pour ajouter ce pays à la liste autorisée.</p>
+    <p><a href="/">Retour à l'accueil</a></p>
     <p class="muted">Code: GEO_RESTRICTED · Oltigo</p>
   </main>
 </body>

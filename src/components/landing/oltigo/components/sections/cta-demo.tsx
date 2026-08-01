@@ -93,7 +93,7 @@ export function CtaDemo() {
                   key={f.id}
                   className={f.id === "clinic" || f.id === "doctor" ? "sm:col-span-2" : ""}
                 >
-                  <span className="telemetry mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-text-muted">
+                  <span className="telemetry mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-text-secondary">
                     {c.fields[f.id]}
                   </span>
                   <input

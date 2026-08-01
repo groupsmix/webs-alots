@@ -9,7 +9,6 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeroVideo } from "@/components/hero-video";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { t, type Locale } from "@/lib/i18n";
 
 const HERO_FEATURES = [
@@ -123,7 +122,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* ── Right form panel ── */}
       <div className="flex flex-1 flex-col">
-        <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
+        <header className="border-b bg-white/80 backdrop-blur-sm">
           <div className="flex h-14 items-center justify-between px-4 sm:px-6">
             <Link
               href="/"
@@ -149,7 +148,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 {t(locale, "nav.backToHome")}
               </span>
             </Link>
-            <ThemeToggle />
           </div>
         </header>
 
