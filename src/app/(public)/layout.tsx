@@ -1,6 +1,7 @@
 import { Chatbot } from "@/components/chatbot";
 import { ConsentGatedAnalytics } from "@/components/consent-gated-analytics";
 import { DemoBanner } from "@/components/demo-banner";
+import { PublicRootLayout } from "@/components/landing/oltigo/public-root-layout";
 import { DynamicFooter } from "@/components/public/dynamic-footer";
 import { DynamicHeader } from "@/components/public/dynamic-header";
 import { PublicFooter } from "@/components/public/footer";
@@ -13,10 +14,10 @@ import { getTenant } from "@/lib/tenant";
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const tenant = await getTenant();
 
-  // Root domain (no tenant) → render children directly.
-  // The landing page provides its own header/footer.
+  // Root domain (no tenant) → wrap marketing public pages with the Oltigo
+  // nav/footer; the home page keeps its self-contained landing shell.
   if (!tenant) {
-    return <>{children}</>;
+    return <PublicRootLayout>{children}</PublicRootLayout>;
   }
 
   // Subdomain → wrap with clinic branding, header, and footer

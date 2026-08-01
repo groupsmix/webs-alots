@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
@@ -40,30 +41,30 @@ export function Nav() {
         className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6"
         aria-label={dict.nav.menu}
       >
-        <a href="#top" className="flex items-center gap-2.5" aria-label="OLTIGO">
+        <Link href="#top" className="flex items-center gap-2.5" aria-label="OLTIGO">
           <Wordmark />
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-7 md:flex">
           {links.map((l) => (
-            <a
+            <Link
               key={l.href}
               href={l.href}
               className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
         </div>
 
         <div className="flex items-center gap-2">
           <LangToggle locale={locale} setLocale={setLocale} />
-          <a
+          <Link
             href="/login"
             className="hidden text-[13.5px] text-text-secondary transition-colors hover:text-text sm:inline"
           >
             {dict.nav.login}
-          </a>
+          </Link>
           <Button variant="primary" size="sm" href="/register-clinic">
             {dict.nav.openAccount}
           </Button>
@@ -89,22 +90,22 @@ export function Nav() {
       >
         <div className="mx-auto flex max-w-7xl flex-col gap-3">
           {links.map((l) => (
-            <a
+            <Link
               key={l.href}
               href={l.href}
               onClick={() => setMobileOpen(false)}
               className="text-[15px] text-text-secondary transition-colors hover:text-text"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
-          <a
+          <Link
             href="/login"
             onClick={() => setMobileOpen(false)}
             className="text-[15px] text-text-secondary transition-colors hover:text-text"
           >
             {dict.nav.login}
-          </a>
+          </Link>
           <Button variant="primary" size="md" href="/register-clinic" className="mt-2 w-full">
             {dict.nav.openAccount}
           </Button>

@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const button = cva(
@@ -32,8 +33,19 @@ export function Button({ className, variant, size, href, ...props }: ButtonProps
   if (href) {
     const { type: _type, ...anchorProps } = props;
     void _type;
+    const isExternal =
+      href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("tel:");
+    if (isExternal) {
+      return (
+        <a
+          href={href}
+          className={classes}
+          {...(anchorProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        />
+      );
+    }
     return (
-      <a
+      <Link
         href={href}
         className={classes}
         {...(anchorProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
