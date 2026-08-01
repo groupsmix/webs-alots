@@ -49,24 +49,24 @@ export function PublicNav() {
 
         <div className="hidden items-center gap-7 md:flex">
           {links.map((l) => (
-            <a
+            <Link
               key={l.href}
               href={l.href}
               className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
             >
               {sectionLabels[l.labelKey]}
-            </a>
+            </Link>
           ))}
         </div>
 
         <div className="flex items-center gap-2">
           <LangToggle locale={locale} setLocale={setLocale} />
-          <a
+          <Link
             href="/login"
             className="hidden text-[13.5px] text-text-secondary transition-colors hover:text-text sm:inline"
           >
             {dict.nav.login}
-          </a>
+          </Link>
           <Button variant="primary" size="sm" href="/register-clinic">
             {dict.nav.openAccount}
           </Button>
@@ -92,22 +92,22 @@ export function PublicNav() {
       >
         <div className="mx-auto flex max-w-7xl flex-col gap-3">
           {links.map((l) => (
-            <a
+            <Link
               key={l.href}
               href={l.href}
               onClick={() => setMobileOpen(false)}
               className="text-[15px] text-text-secondary transition-colors hover:text-text"
             >
               {sectionLabels[l.labelKey]}
-            </a>
+            </Link>
           ))}
-          <a
+          <Link
             href="/login"
             onClick={() => setMobileOpen(false)}
             className="text-[15px] text-text-secondary transition-colors hover:text-text"
           >
             {dict.nav.login}
-          </a>
+          </Link>
           <Button variant="primary" size="md" href="/register-clinic" className="mt-2 w-full">
             {dict.nav.openAccount}
           </Button>

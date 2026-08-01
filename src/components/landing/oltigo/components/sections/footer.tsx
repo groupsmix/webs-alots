@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { Wordmark } from "./section-kit";
 
@@ -19,23 +20,27 @@ import { Wordmark } from "./section-kit";
  */
 const FOOTER_HREFS: string[][] = [
   // 0 — Product / Produit / المنتج
-  ["#features", "#features", "#features", "/pricing"],
+  ["/#features", "/#features", "/#demo", "/pricing"],
   // 1 — Resources / Ressources / الموارد
   ["/api-docs", "/how-to-book", "/status", "/blog"],
   // 2 — Company / Entreprise / الشركة
+  // Carrières / Partenaires fall back to About / Contact until dedicated pages exist.
   ["/about", "/contact", "/about", "/contact"],
   // 3 — Legal / Légal / قانوني
   // Labels (parallel by position): Confidentialité · Conditions · Loi 09-08 · Sécurité
-  // Each maps to a distinct, real destination. "Loi 09-08" points at the
-  // sub-processor list (the page that documents 09-08 / GDPR Art.28 sub-
-  // processing) and "Sécurité" at the RFC 9116 security policy. Previously
-  // "Loi 09-08" duplicated /privacy and "Sécurité" pointed at /sub-processors.
+  // "Sécurité" points at the RFC 9116 security policy file.
   ["/privacy", "/terms", "/sub-processors", "/.well-known/security.txt"],
 ];
 
-/** On-page anchors stay client-side scroll links; real routes are nav links. */
+/** On-page anchors and real routes use Next.js client navigation.
+ *  The security.txt file is a static text asset, so it stays a plain anchor.
+ */
 function isAnchor(href: string): boolean {
   return href.startsWith("#");
+}
+
+function isStaticAsset(href: string): boolean {
+  return href.startsWith("/.well-known/");
 }
 
 export function Footer() {
@@ -50,7 +55,7 @@ export function Footer() {
             <p className="mt-4 text-[13.5px] leading-relaxed text-text-secondary">
               {dict.footer.tagline}
             </p>
-            <a
+            <Link
               href="/status"
               className="mt-5 inline-flex items-center gap-2 transition-opacity hover:opacity-80"
             >
@@ -58,7 +63,7 @@ export function Footer() {
               <span className="telemetry text-[10.5px] uppercase tracking-[0.16em] text-text-muted">
                 {dict.nav.status}
               </span>
-            </a>
+            </Link>
           </div>
 
           {dict.footer.columns.map((col, colIndex) => (
@@ -71,13 +76,24 @@ export function Footer() {
                   const href = FOOTER_HREFS[colIndex]?.[linkIndex] ?? "/";
                   return (
                     <li key={link}>
-                      <a
-                        href={href}
-                        {...(isAnchor(href) ? {} : { rel: "noopener" })}
-                        className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
-                      >
-                        {link}
-                      </a>
+                      {isStaticAsset(href) ? (
+                        <a
+                          href={href}
+                          rel="noopener"
+                          target="_blank"
+                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
+                        >
+                          {link}
+                        </a>
+                      ) : (
+                        <Link
+                          href={href}
+                          {...(isAnchor(href) ? {} : { rel: "noopener" })}
+                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
+                        >
+                          {link}
+                        </Link>
+                      )}
                     </li>
                   );
                 })}

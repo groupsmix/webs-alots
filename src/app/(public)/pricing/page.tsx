@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { LandingLocaleProvider } from "@/components/landing/landing-locale-provider";
 import { Pricing } from "@/components/landing/oltigo/components/sections/pricing";
-import { OltigoPublicShell } from "@/components/landing/oltigo/public-shell";
 import { PricingContent } from "@/components/landing/pricing-content";
 import { getTenant } from "@/lib/tenant";
 
@@ -28,9 +27,5 @@ export default async function PricingPage() {
   }
 
   // Root domain → Oltigo landing chrome with the dedicated pricing section.
-  return (
-    <OltigoPublicShell mainClassName="pt-16">
-      <Pricing headingAs="h1" />
-    </OltigoPublicShell>
-  );
+  return <Pricing headingAs="h1" />;
 }

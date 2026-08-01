@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
-import { OltigoPublicShell } from "@/components/landing/oltigo/public-shell";
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
@@ -209,12 +208,10 @@ export default function TermsPage() {
   ];
 
   return (
-    <OltigoPublicShell mainClassName="pt-16">
-      <LegalDoc
-        title="Conditions Générales d'Utilisation"
-        lastUpdated="MARS 2026"
-        sections={sections}
-      />
-    </OltigoPublicShell>
+    <LegalDoc
+      title="Conditions Générales d'Utilisation"
+      lastUpdated="MARS 2026"
+      sections={sections}
+    />
   );
 }
