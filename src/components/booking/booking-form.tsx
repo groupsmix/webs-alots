@@ -719,6 +719,19 @@ export function BookingForm() {
             </div>
             {selectedDate && (
               <div>
+                {service && (
+                  <div className="mb-4 flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Stethoscope className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                        {t(locale, "booking.recapService")}
+                      </p>
+                      <p className="text-sm font-medium">{service.name}</p>
+                    </div>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground mb-3">
                   {t(locale, "booking.availableSlots")}
                 </p>

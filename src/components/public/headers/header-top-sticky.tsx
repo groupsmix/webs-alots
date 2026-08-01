@@ -54,8 +54,11 @@ export function HeaderTopSticky({ logoUrl, clinicName, navItems, template }: Hea
               {item.label}
             </Link>
           ))}
-          <Link href="/book" className={buttonVariants()}>
-            {t(locale, "public.bookAppointment")}
+          <Link href="/book" className={buttonVariants({ variant: "outline" })}>
+            {t(locale, "public.patientSpace")}
+          </Link>
+          <Link href="/login" className={buttonVariants()}>
+            {t(locale, "public.doctorSpace")}
           </Link>
         </nav>
 
@@ -90,8 +93,14 @@ export function HeaderTopSticky({ logoUrl, clinicName, navItems, template }: Hea
                 {item.label}
               </Link>
             ))}
-            <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
-              {t(locale, "public.bookAppointment")}
+            <Link
+              href="/book"
+              className={buttonVariants({ variant: "outline", className: "mt-2" })}
+            >
+              {t(locale, "public.patientSpace")}
+            </Link>
+            <Link href="/login" className={buttonVariants({ className: "mt-2" })}>
+              {t(locale, "public.doctorSpace")}
             </Link>
           </div>
         </nav>

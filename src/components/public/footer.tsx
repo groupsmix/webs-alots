@@ -1,3 +1,4 @@
+import { Shield } from "lucide-react";
 import Link from "next/link";
 import { t, type Locale } from "@/lib/i18n";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -78,8 +79,14 @@ export function PublicFooter({
           </div>
         </div>
 
-        <div className="mt-8 border-t pt-4 text-center text-xs text-muted-foreground">
-          &copy; <CopyrightYear /> {displayName}. {t(locale, "public.allRightsReserved")}
+        <div className="mt-8 border-t pt-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-muted-foreground">
+            <Shield className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            {t(locale, "public.cndpBadge")}
+          </span>
+          <span>
+            &copy; <CopyrightYear /> {displayName}. {t(locale, "public.allRightsReserved")}
+          </span>
         </div>
       </div>
     </footer>
