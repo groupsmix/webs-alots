@@ -30,23 +30,22 @@ interface PasswordStrengthIndicatorProps {
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
   const [locale] = useLocale();
   const strength = useMemo(() => evaluatePasswordStrength(password), [password]);
-
-  if (!password) return null;
-
   const config = STRENGTH_CONFIG[strength.label];
   const percentage = (strength.score / 5) * 100;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${config.color}`}
-            data-width={Math.round(percentage)}
-          />
+      {password && (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${config.color}`}
+              data-width={Math.round(percentage)}
+            />
+          </div>
+          <span className={`text-xs font-medium ${config.text}`}>{LABELS[strength.label]}</span>
         </div>
-        <span className={`text-xs font-medium ${config.text}`}>{LABELS[strength.label]}</span>
-      </div>
+      )}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
         <li className={strength.checks.minLength ? "text-green-600" : ""}>
           {strength.checks.minLength ? "✓" : "○"}{" "}

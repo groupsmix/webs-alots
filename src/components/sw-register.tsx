@@ -1,25 +1,58 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 
+const DISMISSED_KEY = "sw-update-shown";
+
+function readDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setDismissedFlag(value: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (value) {
+      sessionStorage.setItem(DISMISSED_KEY, "1");
+    } else {
+      sessionStorage.removeItem(DISMISSED_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Register the service worker for PWA offline support and push notifications.
  * Only registers in production to avoid caching dev assets.
- * Shows a toast when a new version is available (Issue 29).
+ * Shows a toast once per tab session when a new version is waiting (Issue 29).
  */
 export function ServiceWorkerRegister() {
   const [locale] = useLocale();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+  const [dismissed, setDismissed] = useState(readDismissed);
+
+  const show = updateAvailable && !dismissed;
 
   const handleUpdate = useCallback(() => {
     if (waitingWorker) {
       waitingWorker.postMessage({ type: "SKIP_WAITING" });
     }
   }, [waitingWorker]);
+
+  const handleDismiss = useCallback(() => {
+    setDismissed(true);
+    setDismissedFlag(true);
+  }, []);
 
   useEffect(() => {
     if (
@@ -54,6 +87,12 @@ export function ServiceWorkerRegister() {
     };
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
+    const markWaiting = (worker: ServiceWorker) => {
+      setWaitingWorker(worker);
+      setUpdateAvailable(true);
+      setDismissedFlag(true);
+    };
+
     navigator.serviceWorker
       .register("/sw.js")
       .then((registration) => {
@@ -70,14 +109,12 @@ export function ServiceWorkerRegister() {
         // Detect waiting worker (new version available)
         const onStateChange = () => {
           if (registration.waiting) {
-            setWaitingWorker(registration.waiting);
-            setUpdateAvailable(true);
+            markWaiting(registration.waiting);
           }
         };
 
         if (registration.waiting) {
-          setWaitingWorker(registration.waiting);
-          setUpdateAvailable(true);
+          markWaiting(registration.waiting);
         }
 
         registration.addEventListener("updatefound", () => {
@@ -120,20 +157,33 @@ export function ServiceWorkerRegister() {
     };
   }, []);
 
-  if (!updateAvailable) return null;
+  if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[90] flex justify-center pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
-      <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 shadow-lg dark:border-blue-800 dark:bg-blue-950">
-        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+    <div
+      className="fixed top-4 right-4 z-[90] max-w-sm pointer-events-auto"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-start gap-3 rounded-lg border border-emerald/30 bg-emerald/10 p-3 shadow-lg dark:border-emerald-800/50 dark:bg-emerald-950/40">
+        <p className="flex-1 text-sm font-medium text-emerald-900 dark:text-emerald-100">
           {t(locale, "sw.updateAvailable" as TranslationKey)}
         </p>
-        <button
-          onClick={handleUpdate}
-          className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
-        >
-          {t(locale, "sw.update" as TranslationKey)}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleUpdate}
+            className="shrink-0 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+          >
+            {t(locale, "sw.update" as TranslationKey)}
+          </button>
+          <button
+            onClick={handleDismiss}
+            aria-label="Fermer"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-emerald-800 transition-colors hover:bg-emerald-200/50 dark:text-emerald-100 dark:hover:bg-emerald-900/50"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );

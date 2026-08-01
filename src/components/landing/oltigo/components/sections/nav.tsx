@@ -1,5 +1,6 @@
 "use client";
 
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
@@ -10,6 +11,7 @@ import { Wordmark } from "./section-kit";
 export function Nav() {
   const { dict, locale, setLocale } = useI18n();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -34,7 +36,10 @@ export function Nav() {
           : "border-b border-transparent",
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
+      <nav
+        className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6"
+        aria-label={dict.nav.menu}
+      >
         <a href="#top" className="flex items-center gap-2.5" aria-label="OLTIGO">
           <Wordmark />
         </a>
@@ -59,11 +64,52 @@ export function Nav() {
           >
             {dict.nav.login}
           </a>
-          <Button variant="primary" size="sm" href="#demo">
+          <Button variant="primary" size="sm" href="/register-clinic">
+            {dict.nav.openAccount}
+          </Button>
+          <button
+            type="button"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileOpen ? "Fermer le menu" : dict.nav.menu}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-text-secondary transition-colors hover:bg-surface/40 hover:text-text md:hidden"
+          >
+            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
+        </div>
+      </nav>
+
+      <div
+        id="mobile-menu"
+        className={cn(
+          "absolute inset-x-0 top-16 border-b border-hairline bg-ink/95 backdrop-blur-md px-6 py-4 md:hidden",
+          mobileOpen ? "block" : "hidden",
+        )}
+      >
+        <div className="mx-auto flex max-w-7xl flex-col gap-3">
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={() => setMobileOpen(false)}
+              className="text-[15px] text-text-secondary transition-colors hover:text-text"
+            >
+              {l.label}
+            </a>
+          ))}
+          <a
+            href="/login"
+            onClick={() => setMobileOpen(false)}
+            className="text-[15px] text-text-secondary transition-colors hover:text-text"
+          >
+            {dict.nav.login}
+          </a>
+          <Button variant="primary" size="md" href="/register-clinic" className="mt-2 w-full">
             {dict.nav.openAccount}
           </Button>
         </div>
-      </nav>
+      </div>
     </header>
   );
 }
@@ -76,8 +122,9 @@ function LangToggle({ locale, setLocale }: { locale: Locale; setLocale: (l: Loca
           key={l}
           onClick={() => setLocale(l)}
           aria-pressed={locale === l}
+          aria-label={localeLabel[l]}
           className={cn(
-            "telemetry rounded-full px-2 py-1 text-[10.5px] uppercase tracking-wider transition-colors",
+            "telemetry rounded-full px-2 py-1 text-[10.5px] uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald",
             locale === l
               ? "bg-surface-high text-text"
               : "text-text-muted hover:text-text-secondary",

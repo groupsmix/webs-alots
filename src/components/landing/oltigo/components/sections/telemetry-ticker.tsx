@@ -15,15 +15,15 @@ export function TelemetryTicker() {
   const row = [...items, ...items];
 
   return (
-    <div className="relative overflow-hidden border-y border-hairline bg-surface/30 py-3">
+    <div className="relative overflow-hidden border-y border-hairline bg-surface/30 py-3 ps-24">
       {/* edge fades */}
       <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-24 bg-gradient-to-r from-ink to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-24 bg-gradient-to-l from-ink to-transparent" />
-      <div className="flex w-max animate-ticker gap-10 ps-10">
+      <div className="flex w-max animate-ticker gap-10">
         {row.map((it, i) => (
           <span key={i} className="flex shrink-0 items-center gap-2.5">
             <span className="size-1 rounded-full bg-cyan" />
-            <span className="telemetry text-[11px] uppercase tracking-[0.14em] text-text-muted">
+            <span className="telemetry text-[11px] uppercase tracking-[0.14em] text-text-secondary">
               {it.label}
             </span>
             <span className="telemetry text-[12px] font-medium text-cyan">{it.value}</span>

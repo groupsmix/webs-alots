@@ -62,7 +62,7 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
                 <Button
                   variant={tier.highlight ? "primary" : "outline"}
                   size="sm"
-                  href="#demo"
+                  href={tier.id === "enterprise" ? "/#demo" : "/register-clinic"}
                   className="mt-5 w-full"
                 >
                   {tier.cta}

@@ -52,6 +52,43 @@ import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractRawSubdomain, extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 
+/**
+ * Branded 404 page for reserved subdomains (app, admin, mail, etc.).
+ * Self-contained HTML with no external assets or inline scripts, safe under CSP.
+ */
+function reservedSubdomainHtml(label: string): string {
+  return `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Sous-domaine réservé · Oltigo</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:#f4f1ea; color:#0b0f0e; padding:24px; }
+  .card { max-width:30rem; width:100%; background:#fff; border:1px solid rgba(0,0,0,.1); border-radius:14px;
+    padding:32px; box-shadow:0 10px 30px rgba(0,0,0,.06); text-align:center; }
+  h1 { font-size:1.25rem; margin:0 0 12px; }
+  p { font-size:.95rem; line-height:1.55; margin:0 0 16px; color:#33403c; }
+  .muted { font-size:.8rem; color:#6b7672; margin-top:20px; }
+  code { background:#f0ede6; padding:1px 6px; border-radius:5px; }
+  a { display:inline-block; color:#005a3b; text-decoration:none; font-weight:500; }
+  a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Sous-domaine réservé</h1>
+    <p><code>${label}.oltigo.com</code> n'est pas un cabinet enregistré. Ce nom est réservé à l'infrastructure Oltigo.</p>
+    <p><a href="/">Retour à l'accueil</a> · <a href="/login">Se connecter</a></p>
+    <p class="muted">Oltigo</p>
+  </main>
+</body>
+</html>`;
+}
+
 interface MiddlewareUser {
   id: string;
   email?: string | null;
@@ -247,8 +284,17 @@ export async function middleware(request: NextRequest) {
   //     here — and is unaffected on the production Worker.
   const rawSubdomain = extractRawSubdomain(hostname, rootDomain);
   if (rawSubdomain && isReservedSubdomain(rawSubdomain)) {
+    // app.oltigo.com is a useful shortcut to the login page; redirect there.
+    if (rawSubdomain === "app" && rootDomain) {
+      const rootHost = rootDomain.split(":")[0];
+      return secureRedirect(new URL("/login", `https://${rootHost}`), 302);
+    }
+
     const reservedBlockResponse = withSecurityHeaders(
-      new NextResponse("Not Found", { status: 404 }),
+      new NextResponse(reservedSubdomainHtml(rawSubdomain), {
+        status: 404,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      }),
       cspHeaders,
     );
     reservedBlockResponse.headers.set("X-Robots-Tag", "noindex, nofollow");

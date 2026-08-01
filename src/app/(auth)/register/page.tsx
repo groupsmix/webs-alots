@@ -290,7 +290,7 @@ export default function RegisterPage() {
             )}
           </div>
           <CardTitle className="text-2xl font-bold">
-            {step === "info" ? t(locale, "register.createAccount") : t(locale, "auth.verifyNumber")}
+            {step === "info" ? t(locale, "register.subtitle") : t(locale, "auth.verifyNumber")}
           </CardTitle>
           <CardDescription className="text-sm">
             {step === "info"
@@ -372,7 +372,7 @@ export default function RegisterPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder={t(locale, "auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required={!PHONE_AUTH_ENABLED}
@@ -390,7 +390,7 @@ export default function RegisterPage() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder={t(locale, "auth.passwordPlaceholder")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required={!PHONE_AUTH_ENABLED}
@@ -415,7 +415,7 @@ export default function RegisterPage() {
                   <Input
                     id="age"
                     type="number"
-                    placeholder="30"
+                    placeholder=""
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
                     className="h-11"

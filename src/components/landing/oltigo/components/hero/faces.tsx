@@ -23,15 +23,15 @@ export function AgendaFace() {
   return (
     <div className="panel w-[300px] rounded-[14px] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="telemetry text-[10px] uppercase tracking-[0.2em] text-text-muted">
+        <span className="telemetry text-[10px] uppercase tracking-[0.2em] text-text-secondary">
           Semaine 24
         </span>
-        <Calendar className="size-3.5 text-text-muted" strokeWidth={1.5} aria-hidden />
+        <Calendar className="size-3.5 text-text-secondary" strokeWidth={1.5} aria-hidden />
       </div>
       <div className="grid grid-cols-[42px_repeat(5,1fr)] gap-1.5">
         <span />
         {days.map((d, i) => (
-          <span key={i} className="telemetry text-center text-[10px] text-text-muted">
+          <span key={i} className="telemetry text-center text-[10px] text-text-secondary">
             {d}
           </span>
         ))}
@@ -46,7 +46,7 @@ export function AgendaFace() {
 function FaceRow({ time, row }: { time: string; row: number[] }) {
   return (
     <>
-      <span className="telemetry self-center text-[9.5px] text-text-muted">{time}</span>
+      <span className="telemetry self-center text-[9.5px] text-text-secondary">{time}</span>
       {row.map((cell, c) => (
         <span
           key={c}
@@ -91,18 +91,15 @@ export function DossierFace({ dict }: { dict: Dictionary }) {
       <div className="space-y-2">
         {[88, 64, 72].map((w, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="h-1.5 w-10 rounded-full bg-text-muted/30" />
-            <span
-              className="h-1.5 rounded-full bg-[var(--color-surface-high)]"
-              style={{ width: `${w}%` }}
-            />
+            <span className="h-1.5 w-10 rounded-full bg-text-secondary/30" />
+            <span className="h-1.5 rounded-full bg-text-secondary/30" style={{ width: `${w}%` }} />
           </div>
         ))}
       </div>
 
       <div className="mt-3 flex items-center gap-1.5 border-t border-hairline pt-3">
         <span className="size-1.5 rounded-full bg-emerald" />
-        <span className="text-[10.5px] text-text-muted">{dict.features[1].bullets[3]}</span>
+        <span className="text-[10.5px] text-text-secondary">{dict.features[1].bullets[3]}</span>
       </div>
     </div>
   );
@@ -145,12 +142,12 @@ export function WhatsappFace({ dict }: { dict: Dictionary }) {
   return (
     <div className="panel w-[300px] rounded-[14px] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="telemetry text-[10px] uppercase tracking-[0.2em] text-text-muted">
+        <span className="telemetry text-[10px] uppercase tracking-[0.2em] text-text-secondary">
           WhatsApp · Darija
         </span>
         <span className="flex items-center gap-1">
           <span className="size-1.5 rounded-full bg-emerald" />
-          <span className="telemetry text-[9.5px] text-text-muted">live</span>
+          <span className="telemetry text-[9.5px] text-text-secondary">live</span>
         </span>
       </div>
 
@@ -168,14 +165,14 @@ export function WhatsappFace({ dict }: { dict: Dictionary }) {
         {step >= 2 ? (
           <CheckCheck className="size-3.5 text-emerald" strokeWidth={2.2} aria-hidden />
         ) : (
-          <Check className="size-3.5 text-text-muted" strokeWidth={2.2} aria-hidden />
+          <Check className="size-3.5 text-text-secondary" strokeWidth={2.2} aria-hidden />
         )}
       </div>
 
       <div className="flex items-center justify-end">
         <span
           className="telemetry text-[9.5px] transition-colors duration-500"
-          style={{ color: step >= 2 ? "var(--color-emerald)" : "var(--color-text-muted)" }}
+          style={{ color: step >= 2 ? "var(--color-emerald)" : "var(--color-text-secondary)" }}
         >
           {step >= 2 ? dict.whatsapp.status : "···"}
         </span>

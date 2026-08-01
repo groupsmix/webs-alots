@@ -78,11 +78,11 @@ function Slab({ index, baseY, xOff, breatheRate, breathePhase, children }: SlabP
       <RoundedBox args={[3.5, 1.95, 0.12]} radius={0.07} smoothness={5} castShadow receiveShadow>
         <meshStandardMaterial
           ref={mat}
-          color="#283134"
-          roughness={0.5}
-          metalness={0.55}
-          emissive="#0e1314"
-          emissiveIntensity={0.5}
+          color="#323d41"
+          roughness={0.45}
+          metalness={0.5}
+          emissive="#141a1c"
+          emissiveIntensity={0.35}
         />
       </RoundedBox>
       {/* Crisp DOM face on the slab front. distanceFactor is the one size knob. */}
@@ -127,19 +127,19 @@ function Rig({ onFocus, dict }: { onFocus: (i: number) => void; dict: Dictionary
 
   return (
     <>
-      <ambientLight intensity={0.9} />
+      <ambientLight intensity={1.3} />
       {/* one soft key, upper-left */}
       <directionalLight
         position={[-4, 5, 4]}
-        intensity={2.3}
+        intensity={3.0}
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
       />
       {/* soft frontal fill so the slab faces read */}
-      <directionalLight position={[0, 0.5, 6]} intensity={0.6} />
+      <directionalLight position={[0, 0.5, 6]} intensity={1.1} />
       {/* gentle cool rim */}
-      <directionalLight position={[5, 1.5, -3]} intensity={0.4} color="#4AA6C9" />
+      <directionalLight position={[5, 1.5, -3]} intensity={0.6} color="#4AA6C9" />
       <group ref={root}>
         <Slab index={0} baseY={1.55} xOff={0.4} breatheRate={0.62} breathePhase={0}>
           <AgendaFace />
@@ -218,7 +218,7 @@ export default function Console3D({
           camera={{ position: [0, 0, 8], fov: 32 }}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.ACESFilmicToneMapping; // ACES-neutral grade
-            gl.toneMappingExposure = 1.0;
+            gl.toneMappingExposure = 1.2;
           }}
         >
           <Rig onFocus={onFocus} dict={dict} />
