@@ -40,6 +40,8 @@ export type Dictionary = {
     status: string;
     login: string;
     openAccount: string;
+    patientSpace: string;
+    doctorSpace: string;
     menu: string;
     sections: { features: string; how: string; pricing: string; faq: string };
   };
@@ -50,6 +52,7 @@ export type Dictionary = {
     sub: string;
     ctaPrimary: string;
     ctaSecondary: string;
+    patientSearch: string;
     captions: string[];
     trust: { uptime: string; uptimeLabel: string; cipher: string; law: string; latency: string };
   };
@@ -97,6 +100,7 @@ export type Dictionary = {
     columns: { title: string; links: string[] }[];
     rights: string;
     law: string;
+    cndp: string;
   };
 };
 
@@ -108,6 +112,8 @@ const fr: Dictionary = {
     status: "Tous les systèmes opérationnels",
     login: "Connexion",
     openAccount: "Ouvrir un compte",
+    patientSpace: "Espace Patient",
+    doctorSpace: "Espace Médecin",
     menu: "Menu",
     sections: {
       features: "Fonctionnalités",
@@ -120,9 +126,10 @@ const fr: Dictionary = {
     eyebrow: "Plateforme pour cabinets médicaux · Maroc",
     titleLead: "Le calme d’un cabinet",
     titleAccent: "qui tourne tout seul.",
-    sub: "Prise de rendez-vous en ligne, dossiers patients chiffrés et rappels WhatsApp en darija. Conçu pour les médecins et gestionnaires de cabinet au Maroc.",
+    sub: "Gérez votre cabinet, réduisez les absences par WhatsApp et digitalisez vos dossiers patients en un clic. Conçu pour les médecins et gestionnaires de cabinet au Maroc.",
     ctaPrimary: "Ouvrir un compte",
-    ctaSecondary: "Voir une démo",
+    ctaSecondary: "Trouver mon médecin",
+    patientSearch: "Trouver mon médecin",
     captions: ["01 — Rendez-vous", "02 — Dossier chiffré", "03 — Rappels Darija"],
     trust: {
       uptime: "99,95",
@@ -316,7 +323,7 @@ const fr: Dictionary = {
         cta: "Parler à l’équipe",
       },
     ],
-    note: "Prix hors taxes. Hébergement et données au standard Loi 09-08.",
+    note: "Prix hors taxes. Paiement annuel ou virement bancaire disponible. Hébergement et données au standard Loi 09-08.",
   },
   faq: {
     eyebrow: "Questions",
@@ -394,6 +401,7 @@ const fr: Dictionary = {
     ],
     rights: "Tous droits réservés.",
     law: "Données hébergées et traitées conformément à la Loi 09-08.",
+    cndp: "Conformité CNDP",
   },
 };
 
@@ -405,6 +413,8 @@ const ar: Dictionary = {
     status: "كل الأنظمة تعمل بشكل سليم",
     login: "تسجيل الدخول",
     openAccount: "افتح حسابًا",
+    patientSpace: "فضاء المريض",
+    doctorSpace: "فضاء الطبيب",
     menu: "القائمة",
     sections: { features: "الميزات", how: "كيف يعمل", pricing: "الأسعار", faq: "الأسئلة" },
   },
@@ -412,9 +422,10 @@ const ar: Dictionary = {
     eyebrow: "منصّة للعيادات الطبية · المغرب",
     titleLead: "هدوء عيادة",
     titleAccent: "تُدار من تلقاء نفسها.",
-    sub: "حجز المواعيد عبر الإنترنت، ملفّات مرضى مُشفّرة، وتذكيرات عبر واتساب بالدارجة. مصمَّمة للأطباء ومسيّري العيادات في المغرب.",
+    sub: "أدِر عيادتك، قلّل حالات التغيّب عبر واتساب، وقم برقمنة ملفّات مرضاك بنقرة واحدة. مصمَّمة للأطباء ومسيّري العيادات في المغرب.",
     ctaPrimary: "افتح حسابًا",
-    ctaSecondary: "شاهد عرضًا",
+    ctaSecondary: "ابحث عن طبيبي",
+    patientSearch: "ابحث عن طبيبي",
     captions: ["٠١ — المواعيد", "٠٢ — ملف مُشفّر", "٠٣ — تذكيرات بالدارجة"],
     trust: {
       uptime: "99,95",
@@ -574,7 +585,7 @@ const ar: Dictionary = {
         cta: "تحدّث مع الفريق",
       },
     ],
-    note: "الأسعار دون احتساب الضريبة. الاستضافة والبيانات وفق معيار القانون 09-08.",
+    note: "الأسعار دون احتساب الضريبة. الدفع السنوي أو التحويل البنكي متاح. الاستضافة والبيانات وفق معيار القانون 09-08.",
   },
   faq: {
     eyebrow: "أسئلة",
@@ -649,6 +660,7 @@ const ar: Dictionary = {
     ],
     rights: "جميع الحقوق محفوظة.",
     law: "البيانات مُستضافة ومعالَجة وفق القانون 09-08.",
+    cndp: "متوافق مع CNDP",
   },
 };
 
@@ -660,6 +672,8 @@ const en: Dictionary = {
     status: "All systems operational",
     login: "Log in",
     openAccount: "Open an account",
+    patientSpace: "Patient Portal",
+    doctorSpace: "Doctor Portal",
     menu: "Menu",
     sections: { features: "Features", how: "How it works", pricing: "Pricing", faq: "FAQ" },
   },
@@ -667,9 +681,10 @@ const en: Dictionary = {
     eyebrow: "Platform for medical practices · Morocco",
     titleLead: "The calm of a practice",
     titleAccent: "that runs itself.",
-    sub: "Online booking, encrypted patient records, and WhatsApp reminders in Darija. Built for doctors and clinic managers across Morocco.",
+    sub: "Manage your practice, cut no-shows via WhatsApp, and digitize patient records in one click. Built for doctors and clinic managers across Morocco.",
     ctaPrimary: "Open an account",
-    ctaSecondary: "See a demo",
+    ctaSecondary: "Find my doctor",
+    patientSearch: "Find my doctor",
     captions: ["01 — Appointments", "02 — Encrypted record", "03 — Darija reminders"],
     trust: {
       uptime: "99.95",
@@ -857,7 +872,7 @@ const en: Dictionary = {
         cta: "Talk to the team",
       },
     ],
-    note: "Prices excl. tax. Hosting and data to the Law 09-08 standard.",
+    note: "Prices excl. tax. Annual billing or bank transfer available. Hosting and data to the Law 09-08 standard.",
   },
   faq: {
     eyebrow: "Questions",
@@ -929,6 +944,7 @@ const en: Dictionary = {
     ],
     rights: "All rights reserved.",
     law: "Data hosted and processed in accordance with Law 09-08.",
+    cndp: "CNDP Compliance",
   },
 };
 

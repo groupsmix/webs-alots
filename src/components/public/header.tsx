@@ -7,7 +7,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { buttonVariants } from "@/components/ui/button";
-import { t, type TranslationKey } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 
 interface NavLink {
   href: string;
@@ -86,8 +87,11 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
               {t(locale, link.labelKey)}
             </Link>
           ))}
-          <Link href="/book" className={buttonVariants()}>
-            {t(locale, "public.bookAppointment")}
+          <Link href="/book" className={buttonVariants({ variant: "outline" })}>
+            {t(locale, "public.patientSpace")}
+          </Link>
+          <Link href="/login" className={buttonVariants()}>
+            {t(locale, "public.doctorSpace")}
           </Link>
         </nav>
 
@@ -122,8 +126,14 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
                 {t(locale, link.labelKey)}
               </Link>
             ))}
-            <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
-              {t(locale, "public.bookAppointment")}
+            <Link
+              href="/book"
+              className={buttonVariants({ variant: "outline", className: "mt-2" })}
+            >
+              {t(locale, "public.patientSpace")}
+            </Link>
+            <Link href="/login" className={buttonVariants({ className: "mt-2" })}>
+              {t(locale, "public.doctorSpace")}
             </Link>
           </div>
         </nav>

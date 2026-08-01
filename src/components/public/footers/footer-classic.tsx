@@ -1,5 +1,6 @@
 "use client";
 
+import { Shield } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
@@ -70,9 +71,15 @@ export function FooterClassic({ clinicName, template }: FooterProps) {
 
       {/* Copyright bar */}
       <div className="border-t px-4 py-4">
-        <p className="text-center text-xs text-muted-foreground">
-          © {year} {clinicName}. {t(locale, "public.allRightsReserved")}
-        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-2.5 py-1">
+            <Shield className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            {t(locale, "public.cndpBadge")}
+          </span>
+          <p className="text-center">
+            © {year} {clinicName}. {t(locale, "public.allRightsReserved")}
+          </p>
+        </div>
       </div>
     </footer>
   );

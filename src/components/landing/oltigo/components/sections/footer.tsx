@@ -1,5 +1,6 @@
 "use client";
 
+import { Shield } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { Wordmark } from "./section-kit";
@@ -106,7 +107,13 @@ export function Footer() {
           <p>
             © {year} OLTIGO. {dict.footer.rights}
           </p>
-          <p className="telemetry tracking-wide">{dict.footer.law}</p>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface/40 px-2.5 py-1 text-text-secondary">
+              <Shield className="size-3.5 text-emerald" aria-hidden="true" />
+              {dict.footer.cndp}
+            </span>
+            <p className="telemetry tracking-wide">{dict.footer.law}</p>
+          </div>
         </div>
       </div>
     </footer>

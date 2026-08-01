@@ -75,7 +75,7 @@ export function Hero() {
                 {dict.hero.ctaPrimary}
                 <ArrowRight className="size-4 rtl:rotate-180" strokeWidth={1.75} />
               </Button>
-              <Button variant="ghost" size="lg" href="#demo">
+              <Button variant="ghost" size="lg" href="/annuaire">
                 {dict.hero.ctaSecondary}
               </Button>
             </div>
