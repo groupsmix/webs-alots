@@ -23,7 +23,7 @@ authoritative details.
 One command sets up everything (prereqs check, deps, local Supabase, `.env.local`):
 
 ```bash
-git clone https://github.com/groupsmix/webs-alots.git
+git clone <repository-url>
 cd webs-alots
 bash scripts/dev-bootstrap.sh
 npm run dev

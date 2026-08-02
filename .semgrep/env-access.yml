@@ -52,4 +52,4 @@ rules:
     metadata:
       category: best-practice
       references:
-        - https://github.com/groupsmix/webs-alots/blob/main/src/lib/env.ts
+        - https://github.com/<owner>/<repo>/blob/main/src/lib/env.ts

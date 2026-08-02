@@ -766,11 +766,11 @@
 
 /* ============================================================================
    OLTIGO marketing landing — scoped design system
-   Ported from groupsmix/oltigo-landing. Tokens + base styles are SCOPED to the
-   `.oltigo-landing` wrapper (rendered only on the root-domain SaaS landing) so
-   the dark "engineering-grade" palette never leaks into the light-theme app.
-   The @theme block registers the colors with Tailwind so utilities such as
-   `bg-ink`, `text-text`, `border-hairline`, `bg-emerald` generate correctly.
+   Tokens + base styles are SCOPED to the `.oltigo-landing` wrapper (rendered
+   only on the root-domain SaaS landing) so the dark "engineering-grade" palette
+   never leaks into the light-theme app. The @theme block registers the colors
+   with Tailwind so utilities such as `bg-ink`, `text-text`, `border-hairline`,
+   `bg-emerald` generate correctly.
    ========================================================================== */
 @theme {
   --color-ink: #0a0d0e; /* canvas */

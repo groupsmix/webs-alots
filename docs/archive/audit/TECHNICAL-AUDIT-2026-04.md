@@ -2,7 +2,7 @@
 
 > **Date:** 2026-04-30
 > **Auditor:** Principal Engineer Review (automated deep inspection)
-> **Repository:** `groupsmix/webs-alots`
+> **Repository:** `<owner>/<repo>`
 > **Commit:** HEAD of `main` at time of audit
 
 ---

@@ -223,7 +223,7 @@ export function RegisterForm() {
             <Label htmlFor="clinic_name">Nom de la clinique *</Label>
             <Input
               id="clinic_name"
-              placeholder="Ex: Cabinet Dr Ahmed"
+              placeholder="Ex: Cabinet Dr [Nom]"
               value={form.clinic_name}
               onChange={(e) => updateField("clinic_name", e.target.value)}
               required
@@ -237,7 +237,7 @@ export function RegisterForm() {
             <Label htmlFor="doctor_name">Nom du docteur *</Label>
             <Input
               id="doctor_name"
-              placeholder="Ex: Dr Ahmed Benali"
+              placeholder="Ex: Dr [Nom]"
               value={form.doctor_name}
               onChange={(e) => updateField("doctor_name", e.target.value)}
               required

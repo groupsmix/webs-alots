@@ -34,7 +34,7 @@ and CNDP best practices.
 |              | Owner     |             | Keep / Revoke / Downgrade |
 |              | Developer |             | Keep / Revoke / Downgrade |
 
-### GitHub (groupsmix)
+### GitHub (<org>)
 
 | User / Handle | Role       | Last Active | Action                    |
 | ------------- | ---------- | ----------- | ------------------------- |

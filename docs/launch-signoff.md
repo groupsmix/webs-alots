@@ -8,15 +8,15 @@ update the table.
 
 ## Reference run
 
-| Field                                                       | Value                                                                                                 |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Repository                                                  | [`groupsmix/webs-alots`](https://github.com/groupsmix/webs-alots)                                     |
-| Base branch                                                 | `main`                                                                                                |
-| Latest reference SHA on `main`                              | [`d8429c24`](https://github.com/groupsmix/webs-alots/commit/d8429c24a58d29999a45d25cb556d698e623f94d) |
-| Reference green CI run (PR #699, latest merged into `main`) | [PR #699](https://github.com/groupsmix/webs-alots/pull/699)                                           |
-| Node version                                                | 22.13 (per CI workflow + `.nvmrc`)                                                                    |
-| npm version                                                 | 10.x                                                                                                  |
-| Date verified                                               | 2026-05-28                                                                                            |
+| Field                                                       | Value                              |
+| ----------------------------------------------------------- | ---------------------------------- |
+| Repository                                                  | `<owner>/<repo>`                   |
+| Base branch                                                 | `main`                             |
+| Latest reference SHA on `main`                              | `<commit-sha>`                     |
+| Reference green CI run (PR #699, latest merged into `main`) | `PR #<number>`                     |
+| Node version                                                | 22.13 (per CI workflow + `.nvmrc`) |
+| npm version                                                 | 10.x                               |
+| Date verified                                               | 2026-05-28                         |
 
 The CI workflow (`.github/workflows/ci.yml`) is triggered on every PR
 into `main` / `staging`, so the canonical "green CI run" is the

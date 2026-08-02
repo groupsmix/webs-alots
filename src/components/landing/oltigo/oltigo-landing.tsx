@@ -18,7 +18,7 @@ import { Testimonials } from "@/components/landing/oltigo/components/sections/te
 import { LanguageProvider } from "@/components/landing/oltigo/i18n/context";
 
 /**
- * Oltigo marketing landing — ported from groupsmix/oltigo-landing.
+ * Oltigo marketing landing.
  *
  * Self-contained SaaS marketing page shown on the root domain (oltigo.com).
  * Brings its own nav, footer, language toggle (FR / AR / EN / Darija) and

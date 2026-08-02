@@ -1,8 +1,8 @@
-# SEASONS Security Audit — Oltigo Health (`groupsmix/webs-alots`)
+# SEASONS Security Audit — Oltigo Health (`<owner>/<repo>`)
 
 > **Audit date:** 2026-05-27
 > **Auditor:** Devin (Cognition AI), executing the SEASONS framework supplied by the engineering owner.
-> **Repository:** `groupsmix/webs-alots` (private)
+> **Repository:** `<owner>/<repo>` (private)
 > **Branch / Commit:** `main` HEAD at audit time (post-migration `00089_pending_audit_logs.sql`).
 > **Scope:** Seasons 0, 1, 2, 3, 4, 6d, 6e, 6f, 8 from `seasons_ready_to_paste1.md`.
 > **Out of scope:** Season 5 (no shipped AI/ML model with custom weights), Season 6a (no mobile app), Season 6b (no web3 surface), Season 6c (no firmware / hardware), Seasons 7a–7d (quarterly governance / capacity / vendor — not per-PR).

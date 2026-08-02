@@ -39,14 +39,14 @@ Once the team exceeds 3 people, enforce:
 
 **Rule:** Every critical system must have at least 2 named humans with admin access. No shared accounts.
 
-| System                   | Role                  | Person 1 | Person 2 | Last Recert |
-| ------------------------ | --------------------- | -------- | -------- | ----------- |
-| GitHub (org owner)       | `groupsmix` org owner | _TBD_    | _TBD_    | _TBD_       |
-| Supabase (service-role)  | Project admin         | _TBD_    | _TBD_    | _TBD_       |
-| Cloudflare (super admin) | Account admin         | _TBD_    | _TBD_    | _TBD_       |
-| Stripe (account owner)   | Account owner         | _TBD_    | _TBD_    | _TBD_       |
-| Meta Business (WhatsApp) | Business admin        | _TBD_    | _TBD_    | _TBD_       |
-| DNS (registrar)          | Domain admin          | _TBD_    | _TBD_    | _TBD_       |
+| System                   | Role               | Person 1 | Person 2 | Last Recert |
+| ------------------------ | ------------------ | -------- | -------- | ----------- |
+| GitHub (org owner)       | Organization owner | _TBD_    | _TBD_    | _TBD_       |
+| Supabase (service-role)  | Project admin      | _TBD_    | _TBD_    | _TBD_       |
+| Cloudflare (super admin) | Account admin      | _TBD_    | _TBD_    | _TBD_       |
+| Stripe (account owner)   | Account owner      | _TBD_    | _TBD_    | _TBD_       |
+| Meta Business (WhatsApp) | Business admin     | _TBD_    | _TBD_    | _TBD_       |
+| DNS (registrar)          | Domain admin       | _TBD_    | _TBD_    | _TBD_       |
 
 ### Recertification
 

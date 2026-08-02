@@ -123,13 +123,13 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 
 **Context:** The CI pipeline uses `actions/attest-build-provenance` for SLSA in-toto attestation, which relies on Sigstore (Fulcio + Rekor) and GitHub's OIDC identity.
 
-**Detection:** Unexpected attestations appearing in Rekor transparency log for the `groupsmix/webs-alots` subject, or GitHub audit log showing OIDC token issuance for unrecognized workflows.
+**Detection:** Unexpected attestations appearing in Rekor transparency log for the `<owner>/<repo>` subject, or GitHub audit log showing OIDC token issuance for unrecognized workflows.
 
 **Revoke & Contain:**
 
 1. **Disable the compromised GitHub Actions workflow** immediately by pushing a commit that removes or disables it, or use the GitHub API to disable the workflow.
 2. **Revoke GitHub OIDC trust** if the identity was issued to an unauthorized workflow:
-   - Review `gh api /repos/groupsmix/webs-alots/actions/oidc/customization/sub` to check the subject claim template.
+   - Review `gh api /repos/<owner>/<repo>/actions/oidc/customization/sub` to check the subject claim template.
    - If the attacker used a forked repo or injected workflow, restrict OIDC to specific branches: set the subject claim to include `ref:refs/heads/main`.
 3. **Check Rekor transparency log** for unauthorized attestations:
    ```bash

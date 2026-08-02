@@ -524,7 +524,7 @@ async function handleBookingIntent(
 
   return (
     `Pour prendre rendez-vous, indiquez le médecin, la date et l'heure.\n` +
-    `Exemple: "Je veux voir Dr. Ahmed demain à 15h00"\n\n` +
+    `Exemple: "Je veux voir Dr. [Nom] demain à 15h00"\n\n` +
     `Nos médecins:\n${doctorList ?? "Aucun médecin disponible"}`
   );
 }

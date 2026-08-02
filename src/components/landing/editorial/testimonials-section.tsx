@@ -7,8 +7,8 @@ const TESTIMONIALS = [
   {
     quote:
       "Depuis qu\u2019on utilise Oltigo, le taux de no-show est pass\u00e9 de 32% \u00e0 8%. Les rappels WhatsApp en darija font la diff\u00e9rence \u2014 nos patients confirment en une minute.",
-    name: "Dr Fatima B.",
-    cabinet: "Cabinet Al Amal",
+    name: "Dr. [Nom]",
+    cabinet: "Demo Clinic",
     city: "Casablanca",
     since: "2024-09",
     plan: "PROFESSIONAL",
@@ -16,8 +16,8 @@ const TESTIMONIALS = [
   {
     quote:
       "L\u2019int\u00e9gration WhatsApp a transform\u00e9 notre gestion quotidienne. Mes assistantes passent 2h de moins au t\u00e9l\u00e9phone par jour. Le dossier patient chiffr\u00e9 nous donne une vraie tranquillit\u00e9.",
-    name: "Dr Youssef M.",
-    cabinet: "Centre Dentaire Agdal",
+    name: "Dr. [Nom]",
+    cabinet: "Demo Clinic",
     city: "Rabat",
     since: "2024-11",
     plan: "PROFESSIONAL",
@@ -25,8 +25,8 @@ const TESTIMONIALS = [
   {
     quote:
       "En p\u00e9diatrie, les parents veulent confirmer vite. Avec les rappels automatiques et la prise de RDV en ligne, on a r\u00e9duit les appels entrants de 60%. Oltigo est devenu indispensable.",
-    name: "Dr Amina K.",
-    cabinet: "Cabinet P\u00e9diatrique Gueliz",
+    name: "Dr. [Nom]",
+    cabinet: "Demo Clinic",
     city: "Marrakech",
     since: "2025-01",
     plan: "STARTER",
@@ -46,7 +46,7 @@ export function TestimonialsSection() {
       <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {}
         {TESTIMONIALS.map((testimonial) => (
-          <div key={testimonial.name}>
+          <div key={testimonial.city}>
             <HairlineRule />
             <div className="py-[var(--space-7)] max-w-full md:max-w-[760px]">
               <p className="font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink)] not-italic">

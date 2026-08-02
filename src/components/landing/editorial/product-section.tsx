@@ -39,14 +39,14 @@ const EDITORIAL_LAST_VISIT = new Date(EDITORIAL_NOW.getTime() - 35 * 864e5)
 function AppointmentCalendarMock() {
   const days = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM"];
   const slots = [
-    { day: 0, hour: "09:00", patient: "A. Bennani", status: "confirmed" },
-    { day: 0, hour: "10:30", patient: "F. Idrissi", status: "confirmed" },
-    { day: 1, hour: "09:00", patient: "M. Tazi", status: "pending" },
-    { day: 2, hour: "11:00", patient: "S. Alaoui", status: "confirmed" },
-    { day: 2, hour: "14:00", patient: "K. Fassi", status: "confirmed" },
-    { day: 3, hour: "09:30", patient: "R. Berrada", status: "pending" },
-    { day: 4, hour: "10:00", patient: "N. Chraibi", status: "confirmed" },
-    { day: 5, hour: "09:00", patient: "H. Mouline", status: "confirmed" },
+    { day: 0, hour: "09:00", patient: "A. Nom", status: "confirmed" },
+    { day: 0, hour: "10:30", patient: "B. Nom", status: "confirmed" },
+    { day: 1, hour: "09:00", patient: "C. Nom", status: "pending" },
+    { day: 2, hour: "11:00", patient: "D. Nom", status: "confirmed" },
+    { day: 2, hour: "14:00", patient: "E. Nom", status: "confirmed" },
+    { day: 3, hour: "09:30", patient: "F. Nom", status: "pending" },
+    { day: 4, hour: "10:00", patient: "G. Nom", status: "confirmed" },
+    { day: 5, hour: "09:00", patient: "H. Nom", status: "confirmed" },
   ];
 
   return (
@@ -105,7 +105,7 @@ function PatientRecordMock() {
         <div className="rounded border border-[var(--rule)] p-2">
           <div className="flex items-center justify-between">
             <span className="font-[var(--font-sans-landing)] text-[length:12px] font-medium text-[var(--ink)]">
-              Amina Bennani
+              Patient Name
             </span>
             <span className="font-[var(--font-mono-landing)] text-[length:9px] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
               CNSS · F · 34 ANS
@@ -159,7 +159,7 @@ function WhatsAppPreviewMock() {
   const messages = [
     {
       from: "system",
-      text: "Salam Amina, n\u2019oubliez pas votre RDV demain \u00e0 10h chez Dr. Bennani. R\u00e9pondez OUI pour confirmer.",
+      text: "Salam, n\u2019oubliez pas votre RDV demain \u00e0 10h. R\u00e9pondez OUI pour confirmer.",
       time: "09:00",
     },
     { from: "patient", text: "OUI", time: "09:02" },

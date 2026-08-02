@@ -11,7 +11,7 @@
  * or name within the clinic and creates a new record if none exists.
  *
  * Using phone as the primary lookup key avoids name-collision issues
- * (e.g. two patients named "Mohammed Ahmed" in the same clinic).
+ * (e.g. two patients with the same full name in the same clinic).
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";

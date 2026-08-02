@@ -1,6 +1,6 @@
 # Deep Audit A86–A100 (2026-05-31)
 
-**Repo:** `groupsmix/webs-alots` (Oltigo Health) · **Commit:** `main` @ 2026-05-31 00:09 UTC
+**Repo:** `<owner>/<repo>` (Oltigo Health) · **Commit:** `main` @ 2026-05-31 00:09 UTC
 **Scope:** 1156 src files · 235 050 LOC · 181 API routes (16 cron) · 24 e2e specs · 140 unit/integration tests
 **Method:** structured pass over critical paths, tests, env, error handling, i18n, logging, docs, PRs, plus adversarial / reviewer / failure-mode passes.
 

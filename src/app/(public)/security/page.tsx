@@ -2,7 +2,6 @@
 
 import { ExternalLink, FileText, Mail, Shield } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
@@ -67,28 +66,16 @@ export default function SecurityPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold">Ressources</h2>
-              <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link
-                    href="/.well-known/security.txt"
-                    className="inline-flex items-center gap-2 text-emerald hover:underline"
-                  >
-                    Fichier security.txt (RFC 9116)
-                    <ExternalLink className="size-3.5" />
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/groupsmix/webs-alots/blob/main/SECURITY.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-emerald hover:underline"
-                  >
-                    SECURITY.md sur GitHub
-                    <ExternalLink className="size-3.5" />
-                  </a>
-                </li>
-              </ul>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Le fichier machine-readable security.txt (RFC 9116) est disponible ci-dessous.
+              </p>
+              <a
+                href="/.well-known/security.txt"
+                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-emerald hover:underline"
+              >
+                Fichier security.txt (RFC 9116)
+                <ExternalLink className="size-3.5" />
+              </a>
             </div>
           </CardContent>
         </Card>

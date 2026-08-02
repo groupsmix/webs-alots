@@ -15,7 +15,7 @@ CI while they are investigated.
 1. Open a GitHub issue tagged `flaky-test` describing the failure pattern.
 2. Add a `describe.skip` or `it.skip` with a comment linking the issue:
    ```typescript
-   // QUARANTINED: https://github.com/groupsmix/webs-alots/issues/XXX
+   // QUARANTINED: https://github.com/<owner>/<repo>/issues/<number>
    it.skip("should handle concurrent bookings", () => { ... });
    ```
 3. Add the test to the table below.

@@ -1,6 +1,6 @@
 # A171-A196 Audit Re-Verification (2026-05-31)
 
-**Repo:** `groupsmix/webs-alots`
+**Repo:** `<owner>/<repo>`
 **Trigger:** External audit dated 2026-05-31 (file `audit-A171-A196-webs-alots(1).md`) reporting **0 PASS / 12 PARTIAL / 8 FAIL / 4 N/A**.
 **Outcome of this verification:** The supplied audit's baseline is materially out of date. **22 of 26 findings are already addressed** in the repository; the actual open count is **3 documentation gaps and 4 infrastructure / external-config tasks** that cannot be closed inside the repo.
 

@@ -548,7 +548,7 @@ jobs:
       # CI-ATTEST: the GitHub build-provenance attestations API is not
       # available for user-owned (personal-account) private repositories
       # ("Failed to persist attestation: Feature not available for user-owned
-      # private repositories"). groupsmix/webs-alots is exactly that, so this
+      # private repositories"). The current repository is exactly that, so this
       # step can never persist until the repo is made public or moved to an
       # org. The SBOM is still generated, cosign-signed, and uploaded as an
       # artifact — only the SLSA provenance record is skipped. Gate it so an

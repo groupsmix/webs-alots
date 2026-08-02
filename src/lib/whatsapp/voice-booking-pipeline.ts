@@ -397,7 +397,7 @@ export async function handleVoiceMessage(
     `Merci pour votre message vocal, ${patientName}. ` +
       `Nous avons bien reçu votre message. ` +
       `Pour prendre un rendez-vous, vous pouvez dire par exemple: ` +
-      `"Je veux voir Dr. Ahmed demain à 15h00"\n\n— ${clinicName}`,
+      `"Je veux voir Dr. [Nom] demain à 15h00"\n\n— ${clinicName}`,
     clinicId,
   );
 }

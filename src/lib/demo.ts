@@ -19,20 +19,20 @@ export const DEMO_SUBDOMAIN = "demo";
 export const DEMO_USERS = {
   doctor: {
     id: "b0000000-de00-0000-0000-000000000002",
-    email: "karim@example.invalid",
-    name: "Dr. Karim Idrissi",
+    email: "doctor@example.invalid",
+    name: "Dr. [Nom]",
     role: "doctor" as const,
   },
   receptionist: {
     id: "b0000000-de00-0000-0000-000000000004",
-    email: "imane@example.invalid",
-    name: "Imane Fassi",
+    email: "receptionist@example.invalid",
+    name: "Demo Receptionist",
     role: "receptionist" as const,
   },
   patient: {
     id: "b0000000-de00-0000-0000-000000000010",
-    email: "rachid@example.invalid",
-    name: "Rachid Bennani",
+    email: "patient@example.invalid",
+    name: "Demo Patient",
     role: "patient" as const,
   },
 } as const;
