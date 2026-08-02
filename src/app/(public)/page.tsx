@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Fragment } from "react";
 import { LandingPage } from "@/components/landing/landing-page";
+import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
 import { HeroSection } from "@/components/public/hero-section";
 import {
   DoctorsSection,
@@ -210,6 +211,17 @@ export default async function HomePage() {
         offerCount: 4,
       },
     };
+    const landingDict =
+      landingDictionaries[locale as keyof typeof landingDictionaries] ?? landingDictionaries.fr;
+    const faqJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: landingDict.faq.items.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.a },
+      })),
+    };
     return (
       <>
         <script
@@ -223,6 +235,12 @@ export default async function HomePage() {
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(faqJsonLd) }}
         />
         <LandingPage />
       </>
