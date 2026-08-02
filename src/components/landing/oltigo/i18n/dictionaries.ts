@@ -135,8 +135,8 @@ const fr: Dictionary = {
   },
   hero: {
     eyebrow: "Plateforme pour cabinets médicaux · Maroc",
-    titleLead: "Le calme d’un cabinet",
-    titleAccent: "qui tourne tout seul.",
+    titleLead: "Gérez votre cabinet,",
+    titleAccent: "réduisez les absences.",
     sub: "Gérez votre cabinet, réduisez les absences par WhatsApp et digitalisez vos dossiers patients en un clic. Conçu pour les médecins et gestionnaires de cabinet au Maroc.",
     ctaPrimary: "Ouvrir un compte",
     ctaSecondary: "Trouver mon médecin",
@@ -436,8 +436,8 @@ const ar: Dictionary = {
   },
   hero: {
     eyebrow: "منصّة للعيادات الطبية · المغرب",
-    titleLead: "هدوء عيادة",
-    titleAccent: "تُدار من تلقاء نفسها.",
+    titleLead: "أدِر عيادتك،",
+    titleAccent: "قلّل حالات التغيّب.",
     sub: "أدِر عيادتك، قلّل حالات التغيّب عبر واتساب، وقم برقمنة ملفّات مرضاك بنقرة واحدة. مصمَّمة للأطباء ومسيّري العيادات في المغرب.",
     ctaPrimary: "افتح حسابًا",
     ctaSecondary: "ابحث عن طبيبي",
@@ -700,8 +700,8 @@ const en: Dictionary = {
   },
   hero: {
     eyebrow: "Platform for medical practices · Morocco",
-    titleLead: "The calm of a practice",
-    titleAccent: "that runs itself.",
+    titleLead: "Manage your practice,",
+    titleAccent: "cut no-shows.",
     sub: "Manage your practice, cut no-shows via WhatsApp, and digitize patient records in one click. Built for doctors and clinic managers across Morocco.",
     ctaPrimary: "Open an account",
     ctaSecondary: "Find my doctor",

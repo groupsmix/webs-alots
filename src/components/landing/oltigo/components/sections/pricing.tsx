@@ -89,7 +89,9 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
         </div>
 
         <Reveal>
-          <p className="mt-8 text-center text-[12.5px] text-text-muted">{dict.pricing.note}</p>
+          <p className="mt-10 flex flex-wrap items-center justify-center gap-x-2 rounded-full border border-hairline bg-surface/40 px-4 py-2 text-center text-[13px] text-text-secondary">
+            {dict.pricing.note}
+          </p>
         </Reveal>
       </div>
     </section>
