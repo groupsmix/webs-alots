@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import { getGaMeasurementId } from "@/lib/env";
-import { t } from "@/lib/i18n";
+import { isSupportedLocale, type Locale, t } from "@/lib/i18n";
 
 /** Cookie preference categories. */
 export interface CookiePreferences {
@@ -262,6 +262,31 @@ export function persistConsent(prefs: CookiePreferences, now: number = Date.now(
  */
 export function CookieConsent() {
   const [locale] = useLocale();
+  const [cookieLocale, setCookieLocale] = useState<Locale>(locale);
+
+  // Keep cookie banner copy in sync with the landing page locale.
+  useEffect(() => {
+    const read = () => {
+      const stored =
+        (typeof window !== "undefined" && window.localStorage.getItem("preferred-locale")) ||
+        locale;
+      if (isSupportedLocale(stored)) setCookieLocale(stored);
+    };
+    read();
+
+    const onLocale = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (isSupportedLocale(detail)) setCookieLocale(detail);
+    };
+    const onStorage = () => read();
+
+    window.addEventListener("oltigo:locale", onLocale);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("oltigo:locale", onLocale);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [locale]);
 
   // SSR-stable initial state: both server and the first client render must
   // produce identical markup (banner hidden) to avoid a hydration mismatch
@@ -366,7 +391,7 @@ export function CookieConsent() {
     <div
       id="cookie-consent-banner"
       role="dialog"
-      aria-label={t(locale, "cookie.ariaLabel")}
+      aria-label={t(cookieLocale, "cookie.ariaLabel")}
       className="fixed bottom-0 left-0 right-0 z-[60] border-t bg-background shadow-lg"
     >
       <div className="mx-auto max-w-5xl p-4 md:px-6">
@@ -375,9 +400,9 @@ export function CookieConsent() {
           <div className="flex items-start gap-3 text-sm text-muted-foreground mb-3 md:mb-0">
             <Shield className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
-              {t(locale, "cookie.message")}{" "}
+              {t(cookieLocale, "cookie.message")}{" "}
               <a href="/privacy/" className="underline hover:text-foreground">
-                {t(locale, "cookie.privacyPolicy")}
+                {t(cookieLocale, "cookie.privacyPolicy")}
               </a>
               .
             </p>
@@ -385,7 +410,7 @@ export function CookieConsent() {
           {/* A69-3: Decline has equal visual weight as Accept All (EDPB 03/2022). */}
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button className="w-full sm:w-auto" size="sm" onClick={declineAll}>
-              {t(locale, "cookie.decline")}
+              {t(cookieLocale, "cookie.decline")}
             </Button>
             <Button
               className="w-full sm:w-auto"
@@ -393,10 +418,10 @@ export function CookieConsent() {
               size="sm"
               onClick={() => setShowPreferences(!showPreferences)}
             >
-              {t(locale, "cookie.managePreferences")}
+              {t(cookieLocale, "cookie.managePreferences")}
             </Button>
             <Button className="w-full sm:w-auto" size="sm" onClick={acceptAll}>
-              {t(locale, "cookie.acceptAll")}
+              {t(cookieLocale, "cookie.acceptAll")}
             </Button>
           </div>
         </div>
@@ -407,13 +432,13 @@ export function CookieConsent() {
             {/* Functional. Always on. */}
             <label className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium">{t(locale, "cookie.functional")}</p>
+                <p className="text-sm font-medium">{t(cookieLocale, "cookie.functional")}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t(locale, "cookie.functionalDesc")}
+                  {t(cookieLocale, "cookie.functionalDesc")}
                 </p>
               </div>
               <span className="text-xs font-medium text-muted-foreground">
-                {t(locale, "cookie.required")}
+                {t(cookieLocale, "cookie.required")}
               </span>
             </label>
 
@@ -421,8 +446,10 @@ export function CookieConsent() {
             {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
-                <p className="text-sm font-medium">{t(locale, "cookie.analytics")}</p>
-                <p className="text-xs text-muted-foreground">{t(locale, "cookie.analyticsDesc")}</p>
+                <p className="text-sm font-medium">{t(cookieLocale, "cookie.analytics")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t(cookieLocale, "cookie.analyticsDesc")}
+                </p>
               </div>
               <input
                 type="checkbox"
@@ -436,8 +463,10 @@ export function CookieConsent() {
             {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
-                <p className="text-sm font-medium">{t(locale, "cookie.marketing")}</p>
-                <p className="text-xs text-muted-foreground">{t(locale, "cookie.marketingDesc")}</p>
+                <p className="text-sm font-medium">{t(cookieLocale, "cookie.marketing")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t(cookieLocale, "cookie.marketingDesc")}
+                </p>
               </div>
               <input
                 type="checkbox"
@@ -454,7 +483,7 @@ export function CookieConsent() {
 
             <div className="flex justify-end pt-2">
               <Button size="sm" onClick={saveCustom}>
-                {t(locale, "cookie.savePreferences")}
+                {t(cookieLocale, "cookie.savePreferences")}
               </Button>
             </div>
           </div>

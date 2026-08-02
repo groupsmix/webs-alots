@@ -1,13 +1,28 @@
 "use client";
 
 import { Pause, Play } from "lucide-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
+import { cn } from "@/lib/utils";
 
 /** Metrics ticker — a mono row streaming static metrics in cyan, seamless loop. */
 export function TelemetryTicker() {
   const { dict } = useI18n();
   const [paused, setPaused] = useState(false);
+
+  const reducedMotion = useSyncExternalStore(
+    (callback) => {
+      if (typeof window === "undefined") return () => {};
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", callback);
+      return () => mq.removeEventListener("change", callback);
+    },
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
+
   const items: { label: string; value: string }[] = [
     { label: dict.telemetry.rdv, value: "1 248" },
     { label: dict.telemetry.p95, value: "182 ms" },
@@ -23,16 +38,30 @@ export function TelemetryTicker() {
       <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-24 bg-gradient-to-r from-ink to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-24 bg-gradient-to-l from-ink to-transparent" />
       <div
-        className="flex w-max animate-ticker gap-10 hover:[animation-play-state:paused] active:[animation-play-state:paused]"
-        style={{ animationPlayState: paused ? "paused" : "running" }}
+        className={cn(
+          "flex w-max gap-10",
+          !reducedMotion &&
+            "animate-ticker hover:[animation-play-state:paused] active:[animation-play-state:paused]",
+        )}
+        style={{ animationPlayState: reducedMotion || paused ? "paused" : "running" }}
       >
         {row.map((it, i) => (
-          <span key={i} className="flex shrink-0 items-center gap-2.5">
-            <span className="size-1 rounded-full bg-cyan" />
-            <span className="telemetry text-[11px] uppercase tracking-[0.14em] text-text-secondary">
+          <span
+            key={i}
+            className="flex shrink-0 items-center gap-2.5"
+            aria-label={`${it.label}: ${it.value}`}
+          >
+            <span className="size-1 rounded-full bg-cyan" aria-hidden="true" />
+            <span
+              className="telemetry text-[11px] uppercase tracking-[0.14em] text-text-secondary"
+              aria-hidden="true"
+            >
               {it.label}
             </span>
-            <span className="telemetry text-[12px] font-medium text-cyan">{it.value}</span>
+            <span className="sr-only">:</span>
+            <span className="telemetry text-[12px] font-medium text-cyan" aria-hidden="true">
+              {it.value}
+            </span>
           </span>
         ))}
       </div>

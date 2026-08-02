@@ -45,6 +45,10 @@ function isStaticAsset(href: string): boolean {
   return href.startsWith("/.well-known/");
 }
 
+function isExternal(href: string): boolean {
+  return href.startsWith("/status");
+}
+
 export function Footer() {
   const { dict } = useI18n();
   const year = new Date().getFullYear();
@@ -59,6 +63,8 @@ export function Footer() {
             </p>
             <Link
               href="/status"
+              target="_blank"
+              rel="noopener"
               className="mt-5 inline-flex items-center gap-2 transition-opacity hover:opacity-80"
             >
               <span className="size-1.5 animate-soft-pulse rounded-full bg-emerald" />
@@ -111,6 +117,7 @@ export function Footer() {
                         <Link
                           href={href}
                           {...(isAnchor(href) ? {} : { rel: "noopener" })}
+                          {...(isExternal(href) ? { target: "_blank", rel: "noopener" } : {})}
                           className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
                         >
                           {link}

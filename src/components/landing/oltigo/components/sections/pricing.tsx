@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Landmark } from "lucide-react";
 import { BilingualNumeral } from "@/components/landing/oltigo/components/primitives/bilingual-numeral";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
@@ -96,13 +96,19 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
                     </li>
                   ))}
                 </ul>
+
+                <div className="mt-auto flex items-start gap-2 pt-5 text-[11.5px] leading-snug text-text-muted">
+                  <Landmark className="mt-0.5 size-3.5 shrink-0 text-emerald" aria-hidden />
+                  {dict.pricing.note}
+                </div>
               </div>
             </Reveal>
           ))}
         </div>
 
         <Reveal>
-          <p className="mt-10 flex flex-wrap items-center justify-center gap-x-2 rounded-full border border-hairline bg-surface/40 px-4 py-2 text-center text-[13px] text-text-secondary">
+          <p className="mt-10 flex flex-wrap items-center justify-center gap-x-2 rounded-full border border-emerald/30 bg-emerald/10 px-4 py-2.5 text-center text-[13px] font-medium text-emerald">
+            <Landmark className="size-4" aria-hidden />
             {dict.pricing.note}
           </p>
         </Reveal>

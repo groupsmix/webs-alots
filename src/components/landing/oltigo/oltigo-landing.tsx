@@ -9,6 +9,7 @@ import { Faq, FaqSchema } from "@/components/landing/oltigo/components/sections/
 import { Features } from "@/components/landing/oltigo/components/sections/features";
 import { Footer } from "@/components/landing/oltigo/components/sections/footer";
 import { HowItWorks } from "@/components/landing/oltigo/components/sections/how-it-works";
+import { MobileCtaBar } from "@/components/landing/oltigo/components/sections/mobile-cta-bar";
 import { MultiTenant } from "@/components/landing/oltigo/components/sections/multi-tenant";
 import { Nav } from "@/components/landing/oltigo/components/sections/nav";
 import { Pricing } from "@/components/landing/oltigo/components/sections/pricing";
@@ -49,6 +50,7 @@ export function OltigoLanding() {
           <Faq />
           <CtaDemo />
         </main>
+        <MobileCtaBar />
         <FaqSchema />
         <Footer />
       </LanguageProvider>

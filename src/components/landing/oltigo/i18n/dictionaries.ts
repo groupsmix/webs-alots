@@ -52,6 +52,7 @@ export type Dictionary = {
     patientSpace: string;
     doctorSpace: string;
     menu: string;
+    skipToContent: string;
     sections: { features: string; how: string; pricing: string; faq: string };
   };
   hero: {
@@ -100,7 +101,13 @@ export type Dictionary = {
     enterpriseReply: string;
     note: string;
   };
-  faq: { eyebrow: string; title: string; items: Faq[] };
+  faq: {
+    eyebrow: string;
+    title: string;
+    searchPlaceholder: string;
+    noResults: string;
+    items: Faq[];
+  };
   cta: {
     eyebrow: string;
     title: string;
@@ -136,6 +143,7 @@ const fr: Dictionary = {
     patientSpace: "Espace Patient",
     doctorSpace: "Espace Médecin",
     menu: "Menu",
+    skipToContent: "Passer au contenu principal",
     sections: {
       features: "Fonctionnalités",
       how: "Comment ça marche",
@@ -360,6 +368,8 @@ const fr: Dictionary = {
   faq: {
     eyebrow: "Questions",
     title: "Ce que les cabinets nous demandent.",
+    searchPlaceholder: "Rechercher dans la FAQ…",
+    noResults: "Aucune question ne correspond à votre recherche.",
     items: [
       {
         q: "Mes données patients sont-elles en sécurité ?",
@@ -450,6 +460,7 @@ const ar: Dictionary = {
     patientSpace: "فضاء المريض",
     doctorSpace: "فضاء الطبيب",
     menu: "القائمة",
+    skipToContent: "تخطي إلى المحتوى الرئيسي",
     sections: { features: "الميزات", how: "كيف يعمل", pricing: "الأسعار", faq: "الأسئلة" },
   },
   hero: {
@@ -635,6 +646,8 @@ const ar: Dictionary = {
   faq: {
     eyebrow: "أسئلة",
     title: "ما تسألنا عنه العيادات.",
+    searchPlaceholder: "البحث في الأسئلة…",
+    noResults: "لا توجد أسئلة تطابق بحثك.",
     items: [
       {
         q: "هل بيانات مرضاي آمنة؟",
@@ -722,6 +735,7 @@ const en: Dictionary = {
     patientSpace: "Patient Portal",
     doctorSpace: "Doctor Portal",
     menu: "Menu",
+    skipToContent: "Skip to main content",
     sections: { features: "Features", how: "How it works", pricing: "Pricing", faq: "FAQ" },
   },
   hero: {
@@ -935,6 +949,8 @@ const en: Dictionary = {
   faq: {
     eyebrow: "Questions",
     title: "What practices ask us.",
+    searchPlaceholder: "Search questions…",
+    noResults: "No questions match your search.",
     items: [
       {
         q: "Is my patient data secure?",
