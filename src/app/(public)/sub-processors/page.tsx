@@ -118,7 +118,7 @@ const SUB_PROCESSORS: SubProcessor[] = [
 
 export default function SubProcessorsPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-10">
         <h1 className="text-3xl font-bold tracking-tight mb-2">Liste des sous-traitants</h1>
         <p className="text-muted-foreground text-sm">
@@ -183,6 +183,6 @@ export default function SubProcessorsPage() {
           </a>
         </p>
       </div>
-    </main>
+    </section>
   );
 }

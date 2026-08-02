@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicStatusSnapshot } from "@/lib/system-status";
 
 export const metadata = {
-  title: "État des services | Oltigo",
+  title: "État des services",
   description: "Page d'état des services Oltigo — disponibilité en temps réel.",
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };

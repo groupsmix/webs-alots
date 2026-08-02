@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { BookingForm } from "@/components/booking/booking-form";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { t, type Locale } from "@/lib/i18n";
@@ -29,6 +30,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BookingPage() {
+  const tenant = await getTenant();
+  if (!tenant) {
+    redirect("/annuaire/");
+  }
+
   const h = await headers();
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
