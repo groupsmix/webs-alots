@@ -29,13 +29,14 @@ const FOOTER_HREFS: string[][] = [
   // Carrières / Partenaires fall back to About / Contact until dedicated pages exist.
   ["/about", "/contact", "/about", "/contact"],
   // 3 — Legal / Légal / قانوني
-  // Labels (parallel by position): Confidentialité · Conditions · Loi 09-08 · Sécurité
-  // "Sécurité" points at the RFC 9116 security policy file.
-  ["/privacy", "/terms", "/sub-processors", "/.well-known/security.txt"],
+  // Labels (parallel by position): Confidentialité · Conditions · Sous-traitants · Sécurité
+  // "Sécurité" now points at a styled security page; the RFC 9116 machine-readable
+  // file remains reachable at /.well-known/security.txt from that page.
+  ["/privacy", "/terms", "/sub-processors", "/security"],
 ];
 
 /** On-page anchors and real routes use Next.js client navigation.
- *  The security.txt file is a static text asset, so it stays a plain anchor.
+ *  The raw security.txt file is linked from the /security page, not the footer.
  */
 function isAnchor(href: string): boolean {
   return href.startsWith("#");

@@ -1,6 +1,18 @@
+/* eslint-disable i18next/no-literal-string -- Scalar loading state only */
 "use client";
 
 import dynamic from "next/dynamic";
+import { useMemo } from "react";
+
+// Scalar ships its own component-level CSS; importing it here ensures the
+// layout, typography, and icon scaling load correctly in the browser.
+import "@scalar/api-reference-react/style.css";
+
+const ScalarLoading = () => (
+  <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+    Chargement de la documentation API…
+  </div>
+);
 
 /**
  * API documentation page (Scalar)
@@ -18,26 +30,29 @@ import dynamic from "next/dynamic";
  */
 const ApiReferenceReact = dynamic(
   () => import("@scalar/api-reference-react").then((m) => m.ApiReferenceReact),
-  { ssr: false },
+  { ssr: false, loading: ScalarLoading },
 );
 
-export default function ApiDocsPage() {
+export default function ApiDocsContent() {
+  const configuration = useMemo(
+    () => ({
+      url: "/api/docs",
+      theme: "default" as const,
+      layout: "modern" as const,
+      hideModels: false,
+      hideDownloadButton: false,
+      // Use system fonts instead of fetching from fonts.scalar.com, which the
+      // app's strict CSP (font-src 'self') blocks — that produced ~14 console
+      // errors and fell back to default fonts anyway. Self-hosting avoids both
+      // the CSP violations and the external dependency.
+      withDefaultFonts: false,
+    }),
+    [],
+  );
+
   return (
-    <div className="min-h-screen">
-      <ApiReferenceReact
-        configuration={{
-          url: "/api/docs",
-          theme: "default",
-          layout: "modern",
-          hideModels: false,
-          hideDownloadButton: false,
-          // Use system fonts instead of fetching from fonts.scalar.com, which the
-          // app's strict CSP (font-src 'self') blocks — that produced ~14 console
-          // errors and fell back to default fonts anyway. Self-hosting avoids both
-          // the CSP violations and the external dependency.
-          withDefaultFonts: false,
-        }}
-      />
-    </div>
+    <section className="min-h-screen">
+      <ApiReferenceReact configuration={configuration} />
+    </section>
   );
 }
