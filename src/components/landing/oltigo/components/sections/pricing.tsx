@@ -49,14 +49,22 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
                 <p className="mt-1 text-[12.5px] text-text-muted">{tier.blurb}</p>
 
                 <div className="mt-5 flex items-baseline gap-1.5">
-                  <BilingualNumeral
-                    value={tier.price}
-                    className="text-[2.2rem] font-medium text-text"
-                  />
-                  <span className="telemetry text-[12px] text-text-muted">
-                    {dict.pricing.currency}
-                  </span>
-                  <span className="text-[12px] text-text-muted">{tier.cadence}</span>
+                  {tier.id === "free" ? (
+                    <span className="text-[2.2rem] font-medium text-text">
+                      {dict.pricing.freeLabel}
+                    </span>
+                  ) : (
+                    <>
+                      <BilingualNumeral
+                        value={tier.price}
+                        className="text-[2.2rem] font-medium text-text"
+                      />
+                      <span className="telemetry text-[12px] text-text-muted">
+                        {dict.pricing.currency}
+                      </span>
+                      <span className="text-[12px] text-text-muted">{tier.cadence}</span>
+                    </>
+                  )}
                 </div>
 
                 <Button
@@ -67,6 +75,11 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
                 >
                   {tier.cta}
                 </Button>
+                {tier.id === "enterprise" ? (
+                  <p className="mt-2 text-center text-[12px] text-text-muted">
+                    {dict.pricing.enterpriseReply}
+                  </p>
+                ) : null}
 
                 <ul className="mt-6 space-y-2.5 border-t border-hairline pt-6">
                   {tier.features.map((feat, j) => (

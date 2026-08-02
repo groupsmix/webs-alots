@@ -29,7 +29,7 @@ export function Features() {
 
         <div className="mt-20 space-y-24 sm:space-y-32">
           {dict.features.map((f, i) => (
-            <FeatureRow key={f.num} feature={f} visual={visuals[i]} reversed={i % 2 === 1} />
+            <FeatureRow key={f.id} feature={f} visual={visuals[i]} reversed={i % 2 === 1} />
           ))}
         </div>
       </div>
@@ -42,17 +42,17 @@ function FeatureRow({
   visual,
   reversed,
 }: {
-  feature: { num: string; title: string; tagline: string; bullets: string[] };
+  feature: { id: string; num: string; title: string; tagline: string; bullets: string[] };
   visual: React.ReactNode;
   reversed: boolean;
 }) {
   return (
-    <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+    <div id={feature.id} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
       {/* copy */}
       <div className={reversed ? "lg:order-2" : ""}>
         <Reveal>
           <div className="flex items-baseline gap-3">
-            <span className="telemetry text-[13px] text-emerald/70">{feature.num}</span>
+            <span className="telemetry text-[14px] text-emerald/70">{feature.num}</span>
             <span className="h-px w-10 bg-hairline" />
           </div>
         </Reveal>
@@ -69,7 +69,7 @@ function FeatureRow({
             <Reveal key={i} delay={160 + i * 50} as="li">
               <span className="flex items-start gap-3">
                 <Check
-                  className="mt-0.5 size-4 shrink-0 text-emerald"
+                  className="mt-0.5 size-[18px] shrink-0 text-emerald"
                   strokeWidth={1.75}
                   aria-hidden
                 />

@@ -1,5 +1,6 @@
 "use client";
 
+import { Shield } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -371,13 +372,16 @@ export function CookieConsent() {
       <div className="mx-auto max-w-5xl p-4 md:px-6">
         {/* Main banner */}
         <div className="md:flex md:items-center md:justify-between md:gap-4">
-          <p className="text-sm text-muted-foreground mb-3 md:mb-0">
-            {t(locale, "cookie.message")}{" "}
-            <a href="/privacy/" className="underline hover:text-foreground">
-              {t(locale, "cookie.privacyPolicy")}
-            </a>
-            .
-          </p>
+          <div className="flex items-start gap-3 text-sm text-muted-foreground mb-3 md:mb-0">
+            <Shield className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>
+              {t(locale, "cookie.message")}{" "}
+              <a href="/privacy/" className="underline hover:text-foreground">
+                {t(locale, "cookie.privacyPolicy")}
+              </a>
+              .
+            </p>
+          </div>
           {/* A69-3: Decline has equal visual weight as Accept All (EDPB 03/2022). */}
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button className="w-full sm:w-auto" size="sm" onClick={declineAll}>

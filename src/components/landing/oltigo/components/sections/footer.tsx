@@ -22,7 +22,7 @@ import { Wordmark } from "./section-kit";
  */
 const FOOTER_HREFS: string[][] = [
   // 0 — Product / Produit / المنتج
-  ["/#features", "#how", "/#demo", "/pricing"],
+  ["/#appointments", "/#records", "/#whatsapp", "/pricing"],
   // 1 — Resources / Ressources / الموارد
   ["/api-docs", "/how-to-book", "/status", "/blog"],
   // 2 — Company / Entreprise / الشركة

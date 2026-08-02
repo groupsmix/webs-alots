@@ -1,10 +1,12 @@
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { cn } from "@/lib/utils";
 
 export function Wordmark({ className }: { className?: string }) {
+  const { dict } = useI18n();
   return (
     <span className={cn("telemetry text-[15px] font-medium tracking-tight text-text", className)}>
-      oltig<span className="text-emerald">.</span>o
+      {dict.nav.brand}
     </span>
   );
 }

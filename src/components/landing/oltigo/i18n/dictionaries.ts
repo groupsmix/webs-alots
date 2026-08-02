@@ -20,7 +20,7 @@ export const localeLabel: Record<Locale, string> = {
   en: "EN",
 };
 
-type Feature = { num: string; title: string; tagline: string; bullets: string[] };
+type Feature = { id: string; num: string; title: string; tagline: string; bullets: string[] };
 type Step = { num: string; title: string; body: string };
 type Tier = {
   id: string;
@@ -39,12 +39,13 @@ type Quote = {
   city: string;
   clinic?: string;
   avatar?: string;
-  plan?: string;
+  metric?: string;
 };
 type Faq = { q: string; a: string };
 
 export type Dictionary = {
   nav: {
+    brand: string;
     status: string;
     login: string;
     openAccount: string;
@@ -65,10 +66,18 @@ export type Dictionary = {
     trust: { uptime: string; uptimeLabel: string; cipher: string; law: string; latency: string };
   };
   whatsapp: { incoming: string; reply: string; status: string };
-  telemetry: { rdv: string; p95: string; uptime: string; clinics: string; reminders: string };
+  telemetry: {
+    rdv: string;
+    p95: string;
+    uptime: string;
+    clinics: string;
+    reminders: string;
+    pause: string;
+    play: string;
+  };
   featuresHeading: { eyebrow: string; title: string; sub: string };
   features: Feature[];
-  how: { eyebrow: string; title: string; sub: string; steps: Step[] };
+  how: { eyebrow: string; title: string; sub: string; securityNote: string; steps: Step[] };
   tenant: {
     eyebrow: string;
     title: string;
@@ -87,6 +96,8 @@ export type Dictionary = {
     currency: string;
     popular: string;
     tiers: Tier[];
+    freeLabel: string;
+    enterpriseReply: string;
     note: string;
   };
   faq: { eyebrow: string; title: string; items: Faq[] };
@@ -118,6 +129,7 @@ export type Dictionary = {
 /* ========================================================================== */
 const fr: Dictionary = {
   nav: {
+    brand: "oltigo",
     status: "Tous les systèmes opérationnels",
     login: "Connexion",
     openAccount: "Ouvrir un compte",
@@ -159,6 +171,8 @@ const fr: Dictionary = {
     uptime: "Disponibilité · 30 j",
     clinics: "Cabinets actifs",
     reminders: "Rappels envoyés · 24 h",
+    pause: "Pause le défilement",
+    play: "Reprendre le défilement",
   },
   featuresHeading: {
     eyebrow: "Le produit",
@@ -167,6 +181,7 @@ const fr: Dictionary = {
   },
   features: [
     {
+      id: "appointments",
       num: "01",
       title: "Rendez-vous",
       tagline: "Une page de réservation publique et une vue semaine unifiée pour tout le cabinet.",
@@ -178,6 +193,7 @@ const fr: Dictionary = {
       ],
     },
     {
+      id: "records",
       num: "02",
       title: "Dossier patient",
       tagline: "Un coffre chiffré pour l’historique, les ordonnances et les documents.",
@@ -189,6 +205,7 @@ const fr: Dictionary = {
       ],
     },
     {
+      id: "whatsapp",
       num: "03",
       title: "Rappels WhatsApp",
       tagline: "Des messages en darija, approuvés par Meta, envoyés au bon moment.",
@@ -204,6 +221,7 @@ const fr: Dictionary = {
     eyebrow: "Mise en route",
     title: "Opérationnel en un après-midi.",
     sub: "Quatre étapes, sans informaticien.",
+    securityNote: "Votre fichier reste chiffré et ne quitte jamais le territoire marocain.",
     steps: [
       {
         num: "01",
@@ -231,7 +249,7 @@ const fr: Dictionary = {
     eyebrow: "Architecture",
     title: "Chaque cabinet, dans son propre coffre.",
     sub: "Un sous-domaine dédié par cabinet, des données strictement cloisonnées. Le cabinet d’à côté n’existe pas pour le vôtre.",
-    rlsTitle: "Row Level Security",
+    rlsTitle: "Isolation des données par cabinet",
     rlsBody:
       "L’isolation est appliquée au niveau de la base de données : chaque requête est filtrée par cabinet. Aucune fuite possible entre locataires.",
     subdomains: ["cabinet-a.oltigo.com", "cabinet-b.oltigo.com", "cabinet-c.oltigo.com"],
@@ -248,7 +266,7 @@ const fr: Dictionary = {
         role: "Médecin généraliste",
         city: "Casablanca",
         clinic: "Cabinet Berrada",
-        plan: "Professional",
+        metric: "−47 % d'absences",
       },
       {
         quote:
@@ -257,7 +275,7 @@ const fr: Dictionary = {
         role: "Cardiologue",
         city: "Rabat",
         clinic: "Clinique El Fassi",
-        plan: "Enterprise",
+        metric: "Dossier chiffré en 24 h",
       },
       {
         quote: "Installé en une après-midi. Mon assistante a tout pris en main sans formation.",
@@ -265,7 +283,7 @@ const fr: Dictionary = {
         role: "Pédiatre",
         city: "Marrakech",
         clinic: "Cabinet Ouazzani",
-        plan: "Starter",
+        metric: "Opérationnel en 1 après-midi",
       },
     ],
   },
@@ -335,6 +353,8 @@ const fr: Dictionary = {
         cta: "Parler à l’équipe",
       },
     ],
+    freeLabel: "Gratuit",
+    enterpriseReply: "Réponse sous 24 h ouvrées.",
     note: "Prix hors taxes. Paiement annuel ou virement bancaire disponible. Hébergement et données au standard Loi 09-08.",
   },
   faq: {
@@ -423,6 +443,7 @@ const fr: Dictionary = {
 /* ========================================================================== */
 const ar: Dictionary = {
   nav: {
+    brand: "oltigo",
     status: "كل الأنظمة تعمل بشكل سليم",
     login: "تسجيل الدخول",
     openAccount: "افتح حسابًا",
@@ -459,6 +480,8 @@ const ar: Dictionary = {
     uptime: "زمن التشغيل · 30 يومًا",
     clinics: "عيادات نشطة",
     reminders: "تذكيرات مُرسَلة · 24 ساعة",
+    pause: "إيقاف التمرير",
+    play: "استئناف التمرير",
   },
   featuresHeading: {
     eyebrow: "المنتج",
@@ -467,6 +490,7 @@ const ar: Dictionary = {
   },
   features: [
     {
+      id: "appointments",
       num: "٠١",
       title: "المواعيد",
       tagline: "صفحة حجز عمومية وعرض أسبوعي موحَّد للعيادة بأكملها.",
@@ -478,6 +502,7 @@ const ar: Dictionary = {
       ],
     },
     {
+      id: "records",
       num: "٠٢",
       title: "ملف المريض",
       tagline: "خزنة مُشفّرة للتاريخ الطبي والوصفات والوثائق.",
@@ -489,6 +514,7 @@ const ar: Dictionary = {
       ],
     },
     {
+      id: "whatsapp",
       num: "٠٣",
       title: "تذكيرات واتساب",
       tagline: "رسائل بالدارجة، معتمَدة من Meta، تُرسَل في الوقت المناسب.",
@@ -504,6 +530,7 @@ const ar: Dictionary = {
     eyebrow: "البدء",
     title: "جاهزة في بعد ظهيرة واحدة.",
     sub: "أربع خطوات، دون الحاجة إلى تقني.",
+    securityNote: "ملفّك يبقى مُشفّرًا ولا يغادر التراب المغربي.",
     steps: [
       { num: "٠١", title: "أنشئ حسابك", body: "افتح عيادتك على OLTIGO في دقائق، دون بطاقة بنكية." },
       { num: "٠٢", title: "اضبط عيادتك", body: "الأطباء، الأوقات، أسباب الاستشارة، وصفحة الحجز." },
@@ -519,7 +546,7 @@ const ar: Dictionary = {
     eyebrow: "البنية",
     title: "كل عيادة في خزنتها الخاصة.",
     sub: "نطاق فرعي مخصَّص لكل عيادة، وبيانات معزولة تمامًا. العيادة المجاورة غير موجودة بالنسبة لعيادتك.",
-    rlsTitle: "Row Level Security",
+    rlsTitle: "عزل البيانات حسب العيادة",
     rlsBody:
       "العزل مُطبَّق على مستوى قاعدة البيانات: كل استعلام مُرشَّح حسب العيادة. لا تسرّب ممكن بين المستأجرين.",
     subdomains: ["cabinet-a.oltigo.com", "cabinet-b.oltigo.com", "cabinet-c.oltigo.com"],
@@ -535,7 +562,7 @@ const ar: Dictionary = {
         role: "طبيبة عامة",
         city: "الدار البيضاء",
         clinic: "عيادة برادة",
-        plan: "Professional",
+        metric: "انخفاض 47% في حالات التغيّب",
       },
       {
         quote: "أخيرًا ملف مريض لا أخشى فتحه. مُشفّر، واضح، وسريع.",
@@ -543,7 +570,7 @@ const ar: Dictionary = {
         role: "طبيب قلب",
         city: "الرباط",
         clinic: "مصحة الفاسي",
-        plan: "Enterprise",
+        metric: "ملف مُشفّر في 24 ساعة",
       },
       {
         quote: "تم التركيب في بعد ظهيرة واحدة. تولّت مساعدتي كل شيء دون تكوين.",
@@ -551,7 +578,7 @@ const ar: Dictionary = {
         role: "طبيبة أطفال",
         city: "مراكش",
         clinic: "عيادة وزاني",
-        plan: "Starter",
+        metric: "جاهز في بعد ظهيرة واحدة",
       },
     ],
   },
@@ -601,6 +628,8 @@ const ar: Dictionary = {
         cta: "تحدّث مع الفريق",
       },
     ],
+    freeLabel: "مجاني",
+    enterpriseReply: "ردّ خلال 24 ساعة عمل.",
     note: "الأسعار دون احتساب الضريبة. الدفع السنوي أو التحويل البنكي متاح. الاستضافة والبيانات وفق معيار القانون 09-08.",
   },
   faq: {
@@ -686,6 +715,7 @@ const ar: Dictionary = {
 /* ========================================================================== */
 const en: Dictionary = {
   nav: {
+    brand: "oltigo",
     status: "All systems operational",
     login: "Log in",
     openAccount: "Open an account",
@@ -722,6 +752,8 @@ const en: Dictionary = {
     uptime: "Uptime · 30d",
     clinics: "Active clinics",
     reminders: "Reminders sent · 24h",
+    pause: "Pause scrolling",
+    play: "Resume scrolling",
   },
   featuresHeading: {
     eyebrow: "The product",
@@ -730,6 +762,7 @@ const en: Dictionary = {
   },
   features: [
     {
+      id: "appointments",
       num: "01",
       title: "Appointments",
       tagline: "A public booking page and one unified week view for the whole practice.",
@@ -741,6 +774,7 @@ const en: Dictionary = {
       ],
     },
     {
+      id: "records",
       num: "02",
       title: "Patient record",
       tagline: "An encrypted vault for history, prescriptions, and documents.",
@@ -752,6 +786,7 @@ const en: Dictionary = {
       ],
     },
     {
+      id: "whatsapp",
       num: "03",
       title: "WhatsApp reminders",
       tagline: "Darija messages, Meta-approved, sent at exactly the right moment.",
@@ -767,6 +802,7 @@ const en: Dictionary = {
     eyebrow: "Getting started",
     title: "Live in a single afternoon.",
     sub: "Four steps, no IT person required.",
+    securityNote: "Your file stays encrypted and never leaves Moroccan territory.",
     steps: [
       {
         num: "01",
@@ -794,7 +830,7 @@ const en: Dictionary = {
     eyebrow: "Architecture",
     title: "Every practice in its own vault.",
     sub: "A dedicated subdomain per clinic, data strictly partitioned. The practice next door does not exist for yours.",
-    rlsTitle: "Row Level Security",
+    rlsTitle: "Row-level data isolation",
     rlsBody:
       "Isolation is enforced at the database layer: every query is filtered by clinic. No leakage is possible between tenants.",
     subdomains: ["cabinet-a.oltigo.com", "cabinet-b.oltigo.com", "cabinet-c.oltigo.com"],
@@ -811,7 +847,7 @@ const en: Dictionary = {
         role: "General practitioner",
         city: "Casablanca",
         clinic: "Berrada Practice",
-        plan: "Professional",
+        metric: "47% fewer no-shows",
       },
       {
         quote: "Finally a patient record I\u2019m not afraid to open. Encrypted, clear, fast.",
@@ -819,7 +855,7 @@ const en: Dictionary = {
         role: "Cardiologist",
         city: "Rabat",
         clinic: "El Fassi Clinic",
-        plan: "Enterprise",
+        metric: "Encrypted record in 24 h",
       },
       {
         quote: "Set up in one afternoon. My assistant took it all in hand with no training.",
@@ -827,7 +863,7 @@ const en: Dictionary = {
         role: "Pediatrician",
         city: "Marrakech",
         clinic: "Ouazzani Pediatrics",
-        plan: "Starter",
+        metric: "Live in one afternoon",
       },
     ],
   },
@@ -892,6 +928,8 @@ const en: Dictionary = {
         cta: "Talk to the team",
       },
     ],
+    freeLabel: "Free",
+    enterpriseReply: "Reply within 24 business hours.",
     note: "Prices excl. tax. Annual billing or bank transfer available. Hosting and data to the Law 09-08 standard.",
   },
   faq: {

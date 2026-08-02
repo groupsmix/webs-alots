@@ -30,6 +30,9 @@ export function Testimonials() {
                 <blockquote className="text-[15px] leading-relaxed text-text">
                   &ldquo;{t.quote}&rdquo;
                 </blockquote>
+                {t.metric ? (
+                  <p className="mt-5 text-[13px] font-medium text-emerald">{t.metric}</p>
+                ) : null}
                 <figcaption className="mt-7 flex items-center gap-3 border-t border-hairline pt-5">
                   <div
                     className={cn(
