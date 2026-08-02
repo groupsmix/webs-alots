@@ -20,7 +20,14 @@ export const localeLabel: Record<Locale, string> = {
   en: "EN",
 };
 
-type Feature = { num: string; title: string; tagline: string; bullets: string[] };
+type Feature = {
+  id: string;
+  num: string;
+  title: string;
+  tagline: string;
+  bullets: string[];
+  cta: string;
+};
 type Step = { num: string; title: string; body: string };
 type Tier = {
   id: string;
@@ -39,18 +46,20 @@ type Quote = {
   city: string;
   clinic?: string;
   avatar?: string;
-  plan?: string;
+  metric?: string;
 };
 type Faq = { q: string; a: string };
 
 export type Dictionary = {
   nav: {
+    brand: string;
     status: string;
     login: string;
     openAccount: string;
     patientSpace: string;
     doctorSpace: string;
     menu: string;
+    skipToContent: string;
     sections: { features: string; how: string; pricing: string; faq: string };
   };
   hero: {
@@ -65,10 +74,18 @@ export type Dictionary = {
     trust: { uptime: string; uptimeLabel: string; cipher: string; law: string; latency: string };
   };
   whatsapp: { incoming: string; reply: string; status: string };
-  telemetry: { rdv: string; p95: string; uptime: string; clinics: string; reminders: string };
+  telemetry: {
+    rdv: string;
+    p95: string;
+    uptime: string;
+    clinics: string;
+    reminders: string;
+    pause: string;
+    play: string;
+  };
   featuresHeading: { eyebrow: string; title: string; sub: string };
   features: Feature[];
-  how: { eyebrow: string; title: string; sub: string; steps: Step[] };
+  how: { eyebrow: string; title: string; sub: string; securityNote: string; steps: Step[] };
   tenant: {
     eyebrow: string;
     title: string;
@@ -87,9 +104,19 @@ export type Dictionary = {
     currency: string;
     popular: string;
     tiers: Tier[];
+    freeLabel: string;
+    enterpriseReply: string;
     note: string;
+    compareTitle: string;
+    compareCaption: string;
   };
-  faq: { eyebrow: string; title: string; items: Faq[] };
+  faq: {
+    eyebrow: string;
+    title: string;
+    searchPlaceholder: string;
+    noResults: string;
+    items: Faq[];
+  };
   cta: {
     eyebrow: string;
     title: string;
@@ -118,12 +145,14 @@ export type Dictionary = {
 /* ========================================================================== */
 const fr: Dictionary = {
   nav: {
+    brand: "oltigo",
     status: "Tous les systèmes opérationnels",
     login: "Connexion",
     openAccount: "Ouvrir un compte",
     patientSpace: "Espace Patient",
     doctorSpace: "Espace Médecin",
     menu: "Menu",
+    skipToContent: "Passer au contenu principal",
     sections: {
       features: "Fonctionnalités",
       how: "Comment ça marche",
@@ -159,6 +188,8 @@ const fr: Dictionary = {
     uptime: "Disponibilité · 30 j",
     clinics: "Cabinets actifs",
     reminders: "Rappels envoyés · 24 h",
+    pause: "Pause le défilement",
+    play: "Reprendre le défilement",
   },
   featuresHeading: {
     eyebrow: "Le produit",
@@ -167,6 +198,7 @@ const fr: Dictionary = {
   },
   features: [
     {
+      id: "appointments",
       num: "01",
       title: "Rendez-vous",
       tagline: "Une page de réservation publique et une vue semaine unifiée pour tout le cabinet.",
@@ -176,8 +208,10 @@ const fr: Dictionary = {
         "Vue semaine unifiée, multi-praticiens",
         "Réduction mesurable des absences",
       ],
+      cta: "Voir la prise de rendez-vous",
     },
     {
+      id: "records",
       num: "02",
       title: "Dossier patient",
       tagline: "Un coffre chiffré pour l’historique, les ordonnances et les documents.",
@@ -187,8 +221,10 @@ const fr: Dictionary = {
         "Ordonnances et documents en un endroit",
         "Accès réservé à votre équipe",
       ],
+      cta: "Découvrir le dossier patient",
     },
     {
+      id: "whatsapp",
       num: "03",
       title: "Rappels WhatsApp",
       tagline: "Des messages en darija, approuvés par Meta, envoyés au bon moment.",
@@ -198,12 +234,14 @@ const fr: Dictionary = {
         "Confirmation par simple réponse « OUI »",
         "Moins d’absences, plus de temps de soin",
       ],
+      cta: "Voir les rappels WhatsApp",
     },
   ],
   how: {
     eyebrow: "Mise en route",
     title: "Opérationnel en un après-midi.",
     sub: "Quatre étapes, sans informaticien.",
+    securityNote: "Votre fichier reste chiffré et ne quitte jamais le territoire marocain.",
     steps: [
       {
         num: "01",
@@ -231,7 +269,7 @@ const fr: Dictionary = {
     eyebrow: "Architecture",
     title: "Chaque cabinet, dans son propre coffre.",
     sub: "Un sous-domaine dédié par cabinet, des données strictement cloisonnées. Le cabinet d’à côté n’existe pas pour le vôtre.",
-    rlsTitle: "Row Level Security",
+    rlsTitle: "Isolation des données par cabinet",
     rlsBody:
       "L’isolation est appliquée au niveau de la base de données : chaque requête est filtrée par cabinet. Aucune fuite possible entre locataires.",
     subdomains: ["cabinet-a.oltigo.com", "cabinet-b.oltigo.com", "cabinet-c.oltigo.com"],
@@ -248,7 +286,7 @@ const fr: Dictionary = {
         role: "Médecin généraliste",
         city: "Casablanca",
         clinic: "Cabinet Berrada",
-        plan: "Professional",
+        metric: "−47 % d'absences",
       },
       {
         quote:
@@ -257,7 +295,7 @@ const fr: Dictionary = {
         role: "Cardiologue",
         city: "Rabat",
         clinic: "Clinique El Fassi",
-        plan: "Enterprise",
+        metric: "Dossier chiffré en 24 h",
       },
       {
         quote: "Installé en une après-midi. Mon assistante a tout pris en main sans formation.",
@@ -265,7 +303,7 @@ const fr: Dictionary = {
         role: "Pédiatre",
         city: "Marrakech",
         clinic: "Cabinet Ouazzani",
-        plan: "Starter",
+        metric: "Opérationnel en 1 après-midi",
       },
     ],
   },
@@ -335,43 +373,49 @@ const fr: Dictionary = {
         cta: "Parler à l’équipe",
       },
     ],
+    freeLabel: "Gratuit",
+    enterpriseReply: "Réponse sous 24 h ouvrées.",
     note: "Prix hors taxes. Paiement annuel ou virement bancaire disponible. Hébergement et données au standard Loi 09-08.",
+    compareTitle: "Comparer toutes les fonctionnalités",
+    compareCaption: "Détail des fonctionnalités par formule",
   },
   faq: {
     eyebrow: "Questions",
     title: "Ce que les cabinets nous demandent.",
+    searchPlaceholder: "Rechercher dans la FAQ…",
+    noResults: "Aucune question ne correspond à votre recherche.",
     items: [
       {
         q: "Mes données patients sont-elles en sécurité ?",
-        a: "Oui. Chaque dossier est chiffré en AES-256-GCM au repos, et l’accès est strictement réservé à votre équipe. L’isolation entre cabinets est appliquée au niveau de la base de données.",
+        a: "Oui. Chaque dossier est chiffré en **AES-256-GCM** au repos, et l’accès est **strictement réservé à votre équipe**. L’isolation entre cabinets est appliquée au niveau de la base de données.",
       },
       {
         q: "OLTIGO est-il conforme à la Loi 09-08 ?",
-        a: "Oui. Le traitement et la conservation des données personnelles suivent les exigences de la Loi 09-08 sur la protection des données au Maroc.",
+        a: "Oui. Le traitement et la conservation des données personnelles suivent les exigences de la **Loi 09-08** sur la protection des données au Maroc.",
       },
       {
         q: "Les rappels WhatsApp sont-ils vraiment en darija ?",
-        a: "Oui. Nous fournissons 10 modèles en darija approuvés par Meta, prêts à l’emploi, que vous pouvez personnaliser.",
+        a: "Oui. Nous fournissons **10 modèles en darija approuvés par Meta**, prêts à l’emploi, que vous pouvez personnaliser.",
       },
       {
         q: "Puis-je importer mon fichier patients existant ?",
-        a: "Oui. Vous pouvez importer votre fichier existant ou ajouter vos patients progressivement, sans interruption.",
+        a: "Oui. Vous pouvez **importer votre fichier existant** ou ajouter vos patients progressivement, sans interruption.",
       },
       {
         q: "Combien de temps pour démarrer ?",
-        a: "La plupart des cabinets sont opérationnels en un après-midi : compte, configuration, page de réservation et premiers rappels.",
+        a: "La plupart des cabinets sont **opérationnels en un après-midi** : compte, configuration, page de réservation et premiers rappels.",
       },
       {
         q: "Et si j’ai plusieurs praticiens ou plusieurs sites ?",
-        a: "Les formules Professional et Enterprise gèrent les cabinets de groupe et le multi-sites, avec un sous-domaine dédié par cabinet.",
+        a: "Les formules **Professional et Enterprise** gèrent les cabinets de groupe et le multi-sites, avec un **sous-domaine dédié par cabinet**.",
       },
       {
         q: "Puis-je changer ou résilier ma formule ?",
-        a: "À tout moment, sans engagement. Vous passez d’une formule à l’autre directement depuis votre espace.",
+        a: "**À tout moment, sans engagement**. Vous passez d’une formule à l’autre directement depuis votre espace.",
       },
       {
         q: "Mes patients doivent-ils installer une application ?",
-        a: "Non. La réservation se fait depuis un navigateur, et les rappels arrivent sur WhatsApp, qu’ils utilisent déjà.",
+        a: "Non. La réservation se fait **depuis un navigateur**, et les rappels arrivent sur **WhatsApp**, qu’ils utilisent déjà.",
       },
     ],
   },
@@ -423,12 +467,14 @@ const fr: Dictionary = {
 /* ========================================================================== */
 const ar: Dictionary = {
   nav: {
+    brand: "oltigo",
     status: "كل الأنظمة تعمل بشكل سليم",
     login: "تسجيل الدخول",
     openAccount: "افتح حسابًا",
     patientSpace: "فضاء المريض",
     doctorSpace: "فضاء الطبيب",
     menu: "القائمة",
+    skipToContent: "تخطي إلى المحتوى الرئيسي",
     sections: { features: "الميزات", how: "كيف يعمل", pricing: "الأسعار", faq: "الأسئلة" },
   },
   hero: {
@@ -459,6 +505,8 @@ const ar: Dictionary = {
     uptime: "زمن التشغيل · 30 يومًا",
     clinics: "عيادات نشطة",
     reminders: "تذكيرات مُرسَلة · 24 ساعة",
+    pause: "إيقاف التمرير",
+    play: "استئناف التمرير",
   },
   featuresHeading: {
     eyebrow: "المنتج",
@@ -467,6 +515,7 @@ const ar: Dictionary = {
   },
   features: [
     {
+      id: "appointments",
       num: "٠١",
       title: "المواعيد",
       tagline: "صفحة حجز عمومية وعرض أسبوعي موحَّد للعيادة بأكملها.",
@@ -476,8 +525,10 @@ const ar: Dictionary = {
         "عرض أسبوعي موحَّد لعدّة أطباء",
         "خفض ملموس في حالات التغيّب",
       ],
+      cta: "عرض حجز المواعيد",
     },
     {
+      id: "records",
       num: "٠٢",
       title: "ملف المريض",
       tagline: "خزنة مُشفّرة للتاريخ الطبي والوصفات والوثائق.",
@@ -487,8 +538,10 @@ const ar: Dictionary = {
         "الوصفات والوثائق في مكان واحد",
         "وصول محصور في فريقك فقط",
       ],
+      cta: "اكتشف ملف المريض",
     },
     {
+      id: "whatsapp",
       num: "٠٣",
       title: "تذكيرات واتساب",
       tagline: "رسائل بالدارجة، معتمَدة من Meta، تُرسَل في الوقت المناسب.",
@@ -498,12 +551,14 @@ const ar: Dictionary = {
         "تأكيد بمجرّد الردّ بـ«نعم»",
         "تغيّب أقل، ووقت رعاية أكثر",
       ],
+      cta: "عرض تذكيرات واتساب",
     },
   ],
   how: {
     eyebrow: "البدء",
     title: "جاهزة في بعد ظهيرة واحدة.",
     sub: "أربع خطوات، دون الحاجة إلى تقني.",
+    securityNote: "ملفّك يبقى مُشفّرًا ولا يغادر التراب المغربي.",
     steps: [
       { num: "٠١", title: "أنشئ حسابك", body: "افتح عيادتك على OLTIGO في دقائق، دون بطاقة بنكية." },
       { num: "٠٢", title: "اضبط عيادتك", body: "الأطباء، الأوقات، أسباب الاستشارة، وصفحة الحجز." },
@@ -519,7 +574,7 @@ const ar: Dictionary = {
     eyebrow: "البنية",
     title: "كل عيادة في خزنتها الخاصة.",
     sub: "نطاق فرعي مخصَّص لكل عيادة، وبيانات معزولة تمامًا. العيادة المجاورة غير موجودة بالنسبة لعيادتك.",
-    rlsTitle: "Row Level Security",
+    rlsTitle: "عزل البيانات حسب العيادة",
     rlsBody:
       "العزل مُطبَّق على مستوى قاعدة البيانات: كل استعلام مُرشَّح حسب العيادة. لا تسرّب ممكن بين المستأجرين.",
     subdomains: ["cabinet-a.oltigo.com", "cabinet-b.oltigo.com", "cabinet-c.oltigo.com"],
@@ -535,7 +590,7 @@ const ar: Dictionary = {
         role: "طبيبة عامة",
         city: "الدار البيضاء",
         clinic: "عيادة برادة",
-        plan: "Professional",
+        metric: "انخفاض 47% في حالات التغيّب",
       },
       {
         quote: "أخيرًا ملف مريض لا أخشى فتحه. مُشفّر، واضح، وسريع.",
@@ -543,7 +598,7 @@ const ar: Dictionary = {
         role: "طبيب قلب",
         city: "الرباط",
         clinic: "مصحة الفاسي",
-        plan: "Enterprise",
+        metric: "ملف مُشفّر في 24 ساعة",
       },
       {
         quote: "تم التركيب في بعد ظهيرة واحدة. تولّت مساعدتي كل شيء دون تكوين.",
@@ -551,7 +606,7 @@ const ar: Dictionary = {
         role: "طبيبة أطفال",
         city: "مراكش",
         clinic: "عيادة وزاني",
-        plan: "Starter",
+        metric: "جاهز في بعد ظهيرة واحدة",
       },
     ],
   },
@@ -601,43 +656,49 @@ const ar: Dictionary = {
         cta: "تحدّث مع الفريق",
       },
     ],
+    freeLabel: "مجاني",
+    enterpriseReply: "ردّ خلال 24 ساعة عمل.",
     note: "الأسعار دون احتساب الضريبة. الدفع السنوي أو التحويل البنكي متاح. الاستضافة والبيانات وفق معيار القانون 09-08.",
+    compareTitle: "مقارنة كل الميزات",
+    compareCaption: "تفاصيل الميزات حسب الباقة",
   },
   faq: {
     eyebrow: "أسئلة",
     title: "ما تسألنا عنه العيادات.",
+    searchPlaceholder: "البحث في الأسئلة…",
+    noResults: "لا توجد أسئلة تطابق بحثك.",
     items: [
       {
         q: "هل بيانات مرضاي آمنة؟",
-        a: "نعم. كل ملف مُشفّر بـ AES-256-GCM في حالة السكون، والوصول محصور في فريقك. العزل بين العيادات مُطبَّق على مستوى قاعدة البيانات.",
+        a: "نعم. كل ملف مُشفّر بـ **AES-256-GCM** في حالة السكون، والوصول **محصور في فريقك**. العزل بين العيادات مُطبَّق على مستوى قاعدة البيانات.",
       },
       {
         q: "هل OLTIGO متوافق مع القانون 09-08؟",
-        a: "نعم. تتم معالجة وحفظ البيانات الشخصية وفق متطلّبات القانون 09-08 لحماية البيانات في المغرب.",
+        a: "نعم. تتم معالجة وحفظ البيانات الشخصية وفق متطلّبات **القانون 09-08** لحماية البيانات في المغرب.",
       },
       {
         q: "هل تذكيرات واتساب بالدارجة فعلاً؟",
-        a: "نعم. نوفّر 10 قوالب بالدارجة معتمَدة من Meta وجاهزة للاستعمال، يمكنك تخصيصها.",
+        a: "نعم. نوفّر **10 قوالب بالدارجة معتمَدة من Meta** وجاهزة للاستعمال، يمكنك تخصيصها.",
       },
       {
         q: "هل يمكنني استيراد ملف مرضاي الحالي؟",
-        a: "نعم. يمكنك استيراد ملفّك الحالي أو إضافة مرضاك تدريجيًا، دون انقطاع.",
+        a: "نعم. يمكنك **استيراد ملفّك الحالي** أو إضافة مرضاك تدريجيًا، دون انقطاع.",
       },
       {
         q: "كم يستغرق البدء؟",
-        a: "تصبح معظم العيادات جاهزة في بعد ظهيرة واحدة: الحساب، الإعداد، صفحة الحجز، وأوّل التذكيرات.",
+        a: "تصبح معظم العيادات **جاهزة في بعد ظهيرة واحدة**: الحساب، الإعداد، صفحة الحجز، وأوّل التذكيرات.",
       },
       {
         q: "وماذا لو كان لديّ عدّة أطباء أو مواقع؟",
-        a: "تدعم باقتا Professional وEnterprise العيادات الجماعية والمواقع المتعدّدة، مع نطاق فرعي مخصَّص لكل عيادة.",
+        a: "تدعم باقتا **Professional وEnterprise** العيادات الجماعية والمواقع المتعدّدة، مع **نطاق فرعي مخصَّص لكل عيادة**.",
       },
       {
         q: "هل يمكنني تغيير باقتي أو إلغاؤها؟",
-        a: "في أي وقت، دون التزام. تنتقل بين الباقات مباشرة من فضائك.",
+        a: "**في أي وقت، دون التزام**. تنتقل بين الباقات مباشرة من فضائك.",
       },
       {
         q: "هل يحتاج مرضاي إلى تثبيت تطبيق؟",
-        a: "لا. يتم الحجز من المتصفّح، وتصل التذكيرات عبر واتساب الذي يستعملونه أصلاً.",
+        a: "لا. يتم الحجز **من المتصفّح**، وتصل التذكيرات عبر **واتساب** الذي يستعملونه أصلاً.",
       },
     ],
   },
@@ -686,12 +747,14 @@ const ar: Dictionary = {
 /* ========================================================================== */
 const en: Dictionary = {
   nav: {
+    brand: "oltigo",
     status: "All systems operational",
     login: "Log in",
     openAccount: "Open an account",
     patientSpace: "Patient Portal",
     doctorSpace: "Doctor Portal",
     menu: "Menu",
+    skipToContent: "Skip to main content",
     sections: { features: "Features", how: "How it works", pricing: "Pricing", faq: "FAQ" },
   },
   hero: {
@@ -722,6 +785,8 @@ const en: Dictionary = {
     uptime: "Uptime · 30d",
     clinics: "Active clinics",
     reminders: "Reminders sent · 24h",
+    pause: "Pause scrolling",
+    play: "Resume scrolling",
   },
   featuresHeading: {
     eyebrow: "The product",
@@ -730,6 +795,7 @@ const en: Dictionary = {
   },
   features: [
     {
+      id: "appointments",
       num: "01",
       title: "Appointments",
       tagline: "A public booking page and one unified week view for the whole practice.",
@@ -739,8 +805,10 @@ const en: Dictionary = {
         "Unified, multi-practitioner week view",
         "A measurable drop in no-shows",
       ],
+      cta: "See appointment booking",
     },
     {
+      id: "records",
       num: "02",
       title: "Patient record",
       tagline: "An encrypted vault for history, prescriptions, and documents.",
@@ -750,8 +818,10 @@ const en: Dictionary = {
         "Prescriptions and documents in one place",
         "Access restricted to your team",
       ],
+      cta: "Explore patient records",
     },
     {
+      id: "whatsapp",
       num: "03",
       title: "WhatsApp reminders",
       tagline: "Darija messages, Meta-approved, sent at exactly the right moment.",
@@ -761,12 +831,14 @@ const en: Dictionary = {
         "Confirm with a simple \u201cYES\u201d reply",
         "Fewer no-shows, more care time",
       ],
+      cta: "See WhatsApp reminders",
     },
   ],
   how: {
     eyebrow: "Getting started",
     title: "Live in a single afternoon.",
     sub: "Four steps, no IT person required.",
+    securityNote: "Your file stays encrypted and never leaves Moroccan territory.",
     steps: [
       {
         num: "01",
@@ -794,7 +866,7 @@ const en: Dictionary = {
     eyebrow: "Architecture",
     title: "Every practice in its own vault.",
     sub: "A dedicated subdomain per clinic, data strictly partitioned. The practice next door does not exist for yours.",
-    rlsTitle: "Row Level Security",
+    rlsTitle: "Row-level data isolation",
     rlsBody:
       "Isolation is enforced at the database layer: every query is filtered by clinic. No leakage is possible between tenants.",
     subdomains: ["cabinet-a.oltigo.com", "cabinet-b.oltigo.com", "cabinet-c.oltigo.com"],
@@ -811,7 +883,7 @@ const en: Dictionary = {
         role: "General practitioner",
         city: "Casablanca",
         clinic: "Berrada Practice",
-        plan: "Professional",
+        metric: "47% fewer no-shows",
       },
       {
         quote: "Finally a patient record I\u2019m not afraid to open. Encrypted, clear, fast.",
@@ -819,7 +891,7 @@ const en: Dictionary = {
         role: "Cardiologist",
         city: "Rabat",
         clinic: "El Fassi Clinic",
-        plan: "Enterprise",
+        metric: "Encrypted record in 24 h",
       },
       {
         quote: "Set up in one afternoon. My assistant took it all in hand with no training.",
@@ -827,7 +899,7 @@ const en: Dictionary = {
         role: "Pediatrician",
         city: "Marrakech",
         clinic: "Ouazzani Pediatrics",
-        plan: "Starter",
+        metric: "Live in one afternoon",
       },
     ],
   },
@@ -892,43 +964,49 @@ const en: Dictionary = {
         cta: "Talk to the team",
       },
     ],
+    freeLabel: "Free",
+    enterpriseReply: "Reply within 24 business hours.",
     note: "Prices excl. tax. Annual billing or bank transfer available. Hosting and data to the Law 09-08 standard.",
+    compareTitle: "Compare all features",
+    compareCaption: "Feature details by plan",
   },
   faq: {
     eyebrow: "Questions",
     title: "What practices ask us.",
+    searchPlaceholder: "Search questions…",
+    noResults: "No questions match your search.",
     items: [
       {
         q: "Is my patient data secure?",
-        a: "Yes. Every record is encrypted with AES-256-GCM at rest, and access is strictly limited to your team. Isolation between practices is enforced at the database layer.",
+        a: "Yes. Every record is encrypted with **AES-256-GCM** at rest, and access is **strictly limited to your team**. Isolation between practices is enforced at the database layer.",
       },
       {
         q: "Is OLTIGO compliant with Law 09-08?",
-        a: "Yes. Processing and storage of personal data follow the requirements of Morocco\u2019s Law 09-08 on data protection.",
+        a: "Yes. Processing and storage of personal data follow the requirements of Morocco\u2019s **Law 09-08** on data protection.",
       },
       {
         q: "Are the WhatsApp reminders really in Darija?",
-        a: "Yes. We provide 10 Meta-approved Darija templates, ready to use, which you can customize.",
+        a: "Yes. We provide **10 Meta-approved Darija templates**, ready to use, which you can customize.",
       },
       {
         q: "Can I import my existing patient file?",
-        a: "Yes. You can import your existing file or add patients gradually, with no interruption.",
+        a: "Yes. You can **import your existing file** or add patients gradually, with no interruption.",
       },
       {
         q: "How long does it take to start?",
-        a: "Most practices are live in one afternoon: account, configuration, booking page, and first reminders.",
+        a: "Most practices are **live in one afternoon**: account, configuration, booking page, and first reminders.",
       },
       {
         q: "What if I have several practitioners or sites?",
-        a: "The Professional and Enterprise plans handle group practices and multi-site, with a dedicated subdomain per clinic.",
+        a: "The **Professional and Enterprise** plans handle group practices and multi-site, with a **dedicated subdomain per clinic**.",
       },
       {
         q: "Can I change or cancel my plan?",
-        a: "Anytime, no commitment. You switch plans directly from your workspace.",
+        a: "**Anytime, no commitment**. You switch plans directly from your workspace.",
       },
       {
         q: "Do my patients need to install an app?",
-        a: "No. Booking happens in a browser, and reminders arrive on WhatsApp, which they already use.",
+        a: "No. Booking happens **in a browser**, and reminders arrive on **WhatsApp**, which they already use.",
       },
     ],
   },

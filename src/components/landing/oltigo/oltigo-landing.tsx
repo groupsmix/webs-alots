@@ -5,10 +5,11 @@ import { Hero } from "@/components/landing/oltigo/components/hero/hero";
 import { Grain } from "@/components/landing/oltigo/components/primitives/grain";
 import { ProgressRail } from "@/components/landing/oltigo/components/primitives/progress-rail";
 import { CtaDemo } from "@/components/landing/oltigo/components/sections/cta-demo";
-import { Faq, FaqSchema } from "@/components/landing/oltigo/components/sections/faq";
+import { Faq } from "@/components/landing/oltigo/components/sections/faq";
 import { Features } from "@/components/landing/oltigo/components/sections/features";
 import { Footer } from "@/components/landing/oltigo/components/sections/footer";
 import { HowItWorks } from "@/components/landing/oltigo/components/sections/how-it-works";
+import { MobileCtaBar } from "@/components/landing/oltigo/components/sections/mobile-cta-bar";
 import { MultiTenant } from "@/components/landing/oltigo/components/sections/multi-tenant";
 import { Nav } from "@/components/landing/oltigo/components/sections/nav";
 import { Pricing } from "@/components/landing/oltigo/components/sections/pricing";
@@ -49,7 +50,7 @@ export function OltigoLanding() {
           <Faq />
           <CtaDemo />
         </main>
-        <FaqSchema />
+        <MobileCtaBar />
         <Footer />
       </LanguageProvider>
     </div>

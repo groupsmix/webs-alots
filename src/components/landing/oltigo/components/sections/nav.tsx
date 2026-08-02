@@ -8,6 +8,7 @@ import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { locales, localeLabel, type Locale } from "@/components/landing/oltigo/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "./section-kit";
+import { useActiveAnchor } from "./use-active-anchor";
 
 export function Nav() {
   const { dict, locale, setLocale } = useI18n();
@@ -27,6 +28,8 @@ export function Nav() {
     { href: "#pricing", label: dict.nav.sections.pricing },
     { href: "#faq", label: dict.nav.sections.faq },
   ];
+  const anchorIds = links.map((l) => l.href.replace("#", ""));
+  const activeAnchor = useActiveAnchor(anchorIds);
 
   return (
     <header
@@ -37,6 +40,12 @@ export function Nav() {
           : "border-b border-transparent",
       )}
     >
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-[10px] focus:bg-emerald focus:px-4 focus:py-2 focus:text-ink"
+      >
+        {dict.nav.skipToContent}
+      </a>
       <nav
         className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6"
         aria-label={dict.nav.menu}
@@ -46,25 +55,30 @@ export function Nav() {
         </Link>
 
         <div className="hidden items-center gap-7 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
-            >
-              {l.label}
-            </Link>
-          ))}
+          {links.map((l) => {
+            const isActive = activeAnchor === l.href.replace("#", "");
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={isActive ? "location" : undefined}
+                className={cn(
+                  "text-[13.5px] transition-colors hover:text-text",
+                  isActive ? "font-medium text-emerald" : "text-text-secondary",
+                )}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-2">
           <LangToggle locale={locale} setLocale={setLocale} />
-          <div className="hidden sm:block">
-            <Button variant="secondary" size="sm" href="/annuaire">
-              {dict.nav.patientSpace}
-            </Button>
-          </div>
-          <Button variant="primary" size="sm" href="/register-clinic">
+          <Button variant="secondary" size="sm" href="/annuaire">
+            {dict.nav.patientSpace}
+          </Button>
+          <Button variant="secondary" size="sm" href="/register-clinic">
             {dict.nav.doctorSpace}
           </Button>
           <button
@@ -107,7 +121,13 @@ export function Nav() {
           >
             {dict.nav.patientSpace}
           </Button>
-          <Button variant="primary" size="md" href="/register-clinic" className="mt-2 w-full">
+          <Button
+            variant="secondary"
+            size="md"
+            href="/register-clinic"
+            className="mt-2 w-full"
+            onClick={() => setMobileOpen(false)}
+          >
             {dict.nav.doctorSpace}
           </Button>
         </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
+import { cn } from "@/lib/utils";
 import { Eyebrow } from "./section-kit";
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -112,8 +113,13 @@ export function CtaDemo() {
                   key={f.id}
                   className={f.id === "clinic" || f.id === "doctor" ? "sm:col-span-2" : ""}
                 >
-                  <span className="telemetry mb-1.5 block text-[10.5px] uppercase tracking-[0.16em] text-text-secondary">
+                  <span className="mb-1.5 block text-[12px] font-medium text-text-secondary">
                     {c.fields[f.id]}
+                    {f.id !== "city" ? (
+                      <span className="ms-1 text-emerald" aria-hidden="true">
+                        *
+                      </span>
+                    ) : null}
                   </span>
                   <input
                     name={f.id}
@@ -156,16 +162,21 @@ export function CtaDemo() {
 
             <p
               aria-live="polite"
-              className="mt-3 min-h-[1.25rem] text-[12.5px]"
-              style={{
-                color:
-                  status === "success"
-                    ? "var(--color-emerald)"
-                    : status === "error"
-                      ? "#e08a7a"
-                      : "var(--color-text-muted)",
-              }}
+              role="status"
+              className={cn(
+                "mt-3 flex min-h-[1.25rem] items-center gap-1.5 text-[12.5px] font-medium",
+                status === "success"
+                  ? "text-emerald"
+                  : status === "error"
+                    ? "text-[#e08a7a]"
+                    : "text-text-muted",
+              )}
             >
+              {status === "success" ? (
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+              ) : status === "error" ? (
+                <AlertCircle className="size-4 shrink-0" aria-hidden />
+              ) : null}
               {status === "success" ? c.success : status === "error" ? c.error : c.consent}
             </p>
           </form>

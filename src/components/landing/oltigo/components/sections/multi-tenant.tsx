@@ -29,9 +29,9 @@ export function MultiTenant() {
                   <span className="grid size-8 place-items-center rounded-lg border border-hairline bg-ink">
                     <Lock className="size-3.5 text-text-secondary" strokeWidth={1.5} aria-hidden />
                   </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald/30 bg-emerald/10 px-2 py-0.5">
-                    <span className="size-1 rounded-full bg-emerald" />
-                    <span className="telemetry text-[9.5px] uppercase tracking-wider text-emerald">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald/40 bg-emerald/15 px-2.5 py-1">
+                    <ShieldCheck className="size-3 text-emerald" strokeWidth={2} aria-hidden />
+                    <span className="telemetry text-[11px] font-medium uppercase tracking-wider text-emerald">
                       {dict.tenant.isolated}
                     </span>
                   </span>

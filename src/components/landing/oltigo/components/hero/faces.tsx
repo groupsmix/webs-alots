@@ -23,15 +23,15 @@ export function AgendaFace() {
   return (
     <div className="panel w-[300px] rounded-[14px] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="telemetry text-[10px] uppercase tracking-[0.2em] text-text-secondary">
+        <span className="telemetry text-[12px] uppercase tracking-[0.2em] text-text-secondary">
           Semaine 24
         </span>
-        <Calendar className="size-3.5 text-text-secondary" strokeWidth={1.5} aria-hidden />
+        <Calendar className="size-4 text-text-secondary" strokeWidth={1.5} aria-hidden />
       </div>
       <div className="grid grid-cols-[42px_repeat(5,1fr)] gap-1.5">
         <span />
         {days.map((d, i) => (
-          <span key={i} className="telemetry text-center text-[10px] text-text-secondary">
+          <span key={i} className="telemetry text-center text-[12px] text-text-secondary">
             {d}
           </span>
         ))}
@@ -46,7 +46,7 @@ export function AgendaFace() {
 function FaceRow({ time, row }: { time: string; row: number[] }) {
   return (
     <>
-      <span className="telemetry self-center text-[9.5px] text-text-secondary">{time}</span>
+      <span className="telemetry self-center text-[11px] text-text-secondary">{time}</span>
       {row.map((cell, c) => (
         <span
           key={c}
@@ -69,7 +69,7 @@ export function DossierFace({ dict }: { dict: Dictionary }) {
   return (
     <div className="panel panel-high w-[300px] rounded-[14px] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[13px] font-medium text-text">{dict.features[1].title}</span>
+        <span className="text-[14px] font-medium text-text">{dict.features[1].title}</span>
         {/* brushed-metal seal / lock — AES motif */}
         <span
           className="relative grid size-7 place-items-center rounded-full"
@@ -83,8 +83,8 @@ export function DossierFace({ dict }: { dict: Dictionary }) {
       </div>
 
       <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-hairline bg-ink/60 px-2 py-1">
-        <Fingerprint className="size-3 text-cyan" strokeWidth={1.5} aria-hidden />
-        <span className="telemetry text-[10px] tracking-wide text-cyan">AES-256-GCM</span>
+        <Fingerprint className="size-3.5 text-cyan" strokeWidth={1.5} aria-hidden />
+        <span className="telemetry text-[11px] tracking-wide text-cyan">AES-256-GCM</span>
       </div>
 
       {/* redacted rows */}
@@ -99,7 +99,7 @@ export function DossierFace({ dict }: { dict: Dictionary }) {
 
       <div className="mt-3 flex items-center gap-1.5 border-t border-hairline pt-3">
         <span className="size-1.5 rounded-full bg-emerald" />
-        <span className="text-[10.5px] text-text-secondary">{dict.features[1].bullets[3]}</span>
+        <span className="text-[12px] text-text-secondary">{dict.features[1].bullets[3]}</span>
       </div>
     </div>
   );
@@ -142,18 +142,18 @@ export function WhatsappFace({ dict }: { dict: Dictionary }) {
   return (
     <div className="panel w-[300px] rounded-[14px] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="telemetry text-[10px] uppercase tracking-[0.2em] text-text-secondary">
+        <span className="telemetry text-[12px] uppercase tracking-[0.2em] text-text-secondary">
           WhatsApp · Darija
         </span>
         <span className="flex items-center gap-1">
           <span className="size-1.5 rounded-full bg-emerald" />
-          <span className="telemetry text-[9.5px] text-text-secondary">live</span>
+          <span className="telemetry text-[11px] text-text-secondary">live</span>
         </span>
       </div>
 
       {/* incoming reminder */}
       <div className="mb-2 max-w-[78%] rounded-2xl rounded-ss-sm border border-hairline bg-[var(--color-surface-high)] px-3 py-2">
-        <p className="text-[11.5px] leading-snug text-text-secondary">{dict.whatsapp.incoming}</p>
+        <p className="text-[12.5px] leading-snug text-text-secondary">{dict.whatsapp.incoming}</p>
       </div>
 
       {/* patient reply OUI */}
@@ -161,7 +161,7 @@ export function WhatsappFace({ dict }: { dict: Dictionary }) {
         className="ms-auto mb-1 flex max-w-[60%] items-center justify-end gap-1.5 rounded-2xl rounded-ee-sm bg-[var(--color-emerald-dim)] px-3 py-1.5 transition-opacity duration-500"
         style={{ opacity: step >= 1 ? 1 : 0.15 }}
       >
-        <span className="text-[12px] font-medium text-text">{dict.whatsapp.reply}</span>
+        <span className="text-[13px] font-medium text-text">{dict.whatsapp.reply}</span>
         {step >= 2 ? (
           <CheckCheck className="size-3.5 text-emerald" strokeWidth={2.2} aria-hidden />
         ) : (
@@ -171,7 +171,7 @@ export function WhatsappFace({ dict }: { dict: Dictionary }) {
 
       <div className="flex items-center justify-end">
         <span
-          className="telemetry text-[9.5px] transition-colors duration-500"
+          className="telemetry text-[11px] transition-colors duration-500"
           style={{ color: step >= 2 ? "var(--color-emerald)" : "var(--color-text-secondary)" }}
         >
           {step >= 2 ? dict.whatsapp.status : "···"}

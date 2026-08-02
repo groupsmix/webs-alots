@@ -37,6 +37,7 @@ function syncLocale(l: Locale) {
       secure: window.location.protocol === "https:",
       sameSite: "lax",
     });
+    window.dispatchEvent(new CustomEvent("oltigo:locale", { detail: l }));
   } catch {
     /* storage unavailable — non-fatal */
   }

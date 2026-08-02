@@ -1,21 +1,22 @@
 "use client";
 
-import { Check } from "lucide-react";
-import {
-  AgendaFace,
-  DossierFace,
-  WhatsappFace,
-} from "@/components/landing/oltigo/components/hero/faces";
+import { ArrowRight, Check } from "lucide-react";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import {
+  AppointmentScreen,
+  RecordScreen,
+  WhatsAppScreen,
+} from "@/components/landing/oltigo/components/sections/feature-screens";
+import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
 
 export function Features() {
   const { dict } = useI18n();
   const visuals = [
-    <AgendaFace key="a" />,
-    <DossierFace key="d" dict={dict} />,
-    <WhatsappFace key="w" dict={dict} />,
+    <AppointmentScreen key="a" dict={dict} />,
+    <RecordScreen key="d" dict={dict} />,
+    <WhatsAppScreen key="w" dict={dict} />,
   ];
 
   return (
@@ -29,7 +30,7 @@ export function Features() {
 
         <div className="mt-20 space-y-24 sm:space-y-32">
           {dict.features.map((f, i) => (
-            <FeatureRow key={f.num} feature={f} visual={visuals[i]} reversed={i % 2 === 1} />
+            <FeatureRow key={f.id} feature={f} visual={visuals[i]} reversed={i % 2 === 1} />
           ))}
         </div>
       </div>
@@ -42,17 +43,24 @@ function FeatureRow({
   visual,
   reversed,
 }: {
-  feature: { num: string; title: string; tagline: string; bullets: string[] };
+  feature: {
+    id: string;
+    num: string;
+    title: string;
+    tagline: string;
+    bullets: string[];
+    cta: string;
+  };
   visual: React.ReactNode;
   reversed: boolean;
 }) {
   return (
-    <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+    <div id={feature.id} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
       {/* copy */}
       <div className={reversed ? "lg:order-2" : ""}>
         <Reveal>
           <div className="flex items-baseline gap-3">
-            <span className="telemetry text-[13px] text-emerald/70">{feature.num}</span>
+            <span className="telemetry text-[14px] text-emerald/70">{feature.num}</span>
             <span className="h-px w-10 bg-hairline" />
           </div>
         </Reveal>
@@ -69,7 +77,7 @@ function FeatureRow({
             <Reveal key={i} delay={160 + i * 50} as="li">
               <span className="flex items-start gap-3">
                 <Check
-                  className="mt-0.5 size-4 shrink-0 text-emerald"
+                  className="mt-0.5 size-[18px] shrink-0 text-emerald"
                   strokeWidth={1.75}
                   aria-hidden
                 />
@@ -78,6 +86,15 @@ function FeatureRow({
             </Reveal>
           ))}
         </ul>
+        <Reveal delay={360}>
+          <Button variant="secondary" size="sm" href="#demo" className="mt-8 group/btn">
+            {feature.cta}
+            <ArrowRight
+              className="size-4 transition-transform group-hover/btn:translate-x-0.5 rtl:rotate-180"
+              strokeWidth={1.75}
+            />
+          </Button>
+        </Reveal>
       </div>
 
       {/* visual */}

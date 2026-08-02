@@ -22,10 +22,16 @@ export function ConsoleStatic() {
         <div className="relative z-30 self-end" style={{ transform: "rotate(-1.2deg)" }}>
           <AgendaFace />
         </div>
-        <div className="relative z-20 -mt-6 self-start" style={{ transform: "rotate(1.1deg)" }}>
+        <div
+          className="relative z-20 -mt-4 md:-mt-6 self-start"
+          style={{ transform: "rotate(1.1deg)" }}
+        >
           <DossierFace dict={dict} />
         </div>
-        <div className="relative z-10 -mt-6 self-end" style={{ transform: "rotate(-0.8deg)" }}>
+        <div
+          className="relative z-10 -mt-4 md:-mt-6 self-end"
+          style={{ transform: "rotate(-0.8deg)" }}
+        >
           <WhatsappFace dict={dict} />
         </div>
       </div>
