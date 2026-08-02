@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
@@ -16,8 +17,13 @@ export const metadata: Metadata = {
 const linkBtnPrimary =
   "inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/80 transition-colors";
 
-export default function HowToBookPage() {
+export default async function HowToBookPage() {
+  const tenant = await getTenant();
   const cfg = defaultWebsiteConfig.howToBook;
+
+  // On the root domain the generic /book route has no clinic context, so send
+  // patients to the public directory instead.
+  const ctaHref = tenant ? "/book" : "/annuaire";
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -43,8 +49,8 @@ export default function HowToBookPage() {
       </div>
 
       <div className="text-center">
-        <Link href="/book" className={linkBtnPrimary}>
-          Book Your Appointment Now
+        <Link href={ctaHref} className={linkBtnPrimary}>
+          Prendre rendez-vous
         </Link>
       </div>
     </div>
