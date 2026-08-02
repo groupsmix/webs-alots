@@ -6,6 +6,24 @@ import { cn } from "@/lib/utils";
 
 type Item = { q: string; a: string };
 
+function RichAnswer({ text }: { text: string }) {
+  const segments = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {segments.map((segment, i) => {
+        if (segment.startsWith("**") && segment.endsWith("**")) {
+          return (
+            <strong key={i} className="font-medium text-text">
+              {segment.slice(2, -2)}
+            </strong>
+          );
+        }
+        return <span key={i}>{segment}</span>;
+      })}
+    </>
+  );
+}
+
 /** Accessible single-open accordion (shadcn-style), no external deps. */
 export function Accordion({ items }: { items: Item[] }) {
   const [open, setOpen] = useState<number | null>(0);
@@ -46,7 +64,7 @@ export function Accordion({ items }: { items: Item[] }) {
               className="grid"
             >
               <p className="max-w-[60ch] pb-6 text-[14.5px] leading-relaxed text-text-secondary">
-                {item.a}
+                <RichAnswer text={item.a} />
               </p>
             </div>
           </div>

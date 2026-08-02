@@ -1,12 +1,13 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import {
   AgendaFace,
   DossierFace,
   WhatsappFace,
 } from "@/components/landing/oltigo/components/hero/faces";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
 
@@ -42,7 +43,14 @@ function FeatureRow({
   visual,
   reversed,
 }: {
-  feature: { id: string; num: string; title: string; tagline: string; bullets: string[] };
+  feature: {
+    id: string;
+    num: string;
+    title: string;
+    tagline: string;
+    bullets: string[];
+    cta: string;
+  };
   visual: React.ReactNode;
   reversed: boolean;
 }) {
@@ -78,6 +86,15 @@ function FeatureRow({
             </Reveal>
           ))}
         </ul>
+        <Reveal delay={360}>
+          <Button variant="secondary" size="sm" href="#demo" className="mt-8 group/btn">
+            {feature.cta}
+            <ArrowRight
+              className="size-4 transition-transform group-hover/btn:translate-x-0.5 rtl:rotate-180"
+              strokeWidth={1.75}
+            />
+          </Button>
+        </Reveal>
       </div>
 
       {/* visual */}

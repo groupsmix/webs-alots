@@ -20,7 +20,14 @@ export const localeLabel: Record<Locale, string> = {
   en: "EN",
 };
 
-type Feature = { id: string; num: string; title: string; tagline: string; bullets: string[] };
+type Feature = {
+  id: string;
+  num: string;
+  title: string;
+  tagline: string;
+  bullets: string[];
+  cta: string;
+};
 type Step = { num: string; title: string; body: string };
 type Tier = {
   id: string;
@@ -199,6 +206,7 @@ const fr: Dictionary = {
         "Vue semaine unifiée, multi-praticiens",
         "Réduction mesurable des absences",
       ],
+      cta: "Voir la prise de rendez-vous",
     },
     {
       id: "records",
@@ -211,6 +219,7 @@ const fr: Dictionary = {
         "Ordonnances et documents en un endroit",
         "Accès réservé à votre équipe",
       ],
+      cta: "Découvrir le dossier patient",
     },
     {
       id: "whatsapp",
@@ -223,6 +232,7 @@ const fr: Dictionary = {
         "Confirmation par simple réponse « OUI »",
         "Moins d’absences, plus de temps de soin",
       ],
+      cta: "Voir les rappels WhatsApp",
     },
   ],
   how: {
@@ -373,35 +383,35 @@ const fr: Dictionary = {
     items: [
       {
         q: "Mes données patients sont-elles en sécurité ?",
-        a: "Oui. Chaque dossier est chiffré en AES-256-GCM au repos, et l’accès est strictement réservé à votre équipe. L’isolation entre cabinets est appliquée au niveau de la base de données.",
+        a: "Oui. Chaque dossier est chiffré en **AES-256-GCM** au repos, et l’accès est **strictement réservé à votre équipe**. L’isolation entre cabinets est appliquée au niveau de la base de données.",
       },
       {
         q: "OLTIGO est-il conforme à la Loi 09-08 ?",
-        a: "Oui. Le traitement et la conservation des données personnelles suivent les exigences de la Loi 09-08 sur la protection des données au Maroc.",
+        a: "Oui. Le traitement et la conservation des données personnelles suivent les exigences de la **Loi 09-08** sur la protection des données au Maroc.",
       },
       {
         q: "Les rappels WhatsApp sont-ils vraiment en darija ?",
-        a: "Oui. Nous fournissons 10 modèles en darija approuvés par Meta, prêts à l’emploi, que vous pouvez personnaliser.",
+        a: "Oui. Nous fournissons **10 modèles en darija approuvés par Meta**, prêts à l’emploi, que vous pouvez personnaliser.",
       },
       {
         q: "Puis-je importer mon fichier patients existant ?",
-        a: "Oui. Vous pouvez importer votre fichier existant ou ajouter vos patients progressivement, sans interruption.",
+        a: "Oui. Vous pouvez **importer votre fichier existant** ou ajouter vos patients progressivement, sans interruption.",
       },
       {
         q: "Combien de temps pour démarrer ?",
-        a: "La plupart des cabinets sont opérationnels en un après-midi : compte, configuration, page de réservation et premiers rappels.",
+        a: "La plupart des cabinets sont **opérationnels en un après-midi** : compte, configuration, page de réservation et premiers rappels.",
       },
       {
         q: "Et si j’ai plusieurs praticiens ou plusieurs sites ?",
-        a: "Les formules Professional et Enterprise gèrent les cabinets de groupe et le multi-sites, avec un sous-domaine dédié par cabinet.",
+        a: "Les formules **Professional et Enterprise** gèrent les cabinets de groupe et le multi-sites, avec un **sous-domaine dédié par cabinet**.",
       },
       {
         q: "Puis-je changer ou résilier ma formule ?",
-        a: "À tout moment, sans engagement. Vous passez d’une formule à l’autre directement depuis votre espace.",
+        a: "**À tout moment, sans engagement**. Vous passez d’une formule à l’autre directement depuis votre espace.",
       },
       {
         q: "Mes patients doivent-ils installer une application ?",
-        a: "Non. La réservation se fait depuis un navigateur, et les rappels arrivent sur WhatsApp, qu’ils utilisent déjà.",
+        a: "Non. La réservation se fait **depuis un navigateur**, et les rappels arrivent sur **WhatsApp**, qu’ils utilisent déjà.",
       },
     ],
   },
@@ -511,6 +521,7 @@ const ar: Dictionary = {
         "عرض أسبوعي موحَّد لعدّة أطباء",
         "خفض ملموس في حالات التغيّب",
       ],
+      cta: "عرض حجز المواعيد",
     },
     {
       id: "records",
@@ -523,6 +534,7 @@ const ar: Dictionary = {
         "الوصفات والوثائق في مكان واحد",
         "وصول محصور في فريقك فقط",
       ],
+      cta: "اكتشف ملف المريض",
     },
     {
       id: "whatsapp",
@@ -535,6 +547,7 @@ const ar: Dictionary = {
         "تأكيد بمجرّد الردّ بـ«نعم»",
         "تغيّب أقل، ووقت رعاية أكثر",
       ],
+      cta: "عرض تذكيرات واتساب",
     },
   ],
   how: {
@@ -651,35 +664,35 @@ const ar: Dictionary = {
     items: [
       {
         q: "هل بيانات مرضاي آمنة؟",
-        a: "نعم. كل ملف مُشفّر بـ AES-256-GCM في حالة السكون، والوصول محصور في فريقك. العزل بين العيادات مُطبَّق على مستوى قاعدة البيانات.",
+        a: "نعم. كل ملف مُشفّر بـ **AES-256-GCM** في حالة السكون، والوصول **محصور في فريقك**. العزل بين العيادات مُطبَّق على مستوى قاعدة البيانات.",
       },
       {
         q: "هل OLTIGO متوافق مع القانون 09-08؟",
-        a: "نعم. تتم معالجة وحفظ البيانات الشخصية وفق متطلّبات القانون 09-08 لحماية البيانات في المغرب.",
+        a: "نعم. تتم معالجة وحفظ البيانات الشخصية وفق متطلّبات **القانون 09-08** لحماية البيانات في المغرب.",
       },
       {
         q: "هل تذكيرات واتساب بالدارجة فعلاً؟",
-        a: "نعم. نوفّر 10 قوالب بالدارجة معتمَدة من Meta وجاهزة للاستعمال، يمكنك تخصيصها.",
+        a: "نعم. نوفّر **10 قوالب بالدارجة معتمَدة من Meta** وجاهزة للاستعمال، يمكنك تخصيصها.",
       },
       {
         q: "هل يمكنني استيراد ملف مرضاي الحالي؟",
-        a: "نعم. يمكنك استيراد ملفّك الحالي أو إضافة مرضاك تدريجيًا، دون انقطاع.",
+        a: "نعم. يمكنك **استيراد ملفّك الحالي** أو إضافة مرضاك تدريجيًا، دون انقطاع.",
       },
       {
         q: "كم يستغرق البدء؟",
-        a: "تصبح معظم العيادات جاهزة في بعد ظهيرة واحدة: الحساب، الإعداد، صفحة الحجز، وأوّل التذكيرات.",
+        a: "تصبح معظم العيادات **جاهزة في بعد ظهيرة واحدة**: الحساب، الإعداد، صفحة الحجز، وأوّل التذكيرات.",
       },
       {
         q: "وماذا لو كان لديّ عدّة أطباء أو مواقع؟",
-        a: "تدعم باقتا Professional وEnterprise العيادات الجماعية والمواقع المتعدّدة، مع نطاق فرعي مخصَّص لكل عيادة.",
+        a: "تدعم باقتا **Professional وEnterprise** العيادات الجماعية والمواقع المتعدّدة، مع **نطاق فرعي مخصَّص لكل عيادة**.",
       },
       {
         q: "هل يمكنني تغيير باقتي أو إلغاؤها؟",
-        a: "في أي وقت، دون التزام. تنتقل بين الباقات مباشرة من فضائك.",
+        a: "**في أي وقت، دون التزام**. تنتقل بين الباقات مباشرة من فضائك.",
       },
       {
         q: "هل يحتاج مرضاي إلى تثبيت تطبيق؟",
-        a: "لا. يتم الحجز من المتصفّح، وتصل التذكيرات عبر واتساب الذي يستعملونه أصلاً.",
+        a: "لا. يتم الحجز **من المتصفّح**، وتصل التذكيرات عبر **واتساب** الذي يستعملونه أصلاً.",
       },
     ],
   },
@@ -786,6 +799,7 @@ const en: Dictionary = {
         "Unified, multi-practitioner week view",
         "A measurable drop in no-shows",
       ],
+      cta: "See appointment booking",
     },
     {
       id: "records",
@@ -798,6 +812,7 @@ const en: Dictionary = {
         "Prescriptions and documents in one place",
         "Access restricted to your team",
       ],
+      cta: "Explore patient records",
     },
     {
       id: "whatsapp",
@@ -810,6 +825,7 @@ const en: Dictionary = {
         "Confirm with a simple \u201cYES\u201d reply",
         "Fewer no-shows, more care time",
       ],
+      cta: "See WhatsApp reminders",
     },
   ],
   how: {
@@ -954,35 +970,35 @@ const en: Dictionary = {
     items: [
       {
         q: "Is my patient data secure?",
-        a: "Yes. Every record is encrypted with AES-256-GCM at rest, and access is strictly limited to your team. Isolation between practices is enforced at the database layer.",
+        a: "Yes. Every record is encrypted with **AES-256-GCM** at rest, and access is **strictly limited to your team**. Isolation between practices is enforced at the database layer.",
       },
       {
         q: "Is OLTIGO compliant with Law 09-08?",
-        a: "Yes. Processing and storage of personal data follow the requirements of Morocco\u2019s Law 09-08 on data protection.",
+        a: "Yes. Processing and storage of personal data follow the requirements of Morocco\u2019s **Law 09-08** on data protection.",
       },
       {
         q: "Are the WhatsApp reminders really in Darija?",
-        a: "Yes. We provide 10 Meta-approved Darija templates, ready to use, which you can customize.",
+        a: "Yes. We provide **10 Meta-approved Darija templates**, ready to use, which you can customize.",
       },
       {
         q: "Can I import my existing patient file?",
-        a: "Yes. You can import your existing file or add patients gradually, with no interruption.",
+        a: "Yes. You can **import your existing file** or add patients gradually, with no interruption.",
       },
       {
         q: "How long does it take to start?",
-        a: "Most practices are live in one afternoon: account, configuration, booking page, and first reminders.",
+        a: "Most practices are **live in one afternoon**: account, configuration, booking page, and first reminders.",
       },
       {
         q: "What if I have several practitioners or sites?",
-        a: "The Professional and Enterprise plans handle group practices and multi-site, with a dedicated subdomain per clinic.",
+        a: "The **Professional and Enterprise** plans handle group practices and multi-site, with a **dedicated subdomain per clinic**.",
       },
       {
         q: "Can I change or cancel my plan?",
-        a: "Anytime, no commitment. You switch plans directly from your workspace.",
+        a: "**Anytime, no commitment**. You switch plans directly from your workspace.",
       },
       {
         q: "Do my patients need to install an app?",
-        a: "No. Booking happens in a browser, and reminders arrive on WhatsApp, which they already use.",
+        a: "No. Booking happens **in a browser**, and reminders arrive on **WhatsApp**, which they already use.",
       },
     ],
   },

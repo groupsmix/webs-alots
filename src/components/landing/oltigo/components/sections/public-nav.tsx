@@ -8,6 +8,7 @@ import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { locales, localeLabel, type Locale } from "@/components/landing/oltigo/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "./section-kit";
+import { useActiveAnchor } from "./use-active-anchor";
 
 const links = [
   { href: "/#features", labelKey: "features" as const },
@@ -29,6 +30,10 @@ export function PublicNav() {
   }, []);
 
   const sectionLabels = dict.nav.sections;
+  const anchorIds = links
+    .map((l) => l.href.split("#")[1])
+    .filter((id): id is string => Boolean(id));
+  const activeAnchor = useActiveAnchor(anchorIds);
 
   return (
     <header
@@ -54,15 +59,22 @@ export function PublicNav() {
         </Link>
 
         <div className="hidden items-center gap-7 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
-            >
-              {sectionLabels[l.labelKey]}
-            </Link>
-          ))}
+          {links.map((l) => {
+            const isActive = activeAnchor === l.href.split("#")[1];
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={isActive ? "location" : undefined}
+                className={cn(
+                  "text-[13.5px] transition-colors hover:text-text",
+                  isActive ? "font-medium text-emerald" : "text-text-secondary",
+                )}
+              >
+                {sectionLabels[l.labelKey]}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-2">
