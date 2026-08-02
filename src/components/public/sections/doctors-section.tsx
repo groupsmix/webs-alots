@@ -12,6 +12,17 @@ interface DoctorsSectionProps {
 export async function DoctorsSection({ cardStyle = "shadow" }: DoctorsSectionProps) {
   const doctors = await getPublicDoctors();
 
+  // Deduplicate by name and prefer entries with a specialty/avatar.
+  const seen = new Map<string, (typeof doctors)[number]>();
+  for (const doctor of doctors) {
+    const key = doctor.name.trim().toLowerCase();
+    const existing = seen.get(key);
+    if (!existing || doctor.specialty || doctor.avatar) {
+      seen.set(key, doctor);
+    }
+  }
+  const uniqueDoctors = Array.from(seen.values());
+
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -19,9 +30,9 @@ export async function DoctorsSection({ cardStyle = "shadow" }: DoctorsSectionPro
         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
           Découvrez nos professionnels de santé dédiés à votre bien-être.
         </p>
-        {doctors.length > 0 ? (
+        {uniqueDoctors.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
-            {doctors.map((doctor) => (
+            {uniqueDoctors.map((doctor) => (
               <Card key={doctor.id} className={publicCardClass(cardStyle)}>
                 <CardContent className="pt-6 text-center">
                   {doctor.avatar ? (

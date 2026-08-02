@@ -6,6 +6,7 @@ import { defaultWebsiteConfig } from "@/lib/website-config";
 interface HeroOverrides {
   title?: string;
   subtitle?: string;
+  imageUrl?: string;
 }
 
 /** Hero layout, taken from the clinic's chosen template `heroStyle`. */

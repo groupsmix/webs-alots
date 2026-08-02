@@ -14,15 +14,26 @@ interface ServicesPreviewProps {
 
 export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewProps) {
   const services = await getPublicServices();
-  const activeServices = services.filter((s) => s.active).slice(0, 3);
+
+  // Deduplicate by name (case-insensitive) and prefer active services.
+  const seen = new Set<string>();
+  const uniqueServices = services
+    .filter((s) => s.active)
+    .filter((s) => {
+      const key = s.name.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3);
 
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl font-bold mb-12">Nos Services</h2>
         <div className="grid gap-8 md:grid-cols-3">
-          {activeServices.length > 0 ? (
-            activeServices.map((service) => (
+          {uniqueServices.length > 0 ? (
+            uniqueServices.map((service) => (
               <div
                 key={service.id}
                 className={cn("rounded-xl bg-card p-6 text-center", publicCardClass(cardStyle))}
@@ -31,7 +42,9 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
                   <Stethoscope className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{service.name}</h3>
-                <p className="text-sm text-muted-foreground">{service.description}</p>
+                {service.description ? (
+                  <p className="text-sm text-muted-foreground">{service.description}</p>
+                ) : null}
               </div>
             ))
           ) : (
