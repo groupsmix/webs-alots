@@ -114,26 +114,38 @@ function buildSyntheticServices(database: PublicStatusService): PublicStatusServ
   ];
 }
 
+function statusTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`Status snapshot did not resolve within ${ms}ms`)), ms);
+    }),
+  ]);
+}
+
 export async function getPublicStatusSnapshot(): Promise<PublicStatusSnapshot> {
   "use cache";
   cacheLife("minutes");
 
-  const admin = createUntypedAdminClient("super_admin");
-
   try {
-    const [database, uptimeRowsResult, incidentRowsResult] = await Promise.all([
-      probeDatabase(),
-      admin
-        .from("uptime_sla_monthly")
-        .select("monitor_name, month, uptime_pct, downtime_events")
-        .abortSignal(AbortSignal.timeout(5000)),
-      admin
-        .from("uptime_events")
-        .select("id, monitor_name, event_type, message, response_time_ms, occurred_at")
-        .order("occurred_at", { ascending: false })
-        .limit(10)
-        .abortSignal(AbortSignal.timeout(5000)),
-    ]);
+    const admin = createUntypedAdminClient("super_admin");
+
+    const [database, uptimeRowsResult, incidentRowsResult] = await statusTimeout(
+      Promise.all([
+        probeDatabase(),
+        admin
+          .from("uptime_sla_monthly")
+          .select("monitor_name, month, uptime_pct, downtime_events")
+          .abortSignal(AbortSignal.timeout(5000)),
+        admin
+          .from("uptime_events")
+          .select("id, monitor_name, event_type, message, response_time_ms, occurred_at")
+          .order("occurred_at", { ascending: false })
+          .limit(10)
+          .abortSignal(AbortSignal.timeout(5000)),
+      ]),
+      8000,
+    );
 
     const services = buildSyntheticServices(database);
     const incidents = ((incidentRowsResult.data ?? []) as Array<Record<string, unknown>>).map(

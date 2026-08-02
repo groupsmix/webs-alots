@@ -1,21 +1,91 @@
-import { Award, Languages, GraduationCap, Briefcase } from "lucide-react";
+import {
+  Award,
+  Languages,
+  GraduationCap,
+  Briefcase,
+  Building2,
+  Shield,
+  Users,
+  Globe,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export const metadata: Metadata = {
-  title: "À propos — Notre Médecin",
-  description:
-    "Découvrez notre médecin, ses qualifications, son expérience et sa spécialité. Un professionnel de santé dédié à votre bien-être.",
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenant();
+  if (!tenant) {
+    return {
+      title: "À propos — Oltigo",
+      description:
+        "Oltigo est la plateforme marocaine dédiée à la gestion opérationnelle des cabinets, cliniques et pharmacies au Maroc.",
+    };
+  }
+  return {
     title: "À propos — Notre Médecin",
-    description: "Découvrez notre médecin, ses qualifications et son expérience.",
-  },
-};
+    description:
+      "Découvrez notre médecin, ses qualifications, son expérience et sa spécialité. Un professionnel de santé dédié à votre bien-être.",
+  };
+}
 
-export default function AboutPage() {
+function OltigoAbout() {
+  const title = "À propos de la plateforme";
+  const body =
+    "Oltigo est la plateforme marocaine de gestion opérationnelle pour les cabinets, cliniques et pharmacies. Rendez-vous, rappels WhatsApp, dossiers patients chiffrés et analyses : tout réuni dans un outil simple, rapide et conforme à la Loi 09-08.";
+  const values = [
+    {
+      icon: Shield,
+      label: "Sécurité des données",
+      value: "Chiffrement AES-256-GCM et conformité Loi 09-08 / CNDP.",
+    },
+    {
+      icon: Globe,
+      label: "Hébergement au Maroc",
+      value:
+        "Données stockées sur l'infrastructure Supabase UE, avec cloisonnement strict par cabinet.",
+    },
+    {
+      icon: Users,
+      label: "Conçu par et pour les praticiens",
+      value: "Une interface pensée pour le flux de travail réel d'un cabinet médical marocain.",
+    },
+    {
+      icon: Building2,
+      label: "Multi-sites & multi-praticiens",
+      value: "Un sous-domaine dédié par cabinet, une gestion unifiée pour les groupes.",
+    },
+  ];
+
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto text-center">
+        <h1 className="text-3xl font-bold mb-4">{title}</h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto mb-12">{body}</p>
+
+        <div className="grid gap-4 md:grid-cols-2 mb-12 text-start">
+          {values.map((v) => (
+            <Card key={v.label}>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <v.icon className="h-5 w-5 text-primary" />
+                  {v.label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{v.value}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClinicAbout() {
   const cfg = defaultWebsiteConfig.about;
 
   const credentials = [
@@ -80,4 +150,9 @@ export default function AboutPage() {
       </div>
     </div>
   );
+}
+
+export default async function AboutPage() {
+  const tenant = await getTenant();
+  return tenant ? <ClinicAbout /> : <OltigoAbout />;
 }

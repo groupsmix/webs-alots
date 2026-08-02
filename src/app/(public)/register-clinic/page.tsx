@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { OltigoPublicShell } from "@/components/landing/oltigo/public-shell";
 import { RegisterForm } from "@/components/onboarding/register-form";
 import { t, type Locale } from "@/lib/i18n";
-import { getTenant } from "@/lib/tenant";
 
 export const metadata: Metadata = {
   // Root layout's title template appends " | Oltigo"; omit the brand here so
@@ -19,9 +17,9 @@ export const metadata: Metadata = {
 };
 
 export default async function RegisterPage() {
-  const tenant = await getTenant();
   const h = await headers();
-  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const locale: Locale =
+    (h.get("x-locale") as Locale) || (h.get("x-tenant-locale") as Locale) || "fr";
 
   const form = (
     <div className="flex min-h-[calc(100vh-4rem)] flex-1 items-center justify-center px-4 py-12">
@@ -30,15 +28,6 @@ export default async function RegisterPage() {
     </div>
   );
 
-  // Subdomain → render inside the tenant public layout (light theme).
-  if (tenant) {
-    return form;
-  }
-
-  // Root domain → Oltigo landing chrome with the registration form on a light canvas.
-  return (
-    <OltigoPublicShell mainClassName="min-h-screen bg-background pt-16 text-foreground">
-      {form}
-    </OltigoPublicShell>
-  );
+  // Both root and subdomain layouts already provide the surrounding chrome.
+  return form;
 }
