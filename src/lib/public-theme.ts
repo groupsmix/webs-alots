@@ -109,11 +109,87 @@ export interface PublicThemeBranding {
  * whole public subtree matches the template — sharp for "minimal",
  * generous for "elegant", etc.
  */
+const TEMPLATE_PALETTES: Record<
+  TemplateDefinition["id"],
+  {
+    background: string;
+    foreground: string;
+    card: string;
+    muted: string;
+    mutedForeground: string;
+    border: string;
+  }
+> = {
+  modern: {
+    background: "#ffffff",
+    foreground: INK,
+    card: "#faf8f2",
+    muted: "#f4f1ea",
+    mutedForeground: "rgba(11, 15, 14, 0.66)",
+    border: "rgba(11, 15, 14, 0.12)",
+  },
+  classic: {
+    background: "#f0f9ff",
+    foreground: INK,
+    card: "#ffffff",
+    muted: "#e0f2fe",
+    mutedForeground: "rgba(11, 15, 14, 0.66)",
+    border: "rgba(11, 15, 14, 0.12)",
+  },
+  elegant: {
+    background: "#fff7f8",
+    foreground: "#1f1a1b",
+    card: "#ffffff",
+    muted: "#ffe4e6",
+    mutedForeground: "rgba(31, 26, 27, 0.66)",
+    border: "rgba(31, 26, 27, 0.12)",
+  },
+  bold: {
+    background: "#0b0f0e",
+    foreground: BONE,
+    card: "#1c2320",
+    muted: "#232b28",
+    mutedForeground: "rgba(244, 241, 234, 0.72)",
+    border: "rgba(244, 241, 234, 0.22)",
+  },
+  minimal: {
+    background: "#ffffff",
+    foreground: INK,
+    card: "#fafafa",
+    muted: "#f5f5f5",
+    mutedForeground: "rgba(11, 15, 14, 0.66)",
+    border: "rgba(11, 15, 14, 0.12)",
+  },
+  arabic: {
+    background: "#ffffff",
+    foreground: INK,
+    card: "#faf8f2",
+    muted: "#f4f1ea",
+    mutedForeground: "rgba(11, 15, 14, 0.66)",
+    border: "rgba(11, 15, 14, 0.12)",
+  },
+};
+
+/**
+ * Build the inline style object that re-themes the public site to the
+ * clinic's branding. Spread onto the public layout wrapper `<div>`.
+ *
+ * When a `template` is passed, the full palette (background, foreground,
+ * card, muted, border) and the border radius are overridden so every
+ * shadcn token (and therefore every component using bg-background,
+ * text-foreground, bg-card, etc.) matches the chosen template.
+ */
 export function buildPublicThemeStyle(
   branding: PublicThemeBranding,
-  borderRadius?: TemplateDefinition["borderRadius"],
+  template?: TemplateDefinition,
 ): CSSProperties {
   const primaryFg = readableForeground(branding.primaryColor);
+  const secondaryColor = branding.secondaryColor || branding.primaryColor;
+  const secondaryFg = readableForeground(secondaryColor);
+  const palette = template
+    ? (TEMPLATE_PALETTES[template.id] ?? TEMPLATE_PALETTES.modern)
+    : undefined;
+
   return {
     // Raw brand values (kept for any component reading them directly).
     "--brand-primary": branding.primaryColor,
@@ -124,10 +200,25 @@ export function buildPublicThemeStyle(
     // pick up the clinic's colors across the whole public subtree.
     "--primary": branding.primaryColor,
     "--primary-foreground": primaryFg,
+    "--secondary": secondaryColor,
+    "--secondary-foreground": secondaryFg,
     "--ring": branding.primaryColor,
     "--sidebar-primary": branding.primaryColor,
     "--sidebar-primary-foreground": primaryFg,
+    // Template-aware neutral palette so headers, footers, and cards feel
+    // cohesive instead of always falling back to the app-wide bone theme.
+    ...(palette
+      ? {
+          "--background": palette.background,
+          "--foreground": palette.foreground,
+          "--card": palette.card,
+          "--muted": palette.muted,
+          "--muted-foreground": palette.mutedForeground,
+          "--border": palette.border,
+          "--input": palette.border,
+        }
+      : {}),
     // Template corner roundness (drives all rounded-* utilities).
-    ...(borderRadius ? { "--radius": templateRadius(borderRadius) } : {}),
+    ...(template ? { "--radius": templateRadius(template.borderRadius) } : {}),
   } as CSSProperties;
 }

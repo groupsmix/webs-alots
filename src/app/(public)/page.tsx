@@ -433,7 +433,10 @@ export default async function HomePage() {
   if (sections.doctors) renderers.doctors = <DoctorsSection cardStyle={template.cardStyle} />;
   if (sections.reviews && topReviews.length > 0) renderers.reviews = reviewsSection;
   if (sections.blog) renderers.blog = <BlogSection />;
-  if (sections.location) renderers.location = <LocationSection />;
+  if (sections.location)
+    renderers.location = (
+      <LocationSection address={branding.address} websiteConfig={branding.websiteConfig} />
+    );
   if (sections.booking) renderers.booking = <BookingSection />;
   if (sections.contactForm) renderers.contactForm = <ContactFormSection />;
   if (sections.insurance) renderers.insurance = <InsuranceSection />;

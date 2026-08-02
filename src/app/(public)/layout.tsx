@@ -38,15 +38,25 @@ export default async function PublicLayout({ children }: { children: React.React
   const useOriginalFooter = template.footerVariant === "classic-3col";
 
   return (
-    <div style={buildPublicThemeStyle(branding, template.borderRadius)}>
+    <div style={buildPublicThemeStyle(branding, template)}>
       {isDemo && <DemoBanner />}
       <ConsentGatedAnalytics gaId={gaId} gtmId={gtmId} />
       {useOriginalHeader ? (
-        <PublicHeader logoUrl={branding.logoUrl} clinicName={branding.clinicName} />
+        <PublicHeader
+          logoUrl={branding.logoUrl}
+          clinicName={branding.clinicName}
+          sectionVisibility={branding.sectionVisibility}
+          phone={branding.phone}
+          email={branding.email}
+          address={branding.address}
+        />
       ) : (
         <DynamicHeader
           logoUrl={branding.logoUrl}
           clinicName={branding.clinicName}
+          phone={branding.phone}
+          email={branding.email}
+          address={branding.address}
           headerVariant={template.headerVariant}
           template={template}
         />
@@ -66,6 +76,9 @@ export default async function PublicLayout({ children }: { children: React.React
           clinicName={branding.clinicName}
           footerVariant={template.footerVariant}
           template={template}
+          phone={branding.phone}
+          email={branding.email}
+          address={branding.address}
         />
       )}
       <Chatbot />

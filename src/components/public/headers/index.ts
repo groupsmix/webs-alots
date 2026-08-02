@@ -18,6 +18,9 @@ export interface HeaderProps {
   clinicName: string;
   navItems: NavItem[];
   template?: TemplateDefinition;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
 /** Navigation item for header/footer navigation. */

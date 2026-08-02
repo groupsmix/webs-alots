@@ -15,6 +15,9 @@ import { FooterMinimal } from "./footer-minimal";
 export interface FooterProps {
   clinicName: string;
   template?: TemplateDefinition;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
 /** Footer component map for dynamic selection. */
