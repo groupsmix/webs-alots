@@ -58,7 +58,9 @@ export function TelemetryTicker() {
             >
               {it.label}
             </span>
-            <span className="sr-only">:</span>
+            <span className="text-[10px] text-text-muted" aria-hidden="true">
+              :
+            </span>
             <span className="telemetry text-[12px] font-medium text-cyan" aria-hidden="true">
               {it.value}
             </span>

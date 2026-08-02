@@ -74,7 +74,6 @@ export function Hero() {
               <TrustItem
                 value={<span className="telemetry">{dict.hero.trust.cipher}</span>}
                 label=""
-                srLabel={dict.hero.trust.cipher}
               />
               <TrustItem
                 value={<span className="text-emerald">●</span>}
@@ -83,7 +82,6 @@ export function Hero() {
               <TrustItem
                 value={<span className="telemetry">{dict.hero.trust.latency}</span>}
                 label=""
-                srLabel={dict.hero.trust.latency}
               />
             </ul>
           </Reveal>
@@ -98,23 +96,11 @@ export function Hero() {
   );
 }
 
-function TrustItem({
-  value,
-  label,
-  srLabel,
-}: {
-  value: React.ReactNode;
-  label: string;
-  srLabel?: string;
-}) {
+function TrustItem({ value, label }: { value: React.ReactNode; label: string }) {
   return (
     <li className="flex flex-col gap-1">
       <span className="text-[15px] font-medium text-text">{value}</span>
-      {label ? (
-        <span className="text-[11px] leading-tight text-text-muted">{label}</span>
-      ) : srLabel ? (
-        <span className="sr-only">{srLabel}</span>
-      ) : null}
+      {label ? <span className="text-[11px] leading-tight text-text-muted">{label}</span> : null}
     </li>
   );
 }
