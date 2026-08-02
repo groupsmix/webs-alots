@@ -1,8 +1,9 @@
 "use client";
 
-import { Shield } from "lucide-react";
+import { Mail, MapPin, Phone, Shield } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Wordmark } from "./section-kit";
 
 /**
@@ -21,7 +22,7 @@ import { Wordmark } from "./section-kit";
  */
 const FOOTER_HREFS: string[][] = [
   // 0 — Product / Produit / المنتج
-  ["/#features", "/#features", "/#demo", "/pricing"],
+  ["/#features", "#how", "/#demo", "/pricing"],
   // 1 — Resources / Ressources / الموارد
   ["/api-docs", "/how-to-book", "/status", "/blog"],
   // 2 — Company / Entreprise / الشركة
@@ -65,6 +66,26 @@ export function Footer() {
                 {dict.nav.status}
               </span>
             </Link>
+            <div className="mt-5 space-y-1.5">
+              <a
+                href={`tel:${defaultWebsiteConfig.contact.phone.replace(/\s|-/g, "")}`}
+                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text"
+              >
+                <Phone className="size-3.5 text-text-muted" aria-hidden="true" />
+                {defaultWebsiteConfig.contact.phone}
+              </a>
+              <a
+                href={`mailto:${defaultWebsiteConfig.contact.email}`}
+                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text"
+              >
+                <Mail className="size-3.5 text-text-muted" aria-hidden="true" />
+                {defaultWebsiteConfig.contact.email}
+              </a>
+              <p className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+                <MapPin className="size-3.5 text-text-muted" aria-hidden="true" />
+                {defaultWebsiteConfig.contact.address}
+              </p>
+            </div>
           </div>
 
           {dict.footer.columns.map((col, colIndex) => (

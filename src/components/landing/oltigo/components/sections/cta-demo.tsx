@@ -9,16 +9,33 @@ import { Eyebrow } from "./section-kit";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "212600000000";
+const rawWhatsAppNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
+
+function formatWhatsAppNumber(num: string): string | null {
+  const digits = num.replace(/\D/g, "");
+  // E.164-ish: 10-15 digits total. Reject empty/short and known placeholder.
+  if (!digits || digits.length < 10 || digits.length > 15) return null;
+  return digits;
+}
+
+const whatsAppHref = (() => {
+  const formatted = formatWhatsAppNumber(rawWhatsAppNumber);
+  return formatted ? `https://wa.me/${formatted}` : null;
+})();
 
 export function CtaDemo() {
   const { dict, locale } = useI18n();
   const c = dict.cta;
   const [status, setStatus] = useState<Status>("idle");
+  const [consent, setConsent] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    if (!consent) {
+      setStatus("error");
+      return;
+    }
     // Snapshot the values before any await — React reuses the synthetic
     // event and form.reset() would clear the fields out from under us.
     const fd = new FormData(form);
@@ -72,15 +89,17 @@ export function CtaDemo() {
             <p className="mt-4 max-w-md text-[15px] leading-relaxed text-text-secondary">{c.sub}</p>
           </Reveal>
           <Reveal delay={180}>
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-8 inline-flex items-center gap-2.5 rounded-[10px] border border-hairline bg-surface/40 px-4 py-2.5 text-sm text-text-secondary transition-colors hover:border-emerald/50 hover:text-text"
-            >
-              <MessageCircle className="size-4 text-emerald" strokeWidth={1.75} aria-hidden />
-              {c.whatsapp}
-            </a>
+            {whatsAppHref ? (
+              <a
+                href={whatsAppHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-2.5 rounded-[10px] border border-hairline bg-surface/40 px-4 py-2.5 text-sm text-text-secondary transition-colors hover:border-emerald/50 hover:text-text"
+              >
+                <MessageCircle className="size-4 text-emerald" strokeWidth={1.75} aria-hidden />
+                {c.whatsapp}
+              </a>
+            ) : null}
           </Reveal>
         </div>
 
@@ -108,12 +127,26 @@ export function CtaDemo() {
               ))}
             </div>
 
+            <label className="mt-4 flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                name="consent"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-hairline bg-ink text-emerald accent-emerald"
+                required
+              />
+              <span className="text-[12.5px] leading-relaxed text-text-secondary">
+                {c.consentCheckbox}
+              </span>
+            </label>
+
             <Button
               type="submit"
               variant="primary"
               size="lg"
-              className="mt-6 w-full"
-              disabled={status === "submitting"}
+              className="mt-5 w-full"
+              disabled={status === "submitting" || !consent}
             >
               {status === "submitting" ? c.submitting : c.submit}
               {status !== "submitting" && (

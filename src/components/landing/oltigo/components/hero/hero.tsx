@@ -63,7 +63,10 @@ export function Hero() {
 
           {/* Trust strip */}
           <Reveal delay={260}>
-            <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-hairline pt-6 sm:grid-cols-4">
+            <ul
+              className="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-hairline pt-6 sm:grid-cols-4"
+              aria-label={dict.hero.eyebrow}
+            >
               <TrustItem
                 value={<BilingualNumeral value={dict.hero.trust.uptime} />}
                 label={dict.hero.trust.uptimeLabel}
@@ -71,6 +74,7 @@ export function Hero() {
               <TrustItem
                 value={<span className="telemetry">{dict.hero.trust.cipher}</span>}
                 label=""
+                srLabel={dict.hero.trust.cipher}
               />
               <TrustItem
                 value={<span className="text-emerald">●</span>}
@@ -79,8 +83,9 @@ export function Hero() {
               <TrustItem
                 value={<span className="telemetry">{dict.hero.trust.latency}</span>}
                 label=""
+                srLabel={dict.hero.trust.latency}
               />
-            </dl>
+            </ul>
           </Reveal>
         </div>
 
@@ -93,11 +98,23 @@ export function Hero() {
   );
 }
 
-function TrustItem({ value, label }: { value: React.ReactNode; label: string }) {
+function TrustItem({
+  value,
+  label,
+  srLabel,
+}: {
+  value: React.ReactNode;
+  label: string;
+  srLabel?: string;
+}) {
   return (
-    <div className="flex flex-col gap-1">
-      <dd className="text-[15px] font-medium text-text">{value}</dd>
-      {label ? <dt className="text-[11px] leading-tight text-text-muted">{label}</dt> : null}
-    </div>
+    <li className="flex flex-col gap-1">
+      <span className="text-[15px] font-medium text-text">{value}</span>
+      {label ? (
+        <span className="text-[11px] leading-tight text-text-muted">{label}</span>
+      ) : srLabel ? (
+        <span className="sr-only">{srLabel}</span>
+      ) : null}
+    </li>
   );
 }

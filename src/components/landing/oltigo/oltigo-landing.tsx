@@ -5,7 +5,7 @@ import { Hero } from "@/components/landing/oltigo/components/hero/hero";
 import { Grain } from "@/components/landing/oltigo/components/primitives/grain";
 import { ProgressRail } from "@/components/landing/oltigo/components/primitives/progress-rail";
 import { CtaDemo } from "@/components/landing/oltigo/components/sections/cta-demo";
-import { Faq } from "@/components/landing/oltigo/components/sections/faq";
+import { Faq, FaqSchema } from "@/components/landing/oltigo/components/sections/faq";
 import { Features } from "@/components/landing/oltigo/components/sections/features";
 import { Footer } from "@/components/landing/oltigo/components/sections/footer";
 import { HowItWorks } from "@/components/landing/oltigo/components/sections/how-it-works";
@@ -33,12 +33,12 @@ export function OltigoLanding() {
   }, []);
 
   return (
-    <div className="oltigo-landing">
+    <div id="top" className="oltigo-landing">
       <LanguageProvider>
         <Grain />
         <Nav />
         <ProgressRail />
-        <main id="top">
+        <main id="main-content">
           <Hero />
           <TelemetryTicker />
           <Features />
@@ -49,6 +49,7 @@ export function OltigoLanding() {
           <Faq />
           <CtaDemo />
         </main>
+        <FaqSchema />
         <Footer />
       </LanguageProvider>
     </div>

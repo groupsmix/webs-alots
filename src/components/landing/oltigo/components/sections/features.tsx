@@ -83,7 +83,11 @@ function FeatureRow({
       {/* visual */}
       <div className={reversed ? "lg:order-1" : ""}>
         <Reveal delay={80}>
-          <div className="blueprint-grid relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-hairline bg-surface/40 p-8">
+          <div
+            className="blueprint-grid relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl border border-hairline bg-surface/40 p-8"
+            role="img"
+            aria-label={feature.title}
+          >
             <div
               className="pointer-events-none absolute inset-0"
               style={{
@@ -91,7 +95,7 @@ function FeatureRow({
                   "radial-gradient(80% 60% at 50% 0%, rgba(255,255,255,0.03), transparent 60%)",
               }}
             />
-            <div style={{ transform: "scale(1.05)" }}>{visual}</div>
+            <div>{visual}</div>
           </div>
         </Reveal>
       </div>

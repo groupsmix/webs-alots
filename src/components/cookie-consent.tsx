@@ -379,18 +379,19 @@ export function CookieConsent() {
             .
           </p>
           {/* A69-3: Decline has equal visual weight as Accept All (EDPB 03/2022). */}
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <Button size="sm" onClick={declineAll}>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button className="w-full sm:w-auto" size="sm" onClick={declineAll}>
               {t(locale, "cookie.decline")}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               variant="outline"
               size="sm"
               onClick={() => setShowPreferences(!showPreferences)}
             >
               {t(locale, "cookie.managePreferences")}
             </Button>
-            <Button size="sm" onClick={acceptAll}>
+            <Button className="w-full sm:w-auto" size="sm" onClick={acceptAll}>
               {t(locale, "cookie.acceptAll")}
             </Button>
           </div>
