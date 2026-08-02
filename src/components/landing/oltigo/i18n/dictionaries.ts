@@ -51,7 +51,6 @@ export type Dictionary = {
     patientSpace: string;
     doctorSpace: string;
     menu: string;
-    skipToContent: string;
     sections: { features: string; how: string; pricing: string; faq: string };
   };
   hero: {
@@ -125,7 +124,6 @@ const fr: Dictionary = {
     patientSpace: "Espace Patient",
     doctorSpace: "Espace Médecin",
     menu: "Menu",
-    skipToContent: "Passer au contenu",
     sections: {
       features: "Fonctionnalités",
       how: "Comment ça marche",
@@ -431,7 +429,6 @@ const ar: Dictionary = {
     patientSpace: "فضاء المريض",
     doctorSpace: "فضاء الطبيب",
     menu: "القائمة",
-    skipToContent: "تجاوز إلى المحتوى",
     sections: { features: "الميزات", how: "كيف يعمل", pricing: "الأسعار", faq: "الأسئلة" },
   },
   hero: {
@@ -695,7 +692,6 @@ const en: Dictionary = {
     patientSpace: "Patient Portal",
     doctorSpace: "Doctor Portal",
     menu: "Menu",
-    skipToContent: "Skip to content",
     sections: { features: "Features", how: "How it works", pricing: "Pricing", faq: "FAQ" },
   },
   hero: {

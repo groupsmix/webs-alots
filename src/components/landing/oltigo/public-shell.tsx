@@ -18,7 +18,9 @@ export function OltigoPublicShell({
       <div className="oltigo-landing">
         <Grain />
         <PublicNav />
-        <main className={cn("min-h-screen", mainClassName)}>{children}</main>
+        <main id="main-content" className={cn("min-h-screen", mainClassName)}>
+          {children}
+        </main>
         <Footer />
       </div>
     </LanguageProvider>
