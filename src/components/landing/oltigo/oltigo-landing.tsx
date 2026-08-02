@@ -15,6 +15,19 @@ import { Pricing } from "@/components/landing/oltigo/components/sections/pricing
 import { TelemetryTicker } from "@/components/landing/oltigo/components/sections/telemetry-ticker";
 import { Testimonials } from "@/components/landing/oltigo/components/sections/testimonials";
 import { LanguageProvider } from "@/components/landing/oltigo/i18n/context";
+import { useI18n } from "@/components/landing/oltigo/i18n/context";
+
+function SkipLink() {
+  const { dict } = useI18n();
+  return (
+    <a
+      href="#top"
+      className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-[10px] focus:bg-emerald focus:px-4 focus:py-2.5 focus:text-ink focus:shadow-lg"
+    >
+      {dict.nav.skipToContent}
+    </a>
+  );
+}
 
 /**
  * Oltigo marketing landing — ported from groupsmix/oltigo-landing.
@@ -35,6 +48,7 @@ export function OltigoLanding() {
   return (
     <div className="oltigo-landing">
       <LanguageProvider>
+        <SkipLink />
         <Grain />
         <Nav />
         <ProgressRail />

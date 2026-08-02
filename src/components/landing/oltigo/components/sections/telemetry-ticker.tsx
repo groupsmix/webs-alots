@@ -19,7 +19,7 @@ export function TelemetryTicker() {
       {/* edge fades */}
       <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-24 bg-gradient-to-r from-ink to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-24 bg-gradient-to-l from-ink to-transparent" />
-      <div className="flex w-max animate-ticker gap-10">
+      <div className="flex w-max animate-ticker gap-10 hover:[animation-play-state:paused] active:[animation-play-state:paused]">
         {row.map((it, i) => (
           <span key={i} className="flex shrink-0 items-center gap-2.5">
             <span className="size-1 rounded-full bg-cyan" />
