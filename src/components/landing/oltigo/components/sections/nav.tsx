@@ -59,9 +59,11 @@ export function Nav() {
 
         <div className="flex items-center gap-2">
           <LangToggle locale={locale} setLocale={setLocale} />
-          <Button variant="secondary" size="sm" href="/annuaire" className="hidden sm:inline-flex">
-            {dict.nav.patientSpace}
-          </Button>
+          <div className="hidden sm:block">
+            <Button variant="secondary" size="sm" href="/annuaire">
+              {dict.nav.patientSpace}
+            </Button>
+          </div>
           <Button variant="primary" size="sm" href="/register-clinic">
             {dict.nav.doctorSpace}
           </Button>
