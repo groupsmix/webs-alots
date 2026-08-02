@@ -32,7 +32,15 @@ type Tier = {
   cta: string;
   highlight?: boolean;
 };
-type Quote = { quote: string; name: string; role: string; city: string; plan: string };
+type Quote = {
+  quote: string;
+  name: string;
+  role: string;
+  city: string;
+  clinic?: string;
+  avatar?: string;
+  plan?: string;
+};
 type Faq = { q: string; a: string };
 
 export type Dictionary = {
@@ -94,6 +102,7 @@ export type Dictionary = {
     error: string;
     whatsapp: string;
     consent: string;
+    consentCheckbox: string;
   };
   footer: {
     tagline: string;
@@ -238,6 +247,7 @@ const fr: Dictionary = {
         name: "Dr. Yasmine Berrada",
         role: "Médecin généraliste",
         city: "Casablanca",
+        clinic: "Cabinet Berrada",
         plan: "Professional",
       },
       {
@@ -246,6 +256,7 @@ const fr: Dictionary = {
         name: "Dr. Karim El Fassi",
         role: "Cardiologue",
         city: "Rabat",
+        clinic: "Clinique El Fassi",
         plan: "Enterprise",
       },
       {
@@ -253,6 +264,7 @@ const fr: Dictionary = {
         name: "Dr. Salima Ouazzani",
         role: "Pédiatre",
         city: "Marrakech",
+        clinic: "Cabinet Ouazzani",
         plan: "Starter",
       },
     ],
@@ -387,6 +399,7 @@ const fr: Dictionary = {
     error: "Un souci est survenu. Réessayez ou écrivez-nous sur WhatsApp.",
     whatsapp: "Écrire sur WhatsApp",
     consent: "En envoyant ce formulaire, vous acceptez d’être recontacté au sujet d’OLTIGO.",
+    consentCheckbox: "J’accepte d’être recontacté(e) au sujet d’OLTIGO.",
   },
   footer: {
     tagline: "Le système d’exploitation discret des cabinets médicaux au Maroc.",
@@ -521,6 +534,7 @@ const ar: Dictionary = {
         name: "د. ياسمين برادة",
         role: "طبيبة عامة",
         city: "الدار البيضاء",
+        clinic: "عيادة برادة",
         plan: "Professional",
       },
       {
@@ -528,6 +542,7 @@ const ar: Dictionary = {
         name: "د. كريم الفاسي",
         role: "طبيب قلب",
         city: "الرباط",
+        clinic: "مصحة الفاسي",
         plan: "Enterprise",
       },
       {
@@ -535,6 +550,7 @@ const ar: Dictionary = {
         name: "د. سليمة وزاني",
         role: "طبيبة أطفال",
         city: "مراكش",
+        clinic: "عيادة وزاني",
         plan: "Starter",
       },
     ],
@@ -649,6 +665,7 @@ const ar: Dictionary = {
     error: "حدث خطأ. أعد المحاولة أو راسلنا عبر واتساب.",
     whatsapp: "راسلنا عبر واتساب",
     consent: "بإرسال هذا النموذج، توافق على أن نعاود الاتصال بك بخصوص OLTIGO.",
+    consentCheckbox: "أوافق على أن يتم الاتصال بي بخصوص OLTIGO.",
   },
   footer: {
     tagline: "نظام التشغيل الهادئ للعيادات الطبية في المغرب.",
@@ -793,6 +810,7 @@ const en: Dictionary = {
         name: "Dr. Yasmine Berrada",
         role: "General practitioner",
         city: "Casablanca",
+        clinic: "Berrada Practice",
         plan: "Professional",
       },
       {
@@ -800,6 +818,7 @@ const en: Dictionary = {
         name: "Dr. Karim El Fassi",
         role: "Cardiologist",
         city: "Rabat",
+        clinic: "El Fassi Clinic",
         plan: "Enterprise",
       },
       {
@@ -807,6 +826,7 @@ const en: Dictionary = {
         name: "Dr. Salima Ouazzani",
         role: "Pediatrician",
         city: "Marrakech",
+        clinic: "Ouazzani Pediatrics",
         plan: "Starter",
       },
     ],
@@ -930,6 +950,7 @@ const en: Dictionary = {
     error: "Something went wrong. Try again or message us on WhatsApp.",
     whatsapp: "Message on WhatsApp",
     consent: "By submitting this form, you agree to be contacted about OLTIGO.",
+    consentCheckbox: "I agree to be contacted about OLTIGO.",
   },
   footer: {
     tagline: "The quiet operating system for medical practices in Morocco.",
