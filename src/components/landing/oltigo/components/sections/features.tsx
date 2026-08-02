@@ -1,12 +1,12 @@
 "use client";
 
 import { ArrowRight, Check } from "lucide-react";
-import {
-  AgendaFace,
-  DossierFace,
-  WhatsappFace,
-} from "@/components/landing/oltigo/components/hero/faces";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
+import {
+  AppointmentScreen,
+  RecordScreen,
+  WhatsAppScreen,
+} from "@/components/landing/oltigo/components/sections/feature-screens";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
 import { useI18n } from "@/components/landing/oltigo/i18n/context";
 import { SectionHeading } from "./section-kit";
@@ -14,9 +14,9 @@ import { SectionHeading } from "./section-kit";
 export function Features() {
   const { dict } = useI18n();
   const visuals = [
-    <AgendaFace key="a" />,
-    <DossierFace key="d" dict={dict} />,
-    <WhatsappFace key="w" dict={dict} />,
+    <AppointmentScreen key="a" dict={dict} />,
+    <RecordScreen key="d" dict={dict} />,
+    <WhatsAppScreen key="w" dict={dict} />,
   ];
 
   return (

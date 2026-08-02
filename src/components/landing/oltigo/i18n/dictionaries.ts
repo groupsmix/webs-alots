@@ -107,6 +107,8 @@ export type Dictionary = {
     freeLabel: string;
     enterpriseReply: string;
     note: string;
+    compareTitle: string;
+    compareCaption: string;
   };
   faq: {
     eyebrow: string;
@@ -374,6 +376,8 @@ const fr: Dictionary = {
     freeLabel: "Gratuit",
     enterpriseReply: "Réponse sous 24 h ouvrées.",
     note: "Prix hors taxes. Paiement annuel ou virement bancaire disponible. Hébergement et données au standard Loi 09-08.",
+    compareTitle: "Comparer toutes les fonctionnalités",
+    compareCaption: "Détail des fonctionnalités par formule",
   },
   faq: {
     eyebrow: "Questions",
@@ -655,6 +659,8 @@ const ar: Dictionary = {
     freeLabel: "مجاني",
     enterpriseReply: "ردّ خلال 24 ساعة عمل.",
     note: "الأسعار دون احتساب الضريبة. الدفع السنوي أو التحويل البنكي متاح. الاستضافة والبيانات وفق معيار القانون 09-08.",
+    compareTitle: "مقارنة كل الميزات",
+    compareCaption: "تفاصيل الميزات حسب الباقة",
   },
   faq: {
     eyebrow: "أسئلة",
@@ -961,6 +967,8 @@ const en: Dictionary = {
     freeLabel: "Free",
     enterpriseReply: "Reply within 24 business hours.",
     note: "Prices excl. tax. Annual billing or bank transfer available. Hosting and data to the Law 09-08 standard.",
+    compareTitle: "Compare all features",
+    compareCaption: "Feature details by plan",
   },
   faq: {
     eyebrow: "Questions",

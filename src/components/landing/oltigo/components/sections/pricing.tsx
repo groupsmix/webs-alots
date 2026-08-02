@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Landmark } from "lucide-react";
+import { Check, ChevronDown, Landmark } from "lucide-react";
 import { BilingualNumeral } from "@/components/landing/oltigo/components/primitives/bilingual-numeral";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
@@ -111,6 +111,53 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
             <Landmark className="size-4" aria-hidden />
             {dict.pricing.note}
           </p>
+        </Reveal>
+
+        <Reveal delay={120}>
+          <details className="group mt-8">
+            <summary className="flex cursor-pointer list-none items-center justify-center gap-2 text-[13px] font-medium text-text-secondary transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
+              {dict.pricing.compareTitle}
+              <ChevronDown
+                className="size-4 shrink-0 transition-transform group-open:rotate-180"
+                strokeWidth={1.75}
+                aria-hidden
+              />
+            </summary>
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-left">
+                <caption className="sr-only">{dict.pricing.compareCaption}</caption>
+                <thead>
+                  <tr className="border-b border-hairline">
+                    {dict.pricing.tiers.map((tier) => (
+                      <th key={tier.id} className="py-3 pr-4 text-[13px] font-medium text-text">
+                        {tier.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {dict.pricing.tiers.map((tier) => (
+                      <td key={tier.id} className="py-3 pr-4 align-top">
+                        <ul className="space-y-2">
+                          {tier.features.map((feat, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <Check
+                                className="mt-0.5 size-3.5 shrink-0 text-emerald"
+                                strokeWidth={1.75}
+                                aria-hidden
+                              />
+                              <span className="text-[12.5px] text-text-secondary">{feat}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
         </Reveal>
       </div>
     </section>
