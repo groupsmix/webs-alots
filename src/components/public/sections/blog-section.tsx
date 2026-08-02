@@ -11,6 +11,9 @@ export async function BlogSection() {
   const blogPosts = await getPublicBlogPosts();
   const previewPosts = blogPosts.slice(0, 3);
 
+  // Hide the section entirely when there is nothing to show.
+  if (previewPosts.length === 0) return null;
+
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
@@ -18,26 +21,20 @@ export async function BlogSection() {
         <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
           Restez informé avec les derniers conseils santé et actualités médicales de notre équipe.
         </p>
-        {previewPosts.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-            {previewPosts.map((post) => (
-              <Card key={post.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                    <FileText className="h-3.5 w-3.5" />
-                    {formatDisplayDate(post.date, "fr", "long")}
-                  </div>
-                  <h3 className="font-semibold mb-2">{post.title}</h3>
-                  <p className="text-sm text-muted-foreground">{post.excerpt}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-muted-foreground">
-            Aucun article publié pour le moment. Revenez bientôt !
-          </p>
-        )}
+        <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+          {previewPosts.map((post) => (
+            <Card key={post.id}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                  <FileText className="h-3.5 w-3.5" />
+                  {formatDisplayDate(post.date, "fr", "long")}
+                </div>
+                <h3 className="font-semibold mb-2">{post.title}</h3>
+                <p className="text-sm text-muted-foreground">{post.excerpt}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
         <div className="mt-10 text-center">
           <Link href="/blog" className={linkBtnOutline}>
             Voir tous les articles

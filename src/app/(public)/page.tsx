@@ -411,21 +411,23 @@ export default async function HomePage() {
   // Build one renderer per *visible* section, then lay them out in the order
   // defined by the clinic's chosen template (`template.sectionOrder`).
   const renderers: Partial<Record<SectionKey, React.ReactNode>> = {};
+  const websiteHero = (
+    branding.websiteConfig as { hero?: { title?: string; subtitle?: string } } | null
+  )?.hero;
+  const heroOverrides: {
+    title?: string;
+    subtitle?: string;
+    imageUrl?: string;
+  } = {
+    title: websiteHero?.title ?? branding.clinicName,
+    imageUrl: branding.heroImageUrl ?? branding.coverPhotoUrl ?? undefined,
+  };
+  if (websiteHero?.subtitle ?? branding.tagline) {
+    heroOverrides.subtitle = (websiteHero?.subtitle ?? branding.tagline) || undefined;
+  }
+
   if (sections.hero) {
-    renderers.hero = (
-      <HeroSection
-        variant={template.heroStyle}
-        overrides={
-          branding.websiteConfig
-            ? {
-                title: (branding.websiteConfig as { hero?: { title?: string } }).hero?.title,
-                subtitle: (branding.websiteConfig as { hero?: { subtitle?: string } }).hero
-                  ?.subtitle,
-              }
-            : undefined
-        }
-      />
-    );
+    renderers.hero = <HeroSection variant={template.heroStyle} overrides={heroOverrides} />;
   }
   if (sections.services) renderers.services = <ServicesPreview cardStyle={template.cardStyle} />;
   if (sections.doctors) renderers.doctors = <DoctorsSection cardStyle={template.cardStyle} />;

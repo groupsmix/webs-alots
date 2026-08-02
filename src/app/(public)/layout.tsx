@@ -55,7 +55,12 @@ export default async function PublicLayout({ children }: { children: React.React
         {children}
       </main>
       {useOriginalFooter ? (
-        <PublicFooter clinicName={branding.clinicName} />
+        <PublicFooter
+          clinicName={branding.clinicName}
+          phone={branding.phone ?? undefined}
+          email={branding.email ?? undefined}
+          address={branding.address ?? undefined}
+        />
       ) : (
         <DynamicFooter
           clinicName={branding.clinicName}

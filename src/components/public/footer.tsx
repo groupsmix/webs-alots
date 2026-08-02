@@ -1,7 +1,6 @@
 import { Shield } from "lucide-react";
 import Link from "next/link";
 import { t, type Locale } from "@/lib/i18n";
-import { defaultWebsiteConfig } from "@/lib/website-config";
 import { CookieSettingsLink } from "./cookie-settings-link";
 import { CopyrightYear } from "./copyright-year";
 
@@ -20,11 +19,7 @@ export function PublicFooter({
   address,
   locale = "fr",
 }: PublicFooterProps) {
-  const contact = defaultWebsiteConfig.contact;
   const displayName = clinicName || "Oltigo";
-  const displayPhone = phone || contact.phone;
-  const displayEmail = email || contact.email;
-  const displayAddress = address || contact.address;
 
   return (
     <footer className="border-t bg-muted/50 py-8" role="contentinfo" aria-label="Pied de page">
@@ -32,7 +27,7 @@ export function PublicFooter({
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <h2 className="text-base font-semibold mb-2">{displayName}</h2>
-            <p className="text-sm text-muted-foreground">{displayAddress}</p>
+            {address ? <p className="text-sm text-muted-foreground">{address}</p> : null}
           </div>
 
           <div>
@@ -74,8 +69,8 @@ export function PublicFooter({
 
           <div>
             <h2 className="text-base font-semibold mb-2">{t(locale, "public.contact")}</h2>
-            <p className="text-sm text-muted-foreground">{displayPhone}</p>
-            <p className="text-sm text-muted-foreground">{displayEmail}</p>
+            {phone ? <p className="text-sm text-muted-foreground">{phone}</p> : null}
+            {email ? <p className="text-sm text-muted-foreground">{email}</p> : null}
           </div>
         </div>
 
