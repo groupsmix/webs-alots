@@ -23,12 +23,12 @@ export function PublicFooter({
 
   return (
     <footer
-      className="border-t border-border bg-background py-12"
+      className="border-t border-border bg-background py-10 sm:py-12"
       role="contentinfo"
       aria-label={t(locale, "public.footerLabel")}
     >
       <div className="container mx-auto px-4">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-8 sm:gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand column */}
           <div className="lg:col-span-1">
             <h2 className="text-lg font-bold text-primary mb-3">{displayName}</h2>

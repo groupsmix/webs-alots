@@ -26,14 +26,21 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
 
   const ctas = (align: "center" | "start") => (
     <div
-      className={`mt-10 flex flex-wrap items-center gap-4 ${
+      className={`mt-8 sm:mt-10 flex flex-col sm:flex-row items-center gap-3 ${
         align === "center" ? "justify-center" : "justify-center lg:justify-start"
       }`}
     >
-      <Link href="/book" className={buttonVariants({ size: "lg" })}>
+      <Link href="/book" className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}>
         {cfg.ctaPrimary}
       </Link>
-      <Link href="/services" className={buttonVariants({ variant: "outline", size: "lg" })}>
+      <Link
+        href="/services"
+        className={buttonVariants({
+          variant: "outline",
+          size: "lg",
+          className: "w-full sm:w-auto",
+        })}
+      >
         {cfg.ctaSecondary}
       </Link>
     </div>
@@ -50,14 +57,16 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
           : "bg-gradient-to-br from-primary/5 to-primary/10";
     const isOverlay = variant === "overlay";
     return (
-      <section className={`relative ${bg} ${variant === "fullwidth" ? "py-32" : "py-24"}`}>
+      <section
+        className={`relative ${bg} ${variant === "fullwidth" ? "py-20 sm:py-32" : "py-16 sm:py-24"}`}
+      >
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
               {cfg.title}
             </h1>
             <p
-              className={`mx-auto mt-6 max-w-2xl text-lg ${
+              className={`mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg ${
                 isOverlay ? "text-primary-foreground/80" : "text-muted-foreground"
               }`}
             >
@@ -71,14 +80,14 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
   }
 
   return (
-    <section className="relative bg-gradient-to-br from-primary/5 to-primary/10 py-24">
+    <section className="relative bg-gradient-to-br from-primary/5 to-primary/10 py-16 sm:py-24">
       <div className="container mx-auto px-4">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="grid items-center gap-10 lg:gap-12 lg:grid-cols-2">
           <div className="text-center lg:text-start">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
               {cfg.title}
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground lg:mx-0">
+            <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg text-muted-foreground lg:mx-0">
               {cfg.subtitle}
             </p>
             {ctas("start")}

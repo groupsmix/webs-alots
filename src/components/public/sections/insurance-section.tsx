@@ -13,14 +13,16 @@ const insuranceProviders = [
 
 export function InsuranceSection() {
   return (
-    <section className="py-16 bg-muted/30">
+    <section className="py-12 sm:py-16 bg-muted/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">Assurances Acceptées</h2>
-        <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-4">
+          Assurances Acceptées
+        </h2>
+        <p className="text-center text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto">
           Nous acceptons la plupart des assurances majeures. Contactez-nous si votre assurance ne
           figure pas dans la liste.
         </p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 max-w-2xl mx-auto">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 max-w-2xl mx-auto">
           {insuranceProviders.map((provider) => (
             <div key={provider} className="flex items-center gap-2 rounded-lg border bg-card p-3">
               <Shield className="h-4 w-4 text-primary flex-shrink-0" />

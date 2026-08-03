@@ -54,12 +54,18 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link
           href="/"
-          className={`flex items-center gap-2 text-xl font-bold transition-colors ${scrolled ? "text-foreground" : textColor}`}
+          className={`flex items-center gap-2 text-lg sm:text-xl font-bold transition-colors min-w-0 ${scrolled ? "text-foreground" : textColor}`}
         >
           {logoUrl && (
-            <Image src={logoUrl} alt={displayName} width={32} height={32} className="h-8 w-auto" />
+            <Image
+              src={logoUrl}
+              alt={displayName}
+              width={32}
+              height={32}
+              className="h-8 w-auto flex-shrink-0"
+            />
           )}
-          {displayName}
+          <span className="truncate">{displayName}</span>
         </Link>
 
         {/* Desktop navigation */}
@@ -106,7 +112,7 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
         <nav
           id="transparent-mobile-nav"
           aria-label="Navigation mobile"
-          className="border-t bg-background/95 backdrop-blur px-4 py-4 md:hidden"
+          className="border-t bg-background/95 backdrop-blur px-4 py-4 md:hidden max-h-[calc(100dvh-5rem)] overflow-y-auto"
         >
           <div className="flex flex-col gap-3">
             {navItems.map((item) => (
@@ -114,13 +120,15 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
                 key={item.href}
                 href={item.href}
                 aria-current={pathname === item.href ? "page" : undefined}
-                className="text-sm text-muted-foreground min-h-11 flex items-center"
+                className={`text-sm min-h-11 flex items-center ${
+                  pathname === item.href ? "text-primary font-medium" : "text-muted-foreground"
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.label}
               </Link>
             ))}
-            <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
+            <Link href="/book" className={buttonVariants({ className: "mt-2 w-full" })}>
               {t(locale, "public.bookAppointment")}
             </Link>
           </div>

@@ -12,10 +12,12 @@ export function ContactFormSection() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
-    <section className="py-16">
+    <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4 max-w-xl">
-        <h2 className="text-center text-3xl font-bold mb-4">Contactez-nous</h2>
-        <p className="text-center text-muted-foreground mb-8">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-4">
+          Contactez-nous
+        </h2>
+        <p className="text-center text-muted-foreground mb-6 sm:mb-8">
           Vous avez une question ? Envoyez-nous un message et nous vous répondrons rapidement.
         </p>
         <Card>
