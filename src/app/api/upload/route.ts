@@ -121,6 +121,7 @@ const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/avif",
   // A52.3: image/gif removed — GIF files can contain animation frames that
   // bypass static analysis, and polyglot GIF/JS files are a known XSS vector.
   // SVG removed: can contain embedded <script> tags leading to XSS.
@@ -156,6 +157,15 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
 };
 
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
+  if (declaredType === "image/avif") {
+    // AVIF is HEIF-based: the first box is a 'ftyp' box whose type starts at byte 4
+    // and whose major brand ('avif' or 'avis') starts at byte 8.
+    if (buffer.length < 12) return false;
+    const ftyp = buffer.toString("ascii", 4, 8);
+    const brand = buffer.toString("ascii", 8, 12);
+    return ftyp === "ftyp" && (brand === "avif" || brand === "avis");
+  }
+
   const signatures = MAGIC_BYTES[declaredType];
   if (!signatures) return false;
   return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
