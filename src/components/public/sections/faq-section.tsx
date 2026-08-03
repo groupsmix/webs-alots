@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const faqs = [
+const DEFAULT_FAQS = [
   {
     q: "Comment prendre rendez-vous ?",
     a: "Vous pouvez prendre rendez-vous en ligne via notre site web en cliquant sur le bouton \u00ab Prendre rendez-vous \u00bb, ou nous appeler directement pendant les heures d'ouverture.",
@@ -28,17 +28,23 @@ const faqs = [
   },
 ];
 
-export function FaqSection() {
+interface FaqSectionProps {
+  title?: string;
+  subtitle?: string;
+  faqs?: { q: string; a: string }[];
+}
+
+export function FaqSection({ title, subtitle, faqs = DEFAULT_FAQS }: FaqSectionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
     <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4 max-w-3xl">
         <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-4">
-          Questions Fréquentes
+          {title ?? "Questions Fréquentes"}
         </h2>
         <p className="text-center text-muted-foreground mb-6 sm:mb-8">
-          Trouvez les réponses aux questions les plus courantes sur nos services.
+          {subtitle ?? "Trouvez les réponses aux questions les plus courantes sur nos services."}
         </p>
         <div className="space-y-3">
           {faqs.map((faq, index) => {

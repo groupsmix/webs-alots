@@ -33,6 +33,7 @@ export default function robots(): MetadataRoute.Robots {
           "/accessibility",
           "/status",
           "/api-docs",
+          "/faq",
           "/doctor-profile",
           "/doctor-services",
           "/annuaire",

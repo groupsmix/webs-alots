@@ -9,9 +9,11 @@ import {
   Building2,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -497,12 +499,28 @@ function CityListingView({
 
 export default async function CityOrDoctorPage({ params }: PageProps) {
   const { city: slug } = await params;
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
 
   // Doctor profile page (slug starts with "dr-")
   if (isDoctorSlug(slug)) {
     const doctor = await getDirectoryDoctorBySlug(slug);
     if (!doctor) notFound();
-    return <DoctorProfileView doctor={doctor} />;
+    const cityForBreadcrumb = getCityBySlug(doctor.citySlug);
+    const breadcrumbItems = [
+      { name: "Accueil", url: BASE_URL },
+      { name: "Annuaire", url: `${BASE_URL}/annuaire` },
+      ...(cityForBreadcrumb
+        ? [{ name: cityForBreadcrumb.name, url: `${BASE_URL}/annuaire/${cityForBreadcrumb.slug}` }]
+        : []),
+      { name: doctor.name, url: `${BASE_URL}/annuaire/${doctor.slug}` },
+    ];
+    return (
+      <>
+        <BreadcrumbJsonLd nonce={nonce} items={breadcrumbItems} />
+        <DoctorProfileView doctor={doctor} />
+      </>
+    );
   }
 
   // City listing page
@@ -515,6 +533,16 @@ export default async function CityOrDoctorPage({ params }: PageProps) {
   ]);
 
   return (
-    <CityListingView citySlug={slug} city={city} doctors={doctors} specialties={specialties} />
+    <>
+      <BreadcrumbJsonLd
+        nonce={nonce}
+        items={[
+          { name: "Accueil", url: BASE_URL },
+          { name: "Annuaire", url: `${BASE_URL}/annuaire` },
+          { name: city.name, url: `${BASE_URL}/annuaire/${city.slug}` },
+        ]}
+      />
+      <CityListingView citySlug={slug} city={city} doctors={doctors} specialties={specialties} />
+    </>
   );
 }
