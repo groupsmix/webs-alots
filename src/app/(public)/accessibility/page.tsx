@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Déclaration d'accessibilité",
   description:
     "Déclaration de conformité WCAG 2.2 AA de la plateforme Oltigo Health. Engagement en matière d'accessibilité numérique.",
-  openGraph: {
-    title: "Déclaration d'accessibilité — Oltigo Health",
-    description: "Déclaration de conformité WCAG 2.2 AA de la plateforme Oltigo Health.",
-  },
-};
+  path: "/accessibility",
+});
 
 /**
  * F-A201: WCAG 2.2 AA Accessibility Conformance Statement.

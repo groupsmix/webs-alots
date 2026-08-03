@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { NpsSurveyForm } from "@/components/patient-experience/nps-survey-form";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Patient Satisfaction Survey",
-  description: "Share your experience and help us improve our services.",
-  robots: { index: false, follow: false },
-};
+export const metadata: Metadata = buildMetadata({
+  title: "Enquête de satisfaction",
+  description: "Partagez votre expérience et aidez-nous à améliorer nos services.",
+  path: "/nps",
+  noIndex: true,
+});
 
 export default async function NpsPage(props: { searchParams: Promise<{ id?: string }> }) {
   const searchParams = await props.searchParams;

@@ -1,11 +1,13 @@
 import { DSARRequestForm } from "@/components/compliance/dsar-request-form";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata = {
-  title: "Demande d'exercice de droits | Oltigo",
+export const metadata = buildMetadata({
+  title: "Demande d'exercice de droits",
   description:
     "Demandez l'accès, la rectification, la suppression ou la portabilité de vos données personnelles. Réponse sous 30 jours conformément à la loi marocaine n°09-08.",
-  robots: { index: false, follow: false, nocache: true, noarchive: true },
-};
+  path: "/dsar-request",
+  noIndex: true,
+});
 
 export default function DSARRequestPage() {
   return (

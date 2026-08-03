@@ -8,13 +8,14 @@
  * Route: /sub-processors
  */
 import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Sous-traitants — Oltigo Health",
+export const metadata: Metadata = buildMetadata({
+  title: "Sous-traitants",
   description:
     "Liste des sous-traitants d'Oltigo Health et mécanismes de transfert de données conformément au RGPD et à la loi 09-08.",
-  robots: { index: true, follow: true },
-};
+  path: "/sub-processors",
+});
 
 interface SubProcessor {
   name: string;

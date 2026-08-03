@@ -23,6 +23,7 @@ import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/l
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
+import { buildMetadata } from "@/lib/metadata";
 import { publicCardClass } from "@/lib/public-theme";
 import { mergeSectionVisibility, type SectionKey } from "@/lib/section-visibility";
 import { getTemplate } from "@/lib/templates";
@@ -103,9 +104,11 @@ export async function generateMetadata(): Promise<Metadata> {
     // prefix the brand here or it renders twice ("Oltigo — … | Oltigo").
     const metaTitle = t(locale, "public.meta.title");
     const metaDescription = t(locale, "public.meta.description");
-    return {
+    return buildMetadata({
       title: metaTitle,
       description: metaDescription,
+      path: "/",
+      locale,
       keywords: [
         "gestion cabinet médical Maroc",
         "rendez-vous en ligne",
@@ -115,23 +118,8 @@ export async function generateMetadata(): Promise<Metadata> {
         "SaaS santé Maroc",
         "Oltigo",
       ],
-      alternates: {
-        canonical: "https://oltigo.com",
-      },
-      openGraph: {
-        title: metaTitle,
-        description: t(locale, "public.meta.ogDescription"),
-        type: "website",
-        locale: locale === "ar" ? "ar_MA" : "fr_MA",
-        siteName: "Oltigo",
-        url: "https://oltigo.com",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: metaTitle,
-        description: metaDescription,
-      },
-    };
+      imageAlt: metaTitle,
+    });
   }
 
   // Pull clinic branding for SEO-rich meta tags
@@ -145,33 +133,14 @@ export async function generateMetadata(): Promise<Metadata> {
     ? t(locale, "public.clinicMetaDesc", { clinicName, tagline: branding.tagline })
     : t(locale, "public.clinicMetaDescDefault", { clinicName });
 
-  return {
+  return buildMetadata({
     title,
     description,
-    alternates: {
-      canonical: canonicalUrl,
-      languages: {
-        fr: canonicalUrl,
-        ar: `${canonicalUrl}?lang=ar`,
-        en: `${canonicalUrl}?lang=en`,
-        "x-default": canonicalUrl,
-      },
-    },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      locale: "fr_MA",
-      alternateLocale: ["ar_MA", "en_US"],
-      siteName: clinicName,
-      url: canonicalUrl,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
+    path: "/",
+    locale,
+    siteUrl: canonicalUrl,
+    imageAlt: title,
+  });
 }
 
 export default async function HomePage() {

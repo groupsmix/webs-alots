@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
 import { BlogSearch } from "@/components/blog/blog-search";
 import { getAllPosts, getCategories } from "@/lib/blog";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Blog Sante — Articles et Conseils Medicaux",
+export const metadata: Metadata = buildMetadata({
+  title: "Blog Santé — Articles et Conseils Médicaux",
   description:
-    "Articles, guides et conseils pour les professionnels de sante au Maroc. Gestion de cabinet, digitalisation, communication patient et assurances.",
-  openGraph: {
-    title: "Blog Sante — Articles et Conseils Medicaux",
-    description: "Articles, guides et conseils pour les professionnels de sante au Maroc.",
-    type: "website",
-    locale: "fr_MA",
-  },
-  alternates: {
-    canonical: "/blog",
-  },
-};
+    "Articles, guides et conseils pour les professionnels de santé au Maroc. Gestion de cabinet, digitalisation, communication patient et assurances.",
+  path: "/blog",
+});
 
 export default function BlogPage() {
   const posts = getAllPosts();

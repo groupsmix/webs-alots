@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { QrCheckinResult } from "@/components/patient-experience/qr-checkin-result";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Check-in",
-  description: "Scan your QR code to check in for your appointment.",
-  robots: { index: false, follow: false },
-};
+  description: "Scannez votre QR code pour confirmer votre rendez-vous.",
+  path: "/checkin/scan",
+  noIndex: true,
+});
 
 export default async function CheckinScanPage(props: {
   searchParams: Promise<{ token?: string }>;

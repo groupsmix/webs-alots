@@ -13,18 +13,16 @@ import {
 } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Nos Services — Cabinet Médical",
   description:
     "Découvrez nos services médicaux, consultations, soins et traitements. Tarifs transparents et prise de rendez-vous en ligne.",
-  openGraph: {
-    title: "Nos Services — Cabinet Médical",
-    description: "Découvrez nos services médicaux, consultations, soins et traitements.",
-  },
-};
+  path: "/services",
+});
 
 export default async function ServicesPage() {
   // On the root marketing domain there is no tenant, so there are no

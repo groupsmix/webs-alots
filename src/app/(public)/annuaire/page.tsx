@@ -7,28 +7,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getDirectoryCities, getDirectorySpecialties } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, DIRECTORY_SPECIALTIES } from "@/lib/directory-constants";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
-
-export const metadata: Metadata = {
-  // Root layout's title template appends " | Oltigo"; omit it here to avoid
-  // the brand appearing twice in the <title>.
+export const metadata: Metadata = buildMetadata({
   title: "Annuaire Médical au Maroc — Trouvez votre médecin",
   description:
     "Trouvez un médecin, dentiste ou spécialiste près de chez vous au Maroc. Annuaire médical complet avec prise de rendez-vous en ligne à Casablanca, Rabat, Marrakech et plus.",
-  openGraph: {
-    title: "Annuaire Médical au Maroc — Trouvez votre médecin | Oltigo",
-    description:
-      "Trouvez un médecin, dentiste ou spécialiste près de chez vous au Maroc. Annuaire médical complet avec prise de rendez-vous en ligne.",
-    type: "website",
-    locale: "fr_MA",
-    url: `${BASE_URL}/annuaire`,
-    siteName: "Oltigo",
-  },
-  alternates: {
-    canonical: `${BASE_URL}/annuaire`,
-  },
-};
+  path: "/annuaire",
+});
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
 export default async function AnnuairePage() {
   const [cities, specialties] = await Promise.all([

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
 import { t } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface BlogPostPageProps {
@@ -21,30 +22,28 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   const post = getPostBySlug(slug);
   if (!post) return {};
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
-
-  return {
+  const base = buildMetadata({
     title: post.title,
     description: post.description,
+    path: `/blog/${post.slug}`,
+    ogType: "article",
+  });
+
+  return {
+    ...base,
     authors: [{ name: post.author }],
     openGraph: {
-      title: post.title,
-      description: post.description,
+      ...base.openGraph,
       type: "article",
-      locale: "fr_MA",
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt ?? post.publishedAt,
       authors: [post.author],
       tags: post.tags,
-      url: `${baseUrl}/blog/${post.slug}`,
     },
     twitter: {
-      card: "summary_large_image",
+      ...base.twitter,
       title: post.title,
       description: post.description,
-    },
-    alternates: {
-      canonical: `${baseUrl}/blog/${post.slug}`,
     },
   };
 }

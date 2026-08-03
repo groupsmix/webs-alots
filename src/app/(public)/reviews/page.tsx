@@ -4,17 +4,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Avis Patients",
   description:
     "Lisez les avis et témoignages de nos patients. Découvrez pourquoi ils nous font confiance pour leurs soins médicaux.",
-  openGraph: {
-    title: "Avis Patients",
-    description: "Lisez les avis et témoignages de nos patients.",
-  },
-};
+  path: "/reviews",
+});
 
 function StarRating({ rating }: { rating: number }) {
   return (

@@ -17,17 +17,15 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card } from "@/components/ui/card";
 import { getPublicDoctors, getPublicBranding } from "@/lib/data/public";
+import { buildMetadata } from "@/lib/metadata";
 import { requireTenantWithConfig } from "@/lib/tenant";
 
-export const metadata: Metadata = {
-  title: "Doctor Profile",
+export const metadata: Metadata = buildMetadata({
+  title: "Profil du médecin",
   description:
-    "Meet our doctor — qualifications, speciality, diplomas, languages spoken, and more.",
-  openGraph: {
-    title: "Doctor Profile",
-    description: "Meet our doctor — qualifications, speciality, and experience.",
-  },
-};
+    "Découvrez le médecin du cabinet : qualifications, spécialité, diplômes, langues parlées et plus.",
+  path: "/doctor-profile",
+});
 
 export default async function DoctorProfilePage() {
   const [doctors, branding, { tenant, config: tenantConfig }] = await Promise.all([
