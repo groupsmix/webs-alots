@@ -76,14 +76,14 @@ export function Footer() {
             <div className="mt-5 space-y-1.5">
               <a
                 href={`tel:${defaultWebsiteConfig.contact.phone.replace(/\s|-/g, "")}`}
-                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text"
+                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text min-h-11"
               >
                 <Phone className="size-3.5 text-text-muted" aria-hidden="true" />
                 {defaultWebsiteConfig.contact.phone}
               </a>
               <a
                 href={`mailto:${defaultWebsiteConfig.contact.email}`}
-                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text"
+                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text min-h-11"
               >
                 <Mail className="size-3.5 text-text-muted" aria-hidden="true" />
                 {defaultWebsiteConfig.contact.email}
@@ -110,7 +110,7 @@ export function Footer() {
                           href={href}
                           rel="noopener"
                           target="_blank"
-                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
+                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text min-h-11 flex items-center"
                         >
                           {link}
                         </a>
@@ -119,7 +119,7 @@ export function Footer() {
                           href={href}
                           {...(isAnchor(href) ? {} : { rel: "noopener" })}
                           {...(isExternal(href) ? { target: "_blank", rel: "noopener" } : {})}
-                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
+                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text min-h-11 flex items-center"
                         >
                           {link}
                         </Link>

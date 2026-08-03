@@ -124,6 +124,8 @@ export function PublicHeader({
                 width={36}
                 height={36}
                 className="h-8 sm:h-9 w-auto flex-shrink-0"
+                priority
+                sizes="36px"
               />
             )}
             <span className="truncate">{displayName}</span>

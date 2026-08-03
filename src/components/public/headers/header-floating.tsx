@@ -46,6 +46,8 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
                   width={28}
                   height={28}
                   className="h-7 w-auto flex-shrink-0"
+                  priority
+                  sizes="28px"
                 />
               )}
               <span className="hidden sm:inline truncate">{displayName}</span>

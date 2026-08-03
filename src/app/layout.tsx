@@ -201,6 +201,11 @@ export default async function RootLayout({
             <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
           </>
         )}
+        {/* Preconnect to Google Fonts and clinic image CDN for faster LCP */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://uploads.oltigo.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://uploads.oltigo.com" />
       </head>
       <body className="min-h-full flex flex-col">
         <WebSiteJsonLd

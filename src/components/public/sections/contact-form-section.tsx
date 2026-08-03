@@ -39,34 +39,53 @@ export function ContactFormSection() {
               >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Nom</Label>
-                    <Input className="min-h-11" placeholder="Votre nom" required />
+                    <Label htmlFor="contact-name">Nom</Label>
+                    <Input
+                      id="contact-name"
+                      name="name"
+                      className="min-h-11"
+                      placeholder="Votre nom"
+                      autoComplete="name"
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Email</Label>
+                    <Label htmlFor="contact-email">Email</Label>
                     <Input
+                      id="contact-email"
+                      name="email"
                       className="min-h-11"
                       type="email"
                       placeholder="votre@email.com"
+                      autoComplete="email"
                       required
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Téléphone</Label>
-                  <Input className="min-h-11" placeholder="+212 6XX XX XX XX" />
+                  <Label htmlFor="contact-phone">Téléphone</Label>
+                  <Input
+                    id="contact-phone"
+                    name="phone"
+                    type="tel"
+                    className="min-h-11"
+                    placeholder="+212 6XX XX XX XX"
+                    autoComplete="tel"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Message</Label>
+                  <Label htmlFor="contact-message">Message</Label>
                   <Textarea
+                    id="contact-message"
+                    name="message"
                     className="min-h-24"
                     placeholder="Comment pouvons-nous vous aider ?"
                     rows={4}
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  <Send className="h-4 w-4 me-2" />
+                <Button type="submit" className="w-full min-h-11">
+                  <Send className="h-4 w-4 me-2" aria-hidden="true" />
                   Envoyer le message
                 </Button>
               </form>
