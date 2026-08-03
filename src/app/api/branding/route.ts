@@ -5,10 +5,9 @@
  *                              and persist the URL to the clinics table
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
-import { meetsWCAG_AA, WCAG_SAFE_DEFAULTS } from "@/lib/contrast";
 import { logger } from "@/lib/logger";
 import { uploadToR2, isR2Configured, buildUploadKey, getResponsiveImageUrls } from "@/lib/r2";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
@@ -130,18 +129,6 @@ export async function GET() {
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
 
-    // Issue 8: Server-side contrast fallback — if custom colors fail
-    // WCAG AA against white, fall back to accessible defaults so public
-    // pages always render with sufficient contrast.
-    const primaryColor = publicData.primary_color ?? WCAG_SAFE_DEFAULTS.primary;
-    const secondaryColor = publicData.secondary_color ?? WCAG_SAFE_DEFAULTS.secondary;
-    if (!meetsWCAG_AA("#ffffff", primaryColor)) {
-      publicData.primary_color = WCAG_SAFE_DEFAULTS.primary;
-    }
-    if (!meetsWCAG_AA("#ffffff", secondaryColor)) {
-      publicData.secondary_color = WCAG_SAFE_DEFAULTS.secondary;
-    }
-
     // P-05: Cache branding for 5 min, serve stale for 10 min while revalidating
     return apiSuccess(publicData, 200, {
       "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
@@ -208,6 +195,7 @@ export const PUT = withAuthValidation(
 
     // Invalidate branding cache so public pages pick up the change
     revalidatePath("/", "layout");
+    revalidateTag(`clinic-branding-${clinicId}`, "max");
 
     // Invalidate subdomain cache so middleware picks up any name/config changes
     invalidateAllSubdomainCaches();
