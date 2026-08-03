@@ -3,7 +3,13 @@
 import { usePathname } from "next/navigation";
 import { OltigoPublicShell } from "./public-shell";
 
-const DARK_PATHS = new Set(["/pricing", "/privacy", "/terms", "/api-docs"]);
+const DARK_PATHS = new Set(["/pricing", "/privacy", "/terms", "/api-docs", "/services"]);
+const DARK_PREFIXES = ["/features/"];
+
+function isDarkPath(pathname: string): boolean {
+  if (DARK_PATHS.has(pathname)) return true;
+  return DARK_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 /**
  * Client gate for root-domain public pages.
@@ -20,7 +26,7 @@ export function PublicRootLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (DARK_PATHS.has(pathname)) {
+  if (isDarkPath(pathname)) {
     return <OltigoPublicShell mainClassName="pt-16">{children}</OltigoPublicShell>;
   }
 
