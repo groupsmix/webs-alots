@@ -84,7 +84,11 @@ export function ContactFormSection() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full min-h-11">
+                <Button
+                  type="submit"
+                  className="w-full min-h-11"
+                  data-event="cta-public-contact-submit"
+                >
                   <Send className="h-4 w-4 me-2" aria-hidden="true" />
                   Envoyer le message
                 </Button>

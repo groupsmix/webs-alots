@@ -48,6 +48,7 @@ export function BookingSection({ template, locale = "fr" }: BookingSectionProps)
         </p>
         <Link
           href="/book"
+          data-event="cta-booking-section"
           className={cn(
             linkBtnPrimary,
             "w-full sm:w-auto",

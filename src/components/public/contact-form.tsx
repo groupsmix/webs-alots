@@ -116,7 +116,12 @@ export function ContactForm() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading}
+            data-event="cta-contact-submit"
+          >
             {loading ? t(locale, "contact.submitting") : t(locale, "contact.submit")}
           </Button>
         </form>
