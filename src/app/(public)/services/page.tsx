@@ -2,7 +2,8 @@ import { Clock, CreditCard } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { RootServicesView } from "@/components/landing/oltigo/components/sections/root-services-view";
+import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
 import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
@@ -14,30 +15,115 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { getPublicBranding, getPublicServices } from "@/lib/data/public";
-import { getRootDomain } from "@/lib/env";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
+import type { Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Nos Services — Cabinet Médical",
-  description:
-    "Découvrez nos services médicaux, consultations, soins et traitements. Tarifs transparents et prise de rendez-vous en ligne.",
-  path: "/services",
-});
-
-export default async function ServicesPage() {
-  // On the root marketing domain there is no tenant, so there are no
-  // clinic-scoped services to show. Send visitors to the product features
-  // section instead of rendering an empty, clinic-framed services page.
+export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
+  const h = await headers();
+  const locale = ((h.get("x-locale") as Locale | null) ||
+    (h.get("x-tenant-locale") as Locale) ||
+    "fr") as Locale;
+  const rootDomain = getRootDomain() || "oltigo.com";
+  const siteUrl = tenant ? `https://${tenant.subdomain}.${rootDomain}` : undefined;
+
   if (!tenant) {
-    redirect("/#features");
+    return buildMetadata({
+      title: "Fonctionnalités",
+      description:
+        "Découvrez les fonctionnalités Oltigo : rendez-vous en ligne, dossier patient chiffré, rappels WhatsApp, paiements et plus. Conçu pour les cabinets médicaux au Maroc.",
+      path: "/services",
+      locale,
+    });
   }
 
+  const branding = await getPublicBranding();
+  const clinicName = branding.clinicName || tenant.clinicName || "Cabinet";
+  return buildMetadata({
+    title: `Nos Services — ${clinicName}`,
+    description:
+      "Découvrez nos services médicaux, consultations, soins et traitements. Tarifs transparents et prise de rendez-vous en ligne.",
+    path: "/services",
+    locale,
+    siteUrl,
+  });
+}
+
+export default async function ServicesPage() {
+  const tenant = await getTenant();
   const h = await headers();
   const nonce = h.get("x-nonce") || undefined;
+  const locale = ((h.get("x-locale") as Locale | null) ||
+    (h.get("x-tenant-locale") as Locale) ||
+    "fr") as Locale;
+
+  // Root marketing domain → SaaS feature page
+  if (!tenant) {
+    const siteUrl = getSiteUrl() || "https://oltigo.com";
+    const landingDict =
+      (landingDictionaries as Record<string, (typeof landingDictionaries)["fr"] | undefined>)[
+        locale
+      ] ?? landingDictionaries.fr;
+
+    const softwareSchema = {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "Oltigo Health",
+      applicationCategory: "HealthApplication",
+      operatingSystem: "Web",
+      url: `${siteUrl}/services`,
+      description:
+        "Plateforme complète pour gérer votre cabinet médical : rendez-vous, dossiers patients chiffrés, rappels WhatsApp en darija.",
+      offers: {
+        "@type": "AggregateOffer",
+        lowPrice: "0",
+        highPrice: "999",
+        priceCurrency: "MAD",
+        offerCount: 4,
+      },
+    };
+
+    const itemListSchema = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      itemListElement: landingDict.features.map((feature, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: feature.title,
+        description: feature.tagline,
+        url: `${siteUrl}/features/${feature.id}`,
+      })),
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListSchema) }}
+        />
+        <BreadcrumbJsonLd
+          nonce={nonce}
+          items={[
+            { name: "Accueil", url: siteUrl },
+            { name: landingDict.featuresHeading.title, url: `${siteUrl}/services` },
+          ]}
+        />
+        <RootServicesView />
+      </>
+    );
+  }
+
+  // Subdomain → clinic service catalog
   const branding = await getPublicBranding();
 
   const cfg = defaultWebsiteConfig.services;

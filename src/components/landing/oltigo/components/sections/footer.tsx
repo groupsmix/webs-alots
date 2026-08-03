@@ -22,17 +22,17 @@ import { Wordmark } from "./section-kit";
  */
 const FOOTER_HREFS: string[][] = [
   // 0 — Product / Produit / المنتج
-  ["/#appointments", "/#records", "/#whatsapp", "/pricing"],
+  // Appointments · Records · WhatsApp · Pricing
+  ["/features/appointments", "/features/records", "/features/whatsapp", "/pricing"],
   // 1 — Resources / Ressources / الموارد
-  ["/api-docs", "/how-to-book", "/status", "/blog"],
+  // API docs · Getting started · FAQ · Status · Blog
+  ["/api-docs", "/how-to-book", "/faq", "/status", "/blog"],
   // 2 — Company / Entreprise / الشركة
-  // Carrières / Partenaires fall back to About / Contact until dedicated pages exist.
-  ["/about", "/contact", "/about", "/contact"],
+  // About · Contact · Careers · Partners
+  ["/about", "/contact", "/carriere", "/partenaires"],
   // 3 — Legal / Légal / قانوني
-  // Labels (parallel by position): Confidentialité · Conditions · Sous-traitants · Sécurité
-  // "Sécurité" now points at a styled security page; the RFC 9116 machine-readable
-  // file remains reachable at /.well-known/security.txt from that page.
-  ["/privacy", "/terms", "/sub-processors", "/security"],
+  // Privacy · Terms · Sub-processors · Security · Cookies
+  ["/privacy", "/terms", "/sub-processors", "/security", "/cookies"],
 ];
 
 /** On-page anchors and real routes use Next.js client navigation.
