@@ -1,7 +1,7 @@
 "use client";
 
 import { Palette, Type, ImageIcon, Eye, Save, RotateCcw, Plus, Trash2, Clock } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,13 +18,41 @@ const DEFAULT_HOW_TO_BOOK_STEP_KEYS = defaultWebsiteConfig.howToBook.steps.map(
   (_, index) => `how-to-book-step-${index}`,
 );
 
+function mergeDeep<T>(target: T, source: unknown): T {
+  if (source === null || source === undefined) return target;
+  if (Array.isArray(target) && Array.isArray(source)) return source as T;
+  if (typeof target === "object" && typeof source === "object" && target !== null) {
+    const result = { ...target } as Record<string, unknown>;
+    for (const key of Object.keys(source as object)) {
+      result[key] = mergeDeep(
+        (target as Record<string, unknown>)[key],
+        (source as Record<string, unknown>)[key],
+      );
+    }
+    return result as T;
+  }
+  return source as T;
+}
+
 export default function WebsiteEditorPage() {
   const [config, setConfig] = useState<WebsiteConfig>(defaultWebsiteConfig);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [workingHourKeys, setWorkingHourKeys] = useState(() => [...DEFAULT_WORKING_HOUR_KEYS]);
   const [howToBookStepKeys, setHowToBookStepKeys] = useState(() => [
     ...DEFAULT_HOW_TO_BOOK_STEP_KEYS,
   ]);
+
+  useEffect(() => {
+    fetch("/api/branding")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok && data.data?.website_config) {
+          setConfig((prev) => mergeDeep(prev, data.data.website_config));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   function updateHero(key: keyof WebsiteConfig["hero"], value: string) {
     setConfig((prev) => ({ ...prev, hero: { ...prev.hero, [key]: value } }));
@@ -126,8 +154,22 @@ export default function WebsiteEditorPage() {
     setSaved(false);
   }
 
-  function handleSave() {
-    setSaved(true);
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ website_config: config }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      alert("Failed to save website changes");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleReset() {
@@ -154,9 +196,9 @@ export default function WebsiteEditorPage() {
             <RotateCcw className="h-4 w-4 me-2" />
             Reset
           </Button>
-          <Button size="sm" onClick={handleSave}>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 me-2" />
-            {saved ? "Saved!" : "Save Changes"}
+            {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
           </Button>
           <a
             href="/"
