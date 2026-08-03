@@ -1,4 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const faqs = [
   {
@@ -24,6 +29,8 @@ const faqs = [
 ];
 
 export function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
   return (
     <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4 max-w-3xl">
@@ -33,17 +40,44 @@ export function FaqSection() {
         <p className="text-center text-muted-foreground mb-6 sm:mb-8">
           Trouvez les réponses aux questions les plus courantes sur nos services.
         </p>
-        <div className="space-y-4">
-          {faqs.map((faq) => (
-            <Card key={faq.q}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">{faq.q}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{faq.a}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-3">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <Card key={faq.q} className="overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-start text-base sm:text-lg font-medium transition-colors hover:bg-muted/50"
+                >
+                  <span className="text-balance">{faq.q}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform",
+                      isOpen && "rotate-180",
+                    )}
+                    aria-hidden="true"
+                  />
+                </button>
+                <div
+                  id={`faq-answer-${index}`}
+                  role="region"
+                  aria-hidden={!isOpen}
+                  className={cn(
+                    "grid transition-all duration-300 ease-out",
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <p className="px-5 pb-4 pt-0 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>

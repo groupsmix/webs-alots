@@ -9,6 +9,7 @@
 export interface SectionVisibility {
   hero: boolean;
   services: boolean;
+  why: boolean;
   doctors: boolean;
   reviews: boolean;
   blog: boolean;
@@ -25,6 +26,7 @@ export type SectionKey = keyof SectionVisibility;
 export const defaultSectionVisibility: SectionVisibility = {
   hero: true,
   services: true,
+  why: true,
   doctors: true,
   reviews: true,
   blog: true,
@@ -54,6 +56,11 @@ export const sectionDefinitions: SectionMeta[] = [
     key: "services",
     label: "Services List",
     description: "Display your available medical services",
+  },
+  {
+    key: "why",
+    label: "Why Choose Us",
+    description: "Highlight your clinic's trust factors and strengths",
   },
   {
     key: "doctors",

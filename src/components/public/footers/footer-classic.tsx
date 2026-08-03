@@ -1,9 +1,11 @@
 "use client";
+/* eslint-disable i18next/no-literal-string */
 
 import { Mail, MapPin, Phone, Shield } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { FooterProps } from "./index";
 
 /**
@@ -11,29 +13,43 @@ import type { FooterProps } from "./index";
  *
  * Three columns: clinic info, quick links, and contact info.
  * Includes copyright bar at the bottom.
- * Supports RTL layout.
+ * Supports RTL layout and switches to a premium look for the "premium" template.
  */
 export function FooterClassic({ clinicName, template, phone, email, address }: FooterProps) {
   const [locale] = useLocale();
   const isRtl = template?.rtl ?? false;
+  const isPremium = template?.id === "premium";
   const year = new Date().getFullYear();
 
   return (
     <footer
-      className="border-t border-border bg-background"
+      className={cn(
+        "border-t border-border",
+        isPremium ? "bg-gradient-to-b from-card to-background" : "bg-background",
+      )}
       dir={isRtl ? "rtl" : undefined}
       aria-label={t(locale, "public.footerLabel")}
     >
-      <div className="container mx-auto px-4 py-10 sm:py-12">
+      <div
+        className={cn("container mx-auto px-4", isPremium ? "py-14 sm:py-16" : "py-10 sm:py-12")}
+      >
         <div className="grid gap-8 sm:gap-10 md:grid-cols-3">
           {/* Column 1 — Clinic info */}
           <div>
-            <h3 className="text-lg font-bold text-primary mb-3">{clinicName}</h3>
+            <h3 className={cn("font-bold text-primary mb-3", isPremium ? "text-xl" : "text-lg")}>
+              {clinicName}
+            </h3>
             {address && (
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" aria-hidden="true" />
                 {address}
               </div>
+            )}
+            {isPremium && (
+              <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                Votre santé, notre priorité. Des soins personnalisés dans un environnement moderne
+                et accueillant.
+              </p>
             )}
           </div>
 

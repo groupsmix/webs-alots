@@ -69,7 +69,7 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
               ))}
               <Link
                 href="/book"
-                className={buttonVariants({ size: "sm", className: "rounded-full" })}
+                className={buttonVariants({ size: "default", className: "rounded-full" })}
               >
                 {t(locale, "public.bookAppointment")}
               </Link>

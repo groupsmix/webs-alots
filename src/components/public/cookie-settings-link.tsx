@@ -14,7 +14,7 @@ export function CookieSettingsLink({ locale = "fr" }: { locale?: Locale }) {
       onClick={reopenCookieConsent}
       aria-controls="cookie-consent-banner"
       aria-label={t(locale, "cookie.managePreferences")}
-      className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+      className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
     >
       {t(locale, "cookie.managePreferences")}
     </button>

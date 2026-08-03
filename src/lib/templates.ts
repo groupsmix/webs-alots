@@ -8,7 +8,14 @@
  * branding / website config.
  */
 
-export type TemplateId = "modern" | "classic" | "elegant" | "bold" | "minimal" | "arabic";
+export type TemplateId =
+  | "modern"
+  | "classic"
+  | "elegant"
+  | "bold"
+  | "minimal"
+  | "arabic"
+  | "premium";
 
 /** Header layout variant */
 export type HeaderVariant =
@@ -26,7 +33,14 @@ export type FooterVariant = "classic-3col" | "minimal" | "centered" | "hidden";
 type NavStyle = "horizontal" | "vertical-side" | "hamburger-only" | "bottom-tabs" | "floating-dots";
 
 /** Hero section layout variant */
-type HeroVariant = "split" | "centered" | "fullscreen-video" | "slider" | "parallax" | "none";
+type HeroVariant =
+  | "split"
+  | "centered"
+  | "fullscreen-video"
+  | "slider"
+  | "parallax"
+  | "none"
+  | "premium";
 
 /** Product click behavior */
 export type ProductClickBehavior = "modal" | "landing-page" | "side-panel" | "new-tab";
@@ -38,7 +52,7 @@ export interface TemplateDefinition {
   /** Tailwind classes applied to the page wrapper */
   wrapperClass: string;
   /** Hero section style variant */
-  heroStyle: "split" | "centered" | "fullwidth" | "overlay";
+  heroStyle: "split" | "centered" | "fullwidth" | "overlay" | "premium";
   /** Card style variant */
   cardStyle: "shadow" | "bordered" | "flat" | "elevated";
   /** Overall border radius theme */
@@ -173,6 +187,33 @@ const templates: Record<TemplateId, TemplateDefinition> = {
     navStyle: "horizontal",
     heroVariant: "split",
     sectionOrder: ["hero", "services", "doctors", "reviews", "about", "location", "contact"],
+    productClickBehavior: "modal",
+  },
+  premium: {
+    id: "premium",
+    name: "Premium",
+    description: "High-end, calming healthcare design with soft gradients and generous whitespace",
+    wrapperClass: "bg-[#F8FAFC] text-slate-900",
+    heroStyle: "premium",
+    cardStyle: "elevated",
+    borderRadius: "xl",
+    bgMode: "light",
+    rtl: false,
+    preview: "Premium medical landing page with hero stats, floating cards, and trust signals",
+    headerVariant: "top-sticky",
+    footerVariant: "classic-3col",
+    navStyle: "horizontal",
+    heroVariant: "premium",
+    sectionOrder: [
+      "hero",
+      "services",
+      "why",
+      "doctors",
+      "reviews",
+      "location",
+      "contactForm",
+      "faq",
+    ],
     productClickBehavior: "modal",
   },
 };

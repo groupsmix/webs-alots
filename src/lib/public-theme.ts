@@ -168,6 +168,14 @@ const TEMPLATE_PALETTES: Record<
     mutedForeground: "rgba(11, 15, 14, 0.66)",
     border: "rgba(11, 15, 14, 0.12)",
   },
+  premium: {
+    background: "#F8FAFC",
+    foreground: "#0f172a",
+    card: "#ffffff",
+    muted: "#e2e8f0",
+    mutedForeground: "rgba(15, 23, 42, 0.66)",
+    border: "rgba(15, 23, 42, 0.08)",
+  },
 };
 
 /**

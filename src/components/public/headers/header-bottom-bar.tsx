@@ -57,14 +57,14 @@ export function HeaderBottomBar({ logoUrl, clinicName, navItems, template }: Hea
                 {item.label}
               </Link>
             ))}
-            <Link href="/book" className={buttonVariants({ size: "sm" })}>
+            <Link href="/book" className={buttonVariants({ size: "default" })}>
               {t(locale, "public.bookAppointment")}
             </Link>
           </nav>
 
           {/* Mobile CTA */}
           <div className="md:hidden">
-            <Link href="/book" className={buttonVariants({ size: "sm" })}>
+            <Link href="/book" className={buttonVariants({ size: "default" })}>
               {t(locale, "public.bookAppointment")}
             </Link>
           </div>

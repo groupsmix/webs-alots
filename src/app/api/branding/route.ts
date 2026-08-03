@@ -160,6 +160,10 @@ export const PUT = withAuthValidation(
       "tagline",
       "phone",
       "address",
+      "logo_url",
+      "favicon_url",
+      "hero_image_url",
+      "cover_photo_url",
       "template_id",
     ] as const;
     for (const key of stringKeys) {
@@ -169,9 +173,12 @@ export const PUT = withAuthValidation(
       }
     }
 
-    // Handle section_visibility as JSONB
+    // Handle JSONB fields
     if (body.section_visibility && typeof body.section_visibility === "object") {
       updates.section_visibility = body.section_visibility;
+    }
+    if (body.website_config && typeof body.website_config === "object") {
+      updates.website_config = body.website_config;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -215,7 +222,7 @@ export const POST = withAuth(async (request, { supabase }) => {
   const field = (formData.get("field") as string) || "";
 
   if (!FIELD_MAP[field]) {
-    return apiError("field must be one of: logo, favicon, hero");
+    return apiError("field must be one of: logo, favicon, hero, cover");
   }
 
   if (!file || !(file instanceof File)) {
