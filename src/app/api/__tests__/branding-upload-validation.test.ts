@@ -11,6 +11,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/avif",
   "image/x-icon",
   "image/vnd.microsoft.icon",
 ]);
@@ -24,6 +25,13 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
 };
 
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
+  if (declaredType === "image/avif") {
+    if (buffer.length < 12) return false;
+    const ftyp = buffer.toString("ascii", 4, 8);
+    const brand = buffer.toString("ascii", 8, 12);
+    return ftyp === "ftyp" && (brand === "avif" || brand === "avis");
+  }
+
   const signatures = MAGIC_BYTES[declaredType];
   if (!signatures) return false;
   return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
@@ -68,6 +76,14 @@ describe("branding upload — validateFileContent", () => {
   it("validates an ICO file", () => {
     const buf = Buffer.from([0x00, 0x00, 0x01, 0x00, 0x01, 0x00]);
     expect(validateFileContent(buf, "image/x-icon")).toBe(true);
+  });
+
+  it("validates an AVIF file", () => {
+    const buf = Buffer.concat([
+      Buffer.from([0x00, 0x00, 0x00, 0x1c]),
+      Buffer.from("ftypavif", "ascii"),
+    ]);
+    expect(validateFileContent(buf, "image/avif")).toBe(true);
   });
 
   it("validates vnd.microsoft.icon the same as x-icon", () => {
