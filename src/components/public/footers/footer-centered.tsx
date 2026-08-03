@@ -25,7 +25,7 @@ export function FooterCentered({ clinicName, template, phone, email, address }: 
       dir={isRtl ? "rtl" : undefined}
       aria-label={t(locale, "public.footerLabel")}
     >
-      <div className="container mx-auto flex flex-col items-center gap-6 px-4 py-10">
+      <div className="container mx-auto flex flex-col items-center gap-6 px-4 py-8 sm:py-10">
         {/* Clinic name */}
         <h3 className="text-xl font-bold text-primary">{clinicName}</h3>
 

@@ -27,11 +27,15 @@ export function LocationSection({ address, websiteConfig }: LocationSectionProps
   const displayAddress = displayAddressParts.filter(Boolean).join(", ");
 
   return (
-    <section className="py-16 bg-muted/30">
+    <section className="py-12 sm:py-16 bg-muted/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">{loc.title}</h2>
-        <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">{loc.subtitle}</p>
-        <div className="grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-4">
+          {loc.title}
+        </h2>
+        <p className="text-center text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto">
+          {loc.subtitle}
+        </p>
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-2 max-w-4xl mx-auto">
           {/* Map */}
           <Card>
             <CardContent className="pt-6">
@@ -43,11 +47,11 @@ export function LocationSection({ address, websiteConfig }: LocationSectionProps
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  className="rounded-lg border-0"
+                  className="rounded-lg border-0 min-h-[220px]"
                   title="Localisation du cabinet"
                 />
               ) : (
-                <div className="h-[300px] rounded-lg bg-muted flex items-center justify-center">
+                <div className="min-h-[220px] h-[300px] rounded-lg bg-muted flex items-center justify-center">
                   <MapPin className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}

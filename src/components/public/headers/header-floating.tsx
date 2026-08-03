@@ -33,19 +33,22 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
   return (
     <header className="fixed top-4 left-0 right-0 z-50" dir={isRtl ? "rtl" : undefined}>
       <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-4xl rounded-full border bg-background/80 backdrop-blur-lg shadow-lg px-6 py-2">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-lg font-bold">
+        <div className="mx-auto max-w-4xl rounded-full border bg-background/80 backdrop-blur-lg shadow-lg px-4 sm:px-6 py-2">
+          <div className="flex items-center justify-between min-w-0">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-base sm:text-lg font-bold min-w-0"
+            >
               {logoUrl && (
                 <Image
                   src={logoUrl}
                   alt={displayName}
                   width={28}
                   height={28}
-                  className="h-7 w-auto"
+                  className="h-7 w-auto flex-shrink-0"
                 />
               )}
-              <span className="hidden sm:inline">{displayName}</span>
+              <span className="hidden sm:inline truncate">{displayName}</span>
             </Link>
 
             {/* Desktop navigation */}
@@ -89,11 +92,11 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
 
         {/* Mobile navigation — drops down below the floating bar */}
         {mobileMenuOpen && (
-          <div className="mx-auto max-w-4xl mt-2">
+          <div className="mx-auto max-w-4xl mt-2 px-4 sm:px-0">
             <nav
               id="floating-mobile-nav"
               aria-label="Navigation mobile"
-              className="rounded-2xl border bg-background/95 backdrop-blur-lg shadow-lg px-4 py-4"
+              className="rounded-2xl border bg-background/95 backdrop-blur-lg shadow-lg px-4 py-4 max-h-[calc(100dvh-8rem)] overflow-y-auto"
             >
               <div className="flex flex-col gap-2">
                 {navItems.map((item) => (
@@ -111,7 +114,10 @@ export function HeaderFloating({ logoUrl, clinicName, navItems, template }: Head
                     {item.label}
                   </Link>
                 ))}
-                <Link href="/book" className={buttonVariants({ className: "mt-2 rounded-full" })}>
+                <Link
+                  href="/book"
+                  className={buttonVariants({ className: "mt-2 rounded-full w-full" })}
+                >
                   {t(locale, "public.bookAppointment")}
                 </Link>
               </div>

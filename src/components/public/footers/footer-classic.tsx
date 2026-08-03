@@ -24,8 +24,8 @@ export function FooterClassic({ clinicName, template, phone, email, address }: F
       dir={isRtl ? "rtl" : undefined}
       aria-label={t(locale, "public.footerLabel")}
     >
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid gap-10 md:grid-cols-3">
+      <div className="container mx-auto px-4 py-10 sm:py-12">
+        <div className="grid gap-8 sm:gap-10 md:grid-cols-3">
           {/* Column 1 — Clinic info */}
           <div>
             <h3 className="text-lg font-bold text-primary mb-3">{clinicName}</h3>
