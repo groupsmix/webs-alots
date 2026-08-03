@@ -1,7 +1,9 @@
 import { Clock, CreditCard } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
   Card,
@@ -11,8 +13,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { getPublicServices } from "@/lib/data/public";
-import { getSiteUrl } from "@/lib/env";
+import { getPublicBranding, getPublicServices } from "@/lib/data/public";
+import { getRootDomain } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
@@ -34,16 +36,28 @@ export default async function ServicesPage() {
     redirect("/#features");
   }
 
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
+  const branding = await getPublicBranding();
+
   const cfg = defaultWebsiteConfig.services;
 
   const services = await getPublicServices();
-  const baseUrl = getSiteUrl() || "https://oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
+  const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
 
   const servicesSchema = {
     "@context": "https://schema.org",
+    "@id": `${canonicalUrl}/#services`,
     "@type": "MedicalBusiness",
-    url: `${baseUrl}/services`,
+    url: `${canonicalUrl}/services`,
     name: cfg.title,
+    provider: {
+      "@type": "MedicalOrganization",
+      name: branding.clinicName || tenant.clinicName,
+      url: canonicalUrl,
+      ...(branding.logoUrl ? { logo: branding.logoUrl } : {}),
+    },
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Medical Services",
@@ -66,9 +80,17 @@ export default async function ServicesPage() {
     <div className="container mx-auto px-4 py-12">
       <script
         type="application/ld+json"
+        nonce={nonce}
         // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection
         // from database-sourced fields (service name, description, price).
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(servicesSchema) }}
+      />
+      <BreadcrumbJsonLd
+        nonce={nonce}
+        items={[
+          { name: "Accueil", url: canonicalUrl },
+          { name: cfg.title, url: `${canonicalUrl}/services` },
+        ]}
       />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>

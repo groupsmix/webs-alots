@@ -20,7 +20,7 @@ import {
 import { ServicesPreview } from "@/components/public/services-preview";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
-import { getRootDomain } from "@/lib/env";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
@@ -29,6 +29,7 @@ import { publicCardClass } from "@/lib/public-theme";
 import { mergeSectionVisibility, type SectionKey } from "@/lib/section-visibility";
 import { getTemplate } from "@/lib/templates";
 import { getTenant } from "@/lib/tenant";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 /**
  * Map a template's `sectionOrder` (which uses loose, historical names like
@@ -152,11 +153,21 @@ export default async function HomePage() {
 
   // Root domain (no subdomain) → show SaaS landing page
   if (!tenant) {
+    const siteUrl = getSiteUrl() || "https://oltigo.com";
     const saasJsonLd = {
       "@context": "https://schema.org",
       "@type": "Organization",
       name: "Oltigo",
-      url: "https://oltigo.com",
+      url: siteUrl,
+      logo: `${siteUrl}/opengraph-image.png`,
+      sameAs: ["https://www.linkedin.com/company/oltigo"],
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "contact@oltigo.com",
+        areaServed: "MA",
+        availableLanguage: ["French", "Arabic", "English"],
+        contactType: "customer support",
+      },
       description:
         "Plateforme SaaS de gestion de cabinets médicaux au Maroc. Rendez-vous en ligne, dossier patient chiffré, rappels WhatsApp.",
       foundingDate: "2024",
@@ -171,7 +182,7 @@ export default async function HomePage() {
       name: "Oltigo Health",
       applicationCategory: "HealthApplication",
       operatingSystem: "Web",
-      url: "https://oltigo.com",
+      url: siteUrl,
       description:
         "Plateforme complète pour gérer votre cabinet médical : rendez-vous, dossiers patients chiffrés, rappels WhatsApp en darija.",
       offers: {
@@ -253,12 +264,51 @@ export default async function HomePage() {
   // Build LocalBusiness + MedicalOrganization structured data
   const rootDomain = getRootDomain() || "oltigo.com";
   const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
+
+  const images = [branding.logoUrl, branding.heroImageUrl, branding.coverPhotoUrl].filter(
+    (url): url is string => typeof url === "string" && url.length > 0,
+  );
+
+  const workingHours =
+    (
+      branding.websiteConfig as {
+        location?: { workingHours?: { day: string; hours: string }[] };
+      }
+    )?.location?.workingHours ?? defaultWebsiteConfig.location.workingHours;
+
+  const DAY_MAP: Record<string, string> = {
+    Lundi: "Monday",
+    Mardi: "Tuesday",
+    Mercredi: "Wednesday",
+    Jeudi: "Thursday",
+    Vendredi: "Friday",
+    Samedi: "Saturday",
+    Dimanche: "Sunday",
+  };
+
+  const openingHours = workingHours
+    .filter((wh) => wh.hours && !wh.hours.toLowerCase().includes("fermé"))
+    .map((wh) => {
+      const [opens, closes] = wh.hours.split("-").map((s) => s.trim());
+      return {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: DAY_MAP[wh.day] ?? wh.day,
+        opens,
+        closes,
+      };
+    })
+    .filter((oh) => oh.opens && oh.closes);
+
+  const geo = (branding.websiteConfig as { geo?: { latitude?: number; longitude?: number } })?.geo;
+  const priceRange = (branding.websiteConfig as { priceRange?: string })?.priceRange ?? "€€";
+
   const clinicSchema = {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "MedicalOrganization"],
     "@id": `${canonicalUrl}/#organization`,
     name: branding.clinicName || tenant.clinicName,
     url: canonicalUrl,
+    ...(images.length ? { image: images } : {}),
     ...(branding.phone ? { telephone: branding.phone } : {}),
     ...(branding.email ? { email: branding.email } : {}),
     ...(branding.address
@@ -270,6 +320,17 @@ export default async function HomePage() {
           },
         }
       : {}),
+    ...(geo?.latitude != null && geo?.longitude != null
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: geo.latitude,
+            longitude: geo.longitude,
+          },
+        }
+      : {}),
+    ...(openingHours.length ? { openingHoursSpecification: openingHours } : {}),
+    priceRange,
     ...(branding.logoUrl ? { logo: branding.logoUrl } : {}),
     ...(avgRating > 0 && reviews.length > 0
       ? {

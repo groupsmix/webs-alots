@@ -14,6 +14,7 @@ import { MaskingBuildSentinel } from "@/components/masking-build-sentinel";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { PlausibleScript } from "@/components/plausible-script";
+import { WebSiteJsonLd } from "@/components/seo/json-ld";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -173,6 +174,7 @@ export default async function RootLayout({
   // — without it, the publicly-cached page can only ever serve the French
   // default since the cache key does not vary on the preferred-locale cookie.
   const headerStore = await headers();
+  const nonce = headerStore.get("x-nonce") || undefined;
   const explicitLocale = headerStore.get("x-locale");
   const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale | undefined;
@@ -182,6 +184,7 @@ export default async function RootLayout({
     preferredLocale ||
     tenantLocale;
   const dir = getDirFromLocale(locale);
+  const siteUrl = getSiteUrl() || "https://oltigo.com";
 
   return (
     <html
@@ -200,6 +203,12 @@ export default async function RootLayout({
         )}
       </head>
       <body className="min-h-full flex flex-col">
+        <WebSiteJsonLd
+          url={siteUrl}
+          name="Oltigo"
+          searchUrl={`${siteUrl}/annuaire?q={search_term_string}`}
+          nonce={nonce}
+        />
         {/* Skip-to-content link for keyboard / screen-reader accessibility (WCAG 2.4.1) */}
         <a
           href="#main-content"
@@ -207,8 +216,9 @@ export default async function RootLayout({
         >
           {t(locale, "nav.skipToContent")}
         </a>
-        {/* JSON-LD structured data is rendered on public pages only (Issue 59).
-            See src/app/(public)/page.tsx for clinic-specific schema. */}
+        {/* Global WebSite JSON-LD is rendered here; page-specific structured
+            data (Organization, SoftwareApplication, LocalBusiness, FAQPage,
+            etc.) is rendered on individual public pages. */}
         <ThemeProvider>
           <ToastProvider>
             <TenantProvider tenant={tenant}>
