@@ -70,6 +70,13 @@ export interface WebsiteConfig {
     subtitle: string;
   };
 
+  /** FAQ page */
+  faq: {
+    title: string;
+    subtitle: string;
+    items: { q: string; a: string }[];
+  };
+
   /** Theme overrides */
   theme: {
     primaryColor: string;
@@ -168,6 +175,33 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Nos Services",
     subtitle:
       "Nous proposons une large gamme de services médicaux pour répondre à vos besoins de santé. Toutes les consultations comprennent un examen approfondi et des soins personnalisés.",
+  },
+
+  faq: {
+    title: "Questions Fréquentes",
+    subtitle: "Trouvez les réponses aux questions les plus courantes sur nos services.",
+    items: [
+      {
+        q: "Comment prendre rendez-vous ?",
+        a: "Vous pouvez prendre rendez-vous en ligne via notre site web en cliquant sur le bouton « Prendre rendez-vous », ou nous appeler directement pendant les heures d'ouverture.",
+      },
+      {
+        q: "Quelles assurances acceptez-vous ?",
+        a: "Nous acceptons la plupart des assurances majeures, notamment CNSS, CNOPS, RMA, SAHAM et AXA. Contactez-nous pour les détails de couverture.",
+      },
+      {
+        q: "Quels sont vos horaires d'ouverture ?",
+        a: "Nous sommes ouverts du lundi au vendredi de 9h00 à 17h00, et le samedi de 9h00 à 13h00. Nous sommes fermés le dimanche.",
+      },
+      {
+        q: "Ai-je besoin d'une recommandation ?",
+        a: "Aucune recommandation n'est nécessaire pour une consultation générale. Certains services spécialisés peuvent nécessiter une orientation de votre médecin traitant.",
+      },
+      {
+        q: "Puis-je annuler ou reporter mon rendez-vous ?",
+        a: "Oui, vous pouvez annuler ou reporter votre rendez-vous jusqu'à 24 heures à l'avance via notre site web ou en nous appelant.",
+      },
+    ],
   },
 
   theme: {

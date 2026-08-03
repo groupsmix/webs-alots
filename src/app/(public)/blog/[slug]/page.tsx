@@ -1,7 +1,9 @@
 import { ArrowLeft, Clock, Calendar, Tag, User } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
 import { getSiteUrl } from "@/lib/env";
@@ -27,6 +29,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     title: post.title,
     description: post.description,
     path: `/blog/${post.slug}`,
+    locale: post.locale ?? "fr",
     ogType: "article",
   });
 
@@ -54,7 +57,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
   const baseUrl = getSiteUrl() || "https://oltigo.com";
+  const articleLang = post.locale ?? "fr";
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -69,6 +75,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       "@type": "Organization",
       name: "Oltigo",
       url: baseUrl,
+      logo: `${baseUrl}/opengraph-image.png`,
     },
     datePublished: post.publishedAt,
     dateModified: post.updatedAt ?? post.publishedAt,
@@ -77,15 +84,25 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       "@id": `${baseUrl}/blog/${post.slug}`,
     },
     keywords: post.tags.join(", "),
-    inLanguage: "fr",
+    inLanguage: articleLang,
     articleSection: BLOG_CATEGORIES[post.category],
+    ...(post.ogImage ? { image: [post.ogImage] } : {}),
   };
 
   return (
     <article className="container mx-auto px-4 py-12 max-w-3xl">
       <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(articleSchema) }}
+      />
+      <BreadcrumbJsonLd
+        nonce={nonce}
+        items={[
+          { name: "Accueil", url: baseUrl },
+          { name: "Blog", url: `${baseUrl}/blog` },
+          { name: post.title, url: `${baseUrl}/blog/${post.slug}` },
+        ]}
       />
 
       {/* Back to blog */}
