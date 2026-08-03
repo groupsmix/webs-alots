@@ -76,7 +76,7 @@ function resolveSectionOrder(templateOrder: string[], renderable: SectionKey[]):
 const DATA_FETCH_TIMEOUT_MS = 10_000;
 
 const linkBtnOutline =
-  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
+  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors min-h-11";
 
 /**
  * Race a promise against a timeout. Rejects with a descriptive error
@@ -319,15 +319,17 @@ export default async function HomePage() {
   };
 
   const reviewsSection = (
-    <section className="py-16">
+    <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">{t(locale, "public.reviews.heading")}</h2>
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-balance mb-4">
+            {t(locale, "public.reviews.heading")}
+          </h2>
           <p className="text-sm text-muted-foreground mb-2">
             {t(locale, "public.reviews.subtitle")}
           </p>
           <div className="flex items-center justify-center gap-2">
-            <span className="text-3xl font-bold">{avgRating}</span>
+            <span className="text-2xl sm:text-3xl font-bold">{avgRating}</span>
             <div className="flex gap-0.5" role="img" aria-label={`${avgRating} out of 5 stars`}>
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
@@ -348,7 +350,7 @@ export default async function HomePage() {
         </div>
         {/* Rating distribution */}
         {reviews.length > 0 && (
-          <div className="mx-auto mb-10 max-w-xs space-y-1.5">
+          <div className="mx-auto mb-8 sm:mb-10 max-w-xs space-y-2">
             {[5, 4, 3, 2, 1].map((star) => {
               const count = reviews.filter((r) => r.rating === star).length;
               const pct = Math.round((count / reviews.length) * 100);
@@ -358,10 +360,10 @@ export default async function HomePage() {
                     {star}
                     <span className="text-yellow-400">&#9733;</span>
                   </span>
-                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-yellow-400"
-                      data-width={String(Math.round(pct))}
+                      className="h-full rounded-full bg-yellow-400 transition-all"
+                      style={{ width: `${pct}%` }}
                     />
                   </div>
                   <span className="w-8 text-xs text-muted-foreground">{count}</span>
@@ -371,7 +373,7 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+        <div className="grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
           {topReviews.map((review) => (
             <Card key={review.id} className={publicCardClass(template.cardStyle)}>
               <CardContent className="pt-6">
@@ -398,8 +400,8 @@ export default async function HomePage() {
             </Card>
           ))}
         </div>
-        <div className="mt-10 text-center">
-          <Link href="/reviews" className={linkBtnOutline}>
+        <div className="mt-8 sm:mt-10 text-center">
+          <Link href="/reviews" className={`${linkBtnOutline} w-full sm:w-auto`}>
             {t(locale, "public.reviews.viewAll")}
             <ArrowRight className="ms-2 h-4 w-4" />
           </Link>

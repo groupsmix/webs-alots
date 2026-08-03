@@ -41,7 +41,7 @@ export function HeaderTopSticky({
   return (
     <header className="sticky top-0 z-50" dir={isRtl ? "rtl" : undefined}>
       {hasContact && (
-        <div className="bg-primary text-primary-foreground py-1.5 text-xs">
+        <div className="bg-primary text-primary-foreground py-1.5 text-xs sm:text-sm">
           <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4 sm:justify-end">
             {phone && (
               <a
@@ -108,10 +108,10 @@ export function HeaderTopSticky({
                 </Link>
               );
             })}
-            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "default" })}>
               {t(locale, "public.doctorSpace")}
             </Link>
-            <Link href="/book" className={buttonVariants({ size: "sm" })}>
+            <Link href="/book" className={buttonVariants({ size: "default" })}>
               {t(locale, "public.patientSpace")}
             </Link>
           </nav>
@@ -146,7 +146,7 @@ export function HeaderTopSticky({
                   key={item.href}
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`text-sm min-h-11 flex items-center ${
+                  className={`text-base min-h-11 flex items-center ${
                     isActive
                       ? "text-primary font-medium"
                       : "text-muted-foreground hover:text-foreground"

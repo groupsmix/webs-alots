@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const linkBtnPrimary =
-  "inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/80 transition-colors";
+  "inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/80 transition-colors min-h-11";
 
 export function BookingSection() {
   return (

@@ -6,7 +6,7 @@ import type { TemplateDefinition } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 
 const linkBtnOutline =
-  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
+  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors min-h-11";
 
 interface ServicesPreviewProps {
   cardStyle?: TemplateDefinition["cardStyle"];

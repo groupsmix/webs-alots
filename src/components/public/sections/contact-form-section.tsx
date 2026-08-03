@@ -40,20 +40,30 @@ export function ContactFormSection() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Nom</Label>
-                    <Input placeholder="Votre nom" required />
+                    <Input className="min-h-11" placeholder="Votre nom" required />
                   </div>
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input type="email" placeholder="votre@email.com" required />
+                    <Input
+                      className="min-h-11"
+                      type="email"
+                      placeholder="votre@email.com"
+                      required
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Téléphone</Label>
-                  <Input placeholder="+212 6XX XX XX XX" />
+                  <Input className="min-h-11" placeholder="+212 6XX XX XX XX" />
                 </div>
                 <div className="space-y-2">
                   <Label>Message</Label>
-                  <Textarea placeholder="Comment pouvons-nous vous aider ?" rows={4} required />
+                  <Textarea
+                    className="min-h-24"
+                    placeholder="Comment pouvons-nous vous aider ?"
+                    rows={4}
+                    required
+                  />
                 </div>
                 <Button type="submit" className="w-full">
                   <Send className="h-4 w-4 me-2" />

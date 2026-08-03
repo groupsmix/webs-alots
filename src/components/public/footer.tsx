@@ -48,25 +48,25 @@ export function PublicFooter({
             <nav aria-label={t(locale, "public.quickLinks")} className="flex flex-col gap-2">
               <Link
                 href="/services/"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
               >
                 {t(locale, "public.services")}
               </Link>
               <Link
                 href="/how-to-book/"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
               >
                 {t(locale, "public.appointments")}
               </Link>
               <Link
                 href="/location/"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
               >
                 {t(locale, "public.locationHours")}
               </Link>
               <Link
                 href="/contact/"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
               >
                 {t(locale, "public.contact")}
               </Link>
@@ -81,13 +81,13 @@ export function PublicFooter({
             <nav aria-label={t(locale, "public.legal")} className="flex flex-col gap-2">
               <Link
                 href="/privacy/"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
               >
                 {t(locale, "public.privacy")}
               </Link>
               <Link
                 href="/terms/"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-10 flex items-center"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors min-h-11 flex items-center"
               >
                 {t(locale, "public.terms")}
               </Link>
@@ -104,7 +104,7 @@ export function PublicFooter({
               {phone && (
                 <a
                   href={`tel:${phone}`}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                  className="flex items-center gap-2 hover:text-primary transition-colors min-h-11"
                 >
                   <Phone className="h-4 w-4 text-primary" aria-hidden="true" />
                   {phone}
@@ -113,7 +113,7 @@ export function PublicFooter({
               {email && (
                 <a
                   href={`mailto:${email}`}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                  className="flex items-center gap-2 hover:text-primary transition-colors min-h-11"
                 >
                   <Mail className="h-4 w-4 text-primary" aria-hidden="true" />
                   {email}
