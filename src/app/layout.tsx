@@ -18,6 +18,7 @@ import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
+import { getSiteUrl } from "@/lib/env";
 import { ClinicFeaturesProvider } from "@/lib/hooks/use-clinic-features";
 import { t, isSupportedLocale, type Locale, type TranslationKey } from "@/lib/i18n";
 import { getTenant, getLocaleFromTenant, getDirFromLocale } from "@/lib/tenant";
@@ -84,7 +85,7 @@ export async function generateMetadata(): Promise<Metadata> {
     tenantLocale ||
     preferredLocale ||
     ("fr" as Locale);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
+  const siteUrl = getSiteUrl() || "https://oltigo.com";
   const ogImage = `${siteUrl}/opengraph-image.png`;
 
   return {
