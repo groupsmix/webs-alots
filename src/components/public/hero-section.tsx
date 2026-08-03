@@ -38,11 +38,16 @@ export function HeroSection({ overrides, variant = "split", template }: HeroSect
         align === "center" ? "justify-center" : "justify-center lg:justify-start",
       )}
     >
-      <Link href="/book" className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}>
+      <Link
+        href="/book"
+        data-event="cta-public-hero-primary"
+        className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}
+      >
         {cfg.ctaPrimary}
       </Link>
       <Link
         href="/services"
+        data-event="cta-public-hero-secondary"
         className={buttonVariants({
           variant: "outline",
           size: "lg",

@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+import { TrackEvents } from "@/components/analytics/track-events";
 import { ConsentGatedReplay } from "@/components/consent-gated-replay";
 import { CookieConsent } from "@/components/cookie-consent";
 import { MaskingBuildSentinel } from "@/components/masking-build-sentinel";
@@ -256,6 +257,7 @@ export default async function RootLayout({
         <ConsentGatedReplay />
         <ServiceWorkerRegister />
         <PlausibleScript />
+        <TrackEvents />
         {/*
           Audit 2026-06-09 Task 2: invisible sentinel that embeds the
           build-time NEXT_PUBLIC_DATA_MASKING value in the client bundle so
