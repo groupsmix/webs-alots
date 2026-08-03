@@ -2,7 +2,6 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, staging]
 
 # A34.12: Cancel redundant runs for the same PR — prevents duplicate
 # CodeQL/Gitleaks/Semgrep jobs from racing and wasting runner minutes.
