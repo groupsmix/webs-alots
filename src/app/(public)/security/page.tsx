@@ -3,12 +3,14 @@
 import { ExternalLink, FileText, Mail, Shield } from "lucide-react";
 import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Sécurité — Oltigo",
+export const metadata: Metadata = buildMetadata({
+  title: "Sécurité",
   description:
     "Politique de divulgation responsable et coordonnées de sécurité pour Oltigo. Signalez une vulnérabilité en toute confiance.",
-};
+  path: "/security",
+});
 
 export default function SecurityPage() {
   return (

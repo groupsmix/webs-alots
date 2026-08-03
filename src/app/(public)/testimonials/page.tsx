@@ -8,16 +8,14 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
 import { t, type Locale } from "@/lib/i18n";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Témoignages Patients",
   description:
     "Découvrez les témoignages de nos patients satisfaits. Avis vérifiés sur la qualité de nos soins médicaux.",
-  openGraph: {
-    title: "Témoignages Patients",
-    description: "Découvrez les témoignages de nos patients satisfaits.",
-  },
-};
+  path: "/testimonials",
+});
 
 function StarRating({ rating, locale }: { rating: number; locale: Locale }) {
   return (

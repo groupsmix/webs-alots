@@ -1,12 +1,14 @@
 import { Activity, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buildMetadata } from "@/lib/metadata";
 import { getPublicStatusSnapshot } from "@/lib/system-status";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "État des services",
   description: "Page d'état des services Oltigo — disponibilité en temps réel.",
-  robots: { index: false, follow: false, nocache: true, noarchive: true },
-};
+  path: "/status",
+  noIndex: true,
+});
 
 const STATUS_STYLES = {
   operational: "text-green-600 bg-green-50 border-green-200",

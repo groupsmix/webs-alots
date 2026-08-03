@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Conditions Générales d'Utilisation",
   description:
     "Conditions générales d'utilisation de la plateforme Oltigo. Règles d'utilisation, responsabilités et droits des utilisateurs.",
-  openGraph: {
-    title: "Conditions Générales d'Utilisation",
-    description: "Conditions générales d'utilisation de la plateforme Oltigo.",
-  },
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   const sections: LegalDocSection[] = [

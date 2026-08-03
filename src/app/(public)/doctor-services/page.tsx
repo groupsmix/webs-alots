@@ -12,16 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getPublicServices, getPublicBranding } from "@/lib/data/public";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Nos Services Médicaux",
   description:
     "Découvrez nos services médicaux avec descriptions détaillées et tarifs. Consultations, examens, soins spécialisés.",
-  openGraph: {
-    title: "Nos Services Médicaux",
-    description: "Découvrez nos services médicaux avec descriptions détaillées et tarifs.",
-  },
-};
+  path: "/doctor-services",
+});
 
 export default async function DoctorServicesPage() {
   const [services, branding] = await Promise.all([getPublicServices(), getPublicBranding()]);

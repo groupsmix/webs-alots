@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Politique de Confidentialité",
   description:
     "Politique de confidentialité et protection des données personnelles. Conformité RGPD et loi marocaine 09-08.",
-  openGraph: {
-    title: "Politique de Confidentialité",
-    description: "Politique de confidentialité et protection des données personnelles.",
-  },
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   const sections: LegalDocSection[] = [

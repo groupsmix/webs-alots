@@ -18,6 +18,7 @@ import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
+import { getSiteUrl } from "@/lib/env";
 import { ClinicFeaturesProvider } from "@/lib/hooks/use-clinic-features";
 import { t, isSupportedLocale, type Locale, type TranslationKey } from "@/lib/i18n";
 import { getTenant, getLocaleFromTenant, getDirFromLocale } from "@/lib/tenant";
@@ -84,9 +85,11 @@ export async function generateMetadata(): Promise<Metadata> {
     tenantLocale ||
     preferredLocale ||
     ("fr" as Locale);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
+  const siteUrl = getSiteUrl() || "https://oltigo.com";
+  const ogImage = `${siteUrl}/opengraph-image.png`;
 
   return {
+    metadataBase: new URL(siteUrl),
     manifest: "/manifest.webmanifest",
     icons: {
       icon: [
@@ -119,15 +122,36 @@ export async function generateMetadata(): Promise<Metadata> {
         "x-default": siteUrl,
         fr: siteUrl,
         ar: `${siteUrl}?lang=ar`,
+        en: `${siteUrl}?lang=en`,
       },
     },
     openGraph: {
       type: "website",
-      locale: locale === "ar" ? "ar_MA" : "fr_MA",
-      alternateLocale: locale === "ar" ? ["fr_MA"] : ["ar_MA"],
+      locale: locale === "ar" || locale === "ary" ? "ar_MA" : locale === "en" ? "en_US" : "fr_MA",
+      alternateLocale:
+        locale === "ar" || locale === "ary"
+          ? ["fr_MA", "en_US"]
+          : locale === "en"
+            ? ["fr_MA", "ar_MA"]
+            : ["ar_MA", "en_US"],
       siteName: "Oltigo",
       title: t(locale, "meta.ogTitle" as TranslationKey),
       description: t(locale, "meta.ogDescription" as TranslationKey),
+      url: siteUrl,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 640,
+          alt: t(locale, "meta.ogTitle" as TranslationKey),
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t(locale, "meta.ogTitle" as TranslationKey),
+      description: t(locale, "meta.ogDescription" as TranslationKey),
+      images: [ogImage],
     },
     robots: {
       index: true,

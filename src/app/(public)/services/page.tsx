@@ -12,19 +12,18 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
+import { getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Nos Services — Cabinet Médical",
   description:
     "Découvrez nos services médicaux, consultations, soins et traitements. Tarifs transparents et prise de rendez-vous en ligne.",
-  openGraph: {
-    title: "Nos Services — Cabinet Médical",
-    description: "Découvrez nos services médicaux, consultations, soins et traitements.",
-  },
-};
+  path: "/services",
+});
 
 export default async function ServicesPage() {
   // On the root marketing domain there is no tenant, so there are no
@@ -38,7 +37,7 @@ export default async function ServicesPage() {
   const cfg = defaultWebsiteConfig.services;
 
   const services = await getPublicServices();
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   const servicesSchema = {
     "@context": "https://schema.org",

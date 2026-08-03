@@ -2,19 +2,14 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { RegisterForm } from "@/components/onboarding/register-form";
 import { t, type Locale } from "@/lib/i18n";
+import { buildMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  // Root layout's title template appends " | Oltigo"; omit the brand here so
-  // it does not render twice.
+export const metadata: Metadata = buildMetadata({
   title: "Créer votre clinique",
   description:
     "Inscrivez votre cabinet médical gratuitement sur Oltigo. Obtenez votre propre site web et commencez à recevoir des patients en ligne.",
-  openGraph: {
-    title: "Créer votre clinique — Oltigo",
-    description:
-      "Inscrivez votre cabinet médical gratuitement et obtenez votre propre sous-domaine.",
-  },
-};
+  path: "/register-clinic",
+});
 
 export default async function RegisterPage() {
   const h = await headers();

@@ -14,11 +14,13 @@ import {
   getSpecialtyBySlug,
   TOP_CITY_SPECIALTY_COMBOS,
 } from "@/lib/directory-constants";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
-const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";
+const BASE_URL = getSiteUrl() || "https://oltigo.com";
+const ROOT_DOMAIN = getRootDomain() || "oltigo.com";
 
 interface CitySpecialtyPageProps {
   params: Promise<{ city: string; specialty: string }>;
@@ -34,24 +36,14 @@ export async function generateMetadata({ params }: CitySpecialtyPageProps): Prom
   const specialty = getSpecialtyBySlug(specialtySlug);
   if (!city || !specialty) return {};
 
-  const title = `${specialty.nameFr} à ${city.name} — Annuaire Médical | Oltigo`;
+  const title = `${specialty.nameFr} à ${city.name} — Annuaire Médical`;
   const description = `Trouvez un ${specialty.nameFr.toLowerCase()} à ${city.name}, Maroc. ${specialty.description}. Prenez rendez-vous en ligne.`;
 
-  return {
+  return buildMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      locale: "fr_MA",
-      url: `${BASE_URL}/annuaire/${city.slug}/${specialty.slug}`,
-      siteName: "Oltigo",
-    },
-    alternates: {
-      canonical: `${BASE_URL}/annuaire/${city.slug}/${specialty.slug}`,
-    },
-  };
+    path: `/annuaire/${city.slug}/${specialty.slug}`,
+  });
 }
 
 export default async function CitySpecialtyPage({ params }: CitySpecialtyPageProps) {

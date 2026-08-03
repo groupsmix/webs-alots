@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import { OltigoPublicShell } from "@/components/landing/oltigo/public-shell";
 import { FullComparisonTable } from "@/components/marketing/comparison-table";
+import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Comparatif — Oltigo vs IYADA, SmartDoc, CABIDOC, Pratisoft",
   description:
     "Comparez Oltigo avec les autres solutions de gestion de cabinet médical au Maroc : IYADA, SmartDoc, CABIDOC et Pratisoft. IA, WhatsApp, QR, multi-tenant et plus.",
-  openGraph: {
-    title: "Comparatif — Oltigo vs concurrents | Oltigo",
-    description:
-      "Tableau comparatif complet des fonctionnalités : tarifs, IA, WhatsApp, facturation assurance, ordonnances QR et plus.",
-  },
-};
+  path: "/compare",
+});
 
 function PageHeader() {
   return (

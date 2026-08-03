@@ -23,11 +23,13 @@ import {
   getDirectoryDoctors,
 } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, getCityBySlug, getSpecialtyBySlug } from "@/lib/directory-constants";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
-const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";
+const BASE_URL = getSiteUrl() || "https://oltigo.com";
+const ROOT_DOMAIN = getRootDomain() || "oltigo.com";
 
 interface PageProps {
   params: Promise<{ city: string }>;
@@ -52,47 +54,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const doctor = await getDirectoryDoctorBySlug(slug);
     if (!doctor) return {};
 
-    const title = `${doctor.name} — ${doctor.specialty} à ${doctor.city} | Oltigo`;
+    const title = `${doctor.name} — ${doctor.specialty} à ${doctor.city}`;
     const description = `Prenez rendez-vous avec ${doctor.name}, ${doctor.specialty.toLowerCase()} à ${doctor.city}. ${doctor.clinicName}. Consultation en ligne disponible.`;
 
-    return {
+    return buildMetadata({
       title,
       description,
-      openGraph: {
-        title,
-        description,
-        type: "profile",
-        locale: "fr_MA",
-        url: `${BASE_URL}/annuaire/${doctor.slug}`,
-        siteName: "Oltigo",
-        ...(doctor.avatar
-          ? { images: [{ url: doctor.avatar, width: 200, height: 200, alt: doctor.name }] }
-          : {}),
-      },
-      alternates: { canonical: `${BASE_URL}/annuaire/${doctor.slug}` },
-    };
+      path: `/annuaire/${doctor.slug}`,
+      image: doctor.avatar || undefined,
+      imageAlt: doctor.name,
+    });
   }
 
   // City page
   const city = getCityBySlug(slug);
   if (!city) return {};
 
-  const title = `Médecins à ${city.name} — Annuaire Médical | Oltigo`;
+  const title = `Médecins à ${city.name} — Annuaire Médical`;
   const description = `Trouvez un médecin, dentiste ou spécialiste à ${city.name}, Maroc. Consultez les profils, avis et prenez rendez-vous en ligne.`;
 
-  return {
+  return buildMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      locale: "fr_MA",
-      url: `${BASE_URL}/annuaire/${city.slug}`,
-      siteName: "Oltigo",
-    },
-    alternates: { canonical: `${BASE_URL}/annuaire/${city.slug}` },
-  };
+    path: `/annuaire/${city.slug}`,
+  });
 }
 
 // ── Doctor Profile View ──

@@ -1,22 +1,44 @@
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { ContactForm } from "@/components/public/contact-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicBranding } from "@/lib/data/public";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
+import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export const metadata: Metadata = {
-  title: "Contact — Nous Joindre",
-  description:
-    "Contactez notre cabinet médical par téléphone, WhatsApp ou email. Accès facile, formulaire de contact et adresse.",
-  openGraph: {
-    title: "Contact — Nous Joindre",
-    description: "Contactez notre cabinet médical par téléphone, WhatsApp ou email.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenant();
+  const h = await headers();
+  const locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const rootDomain = getRootDomain() || "oltigo.com";
+  const siteUrl = tenant ? `https://${tenant.subdomain}.${rootDomain}` : undefined;
+
+  if (!tenant) {
+    return buildMetadata({
+      title: "Contact — Nous Joindre",
+      description:
+        "Contactez notre cabinet médical par téléphone, WhatsApp ou email. Accès facile, formulaire de contact et adresse.",
+      path: "/contact",
+      locale,
+    });
+  }
+
+  const branding = await getPublicBranding();
+  const clinicName = branding.clinicName || tenant.clinicName || t(locale, "public.clinicFallback");
+  return buildMetadata({
+    title: `Contactez ${clinicName}`,
+    description: `Contactez ${clinicName} par téléphone, WhatsApp ou email. Adresse et formulaire de contact.`,
+    path: "/contact",
+    locale,
+    siteUrl,
+  });
+}
 
 export default async function ContactPage() {
   const tenant = await getTenant();
@@ -59,7 +81,7 @@ export default async function ContactPage() {
   const whatsappLink = `https://wa.me/${whatsapp.replace(/\s+/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
   const showWhatsappCta = !isPlaceholderValue(whatsapp);
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   // F-3: The marketing contact page represents the Oltigo *Organization*, not a
   // MedicalBusiness — only a real clinic tenant is a MedicalBusiness. Emit only

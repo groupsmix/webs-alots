@@ -9,26 +9,37 @@ import {
   Globe,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getRootDomain } from "@/lib/env";
+import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
+  const h = await headers();
+  const locale = (h.get("x-tenant-locale") as "fr" | "ar" | "en" | "ary") || "fr";
   if (!tenant) {
-    return {
-      title: "À propos — Oltigo",
+    return buildMetadata({
+      title: "À propos",
       description:
         "Oltigo est la plateforme marocaine dédiée à la gestion opérationnelle des cabinets, cliniques et pharmacies au Maroc.",
-    };
+      path: "/about",
+      locale,
+    });
   }
-  return {
+  const rootDomain = getRootDomain() || "oltigo.com";
+  return buildMetadata({
     title: "À propos — Notre Médecin",
     description:
       "Découvrez notre médecin, ses qualifications, son expérience et sa spécialité. Un professionnel de santé dédié à votre bien-être.",
-  };
+    path: "/about",
+    locale,
+    siteUrl: `https://${tenant.subdomain}.${rootDomain}`,
+  });
 }
 
 function OltigoAbout() {
