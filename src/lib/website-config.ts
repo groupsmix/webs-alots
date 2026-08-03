@@ -90,7 +90,7 @@ export const defaultWebsiteConfig: WebsiteConfig = {
   },
 
   about: {
-    doctorName: "Dr. Ahmed",
+    doctorName: "Dr. [Nom]",
     specialty: "Médecine Générale",
     bio: "Médecin dévoué avec plusieurs années d'expérience, offrant des soins personnalisés et attentionnés à chaque patient.",
     photoUrl: undefined,

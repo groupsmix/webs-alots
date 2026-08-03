@@ -1,7 +1,7 @@
 # Applicability Audit: A171-A196
 
 > **Source:** Security audit April 2026; re-verified 2026-05-31 (see `docs/audit/AUDIT-A171-A196-RE-VERIFICATION-2026-05-31.md`)
-> **Project:** Oltigo Health (groupsmix/webs-alots)
+> **Project:** Oltigo Health (<owner>/<repo>)
 > **Last updated:** 2026-05-31
 
 ## Project Profile

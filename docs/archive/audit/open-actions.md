@@ -1,4 +1,4 @@
-# Open Findings & Required Actions — `groupsmix/webs-alots` (Oltigo Health)
+# Open Findings & Required Actions — `<owner>/<repo>` (Oltigo Health)
 
 > **Compiled:** 2026-04-30 | **Last updated:** 2026-05-31
 > **Source:** 12 audit reports covering A1–A214 + AI + Applicability A171–A196 + CEO A246–A250 + SEASONS S0–S1 + Cleanup FR-01–FR-40 + **Comprehensive 70-item audit (Q-01–Q-70, 2026-05-31)**.
@@ -31,9 +31,9 @@ _Source file: `audit-report10.md`_
 
 ---
 
-# Security / Schema / Operational Audit — `groupsmix/webs-alots`
+# Security / Schema / Operational Audit — `<owner>/<repo>`
 
-- **Artifact:** https://github.com/groupsmix/webs-alots (`main`, cloned 2026-04-30)
+- **Artifact:** https://github.com/<owner>/<repo> (`main`, cloned 2026-04-30)
 - **Stack:** Next.js 16 (App Router, Edge via OpenNext/Cloudflare Workers) + Supabase (PostgreSQL + RLS) + Cloudflare R2 + WhatsApp Cloud API + Stripe/CMI.
 - **Size:** 924 tracked files, ~158k LOC (TS/TSX/SQL), 208 SQL migrations, 236 API route handlers.
 - **Threat model baseline assumed:** hostile author, malicious input, partitioned network, skewed clock, full disk, insider attacker, personal liability.
@@ -374,9 +374,9 @@ _Source file: `audit-A31-A60.md`_
 
 ---
 
-# Audits A31–A60 — `groupsmix/webs-alots`
+# Audits A31–A60 — `<owner>/<repo>`
 
-Repository: https://github.com/groupsmix/webs-alots
+Repository: https://github.com/<owner>/<repo>
 Commit cloned: `main` @ 2026-04-30
 Stack: Next.js 16 / React 19 (App Router) → OpenNext → Cloudflare Workers; Supabase (Postgres + Auth + Storage); Cloudflare R2; Sentry; Plausible.
 
@@ -747,7 +747,7 @@ _Source file: `AUDIT-A61-A85-REPORT.md`_
 
 # Sequential Audit Report — A61 → A85
 
-**Target:** https://github.com/groupsmix/webs-alots (Oltigo Health — multi-tenant healthcare SaaS for Moroccan clinics)
+**Target:** https://github.com/<owner>/<repo> (Oltigo Health — multi-tenant healthcare SaaS for Moroccan clinics)
 **Stack:** Next.js 16 + React 19 + Supabase + Cloudflare Workers (OpenNext) + R2 + WhatsApp/Stripe/CMI
 **Commit:** HEAD of `main` at audit time (2026-04-30)
 **Auditor mode:** Independent analysis. 25 audits run sequentially with same rules (each = scope → evidence → findings → severity → recommendation). No code changes; no PR.
@@ -942,7 +942,7 @@ _Source file: `A86-A100-audit-webs-alots.md`_
 
 ---
 
-# Audits A86–A100 — `groupsmix/webs-alots` (Oltigo Health)
+# Audits A86–A100 — `<owner>/<repo>` (Oltigo Health)
 
 > Scope: 15 sequential audits at HEAD `9edc2adf` (main).
 > All paths are repo-relative.
@@ -1202,7 +1202,7 @@ _Source file: `AI_AUDIT_REPORT.md`_
 
 ---
 
-# AI Security & Compliance Audit — `groupsmix/webs-alots`
+# AI Security & Compliance Audit — `<owner>/<repo>`
 
 > **Project:** Oltigo Health (multi-tenant healthcare SaaS for Moroccan clinics)
 > **Date:** 2026-04-30
@@ -1441,7 +1441,7 @@ _Source file: `audit-report-A126-A170.md`_
 
 # Security & Controls Audit — A126–A170
 
-**Artifact:** https://github.com/groupsmix/webs-alots/ (internally branded **Oltigo Health** — Next.js 16 multi-tenant healthcare SaaS for Morocco: clinics, doctors, dentists, pharmacies; Supabase + Cloudflare Workers + R2; payments via CMI and Stripe)
+**Artifact:** https://github.com/<owner>/<repo>/ (internally branded **Oltigo Health** — Next.js 16 multi-tenant healthcare SaaS for Morocco: clinics, doctors, dentists, pharmacies; Supabase + Cloudflare Workers + R2; payments via CMI and Stripe)
 
 **Commit audited:** current `main` (cloned 2026-04-30)
 
@@ -1587,7 +1587,7 @@ _Source file: `AUDIT-A144-A151-REPORT.md`_
 
 # Audit Report — A144 → A151 (Email / DNS / Domain / Certs / Brand)
 
-**Target:** https://github.com/groupsmix/webs-alots — domain **oltigo.com**
+**Target:** https://github.com/<owner>/<repo> — domain **oltigo.com**
 **Auditor mode:** Independent analysis. Live DNS/WHOIS/TLS/CT lookups performed against public data on 2026-04-30.
 **Applicability overall:** All 8 audits apply. A146 (subdomain takeover) was the highest-concern going in because of the wildcard multi-tenant architecture — it's actually clean. A144 (DMARC) and A145 (DNSSEC/CAA) are the real P1 gaps.
 
@@ -1696,7 +1696,7 @@ _Source file: `applicability-A171-A196.md`_
 
 ---
 
-# Applicability of A171–A196 to `groupsmix/webs-alots` (Oltigo Health)
+# Applicability of A171–A196 to `<owner>/<repo>` (Oltigo Health)
 
 **Project type:** Multi-tenant healthcare SaaS (Next.js 16 + Supabase + Cloudflare Workers + R2). Handles **PHI** under Moroccan Law 09-08 / CNDP. Serves doctors, dentists, pharmacies in Morocco. Closed-source / private. Uses WhatsApp, Twilio, Stripe/CMI, Sentry, Plausible, OpenAI, Resend, Meta APIs.
 
@@ -1757,7 +1757,7 @@ _Source file: `applicability-A171-A196.md`_
 
 ### A180 — Privileged role map (≥2 humans, no shared accts, audited, recert)
 
-**APPLIES — GAP.** CODEOWNERS shows `@groupsmix` (a single org, not necessarily ≥2 named humans) on every security-critical file.
+**APPLIES — GAP.** CODEOWNERS shows `@<owner>` (a single org, not necessarily ≥2 named humans) on every security-critical file.
 **Action:** explicit role map of who has Supabase service-role / Cloudflare admin / GitHub org owner — minimum 2 named humans per role, no shared accounts, quarterly recert.
 
 ### A181 — Break-glass account: sealed two-person custody, every use → high-pri alert + postmortem, drilled
@@ -1870,7 +1870,7 @@ _Source file: `audit-report-A197-A204.md`_
 
 # Governance & Legal Audit — A197–A204
 
-**Artifact:** https://github.com/groupsmix/webs-alots/ (Oltigo Health — Next.js 16 multi-tenant healthcare SaaS for Morocco)
+**Artifact:** https://github.com/<owner>/<repo>/ (Oltigo Health — Next.js 16 multi-tenant healthcare SaaS for Morocco)
 
 **Scope discipline:** A197–A204 are predominantly **legal / governance / corporate-secretarial** controls whose primary artifacts (PIIA agreements, ECCN classification memos, M&A diligence pack, board reports, modern-slavery statements, ESG disclosures) live **outside any code repository**. For each, I report:
 
@@ -1967,7 +1967,7 @@ _Source file: `audit-report-A205-A214.md`_
 
 # Red-Team / Offensive-Security Audit — A205–A214
 
-**Artifact:** https://github.com/groupsmix/webs-alots/ (Oltigo Health — Next.js 16 multi-tenant healthcare SaaS for Morocco)
+**Artifact:** https://github.com/<owner>/<repo>/ (Oltigo Health — Next.js 16 multi-tenant healthcare SaaS for Morocco)
 
 **Scope discipline:** A205–A214 are predominantly **operational red-team exercises** that require a deployed environment, a security operations team, written rules of engagement, legal sign-off, and physical access. Without those, items are explicitly marked **EXERCISE-ONLY (NOT EXECUTABLE FROM CODE REVIEW)** with a one-line justification. Code-auditable items get full PASS / FAIL / PARTIAL with file evidence.
 
@@ -2058,7 +2058,7 @@ _Source file: `CEO-passes-A246-A250.md`_
 
 ---
 
-# CEO Passes A246–A250 — `groupsmix/webs-alots` (Oltigo Health)
+# CEO Passes A246–A250 — `<owner>/<repo>` (Oltigo Health)
 
 **Scope:** Multi-tenant healthcare SaaS — Next.js 16 + Supabase (eu-west-1) + Cloudflare Workers + R2. Handles PHI under Moroccan **Law 09-08** (CNDP). Sub-processors include OpenAI, WhatsApp/Meta, Twilio, Stripe, CMI, Sentry, Plausible, Resend.
 
@@ -2386,9 +2386,9 @@ _Source file: `audit-report9f.md`_
 
 ---
 
-# Security & Quality Audit — `groupsmix/webs-alots`
+# Security & Quality Audit — `<owner>/<repo>`
 
-**Artifact:** https://github.com/groupsmix/webs-alots (commit at clone time `~25 MiB`, 19 723 git objects)
+**Artifact:** https://github.com/<owner>/<repo> (commit at clone time `~25 MiB`, 19 723 git objects)
 **Stack:** Next.js 16 (App Router) + Supabase (Postgres + RLS) + Cloudflare Workers/R2 + Stripe + WhatsApp Cloud API. ~96 API route handlers, ~73 SQL migrations.
 **Auditor mode:** "QUICK MODE — Single-PR Shortcut". Hostile author / malicious input / partitioned network / wrong clock / full disk / insider / personal liability.
 

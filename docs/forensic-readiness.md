@@ -97,7 +97,7 @@ sha256sum evidence_sentry.json > evidence_sentry.json.sha256
 
 ```bash
 # Export via GitHub API
-gh api /orgs/groupsmix/audit-log \
+gh api /orgs/<org>/audit-log \
   --paginate \
   -X GET \
   -f phrase="created:>=[ISO_DATE]" \

@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Mail, MapPin, Menu, Phone, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,14 +50,25 @@ interface PublicHeaderProps {
   logoUrl?: string | null;
   clinicName?: string;
   sectionVisibility?: Record<string, boolean>;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
-export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicHeaderProps) {
+export function PublicHeader({
+  logoUrl,
+  clinicName,
+  sectionVisibility,
+  phone,
+  email,
+  address,
+}: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locale] = useLocale();
   const pathname = usePathname();
   const displayName = clinicName || "Oltigo";
   const navLinks = getNavLinks(sectionVisibility);
+  const hasContact = phone || email || address;
 
   const [prevPathname, setPrevPathname] = useState(pathname);
   if (prevPathname !== pathname) {
@@ -66,45 +77,95 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          {logoUrl && (
-            <Image src={logoUrl} alt={displayName} width={32} height={32} className="h-8 w-auto" />
-          )}
-          {displayName}
-        </Link>
+    <header className="sticky top-0 z-50">
+      {/* Top contact bar */}
+      {hasContact && (
+        <div className="bg-primary text-primary-foreground py-1.5 text-xs">
+          <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-4 sm:justify-end">
+            {phone && (
+              <a href={`tel:${phone}`} className="inline-flex items-center gap-1.5 hover:underline">
+                <Phone className="h-3 w-3" aria-hidden="true" />
+                {phone}
+              </a>
+            )}
+            {email && (
+              <a
+                href={`mailto:${email}`}
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <Mail className="h-3 w-3" aria-hidden="true" />
+                {email}
+              </a>
+            )}
+            {address && (
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="h-3 w-3" aria-hidden="true" />
+                {address}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
-        {/* Desktop navigation */}
-        <nav aria-label={t(locale, "public.navMain")} className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={pathname === link.href ? "page" : undefined}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {t(locale, link.labelKey)}
+      {/* Main nav */}
+      <div className="border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
+            {logoUrl && (
+              <Image
+                src={logoUrl}
+                alt={displayName}
+                width={36}
+                height={36}
+                className="h-9 w-auto"
+              />
+            )}
+            {displayName}
+          </Link>
+
+          {/* Desktop navigation */}
+          <nav
+            aria-label={t(locale, "public.navMain")}
+            className="hidden items-center gap-6 md:flex"
+          >
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`text-sm transition-colors ${
+                    isActive
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t(locale, link.labelKey)}
+                </Link>
+              );
+            })}
+            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              {t(locale, "public.doctorSpace")}
             </Link>
-          ))}
-          <Link href="/book" className={buttonVariants({ variant: "outline" })}>
-            {t(locale, "public.patientSpace")}
-          </Link>
-          <Link href="/login" className={buttonVariants()}>
-            {t(locale, "public.doctorSpace")}
-          </Link>
-        </nav>
+            <Link href="/book" className={buttonVariants({ size: "sm" })}>
+              {t(locale, "public.patientSpace")}
+            </Link>
+          </nav>
 
-        {/* Mobile menu toggle */}
-        <button
-          className="md:hidden flex items-center justify-center min-h-11 min-w-11 rounded-md hover:bg-muted transition-colors"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? t(locale, "public.closeMenu") : t(locale, "public.openMenu")}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="clinic-mobile-nav"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          {/* Mobile menu toggle */}
+          <button
+            className="md:hidden flex items-center justify-center min-h-11 min-w-11 rounded-md hover:bg-muted transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={
+              mobileMenuOpen ? t(locale, "public.closeMenu") : t(locale, "public.openMenu")
+            }
+            aria-expanded={mobileMenuOpen}
+            aria-controls="clinic-mobile-nav"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile navigation */}
@@ -112,28 +173,35 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
         <nav
           id="clinic-mobile-nav"
           aria-label={t(locale, "public.navMobile")}
-          className="border-t px-4 py-4 md:hidden"
+          className="border-b border-border bg-background/95 backdrop-blur px-4 py-4 md:hidden"
         >
           <div className="flex flex-col gap-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={pathname === link.href ? "page" : undefined}
-                className="text-sm text-muted-foreground min-h-11 flex items-center"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t(locale, link.labelKey)}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`text-sm min-h-11 flex items-center ${
+                    isActive
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t(locale, link.labelKey)}
+                </Link>
+              );
+            })}
             <Link
-              href="/book"
+              href="/login"
               className={buttonVariants({ variant: "outline", className: "mt-2" })}
             >
-              {t(locale, "public.patientSpace")}
-            </Link>
-            <Link href="/login" className={buttonVariants({ className: "mt-2" })}>
               {t(locale, "public.doctorSpace")}
+            </Link>
+            <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
+              {t(locale, "public.patientSpace")}
             </Link>
           </div>
         </nav>

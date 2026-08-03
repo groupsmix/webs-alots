@@ -2,9 +2,9 @@
  * Generate a URL-safe subdomain from a clinic name.
  *
  * Examples:
- *   "Cabinet Dr Ahmed"       → "dr-ahmed"
+ *   "Cabinet Dr [Nom]"       → "dr-nom"
  *   "Clinique Dentaire Fès"  → "clinique-dentaire-fes"
- *   "Dr. Fatima El Amrani"   → "dr-fatima-el-amrani"
+ *   "Dr. [Nom]"              → "dr-nom"
  *   "Pharmacie Ibn Sina"     → "pharmacie-ibn-sina"
  *
  * The function:

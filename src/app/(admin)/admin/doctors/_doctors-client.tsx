@@ -261,7 +261,7 @@ export default function DoctorsClient({ initialDoctors }: DoctorsClientProps) {
             <div className="space-y-2">
               <Label>Full Name</Label>
               <Input
-                placeholder="Dr. Ahmed Benali"
+                placeholder="Dr. [Nom]"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
               />

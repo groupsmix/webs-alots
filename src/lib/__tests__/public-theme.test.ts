@@ -5,6 +5,7 @@ import {
   readableForeground,
   templateRadius,
 } from "@/lib/public-theme";
+import type { TemplateDefinition } from "@/lib/templates";
 
 describe("readableForeground", () => {
   it("returns light (bone) text on dark brand colors", () => {
@@ -60,13 +61,15 @@ describe("buildPublicThemeStyle", () => {
     expect(style["--radius"]).toBeUndefined();
   });
 
-  it("sets --radius from the template borderRadius token", () => {
-    expect((buildPublicThemeStyle(branding, "none") as Record<string, string>)["--radius"]).toBe(
-      "0rem",
-    );
-    expect((buildPublicThemeStyle(branding, "xl") as Record<string, string>)["--radius"]).toBe(
-      "0.875rem",
-    );
+  it("sets --radius and template palette from the template", () => {
+    const noneTemplate = { id: "minimal", borderRadius: "none" } as unknown as TemplateDefinition;
+    const xlTemplate = { id: "elegant", borderRadius: "xl" } as unknown as TemplateDefinition;
+    expect(
+      (buildPublicThemeStyle(branding, noneTemplate) as Record<string, string>)["--radius"],
+    ).toBe("0rem");
+    expect(
+      (buildPublicThemeStyle(branding, xlTemplate) as Record<string, string>)["--radius"],
+    ).toBe("0.875rem");
   });
 });
 

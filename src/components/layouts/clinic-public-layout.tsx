@@ -28,13 +28,23 @@ export async function ClinicPublicLayout({ children }: { children: React.ReactNo
   const useOriginalFooter = template.footerVariant === "classic-3col";
 
   return (
-    <div style={buildPublicThemeStyle(branding, template.borderRadius)}>
+    <div style={buildPublicThemeStyle(branding, template)}>
       {useOriginalHeader ? (
-        <PublicHeader logoUrl={branding.logoUrl} clinicName={branding.clinicName} />
+        <PublicHeader
+          logoUrl={branding.logoUrl}
+          clinicName={branding.clinicName}
+          sectionVisibility={branding.sectionVisibility}
+          phone={branding.phone}
+          email={branding.email}
+          address={branding.address}
+        />
       ) : (
         <DynamicHeader
           logoUrl={branding.logoUrl}
           clinicName={branding.clinicName}
+          phone={branding.phone}
+          email={branding.email}
+          address={branding.address}
           headerVariant={template.headerVariant}
           template={template}
         />
@@ -43,12 +53,20 @@ export async function ClinicPublicLayout({ children }: { children: React.ReactNo
         {children}
       </main>
       {useOriginalFooter ? (
-        <PublicFooter clinicName={branding.clinicName} />
+        <PublicFooter
+          clinicName={branding.clinicName}
+          phone={branding.phone ?? undefined}
+          email={branding.email ?? undefined}
+          address={branding.address ?? undefined}
+        />
       ) : (
         <DynamicFooter
           clinicName={branding.clinicName}
           footerVariant={template.footerVariant}
           template={template}
+          phone={branding.phone}
+          email={branding.email}
+          address={branding.address}
         />
       )}
       <Chatbot />

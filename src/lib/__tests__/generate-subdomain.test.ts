@@ -17,12 +17,12 @@ function parts(value: string): { base: string; suffix: string } {
 
 describe("generateSubdomain", () => {
   it("appends a random alphanumeric suffix", () => {
-    const { suffix } = parts(generateSubdomain("Dr Ahmed"));
+    const { suffix } = parts(generateSubdomain("Dr Test"));
     expect(suffix).toMatch(/^[a-z0-9]{1,6}$/);
   });
 
   it("produces unique outputs for the same name (random suffix)", () => {
-    expect(generateSubdomain("Dr Ahmed")).not.toBe(generateSubdomain("Dr Ahmed"));
+    expect(generateSubdomain("Dr Test")).not.toBe(generateSubdomain("Dr Test"));
   });
 
   it("strips diacritics and lowercases", () => {
@@ -30,7 +30,7 @@ describe("generateSubdomain", () => {
   });
 
   it("strips common French prefixes when the remainder is meaningful", () => {
-    expect(parts(generateSubdomain("Cabinet Dr Ahmed")).base).toBe("dr-ahmed");
+    expect(parts(generateSubdomain("Cabinet Dr Test")).base).toBe("dr-test");
     expect(parts(generateSubdomain("Pharmacie Ibn Sina")).base).toBe("ibn-sina");
   });
 
@@ -40,7 +40,7 @@ describe("generateSubdomain", () => {
   });
 
   it("collapses runs of non-alphanumeric characters into single hyphens", () => {
-    expect(parts(generateSubdomain("Dr.  Fatima   El  Amrani")).base).toBe("dr-fatima-el-amrani");
+    expect(parts(generateSubdomain("Dr.  Demo   El  Clinic")).base).toBe("dr-demo-el-clinic");
   });
 
   it("falls back to 'clinic' for a name with no usable characters", () => {

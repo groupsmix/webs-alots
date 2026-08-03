@@ -90,7 +90,7 @@ export function ContactSection() {
                   required
                   value={doctorName}
                   onChange={(e) => setDoctorName(e.target.value)}
-                  placeholder="Dr Fatima Bennani"
+                  placeholder="Dr [Nom]"
                   className={inputClass}
                 />
               </div>

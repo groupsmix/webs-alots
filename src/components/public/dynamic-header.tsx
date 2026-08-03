@@ -25,6 +25,9 @@ interface DynamicHeaderProps {
   clinicName: string;
   headerVariant: HeaderVariant;
   template: TemplateDefinition;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
 /**
@@ -39,6 +42,9 @@ export function DynamicHeader({
   clinicName,
   headerVariant,
   template,
+  phone,
+  email,
+  address,
 }: DynamicHeaderProps) {
   const [locale] = useLocale();
 
@@ -55,6 +61,9 @@ export function DynamicHeader({
       clinicName={clinicName}
       navItems={navItems}
       template={template}
+      phone={phone}
+      email={email}
+      address={address}
     />
   );
 }

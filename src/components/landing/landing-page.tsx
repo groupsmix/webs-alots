@@ -10,8 +10,7 @@ import { OltigoLanding } from "./oltigo/oltigo-landing";
  * Clinic websites live on subdomains (e.g. dr-ahmed.oltigo.com).
  *
  * Two designs are available:
- *  - <OltigoLanding />        — the engineering-grade marketing landing
- *                               (ported from groupsmix/oltigo-landing).
+ *  - <OltigoLanding />        — the engineering-grade marketing landing.
  *  - <EditorialLandingPage /> — the previous editorial-institutional design.
  *
  * Flip USE_OLTIGO_LANDING to switch back; default is the new Oltigo landing.

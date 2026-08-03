@@ -234,7 +234,7 @@ export default function ProvisioningWizardPage() {
                   id="clinicName"
                   value={clinicName}
                   onChange={(e) => handleClinicNameChange(e.target.value)}
-                  placeholder="Clinique Dr. Ahmed"
+                  placeholder="Clinique Dr. [Nom]"
                 />
               </div>
               <div>
@@ -295,7 +295,7 @@ export default function ProvisioningWizardPage() {
                   id="ownerName"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  placeholder="Dr. Ahmed Benali"
+                  placeholder="Dr. [Nom]"
                 />
               </div>
               <div>

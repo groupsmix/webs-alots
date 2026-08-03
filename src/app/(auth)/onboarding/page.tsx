@@ -538,7 +538,7 @@ export default function OnboardingPage() {
             <Label htmlFor="ownerName">Nom complet *</Label>
             <Input
               id="ownerName"
-              placeholder="Dr. Ahmed Tazi"
+              placeholder="Dr. [Nom]"
               value={ownerName}
               onChange={(e) => setOwnerName(e.target.value)}
               autoFocus
@@ -653,7 +653,7 @@ export default function OnboardingPage() {
                 <Label htmlFor="clinicName">Nom de l&apos;&eacute;tablissement *</Label>
                 <Input
                   id="clinicName"
-                  placeholder="ex: Cabinet Dr. Ahmed"
+                  placeholder="ex: Cabinet Dr. [Nom]"
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   autoFocus

@@ -135,7 +135,7 @@ export default function DoctorInstallmentsPage() {
 
         <TabsContent value="create" className="mt-4">
           <InstallmentForm
-            patientName="Karim Mansouri"
+            patientName="Demo Patient"
             treatmentTitle="Full Mouth Rehabilitation"
             defaultTotal={15500}
           />

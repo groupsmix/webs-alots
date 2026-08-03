@@ -1,14 +1,35 @@
 import { MapPin, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { defaultWebsiteConfig } from "@/lib/website-config";
+import type { WebsiteConfig } from "@/lib/website-config";
 
-export function LocationSection() {
-  const loc = defaultWebsiteConfig.location;
+interface LocationSectionProps {
+  address?: string | null;
+  websiteConfig?: Record<string, unknown> | null;
+}
+
+export function LocationSection({ address, websiteConfig }: LocationSectionProps) {
+  const override = (websiteConfig?.location ?? {}) as Partial<WebsiteConfig["location"]>;
+  const loc = {
+    ...defaultWebsiteConfig.location,
+    ...override,
+  };
+  // Prefer the clinic's real address from branding; otherwise keep website-config override.
+  if (address) {
+    loc.address = address;
+  }
+
+  // Avoid duplicated city if the address string already contains it.
+  const displayAddressParts = [loc.address];
+  if (loc.city && !loc.address.toLowerCase().includes(loc.city.toLowerCase())) {
+    displayAddressParts.push(loc.city);
+  }
+  const displayAddress = displayAddressParts.filter(Boolean).join(", ");
 
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">Localisation &amp; Horaires</h2>
+        <h2 className="text-center text-3xl font-bold mb-4">{loc.title}</h2>
         <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">{loc.subtitle}</p>
         <div className="grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto">
           {/* Map */}
@@ -32,9 +53,7 @@ export function LocationSection() {
               )}
               <div className="flex items-start gap-2 mt-4">
                 <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-sm">
-                  {loc.address}, {loc.city}
-                </p>
+                <p className="text-sm">{displayAddress}</p>
               </div>
             </CardContent>
           </Card>

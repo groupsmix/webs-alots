@@ -32,7 +32,7 @@ function createMockVoiceClient(overrides?: {
     .fn()
     .mockResolvedValue({ data: [{}], error: overrides?.insertError ?? null });
   const orderLimitMock = vi.fn().mockResolvedValue({
-    data: overrides?.doctors ?? [{ id: "doc-1", name: "Ahmed Benali" }],
+    data: overrides?.doctors ?? [{ id: "doc-1", name: "Test Doctor" }],
     error: null,
   });
 
@@ -60,7 +60,7 @@ const baseMetadata = {
   clinicId: "clinic-1",
   clinicName: "Clinique Test",
   patientId: "patient-1",
-  patientName: "Ahmed",
+  patientName: "Patient",
 };
 
 // ── Tests for extractBookingEntities ──
@@ -75,14 +75,14 @@ describe("voice-booking-pipeline — extractBookingEntities", () => {
 
   it("extracts doctor name from French text", async () => {
     const { extractBookingEntities } = await import("@/lib/whatsapp/voice-booking-pipeline");
-    const result = extractBookingEntities("Je veux voir Dr. Ahmed demain à 15h00");
-    expect(result.doctorName).toBe("Ahmed");
+    const result = extractBookingEntities("Je veux voir Dr. Test demain à 15h00");
+    expect(result.doctorName).toBe("Test");
   });
 
   it("extracts doctor name from Darija text", async () => {
     const { extractBookingEntities } = await import("@/lib/whatsapp/voice-booking-pipeline");
-    const result = extractBookingEntities("bghi ndir rdv m3a docteur Benali");
-    expect(result.doctorName).toBe("Benali");
+    const result = extractBookingEntities("bghi ndir rdv m3a docteur Test");
+    expect(result.doctorName).toBe("Test");
   });
 
   it("extracts date from 'demain'", async () => {
@@ -137,8 +137,8 @@ describe("voice-booking-pipeline — extractBookingEntities", () => {
 
   it("handles text with all entities", async () => {
     const { extractBookingEntities } = await import("@/lib/whatsapp/voice-booking-pipeline");
-    const result = extractBookingEntities("Je veux une consultation avec Dr. Ahmed demain à 15h00");
-    expect(result.doctorName).toBe("Ahmed");
+    const result = extractBookingEntities("Je veux une consultation avec Dr. Test demain à 15h00");
+    expect(result.doctorName).toBe("Test");
     expect(result.dateStr).toBeTruthy();
     expect(result.timeStr).toBe("15:00");
     expect(result.serviceName).toBe("Consultation générale");
@@ -517,12 +517,12 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
           ok: true,
           json: vi
             .fn()
-            .mockResolvedValue({ text: "je veux voir Dr. Ahmed demain à 15h00", language: "fr" }),
+            .mockResolvedValue({ text: "je veux voir Dr. Test demain à 15h00", language: "fr" }),
         }),
     );
     const { handleVoiceMessage } = await import("@/lib/whatsapp/voice-booking-pipeline");
     const { sendTextMessage } = await import("@/lib/whatsapp");
-    const client = createMockVoiceClient({ doctors: [{ id: "doc-1", name: "Ahmed Benali" }] });
+    const client = createMockVoiceClient({ doctors: [{ id: "doc-1", name: "Test Doctor" }] });
     await handleVoiceMessage(client, baseMetadata);
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
@@ -546,7 +546,7 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
         .mockResolvedValueOnce({ ok: true, arrayBuffer: vi.fn().mockResolvedValue(audioBuffer) })
         .mockResolvedValueOnce({
           ok: true,
-          json: vi.fn().mockResolvedValue({ text: "Dr. Ahmed demain 15h00", language: "fr" }),
+          json: vi.fn().mockResolvedValue({ text: "Dr. Test demain 15h00", language: "fr" }),
         }),
     );
     const { handleVoiceMessage } = await import("@/lib/whatsapp/voice-booking-pipeline");
@@ -576,12 +576,12 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
         .mockResolvedValueOnce({ ok: true, arrayBuffer: vi.fn().mockResolvedValue(audioBuffer) })
         .mockResolvedValueOnce({
           ok: true,
-          json: vi.fn().mockResolvedValue({ text: "rendez-vous avec Dr. Ahmed", language: "fr" }),
+          json: vi.fn().mockResolvedValue({ text: "rendez-vous avec Dr. Test", language: "fr" }),
         }),
     );
     const { handleVoiceMessage } = await import("@/lib/whatsapp/voice-booking-pipeline");
     const { sendTextMessage } = await import("@/lib/whatsapp");
-    const client = createMockVoiceClient({ doctors: [{ id: "doc-1", name: "Ahmed Benali" }] });
+    const client = createMockVoiceClient({ doctors: [{ id: "doc-1", name: "Test Doctor" }] });
     await handleVoiceMessage(client, baseMetadata);
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
@@ -607,12 +607,12 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
           ok: true,
           json: vi
             .fn()
-            .mockResolvedValue({ text: "rendez-vous Dr. Zidane demain 15h00", language: "fr" }),
+            .mockResolvedValue({ text: "rendez-vous Dr. Inconnu demain 15h00", language: "fr" }),
         }),
     );
     const { handleVoiceMessage } = await import("@/lib/whatsapp/voice-booking-pipeline");
     const { sendTextMessage } = await import("@/lib/whatsapp");
-    const client = createMockVoiceClient({ doctors: [{ id: "doc-1", name: "Ahmed Benali" }] });
+    const client = createMockVoiceClient({ doctors: [{ id: "doc-1", name: "Test Doctor" }] });
     await handleVoiceMessage(client, baseMetadata);
     expect(sendTextMessage).toHaveBeenCalledWith(
       "+212600000000",
@@ -636,14 +636,14 @@ describe("voice-booking-pipeline — handleVoiceMessage", () => {
         .mockResolvedValueOnce({ ok: true, arrayBuffer: vi.fn().mockResolvedValue(audioBuffer) })
         .mockResolvedValueOnce({
           ok: true,
-          json: vi.fn().mockResolvedValue({ text: "Dr. Ahmed demain 15h00", language: "fr" }),
+          json: vi.fn().mockResolvedValue({ text: "Dr. Test demain 15h00", language: "fr" }),
         }),
     );
     const { handleVoiceMessage } = await import("@/lib/whatsapp/voice-booking-pipeline");
     const { sendTextMessage } = await import("@/lib/whatsapp");
     const client = createMockVoiceClient({
       insertError: { message: "DB error" },
-      doctors: [{ id: "doc-1", name: "Ahmed Benali" }],
+      doctors: [{ id: "doc-1", name: "Test Doctor" }],
     });
     await handleVoiceMessage(client, baseMetadata);
     expect(sendTextMessage).toHaveBeenCalledWith(

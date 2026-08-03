@@ -6,7 +6,8 @@ Thank you for your interest in contributing! This guide covers the conventions a
 
 ```bash
 # Clone and install
-git clone https://github.com/groupsmix/webs-alots.git
+# Replace <repository-url> with the actual URL of the repository
+git clone <repository-url>
 cd webs-alots
 npm install
 

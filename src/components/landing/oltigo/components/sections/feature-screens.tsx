@@ -86,7 +86,7 @@ export function RecordScreen({ dict }: { dict: Dictionary }) {
           <User className="size-4 text-text-secondary" strokeWidth={1.75} aria-hidden />
         </div>
         <div>
-          <p className="text-[13px] font-medium text-text">Yasmine Berrada</p>
+          <p className="text-[13px] font-medium text-text">Patient Name</p>
           <p className="text-[11px] text-text-muted">{dict.features[1].title} · 32 ans</p>
         </div>
         <Shield className="ms-auto size-4 text-emerald" strokeWidth={1.75} aria-hidden />
@@ -146,7 +146,7 @@ export function WhatsAppScreen({ dict }: { dict: Dictionary }) {
           CB
         </div>
         <div>
-          <p className="text-[13px] font-medium text-text">Cabinet Berrada</p>
+          <p className="text-[13px] font-medium text-text">Cabinet [Nom]</p>
           <p className="text-[10px] text-emerald">en ligne</p>
         </div>
       </div>

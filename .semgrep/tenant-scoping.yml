@@ -138,4 +138,4 @@ rules:
       technology:
         - supabase
       references:
-        - https://github.com/groupsmix/webs-alots/blob/main/AGENTS.md
+        - https://github.com/<owner>/<repo>/blob/main/AGENTS.md
