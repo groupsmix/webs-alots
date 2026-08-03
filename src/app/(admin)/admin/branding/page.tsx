@@ -110,6 +110,7 @@ export default function BrandingPage() {
   const [applyingPreset, setApplyingPreset] = useState<string | null>(null);
   const [appliedPreset, setAppliedPreset] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("presets");
+  const [dragOver, setDragOver] = useState<string | null>(null);
 
   const logoRef = useRef<HTMLInputElement>(null);
   const faviconRef = useRef<HTMLInputElement>(null);
@@ -122,15 +123,12 @@ export default function BrandingPage() {
     setInitialized(true);
   }
 
-  // Issue 8: Derive whether colors pass WCAG AA so we can block save
+  // Issue 8: Derive whether colors pass WCAG AA to show a warning
   const primaryPassesAA = meetsWCAG_AA("#ffffff", branding.primary_color);
   const secondaryPassesAA = meetsWCAG_AA("#ffffff", branding.secondary_color);
   const colorsPassContrast = primaryPassesAA && secondaryPassesAA;
 
   const handleSave = async () => {
-    // Issue 8: Block save when colors fail WCAG AA contrast validation
-    if (!colorsPassContrast) return;
-
     setSaving(true);
     try {
       const res = await fetch("/api/branding", {
@@ -166,6 +164,7 @@ export default function BrandingPage() {
   };
 
   const handleUpload = async (field: "logo" | "favicon" | "hero" | "cover", file: File) => {
+    if (!file) return;
     setUploading(field);
     try {
       const formData = new FormData();
@@ -207,6 +206,31 @@ export default function BrandingPage() {
       if (file) handleUpload(field, file);
     };
 
+  const onDragOver = (e: React.DragEvent, field: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(field);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(null);
+  };
+
+  const onDrop = (field: "logo" | "favicon" | "hero" | "cover") => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(null);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleUpload(field, file);
+  };
+
+  const dropClass = (field: string) =>
+    dragOver === field
+      ? "ring-2 ring-primary bg-primary/10 rounded-lg transition-colors"
+      : "rounded-lg transition-colors";
+
   if (loading) {
     return <PageLoader message="Loading branding settings..." />;
   }
@@ -238,10 +262,10 @@ export default function BrandingPage() {
         </div>
         <Button
           onClick={handleSave}
-          disabled={saving || !colorsPassContrast}
+          disabled={saving}
           title={
             !colorsPassContrast
-              ? "Corrigez le contraste des couleurs avant de sauvegarder"
+              ? "Le contraste des couleurs est insuffisant, mais vous pouvez quand même sauvegarder"
               : undefined
           }
         >
@@ -402,7 +426,13 @@ export default function BrandingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                <div
+                  className={`space-y-4 p-1 ${dropClass("logo")}`}
+                  onDragOver={(e) => onDragOver(e, "logo")}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop("logo")}
+                >
                   {branding.logo_url && (
                     <div className="border rounded-lg p-4 flex items-center justify-center bg-muted/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -454,7 +484,13 @@ export default function BrandingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                <div
+                  className={`space-y-4 p-1 ${dropClass("favicon")}`}
+                  onDragOver={(e) => onDragOver(e, "favicon")}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop("favicon")}
+                >
                   {branding.favicon_url && (
                     <div className="border rounded-lg p-4 flex items-center justify-center bg-muted/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -507,7 +543,13 @@ export default function BrandingPage() {
                 <CardDescription>Main image in the homepage hero section</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                <div
+                  className={`space-y-4 p-1 ${dropClass("hero")}`}
+                  onDragOver={(e) => onDragOver(e, "hero")}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop("hero")}
+                >
                   {branding.hero_image_url && (
                     <div className="border rounded-lg p-4 flex items-center justify-center bg-muted/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -560,7 +602,13 @@ export default function BrandingPage() {
                 <CardDescription>Wide banner image used across pages</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+                <div
+                  className={`space-y-4 p-1 ${dropClass("cover")}`}
+                  onDragOver={(e) => onDragOver(e, "cover")}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop("cover")}
+                >
                   {branding.cover_photo_url && (
                     <div className="border rounded-lg p-4 flex items-center justify-center bg-muted/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
