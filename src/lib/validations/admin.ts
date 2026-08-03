@@ -65,6 +65,11 @@ export const brandingUpdateSchema = z.object({
   tagline: z.string().max(500).optional(),
   phone: phoneNumber.optional(),
   address: z.string().max(500).optional(),
+  logo_url: z.string().max(1000).optional(),
+  favicon_url: z.string().max(1000).optional(),
+  hero_image_url: z.string().max(1000).optional(),
+  cover_photo_url: z.string().max(1000).optional(),
+  website_config: z.record(z.string(), z.unknown()).optional(),
   template_id: z.string().max(50).optional(),
   section_visibility: z.record(z.string(), z.boolean()).optional(),
 });

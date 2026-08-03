@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string */
 
 import {
   AlertCircle,
@@ -144,6 +145,10 @@ export default function BrandingPage() {
           secondary_color: branding.secondary_color,
           heading_font: branding.heading_font,
           body_font: branding.body_font,
+          logo_url: branding.logo_url,
+          favicon_url: branding.favicon_url,
+          hero_image_url: branding.hero_image_url,
+          cover_photo_url: branding.cover_photo_url,
         }),
       });
       if (!res.ok) {
@@ -408,6 +413,18 @@ export default function BrandingPage() {
                       />
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Ou coller l&apos;URL de l&apos;image
+                    </Label>
+                    <Input
+                      value={branding.logo_url ?? ""}
+                      onChange={(e) =>
+                        setBranding((p) => ({ ...p, logo_url: e.target.value || null }))
+                      }
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
                   <input
                     ref={logoRef}
                     type="file"
@@ -448,6 +465,18 @@ export default function BrandingPage() {
                       />
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Ou coller l&apos;URL de l&apos;image
+                    </Label>
+                    <Input
+                      value={branding.favicon_url ?? ""}
+                      onChange={(e) =>
+                        setBranding((p) => ({ ...p, favicon_url: e.target.value || null }))
+                      }
+                      placeholder="https://example.com/favicon.png"
+                    />
+                  </div>
                   <input
                     ref={faviconRef}
                     type="file"
@@ -489,6 +518,18 @@ export default function BrandingPage() {
                       />
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Ou coller l&apos;URL de l&apos;image
+                    </Label>
+                    <Input
+                      value={branding.hero_image_url ?? ""}
+                      onChange={(e) =>
+                        setBranding((p) => ({ ...p, hero_image_url: e.target.value || null }))
+                      }
+                      placeholder="https://example.com/hero.jpg"
+                    />
+                  </div>
                   <input
                     ref={heroRef}
                     type="file"
@@ -530,6 +571,18 @@ export default function BrandingPage() {
                       />
                     </div>
                   )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Ou coller l&apos;URL de l&apos;image
+                    </Label>
+                    <Input
+                      value={branding.cover_photo_url ?? ""}
+                      onChange={(e) =>
+                        setBranding((p) => ({ ...p, cover_photo_url: e.target.value || null }))
+                      }
+                      placeholder="https://example.com/cover.jpg"
+                    />
+                  </div>
                   <input
                     ref={coverRef}
                     type="file"

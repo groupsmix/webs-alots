@@ -15,6 +15,7 @@ import {
   FaqSection,
   BlogSection,
   LocationSection,
+  WhyChooseSection,
 } from "@/components/public/sections";
 import { ServicesPreview } from "@/components/public/services-preview";
 import { Card, CardContent } from "@/components/ui/card";
@@ -429,17 +430,31 @@ export default async function HomePage() {
   }
 
   if (sections.hero) {
-    renderers.hero = <HeroSection variant={template.heroStyle} overrides={heroOverrides} />;
+    renderers.hero = (
+      <HeroSection variant={template.heroStyle} template={template} overrides={heroOverrides} />
+    );
   }
-  if (sections.services) renderers.services = <ServicesPreview cardStyle={template.cardStyle} />;
-  if (sections.doctors) renderers.doctors = <DoctorsSection cardStyle={template.cardStyle} />;
+  if (sections.services)
+    renderers.services = <ServicesPreview cardStyle={template.cardStyle} template={template} />;
+  if (sections.why)
+    renderers.why = (
+      <WhyChooseSection cardStyle={template.cardStyle} clinicName={branding.clinicName} />
+    );
+  if (sections.doctors)
+    renderers.doctors = (
+      <DoctorsSection
+        cardStyle={template.cardStyle}
+        template={template}
+        clinicName={branding.clinicName}
+      />
+    );
   if (sections.reviews && topReviews.length > 0) renderers.reviews = reviewsSection;
   if (sections.blog) renderers.blog = <BlogSection />;
   if (sections.location)
     renderers.location = (
       <LocationSection address={branding.address} websiteConfig={branding.websiteConfig} />
     );
-  if (sections.booking) renderers.booking = <BookingSection />;
+  if (sections.booking) renderers.booking = <BookingSection template={template} />;
   if (sections.contactForm) renderers.contactForm = <ContactFormSection />;
   if (sections.insurance) renderers.insurance = <InsuranceSection />;
   if (sections.faq) renderers.faq = <FaqSection />;

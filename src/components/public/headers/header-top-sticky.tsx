@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { buttonVariants } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { HeaderProps } from "./index";
 
 /**
@@ -15,6 +16,7 @@ import type { HeaderProps } from "./index";
  *
  * Fixed to the top of the viewport with a border and backdrop blur.
  * Includes responsive hamburger menu for mobile.
+ * Switches to a premium, more spacious layout for the "premium" template.
  */
 export function HeaderTopSticky({
   logoUrl,
@@ -31,22 +33,27 @@ export function HeaderTopSticky({
   const displayName = clinicName || "Oltigo";
   const isRtl = template?.rtl ?? false;
   const hasContact = phone || email || address;
-
-  const [prevPathname, setPrevPathname] = useState(pathname);
-  if (prevPathname !== pathname) {
-    setPrevPathname(pathname);
-    if (mobileMenuOpen) setMobileMenuOpen(false);
-  }
+  const isPremium = template?.id === "premium";
 
   return (
     <header className="sticky top-0 z-50" dir={isRtl ? "rtl" : undefined}>
       {hasContact && (
-        <div className="bg-primary text-primary-foreground py-1.5 text-xs sm:text-sm">
+        <div
+          className={cn(
+            "text-xs sm:text-sm",
+            isPremium
+              ? "border-b border-border/40 bg-background py-2"
+              : "bg-primary text-primary-foreground py-1.5",
+          )}
+        >
           <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4 sm:justify-end">
             {phone && (
               <a
                 href={`tel:${phone}`}
-                className="inline-flex items-center gap-1.5 hover:underline truncate max-w-[60vw] sm:max-w-none"
+                className={cn(
+                  "inline-flex items-center gap-1.5 hover:underline truncate max-w-[60vw] sm:max-w-none",
+                  isPremium ? "text-muted-foreground" : "",
+                )}
               >
                 <Phone className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
                 <span className="truncate">{phone}</span>
@@ -55,14 +62,22 @@ export function HeaderTopSticky({
             {email && (
               <a
                 href={`mailto:${email}`}
-                className="hidden sm:inline-flex items-center gap-1.5 hover:underline"
+                className={cn(
+                  "hidden sm:inline-flex items-center gap-1.5 hover:underline",
+                  isPremium ? "text-muted-foreground" : "",
+                )}
               >
                 <Mail className="h-3 w-3" aria-hidden="true" />
                 {email}
               </a>
             )}
             {address && (
-              <span className="hidden sm:inline-flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "hidden sm:inline-flex items-center gap-1.5",
+                  isPremium ? "text-muted-foreground" : "",
+                )}
+              >
                 <MapPin className="h-3 w-3" aria-hidden="true" />
                 {address}
               </span>
@@ -71,19 +86,27 @@ export function HeaderTopSticky({
         </div>
       )}
 
-      <div className="border-b bg-background/95 backdrop-blur">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className={cn("border-b bg-background/95 backdrop-blur", isPremium && "shadow-sm")}>
+        <div
+          className={cn(
+            "container mx-auto flex items-center justify-between px-4",
+            isPremium ? "h-18 sm:h-20" : "h-16",
+          )}
+        >
           <Link
             href="/"
-            className="flex items-center gap-2 text-lg sm:text-xl font-bold text-foreground min-w-0"
+            className={cn(
+              "flex items-center gap-2 font-bold text-foreground min-w-0",
+              isPremium ? "text-xl sm:text-2xl" : "text-lg sm:text-xl",
+            )}
           >
             {logoUrl && (
               <Image
                 src={logoUrl}
                 alt={displayName}
-                width={36}
-                height={36}
-                className="h-8 sm:h-9 w-auto flex-shrink-0"
+                width={isPremium ? 44 : 36}
+                height={isPremium ? 44 : 36}
+                className="h-8 sm:h-10 w-auto flex-shrink-0"
               />
             )}
             <span className="truncate">{displayName}</span>
@@ -98,20 +121,34 @@ export function HeaderTopSticky({
                   key={item.href}
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`text-sm transition-colors ${
+                  className={cn(
+                    "text-sm transition-colors",
+                    isPremium && "text-base",
                     isActive
                       ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
                   {item.label}
                 </Link>
               );
             })}
-            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "default" })}>
+            <Link
+              href="/login"
+              className={cn(
+                buttonVariants({ variant: isPremium ? "ghost" : "ghost", size: "default" }),
+                isPremium && "hidden lg:inline-flex",
+              )}
+            >
               {t(locale, "public.doctorSpace")}
             </Link>
-            <Link href="/book" className={buttonVariants({ size: "default" })}>
+            <Link
+              href="/book"
+              className={cn(
+                buttonVariants({ size: isPremium ? "lg" : "default" }),
+                isPremium && "rounded-full px-6",
+              )}
+            >
               {t(locale, "public.patientSpace")}
             </Link>
           </nav>
@@ -146,25 +183,31 @@ export function HeaderTopSticky({
                   key={item.href}
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`text-base min-h-11 flex items-center ${
+                  className={cn(
+                    "text-base min-h-11 flex items-center",
                     isActive
                       ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               );
             })}
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="grid grid-cols-1 gap-3 pt-2">
               <Link
                 href="/login"
                 className={buttonVariants({ variant: "outline", className: "w-full" })}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 {t(locale, "public.doctorSpace")}
               </Link>
-              <Link href="/book" className={buttonVariants({ className: "w-full" })}>
+              <Link
+                href="/book"
+                className={cn(buttonVariants({ className: "w-full" }), isPremium && "rounded-full")}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 {t(locale, "public.patientSpace")}
               </Link>
             </div>
