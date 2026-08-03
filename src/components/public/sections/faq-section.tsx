@@ -25,10 +25,12 @@ const faqs = [
 
 export function FaqSection() {
   return (
-    <section className="py-16">
+    <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4 max-w-3xl">
-        <h2 className="text-center text-3xl font-bold mb-4">Questions Fréquentes</h2>
-        <p className="text-center text-muted-foreground mb-8">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-4">
+          Questions Fréquentes
+        </h2>
+        <p className="text-center text-muted-foreground mb-6 sm:mb-8">
           Trouvez les réponses aux questions les plus courantes sur nos services.
         </p>
         <div className="space-y-4">

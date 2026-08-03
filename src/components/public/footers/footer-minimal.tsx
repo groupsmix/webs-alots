@@ -24,7 +24,7 @@ export function FooterMinimal({ clinicName, template, phone, email, address }: F
       dir={isRtl ? "rtl" : undefined}
       aria-label={t(locale, "public.footerLabel")}
     >
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-5 sm:py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             © {year} {clinicName}

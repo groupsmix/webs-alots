@@ -42,24 +42,27 @@ export function HeaderTopSticky({
     <header className="sticky top-0 z-50" dir={isRtl ? "rtl" : undefined}>
       {hasContact && (
         <div className="bg-primary text-primary-foreground py-1.5 text-xs">
-          <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-4 sm:justify-end">
+          <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4 sm:justify-end">
             {phone && (
-              <a href={`tel:${phone}`} className="inline-flex items-center gap-1.5 hover:underline">
-                <Phone className="h-3 w-3" aria-hidden="true" />
-                {phone}
+              <a
+                href={`tel:${phone}`}
+                className="inline-flex items-center gap-1.5 hover:underline truncate max-w-[60vw] sm:max-w-none"
+              >
+                <Phone className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+                <span className="truncate">{phone}</span>
               </a>
             )}
             {email && (
               <a
                 href={`mailto:${email}`}
-                className="inline-flex items-center gap-1.5 hover:underline"
+                className="hidden sm:inline-flex items-center gap-1.5 hover:underline"
               >
                 <Mail className="h-3 w-3" aria-hidden="true" />
                 {email}
               </a>
             )}
             {address && (
-              <span className="inline-flex items-center gap-1.5">
+              <span className="hidden sm:inline-flex items-center gap-1.5">
                 <MapPin className="h-3 w-3" aria-hidden="true" />
                 {address}
               </span>
@@ -70,17 +73,20 @@ export function HeaderTopSticky({
 
       <div className="border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-lg sm:text-xl font-bold text-foreground min-w-0"
+          >
             {logoUrl && (
               <Image
                 src={logoUrl}
                 alt={displayName}
                 width={36}
                 height={36}
-                className="h-9 w-auto"
+                className="h-8 sm:h-9 w-auto flex-shrink-0"
               />
             )}
-            {displayName}
+            <span className="truncate">{displayName}</span>
           </Link>
 
           {/* Desktop navigation */}
@@ -130,7 +136,7 @@ export function HeaderTopSticky({
         <nav
           id="header-mobile-nav"
           aria-label="Navigation mobile"
-          className="border-b border-border bg-background/95 backdrop-blur px-4 py-4 md:hidden"
+          className="border-b border-border bg-background/95 backdrop-blur px-4 py-4 md:hidden max-h-[calc(100dvh-8rem)] overflow-y-auto"
         >
           <div className="flex flex-col gap-3">
             {navItems.map((item) => {
@@ -151,15 +157,17 @@ export function HeaderTopSticky({
                 </Link>
               );
             })}
-            <Link
-              href="/login"
-              className={buttonVariants({ variant: "outline", className: "mt-2" })}
-            >
-              {t(locale, "public.doctorSpace")}
-            </Link>
-            <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
-              {t(locale, "public.patientSpace")}
-            </Link>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Link
+                href="/login"
+                className={buttonVariants({ variant: "outline", className: "w-full" })}
+              >
+                {t(locale, "public.doctorSpace")}
+              </Link>
+              <Link href="/book" className={buttonVariants({ className: "w-full" })}>
+                {t(locale, "public.patientSpace")}
+              </Link>
+            </div>
           </div>
         </nav>
       )}

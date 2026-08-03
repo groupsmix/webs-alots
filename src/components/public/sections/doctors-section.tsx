@@ -24,14 +24,16 @@ export async function DoctorsSection({ cardStyle = "shadow" }: DoctorsSectionPro
   const uniqueDoctors = Array.from(seen.values());
 
   return (
-    <section className="py-16 bg-muted/30">
+    <section className="py-12 sm:py-16 bg-muted/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">Notre Équipe</h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-4">
+          Notre Équipe
+        </h2>
+        <p className="text-center text-muted-foreground mb-8 sm:mb-12 max-w-2xl mx-auto">
           Découvrez nos professionnels de santé dédiés à votre bien-être.
         </p>
         {uniqueDoctors.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
+          <div className="grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
             {uniqueDoctors.map((doctor) => (
               <Card key={doctor.id} className={publicCardClass(cardStyle)}>
                 <CardContent className="pt-6 text-center">

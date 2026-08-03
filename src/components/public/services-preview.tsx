@@ -28,10 +28,12 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
     .slice(0, 3);
 
   return (
-    <section className="py-16">
+    <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-12">Nos Services</h2>
-        <div className="grid gap-8 md:grid-cols-3">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-balance mb-8 sm:mb-12">
+          Nos Services
+        </h2>
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
           {uniqueServices.length > 0 ? (
             uniqueServices.map((service) => (
               <div
@@ -53,8 +55,8 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
             </p>
           )}
         </div>
-        <div className="mt-10 text-center">
-          <Link href="/services" className={linkBtnOutline}>
+        <div className="mt-8 sm:mt-10 text-center">
+          <Link href="/services" className={`${linkBtnOutline} w-full sm:w-auto`}>
             Voir tous les services
             <ArrowRight className="ms-2 h-4 w-4" />
           </Link>
