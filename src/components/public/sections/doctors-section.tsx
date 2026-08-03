@@ -66,10 +66,12 @@ export async function DoctorsSection({
                 {primaryDoctor.avatar ? (
                   <Image
                     src={primaryDoctor.avatar}
-                    alt={primaryDoctor.name}
+                    alt={`Dr. ${primaryDoctor.name}`}
                     width={520}
                     height={520}
                     className="relative rounded-[2rem] h-80 sm:h-[28rem] w-full object-cover shadow-2xl"
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                 ) : (
                   <div className="relative flex h-80 sm:h-[28rem] items-center justify-center rounded-[2rem] bg-card shadow-2xl">
@@ -147,10 +149,12 @@ export async function DoctorsSection({
                 {doctor.avatar ? (
                   <Image
                     src={doctor.avatar}
-                    alt={doctor.name}
+                    alt={`Dr. ${doctor.name}`}
                     width={96}
                     height={96}
                     className="rounded-full h-24 w-24 object-cover mx-auto mb-4"
+                    loading="lazy"
+                    sizes="96px"
                   />
                 ) : (
                   <Avatar className="h-24 w-24 mx-auto mb-4">

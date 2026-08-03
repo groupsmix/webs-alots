@@ -85,7 +85,13 @@ export function ContactForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">{t(locale, "contact.phone")}</Label>
-              <Input id="phone" name="phone" placeholder="+212 6XX XX XX XX" />
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+212 6XX XX XX XX"
+              />
             </div>
           </div>
           <div className="space-y-2">
