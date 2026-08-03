@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
+import { getSiteUrl } from "@/lib/env";
 import { t } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
@@ -53,7 +54,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   const articleSchema = {
     "@context": "https://schema.org",

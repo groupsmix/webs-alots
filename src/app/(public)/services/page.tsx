@@ -12,6 +12,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
+import { getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
@@ -36,7 +37,7 @@ export default async function ServicesPage() {
   const cfg = defaultWebsiteConfig.services;
 
   const services = await getPublicServices();
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   const servicesSchema = {
     "@context": "https://schema.org",

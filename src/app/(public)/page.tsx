@@ -20,6 +20,7 @@ import {
 import { ServicesPreview } from "@/components/public/services-preview";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
+import { getRootDomain } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
@@ -125,7 +126,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // Pull clinic branding for SEO-rich meta tags
   const branding = await getPublicBranding();
   const clinicName = branding.clinicName || tenant.clinicName || t(locale, "public.clinicFallback");
-  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
   const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
 
   const title = t(locale, "public.bookOnlineSuffix", { clinicName });
@@ -250,7 +251,7 @@ export default async function HomePage() {
   const topReviews = reviews.slice(0, 6);
 
   // Build LocalBusiness + MedicalOrganization structured data
-  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
   const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
   const clinicSchema = {
     "@context": "https://schema.org",

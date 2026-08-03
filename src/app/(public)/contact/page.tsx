@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ContactForm } from "@/components/public/contact-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicBranding } from "@/lib/data/public";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
@@ -15,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
   const h = await headers();
   const locale = (h.get("x-tenant-locale") as Locale) || "fr";
-  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
   const siteUrl = tenant ? `https://${tenant.subdomain}.${rootDomain}` : undefined;
 
   if (!tenant) {
@@ -80,7 +81,7 @@ export default async function ContactPage() {
   const whatsappLink = `https://wa.me/${whatsapp.replace(/\s+/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
   const showWhatsappCta = !isPlaceholderValue(whatsapp);
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   // F-3: The marketing contact page represents the Oltigo *Organization*, not a
   // MedicalBusiness — only a real clinic tenant is a MedicalBusiness. Emit only

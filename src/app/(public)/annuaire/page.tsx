@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getDirectoryCities, getDirectorySpecialties } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, DIRECTORY_SPECIALTIES } from "@/lib/directory-constants";
+import { getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 
@@ -16,7 +17,7 @@ export const metadata: Metadata = buildMetadata({
   path: "/annuaire",
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
+const BASE_URL = getSiteUrl() || "https://oltigo.com";
 
 export default async function AnnuairePage() {
   const [cities, specialties] = await Promise.all([

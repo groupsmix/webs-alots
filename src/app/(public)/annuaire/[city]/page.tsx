@@ -23,12 +23,13 @@ import {
   getDirectoryDoctors,
 } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, getCityBySlug, getSpecialtyBySlug } from "@/lib/directory-constants";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
-const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";
+const BASE_URL = getSiteUrl() || "https://oltigo.com";
+const ROOT_DOMAIN = getRootDomain() || "oltigo.com";
 
 interface PageProps {
   params: Promise<{ city: string }>;

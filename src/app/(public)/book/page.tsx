@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BookingForm } from "@/components/booking/booking-form";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
   const locale = (h.get("x-tenant-locale") as Locale) || "fr";
   const clinicName = tenant?.clinicName;
-  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
   const siteUrl = tenant ? `https://${tenant.subdomain}.${rootDomain}` : undefined;
 
   const title = clinicName ? `Prendre Rendez-vous — ${clinicName}` : "Prendre Rendez-vous";
@@ -41,7 +42,7 @@ export default async function BookingPage() {
 
   const h = await headers();
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   const bookingSchema = {
     "@context": "https://schema.org",

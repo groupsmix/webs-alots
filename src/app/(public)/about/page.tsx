@@ -13,6 +13,7 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getRootDomain } from "@/lib/env";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -30,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
       locale,
     });
   }
-  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
   return buildMetadata({
     title: "À propos — Notre Médecin",
     description:

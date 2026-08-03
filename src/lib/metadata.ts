@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { getSiteUrl } from "@/lib/env";
 import type { Locale } from "@/lib/i18n";
 
 const DEFAULT_SITE_URL = "https://oltigo.com";
 
 function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_SITE_URL;
+  return getSiteUrl() || DEFAULT_SITE_URL;
 }
 
 function getOgLocale(locale: Locale): string {

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
+import { getSiteUrl } from "@/lib/env";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -36,7 +37,7 @@ export default async function ReviewsPage() {
   const reviews = await getPublicReviews();
   const avgRating = await getPublicAverageRating();
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   const reviewsSchema = {
     "@context": "https://schema.org",
