@@ -107,6 +107,8 @@ export function HeaderTopSticky({
                 width={isPremium ? 44 : 36}
                 height={isPremium ? 44 : 36}
                 className="h-8 sm:h-10 w-auto flex-shrink-0"
+                priority
+                sizes={isPremium ? "44px" : "36px"}
               />
             )}
             <span className="truncate">{displayName}</span>

@@ -40,6 +40,8 @@ export function HeaderBottomBar({ logoUrl, clinicName, navItems, template }: Hea
                 width={28}
                 height={28}
                 className="h-7 w-auto"
+                priority
+                sizes="28px"
               />
             )}
             {displayName}

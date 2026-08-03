@@ -16,9 +16,9 @@ const button = cva(
         outline: "border border-hairline text-text hover:border-emerald/60",
       },
       size: {
-        sm: "h-9 px-3.5 text-[13px]",
-        md: "h-11 px-5 text-sm",
-        lg: "h-12 px-6 text-[15px]",
+        sm: "h-9 min-h-11 px-3.5 text-[13px]",
+        md: "h-11 min-h-11 px-5 text-sm",
+        lg: "h-12 min-h-11 px-6 text-[15px]",
       },
     },
     defaultVariants: { variant: "secondary", size: "md" },

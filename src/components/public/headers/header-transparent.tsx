@@ -63,6 +63,8 @@ export function HeaderTransparent({ logoUrl, clinicName, navItems, template }: H
               width={32}
               height={32}
               className="h-8 w-auto flex-shrink-0"
+              priority
+              sizes="32px"
             />
           )}
           <span className="truncate">{displayName}</span>

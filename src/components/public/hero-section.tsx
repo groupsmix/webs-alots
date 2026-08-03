@@ -110,11 +110,12 @@ export function HeroSection({ overrides, variant = "split", template }: HeroSect
                 {cfg.imageUrl ? (
                   <Image
                     src={cfg.imageUrl}
-                    alt="Cabinet médical"
+                    alt={cfg.title ? `Photo du cabinet ${cfg.title}` : "Cabinet médical"}
                     width={600}
                     height={500}
                     className="rounded-[1.75rem] h-80 sm:h-96 w-full object-cover"
                     priority
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                 ) : (
                   <div className="flex h-80 sm:h-96 items-center justify-center rounded-[1.75rem] bg-card">
@@ -200,10 +201,12 @@ export function HeroSection({ overrides, variant = "split", template }: HeroSect
             {cfg.imageUrl ? (
               <Image
                 src={cfg.imageUrl}
-                alt="Clinic"
+                alt={cfg.title ? `Photo du cabinet ${cfg.title}` : "Cabinet médical"}
                 width={500}
                 height={384}
                 className="rounded-2xl shadow-xl max-h-96 object-cover"
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
               />
             ) : (
               <div className="relative h-80 w-full max-w-md" aria-hidden="true">
