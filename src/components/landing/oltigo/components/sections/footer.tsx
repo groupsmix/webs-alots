@@ -22,8 +22,8 @@ import { Wordmark } from "./section-kit";
  */
 const FOOTER_HREFS: string[][] = [
   // 0 — Product / Produit / المنتج
-  // Appointments · Records · WhatsApp · Pricing
-  ["/features/appointments", "/features/records", "/features/whatsapp", "/pricing"],
+  // Appointments · Records · WhatsApp · Pricing · Comparison
+  ["/features/appointments", "/features/records", "/features/whatsapp", "/pricing", "/compare"],
   // 1 — Resources / Ressources / الموارد
   // API docs · Getting started · FAQ · Tutorials · Status · Blog
   ["/api-docs", "/how-to-book", "/faq", "/tutoriel", "/status", "/blog"],

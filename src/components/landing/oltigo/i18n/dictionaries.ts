@@ -448,7 +448,10 @@ const fr: Dictionary = {
   footer: {
     tagline: "Le système d’exploitation discret des cabinets médicaux au Maroc.",
     columns: [
-      { title: "Produit", links: ["Rendez-vous", "Dossier patient", "Rappels WhatsApp", "Tarifs"] },
+      {
+        title: "Produit",
+        links: ["Rendez-vous", "Dossier patient", "Rappels WhatsApp", "Tarifs", "Comparatif"],
+      },
       {
         title: "Ressources",
         links: ["Documentation", "Guide de démarrage", "FAQ", "Tutoriels", "Statut", "Blog"],
@@ -737,7 +740,10 @@ const ar: Dictionary = {
   footer: {
     tagline: "نظام التشغيل الهادئ للعيادات الطبية في المغرب.",
     columns: [
-      { title: "المنتج", links: ["المواعيد", "ملف المريض", "تذكيرات واتساب", "الأسعار"] },
+      {
+        title: "المنتج",
+        links: ["المواعيد", "ملف المريض", "تذكيرات واتساب", "الأسعار", "المقارنة"],
+      },
       {
         title: "الموارد",
         links: ["التوثيق", "دليل البدء", "الأسئلة الشائعة", "الدروس", "الحالة", "المدونة"],
@@ -1047,7 +1053,7 @@ const en: Dictionary = {
     columns: [
       {
         title: "Product",
-        links: ["Appointments", "Patient record", "WhatsApp reminders", "Pricing"],
+        links: ["Appointments", "Patient record", "WhatsApp reminders", "Pricing", "Comparison"],
       },
       {
         title: "Resources",

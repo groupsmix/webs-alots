@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/lighthouserc.json",
+  "ci": {
+    "collect": {
+      "startServerCommand": "npm start",
+      "url": [
+        "http://localhost:3000/",
+        "http://localhost:3000/services/",
+        "http://localhost:3000/pricing/",
+        "http://localhost:3000/faq/",
+        "http://localhost:3000/contact/",
+        "http://localhost:3000/compare/",
+        "http://localhost:3000/tutoriel/",
+        "http://localhost:3000/api-docs/"
+      ],
+      "numberOfRuns": 1,
+      "settings": {
+        "chromeFlags": "--no-sandbox --headless --disable-gpu"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": [{ "level": "warn", "minScore": 0.7 }],
+        "categories:accessibility": [{ "level": "error", "minScore": 0.9 }],
+        "categories:best-practices": [{ "level": "error", "minScore": 0.9 }],
+        "categories:seo": [{ "level": "error", "minScore": 0.9 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem"
+    }
+  }
+}
