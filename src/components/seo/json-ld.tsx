@@ -6,16 +6,16 @@ interface JsonLdScriptProps {
 }
 
 export function JsonLdScript({ data, nonce }: JsonLdScriptProps) {
-  return (
-    // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection.
-    // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
-    <script
-      type="application/ld+json"
-      nonce={nonce}
-      suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(data) }}
-    />
-  );
+  // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection.
+  // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
+  const scriptProps: React.JSX.IntrinsicElements["script"] = {
+    type: "application/ld+json",
+    nonce,
+    suppressHydrationWarning: true,
+    dangerouslySetInnerHTML: { __html: safeJsonLdStringify(data) },
+  };
+
+  return <script {...scriptProps} />;
 }
 
 interface WebSiteJsonLdProps {
