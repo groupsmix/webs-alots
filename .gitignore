@@ -52,6 +52,9 @@ next-env.d.ts
 # Generated API docs (rebuild with: npm run docs:generate)
 /docs/api
 
+# Lighthouse CI local artifacts
+/.lighthouseci/
+
 # AI eval results (generated, uploaded as CI artifacts)
 evals/results/
 evals/baselines/
