@@ -25,8 +25,8 @@ const FOOTER_HREFS: string[][] = [
   // Appointments · Records · WhatsApp · Pricing · Comparison
   ["/features/appointments", "/features/records", "/features/whatsapp", "/pricing", "/compare"],
   // 1 — Resources / Ressources / الموارد
-  // API docs · Getting started · FAQ · Tutorials · Status · Blog
-  ["/api-docs", "/how-to-book", "/faq", "/tutoriel", "/status", "/blog"],
+  // API docs · Getting started · FAQ · Tutorials · Status · Blog · Sitemap
+  ["/api-docs", "/how-to-book", "/faq", "/tutoriel", "/status", "/blog", "/plan-du-site"],
   // 2 — Company / Entreprise / الشركة
   // About · Contact · Careers · Partners · Changelog
   ["/about", "/contact", "/carriere", "/partenaires", "/versions"],

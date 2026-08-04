@@ -454,7 +454,15 @@ const fr: Dictionary = {
       },
       {
         title: "Ressources",
-        links: ["Documentation", "Guide de démarrage", "FAQ", "Tutoriels", "Statut", "Blog"],
+        links: [
+          "Documentation",
+          "Guide de démarrage",
+          "FAQ",
+          "Tutoriels",
+          "Statut",
+          "Blog",
+          "Plan du site",
+        ],
       },
       {
         title: "Entreprise",
@@ -746,7 +754,15 @@ const ar: Dictionary = {
       },
       {
         title: "الموارد",
-        links: ["التوثيق", "دليل البدء", "الأسئلة الشائعة", "الدروس", "الحالة", "المدونة"],
+        links: [
+          "التوثيق",
+          "دليل البدء",
+          "الأسئلة الشائعة",
+          "الدروس",
+          "الحالة",
+          "المدونة",
+          "خريطة الموقع",
+        ],
       },
       { title: "الشركة", links: ["من نحن", "اتصل بنا", "وظائف", "شركاء", "الإصدارات"] },
       {
@@ -1057,7 +1073,15 @@ const en: Dictionary = {
       },
       {
         title: "Resources",
-        links: ["Documentation", "Getting started", "FAQ", "Tutorials", "Status", "Blog"],
+        links: [
+          "Documentation",
+          "Getting started",
+          "FAQ",
+          "Tutorials",
+          "Status",
+          "Blog",
+          "Sitemap",
+        ],
       },
       { title: "Company", links: ["About", "Contact", "Careers", "Partners", "Changelog"] },
       { title: "Legal", links: ["Privacy", "Terms", "Sub-processors", "Security", "Cookies"] },
