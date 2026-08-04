@@ -1,5 +1,23 @@
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
+interface JsonLdScriptProps {
+  data: unknown;
+  nonce?: string;
+}
+
+export function JsonLdScript({ data, nonce }: JsonLdScriptProps) {
+  return (
+    // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection.
+    // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
+    <script
+      type="application/ld+json"
+      nonce={nonce}
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(data) }}
+    />
+  );
+}
+
 interface WebSiteJsonLdProps {
   url: string;
   name: string;
@@ -27,13 +45,7 @@ export function WebSiteJsonLd({ url, name, searchUrl, nonce }: WebSiteJsonLdProp
       : {}),
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      nonce={nonce}
-      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(website) }}
-    />
-  );
+  return <JsonLdScript data={website} nonce={nonce} />;
 }
 
 interface BreadcrumbJsonLdProps {
@@ -53,11 +65,5 @@ export function BreadcrumbJsonLd({ items, nonce }: BreadcrumbJsonLdProps) {
     })),
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      nonce={nonce}
-      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumb) }}
-    />
-  );
+  return <JsonLdScript data={breadcrumb} nonce={nonce} />;
 }

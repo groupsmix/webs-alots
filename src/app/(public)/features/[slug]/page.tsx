@@ -3,10 +3,9 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { FeatureDetailView } from "@/components/landing/oltigo/components/sections/feature-detail-view";
 import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { getSiteUrl } from "@/lib/env";
 import { type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 
 const FEATURE_SLUGS = ["appointments", "records", "whatsapp"] as const;
@@ -146,16 +145,8 @@ export default async function FeaturePage({ params }: FeaturePageProps) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(serviceSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(howToSchema) }}
-      />
+      <JsonLdScript data={serviceSchema} nonce={nonce} />
+      <JsonLdScript data={howToSchema} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[
