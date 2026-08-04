@@ -25,11 +25,11 @@ const FOOTER_HREFS: string[][] = [
   // Appointments · Records · WhatsApp · Pricing
   ["/features/appointments", "/features/records", "/features/whatsapp", "/pricing"],
   // 1 — Resources / Ressources / الموارد
-  // API docs · Getting started · FAQ · Status · Blog
-  ["/api-docs", "/how-to-book", "/faq", "/status", "/blog"],
+  // API docs · Getting started · FAQ · Tutorials · Status · Blog
+  ["/api-docs", "/how-to-book", "/faq", "/tutoriel", "/status", "/blog"],
   // 2 — Company / Entreprise / الشركة
-  // About · Contact · Careers · Partners
-  ["/about", "/contact", "/carriere", "/partenaires"],
+  // About · Contact · Careers · Partners · Changelog
+  ["/about", "/contact", "/carriere", "/partenaires", "/versions"],
   // 3 — Legal / Légal / قانوني
   // Privacy · Terms · Sub-processors · Security · Cookies
   ["/privacy", "/terms", "/sub-processors", "/security", "/cookies"],
@@ -141,7 +141,12 @@ export function Footer() {
               <Shield className="size-3.5 text-emerald" aria-hidden="true" />
               {dict.footer.cndp}
             </span>
-            <p className="telemetry tracking-wide">{dict.footer.law}</p>
+            <Link
+              href="/loi-09-08"
+              className="telemetry tracking-wide hover:text-text transition-colors min-h-11 flex items-center"
+            >
+              {dict.footer.law}
+            </Link>
           </div>
         </div>
       </div>

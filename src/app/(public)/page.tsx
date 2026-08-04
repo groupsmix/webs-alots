@@ -204,6 +204,17 @@ export default async function HomePage() {
         acceptedAnswer: { "@type": "Answer", text: item.a },
       })),
     };
+    const webPageJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": siteUrl,
+      url: siteUrl,
+      name: "Oltigo — Système d'exploitation des cabinets médicaux au Maroc",
+      speakable: {
+        "@type": "SpeakableSpecification",
+        cssSelector: ["#speakable-summary"],
+      },
+    };
     return (
       <>
         <script
@@ -224,6 +235,17 @@ export default async function HomePage() {
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(faqJsonLd) }}
         />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(webPageJsonLd) }}
+        />
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <div id="speakable-summary" className="sr-only">
+          Oltigo est une plateforme SaaS marocaine de gestion de cabinets médicaux : rendez-vous en
+          ligne, dossier patient chiffré, rappels WhatsApp en darija et paiements sécurisés.
+        </div>
         <LandingPage />
       </>
     );
