@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/env";
 
 /**
  * Robots.txt configuration.
  * Next.js serves this at /robots.txt automatically.
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   return {
     rules: [
@@ -33,6 +34,15 @@ export default function robots(): MetadataRoute.Robots {
           "/accessibility",
           "/status",
           "/api-docs",
+          "/faq",
+          "/cookies",
+          "/carriere",
+          "/partenaires",
+          "/features",
+          "/features/",
+          "/loi-09-08",
+          "/versions",
+          "/tutoriel",
           "/doctor-profile",
           "/doctor-services",
           "/annuaire",

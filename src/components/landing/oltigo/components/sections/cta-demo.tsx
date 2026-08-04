@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, ArrowRight, CheckCircle2, MessageCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Reveal } from "@/components/landing/oltigo/components/primitives/reveal";
 import { Button } from "@/components/landing/oltigo/components/ui/button";
@@ -26,6 +27,7 @@ const whatsAppHref = (() => {
 
 export function CtaDemo() {
   const { dict, locale } = useI18n();
+  const router = useRouter();
   const c = dict.cta;
   const [status, setStatus] = useState<Status>("idle");
   const [consent, setConsent] = useState(false);
@@ -59,6 +61,7 @@ export function CtaDemo() {
       if (res.ok && json?.ok) {
         setStatus("success");
         form.reset();
+        router.push("/merci");
       } else {
         setStatus("error");
       }
@@ -153,6 +156,7 @@ export function CtaDemo() {
               size="lg"
               className="mt-5 w-full"
               disabled={status === "submitting" || !consent}
+              data-event="demo-form-submit"
             >
               {status === "submitting" ? c.submitting : c.submit}
               {status !== "submitting" && (

@@ -60,8 +60,11 @@
      Landing-specific font stacks. Namespaced (suffix `-landing`) so they do
      not clobber --font-sans / --font-mono which are the app-wide theme tokens
      consumed by Tailwind v4's @theme inline in globals.css. */
-  --font-sans-landing: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono-landing: "JetBrains Mono", "Geist Mono", ui-monospace, "Cascadia Code", monospace;
+  --font-sans-landing:
+    var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono-landing:
+    var(--font-jetbrains-mono), "JetBrains Mono", "Geist Mono", ui-monospace, "Cascadia Code",
+    monospace;
   --font-arabic:
     var(--font-ibm-plex-arabic), "IBM Plex Sans Arabic", "Noto Sans Arabic",
     var(--font-noto-arabic), sans-serif;

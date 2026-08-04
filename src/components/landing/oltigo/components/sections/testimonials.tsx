@@ -46,6 +46,9 @@ export function Testimonials() {
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"
+                        sizes="40px"
+                        decoding="async"
+                        fetchPriority="low"
                       />
                     ) : (
                       getInitials(t.name)

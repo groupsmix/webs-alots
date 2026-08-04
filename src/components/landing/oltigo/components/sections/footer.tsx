@@ -22,17 +22,17 @@ import { Wordmark } from "./section-kit";
  */
 const FOOTER_HREFS: string[][] = [
   // 0 — Product / Produit / المنتج
-  ["/#appointments", "/#records", "/#whatsapp", "/pricing"],
+  // Appointments · Records · WhatsApp · Pricing
+  ["/features/appointments", "/features/records", "/features/whatsapp", "/pricing"],
   // 1 — Resources / Ressources / الموارد
-  ["/api-docs", "/how-to-book", "/status", "/blog"],
+  // API docs · Getting started · FAQ · Tutorials · Status · Blog
+  ["/api-docs", "/how-to-book", "/faq", "/tutoriel", "/status", "/blog"],
   // 2 — Company / Entreprise / الشركة
-  // Carrières / Partenaires fall back to About / Contact until dedicated pages exist.
-  ["/about", "/contact", "/about", "/contact"],
+  // About · Contact · Careers · Partners · Changelog
+  ["/about", "/contact", "/carriere", "/partenaires", "/versions"],
   // 3 — Legal / Légal / قانوني
-  // Labels (parallel by position): Confidentialité · Conditions · Sous-traitants · Sécurité
-  // "Sécurité" now points at a styled security page; the RFC 9116 machine-readable
-  // file remains reachable at /.well-known/security.txt from that page.
-  ["/privacy", "/terms", "/sub-processors", "/security"],
+  // Privacy · Terms · Sub-processors · Security · Cookies
+  ["/privacy", "/terms", "/sub-processors", "/security", "/cookies"],
 ];
 
 /** On-page anchors and real routes use Next.js client navigation.
@@ -76,14 +76,14 @@ export function Footer() {
             <div className="mt-5 space-y-1.5">
               <a
                 href={`tel:${defaultWebsiteConfig.contact.phone.replace(/\s|-/g, "")}`}
-                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text"
+                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text min-h-11"
               >
                 <Phone className="size-3.5 text-text-muted" aria-hidden="true" />
                 {defaultWebsiteConfig.contact.phone}
               </a>
               <a
                 href={`mailto:${defaultWebsiteConfig.contact.email}`}
-                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text"
+                className="flex items-center gap-2 text-[12.5px] text-text-secondary transition-colors hover:text-text min-h-11"
               >
                 <Mail className="size-3.5 text-text-muted" aria-hidden="true" />
                 {defaultWebsiteConfig.contact.email}
@@ -110,7 +110,7 @@ export function Footer() {
                           href={href}
                           rel="noopener"
                           target="_blank"
-                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
+                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text min-h-11 flex items-center"
                         >
                           {link}
                         </a>
@@ -119,7 +119,7 @@ export function Footer() {
                           href={href}
                           {...(isAnchor(href) ? {} : { rel: "noopener" })}
                           {...(isExternal(href) ? { target: "_blank", rel: "noopener" } : {})}
-                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text"
+                          className="text-[13.5px] text-text-secondary transition-colors hover:text-text min-h-11 flex items-center"
                         >
                           {link}
                         </Link>
@@ -141,7 +141,12 @@ export function Footer() {
               <Shield className="size-3.5 text-emerald" aria-hidden="true" />
               {dict.footer.cndp}
             </span>
-            <p className="telemetry tracking-wide">{dict.footer.law}</p>
+            <Link
+              href="/loi-09-08"
+              className="telemetry tracking-wide hover:text-text transition-colors min-h-11 flex items-center"
+            >
+              {dict.footer.law}
+            </Link>
           </div>
         </div>
       </div>

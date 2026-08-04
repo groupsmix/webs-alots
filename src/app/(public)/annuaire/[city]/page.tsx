@@ -9,9 +9,11 @@ import {
   Building2,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -24,7 +26,6 @@ import {
 } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, getCityBySlug, getSpecialtyBySlug } from "@/lib/directory-constants";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
@@ -84,8 +85,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 function DoctorProfileView({
   doctor,
+  nonce,
 }: {
   doctor: NonNullable<Awaited<ReturnType<typeof getDirectoryDoctorBySlug>>>;
+  nonce?: string;
 }) {
   const city = getCityBySlug(doctor.citySlug);
   const specialty = getSpecialtyBySlug(doctor.specialtySlug);
@@ -133,10 +136,7 @@ function DoctorProfileView({
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} nonce={nonce} />
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
@@ -338,11 +338,13 @@ function CityListingView({
   city,
   doctors,
   specialties,
+  nonce,
 }: {
   citySlug: string;
   city: NonNullable<ReturnType<typeof getCityBySlug>>;
   doctors: Awaited<ReturnType<typeof getDirectoryDoctorsByCity>>;
   specialties: Awaited<ReturnType<typeof getDirectorySpecialtiesInCity>>;
+  nonce?: string;
 }) {
   const jsonLd = {
     "@context": "https://schema.org",
@@ -358,10 +360,7 @@ function CityListingView({
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} nonce={nonce} />
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
@@ -497,12 +496,28 @@ function CityListingView({
 
 export default async function CityOrDoctorPage({ params }: PageProps) {
   const { city: slug } = await params;
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
 
   // Doctor profile page (slug starts with "dr-")
   if (isDoctorSlug(slug)) {
     const doctor = await getDirectoryDoctorBySlug(slug);
     if (!doctor) notFound();
-    return <DoctorProfileView doctor={doctor} />;
+    const cityForBreadcrumb = getCityBySlug(doctor.citySlug);
+    const breadcrumbItems = [
+      { name: "Accueil", url: BASE_URL },
+      { name: "Annuaire", url: `${BASE_URL}/annuaire` },
+      ...(cityForBreadcrumb
+        ? [{ name: cityForBreadcrumb.name, url: `${BASE_URL}/annuaire/${cityForBreadcrumb.slug}` }]
+        : []),
+      { name: doctor.name, url: `${BASE_URL}/annuaire/${doctor.slug}` },
+    ];
+    return (
+      <>
+        <BreadcrumbJsonLd nonce={nonce} items={breadcrumbItems} />
+        <DoctorProfileView doctor={doctor} nonce={nonce} />
+      </>
+    );
   }
 
   // City listing page
@@ -515,6 +530,22 @@ export default async function CityOrDoctorPage({ params }: PageProps) {
   ]);
 
   return (
-    <CityListingView citySlug={slug} city={city} doctors={doctors} specialties={specialties} />
+    <>
+      <BreadcrumbJsonLd
+        nonce={nonce}
+        items={[
+          { name: "Accueil", url: BASE_URL },
+          { name: "Annuaire", url: `${BASE_URL}/annuaire` },
+          { name: city.name, url: `${BASE_URL}/annuaire/${city.slug}` },
+        ]}
+      />
+      <CityListingView
+        citySlug={slug}
+        city={city}
+        doctors={doctors}
+        specialties={specialties}
+        nonce={nonce}
+      />
+    </>
   );
 }

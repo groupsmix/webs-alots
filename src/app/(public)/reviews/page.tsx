@@ -1,10 +1,11 @@
 import { Star } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { JsonLdScript } from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
 import { getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
@@ -32,6 +33,8 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default async function ReviewsPage() {
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
   const cfg = defaultWebsiteConfig.reviews;
 
   const reviews = await getPublicReviews();
@@ -61,12 +64,7 @@ export default async function ReviewsPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection
-        // from database-sourced fields (patientName, comment, date).
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(reviewsSchema) }}
-      />
+      <JsonLdScript data={reviewsSchema} nonce={nonce} />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto mb-6">{cfg.subtitle}</p>

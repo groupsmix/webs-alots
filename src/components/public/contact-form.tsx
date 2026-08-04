@@ -85,7 +85,13 @@ export function ContactForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">{t(locale, "contact.phone")}</Label>
-              <Input id="phone" name="phone" placeholder="+212 6XX XX XX XX" />
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+212 6XX XX XX XX"
+              />
             </div>
           </div>
           <div className="space-y-2">
@@ -110,7 +116,12 @@ export function ContactForm() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading}
+            data-event="cta-contact-submit"
+          >
             {loading ? t(locale, "contact.submitting") : t(locale, "contact.submit")}
           </Button>
         </form>

@@ -8,12 +8,14 @@ import {
 } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+import { TrackEvents } from "@/components/analytics/track-events";
 import { ConsentGatedReplay } from "@/components/consent-gated-replay";
 import { CookieConsent } from "@/components/cookie-consent";
 import { MaskingBuildSentinel } from "@/components/masking-build-sentinel";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { PlausibleScript } from "@/components/plausible-script";
+import { WebSiteJsonLd } from "@/components/seo/json-ld";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -173,6 +175,7 @@ export default async function RootLayout({
   // — without it, the publicly-cached page can only ever serve the French
   // default since the cache key does not vary on the preferred-locale cookie.
   const headerStore = await headers();
+  const nonce = headerStore.get("x-nonce") || undefined;
   const explicitLocale = headerStore.get("x-locale");
   const cookieStore = await import("next/headers").then((m) => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale | undefined;
@@ -182,6 +185,7 @@ export default async function RootLayout({
     preferredLocale ||
     tenantLocale;
   const dir = getDirFromLocale(locale);
+  const siteUrl = getSiteUrl() || "https://oltigo.com";
 
   return (
     <html
@@ -198,8 +202,19 @@ export default async function RootLayout({
             <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
           </>
         )}
+        {/* Preconnect to Google Fonts and clinic image CDN for faster LCP */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://uploads.oltigo.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://uploads.oltigo.com" />
       </head>
       <body className="min-h-full flex flex-col">
+        <WebSiteJsonLd
+          url={siteUrl}
+          name="Oltigo"
+          searchUrl={`${siteUrl}/annuaire?q={search_term_string}`}
+          nonce={nonce}
+        />
         {/* Skip-to-content link for keyboard / screen-reader accessibility (WCAG 2.4.1) */}
         <a
           href="#main-content"
@@ -207,8 +222,9 @@ export default async function RootLayout({
         >
           {t(locale, "nav.skipToContent")}
         </a>
-        {/* JSON-LD structured data is rendered on public pages only (Issue 59).
-            See src/app/(public)/page.tsx for clinic-specific schema. */}
+        {/* Global WebSite JSON-LD is rendered here; page-specific structured
+            data (Organization, SoftwareApplication, LocalBusiness, FAQPage,
+            etc.) is rendered on individual public pages. */}
         <ThemeProvider>
           <ToastProvider>
             <TenantProvider tenant={tenant}>
@@ -241,6 +257,7 @@ export default async function RootLayout({
         <ConsentGatedReplay />
         <ServiceWorkerRegister />
         <PlausibleScript />
+        <TrackEvents />
         {/*
           Audit 2026-06-09 Task 2: invisible sentinel that embeds the
           build-time NEXT_PUBLIC_DATA_MASKING value in the client bundle so

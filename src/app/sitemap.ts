@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
 import { getDirectoryDoctors } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { isAllowedSubdomain } from "@/lib/reserved-subdomains";
 import type { Database } from "@/lib/types/database";
@@ -32,8 +33,8 @@ function createSitemapAnonClient() {
  * so Google can discover clinic-specific pages.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
-  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const baseUrl = getSiteUrl() || "https://oltigo.com";
+  const rootDomain = getRootDomain() || "oltigo.com";
   const now = new Date();
 
   // Static pages on the root domain
@@ -58,6 +59,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/accessibility", priority: 0.3, changeFrequency: "yearly" as const },
     { path: "/status", priority: 0.3, changeFrequency: "daily" as const },
     { path: "/api-docs", priority: 0.5, changeFrequency: "monthly" as const },
+    { path: "/faq", priority: 0.6, changeFrequency: "monthly" as const },
+    { path: "/cookies", priority: 0.3, changeFrequency: "yearly" as const },
+    { path: "/carriere", priority: 0.4, changeFrequency: "monthly" as const },
+    { path: "/partenaires", priority: 0.4, changeFrequency: "monthly" as const },
+    { path: "/features", priority: 0.8, changeFrequency: "weekly" as const },
+    { path: "/features/appointments", priority: 0.7, changeFrequency: "weekly" as const },
+    { path: "/features/records", priority: 0.7, changeFrequency: "weekly" as const },
+    { path: "/features/whatsapp", priority: 0.7, changeFrequency: "weekly" as const },
+    { path: "/loi-09-08", priority: 0.3, changeFrequency: "yearly" as const },
+    { path: "/versions", priority: 0.4, changeFrequency: "monthly" as const },
+    { path: "/tutoriel", priority: 0.6, changeFrequency: "monthly" as const },
   ];
 
   const entries: MetadataRoute.Sitemap = staticPages.map((page) => ({

@@ -105,6 +105,8 @@ export function ContactSection() {
                   <input
                     id="contact-phone"
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}

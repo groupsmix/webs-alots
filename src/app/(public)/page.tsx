@@ -18,17 +18,18 @@ import {
   WhyChooseSection,
 } from "@/components/public/sections";
 import { ServicesPreview } from "@/components/public/services-preview";
+import { JsonLdScript } from "@/components/seo/json-ld";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
-import { getRootDomain } from "@/lib/env";
+import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
 import { buildMetadata } from "@/lib/metadata";
 import { publicCardClass } from "@/lib/public-theme";
 import { mergeSectionVisibility, type SectionKey } from "@/lib/section-visibility";
 import { getTemplate } from "@/lib/templates";
 import { getTenant } from "@/lib/tenant";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 /**
  * Map a template's `sectionOrder` (which uses loose, historical names like
@@ -152,11 +153,21 @@ export default async function HomePage() {
 
   // Root domain (no subdomain) → show SaaS landing page
   if (!tenant) {
+    const siteUrl = getSiteUrl() || "https://oltigo.com";
     const saasJsonLd = {
       "@context": "https://schema.org",
       "@type": "Organization",
       name: "Oltigo",
-      url: "https://oltigo.com",
+      url: siteUrl,
+      logo: `${siteUrl}/opengraph-image.png`,
+      sameAs: ["https://www.linkedin.com/company/oltigo"],
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "contact@oltigo.com",
+        areaServed: "MA",
+        availableLanguage: ["French", "Arabic", "English"],
+        contactType: "customer support",
+      },
       description:
         "Plateforme SaaS de gestion de cabinets médicaux au Maroc. Rendez-vous en ligne, dossier patient chiffré, rappels WhatsApp.",
       foundingDate: "2024",
@@ -171,7 +182,7 @@ export default async function HomePage() {
       name: "Oltigo Health",
       applicationCategory: "HealthApplication",
       operatingSystem: "Web",
-      url: "https://oltigo.com",
+      url: siteUrl,
       description:
         "Plateforme complète pour gérer votre cabinet médical : rendez-vous, dossiers patients chiffrés, rappels WhatsApp en darija.",
       offers: {
@@ -193,26 +204,28 @@ export default async function HomePage() {
         acceptedAnswer: { "@type": "Answer", text: item.a },
       })),
     };
+    const webPageJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": siteUrl,
+      url: siteUrl,
+      name: "Oltigo — Système d'exploitation des cabinets médicaux au Maroc",
+      speakable: {
+        "@type": "SpeakableSpecification",
+        cssSelector: ["#speakable-summary"],
+      },
+    };
     return (
       <>
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(faqJsonLd) }}
-        />
+        <JsonLdScript data={saasJsonLd} nonce={nonce} />
+        <JsonLdScript data={softwareJsonLd} nonce={nonce} />
+        <JsonLdScript data={faqJsonLd} nonce={nonce} />
+        <JsonLdScript data={webPageJsonLd} nonce={nonce} />
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        <div id="speakable-summary" className="sr-only">
+          Oltigo est une plateforme SaaS marocaine de gestion de cabinets médicaux : rendez-vous en
+          ligne, dossier patient chiffré, rappels WhatsApp en darija et paiements sécurisés.
+        </div>
         <LandingPage />
       </>
     );
@@ -253,12 +266,51 @@ export default async function HomePage() {
   // Build LocalBusiness + MedicalOrganization structured data
   const rootDomain = getRootDomain() || "oltigo.com";
   const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
+
+  const images = [branding.logoUrl, branding.heroImageUrl, branding.coverPhotoUrl].filter(
+    (url): url is string => typeof url === "string" && url.length > 0,
+  );
+
+  const workingHours =
+    (
+      branding.websiteConfig as {
+        location?: { workingHours?: { day: string; hours: string }[] };
+      }
+    )?.location?.workingHours ?? defaultWebsiteConfig.location.workingHours;
+
+  const DAY_MAP: Record<string, string> = {
+    Lundi: "Monday",
+    Mardi: "Tuesday",
+    Mercredi: "Wednesday",
+    Jeudi: "Thursday",
+    Vendredi: "Friday",
+    Samedi: "Saturday",
+    Dimanche: "Sunday",
+  };
+
+  const openingHours = workingHours
+    .filter((wh) => wh.hours && !wh.hours.toLowerCase().includes("fermé"))
+    .map((wh) => {
+      const [opens, closes] = wh.hours.split("-").map((s) => s.trim());
+      return {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: DAY_MAP[wh.day] ?? wh.day,
+        opens,
+        closes,
+      };
+    })
+    .filter((oh) => oh.opens && oh.closes);
+
+  const geo = (branding.websiteConfig as { geo?: { latitude?: number; longitude?: number } })?.geo;
+  const priceRange = (branding.websiteConfig as { priceRange?: string })?.priceRange ?? "€€";
+
   const clinicSchema = {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "MedicalOrganization"],
     "@id": `${canonicalUrl}/#organization`,
     name: branding.clinicName || tenant.clinicName,
     url: canonicalUrl,
+    ...(images.length ? { image: images } : {}),
     ...(branding.phone ? { telephone: branding.phone } : {}),
     ...(branding.email ? { email: branding.email } : {}),
     ...(branding.address
@@ -270,6 +322,17 @@ export default async function HomePage() {
           },
         }
       : {}),
+    ...(geo?.latitude != null && geo?.longitude != null
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: geo.latitude,
+            longitude: geo.longitude,
+          },
+        }
+      : {}),
+    ...(openingHours.length ? { openingHoursSpecification: openingHours } : {}),
+    priceRange,
     ...(branding.logoUrl ? { logo: branding.logoUrl } : {}),
     ...(avgRating > 0 && reviews.length > 0
       ? {
@@ -436,12 +499,7 @@ export default async function HomePage() {
 
   return (
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
-      />
+      <JsonLdScript data={clinicSchema} nonce={nonce} />
       {orderedSections.map((key) => (
         <Fragment key={key}>{renderers[key]}</Fragment>
       ))}

@@ -72,6 +72,7 @@ export function Pricing({ headingAs = "h2" }: { headingAs?: "h1" | "h2" }) {
                   size="sm"
                   href={tier.id === "enterprise" ? "/#demo" : "/register-clinic"}
                   className="mt-5 w-full"
+                  data-event={`cta-pricing-${tier.id}`}
                 >
                   {tier.cta}
                 </Button>

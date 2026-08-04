@@ -1,9 +1,11 @@
 import { MapPin, Stethoscope, Calendar, Phone } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HreflangTags } from "@/components/hreflang-tags";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -15,7 +17,6 @@ import {
   TOP_CITY_SPECIALTY_COMBOS,
 } from "@/lib/directory-constants";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
@@ -48,6 +49,8 @@ export async function generateMetadata({ params }: CitySpecialtyPageProps): Prom
 
 export default async function CitySpecialtyPage({ params }: CitySpecialtyPageProps) {
   const { city: citySlug, specialty: specialtySlug } = await params;
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
   const city = getCityBySlug(citySlug);
   const specialty = getSpecialtyBySlug(specialtySlug);
   if (!city || !specialty) notFound();
@@ -102,9 +105,15 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
+      <JsonLdScript data={jsonLd} nonce={nonce} />
+      <BreadcrumbJsonLd
+        nonce={nonce}
+        items={[
+          { name: "Accueil", url: BASE_URL },
+          { name: "Annuaire", url: `${BASE_URL}/annuaire` },
+          { name: city.name, url: `${BASE_URL}/annuaire/${city.slug}` },
+          { name: specialty.nameFr, url: `${BASE_URL}/annuaire/${city.slug}/${specialty.slug}` },
+        ]}
       />
       {/* Audit 7.6 — hreflang tags for multilingual SEO */}
       <HreflangTags path={`/annuaire/${city.slug}/${specialty.slug}`} />

@@ -266,6 +266,8 @@ export function RegisterForm() {
             <Input
               id="phone"
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               placeholder="0612345678"
               value={form.phone}
               onChange={(e) => updateField("phone", e.target.value)}
