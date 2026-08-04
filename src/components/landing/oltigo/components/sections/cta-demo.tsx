@@ -98,6 +98,7 @@ export function CtaDemo() {
                 href={whatsAppHref}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-event="cta-demo-whatsapp"
                 className="mt-8 inline-flex items-center gap-2.5 rounded-[10px] border border-hairline bg-surface/40 px-4 py-2.5 text-sm text-text-secondary transition-colors hover:border-emerald/50 hover:text-text"
               >
                 <MessageCircle className="size-4 text-emerald" strokeWidth={1.75} aria-hidden />

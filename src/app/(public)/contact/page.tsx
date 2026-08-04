@@ -156,6 +156,7 @@ export default async function ContactPage() {
                   href={whatsappLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-event="cta-contact-whatsapp"
                   className="inline-flex items-center justify-center rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 transition-colors"
                 >
                   Ouvrir WhatsApp
