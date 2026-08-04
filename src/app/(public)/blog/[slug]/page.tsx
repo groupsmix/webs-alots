@@ -3,14 +3,13 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
+import { SanitizedHtml } from "@/components/seo/sanitized-html";
 import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
 import { getSiteUrl } from "@/lib/env";
 import { t } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
-import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -91,11 +90,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <article className="container mx-auto px-4 py-12 max-w-3xl">
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(articleSchema) }}
-      />
+      <JsonLdScript data={articleSchema} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[
@@ -142,10 +137,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </header>
 
       {/* Post content */}
-      <div
-        className="blog-content"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
-      />
+      <SanitizedHtml html={post.content} className="blog-content" />
 
       {/* Tags */}
       <footer className="mt-12 pt-8 border-t">

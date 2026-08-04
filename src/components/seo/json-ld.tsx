@@ -7,11 +7,11 @@ interface JsonLdScriptProps {
 
 export function JsonLdScript({ data, nonce }: JsonLdScriptProps) {
   // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection.
-  // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
   const scriptProps: React.JSX.IntrinsicElements["script"] = {
     type: "application/ld+json",
     nonce,
     suppressHydrationWarning: true,
+    // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
     dangerouslySetInnerHTML: { __html: safeJsonLdStringify(data) },
   };
 

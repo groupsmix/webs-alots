@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HreflangTags } from "@/components/hreflang-tags";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -17,7 +17,6 @@ import {
   TOP_CITY_SPECIALTY_COMBOS,
 } from "@/lib/directory-constants";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
@@ -106,11 +105,7 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[
