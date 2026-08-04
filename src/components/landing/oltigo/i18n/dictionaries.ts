@@ -451,9 +451,12 @@ const fr: Dictionary = {
       { title: "Produit", links: ["Rendez-vous", "Dossier patient", "Rappels WhatsApp", "Tarifs"] },
       {
         title: "Ressources",
-        links: ["Documentation", "Guide de démarrage", "FAQ", "Statut", "Blog"],
+        links: ["Documentation", "Guide de démarrage", "FAQ", "Tutoriels", "Statut", "Blog"],
       },
-      { title: "Entreprise", links: ["À propos", "Contact", "Carrières", "Partenaires"] },
+      {
+        title: "Entreprise",
+        links: ["À propos", "Contact", "Carrières", "Partenaires", "Versions"],
+      },
       {
         title: "Légal",
         links: ["Confidentialité", "Conditions", "Sous-traitants", "Sécurité", "Cookies"],
@@ -737,9 +740,9 @@ const ar: Dictionary = {
       { title: "المنتج", links: ["المواعيد", "ملف المريض", "تذكيرات واتساب", "الأسعار"] },
       {
         title: "الموارد",
-        links: ["التوثيق", "دليل البدء", "الأسئلة الشائعة", "الحالة", "المدونة"],
+        links: ["التوثيق", "دليل البدء", "الأسئلة الشائعة", "الدروس", "الحالة", "المدونة"],
       },
-      { title: "الشركة", links: ["من نحن", "اتصل بنا", "وظائف", "شركاء"] },
+      { title: "الشركة", links: ["من نحن", "اتصل بنا", "وظائف", "شركاء", "الإصدارات"] },
       {
         title: "قانوني",
         links: ["الخصوصية", "الشروط", "المعالجون من الباطن", "الأمان", "ملفات تعريف الارتباط"],
@@ -1046,8 +1049,11 @@ const en: Dictionary = {
         title: "Product",
         links: ["Appointments", "Patient record", "WhatsApp reminders", "Pricing"],
       },
-      { title: "Resources", links: ["Documentation", "Getting started", "FAQ", "Status", "Blog"] },
-      { title: "Company", links: ["About", "Contact", "Careers", "Partners"] },
+      {
+        title: "Resources",
+        links: ["Documentation", "Getting started", "FAQ", "Tutorials", "Status", "Blog"],
+      },
+      { title: "Company", links: ["About", "Contact", "Careers", "Partners", "Changelog"] },
       { title: "Legal", links: ["Privacy", "Terms", "Sub-processors", "Security", "Cookies"] },
     ],
     rights: "All rights reserved.",
