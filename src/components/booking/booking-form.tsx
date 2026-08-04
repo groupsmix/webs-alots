@@ -860,6 +860,8 @@ export function BookingForm() {
                   }}
                   placeholder="+212 6XX XX XX XX"
                   type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                   required
                   autoFocus
                   className={

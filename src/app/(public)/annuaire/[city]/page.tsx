@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -26,7 +26,6 @@ import {
 } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, getCityBySlug, getSpecialtyBySlug } from "@/lib/directory-constants";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { formatCurrency } from "@/lib/utils";
 
@@ -86,8 +85,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 function DoctorProfileView({
   doctor,
+  nonce,
 }: {
   doctor: NonNullable<Awaited<ReturnType<typeof getDirectoryDoctorBySlug>>>;
+  nonce?: string;
 }) {
   const city = getCityBySlug(doctor.citySlug);
   const specialty = getSpecialtyBySlug(doctor.specialtySlug);
@@ -135,10 +136,7 @@ function DoctorProfileView({
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} nonce={nonce} />
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
@@ -340,11 +338,13 @@ function CityListingView({
   city,
   doctors,
   specialties,
+  nonce,
 }: {
   citySlug: string;
   city: NonNullable<ReturnType<typeof getCityBySlug>>;
   doctors: Awaited<ReturnType<typeof getDirectoryDoctorsByCity>>;
   specialties: Awaited<ReturnType<typeof getDirectorySpecialtiesInCity>>;
+  nonce?: string;
 }) {
   const jsonLd = {
     "@context": "https://schema.org",
@@ -360,10 +360,7 @@ function CityListingView({
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} nonce={nonce} />
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
@@ -518,7 +515,7 @@ export default async function CityOrDoctorPage({ params }: PageProps) {
     return (
       <>
         <BreadcrumbJsonLd nonce={nonce} items={breadcrumbItems} />
-        <DoctorProfileView doctor={doctor} />
+        <DoctorProfileView doctor={doctor} nonce={nonce} />
       </>
     );
   }
@@ -542,7 +539,13 @@ export default async function CityOrDoctorPage({ params }: PageProps) {
           { name: city.name, url: `${BASE_URL}/annuaire/${city.slug}` },
         ]}
       />
-      <CityListingView citySlug={slug} city={city} doctors={doctors} specialties={specialties} />
+      <CityListingView
+        citySlug={slug}
+        city={city}
+        doctors={doctors}
+        specialties={specialties}
+        nonce={nonce}
+      />
     </>
   );
 }

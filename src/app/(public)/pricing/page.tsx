@@ -4,10 +4,9 @@ import { LandingLocaleProvider } from "@/components/landing/landing-locale-provi
 import { Pricing } from "@/components/landing/oltigo/components/sections/pricing";
 import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
 import { PricingContent } from "@/components/landing/pricing-content";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 
@@ -92,13 +91,7 @@ export default async function PricingPage() {
     cta: tier.cta,
   }));
   const pricingSchema = buildPricingSchema(baseUrl, tiers);
-  const pricingScript = (
-    <script
-      type="application/ld+json"
-      nonce={nonce}
-      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(pricingSchema) }}
-    />
-  );
+  const pricingScript = <JsonLdScript data={pricingSchema} nonce={nonce} />;
   const breadcrumb = (
     <BreadcrumbJsonLd
       nonce={nonce}

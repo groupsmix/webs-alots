@@ -68,6 +68,7 @@ export function ContactFormSection() {
                     id="contact-phone"
                     name="phone"
                     type="tel"
+                    inputMode="tel"
                     className="min-h-11"
                     placeholder="+212 6XX XX XX XX"
                     autoComplete="tel"

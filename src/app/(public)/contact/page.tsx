@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { ContactForm } from "@/components/public/contact-form";
+import { JsonLdScript } from "@/components/seo/json-ld";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicBranding } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -41,6 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
   const tenant = await getTenant();
   let branding = null;
   if (tenant) {
@@ -113,14 +115,7 @@ export default async function ContactPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      {contactSchema && (
-        <script
-          type="application/ld+json"
-          // SAFETY: JSON.stringify of a server-controlled object built from static
-          // config values (defaultWebsiteConfig) and tenant branding.
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(contactSchema) }}
-        />
-      )}
+      {contactSchema && <JsonLdScript data={contactSchema} nonce={nonce} />}
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{title}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">{subtitle}</p>

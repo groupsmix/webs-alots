@@ -18,11 +18,11 @@ import {
   WhyChooseSection,
 } from "@/components/public/sections";
 import { ServicesPreview } from "@/components/public/services-preview";
+import { JsonLdScript } from "@/components/seo/json-ld";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
 import { buildMetadata } from "@/lib/metadata";
 import { publicCardClass } from "@/lib/public-theme";
@@ -217,30 +217,10 @@ export default async function HomePage() {
     };
     return (
       <>
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(saasJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(faqJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(webPageJsonLd) }}
-        />
+        <JsonLdScript data={saasJsonLd} nonce={nonce} />
+        <JsonLdScript data={softwareJsonLd} nonce={nonce} />
+        <JsonLdScript data={faqJsonLd} nonce={nonce} />
+        <JsonLdScript data={webPageJsonLd} nonce={nonce} />
         {/* eslint-disable-next-line i18next/no-literal-string */}
         <div id="speakable-summary" className="sr-only">
           Oltigo est une plateforme SaaS marocaine de gestion de cabinets médicaux : rendez-vous en
@@ -519,12 +499,7 @@ export default async function HomePage() {
 
   return (
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
-      />
+      <JsonLdScript data={clinicSchema} nonce={nonce} />
       {orderedSections.map((key) => (
         <Fragment key={key}>{renderers[key]}</Fragment>
       ))}

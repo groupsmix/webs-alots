@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BookingForm } from "@/components/booking/booking-form";
+import { JsonLdScript } from "@/components/seo/json-ld";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 
@@ -42,6 +42,7 @@ export default async function BookingPage() {
 
   const h = await headers();
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const nonce = h.get("x-nonce") || undefined;
   const baseUrl = getSiteUrl() || "https://oltigo.com";
 
   const bookingSchema = {
@@ -62,10 +63,7 @@ export default async function BookingPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(bookingSchema) }}
-      />
+      <JsonLdScript data={bookingSchema} nonce={nonce} />
       <h1 className="sr-only">{t(locale, "booking.title")}</h1>
       <ErrorBoundary section="Booking Form">
         <BookingForm />

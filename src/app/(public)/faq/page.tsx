@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
 import { FaqSection } from "@/components/public/sections/faq-section";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { getPublicBranding } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -80,11 +79,7 @@ export default async function FaqPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(faqSchema) }}
-      />
+      <JsonLdScript data={faqSchema} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[

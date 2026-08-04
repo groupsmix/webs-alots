@@ -2,11 +2,10 @@
 import { CheckCircle, Mail } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -48,11 +47,7 @@ export default async function CareersPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(organizationSchema) }}
-      />
+      <JsonLdScript data={organizationSchema} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[

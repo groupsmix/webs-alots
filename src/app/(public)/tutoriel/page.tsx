@@ -3,10 +3,9 @@ import { CalendarDays, CheckCircle, ClipboardList, MessageCircle } from "lucide-
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -73,16 +72,8 @@ export default async function TutorialPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(howToSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(speakableSchema) }}
-      />
+      <JsonLdScript data={howToSchema} nonce={nonce} />
+      <JsonLdScript data={speakableSchema} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[

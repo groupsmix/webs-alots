@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { RootServicesView } from "@/components/landing/oltigo/components/sections/root-services-view";
 import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import {
   Card,
@@ -17,7 +17,6 @@ import {
 import { getPublicBranding, getPublicServices } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import type { Locale } from "@/lib/i18n";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -101,16 +100,8 @@ export default async function ServicesPage() {
 
     return (
       <>
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(softwareSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListSchema) }}
-        />
+        <JsonLdScript data={softwareSchema} nonce={nonce} />
+        <JsonLdScript data={itemListSchema} nonce={nonce} />
         <BreadcrumbJsonLd
           nonce={nonce}
           items={[
@@ -164,13 +155,7 @@ export default async function ServicesPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        nonce={nonce}
-        // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection
-        // from database-sourced fields (service name, description, price).
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(servicesSchema) }}
-      />
+      <JsonLdScript data={servicesSchema} nonce={nonce} />
       <BreadcrumbJsonLd
         nonce={nonce}
         items={[

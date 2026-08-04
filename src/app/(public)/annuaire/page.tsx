@@ -1,13 +1,14 @@
 import { Search, MapPin, Stethoscope, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { HreflangTags } from "@/components/hreflang-tags";
+import { JsonLdScript } from "@/components/seo/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getDirectoryCities, getDirectorySpecialties } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, DIRECTORY_SPECIALTIES } from "@/lib/directory-constants";
 import { getSiteUrl } from "@/lib/env";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -20,6 +21,9 @@ export const metadata: Metadata = buildMetadata({
 const BASE_URL = getSiteUrl() || "https://oltigo.com";
 
 export default async function AnnuairePage() {
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
+
   const [cities, specialties] = await Promise.all([
     getDirectoryCities(),
     getDirectorySpecialties(),
@@ -68,10 +72,7 @@ export default async function AnnuairePage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} nonce={nonce} />
       {/* Audit 7.6 — hreflang tags for multilingual SEO */}
       <HreflangTags path="/annuaire" />
 
