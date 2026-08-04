@@ -70,11 +70,12 @@ export function FullComparisonTable() {
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b border-border">
-              <th className="py-4 pe-4 text-start font-medium text-muted-foreground">
+              <th scope="col" className="py-4 pe-4 text-start font-medium text-muted-foreground">
                 Fonctionnalité
               </th>
               {COMPETITORS.map((c) => (
                 <th
+                  scope="col"
                   key={c.id}
                   className={`px-4 py-4 text-center font-semibold ${
                     c.highlight ? "text-primary" : "text-foreground"
@@ -159,6 +160,7 @@ export function FullComparisonTable() {
         </p>
         <Link
           href="/register-clinic"
+          data-event="cta-compare-signup"
           className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Commencer gratuitement
