@@ -73,6 +73,9 @@ let _cachedUserAt = 0;
 /** Cache TTL in milliseconds (5 minutes). */
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+/** Upper bound for lookup maps so large clinics don't ship the whole users table. */
+const LOOKUP_LIMIT = 1000;
+
 export async function getCurrentUser(): Promise<ClinicUser | null> {
   if (_cachedUser !== undefined && Date.now() - _cachedUserAt < CACHE_TTL_MS) return _cachedUser;
   const supabase = createClient();
@@ -173,8 +176,16 @@ export async function ensureLookups(clinicId: string): Promise<void> {
   }
   const supabase = createClient();
   const [usersRes, servicesRes] = await Promise.all([
-    supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
-    supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
+    supabase
+      .from("users")
+      .select("id, name, phone, email")
+      .eq("clinic_id", clinicId)
+      .limit(LOOKUP_LIMIT),
+    supabase
+      .from("services")
+      .select("id, name, price")
+      .eq("clinic_id", clinicId)
+      .limit(LOOKUP_LIMIT),
   ]);
   const userMap = new Map(
     ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map(

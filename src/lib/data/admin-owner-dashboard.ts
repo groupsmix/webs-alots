@@ -1,9 +1,7 @@
 import { fromUntyped } from "@/lib/ai/untyped-tables";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
-import { clinicDateTime } from "@/lib/timezone";
 import type { AppointmentStatus } from "@/lib/types/database";
-import { getLocalDateStr } from "@/lib/utils";
 
 export interface OwnerTodaySummary {
   totalAppointments: number;
@@ -80,20 +78,16 @@ export function summarizeOwnerTodayAppointments(
 export async function getOwnerDashboardDailyData(
   clinicId: string,
   today: string,
-  timezone: string,
+  _timezone: string,
 ): Promise<OwnerDashboardDailyData> {
   const supabase = await createClient();
-  const nextDay = new Date(clinicDateTime(today, "12:00", timezone));
-  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-  const endDate = getLocalDateStr(nextDay, timezone);
 
   const [appointmentsResult, briefingResult] = await Promise.all([
     supabase
       .from("appointments")
       .select("status")
       .eq("clinic_id", clinicId)
-      .gte("slot_start", clinicDateTime(today, "00:00", timezone).toISOString())
-      .lt("slot_start", clinicDateTime(endDate, "00:00", timezone).toISOString())
+      .eq("appointment_date", today)
       .limit(500),
     fromUntyped(supabase, "clinic_ai_briefings")
       .select("id, briefing_date, content, generated_at")
