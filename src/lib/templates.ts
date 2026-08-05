@@ -1,3 +1,9 @@
+import {
+  mergeSectionVisibility,
+  type SectionKey,
+  type SectionVisibility,
+} from "@/lib/section-visibility";
+
 /**
  * Layout Template Definitions
  *
@@ -24,10 +30,11 @@ export type HeaderVariant =
   | "side-left"
   | "bottom-bar"
   | "floating"
-  | "overlay";
+  | "overlay"
+  | "premium";
 
 /** Footer layout variant */
-export type FooterVariant = "classic-3col" | "minimal" | "centered" | "hidden";
+export type FooterVariant = "classic-3col" | "minimal" | "centered" | "hidden" | "premium";
 
 /** Navigation style variant */
 type NavStyle = "horizontal" | "vertical-side" | "hamburger-only" | "bottom-tabs" | "floating-dots";
@@ -52,7 +59,7 @@ export interface TemplateDefinition {
   /** Tailwind classes applied to the page wrapper */
   wrapperClass: string;
   /** Hero section style variant */
-  heroStyle: "split" | "centered" | "fullwidth" | "overlay" | "premium";
+  heroStyle: "split" | "centered" | "fullwidth" | "overlay";
   /** Card style variant */
   cardStyle: "shadow" | "bordered" | "flat" | "elevated";
   /** Overall border radius theme */
@@ -194,14 +201,14 @@ const templates: Record<TemplateId, TemplateDefinition> = {
     name: "Premium",
     description: "High-end, calming healthcare design with soft gradients and generous whitespace",
     wrapperClass: "bg-[#F8FAFC] text-slate-900",
-    heroStyle: "premium",
+    heroStyle: "split",
     cardStyle: "elevated",
     borderRadius: "xl",
     bgMode: "light",
     rtl: false,
     preview: "Premium medical landing page with hero stats, floating cards, and trust signals",
-    headerVariant: "top-sticky",
-    footerVariant: "classic-3col",
+    headerVariant: "premium",
+    footerVariant: "premium",
     navStyle: "horizontal",
     heroVariant: "premium",
     sectionOrder: [
@@ -222,4 +229,69 @@ export const templateList: TemplateDefinition[] = Object.values(templates);
 
 export function getTemplate(id: string): TemplateDefinition {
   return templates[id as TemplateId] ?? templates.modern;
+}
+
+/**
+ * Map loose template section names (legacy or admin-facing) onto the canonical
+ * `SectionKey` vocabulary used by the renderers.
+ */
+const SECTION_ALIASES: Record<string, SectionKey> = {
+  contact: "contactForm",
+  contactform: "contactForm",
+  team: "doctors",
+  testimonials: "reviews",
+};
+
+/** Sections appended in stable order when a template does not list them. */
+export const DEFAULT_SECTION_TAIL: SectionKey[] = [
+  "services",
+  "doctors",
+  "reviews",
+  "blog",
+  "location",
+  "booking",
+  "contactForm",
+  "insurance",
+  "faq",
+];
+
+/**
+ * Resolve a template's `sectionOrder` into an ordered list of renderable keys.
+ *
+ * - `hero` is always rendered first when visible.
+ * - Unknown/legacy names are mapped via `SECTION_ALIASES` or dropped.
+ * - Any visible section missing from the template order is appended in a
+ *   stable default order so content never disappears.
+ */
+export function resolveSectionOrder(
+  templateOrder: string[],
+  renderable: SectionKey[],
+): SectionKey[] {
+  const allow = new Set(renderable);
+  const ordered: SectionKey[] = [];
+  const seen = new Set<SectionKey>();
+
+  const push = (key: SectionKey) => {
+    if (allow.has(key) && !seen.has(key)) {
+      ordered.push(key);
+      seen.add(key);
+    }
+  };
+
+  push("hero");
+  for (const raw of templateOrder) {
+    const key = (SECTION_ALIASES[raw.toLowerCase()] ?? raw.toLowerCase()) as SectionKey;
+    push(key);
+  }
+  for (const key of DEFAULT_SECTION_TAIL) push(key);
+  return ordered;
+}
+
+/**
+ * Build the visible sections set from template defaults and clinic overrides.
+ *
+ * The `hero` section is always considered visible because it is handled first.
+ */
+export function resolveSections(partial?: Partial<SectionVisibility> | null): SectionVisibility {
+  return mergeSectionVisibility(partial);
 }

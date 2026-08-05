@@ -9,6 +9,7 @@ import type { ComponentType } from "react";
 import type { TemplateDefinition, HeaderVariant } from "@/lib/templates";
 import { HeaderBottomBar } from "./header-bottom-bar";
 import { HeaderFloating } from "./header-floating";
+import { HeaderPremium } from "./header-premium";
 import { HeaderTopSticky } from "./header-top-sticky";
 import { HeaderTransparent } from "./header-transparent";
 
@@ -37,4 +38,5 @@ export const HEADER_COMPONENTS: Record<HeaderVariant, ComponentType<HeaderProps>
   "bottom-bar": HeaderBottomBar,
   floating: HeaderFloating,
   overlay: HeaderTransparent, // similar to transparent
+  premium: HeaderPremium,
 };

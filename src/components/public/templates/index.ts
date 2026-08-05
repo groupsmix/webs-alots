@@ -1,0 +1,1 @@
+export { PremiumTemplate } from "./premium";

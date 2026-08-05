@@ -10,6 +10,7 @@ import type { TemplateDefinition, FooterVariant } from "@/lib/templates";
 import { FooterCentered } from "./footer-centered";
 import { FooterClassic } from "./footer-classic";
 import { FooterMinimal } from "./footer-minimal";
+import { FooterPremium } from "./footer-premium";
 
 /** Props shared by all footer variants. */
 export interface FooterProps {
@@ -26,4 +27,5 @@ export const FOOTER_COMPONENTS: Record<FooterVariant, ComponentType<FooterProps>
   minimal: FooterMinimal,
   centered: FooterCentered,
   hidden: null,
+  premium: FooterPremium,
 };

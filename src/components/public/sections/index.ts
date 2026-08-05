@@ -6,3 +6,4 @@ export { FaqSection } from "./faq-section";
 export { BlogSection } from "./blog-section";
 export { WhyChooseSection } from "./why-choose-section";
 export { LocationSection } from "./location-section";
+export { ReviewsSection } from "./reviews-section";

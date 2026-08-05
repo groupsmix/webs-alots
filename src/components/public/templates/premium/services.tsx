@@ -13,10 +13,7 @@ import { getPublicServices } from "@/lib/data/public";
 import { publicCardClass } from "@/lib/public-theme";
 import { cn } from "@/lib/utils";
 
-const linkBtnOutline =
-  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors min-h-11";
-
-interface ServicesPreviewProps {
+interface PremiumServicesProps {
   cardStyle?: "shadow" | "bordered" | "flat" | "elevated";
 }
 
@@ -50,7 +47,7 @@ function serviceIcon(name: string, category?: string) {
   return Stethoscope;
 }
 
-export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewProps) {
+export async function PremiumServices({ cardStyle = "elevated" }: PremiumServicesProps) {
   const services = await getPublicServices();
 
   // Deduplicate by name (case-insensitive) and prefer active services.
@@ -63,7 +60,7 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
       seen.add(key);
       return true;
     })
-    .slice(0, 3);
+    .slice(0, 6);
 
   return (
     <section className="py-16 sm:py-24">
@@ -77,7 +74,7 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
           </p>
         </div>
 
-        <div className={cn("grid gap-5 sm:gap-6 md:grid-cols-3 max-w-5xl mx-auto")}>
+        <div className="grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
           {uniqueServices.length > 0 ? (
             uniqueServices.map((service) => {
               const Icon = serviceIcon(service.name, service.category ?? undefined);
@@ -85,7 +82,7 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
                 <div
                   key={service.id}
                   className={cn(
-                    "group rounded-2xl bg-card p-6 sm:p-8 text-start transition-all duration-300 hover:-translate-y-1",
+                    "group rounded-2xl bg-card p-6 sm:p-8 text-start transition-all duration-300 hover:-translate-y-1 hover:shadow-xl",
                     publicCardClass(cardStyle),
                   )}
                 >
@@ -99,7 +96,7 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
                     </p>
                   ) : null}
                   <Link
-                    href={`/services`}
+                    href="/services"
                     className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                   >
                     En savoir plus
@@ -115,7 +112,10 @@ export async function ServicesPreview({ cardStyle = "shadow" }: ServicesPreviewP
           )}
         </div>
         <div className="mt-10 sm:mt-12 text-center">
-          <Link href="/services" className={`${linkBtnOutline} w-full sm:w-auto`}>
+          <Link
+            href="/services"
+            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors min-h-11 w-full sm:w-auto"
+          >
             Voir tous les services
             <ArrowRight className="ms-2 h-4 w-4" aria-hidden="true" />
           </Link>
