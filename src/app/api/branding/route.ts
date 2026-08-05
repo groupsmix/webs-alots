@@ -276,6 +276,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
   // Invalidate branding cache so public pages pick up the new image
   revalidatePath("/", "layout");
+  revalidateTag(`clinic-branding-${clinicId}`, "max");
 
   // Invalidate subdomain cache so middleware picks up any config changes
   invalidateAllSubdomainCaches();

@@ -17,7 +17,7 @@
  * Tenant: Scoped to current clinic_id
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { getDefaultServices } from "@/lib/config/default-services";
@@ -112,6 +112,7 @@ export const POST = withAuthValidation(
 
     // Invalidate caches so the public site picks up the change immediately
     revalidatePath("/", "layout");
+    revalidateTag(`clinic-branding-${clinicId}`, "max");
     invalidateAllSubdomainCaches();
 
     return apiSuccess({
