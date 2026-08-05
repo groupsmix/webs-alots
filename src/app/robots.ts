@@ -43,6 +43,7 @@ export default function robots(): MetadataRoute.Robots {
           "/loi-09-08",
           "/versions",
           "/tutoriel",
+          "/plan-du-site",
           "/doctor-profile",
           "/doctor-services",
           "/annuaire",
