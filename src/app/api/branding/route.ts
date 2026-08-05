@@ -129,9 +129,10 @@ export async function GET() {
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
 
-    // P-05: Cache branding for 5 min, serve stale for 10 min while revalidating
+    // Branding can change from the admin panel and must be authoritative
+    // immediately; do not let any cache (browser or shared) serve stale data.
     return apiSuccess(publicData, 200, {
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+      "Cache-Control": "private, no-store, must-revalidate",
     });
   } catch (err) {
     logger.warn("Failed to fetch branding", { context: "branding", error: err });

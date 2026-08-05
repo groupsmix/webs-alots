@@ -36,6 +36,9 @@ const eslintConfig = defineConfig([
     ".open-next/**",
     // Storybook static output (generated)
     "storybook-static/**",
+    // Playwright generated output (trace assets are minified and not source)
+    "test-results/**",
+    "playwright-report/**",
   ]),
   ...storybook.configs["flat/recommended"],
   {
