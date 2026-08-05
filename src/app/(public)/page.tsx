@@ -1,86 +1,35 @@
-import { Star, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Fragment } from "react";
 import { LandingPage } from "@/components/landing/landing-page";
 import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
 import { HeroSection } from "@/components/public/hero-section";
 import {
-  DoctorsSection,
+  BlogSection,
   BookingSection,
   ContactFormSection,
-  InsuranceSection,
+  DoctorsSection,
   FaqSection,
-  BlogSection,
+  InsuranceSection,
   LocationSection,
+  ReviewsSection,
   WhyChooseSection,
 } from "@/components/public/sections";
 import { ServicesPreview } from "@/components/public/services-preview";
+import { PremiumTemplate } from "@/components/public/templates/premium";
 import { JsonLdScript } from "@/components/seo/json-ld";
-import { Card, CardContent } from "@/components/ui/card";
-import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
+import { getPublicAverageRating, getPublicBranding, getPublicReviews } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { buildMetadata } from "@/lib/metadata";
-import { publicCardClass } from "@/lib/public-theme";
 import { mergeSectionVisibility, type SectionKey } from "@/lib/section-visibility";
-import { getTemplate } from "@/lib/templates";
+import { getTemplate, resolveSectionOrder } from "@/lib/templates";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-/**
- * Map a template's `sectionOrder` (which uses loose, historical names like
- * "about"/"contact") onto the canonical `SectionKey` render vocabulary.
- * Unknown names are dropped; any visible section missing from the template
- * order is appended in a stable default order so nothing ever disappears.
- */
-const SECTION_ALIASES: Record<string, SectionKey> = {
-  contact: "contactForm",
-  contactform: "contactForm",
-  team: "doctors",
-  testimonials: "reviews",
-};
-
-const DEFAULT_SECTION_TAIL: SectionKey[] = [
-  "services",
-  "doctors",
-  "reviews",
-  "blog",
-  "location",
-  "booking",
-  "contactForm",
-  "insurance",
-  "faq",
-];
-
-function resolveSectionOrder(templateOrder: string[], renderable: SectionKey[]): SectionKey[] {
-  const allow = new Set(renderable);
-  const ordered: SectionKey[] = [];
-  const seen = new Set<SectionKey>();
-  const push = (key: SectionKey) => {
-    if (allow.has(key) && !seen.has(key)) {
-      ordered.push(key);
-      seen.add(key);
-    }
-  };
-  // hero is always rendered first when visible
-  push("hero");
-  for (const raw of templateOrder) {
-    const key = (SECTION_ALIASES[raw.toLowerCase()] ?? raw) as SectionKey;
-    push(key);
-  }
-  for (const key of DEFAULT_SECTION_TAIL) push(key);
-  return ordered;
-}
-
 /** Default timeout (ms) for Supabase data-fetching on public pages. */
 const DATA_FETCH_TIMEOUT_MS = 10_000;
-
-const linkBtnOutline =
-  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors min-h-11";
 
 /**
  * Race a promise against a timeout. Rejects with a descriptive error
@@ -102,8 +51,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   if (!tenant) {
-    // The root layout's title template already appends " | Oltigo"; don't
-    // prefix the brand here or it renders twice ("Oltigo — … | Oltigo").
     const metaTitle = t(locale, "public.meta.title");
     const metaDescription = t(locale, "public.meta.description");
     return buildMetadata({
@@ -124,7 +71,6 @@ export async function generateMetadata(): Promise<Metadata> {
     });
   }
 
-  // Pull clinic branding for SEO-rich meta tags
   const branding = await getPublicBranding();
   const clinicName = branding.clinicName || tenant.clinicName || t(locale, "public.clinicFallback");
   const rootDomain = getRootDomain() || "oltigo.com";
@@ -231,9 +177,6 @@ export default async function HomePage() {
     );
   }
 
-  // `locale` and `nonce` are already extracted at the top of the component.
-  // We can just rely on them.
-
   // Subdomain → show clinic homepage with tenant data
   let branding;
   let reviews;
@@ -255,15 +198,12 @@ export default async function HomePage() {
   }
 
   if (!branding) {
-    notFound();
+    throw new Error("Branding not found");
   }
+
   const sections = mergeSectionVisibility(branding.sectionVisibility as Record<string, boolean>);
   const template = getTemplate(branding.templateId);
 
-  // Issue 53: Show all ratings (not just 4+) for unfiltered display
-  const topReviews = reviews.slice(0, 6);
-
-  // Build LocalBusiness + MedicalOrganization structured data
   const rootDomain = getRootDomain() || "oltigo.com";
   const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
 
@@ -352,145 +292,81 @@ export default async function HomePage() {
     },
   };
 
-  const reviewsSection = (
-    <section className="py-12 sm:py-16">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-balance mb-4">
-            {t(locale, "public.reviews.heading")}
-          </h2>
-          <p className="text-sm text-muted-foreground mb-2">
-            {t(locale, "public.reviews.subtitle")}
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-2xl sm:text-3xl font-bold">{avgRating}</span>
-            <div className="flex gap-0.5" role="img" aria-label={`${avgRating} out of 5 stars`}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  aria-hidden="true"
-                  className={`h-5 w-5 ${
-                    i < Math.round(avgRating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "fill-muted text-muted"
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-sm text-muted-foreground">
-              {t(locale, "public.reviews.count", { count: reviews.length })}
-            </span>
-          </div>
-        </div>
-        {/* Rating distribution */}
-        {reviews.length > 0 && (
-          <div className="mx-auto mb-8 sm:mb-10 max-w-xs space-y-2">
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = reviews.filter((r) => r.rating === star).length;
-              const pct = Math.round((count / reviews.length) * 100);
-              return (
-                <div key={star} className="flex items-center gap-2 text-sm">
-                  <span className="w-6 text-end font-medium">
-                    {star}
-                    <span className="text-yellow-400">&#9733;</span>
-                  </span>
-                  <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-yellow-400 transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <span className="w-8 text-xs text-muted-foreground">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="grid gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
-          {topReviews.map((review) => (
-            <Card key={review.id} className={publicCardClass(template.cardStyle)}>
-              <CardContent className="pt-6">
-                <div
-                  className="flex gap-0.5 mb-3"
-                  role="img"
-                  aria-label={`${review.rating} out of 5 stars`}
-                >
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      aria-hidden="true"
-                      className={`h-4 w-4 ${
-                        i < review.rating
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "fill-muted text-muted"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">&ldquo;{review.comment}&rdquo;</p>
-                <p className="text-sm font-medium">{review.patientName}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-8 sm:mt-10 text-center">
-          <Link href="/reviews" className={`${linkBtnOutline} w-full sm:w-auto`}>
-            {t(locale, "public.reviews.viewAll")}
-            <ArrowRight className="ms-2 h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-
-  // Build one renderer per *visible* section, then lay them out in the order
-  // defined by the clinic's chosen template (`template.sectionOrder`).
-  const renderers: Partial<Record<SectionKey, React.ReactNode>> = {};
   const websiteHero = (
     branding.websiteConfig as { hero?: { title?: string; subtitle?: string } } | null
   )?.hero;
-  const heroOverrides: {
-    title?: string;
-    subtitle?: string;
-    imageUrl?: string;
-  } = {
+  const heroOverrides = {
     title: websiteHero?.title ?? branding.clinicName,
+    subtitle: (websiteHero?.subtitle ?? branding.tagline) || undefined,
     imageUrl: branding.heroImageUrl ?? branding.coverPhotoUrl ?? undefined,
   };
-  if (websiteHero?.subtitle ?? branding.tagline) {
-    heroOverrides.subtitle = (websiteHero?.subtitle ?? branding.tagline) || undefined;
-  }
 
-  if (sections.hero) {
-    renderers.hero = (
-      <HeroSection variant={template.heroStyle} template={template} overrides={heroOverrides} />
+  const websiteFaq = (
+    branding.websiteConfig as {
+      faq?: { title?: string; subtitle?: string; items?: { q: string; a: string }[] };
+    } | null
+  )?.faq;
+  const faq = {
+    title: websiteFaq?.title ?? defaultWebsiteConfig.faq.title,
+    subtitle: websiteFaq?.subtitle ?? defaultWebsiteConfig.faq.subtitle,
+    items: websiteFaq?.items ?? defaultWebsiteConfig.faq.items,
+  };
+
+  // Premium template gets its own self-contained package.
+  if (template.id === "premium") {
+    return (
+      <PremiumTemplate
+        branding={branding}
+        reviews={reviews}
+        avgRating={avgRating}
+        locale={locale}
+        nonce={nonce}
+        template={template}
+        sections={sections}
+        clinicSchema={clinicSchema}
+      />
     );
   }
-  if (sections.services)
-    renderers.services = <ServicesPreview cardStyle={template.cardStyle} template={template} />;
-  if (sections.why)
+
+  // Generic templates use the shared, neutral section components.
+  const renderers: Partial<Record<SectionKey, React.ReactNode>> = {};
+
+  if (sections.hero) {
+    renderers.hero = <HeroSection variant={template.heroStyle} overrides={heroOverrides} />;
+  }
+  if (sections.services) {
+    renderers.services = <ServicesPreview cardStyle={template.cardStyle} />;
+  }
+  if (sections.why) {
     renderers.why = (
       <WhyChooseSection cardStyle={template.cardStyle} clinicName={branding.clinicName} />
     );
-  if (sections.doctors)
-    renderers.doctors = (
-      <DoctorsSection
+  }
+  if (sections.doctors) {
+    renderers.doctors = <DoctorsSection cardStyle={template.cardStyle} />;
+  }
+  if (sections.reviews && reviews.length > 0) {
+    renderers.reviews = (
+      <ReviewsSection
+        reviews={reviews}
+        avgRating={avgRating}
+        locale={locale}
         cardStyle={template.cardStyle}
-        template={template}
-        clinicName={branding.clinicName}
       />
     );
-  if (sections.reviews && topReviews.length > 0) renderers.reviews = reviewsSection;
+  }
   if (sections.blog) renderers.blog = <BlogSection />;
-  if (sections.location)
+  if (sections.location) {
     renderers.location = (
       <LocationSection address={branding.address} websiteConfig={branding.websiteConfig} />
     );
-  if (sections.booking) renderers.booking = <BookingSection template={template} />;
+  }
+  if (sections.booking) renderers.booking = <BookingSection locale={locale} />;
   if (sections.contactForm) renderers.contactForm = <ContactFormSection />;
   if (sections.insurance) renderers.insurance = <InsuranceSection />;
-  if (sections.faq) renderers.faq = <FaqSection />;
+  if (sections.faq) {
+    renderers.faq = <FaqSection title={faq.title} subtitle={faq.subtitle} faqs={faq.items} />;
+  }
 
   const orderedSections = resolveSectionOrder(
     template.sectionOrder,

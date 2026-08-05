@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable i18next/no-literal-string */
 
 import { Mail, MapPin, Phone, Shield } from "lucide-react";
 import Link from "next/link";
@@ -7,34 +8,37 @@ import { t } from "@/lib/i18n";
 import type { FooterProps } from "./index";
 
 /**
- * Classic 3-column footer — the default footer variant.
+ * Premium 3-column footer.
  *
- * Three columns: clinic info, quick links, and contact info.
- * Includes copyright bar at the bottom.
- * Supports RTL layout.
+ * Polished gradient background and more generous spacing, used by the
+ * "premium" template.
  */
-export function FooterClassic({ clinicName, template, phone, email, address }: FooterProps) {
+export function FooterPremium({ clinicName, template, phone, email, address }: FooterProps) {
   const [locale] = useLocale();
   const isRtl = template?.rtl ?? false;
   const year = new Date().getFullYear();
 
   return (
     <footer
-      className="border-t border-border bg-background"
+      className="border-t border-border bg-gradient-to-b from-card to-background"
       dir={isRtl ? "rtl" : undefined}
       aria-label={t(locale, "public.footerLabel")}
     >
-      <div className="container mx-auto px-4 py-10 sm:py-12">
+      <div className="container mx-auto px-4 py-14 sm:py-16">
         <div className="grid gap-8 sm:gap-10 md:grid-cols-3">
           {/* Column 1 — Clinic info */}
           <div>
-            <h3 className="font-bold text-primary mb-3 text-lg">{clinicName}</h3>
+            <h3 className="font-bold text-primary mb-3 text-xl">{clinicName}</h3>
             {address && (
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" aria-hidden="true" />
                 {address}
               </div>
             )}
+            <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+              Votre santé, notre priorité. Des soins personnalisés dans un environnement moderne et
+              accueillant.
+            </p>
           </div>
 
           {/* Column 2 — Quick links */}

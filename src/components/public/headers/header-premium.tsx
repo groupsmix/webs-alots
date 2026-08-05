@@ -12,13 +12,12 @@ import { cn } from "@/lib/utils";
 import type { HeaderProps } from "./index";
 
 /**
- * Top-sticky header — the default header variant.
+ * Premium top-sticky header.
  *
- * Fixed to the top of the viewport with a border and backdrop blur.
- * Includes responsive hamburger menu for mobile.
- * Non-premium clinics use this compact sticky header.
+ * A more spacious, polished header used by the "premium" template.
+ * Larger logo, subtle shadow, rounded CTA, and a cleaner contact bar.
  */
-export function HeaderTopSticky({
+export function HeaderPremium({
   logoUrl,
   clinicName,
   navItems,
@@ -37,12 +36,12 @@ export function HeaderTopSticky({
   return (
     <header className="sticky top-0 z-50" dir={isRtl ? "rtl" : undefined}>
       {hasContact && (
-        <div className="bg-primary text-primary-foreground py-1.5 text-xs sm:text-sm">
+        <div className="border-b border-border/40 bg-background py-2 text-xs sm:text-sm">
           <div className="container mx-auto px-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4 sm:justify-end">
             {phone && (
               <a
                 href={`tel:${phone}`}
-                className="inline-flex items-center gap-1.5 hover:underline truncate max-w-[60vw] sm:max-w-none"
+                className="inline-flex items-center gap-1.5 text-muted-foreground hover:underline truncate max-w-[60vw] sm:max-w-none"
               >
                 <Phone className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
                 <span className="truncate">{phone}</span>
@@ -51,14 +50,14 @@ export function HeaderTopSticky({
             {email && (
               <a
                 href={`mailto:${email}`}
-                className="hidden sm:inline-flex items-center gap-1.5 hover:underline"
+                className="hidden sm:inline-flex items-center gap-1.5 text-muted-foreground hover:underline"
               >
                 <Mail className="h-3 w-3" aria-hidden="true" />
                 {email}
               </a>
             )}
             {address && (
-              <span className="hidden sm:inline-flex items-center gap-1.5">
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-muted-foreground">
                 <MapPin className="h-3 w-3" aria-hidden="true" />
                 {address}
               </span>
@@ -67,21 +66,21 @@ export function HeaderTopSticky({
         </div>
       )}
 
-      <div className="border-b bg-background/95 backdrop-blur">
-        <div className="container mx-auto flex items-center justify-between px-4 h-16">
+      <div className="border-b bg-background/95 backdrop-blur shadow-sm">
+        <div className="container mx-auto flex items-center justify-between px-4 h-18 sm:h-20">
           <Link
             href="/"
-            className="flex items-center gap-2 font-bold text-foreground min-w-0 text-lg sm:text-xl"
+            className="flex items-center gap-2 font-bold text-foreground min-w-0 text-xl sm:text-2xl"
           >
             {logoUrl && (
               <Image
                 src={logoUrl}
                 alt={displayName}
-                width={36}
-                height={36}
+                width={44}
+                height={44}
                 className="h-8 sm:h-10 w-auto flex-shrink-0"
                 priority
-                sizes="36px"
+                sizes="44px"
               />
             )}
             <span className="truncate">{displayName}</span>
@@ -97,7 +96,7 @@ export function HeaderTopSticky({
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "text-sm transition-colors",
+                    "text-base transition-colors",
                     isActive
                       ? "text-primary font-medium"
                       : "text-muted-foreground hover:text-foreground",
@@ -107,10 +106,16 @@ export function HeaderTopSticky({
                 </Link>
               );
             })}
-            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "default" })}>
+            <Link
+              href="/login"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "default" }),
+                "hidden lg:inline-flex",
+              )}
+            >
               {t(locale, "public.doctorSpace")}
             </Link>
-            <Link href="/book" className={buttonVariants({ size: "default" })}>
+            <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "rounded-full px-6")}>
               {t(locale, "public.patientSpace")}
             </Link>
           </nav>
@@ -167,7 +172,7 @@ export function HeaderTopSticky({
               </Link>
               <Link
                 href="/book"
-                className={buttonVariants({ className: "w-full" })}
+                className={cn(buttonVariants({ className: "w-full" }), "rounded-full")}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t(locale, "public.patientSpace")}
