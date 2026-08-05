@@ -93,9 +93,12 @@ export default function AdminPatientDatabasePage() {
         return;
       }
       setClinicId(user.clinic_id);
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      const sinceDate = twoYearsAgo.toISOString().slice(0, 10);
       const [p, a] = await Promise.all([
         fetchPatients(user.clinic_id),
-        fetchAppointments(user.clinic_id),
+        fetchAppointments(user.clinic_id, { sinceDate }),
       ]);
       if (controller.signal.aborted) return;
       setPatientsList(p);

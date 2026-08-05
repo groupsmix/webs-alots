@@ -103,10 +103,9 @@ describe("getOwnerDashboardDailyData", () => {
     const result = await getOwnerDashboardDailyData(CLINIC_ID, "2026-07-14", "Africa/Casablanca");
 
     expect(appointmentEq).toHaveBeenCalledWith("clinic_id", CLINIC_ID);
+    expect(appointmentEq).toHaveBeenCalledWith("appointment_date", "2026-07-14");
     expect(briefingEq).toHaveBeenCalledWith("clinic_id", CLINIC_ID);
     expect(briefingEq).toHaveBeenCalledWith("briefing_date", "2026-07-14");
-    expect(appointmentGte).toHaveBeenCalledWith("slot_start", "2026-07-13T23:00:00.000Z");
-    expect(appointmentLt).toHaveBeenCalledWith("slot_start", "2026-07-14T23:00:00.000Z");
     expect(result.today).toMatchObject({
       totalAppointments: 6,
       unconfirmedAppointments: 1,

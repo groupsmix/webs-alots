@@ -57,8 +57,17 @@ async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardS
       .select("id", { count: "exact", head: true })
       .eq("clinic_id", clinicId)
       .eq("status", "no_show"),
-    supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
+    supabase
+      .from("payments")
+      .select("total_revenue:amount.sum()")
+      .eq("clinic_id", clinicId)
+      .eq("status", "completed")
+      .maybeSingle(),
+    supabase
+      .from("reviews")
+      .select("average_rating:stars.avg()")
+      .eq("clinic_id", clinicId)
+      .maybeSingle(),
     supabase
       .from("users")
       .select("id", { count: "exact", head: true })
@@ -66,11 +75,14 @@ async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardS
       .eq("role", "doctor"),
   ]);
 
-  const payments = (paymentsRes.data ?? []) as { amount: number }[];
-  const reviews = (reviewsRes.data ?? []) as { stars: number }[];
-  const totalRevenue = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  const avgRating =
-    reviews.length > 0 ? reviews.reduce((sum, r) => sum + (r.stars ?? 0), 0) / reviews.length : 0;
+  const paymentAgg = (paymentsRes.data ?? { total_revenue: null }) as {
+    total_revenue: number | null;
+  };
+  const reviewAgg = (reviewsRes.data ?? { average_rating: null }) as {
+    average_rating: number | null;
+  };
+  const totalRevenue = Number(paymentAgg.total_revenue ?? 0);
+  const avgRating = Number(reviewAgg.average_rating ?? 0);
 
   return {
     totalPatients: patientCountRes.count ?? 0,
@@ -110,16 +122,18 @@ export async function getDashboardStats(clinicId: string): Promise<DashboardStat
   const [base, supabase] = await Promise.all([fetchBaseDashboardStats(clinicId), createClient()]);
 
   // Fetch dashboard-specific data in parallel
-  const [insurancePatientsRes, recentActivity] = await Promise.all([
-    supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
+  const [insuranceCountRes, recentActivity] = await Promise.all([
+    supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "patient")
+      .not("metadata->insurance", "is", null)
+      .not("metadata->insurance", "eq", false),
     getRecentActivity(supabase, clinicId),
   ]);
 
-  const insurancePatients = (insurancePatientsRes.data ?? []) as {
-    id: string;
-    metadata: { insurance?: boolean } | null;
-  }[];
-  const insuranceCount = insurancePatients.filter((p) => p.metadata?.insurance).length;
+  const insuranceCount = insuranceCountRes.count ?? 0;
 
   return {
     ...base,
