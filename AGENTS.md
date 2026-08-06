@@ -23,6 +23,28 @@ Oltigo Health is a **multi-tenant SaaS** healthcare platform for Moroccan clinic
 - **Storage:** Cloudflare R2 (encrypted PHI files)
 - **Notifications:** WhatsApp (Meta Cloud API / Twilio), Email (Resend / SMTP), In-App, SMS
 
+## AI Agent Coding Rules (Cloudflare + Supabase Stack)
+
+### 1. Cloudflare Environment Constraints
+
+- **Edge Runtime Compatibility:** This app is deployed on Cloudflare Workers. Never import Node.js-only modules (`fs`, `path`, `child_process`, `net`, `crypto` Node module) unless `nodejs_compat` is explicitly enabled. Use Web APIs (`fetch`, `Request`, `Response`, `Web Crypto`) instead.
+- **Bindings & Env Vars:** Access Cloudflare bindings and environment variables through the provided helpers (`@/lib/cf-bindings`, `@/lib/env`). Never hardcode secrets or credentials in source files.
+- **Image / Asset Domains:** Adding a new external image domain requires updating `next.config.ts` `images.remotePatterns` and the CSP `img-src` directive in `src/lib/middleware/security-headers.ts`.
+
+### 2. Supabase Security & Database Rules
+
+- **Row Level Security (RLS):** Every table created or modified must have RLS enabled (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`) and explicit, `clinic_id`-scoped policies. Application-level `.eq("clinic_id", clinicId)` filtering is still required.
+- **Secret Key Isolation:**
+  - `SUPABASE_SERVICE_ROLE_KEY` must stay strictly on the server. Never import or reference it in client components.
+  - Client-side queries must only use the public `ANON` key and must be subject to RLS policies.
+- **Client Instantiation:** Use the existing helpers (`createScopedAdminClient`, `@supabase/ssr` server clients, `@/lib/supabase-client` for browser). Do not create ad-hoc Supabase clients in individual files.
+
+### 3. Bug Fixing & Code Quality Standards
+
+- **Root-Cause Fixes:** When fixing a bug, never just wrap failing code in a blank `try/catch`, add `setTimeout` workarounds, or call `e.preventDefault()` to hide an error. Reproduce the issue, identify the underlying logic failure, fix it, and verify the data still saves correctly.
+- **Modular Code:** Keep files focused. If a file exceeds ~250 lines, split it into smaller components or utilities. Avoid copy-pasting large blocks between files.
+- **Verification:** Before marking a task complete, run `npm run lint`, `npx tsc --noEmit`, and `npm run test` (or the subset relevant to the change). For UI changes, visually verify in the browser or with a screen recording.
+
 ## Tenant Isolation (CRITICAL)
 
 Every database operation **must** be scoped to a `clinic_id`. Failing to do so can leak patient data across clinics.
@@ -142,3 +164,77 @@ Any cleanup PR should reference this file to compare before/after metrics.
 PRs run: ESLint → TypeScript → Unit tests → Bundle size check (800 kB shared JS limit, see `scripts/check-bundle-budget.mjs`) → E2E tests
 
 Deploy pipeline (main/staging): lint → unit tests → build → deploy to Cloudflare Workers → health check
+
+## Vibe Coder / Non-Technical Product Owner Workflow
+
+The user often acts as a product tester: they click the UI, notice a symptom, and report it in plain language. Do not treat every short prompt as a complete spec. Follow these rules so the fixes stay clean and production-grade.
+
+### 1. Ask Clarifying Questions Before Coding
+
+If the prompt is vague, ambiguous, or contains only a symptom, ask up to three concrete questions before touching code. Good questions cover:
+
+- **Where:** exact URL, page, tab, or component.
+- **What I did:** the exact user action (clicked button, typed text, switched template, uploaded image).
+- **What I expected:** the desired outcome.
+- **Evidence:** screenshot, browser console output, or HAR file.
+
+Examples:
+
+- "Which clinic subdomain should I test on?"
+- "Do you want the change on all templates or only the currently selected one?"
+- "Should the old behavior be removed, or kept as a fallback?"
+
+### 2. Fix Root Causes, Not Symptoms
+
+Never hide an error just to make the UI stop failing. Do **not** wrap functions in blind `try/catch` blocks, add `setTimeout` workarounds, or disable checks without understanding why the failure happens.
+
+Required process:
+
+1. Reproduce the bug in the browser or with a failing test.
+2. Read the relevant code path, logs, and network responses.
+3. Explain the root cause in one sentence in the PR description.
+4. Fix the cause and verify the original flow still works end-to-end.
+
+### 3. Keep Changes Minimal and Scoped
+
+Do not refactor unrelated code, rename files, or change architecture outside the requested task unless required to make the fix work.
+
+- Prefer editing existing files over creating new ones.
+- Do not add new npm dependencies unless the dependency is already used elsewhere or the task cannot be done without it.
+- Do not create new template packages or pages unless the user explicitly asks for them.
+- Do not touch `src/middleware.ts`, auth/RLS modules, encryption, or `src/lib/tenant.ts` unless explicitly asked (see TASK-ROUTER.md).
+
+### 4. Verify Visually Before Marking Complete
+
+A green test or successful build is not enough. For UI changes:
+
+- Run the dev server or open the deployed preview.
+- Confirm the change renders correctly on desktop and mobile.
+- Confirm the original flow still works (e.g., switching back to the previous template does not break).
+- For high-risk changes, record a short screen capture and attach it to the PR or message.
+
+### 5. Template and Branding Changes Must Reflect Immediately
+
+Public pages are cached at the Cloudflare edge. When a user changes a template, color, or image in the admin dashboard:
+
+- Ensure the public page fetches fresh data on the next request.
+- Ensure `next.config.ts` `images.remotePatterns` allows the storage domain being used.
+- After changing branding, purge the relevant clinic cache or use `Cache-Control` headers that force revalidation.
+- Test the canonical `/` URL without `?_cache_bust`.
+
+### 6. Do Not Pollute the Repo with Test Artifacts
+
+E2E specs, Playwright configs, screenshots, and diagnostic scripts created during a debugging session are **untracked by default**. Do not `git add .` and do not commit them unless the user explicitly asks for them.
+
+### 7. Standard Bug Report Template
+
+When the user reports a bug, fill in this template with them before starting work:
+
+```text
+Where: <URL or page>
+What I did: <exact steps>
+What I expected: <desired result>
+What happened: <actual result>
+```
+
+This small amount of context is usually enough to locate and fix the issue without guessing.
