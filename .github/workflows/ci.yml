@@ -403,6 +403,12 @@ jobs:
       - name: Guard tenant scoping on Supabase mutations
         run: node scripts/check-tenant-scoping.mjs
 
+      # P0-3: Reject passing raw request bodies or spreading them at the
+      # top level of Supabase .insert()/.update()/.upsert() calls. Prevents
+      # mass-assignment of columns like role, clinic_id, or deleted_at.
+      - name: Guard mass-assignment in Supabase mutations
+        run: node scripts/check-mass-assignment.mjs
+
       # Audit egress-adoption fix: server-side third-party integration
       # modules (whatsapp, sms, email, hibp, cloudflare, billing webhook)
       # must route outbound HTTP through safeFetch() so the egress allowlist
