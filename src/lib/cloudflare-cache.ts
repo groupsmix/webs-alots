@@ -1,3 +1,4 @@
+import { getCloudflareApiConfig, getRootDomain } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
@@ -10,8 +11,7 @@ import { logger } from "@/lib/logger";
  * the function logs and returns false without throwing.
  */
 export async function purgeClinicPublicCache(subdomain: string): Promise<boolean> {
-  const zoneId = process.env.CLOUDFLARE_ZONE_ID;
-  const token = process.env.CLOUDFLARE_API_TOKEN;
+  const { apiToken: token, zoneId } = getCloudflareApiConfig();
 
   if (!zoneId || !token) {
     logger.warn(
@@ -24,7 +24,7 @@ export async function purgeClinicPublicCache(subdomain: string): Promise<boolean
     return false;
   }
 
-  const rootDomain = process.env.ROOT_DOMAIN || "oltigo.com";
+  const rootDomain = getRootDomain();
   const host = `${subdomain}.${rootDomain}`;
 
   try {
