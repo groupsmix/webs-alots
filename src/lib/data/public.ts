@@ -11,7 +11,12 @@ import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
 import { excludeSoftDeleted } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
-import { createClient, createTenantClient, createPublicAnonClient } from "@/lib/supabase-server";
+import {
+  createClient,
+  createTenantClient,
+  createPublicAnonClient,
+  createScopedAdminClient,
+} from "@/lib/supabase-server";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
@@ -195,67 +200,74 @@ const DEFAULT_BRANDING: ClinicBranding = {
  * Fetch branding from DB for a specific clinic.
  * Fetched fresh on every request so template, color, and hero image changes
  * from the admin panel are reflected immediately.
+ *
+ * Uses a scoped service-role client because the `clinics` table no longer has
+ * an anonymous SELECT policy; the query is scoped to the resolved clinicId.
  */
 async function fetchBrandingFromDb(
   clinicId: string,
   fallbackName: string,
 ): Promise<ClinicBranding> {
-  // F-03: Use anon client with x-clinic-id header instead of admin client.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return { ...DEFAULT_BRANDING, clinicName: fallbackName };
-  }
+  try {
+    const supabase = createScopedAdminClient("public_branding", clinicId);
 
-  const supabase = createPublicAnonClient(clinicId);
+    const { data, error } = await supabase
+      .from("clinics")
+      .select(
+        "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address, owner_email, config",
+      )
+      .eq("id", clinicId)
+      .single();
 
-  const { data, error } = await supabase
-    .from("clinics")
-    .select(
-      "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address, owner_email, config",
-    )
-    .eq("id", clinicId)
-    .single();
+    if (error || !data) {
+      return { ...DEFAULT_BRANDING, clinicName: fallbackName };
+    }
 
-  if (error || !data) {
-    return { ...DEFAULT_BRANDING, clinicName: fallbackName };
-  }
+    // Fallback to config JSONB for phone/address/email when direct columns are null
+    const cfg = (data.config ?? {}) as ClinicConfigJson;
 
-  // Fallback to config JSONB for phone/address/email when direct columns are null
-  const cfg = (data.config ?? {}) as ClinicConfigJson;
+    // A7: defaults below keep the site renderable, but a clinic missing core
+    // branding usually means an incomplete provisioning/onboarding. Surface it
+    // once per cache TTL so it can be backfilled rather than silently masked.
+    const missingBranding = [
+      !data.name && "name",
+      !data.primary_color && "primary_color",
+      !data.template_id && "template_id",
+    ].filter((field): field is string => Boolean(field));
+    if (missingBranding.length > 0) {
+      logger.warn("Clinic branding incomplete — applying defaults", {
+        context: "data/public:fetchBrandingFromDb",
+        clinicId,
+        missingFields: missingBranding,
+      });
+    }
 
-  // A7: defaults below keep the site renderable, but a clinic missing core
-  // branding usually means an incomplete provisioning/onboarding. Surface it
-  // once per cache TTL so it can be backfilled rather than silently masked.
-  const missingBranding = [
-    !data.name && "name",
-    !data.primary_color && "primary_color",
-    !data.template_id && "template_id",
-  ].filter((field): field is string => Boolean(field));
-  if (missingBranding.length > 0) {
-    logger.warn("Clinic branding incomplete — applying defaults", {
+    return {
+      logoUrl: data.logo_url ?? null,
+      faviconUrl: data.favicon_url ?? null,
+      primaryColor: data.primary_color ?? "#1E4DA1",
+      secondaryColor: data.secondary_color ?? "#0F6E56",
+      headingFont: data.heading_font ?? "Geist",
+      bodyFont: data.body_font ?? "Geist",
+      heroImageUrl: data.hero_image_url ?? null,
+      clinicName: data.name ?? fallbackName,
+      tagline: data.tagline ?? null,
+      coverPhotoUrl: data.cover_photo_url ?? null,
+      templateId: data.template_id ?? "modern",
+      sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
+      phone: data.phone ?? cfg.phone ?? null,
+      address: data.address ?? cfg.address ?? null,
+      email: data.owner_email ?? cfg.email ?? null,
+      websiteConfig: (data.website_config as Record<string, unknown> | null) ?? null,
+    };
+  } catch (err) {
+    logger.warn("Failed to fetch public branding", {
       context: "data/public:fetchBrandingFromDb",
       clinicId,
-      missingFields: missingBranding,
+      error: err,
     });
+    return { ...DEFAULT_BRANDING, clinicName: fallbackName };
   }
-
-  return {
-    logoUrl: data.logo_url ?? null,
-    faviconUrl: data.favicon_url ?? null,
-    primaryColor: data.primary_color ?? "#1E4DA1",
-    secondaryColor: data.secondary_color ?? "#0F6E56",
-    headingFont: data.heading_font ?? "Geist",
-    bodyFont: data.body_font ?? "Geist",
-    heroImageUrl: data.hero_image_url ?? null,
-    clinicName: data.name ?? fallbackName,
-    tagline: data.tagline ?? null,
-    coverPhotoUrl: data.cover_photo_url ?? null,
-    templateId: data.template_id ?? "modern",
-    sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
-    phone: data.phone ?? cfg.phone ?? null,
-    address: data.address ?? cfg.address ?? null,
-    email: data.owner_email ?? cfg.email ?? null,
-    websiteConfig: (data.website_config as Record<string, unknown> | null) ?? null,
-  };
 }
 
 export async function getPublicBranding(): Promise<ClinicBranding> {

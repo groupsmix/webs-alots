@@ -26,28 +26,21 @@ import { logger } from "@/lib/logger";
 /** Admin route prefixes that should be geo-restricted. */
 const ADMIN_PREFIXES = ["/admin", "/dashboard", "/api/admin"] as const;
 
-let _allowedCountries: Set<string> | null | undefined;
-
 function getAllowedCountries(): Set<string> | null {
-  if (_allowedCountries !== undefined) return _allowedCountries;
-
   if (!isAdminGeoRestrictionEnabled()) {
-    _allowedCountries = null;
     return null;
   }
 
   const raw = getGeoRestrictAdminCountries();
   if (!raw || raw.trim() === "") {
-    _allowedCountries = new Set(["MA"]);
-    return _allowedCountries;
+    return new Set(["MA"]);
   }
-  _allowedCountries = new Set(
+  return new Set(
     raw
       .split(",")
       .map((c) => c.trim().toUpperCase())
       .filter(Boolean),
   );
-  return _allowedCountries;
 }
 
 /**
