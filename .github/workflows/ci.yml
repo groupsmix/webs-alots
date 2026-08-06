@@ -241,6 +241,12 @@ jobs:
         working-directory: workers/ai
         run: npx tsc --noEmit
 
+      # SEC-010: The AI Worker has its own lockfile and bundled deps.
+      # Fail on moderate+ CVEs so vulnerable worker packages cannot ship.
+      - name: Audit AI Worker dependencies
+        working-directory: workers/ai
+        run: npm audit --audit-level=moderate
+
       # CI-08: Coverage thresholds are defined in vitest.config.ts and
       # enforced here. @vitest/coverage-v8 is a devDependency installed by
       # `npm ci` above; failing this step blocks the PR.
