@@ -33,6 +33,7 @@ or `manual` (operator-run).
 | `check-mvp-scope-refs.mjs`              | Node       | CI        | Verifies symbols referenced in `MVP_SCOPE.md` still exist in source.                                       |
 | `check-security-coverage.mjs`           | Node       | CI        | Asserts the documented security-test coverage posture.                                                     |
 | `check-tenant-scoping.mjs`              | Node       | CI        | Guards tenant (clinic) scoping invariants.                                                                 |
+| `check-mass-assignment.mjs`             | Node       | CI        | Rejects raw request bodies or top-level spreads in Supabase .insert/.update/.upsert.                       |
 | `check-translations.mjs`                | Node       | CI        | Validates translation files for structural issues.                                                         |
 | `ratchet-coverage.mjs`                  | Node       | manual    | Bumps `.vitest-coverage-floor.json` to current coverage.                                                   |
 | `strip-suppressed-sarif.mjs`            | Node       | CI        | Removes in-source-suppressed findings from a SARIF before upload.                                          |
