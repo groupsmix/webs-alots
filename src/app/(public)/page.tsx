@@ -1,30 +1,16 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Fragment } from "react";
 import { LandingPage } from "@/components/landing/landing-page";
 import { dictionaries as landingDictionaries } from "@/components/landing/oltigo/i18n/dictionaries";
-import { HeroSection } from "@/components/public/hero-section";
-import {
-  BlogSection,
-  BookingSection,
-  ContactFormSection,
-  DoctorsSection,
-  FaqSection,
-  InsuranceSection,
-  LocationSection,
-  ReviewsSection,
-  WhyChooseSection,
-} from "@/components/public/sections";
-import { ServicesPreview } from "@/components/public/services-preview";
-import { PremiumTemplate } from "@/components/public/templates/premium";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { getPublicAverageRating, getPublicBranding, getPublicReviews } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
 import { t, type Locale } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { buildMetadata } from "@/lib/metadata";
-import { mergeSectionVisibility, type SectionKey } from "@/lib/section-visibility";
-import { getTemplate, resolveSectionOrder } from "@/lib/templates";
+import { mergeSectionVisibility } from "@/lib/section-visibility";
+import { templatePages } from "@/lib/template-registry";
+import { getTemplate } from "@/lib/templates";
 import { getTenant } from "@/lib/tenant";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
@@ -292,93 +278,21 @@ export default async function HomePage() {
     },
   };
 
-  const websiteHero = (
-    branding.websiteConfig as { hero?: { title?: string; subtitle?: string } } | null
-  )?.hero;
-  const heroOverrides = {
-    title: websiteHero?.title ?? branding.clinicName,
-    subtitle: (websiteHero?.subtitle ?? branding.tagline) || undefined,
-    imageUrl: branding.heroImageUrl ?? branding.coverPhotoUrl ?? undefined,
-  };
-
-  const websiteFaq = (
-    branding.websiteConfig as {
-      faq?: { title?: string; subtitle?: string; items?: { q: string; a: string }[] };
-    } | null
-  )?.faq;
-  const faq = {
-    title: websiteFaq?.title ?? defaultWebsiteConfig.faq.title,
-    subtitle: websiteFaq?.subtitle ?? defaultWebsiteConfig.faq.subtitle,
-    items: websiteFaq?.items ?? defaultWebsiteConfig.faq.items,
-  };
-
-  // Premium template gets its own self-contained package.
-  if (template.id === "premium") {
-    return (
-      <PremiumTemplate
-        branding={branding}
-        reviews={reviews}
-        avgRating={avgRating}
-        locale={locale}
-        nonce={nonce}
-        template={template}
-        sections={sections}
-        clinicSchema={clinicSchema}
-      />
-    );
+  const TemplatePage = templatePages[template.id];
+  if (!TemplatePage) {
+    throw new Error(`Unknown template: ${template.id}`);
   }
-
-  // Generic templates use the shared, neutral section components.
-  const renderers: Partial<Record<SectionKey, React.ReactNode>> = {};
-
-  if (sections.hero) {
-    renderers.hero = <HeroSection variant={template.heroStyle} overrides={heroOverrides} />;
-  }
-  if (sections.services) {
-    renderers.services = <ServicesPreview cardStyle={template.cardStyle} />;
-  }
-  if (sections.why) {
-    renderers.why = (
-      <WhyChooseSection cardStyle={template.cardStyle} clinicName={branding.clinicName} />
-    );
-  }
-  if (sections.doctors) {
-    renderers.doctors = <DoctorsSection cardStyle={template.cardStyle} />;
-  }
-  if (sections.reviews && reviews.length > 0) {
-    renderers.reviews = (
-      <ReviewsSection
-        reviews={reviews}
-        avgRating={avgRating}
-        locale={locale}
-        cardStyle={template.cardStyle}
-      />
-    );
-  }
-  if (sections.blog) renderers.blog = <BlogSection />;
-  if (sections.location) {
-    renderers.location = (
-      <LocationSection address={branding.address} websiteConfig={branding.websiteConfig} />
-    );
-  }
-  if (sections.booking) renderers.booking = <BookingSection locale={locale} />;
-  if (sections.contactForm) renderers.contactForm = <ContactFormSection />;
-  if (sections.insurance) renderers.insurance = <InsuranceSection />;
-  if (sections.faq) {
-    renderers.faq = <FaqSection title={faq.title} subtitle={faq.subtitle} faqs={faq.items} />;
-  }
-
-  const orderedSections = resolveSectionOrder(
-    template.sectionOrder,
-    Object.keys(renderers) as SectionKey[],
-  );
 
   return (
-    <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
-      <JsonLdScript data={clinicSchema} nonce={nonce} />
-      {orderedSections.map((key) => (
-        <Fragment key={key}>{renderers[key]}</Fragment>
-      ))}
-    </div>
+    <TemplatePage
+      branding={branding}
+      reviews={reviews}
+      avgRating={avgRating}
+      locale={locale}
+      nonce={nonce}
+      template={template}
+      sections={sections}
+      clinicSchema={clinicSchema}
+    />
   );
 }

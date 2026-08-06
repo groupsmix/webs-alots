@@ -1,104 +1,145 @@
 import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
+import type { ClinicBranding } from "@/lib/data/public";
 import { cn } from "@/lib/utils";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-interface HeroOverrides {
+export interface HeroOverrides {
   title?: string;
   subtitle?: string;
   imageUrl?: string;
 }
 
-/** Hero layout variants used by the generic home page. */
-type HeroVariant = "split" | "centered" | "fullwidth" | "overlay";
+export type HeroVariant = "split" | "centered" | "fullwidth" | "overlay" | "minimal";
 
-interface HeroSectionProps {
+interface BaseHeroProps {
+  branding: ClinicBranding;
   overrides?: HeroOverrides;
-  /** Layout variant from the template. Defaults to the classic split layout. */
   variant?: HeroVariant;
+  dark?: boolean;
+  className?: string;
+  contentClassName?: string;
+  titleClassName?: string;
+  subtitleClassName?: string;
 }
 
-export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) {
+export function BaseHero({
+  branding,
+  overrides,
+  variant = "split",
+  dark = false,
+  className,
+  contentClassName,
+  titleClassName,
+  subtitleClassName,
+}: BaseHeroProps) {
   const cfg = {
     ...defaultWebsiteConfig.hero,
-    ...overrides,
+    title: overrides?.title ?? branding.clinicName,
+    subtitle: overrides?.subtitle ?? branding.tagline ?? defaultWebsiteConfig.hero.subtitle,
+    imageUrl: overrides?.imageUrl ?? undefined,
   };
 
-  const ctas = (align: "center" | "start") => (
+  const isCentered = variant === "centered" || variant === "minimal";
+  const isFullwidth = variant === "fullwidth";
+  const isOverlay = variant === "overlay";
+  const isMinimal = variant === "minimal";
+
+  const baseBg = dark
+    ? "bg-gray-950 text-white"
+    : isOverlay
+      ? "bg-primary text-primary-foreground"
+      : isMinimal
+        ? "bg-transparent"
+        : isFullwidth
+          ? "bg-gradient-to-b from-primary/10 via-primary/5 to-transparent"
+          : "bg-gradient-to-br from-primary/5 to-primary/10";
+
+  const titleBase = isMinimal
+    ? "text-2xl font-bold tracking-tight text-balance sm:text-3xl lg:text-4xl"
+    : "text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl";
+
+  const subtitleBase = dark
+    ? "text-white/80"
+    : isOverlay
+      ? "text-primary-foreground/80"
+      : "text-muted-foreground";
+
+  const align = isCentered || isFullwidth || isOverlay ? "center" : "start";
+
+  const primaryBtn = cn(
+    buttonVariants({ size: "lg" }),
+    "w-full sm:w-auto",
+    (dark || isOverlay) && "bg-white text-primary hover:bg-white/90",
+  );
+
+  const secondaryBtn = cn(
+    buttonVariants({ variant: "outline", size: "lg" }),
+    "w-full sm:w-auto",
+    dark && "border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white",
+    isOverlay && "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white",
+  );
+
+  const ctas = (
     <div
       className={cn(
-        "mt-8 sm:mt-10 flex flex-col sm:flex-row items-center gap-3",
+        "mt-6 sm:mt-8 flex flex-col sm:flex-row items-center gap-3",
         align === "center" ? "justify-center" : "justify-center lg:justify-start",
       )}
     >
-      <Link
-        href="/book"
-        data-event="cta-public-hero-primary"
-        className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}
-      >
+      <Link href="/book" data-event="cta-public-hero-primary" className={primaryBtn}>
         {cfg.ctaPrimary}
       </Link>
-      <Link
-        href="/services"
-        data-event="cta-public-hero-secondary"
-        className={buttonVariants({
-          variant: "outline",
-          size: "lg",
-          className: "w-full sm:w-auto",
-        })}
-      >
+      <Link href="/services" data-event="cta-public-hero-secondary" className={secondaryBtn}>
         {cfg.ctaSecondary}
       </Link>
     </div>
   );
 
-  // Centered / fullwidth / overlay all use a single stacked column. They
-  // differ in background treatment and vertical rhythm.
-  if (variant === "centered" || variant === "fullwidth" || variant === "overlay") {
-    const bg =
-      variant === "overlay"
-        ? "bg-primary text-primary-foreground"
-        : variant === "fullwidth"
-          ? "bg-gradient-to-b from-primary/10 via-primary/5 to-transparent"
-          : "bg-gradient-to-br from-primary/5 to-primary/10";
-    const isOverlay = variant === "overlay";
+  const content = (
+    <div className={cn("max-w-3xl", align === "center" && "mx-auto text-center")}>
+      <h1 className={cn(titleBase, titleClassName)}>{cfg.title}</h1>
+      {cfg.subtitle ? (
+        <p
+          className={cn(
+            "mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg",
+            align === "center" ? "mx-auto" : "lg:mx-0",
+            subtitleBase,
+            subtitleClassName,
+          )}
+        >
+          {cfg.subtitle}
+        </p>
+      ) : null}
+      {ctas}
+    </div>
+  );
+
+  if (isCentered || isFullwidth || isOverlay) {
     return (
       <section
-        className={`relative ${bg} ${variant === "fullwidth" ? "py-20 sm:py-32" : "py-16 sm:py-24"}`}
+        className={cn(
+          baseBg,
+          isFullwidth ? "py-20 sm:py-32 lg:py-40" : isMinimal ? "py-12 sm:py-16" : "py-16 sm:py-24",
+          className,
+        )}
       >
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              {cfg.title}
-            </h1>
-            <p
-              className={`mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg ${
-                isOverlay ? "text-primary-foreground/80" : "text-muted-foreground"
-              }`}
-            >
-              {cfg.subtitle}
-            </p>
-            {ctas("center")}
+        <div className={cn("container mx-auto px-4", contentClassName)}>
+          <div className={cn("max-w-3xl mx-auto text-center", align === "center" && "mx-auto")}>
+            {content}
           </div>
         </div>
       </section>
     );
   }
 
+  // Split layout
   return (
-    <section className="relative bg-gradient-to-br from-primary/5 to-primary/10 py-16 sm:py-24">
-      <div className="container mx-auto px-4">
+    <section className={cn(baseBg, "py-16 sm:py-24", className)}>
+      <div className={cn("container mx-auto px-4", contentClassName)}>
         <div className="grid items-center gap-10 lg:gap-12 lg:grid-cols-2">
-          <div className="text-center lg:text-start">
-            <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              {cfg.title}
-            </h1>
-            <p className="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg text-muted-foreground lg:mx-0">
-              {cfg.subtitle}
-            </p>
-            {ctas("start")}
-          </div>
+          <div className="text-center lg:text-start">{content}</div>
 
           <div className="hidden lg:flex justify-center">
             {cfg.imageUrl ? (
@@ -119,7 +160,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-full w-full drop-shadow-xl"
                 >
-                  {/* Background card */}
                   <rect
                     x="60"
                     y="30"
@@ -139,12 +179,8 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                     strokeWidth="1.5"
                     fill="none"
                   />
-
-                  {/* Decorative circles */}
                   <circle cx="420" cy="60" r="40" className="fill-primary/5" />
                   <circle cx="80" cy="350" r="30" className="fill-primary/5" />
-
-                  {/* Stethoscope icon */}
                   <g transform="translate(200, 60)">
                     <circle cx="50" cy="50" r="42" className="fill-primary/10" />
                     <path
@@ -171,8 +207,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                     />
                     <circle cx="65" cy="58" r="3" className="fill-primary" />
                   </g>
-
-                  {/* Appointment card 1 */}
                   <g transform="translate(95, 155)">
                     <rect width="310" height="60" rx="12" className="fill-primary/5" />
                     <rect x="12" y="12" width="36" height="36" rx="8" className="fill-primary/15" />
@@ -193,8 +227,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                       09:00
                     </text>
                   </g>
-
-                  {/* Appointment card 2 */}
                   <g transform="translate(95, 230)">
                     <rect width="310" height="60" rx="12" className="fill-primary/5" />
                     <rect
@@ -231,8 +263,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                       10:30
                     </text>
                   </g>
-
-                  {/* Stats bar */}
                   <g transform="translate(95, 310)">
                     <rect width="95" height="44" rx="10" className="fill-primary/10" />
                     <text
@@ -254,7 +284,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                     >
                       Patients
                     </text>
-
                     <rect
                       x="108"
                       y="0"
@@ -282,7 +311,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                     >
                       Satisfaction
                     </text>
-
                     <rect
                       x="215"
                       y="0"
@@ -311,8 +339,6 @@ export function HeroSection({ overrides, variant = "split" }: HeroSectionProps) 
                       Services
                     </text>
                   </g>
-
-                  {/* Floating pulse dot */}
                   <circle cx="390" cy="170" r="6" className="fill-emerald-500 animate-pulse" />
                   <circle
                     cx="390"
