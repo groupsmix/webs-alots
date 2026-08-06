@@ -193,20 +193,14 @@ const DEFAULT_BRANDING: ClinicBranding = {
 
 /**
  * Fetch branding from DB for a specific clinic.
- * Wrapped with `use cache` for a 5-minute TTL to avoid
- * hitting the DB on every page load (branding rarely changes).
+ * Fetched fresh on every request so template, color, and hero image changes
+ * from the admin panel are reflected immediately.
  */
 async function fetchBrandingFromDb(
   clinicId: string,
   fallbackName: string,
 ): Promise<ClinicBranding> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag(`clinic-branding-${clinicId}`);
-
   // F-03: Use anon client with x-clinic-id header instead of admin client.
-  // Inside `use cache` we cannot read cookies, so we use a cookie-free
-  // client that respects RLS via the x-clinic-id header.
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return { ...DEFAULT_BRANDING, clinicName: fallbackName };
   }
