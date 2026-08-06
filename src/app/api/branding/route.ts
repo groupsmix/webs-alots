@@ -8,6 +8,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { purgeClinicPublicCache } from "@/lib/cloudflare-cache";
 import { logger } from "@/lib/logger";
 import { uploadToR2, isR2Configured, buildUploadKey, getResponsiveImageUrls } from "@/lib/r2";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
@@ -129,9 +130,10 @@ export async function GET() {
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
 
-    // P-05: Cache branding for 5 min, serve stale for 10 min while revalidating
+    // Branding can change from the admin panel and must be authoritative
+    // immediately; do not let any cache (browser or shared) serve stale data.
     return apiSuccess(publicData, 200, {
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+      "Cache-Control": "private, no-store, must-revalidate",
     });
   } catch (err) {
     logger.warn("Failed to fetch branding", { context: "branding", error: err });
@@ -196,6 +198,9 @@ export const PUT = withAuthValidation(
     // Invalidate branding cache so public pages pick up the change
     revalidatePath("/", "layout");
     revalidateTag(`clinic-branding-${clinicId}`, "max");
+
+    // Purge Cloudflare edge cache so the public site updates immediately
+    await purgeClinicPublicCache(tenant.subdomain);
 
     // Invalidate subdomain cache so middleware picks up any name/config changes
     invalidateAllSubdomainCaches();
@@ -277,6 +282,9 @@ export const POST = withAuth(async (request, { supabase }) => {
   // Invalidate branding cache so public pages pick up the new image
   revalidatePath("/", "layout");
   revalidateTag(`clinic-branding-${clinicId}`, "max");
+
+  // Purge Cloudflare edge cache so the public site updates immediately
+  await purgeClinicPublicCache(tenant.subdomain);
 
   // Invalidate subdomain cache so middleware picks up any config changes
   invalidateAllSubdomainCaches();

@@ -20,6 +20,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { purgeClinicPublicCache } from "@/lib/cloudflare-cache";
 import { getDefaultServices } from "@/lib/config/default-services";
 import { logger } from "@/lib/logger";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
@@ -113,6 +114,10 @@ export const POST = withAuthValidation(
     // Invalidate caches so the public site picks up the change immediately
     revalidatePath("/", "layout");
     revalidateTag(`clinic-branding-${clinicId}`, "max");
+
+    // Purge Cloudflare edge cache so the public site updates immediately
+    await purgeClinicPublicCache(tenant.subdomain);
+
     invalidateAllSubdomainCaches();
 
     return apiSuccess({
