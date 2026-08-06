@@ -12,7 +12,7 @@ import { purgeClinicPublicCache } from "@/lib/cloudflare-cache";
 import { logger } from "@/lib/logger";
 import { uploadToR2, isR2Configured, buildUploadKey, getResponsiveImageUrls } from "@/lib/r2";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
-import { createTenantClient } from "@/lib/supabase-server";
+import { createScopedAdminClient } from "@/lib/supabase-server";
 import { getTenant, requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
 import { brandingUpdateSchema } from "@/lib/validations";
@@ -93,7 +93,7 @@ export async function GET() {
     }
 
     const clinicId = tenant.clinicId;
-    const supabase = await createTenantClient(clinicId);
+    const supabase = createScopedAdminClient("public_branding", clinicId);
 
     const { data, error } = await supabase
       .from("clinics")
