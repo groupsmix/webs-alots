@@ -10,7 +10,13 @@ import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { purgeClinicPublicCache } from "@/lib/cloudflare-cache";
 import { logger } from "@/lib/logger";
-import { uploadToR2, isR2Configured, buildUploadKey, getResponsiveImageUrls } from "@/lib/r2";
+import {
+  uploadToR2,
+  isR2Configured,
+  buildUploadKey,
+  getResponsiveImageUrls,
+  normalizeR2ImageUrl,
+} from "@/lib/r2";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { createScopedAdminClient } from "@/lib/supabase-server";
 import { getTenant, requireTenant } from "@/lib/tenant";
@@ -130,9 +136,19 @@ export async function GET() {
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
 
+    // Rewrite legacy non-public R2 S3 URLs to the same-origin /r2/{key} proxy
+    // so previews and public pages can actually load the image.
+    const normalizedPublicData = {
+      ...publicData,
+      logo_url: normalizeR2ImageUrl(publicData.logo_url),
+      favicon_url: normalizeR2ImageUrl(publicData.favicon_url),
+      hero_image_url: normalizeR2ImageUrl(publicData.hero_image_url),
+      cover_photo_url: normalizeR2ImageUrl(publicData.cover_photo_url),
+    };
+
     // Branding can change from the admin panel and must be authoritative
     // immediately; do not let any cache (browser or shared) serve stale data.
-    return apiSuccess(publicData, 200, {
+    return apiSuccess(normalizedPublicData, 200, {
       "Cache-Control": "private, no-store, must-revalidate",
     });
   } catch (err) {

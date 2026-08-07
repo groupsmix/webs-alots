@@ -11,6 +11,7 @@ import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
 import { excludeSoftDeleted } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
+import { normalizeR2ImageUrl } from "@/lib/r2";
 import {
   createClient,
   createTenantClient,
@@ -243,16 +244,16 @@ async function fetchBrandingFromDb(
     }
 
     return {
-      logoUrl: data.logo_url ?? null,
-      faviconUrl: data.favicon_url ?? null,
+      logoUrl: normalizeR2ImageUrl(data.logo_url),
+      faviconUrl: normalizeR2ImageUrl(data.favicon_url),
       primaryColor: data.primary_color ?? "#1E4DA1",
       secondaryColor: data.secondary_color ?? "#0F6E56",
       headingFont: data.heading_font ?? "Geist",
       bodyFont: data.body_font ?? "Geist",
-      heroImageUrl: data.hero_image_url ?? null,
+      heroImageUrl: normalizeR2ImageUrl(data.hero_image_url),
       clinicName: data.name ?? fallbackName,
       tagline: data.tagline ?? null,
-      coverPhotoUrl: data.cover_photo_url ?? null,
+      coverPhotoUrl: normalizeR2ImageUrl(data.cover_photo_url),
       templateId: data.template_id ?? "modern",
       sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
       phone: data.phone ?? cfg.phone ?? null,
