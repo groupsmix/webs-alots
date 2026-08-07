@@ -1,9 +1,8 @@
+import { headers } from "next/headers";
 import { Chatbot } from "@/components/chatbot";
-import { DynamicFooter } from "@/components/public/dynamic-footer";
-import { DynamicHeader } from "@/components/public/dynamic-header";
-import { PublicFooter } from "@/components/public/footer";
-import { PublicHeader } from "@/components/public/header";
+import { DefaultTemplateLayout } from "@/components/public/default-template-layout";
 import { getPublicBranding } from "@/lib/data/public";
+import type { Locale } from "@/lib/i18n";
 import { buildPublicThemeStyle } from "@/lib/public-theme";
 import { getTemplate } from "@/lib/templates";
 
@@ -14,61 +13,21 @@ import { getTemplate } from "@/lib/templates";
  * that was previously duplicated across separate public route groups,
  * now unified under the (clinic-public) route group.
  *
- * Dynamically selects header/footer components based on the clinic's
- * chosen template structural fields (headerVariant, footerVariant).
- * Falls back to the default PublicHeader/PublicFooter for "top-sticky"
- * and "classic-3col" variants respectively.
+ * Template packages can provide their own Layout/Header/Footer components;
+ * otherwise the default dispatcher selects the legacy variant-based
+ * PublicHeader/DynamicHeader and PublicFooter/DynamicFooter components.
  */
 export async function ClinicPublicLayout({ children }: { children: React.ReactNode }) {
   const branding = await getPublicBranding();
   const template = getTemplate(branding.templateId);
-
-  // Determine whether to use the original header/footer or dynamic variants
-  const useOriginalHeader = template.headerVariant === "top-sticky";
-  const useOriginalFooter = template.footerVariant === "classic-3col";
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   return (
     <div style={buildPublicThemeStyle(branding, template)}>
-      {useOriginalHeader ? (
-        <PublicHeader
-          logoUrl={branding.logoUrl}
-          clinicName={branding.clinicName}
-          sectionVisibility={branding.sectionVisibility}
-          phone={branding.phone}
-          email={branding.email}
-          address={branding.address}
-        />
-      ) : (
-        <DynamicHeader
-          logoUrl={branding.logoUrl}
-          clinicName={branding.clinicName}
-          phone={branding.phone}
-          email={branding.email}
-          address={branding.address}
-          headerVariant={template.headerVariant}
-          template={template}
-        />
-      )}
-      <main id="main-content" className="flex-1">
+      <DefaultTemplateLayout branding={branding} template={template} locale={locale}>
         {children}
-      </main>
-      {useOriginalFooter ? (
-        <PublicFooter
-          clinicName={branding.clinicName}
-          phone={branding.phone ?? undefined}
-          email={branding.email ?? undefined}
-          address={branding.address ?? undefined}
-        />
-      ) : (
-        <DynamicFooter
-          clinicName={branding.clinicName}
-          footerVariant={template.footerVariant}
-          template={template}
-          phone={branding.phone}
-          email={branding.email}
-          address={branding.address}
-        />
-      )}
+      </DefaultTemplateLayout>
       <Chatbot />
     </div>
   );

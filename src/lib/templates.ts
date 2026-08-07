@@ -14,14 +14,14 @@ import {
  * branding / website config.
  */
 
-export type TemplateId =
-  | "modern"
-  | "classic"
-  | "elegant"
-  | "bold"
-  | "minimal"
-  | "arabic"
-  | "premium";
+/**
+ * Template identifiers are free-form strings.
+ *
+ * Existing built-in templates use kebab-case IDs (modern, classic, …),
+ * but the system no longer constrains the list. New templates can be
+ * registered in `src/lib/template-registry.ts` and added here as metadata.
+ */
+export type TemplateId = string;
 
 /** Header layout variant */
 export type HeaderVariant =
@@ -53,7 +53,7 @@ type HeroVariant =
 export type ProductClickBehavior = "modal" | "landing-page" | "side-panel" | "new-tab";
 
 export interface TemplateDefinition {
-  id: TemplateId;
+  id: string;
   name: string;
   description: string;
   /** Tailwind classes applied to the page wrapper */
@@ -87,7 +87,7 @@ export interface TemplateDefinition {
   productClickBehavior: ProductClickBehavior;
 }
 
-const templates: Record<TemplateId, TemplateDefinition> = {
+const templates: Record<string, TemplateDefinition> = {
   modern: {
     id: "modern",
     name: "Modern",
@@ -228,7 +228,7 @@ const templates: Record<TemplateId, TemplateDefinition> = {
 export const templateList: TemplateDefinition[] = Object.values(templates);
 
 export function getTemplate(id: string): TemplateDefinition {
-  return templates[id as TemplateId] ?? templates.modern;
+  return templates[id] ?? templates.modern;
 }
 
 /**

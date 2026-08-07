@@ -13,12 +13,11 @@
 
 import type { VerticalId } from "@/lib/config/verticals";
 import type { SectionVisibility } from "@/lib/section-visibility";
-import type { TemplateId } from "@/lib/templates";
 
 export interface TemplatePreset {
   id: string;
   vertical: VerticalId;
-  templateId: TemplateId;
+  templateId: string;
   name: string;
   nameAr: string;
   description: string;
