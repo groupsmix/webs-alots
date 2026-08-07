@@ -37,7 +37,7 @@
 
 import { createHash, createHmac } from "crypto";
 import { getWorkerBinding } from "@/lib/cf-bindings";
-import { getR2Config, isProduction } from "@/lib/env";
+import { getR2Config, getR2ConfigAsync, isProduction } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
@@ -308,15 +308,17 @@ export async function uploadToR2(
   // other sensitive content should generate short-lived signed URLs at read
   // time via generateSignedR2Url() / getPresignedDownloadUrl() rather than
   // relying on the public URL.
-  const { accountId, bucketName, publicUrl } = getR2Config();
+  //
+  // Read R2_PUBLIC_URL from the Cloudflare runtime context when available,
+  // because Worker vars/secrets live on getCloudflareContext().env, not
+  // process.env. When no public URL is configured, fall back to the same-origin
+  // /r2/{key} proxy so the app can serve the object directly without relying on
+  // the S3 API endpoint (which is not publicly accessible and is blocked by CSP
+  // / next.config remotePatterns).
+  const { publicUrl } = await getR2ConfigAsync();
   if (publicUrl) {
     return `${publicUrl.replace(/\/$/, "")}/${finalKey}`;
   }
-  if (accountId && bucketName) {
-    return `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${finalKey}`;
-  }
-  // Binding present but no account/bucket env for URL construction: return a
-  // stable relative key the download proxy can resolve.
   return `/r2/${finalKey}`;
 }
 
@@ -626,4 +628,31 @@ export function getResponsiveImageUrls(srcUrl: string): Record<number, string> {
     urls[w] = getResizedImageUrl(srcUrl, w);
   }
   return urls;
+}
+
+/**
+ * Rewrite legacy R2 S3 API URLs into same-origin /r2/{key} proxy URLs.
+ *
+ * The S3-compatible `*.r2.cloudflarestorage.com` endpoint is not publicly
+ * readable and is not allowlisted in next.config / CSP, so any persisted
+ * branding image URL that uses it will fail in the browser. This helper
+ * normalizes those URLs to the local proxy while leaving external URLs and
+ * already-relative URLs untouched.
+ */
+export function normalizeR2ImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/") || url.startsWith("data:")) return url;
+
+  try {
+    const parsed = new URL(url);
+    // Only rewrite the non-public R2 S3 API host. Custom public domains (e.g.
+    // a configured R2_PUBLIC_URL) and Supabase storage are left as-is.
+    if (parsed.hostname.toLowerCase().endsWith(".r2.cloudflarestorage.com") && parsed.pathname) {
+      return `/r2${parsed.pathname}`;
+    }
+    return url;
+  } catch {
+    // Not a valid URL (e.g. user-typed relative path) — return unchanged.
+    return url;
+  }
 }

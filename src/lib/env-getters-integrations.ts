@@ -51,6 +51,39 @@ export function getR2Config(): {
   };
 }
 
+/**
+ * Async version of getR2Config — reads from getCloudflareContext().env first
+ * (Cloudflare Workers runtime) then falls back to process.env (local dev/tests).
+ *
+ * R2_PUBLIC_URL is often set as a Worker var/secret and may not be present in
+ * process.env under @opennextjs/cloudflare. Use this in async request handlers
+ * instead of the sync version for runtime URL resolution.
+ */
+export async function getR2ConfigAsync(): Promise<{
+  accountId: string | undefined;
+  accessKeyId: string | undefined;
+  secretAccessKey: string | undefined;
+  bucketName: string | undefined;
+  signedUrlSecret: string | undefined;
+  signedUrlBase: string | undefined;
+  publicUrl: string | undefined;
+}> {
+  const { getWorkerBinding } = await import("@/lib/cf-bindings");
+
+  const get = async (name: string): Promise<string | undefined> =>
+    (await getWorkerBinding<string>(name)) ?? process.env[name];
+
+  return {
+    accountId: await get("R2_ACCOUNT_ID"),
+    accessKeyId: await get("R2_ACCESS_KEY_ID"),
+    secretAccessKey: await get("R2_SECRET_ACCESS_KEY"),
+    bucketName: await get("R2_BUCKET_NAME"),
+    signedUrlSecret: await get("R2_SIGNED_URL_SECRET"),
+    signedUrlBase: await get("R2_SIGNED_URL_BASE"),
+    publicUrl: await get("R2_PUBLIC_URL"),
+  };
+}
+
 /** Cloudflare API credentials for DNS / custom hostname management. */
 export function getCloudflareApiConfig(): {
   apiToken: string | undefined;

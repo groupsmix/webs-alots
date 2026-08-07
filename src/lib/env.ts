@@ -105,6 +105,7 @@ export {
   getInsuranceProvider,
   getMetaAppSecret,
   getR2Config,
+  getR2ConfigAsync,
   getR2OrphanRateAlertThreshold,
   getResendApiKey,
   getSmtpHost,
