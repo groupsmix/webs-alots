@@ -278,10 +278,7 @@ export default async function HomePage() {
     },
   };
 
-  const TemplatePage = templatePages[template.id];
-  if (!TemplatePage) {
-    throw new Error(`Unknown template: ${template.id}`);
-  }
+  const TemplatePage = templatePages[template.id] ?? templatePages.modern;
 
   return (
     <TemplatePage

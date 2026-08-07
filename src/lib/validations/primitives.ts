@@ -53,8 +53,11 @@ export const hexColor = z
     "Invalid hex colour (expected #RRGGBB)",
   );
 
-/** The layout template ids a clinic site can render (see src/lib/templates.ts). */
-export const templateId = z.enum(["modern", "classic", "elegant", "bold", "minimal", "arabic"]);
+/** Free-form template id validated as a kebab-case identifier. */
+export const templateId = z
+  .string()
+  .min(1, "Template id is required")
+  .regex(/^[a-z0-9-]+$/, "Template id must be lowercase letters, numbers, and hyphens");
 
 /**
  * Validate Moroccan phone numbers.

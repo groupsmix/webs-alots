@@ -3,13 +3,11 @@ import { Chatbot } from "@/components/chatbot";
 import { ConsentGatedAnalytics } from "@/components/consent-gated-analytics";
 import { DemoBanner } from "@/components/demo-banner";
 import { PublicRootLayout } from "@/components/landing/oltigo/public-root-layout";
-import { DynamicFooter } from "@/components/public/dynamic-footer";
-import { DynamicHeader } from "@/components/public/dynamic-header";
-import { PublicFooter } from "@/components/public/footer";
-import { PublicHeader } from "@/components/public/header";
+import { DefaultTemplateLayout } from "@/components/public/default-template-layout";
 import { WebSiteJsonLd } from "@/components/seo/json-ld";
 import { getPublicBranding, type ClinicBranding } from "@/lib/data/public";
 import { getRootDomain, getSiteUrl } from "@/lib/env";
+import type { Locale } from "@/lib/i18n";
 import { buildPublicThemeStyle } from "@/lib/public-theme";
 import { getTemplate } from "@/lib/templates";
 import { getTenant } from "@/lib/tenant";
@@ -18,6 +16,7 @@ export default async function PublicLayout({ children }: { children: React.React
   const tenant = await getTenant();
   const h = await headers();
   const nonce = h.get("x-nonce") || undefined;
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   // Root domain (no tenant) → wrap marketing public pages with the Oltigo
   // nav/footer; the home page keeps its self-contained landing shell.
@@ -47,13 +46,7 @@ export default async function PublicLayout({ children }: { children: React.React
   const isDemo = tenant.subdomain === "demo";
   const rootDomain = getRootDomain() || "oltigo.com";
   const siteUrl = `https://${tenant.subdomain}.${rootDomain}`;
-
-  // Template-aware header/footer: the clinic's chosen template can swap the
-  // header/footer layout. "top-sticky"/"classic-3col" keep the default
-  // components; other variants use the dynamic (template-driven) ones.
   const template = getTemplate(branding.templateId);
-  const useOriginalHeader = template.headerVariant === "top-sticky";
-  const useOriginalFooter = template.footerVariant === "classic-3col";
 
   return (
     <div style={buildPublicThemeStyle(branding, template)}>
@@ -65,46 +58,9 @@ export default async function PublicLayout({ children }: { children: React.React
         searchUrl={`${siteUrl}/book`}
         nonce={nonce}
       />
-      {useOriginalHeader ? (
-        <PublicHeader
-          logoUrl={branding.logoUrl}
-          clinicName={branding.clinicName}
-          sectionVisibility={branding.sectionVisibility}
-          phone={branding.phone}
-          email={branding.email}
-          address={branding.address}
-        />
-      ) : (
-        <DynamicHeader
-          logoUrl={branding.logoUrl}
-          clinicName={branding.clinicName}
-          phone={branding.phone}
-          email={branding.email}
-          address={branding.address}
-          headerVariant={template.headerVariant}
-          template={template}
-        />
-      )}
-      <main id="main-content" className="flex-1">
+      <DefaultTemplateLayout branding={branding} template={template} locale={locale}>
         {children}
-      </main>
-      {useOriginalFooter ? (
-        <PublicFooter
-          clinicName={branding.clinicName}
-          phone={branding.phone ?? undefined}
-          email={branding.email ?? undefined}
-          address={branding.address ?? undefined}
-        />
-      ) : (
-        <DynamicFooter
-          clinicName={branding.clinicName}
-          footerVariant={template.footerVariant}
-          template={template}
-          phone={branding.phone}
-          email={branding.email}
-          address={branding.address}
-        />
-      )}
+      </DefaultTemplateLayout>
       <Chatbot />
       {/* <CookieConsent /> is mounted globally in src/app/layout.tsx — do not re-mount here */}
     </div>
