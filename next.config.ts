@@ -175,6 +175,12 @@ const nextConfig: NextConfig = {
         hostname: "uploads.oltigo.com",
       },
     ],
+    // Cloudflare Workers (OpenNext) does not run the Sharp-based Next.js image
+    // optimizer. Without `unoptimized`, `next/image` on public pages requests
+    // `/_next/image` which fails on the edge runtime, so clinic logos/hero
+    // images uploaded to R2 stay broken on the public site while they render
+    // fine in the admin dashboard (which uses plain <img> tags).
+    unoptimized: true,
     // S-39: Explicitly disable SVG processing to prevent XSS via embedded scripts.
     dangerouslyAllowSVG: false,
     // Optimize image delivery with modern formats
