@@ -1,12 +1,15 @@
-import { CalendarDays, CheckCircle2, CircleHelp, Clock3 } from "lucide-react";
+"use client";
+
+import { CalendarDays, CheckCircle2, Clock3, UserCheck } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/dashboard/stat-card";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { OwnerTodaySummary } from "@/lib/data/admin-owner-dashboard";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 interface OwnerTodayProps {
   summary: OwnerTodaySummary;
@@ -22,14 +25,17 @@ export function OwnerToday({ summary, locale }: OwnerTodayProps) {
         count: summary.unconfirmedAppointments + summary.confirmedAppointments,
       }),
       icon: CalendarDays,
-      color: "text-[var(--oltigo-green)]",
+      tone: "neutral" as const,
     },
     {
-      label: t(locale, "admin.owner.todayUnconfirmed"),
-      value: summary.unconfirmedAppointments,
-      helper: t(locale, "admin.owner.todayUnconfirmedHelper"),
-      icon: CircleHelp,
-      color: "text-[var(--signal-amber)]",
+      label: t(locale, "admin.owner.todayConfirmed"),
+      value: summary.confirmedAppointments,
+      helper:
+        summary.unconfirmedAppointments > 0
+          ? t(locale, "admin.owner.todayUnconfirmedHelper")
+          : undefined,
+      icon: UserCheck,
+      tone: "success" as const,
     },
     {
       label: t(locale, "admin.owner.todayWaiting"),
@@ -38,7 +44,7 @@ export function OwnerToday({ summary, locale }: OwnerTodayProps) {
         count: summary.inProgressAppointments,
       }),
       icon: Clock3,
-      color: "text-[var(--ink-70)]",
+      tone: "neutral" as const,
     },
     {
       label: t(locale, "admin.owner.todayCompleted"),
@@ -47,48 +53,47 @@ export function OwnerToday({ summary, locale }: OwnerTodayProps) {
         count: summary.noShowAppointments,
       }),
       icon: CheckCircle2,
-      color: "text-[var(--signal-green)]",
+      tone: "success" as const,
     },
   ];
 
   return (
     <section aria-labelledby="today-title">
-      <div className="mb-3 flex items-end justify-between gap-4">
-        <div>
-          <h2 id="today-title" className="text-lg font-semibold">
-            {t(locale, "admin.owner.today")}
-          </h2>
-          <p className="text-sm text-muted-foreground">{t(locale, "admin.owner.todayDesc")}</p>
-        </div>
-        <Badge variant="outline">{t(locale, "admin.owner.todayBadge")}</Badge>
+      <div className="mb-3">
+        <h2 id="today-title" className="text-lg font-semibold">
+          {t(locale, "admin.owner.today")}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t(locale, "admin.owner.todayDesc")}</p>
       </div>
 
       {summary.totalAppointments === 0 ? (
         <Card>
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-5">
             <EmptyState
+              variant="plain"
               icon={CalendarDays}
               title={t(locale, "admin.owner.noAppointmentsToday")}
               description={t(locale, "admin.owner.noAppointmentsTodayDesc")}
               action={
-                <Link href="/admin/agenda" className={buttonVariants({ size: "sm" })}>
+                <Link href="/admin/agenda" className={cn(buttonVariants({ size: "sm" }))}>
                   {t(locale, "admin.owner.viewAgenda")}
                 </Link>
               }
+              className="py-8"
             />
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map((card) => (
-            <Card key={card.label}>
-              <CardContent className="p-4">
-                <card.icon className={`h-5 w-5 ${card.color}`} />
-                <p className="mt-4 text-2xl font-bold">{card.value}</p>
-                <p className="mt-1 text-sm font-medium">{card.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
-              </CardContent>
-            </Card>
+            <StatCard
+              key={card.label}
+              value={card.value}
+              label={card.label}
+              helper={card.helper}
+              icon={card.icon}
+              tone={card.tone}
+            />
           ))}
         </div>
       )}
