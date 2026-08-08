@@ -192,6 +192,7 @@ export {
   Dialog,
   DialogTrigger,
   DialogContent,
+  DialogOverlay,
   DialogHeader,
   DialogFooter,
   DialogTitle,

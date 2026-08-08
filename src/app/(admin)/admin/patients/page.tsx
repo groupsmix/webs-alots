@@ -1,87 +1,119 @@
 "use client";
 
-import {
-  Search,
-  User,
-  Phone,
-  Mail,
-  Calendar,
-  Shield,
-  Pill,
-  Download,
-  Edit,
-  Trash2,
-  Ban,
-  CheckCircle,
-  Loader2,
-  UserPlus,
-} from "lucide-react";
+import { Download, UserPlus } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useLocale } from "@/components/locale-switcher";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { DataMask } from "@/components/ui/data-mask";
+import { PatientDeleteDialog } from "@/components/admin/patients/patient-delete-dialog";
+import { PatientDrawer } from "@/components/admin/patients/patient-drawer";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  PatientFormDialog,
+  type PatientFormData,
+} from "@/components/admin/patients/patient-form-dialog";
+import { PatientList } from "@/components/admin/patients/patient-list";
+import { FilterBar } from "@/components/dashboard/filter-bar";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { useLocale } from "@/components/locale-switcher";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { updateClinicUser, setClinicUserActive, deleteClinicUser } from "@/lib/admin-actions";
 import {
   getCurrentUser,
   fetchPatients,
   fetchAppointments,
-  fetchPatientPrescriptions,
   type PatientView,
   type AppointmentView,
-  type PrescriptionView,
 } from "@/lib/data/client";
 import { exportPatients } from "@/lib/export-data";
+import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 
 type Patient = PatientView;
 
+function normalizeSearch(value: string): string {
+  return value.toLowerCase().trim();
+}
+
+function StatusFilter({
+  value,
+  onChange,
+  locale,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  locale: Locale;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[140px]">
+        <SelectValue placeholder={t(locale, "admin.patients.filters.status")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t(locale, "admin.patients.filters.allStatuses")}</SelectItem>
+        <SelectItem value="active">{t(locale, "admin.patients.status.active")}</SelectItem>
+        <SelectItem value="inactive">{t(locale, "admin.patients.status.inactive")}</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function InsuranceFilter({
+  value,
+  onChange,
+  options,
+  locale,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  locale: Locale;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[160px]">
+        <SelectValue placeholder={t(locale, "admin.patients.filters.insurance")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t(locale, "admin.patients.filters.allInsurances")}</SelectItem>
+        {options.map((insurance) => (
+          <SelectItem key={insurance} value={insurance}>
+            {insurance}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export default function AdminPatientDatabasePage() {
-  const [search, setSearch] = useState("");
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [patientsList, setPatientsList] = useState<Patient[]>([]);
-  const [appointmentsList, setAppointmentsList] = useState<AppointmentView[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentView[]>([]);
   const [clinicId, setClinicId] = useState<string | null>(null);
-  // B6: the selected patient's prescriptions are loaded on demand instead of
-  // pulling every prescription in the clinic up front.
-  const [selectedRx, setSelectedRx] = useState<PrescriptionView[]>([]);
-  const [rxLoading, setRxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const { addToast } = useToast();
-  const [locale] = useLocale();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [insuranceFilter, setInsuranceFilter] = useState("all");
+
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editing, setEditing] = useState<Patient | null>(null);
+  const [adding, setAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Patient | null>(null);
   const [saving, setSaving] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formPhone, setFormPhone] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formInsurance, setFormInsurance] = useState("");
-
-  const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [addName, setAddName] = useState("");
-  const [addPhone, setAddPhone] = useState("");
-  const [addEmail, setAddEmail] = useState("");
-  const [addDob, setAddDob] = useState("");
   const [addError, setAddError] = useState("");
+
+  const [locale] = useLocale();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -101,8 +133,8 @@ export default function AdminPatientDatabasePage() {
         fetchAppointments(user.clinic_id, { sinceDate }),
       ]);
       if (controller.signal.aborted) return;
-      setPatientsList(p);
-      setAppointmentsList(a);
+      setPatients(p);
+      setAppointments(a);
       setLoading(false);
     }
     load().catch((err) => {
@@ -111,124 +143,62 @@ export default function AdminPatientDatabasePage() {
         setLoading(false);
       }
     });
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
-  // B6: load the selected patient's prescriptions on demand.
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    if (!selectedPatient || !clinicId) {
-      timeout = setTimeout(() => setSelectedRx([]), 0);
-      return () => {
-        if (timeout) clearTimeout(timeout);
-      };
-    } else {
-      const controller = new AbortController();
-      const patientId = selectedPatient.id;
-      timeout = setTimeout(() => {
-        setRxLoading(true);
-        setSelectedRx([]);
-        fetchPatientPrescriptions(clinicId, patientId)
-          .then((rx) => {
-            if (!controller.signal.aborted) setSelectedRx(rx);
-          })
-          .catch(() => {
-            if (!controller.signal.aborted) setSelectedRx([]);
-          })
-          .finally(() => {
-            if (!controller.signal.aborted) setRxLoading(false);
-          });
-      }, 0);
-      return () => {
-        if (timeout) clearTimeout(timeout);
-        controller.abort();
-      };
-    }
-  }, [selectedPatient, clinicId]);
+  const insuranceOptions = Array.from(
+    new Set(patients.map((p) => p.insurance).filter((ins): ins is string => Boolean(ins))),
+  ).sort();
 
-  const patients = patientsList;
-  const appointments = appointmentsList;
-  const prescriptions = Array.isArray(selectedRx) ? selectedRx : [];
+  const normalizedSearch = normalizeSearch(search);
+  const filtered = patients.filter((p) => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(normalizedSearch) ||
+      p.phone.includes(normalizedSearch) ||
+      p.email.toLowerCase().includes(normalizedSearch);
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && p.active) ||
+      (statusFilter === "inactive" && !p.active);
+    const matchesInsurance = insuranceFilter === "all" || p.insurance === insuranceFilter;
+    return matchesSearch && matchesStatus && matchesInsurance;
+  });
 
-  const filtered = patients.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.phone.includes(search) ||
-      p.email.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  if (loading) {
-    return <PageLoader message="Loading patients..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">
-          Failed to load data. Please try refreshing the page.
-        </p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
-
-  const getPatientAppts = (patientId: string) =>
-    appointments.filter((a) => a.patientId === patientId);
-
-  const openEditDialog = (patient: Patient) => {
-    setEditing(patient);
-    setFormName(patient.name);
-    setFormPhone(patient.phone);
-    setFormEmail(patient.email);
-    setFormInsurance(patient.insurance ?? "");
-    setSelectedPatient(null);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editing || !formName.trim()) return;
+  const handleSaveEdit = async (data: PatientFormData) => {
+    if (!editing) return;
     setSaving(true);
     try {
       await updateClinicUser(editing.id, {
-        name: formName,
-        phone: formPhone,
-        email: formEmail,
-        metadata: { insurance: formInsurance || undefined },
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        metadata: data.insurance ? { insurance: data.insurance } : undefined,
       });
-      setPatientsList((prev) =>
+      setPatients((prev) =>
         prev.map((p) =>
           p.id === editing.id
             ? {
                 ...p,
-                name: formName,
-                phone: formPhone,
-                email: formEmail,
-                insurance: formInsurance || undefined,
+                name: data.name,
+                phone: data.phone,
+                email: data.email,
+                insurance: data.insurance,
               }
             : p,
         ),
       );
-      addToast("Patient updated", "success");
+      addToast(t(locale, "admin.patients.toast.updated"), "success");
       setEditing(null);
     } catch (err) {
       logger.warn("Failed to update patient", { context: "admin/patients", error: err });
-      addToast("Failed to update patient. Please try again.", "error");
+      addToast(t(locale, "admin.patients.toast.updateFailed"), "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const resetAddForm = () => {
-    setAddName("");
-    setAddPhone("");
-    setAddEmail("");
-    setAddDob("");
-    setAddError("");
-  };
-
-  const handleCreate = async () => {
-    if (!addName.trim() || !addPhone.trim()) return;
+  const handleCreate = async (data: PatientFormData) => {
+    if (!data.name.trim() || !data.phone.trim()) return;
     setCreating(true);
     setAddError("");
     try {
@@ -236,529 +206,210 @@ export default function AdminPatientDatabasePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: addName.trim(),
-          phone: addPhone.trim(),
-          email: addEmail.trim() || undefined,
-          dateOfBirth: addDob || undefined,
+          name: data.name.trim(),
+          phone: data.phone.trim(),
+          email: data.email.trim() || undefined,
+          dateOfBirth: data.dateOfBirth,
         }),
       });
       const json = (await res.json().catch(() => null)) as {
         data?: { patient?: { id: string; name: string; phone: string }; existing?: boolean };
         error?: string;
       } | null;
-
       if (!res.ok || !json?.data?.patient) {
-        setAddError(json?.error ?? "Failed to add patient. Please try again.");
+        setAddError(json?.error ?? t(locale, "admin.patients.toast.createFailed"));
         return;
       }
-
       const created = json.data.patient;
       if (json.data.existing) {
-        addToast("A patient with this phone already exists", "info");
+        addToast(t(locale, "admin.patients.toast.existing"), "info");
       } else {
-        setPatientsList((prev) => {
+        const newPatient: Patient = {
+          id: created.id,
+          name: created.name,
+          phone: created.phone,
+          email: data.email.trim(),
+          age: 0,
+          gender: "M",
+          dateOfBirth: data.dateOfBirth || "",
+          registeredAt: new Date().toISOString().slice(0, 10),
+          active: true,
+        };
+        setPatients((prev) => {
           if (prev.some((p) => p.id === created.id)) return prev;
-          const newPatient: Patient = {
-            id: created.id,
-            name: created.name,
-            phone: created.phone,
-            email: addEmail.trim(),
-            age: 0,
-            gender: "M",
-            dateOfBirth: addDob,
-            registeredAt: new Date().toISOString().slice(0, 10),
-            active: true,
-          };
           return [newPatient, ...prev];
         });
-        addToast("Patient added", "success");
+        addToast(t(locale, "admin.patients.toast.created"), "success");
       }
       setAdding(false);
-      resetAddForm();
     } catch (err) {
       logger.warn("Failed to add patient", { context: "admin/patients", error: err });
-      setAddError("An error occurred. Please try again.");
+      setAddError(t(locale, "admin.patients.toast.createFailed"));
     } finally {
       setCreating(false);
     }
   };
 
-  const toggleActive = async (patient: Patient) => {
+  const handleToggleActive = async (patient: Patient) => {
     const next = !patient.active;
-    setPatientsList((prev) => prev.map((p) => (p.id === patient.id ? { ...p, active: next } : p)));
-    setSelectedPatient(null);
+    setPatients((prev) => prev.map((p) => (p.id === patient.id ? { ...p, active: next } : p)));
+    setSelectedPatient((prev) => (prev?.id === patient.id ? { ...prev, active: next } : prev));
     try {
       await setClinicUserActive(patient.id, next);
-      addToast(next ? "Patient reactivated" : "Patient deactivated", "success");
+      addToast(
+        next
+          ? t(locale, "admin.patients.toast.activated")
+          : t(locale, "admin.patients.toast.deactivated"),
+        "success",
+      );
     } catch (err) {
       logger.warn("Failed to toggle patient", { context: "admin/patients", error: err });
-      setPatientsList((prev) =>
-        prev.map((p) => (p.id === patient.id ? { ...p, active: !next } : p)),
-      );
-      addToast("Failed to update status. Please try again.", "error");
+      setPatients((prev) => prev.map((p) => (p.id === patient.id ? { ...p, active: !next } : p)));
+      setSelectedPatient((prev) => (prev?.id === patient.id ? { ...prev, active: !next } : prev));
+      addToast(t(locale, "admin.patients.toast.statusFailed"), "error");
     }
   };
 
   const handleDelete = async (patient: Patient) => {
-    const previous = patientsList;
-    setPatientsList((prev) => prev.filter((p) => p.id !== patient.id));
+    const previous = patients;
+    setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    setSelectedPatient(null);
     setDeleteConfirm(null);
     try {
       await deleteClinicUser(patient.id);
-      addToast("Patient removed", "success");
+      addToast(t(locale, "admin.patients.toast.deleted"), "success");
     } catch (err) {
       logger.warn("Failed to delete patient", { context: "admin/patients", error: err });
-      setPatientsList(previous);
-      addToast("Failed to remove patient. Please try again.", "error");
+      setPatients(previous);
+      addToast(t(locale, "admin.patients.toast.deleteFailed"), "error");
     }
   };
 
-  return (
-    <div>
-      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Patients" }]} />
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Patient Database</h1>
-          <Badge variant="outline">{patients.length} patients</Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportPatients(filtered)}>
-            <Download className="h-4 w-4 me-1" />
-            Export CSV
+  if (loading) {
+    return <PageLoader message={t(locale, "admin.patients.loading")} />;
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={UserPlus}
+        title={t(locale, "admin.patients.errorTitle")}
+        description={error.message}
+        action={
+          <Button onClick={() => window.location.reload()}>
+            {t(locale, "admin.patients.retry")}
           </Button>
+        }
+      />
+    );
+  }
+
+  const editInitial = editing
+    ? {
+        name: editing.name,
+        phone: editing.phone,
+        email: editing.email,
+        insurance: editing.insurance ?? "",
+      }
+    : undefined;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t(locale, "admin.patients.title")}
+        subtitle={t(locale, "admin.patients.subtitle")}
+        primaryAction={
           <Button
-            size="sm"
             onClick={() => {
-              resetAddForm();
+              setAddError("");
               setAdding(true);
             }}
           >
-            <UserPlus className="h-4 w-4 me-1" />
+            <UserPlus className="me-2 h-4 w-4" />
             {t(locale, "admin.patients.add")}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name, phone, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="ps-10"
+      <FilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={t(locale, "admin.patients.searchPlaceholder")}
+      >
+        <StatusFilter value={statusFilter} onChange={setStatusFilter} locale={locale} />
+        <InsuranceFilter
+          value={insuranceFilter}
+          onChange={setInsuranceFilter}
+          options={insuranceOptions}
+          locale={locale}
         />
-      </div>
+        <Button variant="outline" size="sm" onClick={() => exportPatients(filtered)}>
+          <Download className="me-2 h-4 w-4" />
+          {t(locale, "admin.patients.export")}
+        </Button>
+      </FilterBar>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((patient) => {
-          const patientAppts = getPatientAppts(patient.id);
-          const lastVisit = patientAppts.find((a) => a.status === "completed");
-          return (
-            <Card key={patient.id}>
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{patient.name}</p>
-                    <div className="space-y-1 mt-1">
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        <DataMask value={patient.phone} type="phone" />
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        <DataMask value={patient.email} type="email" />
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Age: {patient.age} | {patient.gender === "M" ? "Male" : "Female"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      {!patient.active && (
-                        <Badge variant="destructive" className="text-[10px]">
-                          Inactive
-                        </Badge>
-                      )}
-                      {patient.insurance && (
-                        <Badge variant="outline" className="text-[10px] flex items-center gap-1">
-                          <Shield className="h-2.5 w-2.5" />
-                          {patient.insurance}
-                        </Badge>
-                      )}
-                      <Badge variant="secondary" className="text-[10px]">
-                        {patientAppts.length} visits
-                      </Badge>
-                    </div>
-                    {lastVisit && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Last visit: {lastVisit.date}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-xs"
-                    onClick={() => setSelectedPatient(patient)}
-                  >
-                    View Profile
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => openEditDialog(patient)}
-                    aria-label="Edit patient"
-                  >
-                    <Edit className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => toggleActive(patient)}
-                    aria-label={patient.active ? "Deactivate patient" : "Reactivate patient"}
-                  >
-                    {patient.active ? (
-                      <Ban className="h-3.5 w-3.5" />
-                    ) : (
-                      <CheckCircle className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-red-500"
-                    onClick={() => setDeleteConfirm(patient)}
-                    aria-label="Delete patient"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <PatientList
+        patients={filtered}
+        appointments={appointments}
+        locale={locale}
+        onRowClick={setSelectedPatient}
+        onEdit={setEditing}
+        onToggleActive={handleToggleActive}
+        onDelete={setDeleteConfirm}
+      />
 
-      {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <User className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">
-            No patients found matching &quot;{search}&quot;
-          </p>
-        </div>
-      )}
+      <PatientDrawer
+        key={selectedPatient?.id ?? "drawer-closed"}
+        patient={selectedPatient}
+        appointments={appointments}
+        clinicId={clinicId}
+        open={selectedPatient !== null}
+        onOpenChange={(open) => !open && setSelectedPatient(null)}
+        onEdit={() => {
+          if (selectedPatient) {
+            setEditing(selectedPatient);
+          }
+        }}
+        onToggleActive={() => selectedPatient && handleToggleActive(selectedPatient)}
+        onDelete={() => selectedPatient && setDeleteConfirm(selectedPatient)}
+        locale={locale}
+      />
 
-      {/* Patient Profile Dialog */}
-      <Dialog open={selectedPatient !== null} onOpenChange={() => setSelectedPatient(null)}>
-        {selectedPatient && (
-          <DialogContent
-            onClose={() => setSelectedPatient(null)}
-            className="max-w-lg max-h-[80vh] overflow-y-auto"
-          >
-            <DialogHeader>
-              <DialogTitle>Patient Profile</DialogTitle>
-              <DialogDescription>{selectedPatient.name}</DialogDescription>
-            </DialogHeader>
-            <div className="mt-4">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-7 w-7 text-primary" />
-                </div>
-                <div>
-                  <p className="font-semibold text-lg">{selectedPatient.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedPatient.gender === "M" ? "Male" : "Female"}, {selectedPatient.age}{" "}
-                    years old
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    DOB: {selectedPatient.dateOfBirth}
-                  </p>
-                </div>
-              </div>
+      <PatientFormDialog
+        key={editing?.id ?? "edit-closed"}
+        mode="edit"
+        open={editing !== null}
+        onOpenChange={(open) => !open && setEditing(null)}
+        initialData={editInitial}
+        onSave={handleSaveEdit}
+        saving={saving}
+        locale={locale}
+      />
 
-              <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                <div className="border rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <DataMask value={selectedPatient.phone} type="phone" className="font-medium" />
-                </div>
-                <div className="border rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <DataMask
-                    value={selectedPatient.email}
-                    type="email"
-                    className="font-medium text-xs"
-                  />
-                </div>
-                <div className="border rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground">Insurance</p>
-                  <p className="font-medium">{selectedPatient.insurance || "None"}</p>
-                </div>
-                <div className="border rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground">Registered</p>
-                  <p className="font-medium">{selectedPatient.registeredAt}</p>
-                </div>
-              </div>
-
-              {selectedPatient.allergies && selectedPatient.allergies.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium mb-1">Allergies</p>
-                  <div className="flex gap-1 flex-wrap">
-                    {selectedPatient.allergies.map((a) => (
-                      <Badge key={a} variant="destructive" className="text-xs">
-                        {a}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Tabs defaultValue="appointments">
-                <TabsList className="w-full">
-                  <TabsTrigger value="appointments" className="flex-1">
-                    Appointments
-                  </TabsTrigger>
-                  <TabsTrigger value="prescriptions" className="flex-1">
-                    Prescriptions
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="appointments">
-                  <div className="space-y-2 mt-2">
-                    {getPatientAppts(selectedPatient.id).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No appointments
-                      </p>
-                    )}
-                    {getPatientAppts(selectedPatient.id).map((appt) => (
-                      <div
-                        key={appt.id}
-                        className="flex items-center justify-between border rounded-lg p-3 text-sm"
-                      >
-                        <div>
-                          <p className="font-medium">{appt.serviceName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {appt.doctorName} — {appt.date} at {appt.time}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            appt.status === "completed"
-                              ? "default"
-                              : appt.status === "cancelled"
-                                ? "destructive"
-                                : appt.status === "no-show"
-                                  ? "destructive"
-                                  : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {appt.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="prescriptions">
-                  <div className="space-y-2 mt-2">
-                    {rxLoading && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Loading prescriptions…
-                      </p>
-                    )}
-                    {!rxLoading && prescriptions.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No prescriptions
-                      </p>
-                    )}
-                    {!rxLoading &&
-                      prescriptions.map((rx) => (
-                        <div key={rx.id} className="border rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-medium flex items-center gap-1">
-                              <Pill className="h-3.5 w-3.5" />
-                              {rx.doctorName}
-                            </p>
-                            <span className="text-xs text-muted-foreground">{rx.date}</span>
-                          </div>
-                          <div className="space-y-1">
-                            {rx.medications.map((med) => (
-                              <p
-                                key={`${rx.id}-${med.name}-${med.dosage}-${med.duration}`}
-                                className="text-xs text-muted-foreground"
-                              >
-                                <span className="font-medium text-foreground">{med.name}</span> —{" "}
-                                {med.dosage} for {med.duration}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
-
-      {/* Edit Patient Dialog */}
-      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent onClose={() => setEditing(null)} className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Patient</DialogTitle>
-            <DialogDescription>Update the patient&apos;s contact details.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Insurance</Label>
-              <Input value={formInsurance} onChange={(e) => setFormInsurance(e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Patient Dialog */}
-      <Dialog
+      <PatientFormDialog
+        key={adding ? "add-open" : "add-closed"}
+        mode="add"
         open={adding}
         onOpenChange={(open) => {
           if (!open) {
             setAdding(false);
-            resetAddForm();
+            setAddError("");
           }
         }}
-      >
-        <DialogContent
-          onClose={() => {
-            setAdding(false);
-            resetAddForm();
-          }}
-          className="max-w-md"
-        >
-          <DialogHeader>
-            <DialogTitle>{t(locale, "admin.patients.add")}</DialogTitle>
-            <DialogDescription>{t(locale, "admin.patients.addDescription")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input
-                value={addName}
-                onChange={(e) => setAddName(e.target.value)}
-                placeholder="Patient name"
-                disabled={creating}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input
-                value={addPhone}
-                onChange={(e) => setAddPhone(e.target.value)}
-                placeholder="+212 6XX XX XX XX"
-                disabled={creating}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
-                disabled={creating}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Date of Birth</Label>
-              <Input
-                type="date"
-                value={addDob}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setAddDob(e.target.value)}
-                disabled={creating}
-              />
-            </div>
-            {addError && <p className="text-sm text-red-600">{addError}</p>}
-          </div>
-          <DialogFooter className="mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAdding(false);
-                resetAddForm();
-              }}
-              disabled={creating}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={creating || !addName.trim() || !addPhone.trim()}
-            >
-              {creating && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
-              {t(locale, "admin.patients.add")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onSave={handleCreate}
+        saving={creating}
+        error={addError}
+        locale={locale}
+      />
 
-      {/* Delete Confirmation */}
-      <Dialog
+      <PatientDeleteDialog
+        patient={deleteConfirm}
         open={deleteConfirm !== null}
         onOpenChange={(open) => !open && setDeleteConfirm(null)}
-      >
-        <DialogContent onClose={() => setDeleteConfirm(null)} className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Remove Patient</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently remove {deleteConfirm?.name}? This deletes their
-              record and cannot be undone. Consider deactivating instead to preserve history.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
-            >
-              Remove
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+        locale={locale}
+      />
     </div>
   );
 }
