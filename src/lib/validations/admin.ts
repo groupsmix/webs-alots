@@ -63,12 +63,15 @@ export const brandingUpdateSchema = z.object({
   body_font: z.string().max(100).optional(),
   name: z.string().max(200).optional(),
   tagline: z.string().max(500).optional(),
-  phone: phoneNumber.optional(),
+  // Empty string is a valid "no phone" value from the admin form inputs.
+  phone: z.union([z.literal(""), phoneNumber]).optional(),
   address: z.string().max(500).optional(),
-  logo_url: z.string().max(1000).optional(),
-  favicon_url: z.string().max(1000).optional(),
-  hero_image_url: z.string().max(1000).optional(),
-  cover_photo_url: z.string().max(1000).optional(),
+  // Image URL columns are nullable in the DB and the admin form sends null
+  // for fields that have not been uploaded yet.
+  logo_url: z.string().max(1000).nullable().optional(),
+  favicon_url: z.string().max(1000).nullable().optional(),
+  hero_image_url: z.string().max(1000).nullable().optional(),
+  cover_photo_url: z.string().max(1000).nullable().optional(),
   website_config: z.record(z.string(), z.unknown()).optional(),
   template_id: z.string().max(50).optional(),
   section_visibility: z.record(z.string(), z.boolean()).optional(),
