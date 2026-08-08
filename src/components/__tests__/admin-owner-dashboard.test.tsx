@@ -81,7 +81,7 @@ describe("owner dashboard sections", () => {
     );
 
     expect(screen.getByText("Appointments today")).toBeDefined();
-    expect(screen.getByText("Awaiting confirmation")).toBeDefined();
+    expect(screen.getByText("Confirmed")).toBeDefined();
     expect(screen.getByText("Waiting now")).toBeDefined();
     expect(screen.getByText("Completed")).toBeDefined();
   });
