@@ -1,13 +1,15 @@
 "use client";
 
 import { Activity } from "lucide-react";
+import Link from "next/link";
 import { ActivityList } from "@/components/dashboard/activity-list";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { RecentActivityItem } from "@/lib/data/dashboard";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
-import { formatDisplayDate } from "@/lib/utils";
+import { cn, formatDisplayDate } from "@/lib/utils";
 
 interface OwnerActivityProps {
   activities: RecentActivityItem[];
@@ -53,8 +55,13 @@ export function OwnerActivity({ activities, locale }: OwnerActivityProps) {
           <EmptyState
             variant="plain"
             icon={Activity}
-            title={t(locale, "admin.recentActivity")}
+            title={t(locale, "admin.owner.noActivityTitle")}
             description={t(locale, "admin.owner.noActivityDesc")}
+            action={
+              <Link href="/admin/agenda" className={cn(buttonVariants({ size: "sm" }))}>
+                {t(locale, "admin.owner.viewAgenda")}
+              </Link>
+            }
             className="py-8"
           />
         ) : (

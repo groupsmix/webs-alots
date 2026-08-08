@@ -72,32 +72,28 @@ export function AgendaPeek({ items, locale, className }: AgendaPeekProps) {
             className="py-8"
           />
         ) : (
-          <div
-            className="divide-y"
-            role="list"
-            aria-label={t(locale, "admin.owner.nextAppointments")}
-          >
+          <ul className="divide-y" aria-label={t(locale, "admin.owner.nextAppointments")}>
             {items.map((item) => (
-              <Link
-                key={item.id}
-                href="/admin/agenda"
-                className="flex items-start justify-between gap-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                role="listitem"
-              >
-                <div className="min-w-0">
-                  <p className="text-start text-sm font-medium text-foreground">
-                    {formatDisplayDate(item.slotStart, locale, "time")} — {item.patientName}
-                  </p>
-                  <p className="text-start text-xs text-muted-foreground">
-                    {item.serviceName} • {item.doctorName}
-                  </p>
-                </div>
-                <Badge variant={statusVariant[item.status]} className="shrink-0">
-                  {getStatusLabel(locale, item.status)}
-                </Badge>
-              </Link>
+              <li key={item.id}>
+                <Link
+                  href="/admin/agenda"
+                  className="flex items-start justify-between gap-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="min-w-0">
+                    <p className="text-start text-sm font-medium text-foreground">
+                      {formatDisplayDate(item.slotStart, locale, "time")} — {item.patientName}
+                    </p>
+                    <p className="text-start text-xs text-muted-foreground">
+                      {item.serviceName} • {item.doctorName}
+                    </p>
+                  </div>
+                  <Badge variant={statusVariant[item.status]} className="shrink-0">
+                    {getStatusLabel(locale, item.status)}
+                  </Badge>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </CardContent>
     </Card>

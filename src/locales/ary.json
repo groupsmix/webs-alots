@@ -1285,6 +1285,7 @@
   "admin.owner.manageTeam": "سيّر الفريق",
   "admin.owner.manageTeamDesc": "الأطباء والأوقات المتوفرة",
   "admin.owner.noActivityDesc": "الأنشطة الجديدة ديال الفريق غادي يبانوا هنا.",
+  "admin.owner.noActivityTitle": "مازال ما كاين حتى نشاط",
   "admin.owner.noAppointmentsToday": "ما كاين حتى رانديفو اليوم",
   "admin.owner.noAppointmentsTodayDesc": "شوف الأجندا ولا وجد للأيام الجايين.",
   "admin.owner.noShowAttention": "من اللول، {rate}% من المواعيد ما جاوش",

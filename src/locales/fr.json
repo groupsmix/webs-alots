@@ -1285,6 +1285,7 @@
   "admin.owner.manageTeam": "Gérer l'équipe",
   "admin.owner.manageTeamDesc": "Médecins et disponibilités",
   "admin.owner.noActivityDesc": "Les nouvelles actions de votre équipe apparaîtront ici.",
+  "admin.owner.noActivityTitle": "Aucune activité pour l'instant",
   "admin.owner.noAppointmentsToday": "Aucun rendez-vous aujourd'hui",
   "admin.owner.noAppointmentsTodayDesc": "Consultez l'agenda ou préparez les prochains jours.",
   "admin.owner.noShowAttention": "Depuis le début, {rate}% des rendez-vous ont été manqués",

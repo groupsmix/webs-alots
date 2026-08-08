@@ -1285,6 +1285,7 @@
   "admin.owner.manageTeam": "إدارة الفريق",
   "admin.owner.manageTeamDesc": "الأطباء والتوفر",
   "admin.owner.noActivityDesc": "ستظهر إجراءات فريقك الجديدة هنا.",
+  "admin.owner.noActivityTitle": "لا توجد أنشطة حتى الآن",
   "admin.owner.noAppointmentsToday": "لا توجد مواعيد اليوم",
   "admin.owner.noAppointmentsTodayDesc": "راجع الجدول أو حضّر للأيام القادمة.",
   "admin.owner.noShowAttention": "منذ البداية، لم يحضر أصحاب {rate}% من المواعيد",

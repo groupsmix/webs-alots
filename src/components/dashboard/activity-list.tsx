@@ -27,7 +27,7 @@ export function ActivityList({
   const visible = items.slice(0, maxItems);
 
   return (
-    <div className={cn("divide-y", className)} role="list" aria-label={ariaLabel}>
+    <ul className={cn("divide-y", className)} aria-label={ariaLabel}>
       {visible.map((item) => {
         const content = (
           <div className="flex items-start justify-between gap-4 py-3">
@@ -45,20 +45,18 @@ export function ActivityList({
         );
 
         return item.href ? (
-          <Link
-            key={item.id}
-            href={item.href}
-            className="block transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            role="listitem"
-          >
-            {content}
-          </Link>
+          <li key={item.id}>
+            <Link
+              href={item.href}
+              className="block transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {content}
+            </Link>
+          </li>
         ) : (
-          <div key={item.id} role="listitem">
-            {content}
-          </div>
+          <li key={item.id}>{content}</li>
         );
       })}
-    </div>
+    </ul>
   );
 }

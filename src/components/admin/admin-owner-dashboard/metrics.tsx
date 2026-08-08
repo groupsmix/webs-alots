@@ -3,7 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardStats } from "@/lib/data/dashboard";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
@@ -33,14 +33,14 @@ export function OwnerMetrics({ stats, locale, noShowRate }: OwnerMetricsProps) {
 
   return (
     <Card className="h-full bg-card">
-      <CardContent className="p-5">
-        <h2 className="text-start text-base font-semibold">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-start text-base">
           {t(locale, "admin.owner.usefulMetrics")}
-        </h2>
-        <p className="text-start text-xs text-muted-foreground">
-          {t(locale, "admin.owner.overviewDesc")}
-        </p>
-        <dl className="mt-4 divide-y">
+        </CardTitle>
+        <CardDescription>{t(locale, "admin.owner.overviewDesc")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="divide-y">
           {metrics.map((metric) => (
             <div key={metric.label} className="flex items-center justify-between gap-4 py-3">
               <dt className="text-sm text-muted-foreground">{metric.label}</dt>
